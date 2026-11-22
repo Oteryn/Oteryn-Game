@@ -269,6 +269,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|_| callback.capture_creature)
             .and_then(|proof| proof.target_actor());
         let capture_key = callback.creature_target.clone();
+        let temporary_creature = callback.temporary_creature;
         if callback.capture_creature
             && let Some(turn) = &creature_runtime
         {
@@ -309,6 +310,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             turn.uncertain.store(false, Ordering::Relaxed);
         }
         drop(creature_runtime);
+        if matches!(result, QuestTransitionOutcome::Committed(_))
+            && let Some(effect) = temporary_creature
+        {
+            self.publish_carried_quest_creature(actor, item_fence, &effect)
+                .await;
+        }
         drop(revision);
         drop(permit);
         let disposition = if matches!(

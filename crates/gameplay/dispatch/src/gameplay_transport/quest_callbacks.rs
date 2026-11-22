@@ -6,6 +6,7 @@ use super::{
 };
 mod admission;
 mod conditional_cells;
+mod creature_effects;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
@@ -103,6 +104,7 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
+    temporary: std::sync::Mutex<Vec<creature_effects::TemporaryActor>>,
     #[cfg(test)]
     pub(super) lose_source_boss_commit_ack: std::sync::atomic::AtomicBool,
     #[cfg(test)]
@@ -154,11 +156,22 @@ impl PendingCallbacks {
 
 impl PendingCallbacks {
     pub(super) fn next_encounter_due_us(&self) -> Option<u64> {
-        self.timed
+        let timed = self
+            .timed
             .lock()
             .ok()?
             .iter()
             .map(|pending| pending.next_due_us())
+            .min();
+        timed
+            .into_iter()
+            .chain(
+                self.temporary
+                    .lock()
+                    .ok()?
+                    .iter()
+                    .map(|entry| entry.expires_at),
+            )
             .min()
     }
 }

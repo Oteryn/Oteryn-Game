@@ -250,6 +250,22 @@ pub struct NativeClaimBinding {
     pub authority_sha256: String,
 }
 
+/// A branch of a server-owned opposed dice roll in NPC dialogue.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DiceOutcome {
+    Win,
+    Loss,
+}
+
+/// A temporary encounter actor owned by one committed bare USE.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct TemporaryCreature {
+    pub creature: String,
+    pub lifetime_ms: u32,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
@@ -274,6 +290,11 @@ pub struct RewardCallback {
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carried_item: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temporary_creature: Option<TemporaryCreature>,
+    /// Spawn these creatures and release focus on the first committed greeting.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub greeting_encounter: Vec<String>,
     /// Explicit selected-instance exchange; legacy tools retain their no-grant contract.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub carried_exchange: bool,
@@ -334,6 +355,8 @@ pub struct RewardCallback {
     pub take: Vec<ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fee: Option<MonetaryFee>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dice_outcome: Option<DiceOutcome>,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
@@ -466,6 +489,12 @@ impl RewardCallback {
                     && self.creature_target.is_none()
             }
             (None, Some(_)) => false,
+            (Some(source), None) if self.temporary_creature.is_some() => {
+                self.take.is_empty()
+                    && self.present.iter().any(|input| {
+                        input.item == *source && input.count == 1 && input.fluid_subtype.is_none()
+                    })
+            }
             (Some(source), None) => {
                 matches!(self.take.as_slice(), [input]
                 if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
@@ -912,6 +941,40 @@ fn validate_document_with_capacity(
                     || c.creature_target.is_some()
                     || c.storage.iter().all(|s| s.preserve)
             })
+            || (!c.greeting_encounter.is_empty()
+                && (c.greeting_encounter.len() > 8
+                    || c.greeting_encounter
+                        .iter()
+                        .any(|key| !slug(key, "oteryn:creature.", b"_", 160))
+                    || c.world_claim.is_some()
+                    || c.carried_item.is_some()
+                    || c.dice_outcome.is_some()
+                    || c.topic != 0
+                    || c.next_topic != 0
+                    || c.keywords
+                        .iter()
+                        .any(|word| !matches!(word.as_str(), "hi" | "hello" | "hail"))
+                    || !c.storage.iter().any(|state| {
+                        state.maximum == state.minimum
+                            && !state.preserve
+                            && !state.increment
+                            && !state.at_least
+                            && state.add.is_none()
+                            && state.set_if.is_none()
+                            && state.maximum != state.set
+                    })))
+            || c.temporary_creature.as_ref().is_some_and(|spawn| {
+                !slug(&spawn.creature, "oteryn:creature.", b"_", 160)
+                    || !(1..=60_000).contains(&spawn.lifetime_ms)
+                    || c.carried_exchange
+                    || c.carried_item.is_none()
+                    || c.carried_target.is_some()
+                    || c.peer_requires.is_some()
+                    || c.creature_target.is_some()
+                    || c.self_target.is_some()
+                    || c.corpse_target.is_some()
+                    || c.storage.iter().all(|storage| storage.preserve)
+            })
             || c.corpse_target
                 .as_ref()
                 .is_some_and(|target| !target.valid(c))
@@ -1106,6 +1169,16 @@ fn validate_document_with_capacity(
             || c.present
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.dice_outcome.is_some_and(|outcome| {
+                c.world_claim.is_some()
+                    || c.carried_item.is_some()
+                    || c.storage.is_empty()
+                    || c.repeatable
+                    || match outcome {
+                        DiceOutcome::Win => c.fee.is_some(),
+                        DiceOutcome::Loss => c.fee.is_none(),
+                    }
+            })
             || c.fee.as_ref().is_some_and(|fee| {
                 fee.gold == 0
                     || fee.gold > 1_000_000_000_000
