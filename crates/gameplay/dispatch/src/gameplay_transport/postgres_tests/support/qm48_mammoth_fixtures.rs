@@ -177,6 +177,7 @@ pub(super) async fn exercise_horn(
             expected_revision: map.facts.object_revision(key),
         }
     };
+    let use_interval = std::time::Duration::from_millis(250);
     if position == BEAR {
         let payload = encode_use_intent(&target()).map_err(debug)?;
         let (next, result, _) = super::item_craft_fixtures::exchange(
@@ -193,6 +194,8 @@ pub(super) async fn exercise_horn(
             UseDisposition::Committed,
             "awake bear cannot be hugged"
         );
+        // A refused USE still starts the native 200 ms world-action window.
+        tokio::time::sleep(use_interval).await;
     }
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::MIN),
@@ -229,6 +232,7 @@ pub(super) async fn exercise_horn(
     };
     if position == BEAR {
         assert_eq!(appearance()?, 7175);
+        tokio::time::sleep(use_interval).await;
         let payload = encode_use_intent(&target()).map_err(debug)?;
         let (next, result, _) = super::item_craft_fixtures::exchange(
             owner,
