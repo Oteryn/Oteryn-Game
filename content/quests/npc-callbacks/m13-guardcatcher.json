@@ -32,7 +32,13 @@
           "set": 1
         }
       ],
-      "requires": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures",
+          "minimum": -1,
+          "maximum": 2
+        }
+      ],
       "take": [],
       "give": null,
       "outfit": null,

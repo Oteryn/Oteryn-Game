@@ -48,11 +48,11 @@ pub(super) async fn exercise(
     super::classic_quests_fixtures::talk(owner, admitted, king, 801, "golden commission").await?;
     assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, 0);
     let base = callbacks.iter().find(|c| c.key == "oteryn:quest-reward/questpc7-golden-base").ok_or("base donation")?;
+    sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
+        .execute(&h.pool).await?;
     let (unpaid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, admitted, king, base, false).await?;
     assert_eq!(unpaid, NpcIntentDisposition::Rejected, "the commission requires payment");
     assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, 0);
-    sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
-        .execute(&h.pool).await?;
     seed_bank(h).await?;
     for (index, (suffix, before, after, price)) in [
         ("base", 0, 1, 500_000_000_i64),

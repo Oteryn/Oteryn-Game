@@ -242,7 +242,7 @@ pub(super) async fn exercise_signs(
         let replay = super::quest_world_callbacks_fixtures::wire(owner, admitted, command, 2, payload).await?;
         assert_eq!(decode_use_result(&replay).map_err(debug)?, UseDisposition::Committed);
         assert_eq!(receipts(h).await?, expected_receipts, "exact command replay has no new effect");
-        assert_eq!(use_at(owner, admitted, site, 17680).await?, UseDisposition::Rejected);
+        assert_eq!(use_at(owner, admitted, site, 17680).await?, UseDisposition::NothingToUse);
         assert_eq!(quantity(h, 17668).await?, 2 - i64::try_from(index)?);
         assert_eq!(receipts(h).await?, expected_receipts, "fresh duplicate visit cannot spend another sign");
     }
@@ -329,7 +329,7 @@ pub(super) async fn exercise_trunks(owner:&mut ComposedFreshAdmission<'_, '_, '_
         assert_eq!(receipts(h).await?,expected);
         let replay=super::quest_world_callbacks_fixtures::wire(owner,a,command,2,payload).await?;
         assert_eq!(decode_use_result(&replay).map_err(debug)?,UseDisposition::Committed);
-        assert_eq!(use_at(owner,a,site,17678).await?,UseDisposition::Rejected);
+        assert_eq!(use_at(owner,a,site,17678).await?,UseDisposition::NothingToUse);
         assert_eq!(receipts(h).await?,expected);
     }
     for (item,count) in TOOLS { assert_eq!(quantity(h,item).await?,if item == 17676 { 0 } else { count }); }
@@ -391,7 +391,7 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     // payment on their real producers.
     sqlx::query("INSERT INTO game_character_achievement_progress(character_id,achievement_key,progress) VALUES(encode($1,'hex')::uuid,'oteryn:achievement/task_manager',499)")
         .bind(id(41).as_slice()).execute(&h.pool).await?;
-    let report = conversation("report-kill", "report kill")?;
+    let report = conversation("report-kill", "kill")?;
     let (paid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &report, false).await?;
     assert_eq!(paid, NpcIntentDisposition::Ok);
     assert_eq!(quantity(h, 3035).await?, 1);
@@ -403,6 +403,25 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     let _ = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &get, false).await?;
     assert_eq!(value(owner,a,&format!("{ROOT}stalkers")).await?, -1, "the 20-hour cooldown refuses a new start");
     assert_eq!(quantity(h,3035).await?,1);
+    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
+        .fetch_one(&h.pool).await?;
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, a, &[
+            (format!("{ROOT}stalkers/last-report"), now - 72_000),
+            (format!("{ROOT}captures"), 3),
+        ], 78,
+    ).await?;
+    owner.refresh_quest_session(a.game_session_id, true).await;
+    let (started, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &get, false).await?;
+    assert_eq!(started, NpcIntentDisposition::Ok);
+    assert_eq!(value(owner,a,&format!("{ROOT}stalkers")).await?, 0, "the task reopens after 20 hours");
+    assert_eq!(value(owner,a,&format!("{ROOT}reports")).await?, 1, "starting again cannot pay a report");
+    let guards = conversation("report-guards", "guards")?;
+    let (paid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &guards, false).await?;
+    assert_eq!(paid, NpcIntentDisposition::Ok);
+    assert_eq!(quantity(h, 3035).await?, 2, "guards reports the finished task even with the original offer unvisited");
+    assert_eq!(value(owner, a, &format!("{ROOT}captures")).await?, -1);
+    assert_eq!(value(owner, a, &format!("{ROOT}reports")).await?, 2);
     Ok(())
 }
 
@@ -480,7 +499,7 @@ pub(super) async fn exercise_perfume_finish(
     let outcome = owner.use_cooking_conversion(actor, command(77002), cheese, Some(instance(17674).await?), Some(instance(3120).await?)).await.ok_or("cheese route")?;
     assert_eq!(outcome.disposition, UseDisposition::Committed);
     assert_eq!((quantity(h,17674).await?,quantity(h,3120).await?,quantity(h,17675).await?), (0,0,1));
-    assert_eq!(super::questpc7_outfit_items_fixtures::talk(owner, admitted, rafzan, &mut sequence, "report perfume").await?, NpcIntentDisposition::Ok);
+    assert_eq!(super::questpc7_outfit_items_fixtures::talk(owner, admitted, rafzan, &mut sequence, "perfume").await?, NpcIntentDisposition::Ok);
     assert_eq!((quantity(h,17675).await?,quantity(h,3035).await?), (0,2));
     assert_eq!(super::questpc7_ferumbras_fixtures::value(owner,admitted,&format!("{ROOT}reports")).await?,1);
     Ok(())

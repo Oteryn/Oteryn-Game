@@ -125,7 +125,7 @@ mod tests {
     use crate::quest::{loader, npc_rules};
 
     #[test]
-    fn grave_danger_uses_the_zelo_report_definition_and_keeps_previous_pins() -> Result<(), String>
+    fn grave_danger_uses_the_zelos_report_definition_and_keeps_previous_pins() -> Result<(), String>
     {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
