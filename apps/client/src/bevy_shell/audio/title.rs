@@ -23,6 +23,23 @@ impl Title {
     }
 
     pub(super) fn poll(&mut self, phase: Phase, focused: bool, prefs: &ReferencePreferences) {
+        self.poll_with(phase, focused, prefs, |device, errors| {
+            if std::env::var_os("OTERYN_SOUND_MANIFEST").is_none() {
+                return Ok(None);
+            }
+            let mut output = AudioOutput::open_reporting(device, errors)?;
+            output.start_title()?;
+            Ok(Some(move |settings| output.update(settings, Vec::new())))
+        });
+    }
+
+    fn poll_with<F: FnMut(AudioSettings)>(
+        &mut self,
+        phase: Phase,
+        focused: bool,
+        prefs: &ReferencePreferences,
+        open: impl FnOnce(&str, mpsc::SyncSender<String>) -> Result<Option<F>, String> + Send + 'static,
+    ) {
         if phase != Phase::Offline || !focused || !prefs.audio.anthem {
             self.retry_after = None;
             self.worker = None;
@@ -39,7 +56,9 @@ impl Title {
                 worker.settings = prefs.audio;
                 let _ = worker.send.send(prefs.audio);
             }
-            if let Ok(error) = worker.errors.try_recv() {
+            if self.retry_after.is_none()
+                && let Ok(error) = worker.errors.try_recv()
+            {
                 self.retry_after =
                     Some(std::time::Instant::now() + std::time::Duration::from_secs(1));
                 self.error = Some(error);
@@ -50,17 +69,15 @@ impl Title {
         self.retry_after = None;
         let device = prefs.audio_device.clone();
         let (send, receive) = mpsc::channel();
-        let (errors, report) = mpsc::channel();
+        let (errors, report) = mpsc::sync_channel(1);
         let initial = prefs.audio;
         let result = std::thread::Builder::new()
             .name("client-title-audio".into())
             .spawn(move || {
                 let run = || -> Result<(), String> {
-                    if std::env::var_os("OTERYN_SOUND_MANIFEST").is_none() {
+                    let Some(mut update) = open(&device, errors.clone())? else {
                         return Ok(());
-                    }
-                    let mut output = AudioOutput::with_device(&device)?;
-                    output.start_title()?;
+                    };
                     // A closed sender cancels a load that finished after admission.
                     let mut settings = initial;
                     loop {
@@ -68,7 +85,7 @@ impl Title {
                             Ok(next) => settings = next,
                             Err(mpsc::TryRecvError::Disconnected) => return Ok(()),
                             Err(mpsc::TryRecvError::Empty) => {
-                                output.update(settings, Vec::new());
+                                update(settings);
                                 let Ok(next) = receive.recv() else {
                                     return Ok(());
                                 };
@@ -78,7 +95,7 @@ impl Title {
                     }
                 };
                 if let Err(error) = run() {
-                    let _ = errors.send(error);
+                    let _ = errors.try_send(error);
                 }
             });
         if let Err(error) = result {
@@ -116,22 +133,28 @@ mod tests {
         }
     }
     #[test]
-    fn title_reopens_after_transient_output_failure_without_focus_change() {
+    fn title_reopens_after_transient_output_failure_without_focus_change()
+    -> Result<(), Box<dyn std::error::Error>> {
         let prefs = ReferencePreferences::default();
         let mut title = Title::default();
-        let (settings, _receive) = mpsc::channel();
-        let (report, errors) = mpsc::channel();
-        title.worker = Some(Worker {
-            device: prefs.audio_device.clone(),
-            settings: prefs.audio,
-            send: settings,
-            errors,
+        let (started, running) = mpsc::channel();
+        title.poll_with(Phase::Offline, true, &prefs, move |_, report| {
+            let callback = AudioOutput::device_error_callback(report);
+            let mut ready = Some((started, callback));
+            Ok(Some(move |_| {
+                if let Some((tx, callback)) = ready.take() {
+                    assert!(tx.send(callback).is_ok());
+                }
+            }))
         });
-        assert!(report.send("Device unavailable".to_owned()).is_ok());
+        let failure = rodio::cpal::StreamError::DeviceNotAvailable;
+        let message = failure.to_string();
+        running.recv_timeout(std::time::Duration::from_secs(5))?(failure);
         title.poll(Phase::Offline, true, &prefs);
-        assert_eq!(title.status(), Some("Device unavailable"));
+        assert_eq!(title.status(), Some(message.as_str()));
         std::thread::sleep(std::time::Duration::from_millis(1100));
         title.poll(Phase::Offline, true, &prefs);
         assert!(title.status().is_none());
+        Ok(())
     }
 }

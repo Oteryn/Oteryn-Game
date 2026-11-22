@@ -158,6 +158,7 @@ pub(super) fn project(
     if state.generation != Some(generation) || owner.play.is_none() {
         state.generation = Some(generation);
         state.clipboard_feedback = None;
+        state.copy_pending = None;
         state.draft = None;
         state.pending = None;
     }
@@ -181,6 +182,19 @@ pub(super) fn project(
         *entered = Some(generation);
     }
     let panel = play.link.vip_panel();
+    if let Some((revision, name, result)) = &state.copy_pending
+        && let Some(copied) = result.get()
+    {
+        state.clipboard_feedback = Some((
+            *revision,
+            if *copied {
+                format!("Copied {name}")
+            } else {
+                format!("Could not copy {name} to the clipboard")
+            },
+        ));
+        state.copy_pending = None;
+    }
     let snapshot = Snapshot::read(&panel);
     let entries = snapshot
         .as_ref()

@@ -33,6 +33,14 @@ impl LiveShop {
     }
     /// Capacity here is a preview. The server still checks custody and free space.
     pub fn can_trade(&self, quote: Quote, amount: u32) -> bool {
+        let pays_with_coins = quote.price != 0
+            && self.inventory.as_ref().is_some_and(|inventory| {
+                inventory.entries.iter().any(|entry| {
+                    // The item view projects source appearances for the three coins.
+                    // Zero means no appearance, so it is never a coin stack.
+                    matches!(entry.appearance_id, 3031 | 3035 | 3043)
+                })
+            });
         self.valid_amount(quote, amount)
             && (quote.side != NpcTradeSide::Buy
                 || self.options.ignore_capacity
@@ -42,19 +50,12 @@ impl LiveShop {
                     && self
                         .free_capacity
                         .zip(self.total_weight(quote, amount))
-                        .is_none_or(|(free, weight)| weight <= u128::from(free)))
+                        .is_none_or(|(free, weight)| weight <= u128::from(free) || pays_with_coins))
             && (quote.side != NpcTradeSide::Buy
                 || self.options.ignore_capacity
                 || self.free_slots() != Some(0)
                 // Paying can consume an entire direct stack. Let the server plan change
                 // and check the final placement whenever the current view could allow it.
-                || (quote.price != 0
-                    && self.inventory.as_ref().is_some_and(|inventory| {
-                        inventory.entries.iter().any(|entry| {
-                            // The item view projects source appearances for the three coins.
-                            // Zero means no appearance, so it is never a coin stack.
-                            matches!(entry.appearance_id, 3031 | 3035 | 3043)
-                        })
-                    })))
+                || pays_with_coins)
     }
 }

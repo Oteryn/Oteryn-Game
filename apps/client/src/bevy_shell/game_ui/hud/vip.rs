@@ -36,6 +36,7 @@ mod view;
 #[derive(Resource, Default)]
 struct State {
     generation: Option<u64>,
+    copy_pending: Option<(u64, String, std::sync::Arc<std::sync::OnceLock<bool>>)>,
     clipboard_feedback: Option<(u64, String)>,
     serial: u64,
     draft: Option<Draft>,
@@ -125,6 +126,7 @@ enum Label {
 }
 
 pub(super) fn install(app: &mut App) {
+    app.init_resource::<crate::bevy_shell::game_ui::clipboard_writer::ClipboardWriter>();
     app.init_resource::<State>()
         .init_resource::<presentation::Preferences>()
         .init_resource::<InputFocus>()

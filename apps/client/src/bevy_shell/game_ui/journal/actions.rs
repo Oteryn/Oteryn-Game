@@ -175,7 +175,8 @@ pub(super) fn perform(
                 return link.quest_clean_tracker(matches!(action.kind, Kind::CleanTracker));
             }
             Kind::Pin | Kind::HideQuest => {
-                if !link.quest_toggle_mark(matches!(action.kind, Kind::Pin)) {
+                if !link.quest_toggle_mark(state.displayed_quest, matches!(action.kind, Kind::Pin))
+                {
                     return false;
                 }
                 state.quest_page = 0;

@@ -274,7 +274,7 @@ struct Copied(String);
 
 fn capture_copy(app: &mut App) {
     app.world_mut()
-        .remove_resource::<bevy::clipboard::Clipboard>();
+        .remove_resource::<crate::bevy_shell::game_ui::clipboard_writer::ClipboardWriter>();
     app.insert_resource(Copied("before Copy Message".into()))
         .add_observer(
             |request: On<widgets::CopyText>, mut copied: ResMut<Copied>| {

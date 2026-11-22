@@ -56,6 +56,7 @@ fn journal_pin_hide_restore_and_order_quests() -> Result {
         key: Some(key),
         ..default()
     };
+    state.displayed_quest = Some(73);
     for (kind, expected, hidden) in [
         (Kind::Pin, vec![73, 2], 0),
         (Kind::HideQuest, vec![2], 1),
@@ -279,6 +280,7 @@ fn most_recent_pin_stays_first_after_sorting() -> Result {
             .ok_or("play")?
             .link
             .quest_open_tracked_mission(id, 1);
+        state.displayed_quest = Some(id);
         assert!(actions::perform(
             &mut host,
             &mut state,
@@ -305,5 +307,89 @@ fn most_recent_pin_stays_first_after_sorting() -> Result {
             model::RowId::Quest(73)
         );
     }
+    Ok(())
+}
+
+#[test]
+fn mark_buttons_refuse_a_quest_reply_that_has_not_been_drawn() -> Result {
+    let (owner, mut commands, outbox) = host()?;
+    let mut snapshot = quest_state();
+    snapshot.list.push(QuestListEntry {
+        quest_index: 2,
+        completed: false,
+    });
+    outbox.bevy_journal_quest_state(snapshot.clone());
+    owner.play.as_ref().ok_or("play")?.link.quest_set_open(true);
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    let button = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| matches!(action.kind, Kind::Quest(2)).then_some(entity))
+        .ok_or("quest B button")?;
+    app.world_mut().trigger(Activate { entity: button });
+    let PlayCommand::QuestLog(payload) = commands.try_recv()? else {
+        return Err("select quest B".into());
+    };
+    assert_eq!(
+        decode_quest_log_query(&payload).map_err(|_| "quest query")?,
+        QuestLogQuery::Quest { quest_index: 2 }
+    );
+    let Some(QuestLogView::Line(line)) = &mut snapshot.log.view else {
+        return Err("line".into());
+    };
+    line.quest_index = 2;
+    outbox.bevy_journal_quest_result(&result(vec![]));
+    outbox.push(vec![oteryn_session::SessionEvent::QuestLog(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: snapshot.log,
+        },
+    )]);
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    assert_eq!(
+        link.quest_panel()
+            .journal_line()
+            .map(|line| line.quest_index),
+        Some(2)
+    );
+    assert_eq!(app.world().resource::<State>().displayed_quest, Some(73));
+    let buttons = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .filter(|(_, a)| matches!(a.kind, Kind::Pin | Kind::HideQuest))
+        .map(|(e, _)| e)
+        .collect::<Vec<_>>();
+    assert_eq!(buttons.len(), 2);
+    for entity in buttons {
+        app.world_mut().trigger(Activate { entity });
+    }
+    let panel = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .quest_panel();
+    assert!(panel.pinned.is_empty() && panel.hidden.is_empty());
     Ok(())
 }

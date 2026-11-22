@@ -12,6 +12,8 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 struct Peer {
     reverse_pages: bool,
     emptied_last: bool,
+    grow: bool,
+    fail_probe: bool,
     queries: Option<std::sync::Arc<std::sync::Mutex<Vec<stash::StashFilter>>>>,
 }
 impl Stepper for Peer {
@@ -21,10 +23,17 @@ impl Stepper for Peer {
     async fn stash(&mut self, command: &StashCommand) -> Result<StashResponse, SessionError> {
         let (intent, filter) = stash::decode_stash_query(&command.payload)
             .map_err(|_| SessionError::SessionUnusable)?;
-        if let Some(queries) = &self.queries && let Some(filter) = &filter {
-            queries.lock().map_err(|_| SessionError::SessionUnusable)?.push(filter.clone());
+        if let Some(queries) = &self.queries
+            && let Some(filter) = &filter
+        {
+            queries
+                .lock()
+                .map_err(|_| SessionError::SessionUnusable)?
+                .push(filter.clone());
         }
-        if let Some(filter) = filter && !filter.search.is_empty() {
+        if let Some(filter) = filter
+            && !filter.search.is_empty()
+        {
             assert_eq!(filter.search, "apple");
             assert_eq!(filter.category, "other");
             assert_eq!(filter.trader, "Sam");
@@ -45,22 +54,38 @@ impl Stepper for Peer {
             }],
         };
         if self.reverse_pages {
-            let last = if self.emptied_last { 2 } else { 3 };
+            if self.fail_probe && self.emptied_last && intent.action == stash::StashAction::Browse {
+                return Err(SessionError::SessionUnusable);
+            }
+            let last = if self.grow {
+                4
+            } else if self.emptied_last {
+                2
+            } else {
+                3
+            };
             reply.has_more = intent.page < last;
-            if intent.page > last { reply.rows.clear(); } else {
-                reply.rows[0].handle = [intent.page as u8 + 1;16];
+            if intent.page > last {
+                reply.rows.clear();
+            } else {
+                reply.rows[0].handle = [intent.page as u8 + 1; 16];
+            }
+            if matches!(intent.action, stash::StashAction::Stow(_)) {
+                self.grow = true;
+                reply.outcome = stash::StashOutcome::Committed;
+                reply.transaction = Some([8; 16]);
             }
             if let stash::StashAction::Withdraw { row, .. } = intent.action {
                 if intent.page == 3 {
                     assert!(!self.emptied_last, "withdrawal must execute once");
-                    assert_eq!(row,[4;16]);
+                    assert_eq!(row, [4; 16]);
                     self.emptied_last = true;
                     reply.rows.clear();
                     reply.outcome = stash::StashOutcome::Committed;
-                    reply.transaction = Some([9;16]);
+                    reply.transaction = Some([9; 16]);
                 } else {
                     assert_eq!(intent.page, 2);
-                    assert_eq!(row, [3;16]);
+                    assert_eq!(row, [3; 16]);
                 }
             }
         }
@@ -277,48 +302,120 @@ fn stash_sort_is_saved_and_restored_in_a_new_session() -> Result<(), Error> {
 
 #[test]
 fn reverse_stash_pages_start_at_last_and_keep_withdraw_handle() -> Result<(), Error> {
-    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
-        let runtime = oteryn_client_runtime::ClientRuntime::new()?;
-        runtime.block_on(async {
-            let (link, incoming, outbox) = play_channel();
-            let task = tokio::spawn(run_session(Peer { reverse_pages: true, ..Default::default() }, incoming, outbox));
-            tokio::time::timeout(Duration::from_secs(3), async {
-                while !link.stash_panel().selected { tokio::task::yield_now().await; }
-            }).await?;
-            link.stash_reverse();
-            ready(&link).await?;
-            let page = link.stash_panel();
-            assert_eq!(page.page, 0);
-            assert!(page.has_more);
-            assert_eq!(page.rows[0].handle, [4;16]);
-            link.stash_request(Intent::Next);
-            ready(&link).await?;
-            let page = link.stash_panel();
-            assert_eq!(page.page, 1);
-            assert_eq!(page.rows[0].handle, [3;16]);
-            link.stash_request(Intent::Withdraw { row: 0, amount: 1 });
-            ready(&link).await?;
-            link.stash_request(Intent::Previous);
-            ready(&link).await?;
-            link.stash_request(Intent::Withdraw { row: 0, amount: 12 });
-            ready(&link).await?;
-            let refreshed = link.stash_panel();
-            assert_eq!(refreshed.page, 0);
-            assert_eq!(refreshed.rows[0].handle, [3;16]);
-            // The editor limits characters, while the protocol limits UTF-8 bytes.
-            link.stash_filter("é".repeat(65), String::new(), String::new());
-            link.stash_reverse();
-            link.stash_sort();
-            let rejected = link.stash_panel();
-            assert_eq!(rejected.reverse, refreshed.reverse);
-            assert_eq!(rejected.last_server_page, refreshed.last_server_page);
-            assert_eq!(rejected.sort, refreshed.sort);
-            assert_eq!(rejected.sort_edit, refreshed.sort_edit);
-            assert_eq!(rejected.rows, refreshed.rows);
-            assert!(!rejected.pending);
-            drop(link);
-            task.await?;
-            Ok::<(), Error>(())
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+            runtime.block_on(async {
+                let (link, incoming, outbox) = play_channel();
+                let task = tokio::spawn(run_session(
+                    Peer {
+                        reverse_pages: true,
+                        ..Default::default()
+                    },
+                    incoming,
+                    outbox,
+                ));
+                tokio::time::timeout(Duration::from_secs(3), async {
+                    while !link.stash_panel().selected {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await?;
+                link.stash_reverse();
+                ready(&link).await?;
+                let page = link.stash_panel();
+                assert_eq!(page.page, 0);
+                assert!(page.has_more);
+                assert_eq!(page.rows[0].handle, [4; 16]);
+                link.stash_request(Intent::Next);
+                ready(&link).await?;
+                let page = link.stash_panel();
+                assert_eq!(page.page, 1);
+                assert_eq!(page.rows[0].handle, [3; 16]);
+                link.stash_request(Intent::Withdraw { row: 0, amount: 1 });
+                ready(&link).await?;
+                link.stash_request(Intent::Previous);
+                ready(&link).await?;
+                link.stash_request(Intent::Withdraw { row: 0, amount: 12 });
+                ready(&link).await?;
+                let refreshed = link.stash_panel();
+                assert_eq!(refreshed.page, 0);
+                assert_eq!(refreshed.rows[0].handle, [3; 16]);
+                // The editor limits characters, while the protocol limits UTF-8 bytes.
+                link.stash_filter("é".repeat(65), String::new(), String::new());
+                link.stash_reverse();
+                link.stash_sort();
+                let rejected = link.stash_panel();
+                assert_eq!(rejected.reverse, refreshed.reverse);
+                assert_eq!(rejected.last_server_page, refreshed.last_server_page);
+                assert_eq!(rejected.sort, refreshed.sort);
+                assert_eq!(rejected.sort_edit, refreshed.sort_edit);
+                assert_eq!(rejected.rows, refreshed.rows);
+                assert!(!rejected.pending);
+                drop(link);
+                task.await?;
+                Ok::<(), Error>(())
+            })?
         })?
-    })?.join().map_err(|_| "reverse stash session panicked")?
+        .join()
+        .map_err(|_| "reverse stash session panicked")?
+}
+
+#[tokio::test]
+async fn reversed_mutation_rediscovers_end_on_a_nonzero_page() -> Result<(), Error> {
+    let (link, _, outbox) = play_channel();
+    {
+        let mut m = crate::play::mailbox::lock(&outbox.0);
+        m.stash.reverse = true;
+        m.stash.last_server_page = Some(3);
+    }
+    let mut peer = Peer {
+        reverse_pages: true,
+        ..Default::default()
+    };
+    let command = StashCommand::filtered(
+        stash::StashIntent {
+            page: 1,
+            action: stash::StashAction::Stow(1u64.try_into()?),
+        },
+        None,
+    )
+    .ok_or("command")?;
+    let response = outbox.stash_execute(&mut peer, &command).await?;
+    assert_eq!(response.reply.transaction, Some([8; 16]));
+    assert_eq!(link.stash_panel().last_server_page, Some(4));
+    assert_eq!(response.reply.page, 1);
+    assert_eq!(response.reply.rows[0].handle, [4; 16]);
+    Ok(())
+}
+
+#[tokio::test]
+async fn reversed_withdrawal_preserves_receipt_on_failed_page_probe() -> Result<(), Error> {
+    let (_, _, outbox) = play_channel();
+    {
+        let mut m = crate::play::mailbox::lock(&outbox.0);
+        m.stash.reverse = true;
+        m.stash.last_server_page = Some(3);
+    }
+    let mut peer = Peer {
+        reverse_pages: true,
+        fail_probe: true,
+        ..Default::default()
+    };
+    let command = StashCommand::filtered(
+        stash::StashIntent {
+            page: 0,
+            action: stash::StashAction::Withdraw {
+                row: [4; 16],
+                amount: 12,
+            },
+        },
+        None,
+    )
+    .ok_or("command")?;
+    let response = outbox.stash_execute(&mut peer, &command).await?;
+    assert_eq!(response.reply.outcome, stash::StashOutcome::Committed);
+    assert_eq!(response.reply.transaction, Some([9; 16]));
+    Ok(())
 }

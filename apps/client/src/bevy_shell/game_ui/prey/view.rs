@@ -32,7 +32,7 @@ pub(super) fn project(
         owner
             .play
             .as_ref()
-            .map(|play| RerollPrice::for_slot(&panel, slot, &play.link, now))
+            .map(|play| RerollPrice::for_slot(&panel, slot, &play.link))
     });
     let seen = (
         generation,
@@ -237,7 +237,7 @@ pub(super) fn project(
             let price = match price {
                 RerollPrice::Free => "Free list reroll available.".into(),
                 RerollPrice::Paid(level) => format!(
-                    "Paid reroll: {} gold at level {level}.",
+                    "The server may charge {} gold at level {level}.",
                     u64::from(level) * 200
                 ),
                 RerollPrice::Unknown => {

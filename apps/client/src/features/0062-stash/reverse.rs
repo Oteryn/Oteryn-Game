@@ -36,44 +36,64 @@ impl Outbox {
         let initial_physical = physical;
         let committed =
             (response.reply.outcome == stash::StashOutcome::Committed).then(|| response.clone());
-        if logical == 0 && (command.intent.action == StashAction::Browse || committed.is_some()) {
-            // Find the final page in logarithmic reads. Never repeat a stow or withdrawal.
-            let mut low = 0;
-            let mut high = None;
-            for _ in 0..32 {
-                if !matches!(
-                    response.reply.outcome,
-                    stash::StashOutcome::Opened | stash::StashOutcome::Committed
-                ) {
-                    break;
+        let browse_result = async {
+            if (logical == 0 && command.intent.action == StashAction::Browse) || committed.is_some()
+            {
+                // Find the final page in logarithmic reads. Never repeat a stow or withdrawal.
+                let mut low = 0;
+                let mut high = None;
+                for _ in 0..32 {
+                    if !matches!(
+                        response.reply.outcome,
+                        stash::StashOutcome::Opened | stash::StashOutcome::Committed
+                    ) {
+                        break;
+                    }
+                    if response.reply.has_more {
+                        low = physical.saturating_add(1).min(stash::MAX_STASH_PAGE);
+                    } else if !response.reply.rows.is_empty() || physical == 0 {
+                        last = physical;
+                        break;
+                    } else {
+                        high = Some(physical - 1);
+                    }
+                    let next = high.map_or_else(
+                        || {
+                            physical
+                                .saturating_mul(2)
+                                .max(low)
+                                .min(stash::MAX_STASH_PAGE)
+                        },
+                        |end| low + end.saturating_sub(low) / 2,
+                    );
+                    if next == physical {
+                        last = physical;
+                        break;
+                    }
+                    physical = next;
+                    response = session
+                        .stash(&page_command(physical, StashAction::Browse)?)
+                        .await?;
                 }
-                if response.reply.has_more {
-                    low = physical.saturating_add(1).min(stash::MAX_STASH_PAGE);
-                } else if !response.reply.rows.is_empty() || physical == 0 {
-                    last = physical;
-                    break;
-                } else {
-                    high = Some(physical - 1);
+                let target = last.saturating_sub(logical);
+                if committed.is_some() && physical != target {
+                    physical = target;
+                    response = session
+                        .stash(&page_command(target, StashAction::Browse)?)
+                        .await?;
                 }
-                let next = high.map_or_else(
-                    || {
-                        physical
-                            .saturating_mul(2)
-                            .max(low)
-                            .min(stash::MAX_STASH_PAGE)
-                    },
-                    |end| low + end.saturating_sub(low) / 2,
-                );
-                if next == physical {
-                    last = physical;
-                    break;
-                }
-                physical = next;
-                response = session
-                    .stash(&page_command(physical, StashAction::Browse)?)
-                    .await?;
+                lock(&self.0).stash.last_server_page = Some(last);
             }
-            lock(&self.0).stash.last_server_page = Some(last);
+            Ok::<(), SessionError>(())
+        }
+        .await;
+        if let Err(error) = browse_result {
+            let Some(receipt) = committed.as_ref() else {
+                return Err(error);
+            };
+            response = receipt.clone();
+            physical = initial_physical;
+            last = physical.saturating_add(logical);
         }
         if let Some(receipt) = committed {
             if !matches!(

@@ -325,3 +325,38 @@ fn vip_filter_fetches_remaining_names_without_switching_the_displayed_page()
         .join()
         .map_err(|_| "VIP filter thread failed")?
 }
+
+#[tokio::test]
+async fn rv3404_vip_membership_and_page_are_published_together() -> Result<(), SessionError> {
+    let (link, _, outbox) = crate::play::play_channel();
+    crate::play::mailbox::lock(&outbox.0)
+        .chat
+        .console
+        .communication
+        .allow_vips = true;
+    let query = VipCommand::new(&vip::Request {
+        operation: vip::Operation::Query,
+        number: 0,
+        text: String::new(),
+        icon: 0,
+        notify: false,
+        groups: vec![],
+    })
+    .ok_or(SessionError::SessionUnusable)?;
+    crate::play::feature_0043_vip::protocol::send_vip(&mut Peer { added: true }, &outbox, &query)
+        .await?;
+    assert!(
+        link.chat_panel()
+            .console
+            .communication
+            .vip_names
+            .contains("bob")
+    );
+    assert!(
+        link.vip_panel()
+            .view
+            .as_ref()
+            .is_some_and(|page| page.contains("Alice"))
+    );
+    Ok(())
+}

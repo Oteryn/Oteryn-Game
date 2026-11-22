@@ -50,10 +50,10 @@ enum RerollPrice {
     Unknown,
 }
 impl RerollPrice {
-    fn for_slot(panel: &PreyPanel, slot: u8, link: &crate::play::PlayLink, now: u64) -> Self {
+    fn for_slot(panel: &PreyPanel, slot: u8, link: &crate::play::PlayLink) -> Self {
         if panel
             .slot(slot)
-            .is_some_and(|slot| slot.free_reroll_at <= now)
+            .is_some_and(|slot| slot.free_reroll_at == 0)
         {
             Self::Free
         } else {
@@ -187,8 +187,10 @@ fn affordable(panel: &PreyPanel, kind: &Kind) -> bool {
 }
 fn reroll_time(free_at: u64, now: u64) -> String {
     let minutes = free_at.saturating_sub(now).div_ceil(60);
-    if minutes == 0 {
+    if free_at == 0 {
         "Free list reroll available".into()
+    } else if minutes == 0 {
+        "Estimated cooldown elapsed; server confirms the reroll price".into()
     } else {
         format!(
             "Next free list reroll in {:02}:{:02} (estimated)",
@@ -225,7 +227,7 @@ fn activate(
     if matches!(action.kind, Kind::Confirm)
         && state
             .confirmation
-            .map(|slot| RerollPrice::for_slot(&action.panel, slot, &play.link, now_seconds()))
+            .map(|slot| RerollPrice::for_slot(&action.panel, slot, &play.link))
             != state.seen.as_ref().and_then(|seen| seen.5)
     {
         return;

@@ -83,6 +83,7 @@ struct Tracker;
 struct FilterCaption(Kind);
 #[derive(Resource, Default)]
 struct State {
+    displayed_quest: Option<u32>,
     key: Option<Key>,
     tab: Tab,
     widgets: Option<widgets::Widgets>,
@@ -251,6 +252,7 @@ fn project(
             state.quest_page,
         )
     };
+    state.displayed_quest = quests.journal_line().map(|line| line.quest_index);
     state.selected_spell = projection.selected_spell;
     if state.rows != projection.rows {
         commands.entity(widgets.rows).despawn_children();

@@ -821,3 +821,17 @@ fn prey_open_confirmation_updates_when_actor_level_arrives() -> TestResult {
     );
     Ok(())
 }
+#[test]
+fn prey_elapsed_local_deadline_still_discloses_possible_charge() -> TestResult {
+    let (mut app, mut commands) = fixture_level(5, 1, true)?;
+    click(&mut app, Kind::Reroll(2))?;
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("6000 gold"))
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

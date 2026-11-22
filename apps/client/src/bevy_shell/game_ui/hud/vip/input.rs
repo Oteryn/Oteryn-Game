@@ -10,7 +10,7 @@ pub(super) fn activate(
     mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<State>,
     mut presentation: ResMut<presentation::Preferences>,
-    mut clipboard: Option<ResMut<bevy::clipboard::Clipboard>>,
+    clipboard: Res<crate::bevy_shell::game_ui::clipboard_writer::ClipboardWriter>,
 ) {
     if !guard.allows(event.entity) || !available(&owner) {
         return;
@@ -72,16 +72,11 @@ pub(super) fn activate(
                 return;
             };
             if matches!(control.command, Action::CopyName(_)) {
-                let copied = clipboard
-                    .as_mut()
-                    .is_some_and(|clipboard| clipboard.set_text(contact.name.clone()).is_ok());
-                state.clipboard_feedback = Some((
+                state.clipboard_feedback = None;
+                state.copy_pending = Some((
                     panel.revision,
-                    if copied {
-                        format!("Copied {}", contact.name)
-                    } else {
-                        format!("Could not copy {} to the clipboard", contact.name)
-                    },
+                    contact.name.clone(),
+                    clipboard.write(contact.name.clone()),
                 ));
             } else {
                 play.link.vip_private_recipient(

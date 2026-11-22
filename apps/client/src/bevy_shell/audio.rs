@@ -3,6 +3,7 @@ mod driver;
 #[cfg(test)]
 mod tests;
 mod title;
+mod worker;
 
 use super::owner::HostOwner;
 use crate::play::{AudioOutput, AudioSettings, SoundCue, UiSound};
@@ -22,10 +23,10 @@ impl Output for AudioOutput {
     }
 }
 
-/// The Rodio stream is confined to the same main thread as its play owner.
+/// Frame-side playback controls.
 #[derive(Default)]
 pub(super) struct Playback {
-    player: Player<AudioOutput>,
+    player: Player<worker::WorkerOutput>,
     title: title::Title,
 }
 impl Playback {
@@ -49,6 +50,6 @@ fn poll(
     audio.player.poll(
         owner.play.as_mut().map(|play| (generation, &mut play.view)),
         focused,
-        AudioOutput::with_device,
+        worker::WorkerOutput::open,
     );
 }

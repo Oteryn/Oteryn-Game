@@ -288,3 +288,6 @@ pub use device::select_audio_device;
 #[path = "mixer.rs"]
 mod mixer;
 pub use mixer::{BattleClass, SoundChannel};
+
+#[cfg(all(bevy_shell, test))]
+pub(crate) use output::check_audio_frame;

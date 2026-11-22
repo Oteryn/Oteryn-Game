@@ -67,6 +67,7 @@ struct State {
     widgets: Option<widgets::Widgets>,
     rendered: Option<RenderedOffers>,
     sort: Sort,
+    sale_inventory: Option<(u32, u64)>,
     sales: std::collections::VecDeque<Quote>,
     pending: Option<submission::Pending>,
     conversation: conversation::Ui,
@@ -175,6 +176,7 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
                 .collect();
             if let Some(first) = state.sales.pop_front() {
                 let sent = play.link.npc_sell_all_request(first);
+                state.sale_inventory = sent.then(|| (first.item, panel.live.owned(first.item)));
                 if !sent {
                     state.sales.clear();
                 }

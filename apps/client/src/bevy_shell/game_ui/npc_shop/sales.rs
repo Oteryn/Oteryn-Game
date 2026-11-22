@@ -25,12 +25,19 @@ pub(super) fn advance(
         state.sales.clear();
         return;
     }
+    if state
+        .sale_inventory
+        .is_some_and(|(item, before)| panel.live.owned(item) >= before)
+    {
+        return;
+    }
     while let Some(quote) = state.sales.pop_front() {
         if panel.live.look(quote).is_none() {
             state.sales.clear();
             return;
         }
         if panel.live.owned(quote.item) > 0 {
+            state.sale_inventory = Some((quote.item, panel.live.owned(quote.item)));
             if !link.npc_sell_all_request(quote) {
                 state.sales.clear();
             }

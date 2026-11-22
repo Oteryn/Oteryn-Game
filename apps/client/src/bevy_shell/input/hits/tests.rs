@@ -386,21 +386,34 @@ fn native_touch_on_world_joystick_emits_a_paced_step() -> TestResult {
         .viewport_px();
     let scale = (w as f32 / 480.).min(h as f32 / 352.);
     let point = Vec2::new(40. + 118. * scale, 16. + h as f32 - 72. * scale);
-    let target = f
-        .app
-        .world()
-        .get::<PointerLocation>(f.pointer)
-        .and_then(PointerLocation::location)
-        .ok_or("pointer")?
-        .target
-        .clone();
-    f.app.world_mut().spawn((
-        PointerId::Touch(7),
-        PointerLocation::new(Location {
-            target,
-            position: point / 2.,
-        }),
-    ));
+    use bevy::picking::pointer::PointerInput;
+    f.app
+        .add_message::<bevy::window::WindowEvent>()
+        .add_message::<PointerInput>()
+        .add_systems(
+            PreUpdate,
+            (
+                bevy::picking::input::touch_pick_events,
+                PointerInput::receive,
+            )
+                .chain(),
+        );
+    for (phase, position) in [
+        (bevy::input::touch::TouchPhase::Started, point),
+        (bevy::input::touch::TouchPhase::Moved, point + Vec2::X),
+    ] {
+        f.app
+            .world_mut()
+            .write_message(bevy::window::WindowEvent::TouchInput(
+                bevy::input::touch::TouchInput {
+                    phase,
+                    position: position / 2.,
+                    window: f.window,
+                    force: None,
+                    id: 7,
+                },
+            ));
+    }
     f.app
         .world_mut()
         .resource_mut::<HoverMap>()
@@ -414,6 +427,28 @@ fn native_touch_on_world_joystick_emits_a_paced_step() -> TestResult {
             phase: winit::event::TouchPhase::Started,
             device_id: DeviceId::dummy(),
             location: PhysicalPosition::new(f64::from(point.x), f64::from(point.y)),
+            force: None,
+        }),
+    });
+    f.app.world_mut().entity_mut(f.world).insert((
+        ComputedNode {
+            size: Vec2::splat(1000.),
+            ..default()
+        },
+        bevy::ui::UiGlobalTransform::from_translation(point),
+        InheritedVisibility::VISIBLE,
+    ));
+    f.app.insert_resource(bevy::ui::UiStack {
+        partition: std::iter::once(0..1).collect(),
+        uinodes: vec![f.world],
+    });
+    f.app.world_mut().write_message(RawWinitWindowEvent {
+        window_id: WindowId::dummy(),
+        event: WindowEvent::Touch(winit::event::Touch {
+            id: 7,
+            phase: winit::event::TouchPhase::Moved,
+            device_id: DeviceId::dummy(),
+            location: PhysicalPosition::new(f64::from(point.x + 1.), f64::from(point.y)),
             force: None,
         }),
     });

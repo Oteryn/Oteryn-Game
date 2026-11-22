@@ -174,6 +174,7 @@ struct Control {
 }
 
 pub(super) fn install(app: &mut App) {
+    app.init_resource::<crate::bevy_shell::game_ui::clipboard_writer::ClipboardWriter>();
     app.init_resource::<ChatState>()
         .init_resource::<bevy::clipboard::Clipboard>()
         .add_systems(Startup, widgets::setup.after(super::setup))

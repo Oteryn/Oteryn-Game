@@ -775,7 +775,13 @@ fn sell_all_visits_owned_sell_quotes_without_row_selection() -> Result {
         };
         assert_eq!(request.0.offer_index, expected);
         assert!(commands.try_recv().is_err());
+        outbox.bevy_npc_sale_accepted();
+        app.update();
         if expected == 0 {
+            assert!(
+                commands.try_recv().is_err(),
+                "inventory still belongs to the previous sale"
+            );
             outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
                 server_sequence: 10,
                 base_revision: 1,
@@ -787,7 +793,6 @@ fn sell_all_visits_owned_sell_quotes_without_row_selection() -> Result {
                 },
             })]);
         }
-        outbox.bevy_npc_sale_accepted();
         app.update();
     }
     assert!(commands.try_recv().is_err());
@@ -796,6 +801,15 @@ fn sell_all_visits_owned_sell_quotes_without_row_selection() -> Result {
 
 #[test]
 fn shop_weight_sort_and_capacity_use_inspected_weight_and_live_free_capacity() -> Result {
+    inspected_purchase(false)
+}
+
+#[test]
+fn paying_coins_can_free_capacity_for_the_purchased_goods() -> Result {
+    inspected_purchase(true)
+}
+
+fn inspected_purchase(pays_with_coins: bool) -> Result {
     use oteryn_client_ui::inspection::{InspectedItem, Reply, encode_reply};
     let (host, mut commands, outbox) = fixture()?;
     let link = &host.play.as_ref().ok_or("play")?.link;
@@ -908,7 +922,39 @@ fn shop_weight_sort_and_capacity_use_inspected_weight_and_live_free_capacity() -
             .iter(app.world())
             .any(|text| text.contains("12.60 oz") && text.contains("9.00 oz"))
     );
-    click(&mut app, |k| matches!(k, Kind::IgnoreCapacity))?;
+    if pays_with_coins {
+        let coin = oteryn_session::ItemEntry {
+            appearance_id: 3031,
+            handle: 17.try_into()?,
+            item_definition_ref: 1.try_into()?,
+            count: 100.try_into()?,
+            sub_type: 0,
+        };
+        outbox.push(vec![
+            SessionEvent::InventoryCapacity(AppliedDelta {
+                server_sequence: 11,
+                base_revision: 1,
+                new_revision: 2,
+                value: oteryn_session::inventory_capacity::InventoryCapacity {
+                    capacity: 5000,
+                    free: 1259,
+                },
+            }),
+            SessionEvent::Inventory(AppliedDelta {
+                server_sequence: 12,
+                base_revision: 0,
+                new_revision: 1,
+                value: oteryn_session::CharacterInventory {
+                    entries: vec![coin],
+                    main_backpack: None,
+                    equipment: vec![],
+                },
+            }),
+        ]);
+        app.update();
+    } else {
+        click(&mut app, |k| matches!(k, Kind::IgnoreCapacity))?;
+    }
     click(&mut app, |k| matches!(k, Kind::Trade))?;
     assert!(matches!(commands.try_recv()?, PlayCommand::NpcTrade(_)));
     Ok(())

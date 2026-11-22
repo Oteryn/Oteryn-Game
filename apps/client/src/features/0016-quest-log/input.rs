@@ -13,14 +13,15 @@ impl PlayLink {
         mailbox.quest.show_hidden = !mailbox.quest.show_hidden;
     }
 
-    pub fn quest_toggle_mark(&self, pin: bool) -> bool {
+    pub fn quest_toggle_mark(&self, displayed: Option<u32>, pin: bool) -> bool {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.quest;
         let Some(line) = panel.journal_line() else {
             return false;
         };
         let id = line.quest_index;
-        if !panel.state.selected
+        if displayed != Some(id)
+            || !panel.state.selected
             || !panel.state.list.iter().any(|q| q.quest_index == id)
             || (panel.show_hidden != panel.hidden.contains(&id))
         {

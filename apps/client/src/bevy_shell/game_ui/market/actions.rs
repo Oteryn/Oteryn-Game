@@ -256,19 +256,27 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
 }
 
 pub(super) fn finish_character_filter(owner: &HostOwner, state: &mut State) {
-    let Some(action) = state.character_filter else {
+    let Some(mut action) = state.character_filter else {
         return;
     };
     let Some(play) = owner.play.as_ref() else {
         return;
     };
-    if action.key.generation != owner.generation()
-        || state.key != Some(action.key)
-        || owner.modal_active()
-    {
+    if action.key.generation != owner.generation() || owner.modal_active() {
         state.character_filter = None;
         return;
     }
+    let Some(key) = state
+        .key
+        .filter(|key| key.generation == action.key.generation)
+    else {
+        state.character_filter = None;
+        return;
+    };
+    if state.seen.as_ref() != Some(&play.link.market_panel()) {
+        return;
+    }
+    action.key = key;
     let (waiting, available) = if matches!(action.kind, Kind::MyLevel) {
         let skills = play.link.skill_progress_panel();
         (skills.pending, skills.complete.is_some())

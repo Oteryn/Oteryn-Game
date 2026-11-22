@@ -254,7 +254,20 @@ fn vip_copy_places_contact_name_on_clipboard() -> TestResult {
         .find_map(|(id, name)| (name.as_str() == "vip.copy").then_some(id))
         .ok_or("copy name")?;
     app.world_mut().trigger(Activate { entity: button });
+    assert!(
+        app.world().resource::<State>().clipboard_feedback.is_none(),
+        "native write ran inline with button activation"
+    );
     app.update();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while app.world().resource::<State>().clipboard_feedback.is_none() {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "clipboard worker did not finish"
+        );
+        app.update();
+        std::thread::yield_now();
+    }
     let value = app
         .world_mut()
         .resource_mut::<bevy::clipboard::Clipboard>()

@@ -4,8 +4,25 @@ impl Outbox {
     pub(in crate::play) fn vip_initialize(&self, selected: bool) {
         lock(&self.0).vip.selected = selected;
     }
+    #[cfg(test)]
     pub(in crate::play) fn vip_result(&self, response: &oteryn_client_runtime::vip::VipResponse) {
+        self.publish_vip(response, None);
+    }
+
+    fn publish_vip(
+        &self,
+        response: &oteryn_client_runtime::vip::VipResponse,
+        membership: Option<std::collections::BTreeSet<String>>,
+    ) {
         let mut mailbox = lock(&self.0);
+        if let Some(names) = membership
+            && mailbox.vip_presence_confirmed_at.is_none()
+        {
+            mailbox.vip_membership_revision = Some(response.result.revision);
+            mailbox.chat.console.communication.vip_names = names;
+            mailbox.chat_private.communication = mailbox.chat.console.communication.clone();
+            mailbox.chat_party_room.communication = mailbox.chat.console.communication.clone();
+        }
         let changed = mailbox.vip.revision != response.result.revision;
         oteryn_client_ui::vip::apply_result(&mut mailbox.vip, response);
         if mailbox.vip_membership_revision != Some(response.result.revision)
@@ -64,7 +81,7 @@ pub(in crate::play) async fn send_vip<T: crate::play::Stepper>(
     session: &mut T,
     outbox: &Outbox,
     command: &oteryn_client_runtime::vip::VipCommand,
-) -> Result<oteryn_client_runtime::vip::VipResponse, oteryn_session::SessionError> {
+) -> Result<(), oteryn_session::SessionError> {
     let response = session.vip(command).await?;
     let refresh = refresh_after(command, &response);
     let (page_command, response) = if let Some(refresh) = &refresh {
@@ -72,8 +89,9 @@ pub(in crate::play) async fn send_vip<T: crate::play::Stepper>(
     } else {
         (command, response)
     };
-    sync_membership(session, outbox, page_command, &response).await?;
-    Ok(response)
+    let membership = sync_membership(session, outbox, page_command, &response).await?;
+    outbox.publish_vip(&response, membership);
+    Ok(())
 }
 
 /// VIP v1 returns 25 contacts per query. Sessions with presence receive full replacements.
@@ -82,7 +100,7 @@ async fn sync_membership<T: crate::play::Stepper>(
     outbox: &Outbox,
     command: &oteryn_client_runtime::vip::VipCommand,
     response: &oteryn_client_runtime::vip::VipResponse,
-) -> Result<(), oteryn_session::SessionError> {
+) -> Result<Option<std::collections::BTreeSet<String>>, oteryn_session::SessionError> {
     use oteryn_client_runtime::vip::{VipCommand, vip};
     #[derive(serde::Deserialize)]
     struct Page {
@@ -99,14 +117,14 @@ async fn sync_membership<T: crate::play::Stepper>(
             || !mailbox.chat.console.communication.allow_vips
             || mailbox.vip_membership_revision == Some(response.result.revision)
         {
-            return Ok(());
+            return Ok(None);
         }
     }
     let Ok(mut query) = vip::decode_request(command.kind, &command.payload) else {
-        return Ok(());
+        return Ok(None);
     };
     if query.operation != vip::Operation::Query || response.result.code != 1 {
-        return Ok(());
+        return Ok(None);
     }
     let mut initial = (query.number == 0).then_some(&response.result);
     query.number = 0;
@@ -135,19 +153,12 @@ async fn sync_membership<T: crate::play::Stepper>(
                 .map(|entry| entry.name.to_lowercase()),
         );
         if page.next_entry == 0 {
-            let mut mailbox = lock(&outbox.0);
-            if mailbox.vip_presence_confirmed_at.is_none() {
-                mailbox.vip_membership_revision = Some(result.revision);
-                mailbox.chat.console.communication.vip_names = names;
-                mailbox.chat_private.communication = mailbox.chat.console.communication.clone();
-                mailbox.chat_party_room.communication = mailbox.chat.console.communication.clone();
-            }
-            break;
+            return Ok(Some(names));
         }
         if page.next_entry <= query.number {
             break;
         }
         query.number = page.next_entry;
     }
-    Ok(())
+    Ok(None)
 }
