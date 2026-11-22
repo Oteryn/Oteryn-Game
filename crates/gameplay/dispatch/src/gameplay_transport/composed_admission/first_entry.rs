@@ -583,8 +583,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             // #2199: a familiar Login that did not complete restored neither the stored familiar
             // nor its cooldowns, so the entry fails closed like the other post-position owners.
+            let login_budget =
+                AdmissionRetryBudget::for_foreground_root(&game_session_id, self.root)
+                    .unwrap_or_else(|_| {
+                        AdmissionRetryBudget::for_root(&game_session_id, self.root)
+                    });
             let initialized = Box::pin(self.initialize_familiar_login(
-                budget,
+                &login_budget,
                 actor,
                 game_session_id,
                 request,
