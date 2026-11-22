@@ -11,7 +11,7 @@ from pathlib import Path
 from textwrap import dedent
 from unittest.mock import patch
 
-from producer import load_json_file, verify_snapshot
+from producer import CONTENT_AUTHORITY_ID, load_json_file, verify_snapshot
 
 
 class CatalogueBuildIsolationTests(unittest.TestCase):
@@ -88,6 +88,7 @@ class CatalogueBuildIsolationTests(unittest.TestCase):
                 build(root, output, preproduction=preproduction)
                 snapshot = load_json_file(output)
                 verify_snapshot(snapshot)
+                self.assertEqual(snapshot["content_authority_id"], CONTENT_AUTHORITY_ID)
                 self.assertEqual(
                     (
                         snapshot["source_revision"],
@@ -101,6 +102,29 @@ class CatalogueBuildIsolationTests(unittest.TestCase):
         replacement = self.git("rev-parse", "HEAD")
         self.git("switch", "--quiet", "--detach", self.revision)
         self.git("replace", self.revision, replacement)
+        self.assert_pinned_build(self.other)
+
+    def test_build_reads_committed_blobs_despite_checkout_filters(self):
+        self.git("switch", "--quiet", "--detach", self.revision)
+        projection = "crates/gameplay/content/src/content/project/public_view.rs"
+        producer = "tools/game-platform-catalog/producer.py"
+        attributes = self.other / ".git/info/attributes"
+        attributes.write_text(
+            f"{projection} filter=rewrite\n{producer} filter=rewrite\n",
+            encoding="utf-8",
+        )
+        self.git(
+            "config",
+            "filter.rewrite.smudge",
+            "sed -e s/public-catalog-candidate/filtered/ -e s/oteryn-native/filtered/",
+        )
+        for file in (projection, producer):
+            (self.other / file).unlink()
+        self.git("checkout-index", projection, producer)
+        self.assertIn("oteryn:ruleset.filtered", (self.other / projection).read_text())
+        self.assertIn(
+            'CONTENT_AUTHORITY_ID = "filtered"', (self.other / producer).read_text()
+        )
         self.assert_pinned_build(self.other)
 
     def test_build_launches_its_own_cargo_executable(self):

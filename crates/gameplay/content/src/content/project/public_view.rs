@@ -15,6 +15,86 @@ pub const CATALOG_CAPABILITIES: [&str; 8] = [
     "spell",
 ];
 
+const WIRE_MAX_STRING_BYTES: usize = 2_048;
+
+// These are the v1 carrier bounds enforced by the producer. The native graph
+// can admit wider values and stays intact when the public view omits them.
+fn wire_key(key: &str) -> bool {
+    fn segment(value: &str) -> bool {
+        value.as_bytes().first().is_some_and(u8::is_ascii_lowercase)
+            && value.bytes().all(|byte| {
+                byte.is_ascii_lowercase() || byte.is_ascii_digit() || b"_.-".contains(&byte)
+            })
+    }
+    key.len() <= WIRE_MAX_STRING_BYTES
+        && key
+            .split_once(':')
+            .is_some_and(|(namespace, local)| segment(namespace) && segment(local))
+}
+
+fn wire_revision(revision: &str) -> bool {
+    let lower = revision.to_ascii_lowercase();
+    !revision.is_empty()
+        && revision.len() <= 512
+        && revision.bytes().all(|byte| byte.is_ascii_graphic())
+        && !["fixture", "synthetic", "evidence", "test-only"]
+            .iter()
+            .any(|marker| lower.contains(marker))
+        && !lower
+            .split([':', '.', '/', '_', '-'])
+            .any(|part| part == "test")
+}
+
+fn wire_source_text(text: &str) -> bool {
+    !text.is_empty()
+        && text.len() <= WIRE_MAX_STRING_BYTES
+        && text.trim() == text
+        && !text.chars().any(char::is_control)
+}
+
+fn project_creature_fields(profile: &ProjectV2CreatureAuthoring, data: &mut Value) -> bool {
+    let mut complete = true;
+    if let Some(details) = &profile.details {
+        if wire_source_text(&details.display_name) {
+            data["name"] = json!(details.display_name);
+        } else {
+            complete = false;
+        }
+    }
+    for (field, value) in [
+        ("health", profile.health),
+        ("experience", profile.experience),
+        ("speed", profile.speed.map(u64::from)),
+        ("armor", profile.armor.map(u64::from)),
+    ] {
+        if let Some(value) = value {
+            if let Ok(value) = i64::try_from(value) {
+                data[field] = json!(value);
+            } else {
+                complete = false;
+            }
+        }
+    }
+    // Preserve a list only when every member can be represented exactly.
+    if !profile.resistances.is_empty() {
+        if profile.resistances.iter().all(|entry| {
+            wire_source_text(&entry.damage_type) && i64::try_from(entry.percent.denominator).is_ok()
+        }) {
+            data["resistances"] = json!(profile.resistances);
+        } else {
+            complete = false;
+        }
+    }
+    if !profile.immunities.is_empty() {
+        if profile.immunities.iter().all(|text| wire_source_text(text)) {
+            data["immunities"] = json!(profile.immunities);
+        } else {
+            complete = false;
+        }
+    }
+    complete
+}
+
 /// Public projection and private coverage evidence from one admitted WorldProject.
 #[derive(Debug, Serialize)]
 pub struct PublicContentView {
@@ -286,25 +366,21 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                 && let ReferenceItemField::Known(presentation) = &semantics.presentation
                 && let ReferenceItemField::Known(name) = &presentation.name
             {
-                projected["data"]["name"] = json!(name);
+                // Native admission already checks the v1 Item name byte limit.
+                if name.is_empty() {
+                    view.incomplete.insert("item");
+                } else {
+                    projected["data"]["name"] = json!(name);
+                }
             }
             if let Some(profile) = profiles.get(&profile_key) {
-                if let ProjectV2AuthoringProfileData::Creature(profile) = profile
-                    && let Some(details) = &profile.details
-                {
-                    projected["data"]["name"] = json!(details.display_name);
-                }
-                let profile = project_json(profile)?;
-                let selected = match kind {
-                    "creature" => &[
-                        "health",
-                        "experience",
-                        "speed",
-                        "armor",
-                        "resistances",
-                        "immunities",
-                    ][..],
-                    "spell" => &[
+                if let ProjectV2AuthoringProfileData::Creature(profile) = profile {
+                    if !project_creature_fields(profile, &mut projected["data"]) {
+                        view.incomplete.insert("creature");
+                    }
+                } else if kind == "spell" {
+                    let profile = project_json(profile)?;
+                    for field in [
                         "incantation",
                         "vocations",
                         "required_level",
@@ -313,12 +389,10 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                         "cooldown_ms",
                         "group_cooldown_ms",
                         "range",
-                    ][..],
-                    _ => &[],
-                };
-                for field in selected {
-                    if let Some(value) = profile["profile"].get(field) {
-                        projected["data"][*field] = value.clone();
+                    ] {
+                        if let Some(value) = profile["profile"].get(field) {
+                            projected["data"][field] = value.clone();
+                        }
                     }
                 }
             }
@@ -416,10 +490,37 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
         });
     }
     let ambiguous = omit_ambiguous_rows(&mut view.entities, "content_key", &mut view.incomplete);
+    let mut outside_wire = BTreeSet::new();
+    view.entities.retain(|row| {
+        let Some((capability, key, revision)) = row["content_key"]
+            .as_str()
+            .zip(row["data"]["definition_revision"].as_str())
+            .and_then(|(key, revision)| {
+                ["item", "creature", "npc"]
+                    .into_iter()
+                    .find(|cap| row["capability_id"] == *cap)
+                    .map(|cap| (cap, key, revision))
+            })
+        else {
+            return true;
+        };
+        if wire_key(key) && wire_revision(revision) {
+            return true;
+        }
+        view.incomplete.insert(capability);
+        outside_wire.insert(key.to_owned());
+        false
+    });
     for row in &mut view.coverage {
-        if row.disposition == "projected" && ambiguous.contains(row.key.as_str()) {
+        if row.disposition != "projected" {
+            continue;
+        }
+        if ambiguous.contains(row.key.as_str()) {
             row.disposition = "unsupported";
             row.reason = "ambiguous public identity";
+        } else if outside_wire.contains(row.key.as_str()) {
+            row.disposition = "unsupported";
+            row.reason = "public identity outside v1 wire bounds";
         }
     }
     let endpoints: BTreeMap<_, _> = view
@@ -453,6 +554,7 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             for (ordinal, offer) in offers.iter().enumerate() {
                 if !is_exported("npc", npc, &identity.revision)
                     || offer.parity_pending
+                    || i64::try_from(offer.unit_price).is_err()
                     || !is_exported(
                         "item",
                         offer.item.key.as_str(),
@@ -465,9 +567,15 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                     view.incomplete.insert("npc_shop");
                     continue;
                 }
+                let relation_key =
+                    format!("{npc}.shop.{}.row.{ordinal}", service.key.replace(':', "."));
+                if !wire_key(&relation_key) {
+                    view.incomplete.insert("npc_shop");
+                    continue;
+                }
                 view.relations.push(json!({
                     "type":"npc_shop", "capability_id":"npc_shop",
-                    "relation_key":format!("{npc}.shop.{}.row.{ordinal}", service.key.replace(':', ".")),
+                    "relation_key":relation_key,
                     "source":npc,"target":offer.item.key,
                     "data":{"payload_revision":1,"direction":project_json(&offer.direction)?,"unit_price":offer.unit_price,
                         "count":offer.count,"sub_type":offer.sub_type,
@@ -515,17 +623,20 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             continue;
         }
         for (ordinal, entry) in entries.iter().enumerate() {
-            if !is_exported(
-                "item",
-                entry.item.key.as_str(),
-                entry.item.revision.as_str(),
-            ) {
+            let relation_key = format!("{}.loot.{ordinal}", identity.key);
+            if !wire_key(&relation_key)
+                || !is_exported(
+                    "item",
+                    entry.item.key.as_str(),
+                    entry.item.revision.as_str(),
+                )
+            {
                 view.incomplete.insert("creature_loot");
                 continue;
             }
             view.relations.push(
                 json!({"type":"creature_loot","capability_id":"creature_loot",
-                "relation_key":format!("{}.loot.{ordinal}", identity.key),
+                "relation_key":relation_key,
                 "source":identity.key,"target":entry.item.key,
                 "data":{"payload_revision":1,"algorithm":algorithm,"min_count":entry.min_count,
                     "max_count":entry.max_count,"probability_ppm":entry.probability_ppm}}),
@@ -619,6 +730,129 @@ mod tests {
                 } if identity.key == CLEDWYN => Some(services),
                 _ => None,
             })
+    }
+
+    #[test]
+    fn native_values_outside_wire_bounds_preserve_representable_rows() -> TestResult {
+        const PRICE: u64 = 1 << 63;
+        const ITEM: &str = "oteryn:item.tibia.i1000";
+        project_mutation(
+            |draft| {
+                let original = cledwyn_services(draft)
+                    .and_then(|refs| refs.first().cloned())
+                    .ok_or("Cledwyn service missing")?;
+                let service = draft
+                    .state
+                    .declarations
+                    .iter_mut()
+                    .find(|row| row.identity().key == original.key)
+                    .ok_or("Cledwyn service definition missing")?;
+                let ProjectV2Declaration::Service { offers, .. } = service else {
+                    return Err("expected a Service".into());
+                };
+                offers
+                    .first_mut()
+                    .ok_or("Cledwyn offer missing")?
+                    .unit_price = PRICE;
+                let mut slash_service = service.clone();
+                let ProjectV2Declaration::Service { identity, .. } = &mut slash_service else {
+                    return Err("expected a Service".into());
+                };
+                identity.key = identity.key.replace('.', "/");
+                let mut reference = original;
+                reference.key.clone_from(&identity.key);
+                draft.state.declarations.push(slash_service);
+                cledwyn_services(draft)
+                    .ok_or("Cledwyn NPC missing")?
+                    .push(reference);
+                let mut slash_npc = draft
+                    .state
+                    .declarations
+                    .iter()
+                    .find(|row| row.identity().key == CLEDWYN)
+                    .ok_or("Cledwyn NPC missing")?
+                    .clone();
+                let ProjectV2Declaration::Npc { identity, .. } = &mut slash_npc else {
+                    return Err("expected an NPC".into());
+                };
+                identity.key = identity.key.replace('.', "/");
+                draft.state.declarations.push(slash_npc);
+
+                let profile = draft
+                    .state
+                    .authoring_profiles
+                    .iter_mut()
+                    .find(|row| row.target.key == ABYSSADOR)
+                    .ok_or("Abyssador profile missing")?;
+                let ProjectV2AuthoringProfileData::Creature(creature) = &mut profile.data else {
+                    return Err("expected a Creature profile".into());
+                };
+                creature.health = Some(PRICE);
+                creature.experience = Some(PRICE);
+                creature.resistances = vec![ProjectV2Resistance {
+                    damage_type: "x".repeat(2049),
+                    percent: ProjectV2ExactRatio {
+                        numerator: 1,
+                        denominator: PRICE,
+                    },
+                }];
+                creature.immunities = vec!["x".repeat(2049)];
+
+                let item = draft
+                    .core
+                    .records
+                    .iter_mut()
+                    .find(|row| row.identity().key == ITEM)
+                    .ok_or("Item missing")?;
+                let ProjectReferenceRecord::Item { semantics, .. } = item else {
+                    return Err("expected an Item".into());
+                };
+                let ReferenceItemField::Known(presentation) = &mut semantics.presentation else {
+                    return Err("item presentation missing".into());
+                };
+                presentation.name = ReferenceItemField::Known(String::new());
+                Ok(())
+            },
+            |view| {
+                let shop: Vec<_> = view
+                    .relations
+                    .iter()
+                    .filter(|row| row["type"] == "npc_shop")
+                    .filter_map(|row| row["relation_key"].as_str())
+                    .collect();
+                assert!(shop.iter().all(|key| !key.contains('/')));
+                assert!(
+                    !shop
+                        .iter()
+                        .any(|key| { key.starts_with(CLEDWYN) && key.ends_with(".row.0") })
+                );
+                assert!(
+                    shop.iter()
+                        .any(|key| { key.starts_with(CLEDWYN) && key.ends_with(".row.1") })
+                );
+                assert!(
+                    !view
+                        .entities
+                        .iter()
+                        .any(|row| row["content_key"] == CLEDWYN.replace('.', "/"))
+                );
+                let data = |key| {
+                    view.entities
+                        .iter()
+                        .find(|row| row["content_key"] == key)
+                        .map(|row| &row["data"])
+                };
+                let creature = data(ABYSSADOR).ok_or("Abyssador missing")?;
+                for field in ["health", "experience", "resistances", "immunities"] {
+                    assert!(creature.get(field).is_none(), "{field} exceeds wire bounds");
+                }
+                assert!(data(ITEM).ok_or("Item missing")?.get("name").is_none());
+                for capability in ["item", "creature", "npc", "npc_shop"] {
+                    assert!(view.incomplete.contains(capability));
+                }
+                Ok(())
+            },
+        )
     }
 
     #[test]

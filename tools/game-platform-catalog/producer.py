@@ -4,9 +4,13 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import re
 import sys
+import tempfile
+from contextlib import contextmanager
 from datetime import datetime, timezone
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -374,7 +378,9 @@ def _normalize_tombstones(
     return result
 
 
-def _public_int(value: Any, name: str, minimum: int = 0, maximum: int = MAX_INT) -> None:
+def _public_int(
+    value: Any, name: str, minimum: int = 0, maximum: int = MAX_INT
+) -> None:
     if type(value) is not int or not minimum <= value <= maximum:
         raise CatalogValidationError(f"invalid public payload {name}")
 
@@ -382,9 +388,14 @@ def _public_int(value: Any, name: str, minimum: int = 0, maximum: int = MAX_INT)
 def _public_revision(value: Any) -> None:
     revision = _require_string(value, "definition_revision")
     lower = revision.lower()
-    if (re.fullmatch(r"[!-~]{1,512}", revision) is None
-            or any(marker in lower for marker in ("fixture", "synthetic", "evidence", "test-only"))
-            or "test" in re.split(r"[:./_-]", lower)):
+    if (
+        re.fullmatch(r"[!-~]{1,512}", revision) is None
+        or any(
+            marker in lower
+            for marker in ("fixture", "synthetic", "evidence", "test-only")
+        )
+        or "test" in re.split(r"[:./_-]", lower)
+    ):
         raise CatalogValidationError("invalid public payload definition_revision")
 
 
@@ -396,21 +407,30 @@ def _public_source_text(value: Any, name: str) -> str:
 
 
 def _require_increasing(values: list[str], name: str) -> None:
-    if any(left >= right for left, right in zip(values, values[1:])):
+    if any(left >= right for left, right in pairwise(values)):
         raise CatalogValidationError(f"public {name} must be sorted and unique")
 
 
 def _validate_public_view_payloads(
-    entities: list[dict], relations: list[dict], tombstones: list[dict],
-    support: dict[str, str], completeness: dict[str, str],
+    entities: list[dict],
+    relations: list[dict],
+    tombstones: list[dict],
+    support: dict[str, str],
+    completeness: dict[str, str],
 ) -> None:
     # These checks apply to the Game-owned public projection profile. Other v1
     # profiles retain the generic bounded-carrier validation.
     observed = {row["capability_id"] for row in entities + relations}
     if observed != {cap for cap, state in support.items() if state == "supported"}:
-        raise CatalogValidationError("public view support must match emitted capabilities")
-    if set(support) != KNOWN_CAPABILITIES or any(completeness[cap] == "unknown" for cap in observed):
-        raise CatalogValidationError("public view requires coverage states for all v1 capabilities")
+        raise CatalogValidationError(
+            "public view support must match emitted capabilities"
+        )
+    if set(support) != KNOWN_CAPABILITIES or any(
+        completeness[cap] == "unknown" for cap in observed
+    ):
+        raise CatalogValidationError(
+            "public view requires coverage states for all v1 capabilities"
+        )
     if tombstones:
         raise CatalogValidationError("public view has no native tombstone source")
 
@@ -420,36 +440,66 @@ def _validate_public_view_payloads(
         if row["type"] != cap or cap not in {"item", "creature", "npc"}:
             raise CatalogValidationError("invalid public entity type or capability")
         if cap == "item":
-            _require_exact_keys(data, "item data", core | {"materializable", "stack_class"}, {"name"})
+            _require_exact_keys(
+                data, "item data", core | {"materializable", "stack_class"}, {"name"}
+            )
             if type(data["materializable"]) is not bool or data["stack_class"] not in (
-                "Unknown", "StackCapable", "NonStackable",
+                "Unknown",
+                "StackCapable",
+                "NonStackable",
             ):
                 raise CatalogValidationError("invalid public item payload")
             if data["materializable"] and data["stack_class"] == "Unknown":
-                raise CatalogValidationError("public identity-only item cannot be materializable")
-            if "name" in data and len(_require_string(data["name"], "name").encode("utf-8")) > 46:
+                raise CatalogValidationError(
+                    "public identity-only item cannot be materializable"
+                )
+            if (
+                "name" in data
+                and len(_require_string(data["name"], "name").encode("utf-8")) > 46
+            ):
                 raise CatalogValidationError("public item name exceeds 46 UTF-8 bytes")
         elif cap == "creature":
             stats = {"health", "experience", "speed", "armor"}
-            _require_exact_keys(data, "creature data", core, stats | {"name", "resistances", "immunities"})
+            _require_exact_keys(
+                data,
+                "creature data",
+                core,
+                stats | {"name", "resistances", "immunities"},
+            )
             for field in stats & data.keys():
-                _public_int(data[field], field, minimum=int(field == "health"),
-                            maximum=MAX_U32 if field in {"speed", "armor"} else MAX_INT)
+                _public_int(
+                    data[field],
+                    field,
+                    minimum=int(field == "health"),
+                    maximum=MAX_U32 if field in {"speed", "armor"} else MAX_INT,
+                )
             if "name" in data:
                 _public_source_text(data["name"], "name")
             damage_types = []
-            for entry in _require_list(data.get("resistances", []), "resistances", MAX_ARRAY_ENTRIES):
+            for entry in _require_list(
+                data.get("resistances", []), "resistances", MAX_ARRAY_ENTRIES
+            ):
                 _require_exact_keys(entry, "resistance", {"damage_type", "percent"})
-                damage_types.append(_public_source_text(entry["damage_type"], "resistance damage_type"))
-                percent = _require_exact_keys(entry["percent"], "percent", {"numerator", "denominator"})
+                damage_types.append(
+                    _public_source_text(entry["damage_type"], "resistance damage_type")
+                )
+                percent = _require_exact_keys(
+                    entry["percent"], "percent", {"numerator", "denominator"}
+                )
                 _public_int(percent["numerator"], "numerator", -MAX_INT - 1)
                 _public_int(percent["denominator"], "denominator", 1)
                 if math.gcd(percent["numerator"], percent["denominator"]) != 1:
-                    raise CatalogValidationError("public resistances must use reduced ratios")
+                    raise CatalogValidationError(
+                        "public resistances must use reduced ratios"
+                    )
             _require_increasing(damage_types, "resistances")
-            immunities = _require_list(data.get("immunities", []), "immunities", MAX_ARRAY_ENTRIES)
-            _require_increasing([_public_source_text(value, "immunity") for value in immunities],
-                                "immunities")
+            immunities = _require_list(
+                data.get("immunities", []), "immunities", MAX_ARRAY_ENTRIES
+            )
+            _require_increasing(
+                [_public_source_text(value, "immunity") for value in immunities],
+                "immunities",
+            )
         else:
             _require_exact_keys(data, "npc data", core)
         _public_revision(data["definition_revision"])
@@ -459,9 +509,15 @@ def _validate_public_view_payloads(
     for row in relations:
         cap, data = row["capability_id"], row["data"]
         source_kind = {"creature_loot": "creature", "npc_shop": "npc"}.get(cap)
-        if (row["type"] != cap or source_kind is None
-                or entity_kinds[row["source"]] != source_kind or entity_kinds.get(row["target"]) != "item"):
-            raise CatalogValidationError("invalid public relation capability or endpoint type")
+        if (
+            row["type"] != cap
+            or source_kind is None
+            or entity_kinds[row["source"]] != source_kind
+            or entity_kinds.get(row["target"]) != "item"
+        ):
+            raise CatalogValidationError(
+                "invalid public relation capability or endpoint type"
+            )
         kind = ".loot." if cap == "creature_loot" else ".row."
         prefix, _, ordinal = row["relation_key"].rpartition(kind)
         if cap == "creature_loot":
@@ -473,16 +529,39 @@ def _validate_public_view_payloads(
             service_key = prefix.removeprefix(shop_prefix)
             matches_source = prefix.startswith(shop_prefix) and "." in service_key[1:-1]
         if not matches_source or re.fullmatch(r"0|[1-9][0-9]*", ordinal) is None:
-            raise CatalogValidationError("public relation_key must identify a source row and ordinal")
+            raise CatalogValidationError(
+                "public relation_key must identify a source row and ordinal"
+            )
         if cap == "creature_loot":
-            _require_exact_keys(data, "loot data", {"payload_revision", "algorithm", "min_count", "max_count", "probability_ppm"})
+            _require_exact_keys(
+                data,
+                "loot data",
+                {
+                    "payload_revision",
+                    "algorithm",
+                    "min_count",
+                    "max_count",
+                    "probability_ppm",
+                },
+            )
             if data["algorithm"] != "IndependentBernoulliPpm":
                 raise CatalogValidationError("invalid public loot algorithm")
             _public_int(data["min_count"], "min_count", 1, MAX_U32)
             _public_int(data["max_count"], "max_count", data["min_count"], MAX_U32)
             _public_int(data["probability_ppm"], "probability_ppm", 0, 1_000_000)
         else:
-            _require_exact_keys(data, "shop data", {"payload_revision", "direction", "unit_price", "count", "sub_type", "currency"})
+            _require_exact_keys(
+                data,
+                "shop data",
+                {
+                    "payload_revision",
+                    "direction",
+                    "unit_price",
+                    "count",
+                    "sub_type",
+                    "currency",
+                },
+            )
             if data["direction"] not in ("BuyFromPlayer", "SellToPlayer"):
                 raise CatalogValidationError("invalid public shop direction")
             _public_int(data["unit_price"], "unit_price")
@@ -493,7 +572,9 @@ def _validate_public_view_payloads(
             if data["currency"] is not None:
                 currency = _require_string(data["currency"], "currency", CONTENT_KEY_RE)
                 if entity_kinds.get(currency) != "item":
-                    raise CatalogValidationError("public shop currency must reference an exported item")
+                    raise CatalogValidationError(
+                        "public shop currency must reference an exported item"
+                    )
         _public_int(data["payload_revision"], "payload_revision", 1, 1)
 
 
@@ -546,8 +627,12 @@ def _normalize_source(source: Any) -> tuple[dict, str]:
     )
     if content_profile_id == PUBLIC_VIEW_PROFILE:
         if authority_epoch != PUBLIC_VIEW_EPOCH:
-            raise CatalogValidationError(f"public view authority_epoch must be {PUBLIC_VIEW_EPOCH}")
-        _validate_public_view_payloads(entities, relations, tombstones, support, completeness)
+            raise CatalogValidationError(
+                f"public view authority_epoch must be {PUBLIC_VIEW_EPOCH}"
+            )
+        _validate_public_view_payloads(
+            entities, relations, tombstones, support, completeness
+        )
     semantic = {
         "contract_id": CONTRACT_ID,
         "schema_version": SCHEMA_VERSION,
@@ -659,58 +744,61 @@ def load_json_file(path: Path) -> Any:
         raise CatalogValidationError(f"input is not valid JSON: {exc.msg}") from exc
 
 
-def _atomic_write(path: Path, data: bytes) -> None:
-    if not path.parent.exists():
-        raise CatalogValidationError(f"output directory does not exist: {path.parent}")
-    temporary = path.with_name(path.name + ".tmp")
-    try:
-        temporary.write_bytes(data)
-        temporary.replace(path)
-    except OSError as exc:
-        try:
-            temporary.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise CatalogValidationError(f"cannot write output file: {path}") from exc
-
-
-def _atomic_write_snapshot(path: Path, snapshot: dict) -> str:
-    if not path.parent.exists():
-        raise CatalogValidationError(f"output directory does not exist: {path.parent}")
-    temporary = path.with_name(path.name + ".tmp")
+def _stage_snapshot(path: Path, snapshot: dict) -> str:
     digest = hashlib.sha256()
     total = 0
+    with path.open("wb") as handle:
+        for chunk in _iter_canonical_json_bytes(snapshot):
+            total += len(chunk)
+            if total + 1 > MAX_FILE_BYTES:
+                raise CatalogValidationError("snapshot exceeds file size limit")
+            handle.write(chunk)
+            digest.update(chunk)
+        handle.write(b"\n")
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+@contextmanager
+def _publication_lock(directory: Path):
+    if os.name == "nt":
+        import msvcrt
+
+        # Keep the lock file so overlapping writers always lock the same file.
+        with (directory / ".catalogue.lock").open("a+b") as lock:
+            msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
+            yield
+        return
+
+    import fcntl
+
+    parent = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
     try:
-        with temporary.open("wb") as handle:
-            for chunk in _iter_canonical_json_bytes(snapshot):
-                total += len(chunk)
-                if total + 1 > MAX_FILE_BYTES:
-                    raise CatalogValidationError("snapshot exceeds file size limit")
-                handle.write(chunk)
-                digest.update(chunk)
-            handle.write(b"\n")
-            digest.update(b"\n")
-        temporary.replace(path)
-        return digest.hexdigest()
-    except CatalogValidationError:
-        try:
-            temporary.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise
-    except OSError as exc:
-        try:
-            temporary.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise CatalogValidationError(f"cannot write output file: {path}") from exc
+        fcntl.flock(parent, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(parent)
 
 
 def write_snapshot_files(snapshot: dict, output: Path) -> None:
     verify_snapshot(snapshot)
-    artifact_hex = _atomic_write_snapshot(output, snapshot)
-    sidecar = output.with_suffix(output.suffix + ".sha256")
-    _atomic_write(sidecar, (artifact_hex + "\n").encode("ascii"))
+    if not output.parent.exists():
+        raise CatalogValidationError(
+            f"output directory does not exist: {output.parent}"
+        )
+    try:
+        with tempfile.TemporaryDirectory(
+            prefix=".catalogue-", dir=output.parent
+        ) as staging:
+            artifact = Path(staging) / "snapshot"
+            digest = Path(staging) / "digest"
+            artifact_hex = _stage_snapshot(artifact, snapshot)
+            digest.write_bytes((artifact_hex + "\n").encode("ascii"))
+            with _publication_lock(output.parent):
+                artifact.replace(output)
+                digest.replace(output.with_suffix(output.suffix + ".sha256"))
+    except OSError as exc:
+        raise CatalogValidationError(f"cannot write output file: {output}") from exc
 
 
 def _build_parser() -> argparse.ArgumentParser:

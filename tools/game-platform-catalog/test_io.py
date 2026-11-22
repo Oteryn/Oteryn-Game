@@ -4,7 +4,10 @@ import hashlib
 import sys
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from pathlib import Path
+from threading import Event
+from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -14,6 +17,7 @@ from producer import (
     build_snapshot,
     canonical_json_bytes,
     load_json_file,
+    main,
     verify_snapshot,
     write_snapshot_files,
 )
@@ -47,20 +51,31 @@ class ProducerIoTests(unittest.TestCase):
             ("capability_manifest", "support", "unsupported"),
             ("completeness_manifest", "state", "unknown"),
         ):
-            next(row for row in source[manifest] if row["capability_id"] == "item")[field] = value
-        with self.assertRaisesRegex(CatalogValidationError, "references unsupported capability: item"):
+            next(row for row in source[manifest] if row["capability_id"] == "item")[
+                field
+            ] = value
+        with self.assertRaisesRegex(
+            CatalogValidationError, "references unsupported capability: item"
+        ):
             build_snapshot(source)
         source["required_capabilities"] = ["item"]
-        with self.assertRaisesRegex(CatalogValidationError, "required capability item is unsupported"):
+        with self.assertRaisesRegex(
+            CatalogValidationError, "required capability item is unsupported"
+        ):
             build_snapshot(source)
 
     def test_public_payload_verifier_checks_endpoints_after_valid_digest(self) -> None:
         source = load_json_file(HERE / "fixtures/supported-native-input.json")
         snapshot = build_snapshot(source)
-        shop = next(row for row in snapshot["relations"] if row["capability_id"] == "npc_shop")
+        shop = next(
+            row for row in snapshot["relations"] if row["capability_id"] == "npc_shop"
+        )
         shop["target"] = shop["source"]
-        integrity = {key: value for key, value in snapshot.items()
-                     if key not in {"snapshot_id", "payload_digest"}}
+        integrity = {
+            key: value
+            for key, value in snapshot.items()
+            if key not in {"snapshot_id", "payload_digest"}
+        }
         digest = "sha256:" + hashlib.sha256(canonical_json_bytes(integrity)).hexdigest()
         snapshot["snapshot_id"] = snapshot["payload_digest"] = digest
         with self.assertRaisesRegex(CatalogValidationError, "endpoint type"):
@@ -90,6 +105,51 @@ class ProducerIoTests(unittest.TestCase):
                     encoding="ascii"
                 ),
                 expected_digest + "\n",
+            )
+
+    def test_concurrent_public_profiles_publish_matching_sidecar(self) -> None:
+        fixtures = HERE / "fixtures"
+        default = fixtures / "unsupported-native-input.json"
+        preproduction = fixtures / "supported-native-input.json"
+        published_json = Event()
+        resume_default = Event()
+        replace = Path.replace
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "catalog.json"
+
+            def pause_after_first_json(path, destination):
+                result = replace(path, destination)
+                if destination == output and not published_json.is_set():
+                    published_json.set()
+                    if not resume_default.wait(10):
+                        raise TimeoutError("default publication did not resume")
+                return result
+
+            def produce(source):
+                return main(["produce", str(source), str(output)])
+
+            with (
+                patch.object(Path, "replace", pause_after_first_json),
+                ThreadPoolExecutor(2) as pool,
+            ):
+                first = pool.submit(produce, default)
+                try:
+                    self.assertTrue(published_json.wait(10))
+                    second = pool.submit(produce, preproduction)
+                    try:
+                        second.result(timeout=1)
+                    except TimeoutError:
+                        pass  # A serialized writer waits for the first publication.
+                finally:
+                    resume_default.set()
+                self.assertEqual(first.result(timeout=10), 0)
+                self.assertEqual(second.result(timeout=10), 0)
+
+            verify_snapshot(load_json_file(output))
+            self.assertEqual(
+                output.with_suffix(".json.sha256").read_text(encoding="ascii"),
+                hashlib.sha256(output.read_bytes()).hexdigest() + "\n",
             )
 
     def test_loader_rejects_file_above_hard_limit_before_json_parse(self) -> None:
@@ -128,8 +188,11 @@ class PublicProfileRejectionTests(unittest.TestCase):
         change(source)
         change(snapshot)
         snapshot["relations"].sort(key=lambda row: (row["type"], row["relation_key"]))
-        integrity = {key: value for key, value in snapshot.items()
-                     if key not in {"snapshot_id", "payload_digest"}}
+        integrity = {
+            key: value
+            for key, value in snapshot.items()
+            if key not in {"snapshot_id", "payload_digest"}
+        }
         digest = "sha256:" + hashlib.sha256(canonical_json_bytes(integrity)).hexdigest()
         snapshot["snapshot_id"] = snapshot["payload_digest"] = digest
         with tempfile.TemporaryDirectory() as directory:
@@ -142,14 +205,21 @@ class PublicProfileRejectionTests(unittest.TestCase):
                 ["produce", str(source_path), str(root / "output.json")],
                 ["verify", str(artifact_path)],
             ):
-                with self.subTest(command=command[0]), redirect_stdout(StringIO()), redirect_stderr(StringIO()) as errors:
+                with (
+                    self.subTest(command=command[0]),
+                    redirect_stdout(StringIO()),
+                    redirect_stderr(StringIO()) as errors,
+                ):
                     self.assertEqual(main(command), 2)
                     self.assertIn(diagnostic, errors.getvalue())
 
     def assert_field_rejected(self, capability, field, value, diagnostic=None):
         def change(document):
-            row = next(row for row in document["entities"] + document["relations"]
-                       if row["capability_id"] == capability)
+            row = next(
+                row
+                for row in document["entities"] + document["relations"]
+                if row["capability_id"] == capability
+            )
             row["data"][field] = value
 
         with self.subTest(capability=capability, field=field, value=value):
@@ -172,8 +242,13 @@ class PublicProfileRejectionTests(unittest.TestCase):
                 self.assert_field_rejected(cap, field, value)
 
         for count in (0, 1 << 32):
-            def change(document):
-                loot = next(row for row in document["relations"] if row["capability_id"] == "creature_loot")
+
+            def change(document, count=count):
+                loot = next(
+                    row
+                    for row in document["relations"]
+                    if row["capability_id"] == "creature_loot"
+                )
                 loot["data"].update(min_count=count, max_count=count)
 
             with self.subTest(loot_quantity=count):
@@ -181,7 +256,10 @@ class PublicProfileRejectionTests(unittest.TestCase):
 
     def test_creature_arrays_are_canonical(self):
         def resistance(damage_type, numerator=15, denominator=1):
-            return {"damage_type": damage_type, "percent": {"numerator": numerator, "denominator": denominator}}
+            return {
+                "damage_type": damage_type,
+                "percent": {"numerator": numerator, "denominator": denominator},
+            }
 
         for field, value in (
             ("resistances", [resistance("death"), resistance("death")]),
@@ -200,21 +278,35 @@ class PublicProfileRejectionTests(unittest.TestCase):
         for text in (" fire", "fire ", "fi\nre", "fi\x85re"):
             self.assert_field_rejected("creature", "name", text)
             self.assert_field_rejected("creature", "immunities", [text], "immunity")
-            self.assert_field_rejected("creature", "resistances", [
-                {"damage_type": text, "percent": {"numerator": 15, "denominator": 1}},
-            ], "damage_type")
+            self.assert_field_rejected(
+                "creature",
+                "resistances",
+                [
+                    {
+                        "damage_type": text,
+                        "percent": {"numerator": 15, "denominator": 1},
+                    },
+                ],
+                "damage_type",
+            )
 
     def test_relation_keys_bind_source_and_ordinal(self):
         for cap, key in (
             ("creature_loot", "oteryn:creature.another_monster.loot.0"),
-            ("npc_shop", "oteryn:npc.another_vendor.shop.oteryn.service.trade.cledwyn.row.0"),
+            (
+                "npc_shop",
+                "oteryn:npc.another_vendor.shop.oteryn.service.trade.cledwyn.row.0",
+            ),
             ("creature_loot", "oteryn:creature.abyssador.loot.00"),
             ("npc_shop", "oteryn:npc.cledwyn.shop.oteryn.service.trade.cledwyn.row.00"),
             ("creature_loot", "oteryn:relation.alias"),
             ("npc_shop", "oteryn:relation.alias"),
         ):
-            def change(document):
-                row = next(row for row in document["relations"] if row["capability_id"] == cap)
+
+            def change(document, cap=cap, key=key):
+                row = next(
+                    row for row in document["relations"] if row["capability_id"] == cap
+                )
                 if key == "oteryn:relation.alias":
                     document["relations"].append(dict(row, relation_key=key))
                 else:
