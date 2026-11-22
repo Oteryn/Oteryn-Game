@@ -1,5 +1,5 @@
-//! A complete native container projection can resolve a historical SOURCE Item
-//! hold for nonreward progress. It never authorizes completion or delivery.
+//! Native claim projections reconcile historical SOURCE holds against their
+//! admitted owner. Container Item holds still authorize only nonreward progress.
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
@@ -13,6 +13,22 @@ struct Proof {
     owner: Value,
     key: String,
     revision: String,
+}
+
+impl Proof {
+    fn matches(&self, quest: &Value, hold: &Value) -> bool {
+        self.owner == quest["source_refs"]["quest"]
+            && hold["source_key"] == self.key
+            && quest["source_refs"]["claims"]
+                .as_array()
+                .is_some_and(|claims| {
+                    claims.iter().any(|claim| {
+                        claim["family"] == "RewardClaim"
+                            && claim["key"] == self.key
+                            && claim["revision"] == self.revision
+                    })
+                })
+    }
 }
 
 fn proof(definition: &Value, digest: &str, revision: &Value) -> Option<Proof> {
@@ -108,19 +124,61 @@ pub(super) fn resolves(quest: &Value, hold: &Value) -> bool {
         }
         proofs
     });
-    proofs.iter().any(|proof| {
-        proof.owner == quest["source_refs"]["quest"]
-            && hold["source_key"] == proof.key
-            && quest["source_refs"]["claims"]
-                .as_array()
-                .is_some_and(|claims| {
-                    claims.iter().any(|claim| {
-                        claim["family"] == "RewardClaim"
-                            && claim["key"] == proof.key
-                            && claim["revision"] == proof.revision
-                    })
-                })
-    })
+    proofs.iter().any(|proof| proof.matches(quest, hold))
+}
+
+/// The archived RewardBook is a standalone native text claim. Preserve the
+/// SOURCE core digest and reconcile only its exact generated native lowering.
+pub(super) fn resolves_thieves_book(quest: &Value, hold: &Value) -> bool {
+    const QUEST: &str = "oteryn:quest.the_thieves_guild_quest";
+    const CLAIM: &str = "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_book";
+    const SOURCE_CLAIM: &str = "canary:reward-claim/quest/u8_2/the_thieves_guild_quest/reward_book";
+    const CONTENTS_SHA256: &str =
+        "c8f3451cdd6cfc42836542ad5ec06c5650180ab60292b514294d3c5a873db7a0";
+    if quest["identity"]["key"] != QUEST
+        || hold["code"] != "claim_native_lowering_missing"
+        || hold["source_key"] != SOURCE_CLAIM
+    {
+        return false;
+    }
+
+    static PROOF: OnceLock<Option<Proof>> = OnceLock::new();
+    let proof = PROOF.get_or_init(|| {
+        for (_, document) in super::NATIVE_CLAIM_SHARDS {
+            let shard: Value = serde_json::from_str(document).ok()?;
+            for row in shard["records"].as_array()? {
+                let claim = &row["definition"];
+                if claim["identity"]["key"] != CLAIM {
+                    continue;
+                }
+                let native = &claim["native_contents"];
+                let bytes = serde_json::to_vec(native).ok()?;
+                let digest: String = Sha256::new()
+                    .chain_update(bytes)
+                    .chain_update(b"\n")
+                    .finalize()
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect();
+                if claim["definition_profile"] != "authored_variant_v1"
+                    || !claim["data_holds"].as_array()?.is_empty()
+                    || claim["provenance"]["pilot_key"] != SOURCE_CLAIM
+                    || digest != CONTENTS_SHA256
+                {
+                    return None;
+                }
+                return Some(Proof {
+                    owner: claim["quest"].clone(),
+                    key: SOURCE_CLAIM.into(),
+                    revision: claim["provenance"]["pilot_revision"].as_str()?.into(),
+                });
+            }
+        }
+        None
+    });
+    proof
+        .as_ref()
+        .is_some_and(|proof| proof.matches(quest, hold))
 }
 
 #[cfg(test)]

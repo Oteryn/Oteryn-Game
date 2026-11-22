@@ -141,6 +141,7 @@ impl RecipeEvidence {
                 ) && !(selected.original_source_gaps
                     && entry["code"].as_str() == Some("reported_source_gap"))
                     && !selected.resolves_original_level(entry)
+                    && !native_claim_item_evidence::resolves_thieves_book(&definition, entry)
             });
             // A missing legacy delivery owner must not prevent a safe first step.
             // Every other data hold remains authoritative, as do nontrivial actor gates.
