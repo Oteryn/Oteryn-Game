@@ -317,11 +317,13 @@ fn qn5_grimvale_area_uses_frozen_victim_position_and_retains_first_capture() -> 
         .map(|counter| counter.transition.as_str())
         .collect();
     active.sort_unstable();
-    // QUESTPC3's two source death routes begin at zero. Neither species may
-    // receive the werewolf credit tested below; keep the complete exact census.
+    // The source death routes start at zero. Keep the exact census and verify
+    // that only the werewolf counter receives the credit tested below.
     assert_eq!(
         active,
         [
+            "oteryn:quest-transition/native-kills/great-dragon-hunt/dragon",
+            "oteryn:quest-transition/native-kills/great-dragon-hunt/dragon_lord",
             "oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau",
             "oteryn:quest-transition/native-kills/m01c-decaying-defender-bakragore",
             "oteryn:quest-transition/native-kills/qn5-grimvale-werewolves",
