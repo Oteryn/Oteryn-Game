@@ -398,6 +398,46 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
                     .borrow_movement_position()
                     .commit_creature_relocation(first, position, cell(4))
                     .map_err(debug)?;
+                // The carrier can still report a live creature outside the
+                // qualified Map. Refuse the pass after planning the first creature.
+                let second_position = runtime.read_actor_position(second).map_err(debug)?;
+                let outside = MovementLocalPosition {
+                    x: 4_096,
+                    ..second_position.position()
+                };
+                let displaced = runtime
+                    .borrow_movement_position()
+                    .commit_creature_relocation(second, second_position, outside)
+                    .map_err(debug)?;
+                let before_refusal = runtime.companion_snapshot(first).map_err(debug)?;
+                assert!(matches!(
+                    pass.tick(&mut runtime, &mut states, 1).await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                assert_eq!(
+                    runtime.companion_snapshot(first).map_err(debug)?,
+                    before_refusal,
+                    "an unavailable map read must leave the retained entry unapplied"
+                );
+                assert!(
+                    states
+                        .deferred_creature_field_entries
+                        .contains_key(&first.placement_identity())
+                );
+                runtime
+                    .borrow_movement_position()
+                    .commit_creature_relocation(second, displaced, second_position.position())
+                    .map_err(debug)?;
+
+                let proof = HeldSource(source);
+                let held = hold_source(&mut runtime, &proof)?;
+                pass.tick(&mut runtime, &mut states, 1).await?;
+                assert_eq!(health(&runtime, first)?, before);
+                assert!(!remaining(&runtime, first)?.is_empty());
+                assert!(states.deferred_creature_field_entries.is_empty());
+                runtime
+                    .release_source_actors_after_observed_outcome(held, &proof)
+                    .map_err(debug)?;
                 // Yellow flame has seven ten-point ticks spaced ten seconds apart.
                 // The pinned Cyclops mitigation truncates each tick to nine HP.
                 let last = 1 + 60 * SECOND;

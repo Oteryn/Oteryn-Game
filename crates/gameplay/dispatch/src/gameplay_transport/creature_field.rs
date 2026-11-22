@@ -8,6 +8,7 @@ use oteryn_gameplay_foundation::foundation::condition::{
     ConditionDefinition, ConditionLineage, TickFacts,
 };
 use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 
 #[derive(Debug)]
 pub(super) struct DeferredCreatureFieldEntry {
@@ -65,17 +66,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         native_health_names
             .validate_frame(runtime)
             .map_err(|_| DurabilityError::Unavailable)?;
-        states.prune_deferred_creature_fields(runtime);
         let mut plans = Vec::new();
         let mut source_players = Vec::new();
         let mut deferred = Vec::new();
+        let mut replays = BTreeMap::new();
 
-        // Replay retained contacts before observing any of their new tiles.
+        // Qualify retained contacts before reading their new tiles. The HP
+        // preview applies them in replay order on its cloned condition store.
         let mut creatures = runtime.visible_entities().creatures;
         if !states.deferred_creature_field_entries.is_empty() {
             for visible in &creatures {
                 let key = visible.actor.placement_identity();
-                let Some(pending) = states.deferred_creature_field_entries.get_mut(&key) else {
+                let Some(pending) = states.deferred_creature_field_entries.get(&key) else {
                     continue;
                 };
                 if let Err(error) = runtime.assert_actor_spell_unreserved(visible.actor) {
@@ -92,28 +94,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // The retained recipe survives caster retirement. Attribution,
                 // like a fresh field read, still requires a current exact actor.
-                if pending
-                    .entry
+                let mut entry = pending.entry.clone();
+                if entry
                     .source
                     .is_some_and(|source| !runtime.borrow_exact_actor_lookup().contains(source))
                 {
-                    pending.entry.source = None;
-                    pending.entry.lineage = None;
+                    entry.source = None;
+                    entry.lineage = None;
                 }
-                runtime
-                    .commit_creature_field_entry_at(
-                        visible.actor,
-                        now,
-                        pending.position_revision,
-                        Some(&pending.entry),
-                    )
-                    .map_err(|_| DurabilityError::Unavailable)?;
-                states.deferred_creature_field_entries.remove(&key);
+                replays.insert(key, (pending.position_revision, entry));
             }
             creatures.retain(|visible| {
-                !states
-                    .deferred_creature_field_entries
-                    .contains_key(&visible.actor.placement_identity())
+                let key = visible.actor.placement_identity();
+                replays.contains_key(&key)
+                    || !states.deferred_creature_field_entries.contains_key(&key)
             });
         }
         // Passive source creatures are outside the AI table, but still own field conditions.
@@ -239,8 +233,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             | crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::FourthTaint
                     )
                 });
+            let replay = if replays.is_empty() {
+                None
+            } else {
+                replays.remove(&visible.actor.placement_identity())
+            };
             let due = runtime
-                .preview_creature_field_due(snapshot, now, entry.as_ref(), facts)
+                .preview_creature_field_due(
+                    snapshot,
+                    now,
+                    replay.as_ref().map(|(revision, field)| (*revision, field)),
+                    entry.as_ref(),
+                    facts,
+                )
                 .map_err(|_| DurabilityError::Unavailable)?;
             let sources = due.iter().filter_map(|tick| tick.provenance.source);
             let hooked = runtime
@@ -253,7 +258,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !skip_hp && needs_source_facts {
                 source_players.extend(sources);
             }
-            plans.push((visible.actor, entry, facts, skip_hp));
+            plans.push((visible.actor, replay, entry, facts, skip_hp));
         }
         if let Some(active) = self.active_generation {
             let room = map.room();
@@ -274,12 +279,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !map.validate_transaction(runtime).await {
             return Err(DurabilityError::Unavailable);
         }
+        states.prune_deferred_creature_fields(runtime);
         for pending in deferred {
             states
                 .deferred_creature_field_entries
                 .insert(pending.actor.placement_identity(), pending);
         }
-        for (actor, entry, facts, skip_hp) in plans {
+        for (actor, replay, entry, facts, skip_hp) in plans {
+            if let Some((revision, field)) = replay {
+                runtime
+                    .commit_creature_field_entry_at(actor, now, revision, Some(&field))
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                states.forget_deferred_creature_field(actor);
+            }
             runtime
                 .commit_creature_field_entry(actor, now, entry.as_ref())
                 .map_err(|_| DurabilityError::Unavailable)?;

@@ -56,12 +56,12 @@ pub struct CreaturePeriodicImpact {
     pub healing: u64,
 }
 fn field_entry_is_current(
-    committed: &super::runtime_actor_conditions::CreatureCommitState,
+    previous: (Option<u64>, Option<&CreatureFieldEntry>),
     position_revision: u64,
     field: Option<&CreatureFieldEntry>,
 ) -> bool {
-    committed.field_entry_revision == Some(position_revision)
-        && match (committed.field_entry.as_ref(), field) {
+    previous.0 == Some(position_revision)
+        && match (previous.1, field) {
             (Some(previous), Some(current)) => {
                 previous.occurrence == current.occurrence
                     && previous.definition == current.definition
@@ -163,25 +163,15 @@ impl ChannelRuntimeV1 {
         let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
             return Err(CarrierError::NotCreature);
         };
-        if field_entry_is_current(committed, position_revision, field) {
+        let previous = (
+            committed.field_entry_revision,
+            committed.field_entry.as_ref(),
+        );
+        if field_entry_is_current(previous, position_revision, field) {
             return Ok(());
         }
+        self.validate_creature_field_lineage(field)?;
         let mut next = before.state;
-        if let Some(field) = field {
-            if field.source.is_some() != field.lineage.is_some() {
-                return Err(CarrierError::PlanConflict);
-            }
-            if let Some(lineage) = &field.lineage
-                && (lineage.source_content_digest != self.content_pin().server_artifact_digest()
-                    || lineage.source_scope_generation != self.binding().scope_generation().get()
-                    || field.source.is_none_or(|source| {
-                        source.placement_identity() != lineage.source_actor_placement
-                            || !self.borrow_exact_actor_lookup().contains(source)
-                    }))
-            {
-                return Err(CarrierError::PlanConflict);
-            }
-        }
         preview_entry_and_due(
             &mut next,
             field,
@@ -203,12 +193,35 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
+    fn validate_creature_field_lineage(
+        &self,
+        field: Option<&CreatureFieldEntry>,
+    ) -> Result<(), CarrierError> {
+        if let Some(field) = field {
+            if field.source.is_some() != field.lineage.is_some() {
+                return Err(CarrierError::PlanConflict);
+            }
+            if let Some(lineage) = &field.lineage
+                && (lineage.source_content_digest != self.content_pin().server_artifact_digest()
+                    || lineage.source_scope_generation != self.binding().scope_generation().get()
+                    || field.source.is_none_or(|source| {
+                        source.placement_identity() != lineage.source_actor_placement
+                            || !self.borrow_exact_actor_lookup().contains(source)
+                    }))
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+        }
+        Ok(())
+    }
+
     /// The supplied snapshot owns a clone of the condition store. Only the
     /// real entry and periodic turns can write back to the creature slot.
     pub fn preview_creature_field_due(
         &self,
         mut snapshot: CompanionSnapshot,
         now_us: u64,
+        replay: Option<(u64, &CreatureFieldEntry)>,
         field: Option<&CreatureFieldEntry>,
         facts: TickFacts,
     ) -> Result<Vec<ConditionTick<ExactActorRef>>, CarrierError> {
@@ -218,17 +231,36 @@ impl ChannelRuntimeV1 {
         let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
             return Err(CarrierError::NotCreature);
         };
-        let entry = if field_entry_is_current(committed, snapshot.position_revision, field) {
+        let content_digest = self.content_pin().server_artifact_digest();
+        let mut previous = (
+            committed.field_entry_revision,
+            committed.field_entry.as_ref(),
+        );
+        if let Some((revision, entry)) = replay
+            && !field_entry_is_current(previous, revision, Some(entry))
+        {
+            self.validate_creature_field_lineage(Some(entry))?;
+            preview_entry_and_due(
+                &mut snapshot.state,
+                Some(entry),
+                now_us,
+                None,
+                content_digest,
+            )?;
+            previous = (Some(revision), Some(entry));
+        }
+        let entry = if field_entry_is_current(previous, snapshot.position_revision, field) {
             None
         } else {
             field
         };
+        self.validate_creature_field_lineage(entry)?;
         preview_entry_and_due(
             &mut snapshot.state,
             entry,
             now_us,
             Some(facts),
-            self.content_pin().server_artifact_digest(),
+            content_digest,
         )
     }
 
