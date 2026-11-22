@@ -534,7 +534,7 @@ fn boss_spawn_world_points_reach_bundle_at_fixed_cells() -> TestResult {
             checked += 1;
         }
     }
-    assert_eq!(checked, 34);
+    assert_eq!(checked, 38);
     Ok(())
 }
 

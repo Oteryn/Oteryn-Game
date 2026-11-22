@@ -26,10 +26,10 @@ class ConvertSpawnsTest(unittest.TestCase):
         cls.held = json.loads(cs.HELD.read_text())["records"]
 
     def test_counts(self):
-        self.assertEqual(len(self.records), 54691)
-        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87819)
-        self.assertEqual(self.index["record_count"], 54691)
-        self.assertEqual(self.index["point_count"], 87819)
+        self.assertEqual(len(self.records), 55076)
+        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 88478)
+        self.assertEqual(self.index["record_count"], 55076)
+        self.assertEqual(self.index["point_count"], 88478)
 
     def test_provenance_is_crystalserver(self):
         self.assertEqual(self.index["source"]["source_key"], "oteryn:source.crystalserver")

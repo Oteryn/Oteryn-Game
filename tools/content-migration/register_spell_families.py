@@ -691,6 +691,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     imbuement_item_profiles.complete_boots(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
+    import crystal_spawn_creatures
+    crystal_spawn_creatures.admit(root, generated)
     from bind_monster_source_definitions import bind_definitions
     generated = bind_definitions(root, generated)
     # W11 source callback outfits share the registered native appearance provider.

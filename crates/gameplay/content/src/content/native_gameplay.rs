@@ -3812,6 +3812,76 @@ mod tests {
         assert_eq!(boss.category.as_str(), "nemesis");
     }
     #[test]
+    fn crystal_spawn_delta_creatures_and_gorga_corpse_load_from_native_manifest()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use super::super::{ReferenceItemField as F, ReferenceMilliseconds};
+        let world = test_source(1)?.world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("missing active native gameplay")?;
+        for (slug, hp, speed, outfit, object) in [
+            ("common_beetle", 3700, 120, 1770, None),
+            ("gorga", 15000, 140, 330, None),
+            ("grove_guardian", 20000, 100, 1767, None),
+            ("herd_weevil", 3700, 120, 1770, None),
+            ("rootthing_cocoon", 5000, 0, 0, Some(45600)),
+        ] {
+            let key = format!("oteryn:creature.{slug}");
+            let policy = native
+                .policies()
+                .policies()
+                .iter()
+                .find(|policy| policy.definition_key == key)
+                .ok_or_else(|| format!("missing Crystal Creature policy {key}"))?;
+            assert_eq!(policy.maximum_health, hp, "{key}");
+            assert_eq!(policy.base_speed, speed, "{key}");
+            assert_eq!(policy.outfit_look_type, outfit, "{key}");
+            assert_eq!(policy.object_look_type, object, "{key}");
+        }
+        let reward = native
+            .reward_table()
+            .row("oteryn:creature.gorga")
+            .map_err(|reason| format!("Gorga reward row: {reason:?}"))?;
+        assert_eq!(reward.loot_table.entries.len(), 12);
+        let corpse = native
+            .reward_table()
+            .reward_boss_corpse("oteryn:creature.gorga")
+            .ok_or("missing Gorga reward corpse")?;
+        assert_eq!(
+            corpse
+                .corpse_item
+                .as_ref()
+                .map(|item| item.production_key.as_str()),
+            Some("oteryn:item.tibia.i9607"),
+        );
+        for (id, duration) in [
+            (9607, 10_000),
+            (9608, 300_000),
+            (9609, 300_000),
+            (9610, 60_000),
+        ] {
+            let policy = native
+                .item_policy_for_source_id(id)
+                .ok_or("missing Gorga decay stage")?;
+            let F::Known(temporal) = &policy.record().semantics.temporal else {
+                return Err(format!("missing Gorga decay policy for {id}").into());
+            };
+            assert_eq!(temporal.duration, F::Known(ReferenceMilliseconds(duration)));
+            if id == 9610 {
+                assert_eq!(temporal.decay_target, F::NotApplicable);
+            } else {
+                let F::Known(target) = &temporal.decay_target else {
+                    return Err(format!("missing Gorga decay target for {id}").into());
+                };
+                assert_eq!(target.key, format!("oteryn:item.tibia.i{}", id + 1));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn reward_boss_empty_corpse_does_not_admit_missing_private_loot() {
         let world = test_source(1).unwrap().world_id;
         let (controller, _) = activated_with_loot_tables(world, None);

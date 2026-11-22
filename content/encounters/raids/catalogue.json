@@ -35504,17 +35504,15 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "creature_unbound:Gorga"
-      ],
+      "inactive_reasons": [],
       "key": "raid:porthope.gorga",
-      "kind": "area",
+      "kind": "boss",
       "name": "porthope.gorga",
       "schedule": {
         "interval_s": 86400,
@@ -35588,7 +35586,7 @@
                     "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
                   },
                   "area_anchor": "raid-anchor:32867_32829_1-32867_32829_1",
-                  "boss": false,
+                  "boss": true,
                   "boss_source": null,
                   "creature": "oteryn:creature.gorga",
                   "source": {
@@ -50641,11 +50639,11 @@
   "totals": {
     "area": {
       "active": 34,
-      "total": 102
+      "total": 101
     },
     "boss": {
-      "active": 70,
-      "total": 86
+      "active": 71,
+      "total": 87
     },
     "calendar": {
       "active": 2,

@@ -559,7 +559,7 @@ mod tests {
         // plus Crystal a_piece_of_cake_config.lua:394-400's seasonal raid.
         // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
         assert_eq!(catalogue.records().len(), 240);
-        assert_eq!(catalogue.active().count(), 137);
+        assert_eq!(catalogue.active().count(), 138);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;
@@ -568,6 +568,38 @@ mod tests {
                 assert!(record.select([7; 32], [9; 16]).is_err());
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn gorga_raid_selects_the_exact_crystal_single_spawn() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let catalogue = RaidCatalogue::embedded()?;
+        let raid = catalogue
+            .get(&ProductionKey::new("raid:porthope.gorga")?)
+            .ok_or("Gorga raid is missing")?;
+        let selected = raid.select([7; 32], [9; 16])?;
+        let [wave] = selected.definition.waves.as_slice() else {
+            return Err("expected one Gorga raid wave".into());
+        };
+        let [entry] = wave.entries.as_slice() else {
+            return Err("expected one Gorga raid entry".into());
+        };
+        assert_eq!(entry.count, 1);
+        assert_eq!(entry.creature.as_str(), "oteryn:creature.gorga");
+        let [variant] = raid.variants.as_slice() else {
+            return Err("expected one Gorga raid variant".into());
+        };
+        let [source_wave] = variant.waves.as_slice() else {
+            return Err("expected one Gorga donor wave".into());
+        };
+        let [source_entry] = source_wave.entries.as_slice() else {
+            return Err("expected one Gorga donor entry".into());
+        };
+        assert_eq!(source_wave.delay_ms, 1_000);
+        let at = source_entry.area.from;
+        assert_eq!((at.x, at.y, at.floor), (32867, 32829, 1));
+        assert_eq!(source_entry.area.to.position(), at.position());
         Ok(())
     }
 
