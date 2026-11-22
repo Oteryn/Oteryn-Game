@@ -1,0 +1,10 @@
+{
+  "id": 6252,
+  "name": "HOUSE_GUILD_ACL",
+  "owner_decision": "S05 server package",
+  "capability": 515,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/house-guild-acl-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/house-guild-acl-v1.md#result",
+  "max_payload_bytes": 4168,
+  "max_result_payload_bytes": 16
+}
