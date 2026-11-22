@@ -11,14 +11,17 @@ fn daily_variant_river_fishing_spends_bait_and_replays_the_single_sandfish() -> 
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| {
-            super::standard_fishing::gathering_scenario(
-                3483,
-                DESERT_FISHING_WATER,
-                Some(DESERT_FISHING_SPENT),
-                Some(SANDFISH),
-                true,
-                false,
-            )
+            super::fishing_wire::gathering_scenario(super::fishing_wire::GatheringCase {
+                tool: 3483,
+                target_id: DESERT_FISHING_WATER,
+                after: Some(DESERT_FISHING_SPENT),
+                yield_item: Some(SANDFISH),
+                committed: true,
+                in_sewers: false,
+                projected_desert: true,
+                select_roll: None,
+                consumes_bait: true,
+            })
             .map_err(|error| error.to_string())
         })?
         .join()
