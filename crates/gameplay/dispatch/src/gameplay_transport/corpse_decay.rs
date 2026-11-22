@@ -91,6 +91,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .reconcile_plain_corpses(fence.runtime_scope, &live);
             let _ = runtime.retain_live_corpse_items(&live);
             for corpse in &schedule.corpses {
+                if let Some(bytes) = &corpse.loop_ground_spatial_position
+                    && let Ok(cell) = crate::durability::spell_items_abi::decode_ground_cell(bytes)
+                    && let Some(floor) = i16::try_from(cell.z).ok().and_then(i16::checked_neg)
+                {
+                    let _ = runtime.relocate_corpse_item(
+                        corpse.corpse_item_instance_id,
+                        crate::foundation::MovementLocalPosition {
+                            x: cell.x,
+                            y: cell.y,
+                            floor,
+                        },
+                    );
+                }
                 let _ = runtime.refresh_corpse_item(
                     corpse.corpse_item_instance_id,
                     &corpse.definition.family,

@@ -29,6 +29,8 @@ pub(super) struct CorpseItemBinding {
     // Original MINT binding stays immutable when the displayed Item transforms.
     minted_item: RuntimeCorpseItem,
     item: RuntimeCorpseItem,
+    position: MovementLocalPosition,
+    revision: u64,
 }
 
 impl ChannelActorCarrier {
@@ -43,13 +45,16 @@ impl ChannelActorCarrier {
         // the same exact scope, ownership generation and lethal occurrence.
         if actor.runtime_scope() != self.runtime_scope
             || actor.scope_generation() != self.scope_generation
-            || !self
-                .corpse_projections
-                .iter()
-                .any(|projection| projection.occurrence.actor == actor)
         {
             return Err(CarrierError::CommittedLethalUnavailable);
         }
+        let projection = self
+            .corpse_projections
+            .iter()
+            .find(|projection| projection.occurrence.actor == actor)
+            .ok_or(CarrierError::CommittedLethalUnavailable)?;
+        let position = projection.position();
+        let revision = projection.position_revision();
         if let Some(bound) = self
             .corpse_item_bindings
             .iter()
@@ -81,6 +86,8 @@ impl ChannelActorCarrier {
             actor,
             minted_item: item.clone(),
             item,
+            position,
+            revision,
         });
         Ok(())
     }
@@ -102,8 +109,8 @@ impl ChannelActorCarrier {
                     .find(|binding| binding.actor == actor)?;
                 Some(VisibleRuntimeCorpse {
                     identity: actor.corpse_identity(),
-                    position: projection.position(),
-                    revision: projection.position_revision(),
+                    position: binding.position,
+                    revision: binding.revision,
                     item: binding.item.clone(),
                 })
             })
@@ -291,6 +298,27 @@ impl ChannelRuntimeV1 {
             binding.item.family = family.to_owned();
             binding.item.production_key = production_key.to_owned();
             binding.item.revision_ref = revision_ref.to_owned();
+        }
+        Ok(())
+    }
+
+    /// Update a bound corpse after its durable Ground placement changes.
+    /// The item-lane owner supplies the committed location in runtime coordinates.
+    pub fn relocate_corpse_item(
+        &mut self,
+        item_instance_id: [u8; 16],
+        position: MovementLocalPosition,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if let Some(binding) = self
+            .carrier
+            .corpse_item_bindings
+            .iter_mut()
+            .find(|binding| binding.item.item_instance_id == item_instance_id)
+            && binding.position != position
+        {
+            binding.position = position;
+            binding.revision = binding.revision.saturating_add(1);
         }
         Ok(())
     }

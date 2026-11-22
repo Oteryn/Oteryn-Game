@@ -55,3 +55,8 @@ fn ordinary_orc_death_mints_the_source_corpse_and_schedules_its_lifecycle_postgr
     }
     super::qengine_rewards_fixtures::scenario(MINT_SCENARIO)
 }
+
+#[test]
+fn ordinary_cobra_drag_refreshes_the_bound_corpse_and_durable_schedule_postgres() -> TestResult {
+    super::qengine_rewards_fixtures::scenario(super::ordinary_corpse_decay_fixtures::DRAG_SCENARIO)
+}

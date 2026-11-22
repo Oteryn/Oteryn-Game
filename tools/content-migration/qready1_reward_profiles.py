@@ -1,7 +1,9 @@
 """Reuse the six exact QUESTPC5 native reward profiles needed by QREADY1."""
 import hashlib
 import json
+
 import quest_callback_profiles as accepted
+from native_profile_composition import compact_item_profile
 
 PACKET = 'tools/content-schema/native-gameplay/qready1-reward-item-profiles.json'
 IDS = {3068, 3323, 3383, 3579, 3734, 4871}
@@ -35,9 +37,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 or record['attributes'] != attributes or record['authoring']['item'] != definition['identity']):
             raise ValueError('QREADY1_NATIVE_REWARD_CANONICAL_DRIFT:' + key)
         accepted.complete_native_stack(root, record, definition, binding)
-        if key in present and present[key] != record:
-            raise ValueError('QREADY1_NATIVE_REWARD_CONFLICT:' + key)
-        present[key] = record
+        if key in present:
+            if compact_item_profile(present[key]) != compact_item_profile(record):
+                raise ValueError('QREADY1_NATIVE_REWARD_CONFLICT:' + key)
+        else:
+            present[key] = record
     document['records'] = sorted(present.values(), key=order)
     generated[profile_path] = canonical(document)
     manifest = json.loads(generated[manifest_path])

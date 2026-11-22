@@ -906,6 +906,9 @@ pub(super) async fn exercise(
     if name == super::ordinary_corpse_content_fixtures::NAME {
         return Box::pin(super::ordinary_corpse_content_fixtures::exercise(owner, admitted, h)).await;
     }
+    if name == super::ordinary_corpse_decay_fixtures::DRAG_SCENARIO {
+        return Box::pin(super::ordinary_corpse_decay_fixtures::exercise_drag(owner, admitted)).await;
+    }
     if name == super::ordinary_corpse_decay_fixtures::MINT_SCENARIO {
         return Box::pin(super::ordinary_corpse_decay_fixtures::exercise_mint(owner, admitted, h)).await;
     }

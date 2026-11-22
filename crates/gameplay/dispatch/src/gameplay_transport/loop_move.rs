@@ -1010,6 +1010,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
             ground.as_deref(),
         )
         .await;
+    let ordinary_move = elemental_result.is_none();
     let mut ring_opened = false;
     let ring_result = match (elemental_result.is_none(), ring_target.as_ref()) {
         (true, Some(prepared)) => {
@@ -1142,6 +1143,29 @@ pub(super) async fn move_loop_item_with_house_capacity(
     {
         map.facts
             .emit_movement_effect(TilePos { x, y, floor }, effect);
+    }
+    if let Ok(Ok(receipt)) = &committed
+        && !receipt.replayed
+        && ordinary_move
+        && touches_ground
+        && let LoopTarget::Ground(to) = request.target
+        && let Some(floor) = to.floor.checked_neg()
+    {
+        let mut runtime = admission.runtime.lock().await;
+        if runtime.binding().runtime_scope() == fence.runtime_scope
+            && runtime
+                .owner_fence()
+                .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
+        {
+            let _ = runtime.relocate_corpse_item(
+                item,
+                crate::foundation::MovementLocalPosition {
+                    x: to.x,
+                    y: to.y,
+                    floor,
+                },
+            );
+        }
     }
     // Publish the tile-order event while the same Channel lane still excludes
     // observers. Even pickup + re-drop between two view polls must append the item.
