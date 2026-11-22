@@ -392,8 +392,10 @@ def build():
         track='oteryn:quest-progress/wayfarer_outfit'+('' if bit==1 else '_1')
         add('l1-wayfarer-'+name,'wayfarer_outfits_quest','cranky_lizard_crone',['yes'],
             [storage(track,-1,1,0)],take=[(item,1)],outfit=('wayfarer',bit),topic=bit)
+        callbacks[-1]['requires_completed_quests'] = ['oteryn:quest.the_spirit_will_get_you_quest']
         offers.append({'npc':'oteryn:npc.cranky_lizard_crone','keywords':words,
             'topic':0,'next_topic':bit,'storage':callbacks[-1]['storage'],
+            'requires':[{'track':'oteryn:quest-progress/l6/spirit/stage','minimum':2,'maximum':2}],
             'reply':['Do you have the '+('old cape' if bit==1 else 'sedge hat')+' with you?']})
     for npc,side in [('palimuth',1),('yalahari',2)]:
         states=[storage(yalahar+'questline',52,53),

@@ -1,4 +1,4 @@
-//! The M39 source books retain their existing per-character RewardClaim identities.
+//! Source books and Paradox caches retain their per-character RewardClaim identities.
 //! This resolves immutable source pairs, never an alias supplied by a caller.
 use super::{ActorKind, Callback, Trigger};
 use crate::quest::reward_callbacks::{ItemReward, NativeClaimBinding};
@@ -50,6 +50,41 @@ const PAIRS: &[(&str, &str)] = &[
     ("l2-tome-top-tower", "tomes_of_knowledge.top_tower"),
 ];
 
+const PARADOX_CALLBACKS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/quests/world-callbacks/l6-world-puzzles.json"
+));
+const PARADOX_CLAIMS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../content/interactions/reward_claims/reward-claims-00100-00199.json"
+));
+const PARADOX_PAIRS: &[(&str, &str, &str, u16)] = &[
+    (
+        "paradox-claim-egg",
+        "u7_24.the_paradox_tower.reward.egg",
+        "oteryn:item.tibia.i3215",
+        1,
+    ),
+    (
+        "paradox-claim-gold",
+        "u7_24.the_paradox_tower.reward.gold",
+        "oteryn:item.tibia.i3035",
+        100,
+    ),
+    (
+        "paradox-claim-talon",
+        "u7_24.the_paradox_tower.reward.talon",
+        "oteryn:item.tibia.i3034",
+        32,
+    ),
+    (
+        "paradox-claim-wand",
+        "u7_24.the_paradox_tower.reward.wand",
+        "oteryn:item.tibia.i3073",
+        1,
+    ),
+];
+
 struct Binding {
     callback: Callback,
     claim: NativeClaimBinding,
@@ -63,6 +98,22 @@ fn only(value: &Value, fields: &[&str]) -> bool {
 }
 
 fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
+    let pairs = PAIRS.iter().map(|&(callback, claim)| {
+        (
+            callback,
+            format!("u8_54.{claim}"),
+            "oteryn:item.tibia.i10217",
+            1,
+        )
+    });
+    bind_pairs(callbacks, claims, pairs)
+}
+
+fn bind_pairs<'a>(
+    callbacks: &str,
+    claims: &str,
+    pairs: impl IntoIterator<Item = (&'a str, String, &'a str, u16)>,
+) -> Result<Vec<Binding>, String> {
     let callbacks = super::parse(callbacks)?;
     let claims: Value = serde_json::from_str(claims).map_err(|error| error.to_string())?;
     if claims["schema"] != "OTERYN_REWARD_CLAIM_SHARD/v1" || claims["family"] != "RewardClaim" {
@@ -73,17 +124,17 @@ fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
         .ok_or("legacy World claim records")?;
     let mut bindings = Vec::new();
     let mut positions = BTreeSet::new();
-    let reward: ItemReward = serde_json::from_value(json!({
-        "item": "oteryn:item.tibia.i10217", "count": 1, "contents": [],
-    }))
-    .map_err(|error| error.to_string())?;
-    for (callback_suffix, claim_suffix) in PAIRS {
+    for (callback_suffix, claim_suffix, item, count) in pairs {
+        let reward: ItemReward = serde_json::from_value(json!({
+            "item": item, "count": count, "contents": [],
+        }))
+        .map_err(|error| error.to_string())?;
         let key = format!("oteryn:quest-callback/{callback_suffix}");
         let callback = callbacks
             .iter()
             .find(|callback| callback.key == key)
             .ok_or("legacy World callback missing")?;
-        let claim_key = format!("oteryn:reward-claim.quest.u8_54.{claim_suffix}");
+        let claim_key = format!("oteryn:reward-claim.quest.{claim_suffix}");
         let matching: Vec<_> = records
             .iter()
             .map(|row| &row["definition"])
@@ -149,8 +200,8 @@ fn bind(callbacks: &str, claims: &str) -> Result<Vec<Binding>, String> {
             || placement["appearance_tibia_id"] != appearance
             || placement["reward"]
                 != json!({"items": [{"item": {
-                "family": "Item", "key": "oteryn:item.tibia.i10217", "revision": "definition-r1"
-            }, "count": 1}]})
+                "family": "Item", "key": item, "revision": "definition-r1"
+            }, "count": count}]})
             || !only(source, &["legacy_unique_ids", "project_position"])
             || source["project_position"]
                 != json!({"x": position.x, "y": position.y, "z": -i16::from(position.floor)})
@@ -213,7 +264,17 @@ pub fn legacy_world_source_unique(callback: &Callback) -> Result<Option<u16>, St
 fn legacy_world_binding(callback: &Callback) -> Result<Option<&'static Binding>, String> {
     static BINDINGS: OnceLock<Result<Vec<Binding>, String>> = OnceLock::new();
     let bindings = BINDINGS
-        .get_or_init(|| bind(CALLBACKS, CLAIMS))
+        .get_or_init(|| {
+            let mut bindings = bind(CALLBACKS, CLAIMS)?;
+            bindings.extend(bind_pairs(
+                PARADOX_CALLBACKS,
+                PARADOX_CLAIMS,
+                PARADOX_PAIRS.iter().map(|&(callback, claim, item, count)| {
+                    (callback, claim.to_owned(), item, count)
+                }),
+            )?);
+            Ok(bindings)
+        })
         .as_ref()
         .map_err(Clone::clone)?;
     let bound =

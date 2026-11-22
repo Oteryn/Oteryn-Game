@@ -1183,6 +1183,7 @@ fn scenario_case(
                 generation
                     .native_gameplay()
                     .ok_or("native story policies")?,
+                name.ends_with("-riddler"),
             )?
         } else if diprath_room {
             super::super::l6_diprath_room_fixtures::world(
@@ -1563,8 +1564,10 @@ fn scenario_case(
             "runtime-scope-assignment:1",
             if m07_realm || name == "qengine-rewards-questpc4-native-tower-third" {
                 4_104 // Quest callbacks must tolerate >4096 unrelated live creatures.
-            } else if name == "qengine-rewards-qnpcfx-m10-inquisition" {
-                7 // One player and the six source NPCs for the full interview story.
+            } else if name == "qengine-rewards-qnpcfx-m10-inquisition"
+                || (native_story && name.ends_with("-riddler"))
+            {
+                7 // One player and six source contacts.
             } else if qm50 {
                 8
             } else if name.starts_with("qengine-rewards-l12-") {

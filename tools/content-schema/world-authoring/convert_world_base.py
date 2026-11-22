@@ -1208,6 +1208,9 @@ def build(
         import qh_jimmy_stub
 
         qh_jimmy_stub.overlay_outputs(out, ROOT)
+        import spirit_will_pickups
+
+        spirit_will_pickups.overlay_outputs(out, ROOT)
     import m01c_key_doors
 
     m01c_key_doors.overlay_outputs(
@@ -1285,6 +1288,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         - count(drafted, "items_added")
         - count(authored, "items_added")
         - jimmy_stub["items"]
+        - count(summary.get("source", {}).get("spirit_will_pickups", {}), "items_added")
         - count(drafted, "replaced_items_added")
         + count(replace, "items_removed")
         + count(rework, "replaced_items_removed")

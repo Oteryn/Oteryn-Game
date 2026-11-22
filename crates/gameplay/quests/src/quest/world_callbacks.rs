@@ -17,7 +17,7 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
 // The Explorer Society and Outlaw Camp cohort adds 25 source callbacks.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1056;
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1088;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 

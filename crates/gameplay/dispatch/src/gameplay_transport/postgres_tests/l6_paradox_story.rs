@@ -19,3 +19,8 @@ fn l6_paradox_story_native_out_of_order() -> TestResult {
 fn l6_paradox_story_native_lesson_guard_and_replay() -> TestResult {
     run("qengine-rewards-questpc4-paradox-story-lesson-guard")
 }
+
+#[test]
+fn l6_paradox_riddler_transports_the_learned_character() -> TestResult {
+    run("qengine-rewards-questpc4-paradox-story-riddler")
+}

@@ -21,7 +21,7 @@ CORPUS = (
 REVISION = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
 # Crystal’s 3301/3302 coordinates retain ordinary two-form gates (12035).
 # Only 3303/3304 have retained locked key-door appearances.
-EXPECTED_COUNTS = {3303: 1, 3304: 1, 3800: 1, 3801: 1, 3802: 7, 3940: 1, 3980: 1}
+EXPECTED_COUNTS = {3303: 1, 3304: 1, 3800: 1, 3801: 1, 3802: 7, 3899: 1, 3940: 1, 3980: 1}
 SELECTED = {f"Storage.Quest.Key.ID{number}" for number in EXPECTED_COUNTS}
 TABLE = "data-global/startup/tables/door_key.lua"
 STORAGES = "data-global/lib/core/storages.lua"

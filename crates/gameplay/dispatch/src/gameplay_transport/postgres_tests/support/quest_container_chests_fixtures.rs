@@ -12,7 +12,7 @@ use crate::durability::reward_claim_mint::RewardClaimMintRequest;
 
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition};
 
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority, UseCommand};
 
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
 
@@ -794,6 +794,7 @@ fn scenario_case(
             phase("cleanup");
             return cleaned;
         }
+        let paradox_reward = super::source_quest_rewards_fixtures::paradox_reward(claim);
         {
             let mut owner = deps.owner(&harness, &authority);
             if let Some(shard) = &authored_shard {
@@ -812,6 +813,24 @@ fn scenario_case(
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
+            if paradox_reward {
+                let outcome = owner.use_object(
+                    deps.actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 9_001,
+                        item_fence: admitted.item_fence,
+                    },
+                    target.clone(),
+                ).await;
+                assert_eq!(outcome.disposition, UseDisposition::Rejected);
+                let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts")
+                    .fetch_one(&harness.pool).await?;
+                assert_eq!(count, 0, "the unlearned character cannot claim a cache");
+                super::source_quest_rewards_fixtures::seed_paradox_riddle(
+                    &owner, &admitted, &harness, &authority,
+                ).await?;
+            }
             let mut stale = admitted;
             let mut stale_fence = fence;
             stale_fence.character_lease_generation += 1;
@@ -828,6 +847,7 @@ fn scenario_case(
                 count, 0,
                 "stale authority cannot reserve any part of the reward"
             );
+
         }
         if matches!(case, Case::Full | Case::Weight) {
             // Establish real durable before-state through the existing leaf
@@ -1114,6 +1134,12 @@ fn scenario_case(
                     (SELECT count(DISTINCT created_xact_id::text) FROM game_item_audit_outbox WHERE item_instance_id=encode($2,'hex')::uuid OR item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($2,'hex')::uuid))")
                     .bind(claim).bind(root.item_instance_id.as_slice()).fetch_one(&harness.pool).await?;
                 assert_eq!(counts, (1, 1, 1 + expected.len() as i64, 1));
+                if paradox_reward {
+                    let completed: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_paradox_tower_quest'")
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .fetch_one(&harness.pool).await?;
+                    assert!(completed);
+                }
                 if let Some(chest) = catalogue {
                     let texts: Vec<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,t.text \
                         FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id) \

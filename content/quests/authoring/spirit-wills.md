@@ -6,10 +6,10 @@ historical source closure. Classification: `CHOSEN_OTERYN_RECIPE_ONLY` /
 `OTERYN_AUTHORED_APPROXIMATION`.
 
 A premium character accepts the Crone's request, discovers three separate faded
-wills, and returns while retaining all three. The confession completes this
-selected story and opens its conversation. It does not grant a Wayfarer outfit
-or modify the independent Wayfarer addon service. An absent will refuses the
-confession without consuming any other will or advancing progress.
+wills, and returns while retaining all three. The confession completes the quest
+and opens both Wayfarer addon hand-ins. The cape and hat each require their own
+items, and Wrath of the Emperor awards the base outfit. An absent will prevents
+confession and leaves custody and progress unchanged.
 
 The admitted Crone placement is `(33192,31044,6)` in the native NPC placement
 shard. Pinned Crystal source:
@@ -27,25 +27,20 @@ SHA256 is `1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2`.
 The paper weighs200 native units; its description says the writing has vanished.
 No readable text, charges, timer, subtype or binding is inferred.
 
-Conservative placement assumption: the available source has no11544 map entry or
-Spirit chest registration. The historical public walkthrough URLs returned
-HTTP403/402. This selected recipe assigns one will to each of two existing box
-piles and an adjacent chest in the same native world region as the Crone. The choice is an
-Oteryn rule, not evidence that those objects historically held wills:
+TibiaWiki's Spirit spoiler (2022-10-19) gives three mapper coordinates in
+the Souleater Mountains. The B3 surfaces at those coordinates retain the
+Crystal scenery. The World overlay restores only the quest furniture.
 
-| Position (legacy floor) | Appearance | Native source stack |
+| Position (legacy floor) | Source object | Appearance |
 | --- | --- | --- |
-|33079,31158,8|2473 box|11002,2473,2473,2473|
-|33083,31158,8|2469 box|11000,2469,2469|
-|33083,31159,8|2472 chest|10999,2472|
+|33177,31021,5|Brown quest box|2473|
+|33161,31056,4|Quest box|2469|
+|33166,31056,6|Quest chest|2472|
 
-All have house0, depth0, no UID/action/child attributes. Source:
-`content/world/placements/region-z08-x129-y121.b3`, SHA256
-`824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4`.
-No map bytes are changed. Any matching box in one pile shares its personal once
-flag; another box in the same pile cannot mint another will. Each successful
-source USE atomically commits its leaf MINT and discovery flag. A full inventory,
-stale authority, or repeated source cannot advance that discovery.
+Each successful source USE atomically commits its leaf MINT and discovery flag.
+A full inventory, stale authority or repeated source leaves discovery unchanged.
+The approach scenery at the second and third pickups uses Crystal's fixed,
+walkable placement traits for Items 8703 and 10538.
 
 NPC callbacks and world callbacks share the same owning quest tracks. The final
 confession requires all three discovery flags and retained custody of at least
@@ -54,10 +49,9 @@ the collection route. Premium is checked again for each fresh grant and final
 conversation. Historical replay returns its stored outcome without minting or
 refilling anything.
 
-After completion, the `confession` conversation remains available from the
-Crone through a read-only stage2 offer. It does not repeat the completion or
-create a new source, item, outfit or Quest receipt. The bounded PG fixture
-mounts the source NPC identity beside the native collection-room crop; the
-production placement remains the separately pinned Crone placement above.
-This qualifies quest bindings and custody, not a traversal of every intervening
-world tile.
+After completion, the Crone offers a read-only stage 2 `confession` conversation.
+The PostgreSQL fixture exercises the three pickup locations and both Crone offers
+as separate bounded map crops.
+
+TibiaWiki lists 50 experience per character level. The fixed-amount NPC reward
+field cannot represent that formula.

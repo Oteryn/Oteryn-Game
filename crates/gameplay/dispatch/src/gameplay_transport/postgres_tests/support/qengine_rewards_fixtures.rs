@@ -668,7 +668,7 @@ pub(super) async fn seed(
     ordinal: u64,
 ) -> TestResult {
     let canonical = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
-    let tracks = callback
+    let mut tracks = callback
         .storage
         .iter()
         .map(|s| canonical.track(&s.track).cloned().ok_or("track"))
@@ -696,6 +696,27 @@ pub(super) async fn seed(
             .cloned()
             .ok_or("reward transition")?,
     );
+    let spirit = "oteryn:quest.the_spirit_will_get_you_quest";
+    let spirit_completion = "oteryn:quest-transition/qengine-rewards-fixture-spirit";
+    let mut setup_steps = vec![setup];
+    if callback.requires_completed_quests.iter().any(|quest| quest == spirit) {
+        // The hand-in cases start after the separately qualified Crone quest.
+        let stage = "oteryn:quest-progress/l6/spirit/stage";
+        tracks.push(canonical.track(stage).cloned().ok_or("Spirit stage")?);
+        transitions.push(QuestTransition {
+            world_change: None,
+            key: spirit_completion.into(),
+            quest: spirit.into(),
+            effects: vec![QuestEffect {
+                track: stage.into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Set(2),
+            }],
+            completes: true,
+            experience: None,
+        });
+        setup_steps.push(spirit_completion);
+    }
     let catalogue = Arc::new(
         QuestStateCatalogue::new(canonical.content_revision(), tracks, transitions)
             .map_err(debug)?,
@@ -707,24 +728,26 @@ pub(super) async fn seed(
         .map_err(|_| "fence")?
         .ok_or("fence")?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-    let outcome = slot
-        .commit_quest_transition(
-            owner.root,
-            owner.character,
-            owner.holder,
-            fence,
-            QuestTransitionRequest {
-                transition_key: setup.into(),
-                cause: QuestCause::Command(CommandRef::new(
-                    admitted.game_session_id,
-                    CommandId::new(ordinal).map_err(debug)?,
-                )),
-            },
-            catalogue,
-        )
-        .await
-        .map_err(|e| format!("reward fixture seed: {e:?}"))?;
-    assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+    for (step, ordinal) in setup_steps.into_iter().zip(ordinal..) {
+        let outcome = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: step.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(ordinal).map_err(debug)?,
+                    )),
+                },
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(|e| format!("reward fixture seed: {e:?}"))?;
+        assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+    }
     drop(slot);
     owner
         .refresh_quest_session(admitted.game_session_id, false)
