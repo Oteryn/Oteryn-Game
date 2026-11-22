@@ -20,7 +20,10 @@ impl Outbox {
         mailbox.mount_pending = None;
     }
 
-    pub(in crate::play) fn mount_sent(&self) {
+    pub(in crate::play) fn feature_sent(&self, capability: u32) {
+        if capability != 502 {
+            return;
+        }
         if let Some(pending) = &mut lock(&self.0).mount_pending {
             pending.sent = true;
         }

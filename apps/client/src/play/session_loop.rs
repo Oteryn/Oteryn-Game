@@ -224,9 +224,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             Ok(PlayCommand::Feature(command)) => {
                 let item_scope = outbox.bar_action_scope();
                 let started = std::time::Instant::now();
-                if command.capability == 502 {
-                    outbox.mount_sent();
-                }
+                outbox.feature_sent(command.capability);
                 match session.feature(&command).await {
                 Ok(result) => {
                     outbox.performance_command_result(started.elapsed());
