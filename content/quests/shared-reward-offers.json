@@ -5656,6 +5656,11 @@
           "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
           "minimum": 0,
           "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1",
+          "minimum": 0,
+          "maximum": 0
         }
       ]
     },
@@ -5690,6 +5695,11 @@
           "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
           "minimum": 0,
           "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1",
+          "minimum": 0,
+          "maximum": 0
         }
       ]
     },
@@ -5722,6 +5732,11 @@
           "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
           "minimum": 0,
           "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1",
+          "minimum": 0,
+          "maximum": 0
         }
       ]
     },
@@ -5752,6 +5767,11 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1",
           "minimum": 0,
           "maximum": 0
         }
@@ -5788,6 +5808,11 @@
           "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
           "minimum": 0,
           "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1",
+          "minimum": 0,
+          "maximum": 0
         }
       ]
     },
@@ -5822,7 +5847,42 @@
           "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
           "minimum": 0,
           "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1",
+          "minimum": 0,
+          "maximum": 0
         }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "advancement",
+        "demonic essence"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s6",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s7",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "reply": [
+        "Did you bring 100 demonic essences for your Document of the Follower?"
       ]
     },
     {
@@ -5852,6 +5912,11 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1",
           "minimum": 0,
           "maximum": 0
         }
@@ -5884,6 +5949,11 @@
         },
         {
           "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s1",
           "minimum": 0,
           "maximum": 0
         }

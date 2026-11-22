@@ -47,6 +47,12 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual(source['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
         self.assertEqual(source['source_row'], 'data-global/world/world-npc.xml')
 
+    def test_noble_armor_places_skjaar_at_the_agreeing_donor_cell(self):
+        rows = [r['declaration'] for r in self.records
+                if r['declaration']['npc'] == 'oteryn:npc.skjaar']
+        self.assertEqual([r['cell'] for r in rows], [{'x': 32450, 'y': 32039, 'floor': 8}])
+        self.assertEqual({p['origin'] for p in rows[0]['provenance']}, {'canary', 'crystal'})
+
     def test_m38_swan_keeps_the_exact_stationary_source_anchor(self):
         actual = [r['declaration'] for r in self.records
                   if r['declaration']['npc'] == 'oteryn:npc.a_swan']

@@ -12,6 +12,25 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class QuestAccessBindings(unittest.TestCase):
+    def test_dreamer_startup_capture_covers_each_puzzle_selector(self):
+        capture = json.loads((ROOT / access.CAPTURE).read_bytes())
+        rows = {(row["attribute"], row["value"], tuple(row["position"]))
+                for row in capture["bindings"]}
+        expected = {
+            ("unique", 2244, (32857, 32225, 11)),
+            ("unique", 9234, (32857, 32230, 11)),
+            ("unique", 50147, (32826, 32347, 9)),
+            ("unique", 9030, (32762, 32290, 14)),
+            ("unique", 2272, (32838, 32263, 14)),
+            ("action", 8033, (32836, 32278, 14)),
+            ("action", 8033, (32834, 32285, 14)),
+            *(("action", 2245, (32816, y, 9)) for y in range(32334, 32340)),
+            *(("action", 2246, (x, 32332, 9)) for x in range(32818, 32824)),
+        }
+        self.assertEqual(expected - rows, set())
+        observed = {value for attribute, value, _ in rows if attribute == "unique"}
+        self.assertEqual({2241, 2242, 2243, *range(2250, 2256)} - observed, set())
+
     def test_capture_bootstraps_without_generated_sample_and_rejects_changed_source(self):
         sources = {
             "lever.lua": b"LeverUnique = {}\nLeverAction = {}\n",

@@ -14,10 +14,9 @@ from build_spell_item_identities import BINDINGS, binding_index, bind_profiles
 
 PATH = 'tools/content-schema/native-gameplay/rust-lottery-profiles.json'
 # The shield and helmet results already have native profiles in the base provider.
-BASE_IDS = {3357, 3358, 3359, 3360, 3362, 3364, 3370, 3371, 3372, 3377,
+IDS = {3357, 3358, 3359, 3360, 3362, 3364, 3370, 3371, 3372, 3377,
        3381, 3382, 3557, 3558, 5957, 5958, 8063, 8894, 8895, 8896,
-       8897, 8898, 8899, 9016}
-IDS = BASE_IDS | {8902, 8907, 8908}
+       8897, 8898, 8899, 8902, 8907, 8908, 9016}
 
 
 def capture(canary, crystal):
@@ -49,12 +48,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     overlay = json.loads((root / PATH).read_bytes())
     records = overlay['records']
     keys = {r['production_definition']['production_key'] for r in records}
-    # The base provider can remain on its original complete capture until the
-    # three new inputs are generated from the pinned donors as one set.
-    allowed_sets = [{f'oteryn:item.tibia.i{i}' for i in ids} for ids in (BASE_IDS, IDS)]
     if (overlay['schema'] != 'OTERYN_NATIVE_RUST_LOTTERY_PROFILES/v1'
             or len(records) != len(keys)
-            or keys not in allowed_sets):
+            or keys != {f'oteryn:item.tibia.i{i}' for i in IDS}):
         raise ValueError('RUST_LOTTERY_PROFILE_SET')
     document = json.loads(generated[profile_path])
     existing = {r['production_definition']['production_key']: r for r in document['records']}
