@@ -865,6 +865,9 @@
       "path": "tools/content-schema/native-gameplay/engnpc2-slug-corpse-profiles.json"
     },
     {
+      "path": "tools/content-schema/native-gameplay/item-detail-weight-facts.json"
+    },
+    {
       "path": "tools/content-schema/native-gameplay/loot-tables.json"
     },
     {
@@ -1060,7 +1063,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "f558fe0c2247516cf58bd7dedd39b40ac12eeaba2021e01803ff389891fdab3b"
+          "sha256": "c7899eabd2b334b41f02d7a93272f07d0f4e14e333af1c27701e94cea3cb454a"
         },
         {
           "creates_canonical_identities": false,
