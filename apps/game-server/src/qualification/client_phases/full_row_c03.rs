@@ -3,6 +3,7 @@
 //! projection alone: a projection only says an effect may occur, so a zero projection means the
 //! player holds no source and the step FAILs naming what is needed.
 //!
+//! Confirm fresh admission, then observe the following steps.
 //! 1. `tabs`: request the native Offence and Defence tabs; require revisioned projections.
 //! 2. `baseline`: attack a live compiled-world monster; require attributed player hits, monster
 //!    hits on the player, and an idle vitals regeneration rate to compare against.
@@ -27,8 +28,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use combat::CombatStat as Stat;
 
-const STEPS: [&str; 9] = [
-    "tabs", "baseline", "critical", "leech", "reflect", "cleave", "perfect-shot", "fatal", "refusal-relog",
+const STEPS: [&str; 10] = [
+    "admission", "tabs", "baseline", "critical", "leech", "reflect", "cleave", "perfect-shot", "fatal", "refusal-relog",
 ];
 const FIGHT_SECONDS: u64 = 25;
 /// The attributed damage frames carry no critical, fatal or perfect-shot mark, so the client
@@ -124,15 +125,41 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn tab(client: &mut DevClientSession, tab: CharacterTab) -> TestResult<combat::CombatStats> {
-    use oteryn_protocol_oteryn::cyclopedia_character as wire;
-    let response = client
-        .session_mut()
-        .gated_command(wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[tab as u8, 0, 0, 50])
-        .await?;
-    if response.status != CommandStatus::Accepted {
-        return Err(format!("character-tab-{tab:?}-status:{:?}", response.status).into());
+    use oteryn_dev_client::client_ui::cyclopedia_character::{
+        CyclopediaCharacterPanel, Intent, request,
+    };
+    let mut panel = CyclopediaCharacterPanel {
+        selected: true,
+        tab,
+        ..Default::default()
+    };
+    let command = request(&mut panel, Intent::Tab).ok_or("C03 combat page request unavailable")?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let response = client
+            .session_mut()
+            .gated_command(command.capability, command.kind, &command.payload)
+            .await?;
+        if response.status == CommandStatus::Accepted {
+            let stats = combat::CombatStats::decode(&response.payload)
+                .map_err(|error| format!("tab-{tab:?}-decode:{error:?}"))?;
+            if stats.tab() != tab {
+                return Err(format!("C03 expected {tab:?} but received {:?}", stats.tab()).into());
+            }
+            return Ok(stats);
+        }
+        if !retry_combat_page(response.status, tokio::time::Instant::now() >= deadline) {
+            return Err(format!("character-tab-{tab:?}-status:{:?}; combat snapshot unavailable (attack/cyclopedia.rs:113)", response.status).into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
     }
-    combat::CombatStats::decode(&response.payload).map_err(|error| format!("tab-{tab:?}-decode:{error:?}").into())
+}
+
+fn retry_combat_page(status: CommandStatus, expired: bool) -> bool {
+    // The snapshot owner can reject a read while an equipment refresh or
+    // combat lock is in flight. A closed transport still returns immediately.
+    status == CommandStatus::Rejected && !expired
 }
 
 struct Stats {
@@ -537,6 +564,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_world(clients, 0xc3).await?;
     let first_session = client.join_snapshot().game_session_id;
+    row.pass("admission", first_session);
     let me = own(&client)?;
 
     let with = Stats::read(&mut client).await?;
@@ -802,6 +830,26 @@ mod tests {
         }
         assert_ne!(at, TOWN);
         Ok(())
+    }
+
+    #[test]
+    fn failed_admission_remains_separate_from_unexecuted_tabs() {
+        let mut row = Row::new();
+        assert_eq!(STEPS.first(), Some(&"admission"));
+        row.fail("admission", "fixture-release closed the connection");
+        assert!(!row.complete());
+        assert_eq!(
+            row.failures,
+            [("admission", "fixture-release closed the connection".to_owned())]
+        );
+        assert!(!row.passed.contains(&"tabs"));
+    }
+
+    #[test]
+    fn combat_page_retries_rejection_only_before_deadline() {
+        assert!(retry_combat_page(CommandStatus::Rejected, false));
+        assert!(!retry_combat_page(CommandStatus::Rejected, true));
+        assert!(!retry_combat_page(CommandStatus::Accepted, false));
     }
 
     #[test]
