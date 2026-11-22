@@ -3,7 +3,7 @@ use super::character_authority::ReconciledCharacterAuthority;
 use super::character_equipment::assert_current_equipment_in_transaction;
 use super::db::begin_type2_transaction;
 use super::item_loop_move::{ItemLoopContent, carried_weight};
-use super::item_mint::TypedDefinitionRef;
+use super::item_mint::{GroundPlacement, TypedDefinitionRef};
 use super::item_transfer::{
     CurrentCharacterItemFence, read_derived_transfer_capacity_centi_oz, scope_of, stack_maximum,
 };
@@ -25,7 +25,7 @@ mod dispenser;
 mod ground;
 #[path = "consume_transform_planting.rs"]
 mod planting;
-pub use ground::{GroundActionContext, GroundActionSource};
+pub use ground::{DispenserActionContext, GroundActionContext, GroundActionSource};
 #[path = "consume_transform_house.rs"]
 mod house;
 pub use house::{HouseActionContext, HouseDecorationBaseItem};
@@ -87,7 +87,7 @@ enum ActionContext<'a> {
     Carried,
     CakeBaker(&'a CakeBakerContext),
     Ground(&'a GroundActionContext),
-    DispenserTarget(&'a GroundActionContext),
+    Dispenser(&'a DispenserActionContext),
     DispenserHouseTarget(&'a HouseActionContext),
 }
 
@@ -328,7 +328,7 @@ async fn write<C: ItemLoopContent>(
             Some(plan) => Some(plan),
             None if matches!(
                 ground,
-                ActionContext::DispenserTarget(_) | ActionContext::DispenserHouseTarget(_)
+                ActionContext::Dispenser(_) | ActionContext::DispenserHouseTarget(_)
             ) =>
             {
                 return Ok(ConsumeTransformResult::refused(
@@ -573,15 +573,10 @@ async fn write<C: ItemLoopContent>(
             .bind(fence.character_id.as_bytes().as_slice())
             .fetch_one(&mut ***tx)
             .await?;
-    if tree_count
-        + i64::try_from(conversion.outputs.len())
-            .map_err(|_| DurabilityError::InvalidStoredState)?
+    let slots_needed = i64::try_from(conversion.outputs.len())
+        .map_err(|_| DurabilityError::InvalidStoredState)?
         - i64::from(quantity == i64::from(conversion.source_count))
-        - additional_freed
-        > 500
-    {
-        return Ok(ConsumeTransformResult::refused(UseDisposition::NoRoom));
-    }
+        - additional_freed;
     let bag = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
         .bind(&parent).fetch_one(&mut ***tx).await?;
     let bag_definition = TypedDefinitionRef {
@@ -594,6 +589,7 @@ async fn write<C: ItemLoopContent>(
         .and_then(|f| f.container_capacity)
         .unwrap_or(0);
     let capacity = if event_reward
+        || conversion.recipe == "oteryn:dispenser.fill"
         || conversion.recipe == cake::RECIPE
         || conversion.recipe.starts_with("oteryn:novelty-item.")
         || conversion.recipe.starts_with("oteryn:item-cosmetic.")
@@ -602,102 +598,120 @@ async fn write<C: ItemLoopContent>(
     } else {
         authored_capacity.min(20)
     };
-    if occupied
-        + i64::try_from(conversion.outputs.len())
-            .map_err(|_| DurabilityError::InvalidStoredState)?
-        - i64::from(quantity == i64::from(conversion.source_count))
-        - additional_freed
-        > i64::from(capacity)
-    {
-        return Ok(ConsumeTransformResult::refused(UseDisposition::NoRoom));
-    }
-    // Whole carried weight and capacity use the same locked projection as the item loop.
-    let carried = match carried_weight(tx, fence.character_id, *world.as_bytes(), content).await {
-        Ok(w) => w,
-        Err(_) => return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible)),
-    };
-    let Some(used_weight) = content.loop_facts(&definition).and_then(|f| f.weight) else {
-        return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
-    };
-    let mut output_weight = 0_u64;
-    for (definition, count) in &conversion.outputs {
-        let Some(facts) = content.loop_facts(definition) else {
-            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
-        };
-        let Some(weight) = facts.weight else {
-            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
-        };
-        if (facts.container_capacity.is_some() && !(event_reward && *count == 1))
-            || *count
-                > stack_maximum(facts.stack)
-                    .map(|(maximum, _)| maximum)
-                    .unwrap_or(0)
-        {
-            return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+    let parent_capacity = capacity;
+    let refusal = 'carried: {
+        if tree_count + slots_needed > 500 || occupied + slots_needed > i64::from(parent_capacity) {
+            break 'carried Some(UseDisposition::NoRoom);
         }
-        output_weight += u64::from(weight) * u64::from(*count);
-    }
-    let secondary_weight = if let Some(tool) = &secondary {
-        let tool_definition = TypedDefinitionRef {
-            family: tool.try_get("definition_family")?,
-            production_key: tool.try_get("definition_production_key")?,
-            revision_ref: tool.try_get("definition_revision_ref")?,
+        // Whole carried weight and capacity use the same locked projection as the item loop.
+        let carried = match carried_weight(tx, fence.character_id, *world.as_bytes(), content).await {
+            Ok(w) => w,
+            Err(_) => return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible)),
         };
-        let Some(weight) = content.loop_facts(&tool_definition).and_then(|f| f.weight) else {
+        let Some(used_weight) = content.loop_facts(&definition).and_then(|f| f.weight) else {
             return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
         };
-        u64::from(weight)
-    } else {
-        0
-    };
-    let mut extra_weight = 0_u64;
-    // A depleted placed dispenser is retired atomically, but its Ground weight
-    // was never part of the carried projection and cannot free carrying capacity.
-    for input in conversion
-        .extra_inputs
-        .iter()
-        .filter(|input| matches!(input.source_kind, 1 | 4))
-    {
-        let definition = TypedDefinitionRef {
-            family: input
-                .before
-                .get("definition_family")
-                .and_then(Value::as_str)
-                .ok_or(DurabilityError::InvalidStoredState)?
-                .to_owned(),
-            production_key: input
-                .before
-                .get("definition_production_key")
-                .and_then(Value::as_str)
-                .ok_or(DurabilityError::InvalidStoredState)?
-                .to_owned(),
-            revision_ref: input
-                .before
-                .get("definition_revision_ref")
-                .and_then(Value::as_str)
-                .ok_or(DurabilityError::InvalidStoredState)?
-                .to_owned(),
+        let mut output_weight = 0_u64;
+        for (definition, count) in &conversion.outputs {
+            let Some(facts) = content.loop_facts(definition) else {
+                return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+            };
+            let Some(weight) = facts.weight else {
+                return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+            };
+            if (facts.container_capacity.is_some() && !(event_reward && *count == 1))
+                || *count
+                    > stack_maximum(facts.stack)
+                        .map(|(maximum, _)| maximum)
+                        .unwrap_or(0)
+            {
+                return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+            }
+            output_weight += u64::from(weight) * u64::from(*count);
+        }
+        let secondary_weight = if let Some(tool) = &secondary {
+            let tool_definition = TypedDefinitionRef {
+                family: tool.try_get("definition_family")?,
+                production_key: tool.try_get("definition_production_key")?,
+                revision_ref: tool.try_get("definition_revision_ref")?,
+            };
+            let Some(weight) = content.loop_facts(&tool_definition).and_then(|f| f.weight) else {
+                return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+            };
+            u64::from(weight)
+        } else {
+            0
         };
-        let Some(weight) = content
-            .loop_facts(&definition)
-            .and_then(|facts| facts.weight)
+        let mut extra_weight = 0_u64;
+        // A depleted placed dispenser is retired atomically, but its Ground weight
+        // was never part of the carried projection and cannot free carrying capacity.
+        for input in conversion
+            .extra_inputs
+            .iter()
+            .filter(|input| matches!(input.source_kind, 1 | 4))
+        {
+            let definition = TypedDefinitionRef {
+                family: input
+                    .before
+                    .get("definition_family")
+                    .and_then(Value::as_str)
+                    .ok_or(DurabilityError::InvalidStoredState)?
+                    .to_owned(),
+                production_key: input
+                    .before
+                    .get("definition_production_key")
+                    .and_then(Value::as_str)
+                    .ok_or(DurabilityError::InvalidStoredState)?
+                    .to_owned(),
+                revision_ref: input
+                    .before
+                    .get("definition_revision_ref")
+                    .and_then(Value::as_str)
+                    .ok_or(DurabilityError::InvalidStoredState)?
+                    .to_owned(),
+            };
+            let Some(weight) = content
+                .loop_facts(&definition)
+                .and_then(|facts| facts.weight)
+            else {
+                return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+            };
+            extra_weight = extra_weight
+                .checked_add(u64::from(weight) * u64::from(input.count))
+                .ok_or(DurabilityError::InvalidStoredState)?;
+        }
+        let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
+        let Some(after_weight) = carried
+            .checked_sub(u64::from(used_weight) * u64::from(conversion.source_count))
+            .and_then(|w| w.checked_sub(secondary_weight))
+            .and_then(|w| w.checked_sub(extra_weight))
+            .and_then(|w| w.checked_add(output_weight))
         else {
             return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
         };
-        extra_weight = extra_weight
-            .checked_add(u64::from(weight) * u64::from(input.count))
-            .ok_or(DurabilityError::InvalidStoredState)?;
-    }
-    let parent_capacity = capacity;
-    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
-    if carried
-        .checked_sub(u64::from(used_weight) * u64::from(conversion.source_count))
-        .and_then(|w| w.checked_sub(secondary_weight))
-        .and_then(|w| w.checked_sub(extra_weight))
-        .and_then(|w| w.checked_add(output_weight))
-        .is_none_or(|w| w > capacity)
-    {
-        return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+        if after_weight > capacity {
+            break 'carried Some(UseDisposition::NotPossible);
+        }
+        None
+    };
+    let mut overflow = None;
+    let mut house_ordinal = None;
+    if let Some(disposition) = refusal {
+        match ground {
+            ActionContext::Dispenser(context) if let Some(destination) = &context.overflow => {
+                overflow = dispenser::ground_overflow(fence, native, &mut conversion, destination)?;
+                if overflow.is_none() {
+                    return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
+                }
+            }
+            ActionContext::DispenserHouseTarget(_) if dispenser::portable_output(native, &conversion)? => {
+                house_ordinal = dispenser::house_overflow_ordinal(tx, fence, &mut conversion).await?;
+                if house_ordinal.is_none() {
+                    return Ok(ConsumeTransformResult::refused(UseDisposition::NoRoom));
+                }
+            }
+            _ => return Ok(ConsumeTransformResult::refused(disposition)),
+        }
     }
     let highest: String = sqlx::query_scalar("SELECT coalesce(max(placement_ordinal),0)::text FROM (SELECT placement_ordinal FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid UNION ALL SELECT placement_ordinal FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) entries").bind(&parent).fetch_one(&mut ***tx).await?;
     let mut ordinal: u64 = highest
@@ -705,7 +719,14 @@ async fn write<C: ItemLoopContent>(
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let mut outputs = Vec::new();
     for (position, (definition, count)) in conversion.outputs.iter().enumerate() {
-        let output_ordinal = if quantity == i64::from(conversion.source_count) && position == 0 {
+        let output_ordinal = if let Some(ordinal) = &house_ordinal {
+            ordinal.clone()
+        } else if overflow.is_some() {
+            sqlx::query_scalar::<_, i64>("SELECT nextval('game_item_ground_stack_ordinal_seq')")
+                .fetch_one(&mut ***tx)
+                .await?
+                .to_string()
+        } else if quantity == i64::from(conversion.source_count) && position == 0 {
             source.try_get::<String, _>("ordinal")?
         } else {
             ordinal = ordinal
@@ -775,7 +796,7 @@ async fn write<C: ItemLoopContent>(
         parent_capacity,
         &outputs,
         &source_location,
-        None,
+        overflow.as_ref().map(|placement| (ground_fences, placement)),
     )
     .await
 }
@@ -796,7 +817,7 @@ async fn persist_action(
     parent_capacity: u32,
     outputs: &[Value],
     source_location: &Value,
-    ground_admission: Option<(&ActionGroundFences<'_>, &GroundActionContext)>,
+    ground_admission: Option<(&ActionGroundFences<'_>, &GroundPlacement)>,
 ) -> Result<ConsumeTransformResult, DurabilityError> {
     // Named-House transforms do not touch key-33 tables; every Ground path must
     // retain and validate its caller's lane proof before writing the receipt or items.
@@ -809,7 +830,10 @@ async fn persist_action(
     let ground_reward = source_kind == 3
         && parent.is_none()
         && plan.effects.get("kind").and_then(Value::as_str) == Some("reward");
-    if ground_admission.is_some() != ground_reward {
+    let overflow = plan.effects.get("dispenser_ground");
+    let house_overflow = plan.effects["dispenser_house_overflow"].as_bool() == Some(true);
+    let has_overflow = overflow.is_some() || house_overflow;
+    if ground_admission.is_some() != (ground_reward || overflow.is_some()) {
         return Err(DurabilityError::InvalidStoredState);
     }
     if if plan.recipe == cake::RECIPE {
@@ -953,7 +977,8 @@ async fn persist_action(
     // Afflicted Ground USE leaves the clicked trigger intact and spends all six
     // carried pieces. SQL admits this exact exception with the same owner proofs.
     let dispenser = plan.recipe == "oteryn:dispenser.fill";
-    if !dispenser {
+    // An exhausted placed dispenser frees its floor slot before overflow admission.
+    if !dispenser || has_overflow {
         for input in &plan.extra_inputs {
             consume_count(
                 permit,
@@ -973,21 +998,29 @@ async fn persist_action(
             // Actual source consumption above determines whether its root remains.
             // A refusal drops this entire transaction, including source and receipt.
             if let Some(disposition) =
-                ground::admit_reward_output(tx, fence, fences, context, output).await?
+                ground::admit_output(tx, fence, fences, context, output).await?
             {
                 return Ok(ConsumeTransformResult::refused(disposition));
             }
         }
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
             .bind(output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
-        match if source_kind == 3 && parent.is_some() {
+        match if house_overflow {
+            5
+        } else if overflow.is_some() {
+            3
+        } else if source_kind == 3 && parent.is_some() {
             1
         } else {
             source_kind
         } {
+            5 => {
+                sqlx::query("SELECT game_item_dispenser_place_house_overflow($1::uuid)")
+                    .bind(&transaction).execute(&mut ***tx).await?;
+            }
             3 => {
                 sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) SELECT ($1->>'item')::uuid,g.world_id,g.channel_id,g.runtime_scope_ownership_generation,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,($1->>'ordinal')::bigint FROM jsonb_populate_record(NULL::game_item_ground_locations,$2) g")
-                    .bind(output).bind(source_location).execute(&mut ***tx).await?;
+                    .bind(output).bind(overflow.unwrap_or(source_location)).execute(&mut ***tx).await?;
             }
             4 => {
                 sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,($1->>'ordinal')::numeric,$4::uuid)")
@@ -1021,7 +1054,7 @@ async fn persist_action(
     // debit above leaves every unfilled flask untouched before potion creation.
     if dispenser {
         dispenser::apply(tx, fence, plan, &transaction).await?;
-        for input in &plan.extra_inputs {
+        for input in plan.extra_inputs.iter().filter(|_| !has_overflow) {
             consume_count(
                 permit,
                 tx,

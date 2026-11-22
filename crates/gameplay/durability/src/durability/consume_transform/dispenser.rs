@@ -4,6 +4,8 @@ use super::super::item_timed_state::{
 };
 use super::*;
 use crate::domain::timed_item::TimedValues;
+use crate::durability::item_loop_move::LoopGround;
+use oteryn_gameplay_items::item_ref_admission::generation_ground_item_facts;
 use oteryn_gameplay_content::content::ReferenceItemField;
 use oteryn_gameplay_items::remaining_consumables::keg_fill;
 
@@ -32,12 +34,18 @@ pub(super) async fn prepare(
     {
         return Ok(None);
     }
-    let placed = match context {
-        ActionContext::DispenserTarget(ground) => ground.dispenser_row(tx, fence, target).await?,
-        ActionContext::DispenserHouseTarget(house) => house.dispenser_row(tx, node, target).await?,
+    let ground = match context {
+        ActionContext::Dispenser(context) => context.target.as_ref(),
         _ => None,
     };
-    let row = if placed.is_some() || matches!(context, ActionContext::DispenserTarget(_)) {
+    let placed = if let Some(ground) = ground {
+        ground.dispenser_row(tx, fence, target).await?
+    } else if let ActionContext::DispenserHouseTarget(house) = context {
+        house.dispenser_row(tx, node, target).await?
+    } else {
+        None
+    };
+    let row = if placed.is_some() || ground.is_some() {
         placed
     } else {
         sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,uuid_send(coalesce(e.parent_item_instance_id,n.parent_item_instance_id)) AS parent,coalesce(e.placement_ordinal,n.placement_ordinal)::text AS ordinal,CASE WHEN n.item_instance_id IS NULL THEN 1 ELSE 4 END AS source_kind FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid LEFT JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id LEFT JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) owner ON n.item_instance_id IS NOT NULL WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 AND ((e.world_id=i.world_id AND b.world_id=i.world_id) OR (n.world_id=i.world_id AND owner.owner_character=encode($2,'hex')::uuid AND owner.depth BETWEEN 0 AND 7)) FOR UPDATE OF i")
@@ -135,6 +143,72 @@ pub(super) async fn prepare(
             "house_context":match context { ActionContext::DispenserHouseTarget(house)=>house.dispenser_proof(node), _=>Value::Null },
         }}),
     }))
+}
+
+pub(super) fn ground_overflow(
+    fence: CurrentCharacterItemFence,
+    native: &NativeGameplayState,
+    plan: &mut ActionPlan,
+    destination: &LoopGround,
+) -> Result<Option<GroundPlacement>, DurabilityError> {
+    if !portable_output(native, plan)? {
+        return Ok(None);
+    }
+    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let placement = GroundPlacement {
+        spatial_position: destination.spatial_position.clone(),
+        corpse_ref: b"oteryn:dispenser.overflow".to_vec(),
+        map_revision: destination.map_revision.clone(),
+        content_revision: destination.content_revision.clone(),
+        native_room_placement_context: destination.placement_context.clone(),
+    };
+    plan.effects["dispenser_ground"] = json!({
+        "world_id": uuid_text(*world.as_bytes()),
+        "channel_id": uuid_text(*channel.as_bytes()),
+        "runtime_scope_ownership_generation": fence.scope_ownership_generation.get(),
+        "spatial_position": bytea_text(&placement.spatial_position),
+        "corpse_ref": bytea_text(&placement.corpse_ref),
+        "map_revision": placement.map_revision,
+        "content_revision": placement.content_revision,
+        "native_room_placement_context": bytea_text(&placement.native_room_placement_context),
+        "scope_kind": 1,
+        "instance_id": null,
+    });
+    Ok(Some(placement))
+}
+
+pub(super) fn portable_output(
+    native: &NativeGameplayState,
+    plan: &ActionPlan,
+) -> Result<bool, DurabilityError> {
+    let [(definition, count)] = plan.outputs.as_slice() else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    let Ok(facts) = generation_ground_item_facts(native, definition) else {
+        return Ok(false);
+    };
+    Ok(facts.container_capacity.is_none()
+        && stack_maximum(facts.stack).is_ok_and(|(maximum, _)| *count <= maximum))
+}
+
+pub(super) async fn house_overflow_ordinal(
+    tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    plan: &mut ActionPlan,
+) -> Result<Option<String>, DurabilityError> {
+    plan.effects["dispenser_house_overflow"] = json!(true);
+    let draft = json!({
+        "recipe": plan.recipe,
+        "game_session_id": uuid_text(*fence.game_session_id.as_bytes()),
+        "character_id": uuid_text(*fence.character_id.as_bytes()),
+        "world_id": uuid_text(*fence.runtime_scope.world_id().as_bytes()),
+        "effects": plan.effects,
+        "audit_context": {"scope_generation": fence.scope_ownership_generation.get(),
+            "lease_generation": fence.character_lease_generation,
+            "connection_generation": fence.connection_generation.get()},
+    });
+    sqlx::query_scalar("SELECT game_item_dispenser_house_overflow_ordinal(jsonb_populate_record(NULL::game_item_consume_transform_records,$1))::text")
+        .bind(draft).fetch_one(&mut ***tx).await.map_err(Into::into)
 }
 
 pub(super) async fn apply(
