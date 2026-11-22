@@ -562,6 +562,13 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import elephant_corpse_profiles
     elephant_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    # Arbaziloth owns corpse 50029. The retained Item source closes its
+    # Ground-only decay chain (Canary items.xml:82814-82829).
+    arbaziloth_corpses = elephant_corpse_profiles.capture_chain(
+        root, {50029: (300, 50028, 15), 50028: (300, 50027, 15), 50027: (60, 0, None)})
+    qengine_reward_item_profiles.admit_records(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes, arbaziloth_corpses)
     import questpc7_hot_corpse_profiles
     questpc7_hot_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import questpc7_hot_fishburger_profile
@@ -690,6 +697,19 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import soul_war_appearance_profiles
     soul_war_appearance_profiles.admit(
         root, generated, spell_import.PROVIDER_DESTINATIONS["spell_appearances"], NATIVE_MANIFEST)
+    # The Sea Ear route lands on swimming ground. Retain its exact Crystal outfit.
+    appearance_path = spell_import.PROVIDER_DESTINATIONS["spell_appearances"]
+    appearances = json.loads(generated[appearance_path])
+    swimming = json.loads((root / 'tools/content-schema/native-gameplay/qc-swimming-appearance.json').read_bytes())['record']
+    existing = [row for row in appearances['records'] if row['outfit_key'] == swimming['outfit_key']]
+    if existing and existing != [swimming]:
+        raise ValueError('QC_SWIMMING_APPEARANCE_CONFLICT')
+    if not existing:
+        appearances['records'].append(swimming)
+        generated[appearance_path] = (json.dumps(appearances, ensure_ascii=False, indent=2) + '\n').encode()
+        manifest = json.loads(generated[NATIVE_MANIFEST])
+        manifest['spell_appearances']['sha256'] = hashlib.sha256(generated[appearance_path]).hexdigest()
+        generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
     # Owner-authored quest variants retain admitted attack closures, with no donor identity.
     import engenc_elemental_profiles
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]

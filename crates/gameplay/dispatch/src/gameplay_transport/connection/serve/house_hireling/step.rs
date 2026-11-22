@@ -7,6 +7,7 @@ pub(in crate::gameplay_transport::connection::serve) enum Event {
     Input(inbound::Input),
     Probe,
     Services,
+    PodiumWalk,
 }
 
 /// A completed service pass may have consumed its entire period while its
@@ -164,10 +165,18 @@ mod tests {
 pub(in crate::gameplay_transport::connection::serve) struct Queue {
     frames: FrameReader,
     buffered: Option<BufferedStep>,
+    podium_due: Option<tokio::time::Instant>,
     held: std::collections::VecDeque<(Vec<u8>, bool)>,
 }
 
 impl Queue {
+    pub(in crate::gameplay_transport::connection::serve) fn set_podium_due(
+        &mut self,
+        due: Option<tokio::time::Instant>,
+    ) {
+        self.podium_due = due;
+    }
+
     pub(in crate::gameplay_transport::connection::serve) fn buffer(
         &mut self,
         frame: Vec<u8>,
@@ -189,12 +198,16 @@ impl Queue {
             Held,
             Probe,
             Services,
+            PodiumWalk,
         }
         loop {
             let mut due = self
                 .buffered
                 .as_ref()
                 .map(|step| Box::pin(tokio::time::sleep_until(step.due)));
+            let mut podium = self
+                .podium_due
+                .map(|due| Box::pin(tokio::time::sleep_until(due)));
             let held_ready = self.buffered.is_none() && !self.held.is_empty();
             let reading = self.held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
             let ready = {
@@ -215,11 +228,16 @@ impl Queue {
                     if held_ready {
                         return std::task::Poll::Ready(Ready::Held);
                     }
-                    if reading {
-                        return read
-                            .as_mut()
-                            .poll(cx)
-                            .map(|frame| Ready::Frame(frame.map_err(|_| ServeEnd::Disconnected)));
+                    if reading && let std::task::Poll::Ready(frame) = read.as_mut().poll(cx) {
+                        return std::task::Poll::Ready(Ready::Frame(
+                            frame.map_err(|_| ServeEnd::Disconnected),
+                        ));
+                    }
+                    if podium
+                        .as_mut()
+                        .is_some_and(|due| due.as_mut().poll(cx).is_ready())
+                    {
+                        return std::task::Poll::Ready(Ready::PodiumWalk);
                     }
                     std::task::Poll::Pending
                 })
@@ -228,6 +246,10 @@ impl Queue {
             let (frame, arrived_while_buffered, buffered_original) = match ready {
                 Ready::Probe => return Ok(Event::Probe),
                 Ready::Services => return Ok(Event::Services),
+                Ready::PodiumWalk => {
+                    self.podium_due = None;
+                    return Ok(Event::PodiumWalk);
+                }
                 Ready::Due => {
                     let step = self.buffered.take().ok_or(ServeEnd::Disconnected)?;
                     (step.frame, false, true)
@@ -260,6 +282,13 @@ impl Queue {
 }
 
 impl State {
+    pub(in crate::gameplay_transport::connection::serve) fn step_due(
+        &self,
+    ) -> tokio::time::Instant {
+        let now = tokio::time::Instant::now();
+        self.pacer.wait_until(now).unwrap_or(now)
+    }
+
     pub(in crate::gameplay_transport::connection::serve) async fn step<
         A: FreshAdmissionAuthority,
     >(

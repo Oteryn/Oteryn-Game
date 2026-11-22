@@ -15,11 +15,12 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                 .item_on_target
                 .as_ref()
                 .is_some_and(|tool| tool.selected_instance)
-                && matches!(
-                    callback.key.as_str(),
-                    "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
-                        | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
-                ))
+                && (callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+                    || matches!(
+                        callback.key.as_str(),
+                        "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
+                            | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
+                    )))
             || matches!(
                 callback.native_rule,
                 Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })

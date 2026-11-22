@@ -18,7 +18,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         418,
-        "f342f3a4f2d4dd09e216f7e04232c48d974006e26eebeb4bbfb4da1fa61c220b",
+        "f531f82a5f7352a12ef6070c5e1c1c16acb0259d0d432e68864ce948ecbcd15b",
     ),
     (
         "definitions/declarations.json",
@@ -27,8 +27,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        27_393_337,
-        "1d1b38e4222dfeb2ed7d96693826163259563c1b3b73d34765f56195b994699a",
+        27_390_893,
+        "a375a7c94187351a674a9e5b6eeca22ffd2a40a420167f0757f8a92b8b7dd83a",
     ),
     (
         "editor/author.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1957,
-        "e5a9bd4afe4cdb7433c2dc4f85737d589ca4a9182becb6b6e0bad27426b5f2b4",
+        "13b5b70d473b1be794045234dabcf60cbf78974dd9f1c9527b69133621a654bc",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         408,
-        "a4bb257c0fc39144302fd835f90767457dbc68207dac86f3592797c2672b49a2",
+        "9025eb3943522af3380c32524eb19d76e8257527755304a3e101096d61fe99c4",
     ),
     (
         "provenance/imports.json",
         6_774_564,
-        "501a58bce8cf0913fa728e7dd1b33fa85ad6bfa94fbeaf8dbc5a78bd4f7377ae",
+        "96adebd34de3ccddc1563569c26528c9fe21c2c302774daeda5977feb4697c5c",
     ),
     (
         "provenance/sources.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "c829a6f1362515acdb594d64e509a308d3fbb0ad2202c6633510cd69683776f9";
+const TREE_SHA256: &str = "c9c082fe0655d425a53391448a11ac167e4d38997e7579550059825711af4ce6";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.

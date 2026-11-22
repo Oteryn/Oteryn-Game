@@ -20,7 +20,7 @@ impl PlayLink {
             .find(|row| row.channel == target)
             .cloned();
         Some(SwitchTarget {
-            character_id: mailbox.channel_switch_character.clone(),
+            character_id: mailbox.connection.channel_character.clone(),
             channel_id: uuid_text(&target),
             row,
         })

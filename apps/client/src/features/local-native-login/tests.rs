@@ -1,4 +1,5 @@
 use super::*;
+use std::path::Path;
 use std::time::Duration;
 
 #[test]
@@ -91,4 +92,42 @@ fn legacy_update_refusal_keeps_its_update_instruction() {
         "Install the current Oteryn client, then sign in again."
     );
     assert!(!form.can_submit());
+}
+
+#[test]
+fn simultaneous_login_saves_use_unique_staging_files() -> Result<(), Box<dyn std::error::Error>> {
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("login.json");
+    let occupied = path.with_extension("json.tmp");
+    std::fs::create_dir(&occupied)?;
+    let barrier = std::sync::Barrier::new(2);
+    let settings = |world: &str| {
+        LoginSettings::from_values([
+            "http://localhost:8080".into(),
+            "http://localhost:9000".into(),
+            "019a5f4a-1000-7000-8000-000000000001".into(),
+            world.into(),
+            String::new(),
+            String::new(),
+        ])
+    };
+    let results = std::thread::scope(|scope| {
+        let first = scope.spawn(|| {
+            barrier.wait();
+            settings("first").save(&path)
+        });
+        barrier.wait();
+        (settings("second").save(&path), first.join())
+    });
+    assert!(results.0.is_ok(), "{:?}", results.0);
+    assert!(results.1.map_err(|_| "first writer panicked")?.is_ok());
+    assert!(["first", "second"].contains(&LoginSettings::load(&path)?.world_ref.as_str()));
+    assert!(occupied.is_dir());
+    std::fs::remove_dir(occupied)?;
+    assert!(
+        std::fs::read_dir(fixture.path())?.all(|entry| entry.is_ok_and(|entry| {
+            entry.file_name() == "login.json" || entry.file_name() == "login.json.lock"
+        }))
+    );
+    Ok(())
 }

@@ -42,7 +42,11 @@ House session fence: `0` for an empty podium, or `1`, podium kind (`1` renown, `
 tenacity), display kind, direction, revision (`u64`, big endian), key length and key (at most
 174 bytes, within the 4096-byte bound).
 
-An unknown command payload ends the connection; a missing House session or an unavailable
+Command 174 approaches a distant podium at the actor's ordinary step cadence. It retries
+the read after arrival. A manual move cancels the pending query. A qualified target with no
+walkable approach receives a rejected result with an empty payload.
+
+An unknown command payload ends the connection. A missing House session or an unavailable
 store ends the command without a reply.
 
 ## Visibility flags (capability 489)

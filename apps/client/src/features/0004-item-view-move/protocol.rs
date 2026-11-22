@@ -18,17 +18,6 @@ impl Outbox {
             oteryn_client_ui::container_manual_sort::admitted(selected);
     }
 
-    pub(in crate::play) fn inventory_events(&self, events: &[SessionEvent]) {
-        let mut mailbox = lock(&self.0);
-        for event in events {
-            if let SessionEvent::Inventory(delta) = event {
-                mailbox.inventory.apply(Some(delta.value.clone()));
-            }
-            if let SessionEvent::InventoryCapacity(delta) = event {
-                oteryn_client_ui::inventory_capacity::apply(&mut mailbox.inventory, delta.value);
-            }
-        }
-    }
 
     pub(in crate::play) fn inventory_end(&self) {
         self.equipment_initialize(false);
@@ -120,5 +109,19 @@ impl Outbox {
         mailbox.item_movement.feedback = Some(oteryn_client_ui::localization::tr(
             oteryn_client_runtime::inventory::feedback(response),
         ));
+    }
+}
+
+
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn inventory_events(&mut self, events: &[SessionEvent]) {
+        for event in events {
+            if let SessionEvent::Inventory(delta) = event {
+                self.inventory.apply(Some(delta.value.clone()));
+            }
+            if let SessionEvent::InventoryCapacity(delta) = event {
+                oteryn_client_ui::inventory_capacity::apply(&mut self.inventory, delta.value);
+            }
+        }
     }
 }

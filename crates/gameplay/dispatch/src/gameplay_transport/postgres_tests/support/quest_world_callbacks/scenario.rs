@@ -77,7 +77,8 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let pinned_qc_world = name.starts_with("m09-treasure-")
+    let twenty_miles = super::super::qc_twenty_miles_fixtures::matches(name);
+    let pinned_qc_world = twenty_miles || name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
     let city_story = name == super::super::qh_authored_cases_fixtures::TOP_OF_THE_CITY;
     let native_crop = pinned_qc_world
@@ -118,7 +119,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if twenty_miles {
+        super::super::qc_twenty_miles_fixtures::START
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -415,6 +418,8 @@ fn scenario_case(
         callback("questpc7-formal-display")?
     } else if outfit_world {
         callback(name)?
+    } else if twenty_miles {
+        callback("qc-twenty-miles-pile-1")?
     } else if classic_npc {
         callback("behemoth")?
     } else if rotten_purchase {
@@ -942,7 +947,7 @@ fn scenario_case(
         world(&callback, trigger)?
     };
     run(async |admin| {
-        let h = if shared_rewards
+        let h = if twenty_miles || shared_rewards
             || qengine_reward
             || outfit_world
             || matches!(
@@ -1567,7 +1572,7 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
-            } else if classic_npc || qd_world {
+            } else if twenty_miles || classic_npc || qd_world {
                 5
             } else if monk {
                 4
@@ -2701,6 +2706,8 @@ fn scenario_case(
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if twenty_miles {
+            Box::pin(super::super::qc_twenty_miles_fixtures::exercise(&mut owner, &mut admitted, &h, name)).await?;
         } else if super::super::qc_lizard_sanctuary_fixtures::matches_world(name) {
             Box::pin(super::super::qc_lizard_sanctuary_fixtures::exercise(
                 &mut owner, &mut admitted, &h, &callback, trigger,

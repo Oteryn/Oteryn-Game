@@ -3,9 +3,10 @@ use crate::{GameplayEntryError, NativeLoginConfig};
 use oteryn_platform_client::PlatformClientConfig;
 use oteryn_platform_client::native_login::{PublicClass, parse_uuid_v7};
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Instant;
 
+mod persistence;
 mod refusal;
 pub use refusal::error_text;
 #[cfg(test)]
@@ -122,32 +123,6 @@ impl LoginSettings {
         })
         .map_err(|error| error.to_string())?
         .ok_or_else(|| tr!("Enter the Platform URL.").into())
-    }
-
-    pub fn load(path: &Path) -> Result<Self, String> {
-        match std::fs::read(path) {
-            Ok(bytes) => serde_json::from_slice(&bytes).map_err(|_| {
-                tr!("Saved login settings are invalid. Correct the fields and save again.").into()
-            }),
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Self::default()),
-            Err(_) => {
-                Err(tr!("Cannot read saved login settings. Check the file permissions.").into())
-            }
-        }
-    }
-
-    pub fn save(&self, path: &Path) -> Result<(), String> {
-        self.validate()?;
-        let write = || -> Result<(), Box<dyn std::error::Error>> {
-            if let Some(parent) = path.parent() {
-                std::fs::create_dir_all(parent)?;
-            }
-            let temporary = path.with_extension("json.tmp");
-            std::fs::write(&temporary, serde_json::to_vec_pretty(self)?)?;
-            std::fs::rename(temporary, path)?;
-            Ok(())
-        };
-        write().map_err(|_| tr!("Cannot save login settings. Check the configuration directory permissions and try again.").into())
     }
 }
 

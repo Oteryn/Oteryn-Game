@@ -132,3 +132,26 @@ fn cosmetics_authoring_accepts_the_byte_limit_and_rejects_one_byte_over()
     std::fs::remove_dir_all(scratch)?;
     result
 }
+
+#[test]
+fn mount_catalogue_includes_jaracal_and_radiant_nimbus() -> Result<(), Box<dyn std::error::Error>> {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let path = root.join("content/cosmetics/outfits/native-cosmetics.json");
+    let bytes = std::fs::read(&path)?;
+    let descriptor = PinnedGameplayBytes {
+        sha256: super::super::super::hex(crate::content::digest::sha256(&bytes)),
+        bytes,
+    };
+    let section = materialize(descriptor, &path)?;
+    let catalogue = super::super::decode(&section.bytes)?.ok_or("native cosmetics unavailable")?;
+    assert_eq!(catalogue.mount_keys.len(), 252);
+    for (name, client_id) in [("jaracal", 1962), ("radiant_nimbus", 1975)] {
+        let key = format!("oteryn:content.mount.{name}");
+        assert_eq!(
+            catalogue.content.mount_metadata(&key),
+            Some((client_id, 10, true)),
+            "{key}"
+        );
+    }
+    Ok(())
+}

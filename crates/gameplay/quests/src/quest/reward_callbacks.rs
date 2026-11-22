@@ -508,6 +508,7 @@ const DOCUMENTS: &[&str] = &[
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
@@ -1539,18 +1540,45 @@ fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
     // Main at 492ca0e6ba, before Package C.
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
-    const PREVIOUS: &[DefinitionPin] = &[(
-        "oteryn:quest.treasure_hunt_quest",
-        [
-            0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
-            0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
-            0x31, 0x10, 0x9f, 0x22,
-        ],
-        &[
-            ("oteryn:quest-progress/m09/treasure/ingots", -1),
-            ("oteryn:quest-progress/m09/treasure/telescope", -1),
-        ],
-    )];
+    const PREVIOUS: &[DefinitionPin] = &[
+        (
+            "oteryn:quest.treasure_hunt_quest",
+            [
+                0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
+                0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
+                0x31, 0x10, 0x9f, 0x22,
+            ],
+            &[
+                ("oteryn:quest-progress/m09/treasure/ingots", -1),
+                ("oteryn:quest-progress/m09/treasure/telescope", -1),
+            ],
+        ),
+        // The pre-withdrawal definition from ff6a482f7.
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            [
+                0x95, 0x57, 0x24, 0xdf, 0xc1, 0xc9, 0xb0, 0x39, 0x2d, 0x23, 0xea, 0xa2, 0x2a, 0x2b,
+                0x77, 0x1f, 0x73, 0x9e, 0x36, 0x7e, 0x9b, 0x7a, 0x07, 0xf2, 0xa7, 0xd7, 0x5e, 0x52,
+                0x4b, 0xfe, 0x3f, 0x3c,
+            ],
+            &[
+                ("oteryn:quest-progress/qc/twenty_miles/access_birthing", -1),
+                (
+                    "oteryn:quest-progress/qc/twenty_miles/access_sunken_city",
+                    -1,
+                ),
+                ("oteryn:quest-progress/qc/twenty_miles/access_west", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile1", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile2", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile3", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile4", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile5", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/skulls", 0),
+                ("oteryn:quest-progress/qc/twenty_miles/slabs", 0),
+                ("oteryn:quest-progress/qc/twenty_miles/stage", -1),
+            ],
+        ),
+    ];
     for &(quest, hash, defaults) in PREVIOUS {
         if active
             .definition_hash(quest)
@@ -2297,7 +2325,7 @@ mod tests {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
         // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1);
+        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 18);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

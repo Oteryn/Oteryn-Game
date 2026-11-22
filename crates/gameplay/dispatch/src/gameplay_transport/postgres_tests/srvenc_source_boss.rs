@@ -49,6 +49,7 @@ const EXIT: MovementLocalPosition = MovementLocalPosition {
 fn srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewards_postgres()
 -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("POSTGRES_CASE_SKIPPED {}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent", module_path!());
         return Ok(());
     }
     std::thread::Builder::new()
@@ -62,6 +63,7 @@ fn srvenc_source_sugar_daddy_template_creates_instance_and_settles_personal_rewa
 #[test]
 fn activity_equipment_clocks_charge_worn_items_and_imbuements_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("POSTGRES_CASE_SKIPPED {}: OTERYN_TEST_POSTGRES_ADMIN_URL is absent", module_path!());
         return Ok(());
     }
     std::thread::Builder::new()
@@ -78,6 +80,7 @@ fn scenario(case: equipment::Case) -> TestResult {
         reset();
         let h =
             Harness::create_with_admission_seed(admin, "srvenc_source_sugar", true, false).await?;
+        let result: TestResult = async {
         let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
         super::house_transfer_fixtures::prepare_owned_session(&h).await?;
         let expected = fixture::fence(1)?;
@@ -289,6 +292,7 @@ fn scenario(case: equipment::Case) -> TestResult {
                 .is_none(),
             "only the production template caller may instantiate the destination"
         );
+        let entry_checked_at = std::time::Instant::now();
         let entry_budget = if case == equipment::Case::Entry {
             equipment::activity_equipment_clocks_charge_worn_items(&h, &mut owner, admitted, case).await?;
             owner.clock_origin -= std::time::Duration::from_secs(59);
@@ -320,14 +324,15 @@ fn scenario(case: equipment::Case) -> TestResult {
         assert_eq!(barrier.handoff, handoff);
         assert_eq!(barrier.source_session, *old.game_session_id.as_bytes());
         assert_eq!(barrier.session, *admitted.game_session_id.as_bytes());
-        if let Some(budget) = entry_budget {
-            return equipment::assert_elapsed(&h, budget).await;
-        }
         let mut destination = owner
             .resolve_runtime_view(admitted)
             .await
             .map_err(|_| "resolve production Instance")?
             .ok_or("Instance owner switched")?;
+        if let Some(budget) = entry_budget {
+            equipment::tick_successor(&h, &mut destination, budget, entry_checked_at).await?;
+            return Ok(());
+        }
         assert_eq!(
             destination
                 .bundle_map()
@@ -371,7 +376,7 @@ fn scenario(case: equipment::Case) -> TestResult {
         if case != equipment::Case::Neither {
             equipment::activity_equipment_clocks_charge_worn_items(&h, &mut destination, admitted, case).await?;
             if case == equipment::Case::LostExpiry {
-                return equipment::settle_lost_expiry(&h, &mut destination, admitted).await;
+                return equipment::settle_lost_expiry(&h, &owner, &mut destination, admitted, handoff).await;
             }
             if !clock_handoff {
                 return Ok(());
@@ -401,6 +406,7 @@ fn scenario(case: equipment::Case) -> TestResult {
             )?))
             .await;
         }
+        let return_checked_at = std::time::Instant::now();
         let before = if clock_handoff {
             let actor = admitted.runtime_actor.ok_or("activity actor")?;
             let permit = destination.spell_lane_permit().await.ok_or("activity spell lane")?;
@@ -437,7 +443,7 @@ fn scenario(case: equipment::Case) -> TestResult {
             EXIT
         );
         if let Some(budget) = before {
-            equipment::assert_elapsed(&h, budget).await?;
+            equipment::tick_successor(&h, &mut owner, budget, return_checked_at).await?;
         }
         let retained_rewards: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_boss_reward_items")
@@ -451,6 +457,9 @@ fn scenario(case: equipment::Case) -> TestResult {
             "SRVENC_SOURCE_SUGAR_TEMPLATE_INSTANCE_CORPSE_REWARDS_RETURN POSTGRES_CASE_COMPLETED"
         );
         Ok(())
+        }.await;
+        let cleanup = h.cleanup().await;
+        result.and(cleanup)
     })
 }
 

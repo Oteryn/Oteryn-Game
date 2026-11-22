@@ -12,6 +12,7 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
         include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
         include_str!("../../../../../../../content/quests/npc-offers/m09-rookie.json"),
         include_str!("../../../../../../../content/quests/npc-offers/m16-targuna-marker.json"),
+        include_str!("../../../../../../../content/quests/npc-offers/qc-twenty-miles.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
         include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-m10.json"),

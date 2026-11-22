@@ -13,12 +13,11 @@ pub(super) fn disjoint(a: &Callback, b: &Callback) -> bool {
         && a.actor_kind == ActorKind::Player
         && b.actor_kind == ActorKind::Player
         && a.storage.iter().any(|left| {
-            left.preserve
-                && b.storage.iter().any(|right| {
-                    right.preserve
-                        && left.track == right.track
-                        && (left.maximum < right.minimum || right.maximum < left.minimum)
-                })
+            b.storage.iter().any(|right| {
+                ((left.preserve && right.preserve) || (left.read_only && right.read_only))
+                    && left.track == right.track
+                    && (left.maximum < right.minimum || right.maximum < left.minimum)
+            })
         })
 }
 
@@ -58,9 +57,12 @@ pub fn select_storage_phase<'a>(
     }
     Ok(selected)
 }
-// STEP alternatives share geometry only when preserved personal phases are disjoint.
+// STEP alternatives share geometry only when their personal phases are disjoint.
 
 pub fn exclusive(left: &Callback, right: &Callback) -> bool {
+    if disjoint(left, right) {
+        return true;
+    }
     let source_trial = left.trigger == Trigger::Use
         && left.effects.target_transform.is_some()
         && left.effects.target_transform == right.effects.target_transform

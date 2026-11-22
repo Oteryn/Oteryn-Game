@@ -7,13 +7,12 @@ use oteryn_client_ui::cyclopedia_map::{Intent, Panel};
 
 pub(super) const DISCOVERY_NOTICE: &str = "Subarea discovered! All seven points of interest found.";
 
-impl crate::play::Outbox {
+impl crate::play::mailbox::Mailbox {
     pub(in crate::play) fn cyclopedia_discovery_events(
-        &self,
+        &mut self,
         events: &[oteryn_session::SessionEvent],
     ) {
-        let mut mailbox = crate::play::mailbox::lock(&self.0);
-        let panel = &mut mailbox.properties.cyclopedia_map;
+        let panel = &mut self.properties.cyclopedia_map;
         for event in events {
             // Session permits a sequence rewind only for a committed House/activity
             // destination; ordinary replacement snapshots advance the current sequence.
@@ -218,6 +217,8 @@ pub(in crate::play) fn apply(
         }
     }.into();
 }
+
+
 
 #[cfg(test)]
 #[path = "tests/e2e_w12.rs"]

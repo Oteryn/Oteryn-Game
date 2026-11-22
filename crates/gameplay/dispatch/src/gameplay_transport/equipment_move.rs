@@ -524,10 +524,17 @@ async fn move_equipment_inner(
     request: MoveRequest,
     hotkey: bool,
 ) -> EquipmentMoveResult {
-    let refused = EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected);
+    use super::hotkey_equip::RejectionStage;
+
+    let refused = |stage: RejectionStage| {
+        if hotkey {
+            stage.log(command.command_id);
+        }
+        EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected)
+    };
     let session = command.game_session_id;
     let Some(fence) = command.item_fence else {
-        return refused;
+        return refused(RejectionStage::EquipmentItemFence);
     };
     let house = admission
         .runtime
@@ -536,7 +543,7 @@ async fn move_equipment_inner(
         .house_actor_state(actor, session)
         .is_ok();
     if house && hotkey {
-        return refused;
+        return refused(RejectionStage::EquipmentHouse);
     }
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
@@ -575,7 +582,7 @@ async fn move_equipment_inner(
         }
     };
     if !trade_ready {
-        return refused;
+        return refused(RejectionStage::EquipmentTrade);
     }
     if !admission
         .checkpoint_timed_equipment(actor, session, true)
@@ -596,21 +603,21 @@ async fn move_equipment_inner(
                 admission.owner_now().get(),
             )
         {
-            return refused;
+            return refused(RejectionStage::EquipmentCondition);
         }
         native_for_move(&runtime, admission.active_generation, dead, pending)
     };
     let Some(native) = native else {
-        return refused;
+        return refused(RejectionStage::EquipmentAvailability);
     };
     if house
         && house_equipment_digest(admission, actor, session, fence).await
             != Some(native.source_digest())
     {
-        return refused;
+        return refused(RejectionStage::EquipmentHouseDigest);
     }
     let Ok(command_id) = CommandId::new(command.command_id) else {
-        return refused;
+        return refused(RejectionStage::EquipmentCommandId);
     };
     let committed = match request {
         MoveRequest::Hotkey {
@@ -633,7 +640,7 @@ async fn move_equipment_inner(
         }
         MoveRequest::Exact(request) => {
             let Some(durable) = durable_move(request) else {
-                return refused;
+                return refused(RejectionStage::EquipmentRequest);
             };
             if house {
                 admission
@@ -698,6 +705,7 @@ async fn move_equipment_inner(
             }
             EquipmentMoveResult::Committed
         }
+        Ok(Err(EquipmentMoveRefusal::Rejected)) => refused(RejectionStage::EquipmentCommit),
         Ok(Err(refusal)) => EquipmentMoveResult::Refused(refusal),
         Err(_) => EquipmentMoveResult::Unknown,
     }

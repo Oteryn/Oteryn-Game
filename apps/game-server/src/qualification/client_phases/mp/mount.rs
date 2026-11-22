@@ -5,7 +5,7 @@ mod bots;
 mod diagnostics;
 mod mp01_party_pvp;
 mod mp09_party_xp;
-mod observations;
+pub(super) mod observations;
 mod starter;
 
 pub(in crate::qualification) use starter::legacy_d150;

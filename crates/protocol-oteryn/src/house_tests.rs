@@ -90,6 +90,43 @@ fn house_door_native_coordinates_and_empty_clear() {
     }
 }
 #[test]
+fn house_door_guild_selector_wire_requires_capability_and_preserves_empty_clear() {
+    // Door position (6, 0, 7), revision 8, guild selectors field 4.
+    let door = [
+        b"\x0a\x06\x08\x06\x10\x00\x18\x0e\x10\x08".as_slice(),
+        b"\x22\x14\x0a\x12Member@House Guild",
+    ]
+    .concat();
+    let body = intent(5, &door);
+    assert_eq!(decode_house_intent(&body), Err(Error::Malformed));
+    assert!(matches!(
+        decode_house_intent_selected(&body, true),
+        Ok(HouseIntent {
+            action: HouseAction::Door { guild_selectors: Some(selectors), .. },
+            ..
+        }) if selectors == ["Member@House Guild"]
+    ));
+
+    let clear = [&door[..10], &[0x22, 0]].concat();
+    assert!(matches!(
+        decode_house_intent_selected(&intent(5, &clear), true),
+        Ok(HouseIntent {
+            action: HouseAction::Door { guild_selectors: Some(selectors), .. },
+            ..
+        }) if selectors.is_empty()
+    ));
+    assert!(matches!(
+        decode_house_intent_selected(&intent(5, &door[..10]), true),
+        Ok(HouseIntent {
+            action: HouseAction::Door {
+                guild_selectors: None,
+                ..
+            },
+            ..
+        })
+    ));
+}
+#[test]
 fn house_query_strict_cursor_and_town() {
     let mut b = Vec::new();
     bytes(&mut b, 1, &id(1));

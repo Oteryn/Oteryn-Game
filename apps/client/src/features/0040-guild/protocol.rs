@@ -2,7 +2,11 @@ use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
     pub(in crate::play) fn guild_initialize(&self, selected: bool) {
         let mut mailbox = lock(&self.0);
-        mailbox.guild = oteryn_client_ui::guild::GuildPanel { selected, ..Default::default() };
+        mailbox.guild = oteryn_client_ui::guild::GuildPanel {
+            selected,
+            channel_names: std::mem::take(&mut mailbox.guild.channel_names),
+            ..Default::default()
+        };
         mailbox.chat.guild_selected = false;
         mailbox.chat.guild = oteryn_session::GuildRoomState::Unavailable;
     }

@@ -254,7 +254,7 @@
           "direction": "SellToPlayer",
           "unit_price": 5000,
           "count": 1,
-          "sub_type": null,
+          "sub_type": 1,
           "requirements": [
             {
               "quest": "oteryn:quest.the_djinn_war_efreet_faction",

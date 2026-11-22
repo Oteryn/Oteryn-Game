@@ -278,6 +278,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
     let newly_admitted = [
+        "oteryn:creature.arbaziloth",
         "oteryn:creature.demodras",
         "oteryn:creature.the_percht_queen",
         "oteryn:creature.goshnar_s_spite",
@@ -592,7 +593,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 262, 38, 36)
+        (52, 261, 38, 37)
     );
     assert_eq!(
         admitted,
@@ -600,6 +601,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.ahau",
             "oteryn:creature.anomaly",
             "oteryn:creature.apprentice_sheng",
+            "oteryn:creature.arbaziloth",
             "oteryn:creature.armenius_creature",
             "oteryn:creature.ascending_ferumbras",
             "oteryn:creature.bakragore",

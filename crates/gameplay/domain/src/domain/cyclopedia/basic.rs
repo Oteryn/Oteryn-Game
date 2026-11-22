@@ -149,6 +149,7 @@ impl BasicArea {
                 let mut candidates: Vec<_> = pool
                     .iter()
                     .copied()
+                    .filter(|point| !point.in_window(at))
                     .map(|p| {
                         let mut hash = Sha256::new();
                         hash.update(b"cyclopedia_poi:oteryn-basic-v2");
@@ -156,7 +157,7 @@ impl BasicArea {
                         hash.update(p.x.to_be_bytes());
                         hash.update(p.y.to_be_bytes());
                         hash.update(p.floor.to_be_bytes());
-                        (p.in_window(at), <[u8; 32]>::from(hash.finalize()), p)
+                        (<[u8; 32]>::from(hash.finalize()), p)
                     })
                     .collect();
                 candidates.sort_unstable();
@@ -164,7 +165,7 @@ impl BasicArea {
                     return Err(MapRefusal::InsufficientPool);
                 }
                 let mut points = Vec::with_capacity(self.generated_count);
-                for (_, _, point) in &candidates {
+                for (_, point) in &candidates {
                     if points.len() < self.generated_count
                         && points.iter().all(|selected: &Point| {
                             selected.floor != point.floor
@@ -177,7 +178,7 @@ impl BasicArea {
                 }
                 // Crystal `discovery_system.lua` generatePois relaxes the spacing rule
                 // once a box is hard to fill; the remaining draws keep the same order.
-                for (_, _, point) in &candidates {
+                for (_, point) in &candidates {
                     if points.len() < self.generated_count && !points.contains(point) {
                         points.push(*point);
                     }

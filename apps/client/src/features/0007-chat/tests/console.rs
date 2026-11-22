@@ -90,6 +90,43 @@ fn channel_log_control_saves_appends_replaces_and_reports_io_errors() -> Result<
     Ok(())
 }
 
+#[cfg(unix)]
+#[test]
+fn channel_log_is_created_with_owner_only_permissions() -> Result<(), Error> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("chat.log");
+    let (link, _, _) = play_channel();
+    link.chat_save_log(&path, true)?;
+    assert_eq!(std::fs::metadata(path)?.permissions().mode() & 0o777, 0o600);
+    Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn channel_log_refuses_to_append_to_a_public_file() -> Result<(), Error> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("chat.log");
+    std::fs::write(&path, "existing log")?;
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644))?;
+    let (link, _, _) = play_channel();
+    let result = link.chat_save_log(&path, true);
+    assert_eq!(
+        result.err().map(|error| error.kind()),
+        Some(std::io::ErrorKind::PermissionDenied)
+    );
+    assert_eq!(std::fs::read_to_string(path)?, "existing log");
+    assert!(
+        link.chat_panel()
+            .feedback
+            .is_some_and(|text| text.contains("Could not write"))
+    );
+    Ok(())
+}
+
 #[test]
 fn communication_control_filters_live_lines_and_propagates_whitelist_exceptions() {
     let (link, _, outbox) = play_channel();
