@@ -2,6 +2,7 @@
 
 import copy
 import json
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
@@ -30,9 +31,17 @@ class ComposeTests(unittest.TestCase):
         incoming = compose.indexed(json.loads(self.current[compose.CREATURES]))
         baseline = compose.indexed(json.loads(self.base[compose.CREATURES]))
         combined = compose.indexed(json.loads(result[compose.CREATURES]))
-        self.assertEqual(len(combined), 1871)
-        self.assertEqual(set(combined) - set(adopted), {importer.canonical_bytes({
-            "family": "Creature", "key": "oteryn:creature.cake_golem", "revision": "definition-r1"})})
+        additions = {"oteryn:creature.cake_golem"}
+        presentations = ["oteryn:presentation.creature.cake_golem"]
+        references = compose.read_project_document(self.root, "definitions/reference.json")
+        if any(row["identity"]["key"] == compose.ORC_SAM_CREATURE for row in references["records"]):
+            additions.add(compose.ORC_SAM_CREATURE)
+            presentations.append("oteryn:presentation.creature.orc_sam_backpack")
+        self.assertEqual(len(combined), 1870 + len(additions))
+        self.assertEqual(
+            {combined[key]["profile"]["target"]["key"] for key in set(combined) - set(adopted)},
+            additions,
+        )
         self.assertTrue(adopted.keys() <= combined.keys())
         changed = 0
         for key, retained in adopted.items():
@@ -55,7 +64,7 @@ class ComposeTests(unittest.TestCase):
         new_presentations = json.loads(result[presentation_path])["records"]
         self.assertEqual(new_presentations[:len(old_presentations)], old_presentations)
         self.assertEqual([r["target"]["key"] for r in new_presentations[len(old_presentations):]],
-                         ["oteryn:presentation.creature.cake_golem"])
+                         presentations)
         for section in ("catalog", "source_selection"):
             self.assertEqual(
                 json.loads(result[current.MANIFEST])[section],
@@ -94,6 +103,38 @@ class ComposeTests(unittest.TestCase):
         with patch.object(compose, "apply_overlay", return_value=negative):
             with self.assertRaisesRegex(ValueError, "MELEE_CONFLICT"):
                 compose.compose(self.root, self.base, self.current)
+
+
+class OrcSamProjectionTests(unittest.TestCase):
+    def test_admission_preserves_projected_nullable_reference_level(self):
+        packet = compose.load(importer.ROOT, compose.ORC_SAM_SOURCE)
+        raw_creature = packet["profiles"][0]
+        projected = copy.deepcopy(raw_creature["data"])
+        projected["profile"]["details"]["reference_level"] = None
+        shard = {"records": [{"definition": packet["records"][0], "authoring": projected}]}
+        documents = {
+            "definitions/reference.json": {"records": packet["records"]},
+            "definitions/declarations.json": {"authoring_profiles": packet["profiles"]},
+        }
+        generated = {
+            compose.CREATURES: json.dumps({"schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1", "records": []}),
+            compose.PRESENTATIONS: json.dumps({
+                "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1", "records": [],
+            }),
+            "content/spells.manifest.json": json.dumps({"presentation_profiles": {}}),
+        }
+        with (
+            patch.object(Path, "glob", return_value=[Path("creatures-shard.json")]),
+            patch.object(compose, "read_derived_shard", return_value=shard),
+            patch.object(compose, "read_project_document", side_effect=lambda root, name: documents[name]),
+        ):
+            result = compose.admit_orc_sam(importer.ROOT, generated)
+            record, = json.loads(result[compose.CREATURES])["records"]
+            self.assertEqual(record["profile"]["data"], projected)
+            self.assertNotIn("reference_level", raw_creature["data"]["profile"]["details"])
+            projected["profile"]["health"] += 1
+            with self.assertRaisesRegex(ValueError, "ORC_SAM_CANONICAL_CREATURE"):
+                compose.admit_orc_sam(importer.ROOT, generated)
 
 
 if __name__ == "__main__":

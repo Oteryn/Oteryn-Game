@@ -4,7 +4,7 @@ import copy
 import hashlib
 import json
 
-from bind_monster_source_definitions import CREATURES, bind_definitions
+from bind_monster_source_definitions import CREATURES, bind_definitions, explicit_reference_levels
 from import_spell_families import canonical_bytes
 from cake_native_successor import (
     PRESENTATIONS, admit as admit_cake_successor, read_derived_shard, read_project_document,
@@ -92,8 +92,10 @@ def admit_orc_sam(root, generated):
         if row["definition"]["identity"]["key"] == ORC_SAM_CREATURE
     ]
     profile, = [row for row in declarations if row["target"]["key"] == ORC_SAM_CREATURE]
+    projected = copy.deepcopy(profile["data"])
+    explicit_reference_levels(projected)
     if (len(rows) != 1 or rows[0]["definition"] != expected[ORC_SAM_CREATURE]
-            or rows[0]["authoring"] != profile["data"]):
+            or rows[0]["authoring"] != projected):
         raise ValueError("ORC_SAM_CANONICAL_CREATURE")
     active = json.loads(generated[CREATURES])
     presentations = json.loads(generated[PRESENTATIONS])
@@ -105,12 +107,7 @@ def admit_orc_sam(root, generated):
     if added != [rows[0]["definition"]["identity"]]:
         raise ValueError("ORC_SAM_NATIVE_IDENTITY")
     raid, = [row for row in creatures["records"] if row["profile"]["target"]["key"] == ORC_SAM_CREATURE]
-    attack, = raid["behavior"]["data"]["profile"]["attacks"]
-    raid["monster_melee"] = {
-        **attack, **packet["melee"],
-        **{f"source_{field}": value for field, value in packet["source"].items()},
-        "execution_status": "approximate_nonlethal_physical_melee",
-    }
+    raid["monster_melee"] = orc_sam_melee(packet, raid["behavior"])
     result = dict(generated)
     result[CREATURES] = canonical_bytes(creatures)
     result[PRESENTATIONS] = canonical_bytes(presentations)
@@ -119,6 +116,15 @@ def admit_orc_sam(root, generated):
     manifest["presentation_profiles"]["sha256"] = hashlib.sha256(result[PRESENTATIONS]).hexdigest()
     result[path] = canonical_bytes(manifest)
     return result
+
+
+def orc_sam_melee(packet, behavior):
+    attack, = behavior["data"]["profile"]["attacks"]
+    return {
+        **attack, **packet["melee"],
+        **{f"source_{field}": value for field, value in packet["source"].items()},
+        "execution_status": "approximate_nonlethal_physical_melee",
+    }
 
 
 def admit_orc_sam_corpse(root, items, order):

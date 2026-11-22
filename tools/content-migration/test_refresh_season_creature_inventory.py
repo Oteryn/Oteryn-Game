@@ -13,15 +13,47 @@ class SeasonalInventory(unittest.TestCase):
         cls.root = Path(__file__).resolve().parents[2]
         read = lambda path: json.loads((cls.root / path).read_bytes())
         cls.rows = [row for path in read('content/creatures/definitions/index.json')['shards']
-                    for row in read(path)['records']]
+                    for row in read(path)['records']
+                    if row['definition']['identity']['key'] != inventory.raid_catalogue.ORC_SAM_CREATURE]
         cls.native = [row for row in read('content/creatures/definitions/spell-native-profiles.json')['records']
-                      if row['profile']['target']['key'].startswith('oteryn:creature.')]
+                      if row['profile']['target']['key'].startswith('oteryn:creature.')
+                      and row['profile']['target']['key'] != inventory.raid_catalogue.ORC_SAM_CREATURE]
         cls.schedules = sum(len(row['behavior']['data']['profile'].get(key, []))
                             for row in cls.native for key in ('attacks', 'defenses'))
 
     def test_exact_merged_cohort_qualifies_one_melee_successor(self):
         self.assertEqual(inventory.validate_inventory(
             self.root, self.rows, self.native, self.schedules), 1)
+
+    def test_orc_sam_qualifies_exactly_one_more_creature_and_melee_slot(self):
+        packet = json.loads((self.root / inventory.raid_catalogue.ORC_SAM_SOURCE).read_bytes())
+        creature, behavior, _ = copy.deepcopy(packet['profiles'])
+        creature['data']['profile']['details']['reference_level'] = None
+        orc, = [row for row in self.native if row['profile']['target']['key'] == 'oteryn:creature.orc']
+        voices = copy.deepcopy(orc['behavior']['data']['profile']['voices'])
+        voices['entries'] = [voices['entries'][i] for i in packet['voice_order']]
+        behavior['data']['profile']['voices'] = voices
+        definition = packet['records'][0]
+        canonical = {'definition': definition, 'authoring': creature['data']}
+        native = {
+            'profile': creature,
+            'behavior': behavior,
+            'presentation': definition['presentation'],
+            'monster_melee': {
+                **behavior['data']['profile']['attacks'][0], **packet['melee'],
+                **{f'source_{field}': value for field, value in packet['source'].items()},
+                'execution_status': 'approximate_nonlethal_physical_melee',
+            },
+        }
+        rows = self.rows + [canonical]
+        profiles = self.native + [native]
+        self.assertEqual(inventory.validate_inventory(
+            self.root, rows, profiles, self.schedules + 1), 2)
+        with self.assertRaisesRegex(ValueError, 'Orc Sam'):
+            inventory.validate_inventory(self.root, rows, self.native, self.schedules)
+        native['monster_melee']['maximum'] += 1
+        with self.assertRaisesRegex(ValueError, 'Orc Sam'):
+            inventory.validate_inventory(self.root, rows, profiles, self.schedules + 1)
 
     def thaian_rows(self):
         rows = list(self.rows)

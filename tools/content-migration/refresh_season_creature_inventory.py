@@ -1,19 +1,48 @@
 """Refresh strict inventory pins for the exact, source-qualified Cake successor."""
 import argparse
 from collections import Counter
+import copy
 import json
 from pathlib import Path
 import re
 
 import cake_native_successor as cake
 import raid_catalogue
+from bind_monster_source_definitions import explicit_reference_levels
+from compose_monster_current_sources import orc_sam_melee
 from world_project_v2_to_tree import CREATURE_FAMILIES, git_blob_sha
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def orc_sam_extension(root, rows, native):
+    key = raid_catalogue.ORC_SAM_CREATURE
+    canonical = [row for row in rows if row['definition']['identity']['key'] == key]
+    active = [row for row in native if row['profile']['target']['key'] == key]
+    if not canonical and not active:
+        return 0
+    if len(canonical) != 1 or len(active) != 1:
+        raise ValueError('Orc Sam canonical and native inventory must match')
+    packet = raid_catalogue.load(root, raid_catalogue.ORC_SAM_SOURCE)
+    creature, behavior, _ = copy.deepcopy(packet['profiles'])
+    explicit_reference_levels(creature)
+    definition = packet['records'][0]
+    orc, = [row for row in native if row['profile']['target']['key'] == 'oteryn:creature.orc']
+    voices = copy.deepcopy(orc['behavior']['data']['profile']['voices'])
+    voices['entries'] = [voices['entries'][index] for index in packet['voice_order']]
+    behavior['data']['profile']['voices'] = voices
+    if (canonical[0]['definition'] != definition
+            or canonical[0]['authoring'] != creature['data']
+            or active[0]['profile'] != creature
+            or active[0]['behavior'] != behavior
+            or active[0]['presentation'] != definition['presentation']
+            or active[0].get('monster_melee') != orc_sam_melee(packet, behavior)):
+        raise ValueError('Orc Sam source authoring closure')
+    return 1
+
+
 def validate_inventory(root, rows, native, schedules):
-    """Retain main's exact cohort while qualifying the branch's one Thaian."""
+    """Retain the exact cohort and qualify source-attested melee additions."""
     from questpc7_thaian_authoring import PACKET
     packet, _ = cake.read_canonical(root / PACKET)
     if packet['source']['page_id'] != 48123 or packet['source']['revision'] != 445240:
@@ -71,10 +100,11 @@ def validate_inventory(root, rows, native, schedules):
     nrwicked_native, nrwicked_schedules = nrwicked_inventory(root, native)
     extra_native += nrwicked_native
     extra_schedules += nrwicked_schedules
-    if (len(rows) - 1 != 1863 + 1 or len(native) != len(rows) + extra_native
-            or schedules - 1 != 7201 + 4 + extra_schedules):
+    melee_additions = 1 + orc_sam_extension(root, rows, native)
+    if (len(rows) - melee_additions != 1863 + 1 or len(native) != len(rows) + extra_native
+            or schedules - melee_additions != 7201 + 4 + extra_schedules):
         raise ValueError('Non-seasonal canonical inventory changed; review its source first')
-    return 1
+    return melee_additions
 
 
 def generated(root):
@@ -101,7 +131,7 @@ def generated(root):
         raise ValueError('Cake source schedule inventory')
     schedules = sum(len(row['behavior']['data']['profile'].get(key, []))
                     for row in native for key in ('attacks', 'defenses'))
-    thaian_melee = validate_inventory(root, rows, native, schedules)
+    melee_additions = validate_inventory(root, rows, native, schedules)
     from engenc_elemental_profiles import inventory_extension as elemental_inventory
     elemental_native, _ = elemental_inventory(native)
     result = {}
@@ -128,7 +158,7 @@ def generated(root):
     # Keep the pre-existing unsupported set at116: no new source gap is admitted.
     path = 'crates/gameplay/encounters/src/bosses/native_combat/monster_combat_lane.rs'
     replace(path, r'\("melee:Ok\(\(\)\)", [0-9_]+\)',
-            f'("melee:Ok(())", {1689 + 1 + thaian_melee})')
+            f'("melee:Ok(())", {1689 + 1 + melee_additions})')
     replace(path, r'\("spell:Ok\(\(\)\)", [0-9_]+\)',
             f'("spell:Ok(())", {4198 + len(behavior["attacks"]) - 1})')
     if '("spell:Err(UnsupportedShape)", 116)' not in result[path]:
@@ -160,7 +190,10 @@ def generated(root):
         raise ValueError('Regenerate the source-qualified raid index first')
     raids = json.loads(outputs[raid_catalogue.CATALOGUE])['records']
     active = sum(row['active'] for row in raids)
-    if len(raids) != 239 + 1 or active != 136 + 1:
+    orc_sam_active = any(row['key'] == raid_catalogue.ORC_SAM_RAID and row['active']
+                         for row in raids)
+    if (orc_sam_active != (melee_additions == 2)
+            or len(raids) != 239 + 1 or active != 136 + melee_additions):
         raise ValueError('Non-seasonal raid inventory changed; review its source first')
     path = 'crates/gameplay/encounter-rules/src/raid/catalogue.rs'
     replace(path, r'assert_eq!\(catalogue.records\(\).len\(\), [0-9_]+\);',
