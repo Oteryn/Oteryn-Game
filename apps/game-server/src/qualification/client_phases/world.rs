@@ -5,6 +5,9 @@ use crate::map::overlay::TilePos;
 use std::collections::{BTreeMap, VecDeque};
 use std::path::Path;
 
+#[path = "full_e2ef3.rs"]
+mod full_e2ef3;
+
 #[path = "general_stats.rs"]
 mod general_stats;
 
