@@ -80,7 +80,7 @@ class InventoryTests(unittest.TestCase):
                 namespace['creature_family_counts'](reference)
             golden_text = (root / GOLDEN).read_text()
             self.assertIn("assert family_counts['Creature'] == 3", golden_text)
-            assertions = [node for node in ast.parse(golden_text).body
+            assertions = [node for node in ast.walk(ast.parse(golden_text))
                           if isinstance(node, ast.Assert) and isinstance(node.test, ast.Compare)
                           and isinstance(node.test.left, ast.Subscript)
                           and isinstance(node.test.left.value, ast.Name)
