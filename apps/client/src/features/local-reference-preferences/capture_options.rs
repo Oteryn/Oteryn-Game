@@ -31,6 +31,25 @@ pub struct ScreenshotPreferences {
     pub on_achievement: bool,
 }
 impl ScreenshotPreferences {
+    pub(crate) fn triggers(&self) -> [bool; 12] {
+        if self.automatic_disabled {
+            return [false; 12];
+        }
+        [
+            self.on_bestiary_unlock,
+            self.on_bestiary_complete,
+            self.on_boss_defeat,
+            self.on_player_attacking,
+            self.on_record_damage,
+            self.on_record_healing,
+            self.on_valuable_loot,
+            self.on_low_health,
+            self.on_skill,
+            self.on_level,
+            self.on_death,
+            self.on_achievement,
+        ]
+    }
     pub fn reconciled(mut self, previous: &Self) -> Self {
         self.harmonize(previous);
         self

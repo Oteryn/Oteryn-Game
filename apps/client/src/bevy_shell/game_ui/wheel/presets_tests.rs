@@ -148,3 +148,26 @@ fn review_import_validates_source_budget_before_adapting_points() -> TestResult 
     assert_eq!(panel(&app)?.points[14], 5);
     Ok(())
 }
+
+#[test]
+fn official_version_one_planner_allocations_import_through_preset_controls() -> TestResult {
+    let mut p = model();
+    let reply = p.diagram.reply.as_mut().ok_or("diagram")?;
+    reply.available = 4000;
+    reply.vocation = "Monk".into();
+    let (mut app, _, _) = fixture(p)?;
+    preset_field(&mut app, 1, "M1OzEtJWXaiWkp3t4pQMLIyDsFQkJEToBl_-MAAA");
+    preset_action(&mut app, 5)?;
+    assert_eq!(
+        panel(&app)?.points,
+        oteryn_client_ui::wheel_allocation::SLOT_CAPACITIES
+    );
+    preset_field(&mut app, 1, "M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA");
+    preset_action(&mut app, 5)?;
+    assert!(panel(&app)?.preset_feedback.contains("gem identities"));
+    assert_eq!(
+        panel(&app)?.points,
+        oteryn_client_ui::wheel_allocation::SLOT_CAPACITIES
+    );
+    Ok(())
+}

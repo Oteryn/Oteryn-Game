@@ -290,7 +290,9 @@ impl PlayLink {
             console_request(chat)
         } else if chat.selected && chat.console.display.levels {
             chat.console.metadata.query_new_speakers(&chat.lines)
-        } else { None };
+        } else {
+            None
+        };
         if let Some(payload) = payload
             && self
                 .commands
@@ -302,8 +304,9 @@ impl PlayLink {
                     },
                 ))
                 .is_err()
+            && let Some(names) = mailbox.chat.console.metadata.pending.take()
         {
-            mailbox.chat.console.metadata.pending = None;
+            mailbox.chat.console.metadata.finish_query(&names, false);
         }
     }
 }
@@ -366,16 +369,16 @@ impl Mailbox {
                 oteryn_session::SessionEvent::ChatLine(delta) => {
                     #[cfg(bevy_shell)]
                     if let oteryn_session::ChatLine::Private { speaker_name, text } = &delta.value
+                        && !speaker_name.eq_ignore_ascii_case(&self.party.own_character_name)
                         && self.chat.console.communication.visible(&delta.value)
                     {
-                        self.window_notice(crate::play::feature_local_text_messages::view::NoticeKind::Private, format!("{speaker_name}: {text}"));
+                        self.window_notice(
+                            crate::play::feature_local_text_messages::view::NoticeKind::Private,
+                            format!("{speaker_name}: {text}"),
+                        );
                     }
                     self.chat.pending_lines = self.chat.pending_lines.wrapping_add(1);
-                    self
-                        .chat
-                        .console
-                        .metadata
-                        .received(&delta.value, received);
+                    self.chat.console.metadata.received(&delta.value, received);
                 }
                 oteryn_session::SessionEvent::ServerMessage(delta) => {
                     use oteryn_client_ui::chat::NoticeClass;
@@ -393,6 +396,8 @@ impl Mailbox {
                     self.chat.console.notices.push(class, &text, received);
                 }
                 oteryn_session::SessionEvent::ChatSnapshot(_) => {
+                    #[cfg(bevy_shell)]
+                    self.window_notices.retain(|notice| notice.kind != crate::play::feature_local_text_messages::view::NoticeKind::Private);
                     self.chat.scope = self.chat.scope.wrapping_add(1);
                     self.chat.console.metadata.reset_history();
                     self.chat.console.reset_extensions();
@@ -409,21 +414,20 @@ impl Outbox {
         let Some(names) = mailbox.chat.console.metadata.pending.take() else {
             return;
         };
-        for name in &names {
-            mailbox.chat.console.metadata.levels.remove(name);
-        }
-        if !matches!(
+        let levels = matches!(
             result.status,
             oteryn_session::CommandStatus::Accepted
                 | oteryn_session::CommandStatus::DuplicateReplay
-        ) {
-            return;
-        }
-        let Some(levels) = oteryn_client_runtime::chat::console::decode_levels(&result.payload)
-            .filter(|levels| levels.len() == names.len())
-        else {
-            return;
-        };
+        )
+        .then(|| oteryn_client_runtime::chat::console::decode_levels(&result.payload))
+        .flatten()
+        .filter(|levels| levels.len() == names.len());
+        mailbox
+            .chat
+            .console
+            .metadata
+            .finish_query(&names, levels.is_some());
+        let Some(levels) = levels else { return };
         for (name, level) in names.into_iter().zip(levels) {
             if let Some(level) = level {
                 mailbox.chat.console.metadata.levels.insert(name, level);

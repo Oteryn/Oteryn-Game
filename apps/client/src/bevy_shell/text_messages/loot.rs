@@ -36,6 +36,7 @@ pub(super) fn project(
         let scope = Some((owner.generation(), namespace));
         let receipt = play.link.loot_receipt();
         if state.scope != scope {
+            state.dismissals = dismissals;
             state.expires = Duration::ZERO;
             state.receipt = if state
                 .scope

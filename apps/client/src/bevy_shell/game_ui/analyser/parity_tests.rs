@@ -536,3 +536,78 @@ fn loot_visibility_does_not_change_the_consolidated_hunt() -> TestResult {
     assert!(!loot.contains("Loot/h target:"));
     Ok(())
 }
+
+#[test]
+fn failed_high_reset_is_retried_even_without_another_impact() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let (mut app, _) = app_at(Some(folder.path().join("client.json")))?;
+    select(&mut app, Tool::Impact)?;
+    let path = app
+        .world()
+        .non_send::<HostOwner>()
+        .dock_layout_path()
+        .ok_or("profile")?
+        .with_extension("analyser-highs.json");
+    std::fs::create_dir_all(path.parent().ok_or("profile directory")?)?;
+    std::fs::write(&path, "malformed")?;
+    click_caption(&mut app, "Reset all-time high")?;
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(6);
+    while app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .analyser_panel()
+        .feedback
+        != Some("Could not read or save analyser highs")
+    {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "writer failure not observed"
+        );
+        app.update();
+    }
+    std::fs::write(&path, "[88,99]")?;
+    while std::fs::read_to_string(&path)? != "[0,0]" {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "reset never persisted after recovery"
+        );
+        app.update();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    Ok(())
+}
+
+#[test]
+fn refused_analyser_catalogue_page_retries_the_same_observed_items() -> TestResult {
+    use crate::combat_input::PlayCommand;
+    let (mut app, outbox) = app()?;
+    select(&mut app, Tool::LootTracker)?;
+    let take_query = |app: &mut App| {
+        let mut commands = app
+            .world_mut()
+            .non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<PlayCommand>>();
+        std::iter::from_fn(|| commands.try_recv().ok()).find_map(|command| match command {
+            PlayCommand::Feature(query) if query.kind == 734 => Some(query.payload),
+            _ => None,
+        })
+    };
+    let payload = take_query(&mut app).ok_or("first query")?;
+    outbox.bevy_analyser_catalogue_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 3,
+        status: oteryn_session::CommandStatus::Rejected,
+        payload: vec![],
+    });
+    app.update();
+    assert!(take_query(&mut app).is_none());
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_secs(3),
+    ));
+    app.update();
+    assert_eq!(take_query(&mut app), Some(payload));
+    Ok(())
+}

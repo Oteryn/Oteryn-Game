@@ -7,6 +7,13 @@ impl PlayLink {
     pub fn inspection_panel(&self) -> oteryn_client_ui::inspection::Panel {
         lock(&self.mailbox).discovery.inspection.clone()
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn with_inspected_items<T>(
+        &self,
+        read: impl FnOnce(&oteryn_client_ui::inspection::Panel) -> T,
+    ) -> T {
+        read(&lock(&self.mailbox).discovery.inspection)
+    }
     /// Close/reopen only the existing presentation flag; preserve in-flight work and replies.
     pub fn inspection_set_open(&self, open: bool) {
         lock(&self.mailbox).discovery.inspection.open = open;
@@ -52,7 +59,7 @@ impl crate::play::PlayView {
         &self,
         link: &crate::play::PlayLink,
         entity: oteryn_session::EntityRef,
-    ) -> Option<oteryn_client_ui::appearance::Preview> {
+    ) -> Option<oteryn_client_ui::inspection::OutfitPortrait> {
         let visible = self
             .appearances
             .iter()
@@ -66,16 +73,20 @@ impl crate::play::PlayView {
             return None;
         };
         let mailbox = crate::play::mailbox::lock(&link.mailbox);
-        let palette = &mailbox.properties.appearance.catalogue.as_ref()?.palette;
-        let [Some(head), Some(body), Some(legs), Some(feet)] =
-            colours.map(|index| palette.get(usize::from(index)).copied())
-        else {
-            return None;
-        };
-        Some(oteryn_client_ui::appearance::Preview {
+        let tint = mailbox
+            .properties
+            .appearance
+            .catalogue
+            .as_ref()
+            .and_then(|catalogue| {
+                let [head, body, legs, feet] =
+                    colours.map(|index| catalogue.palette.get(usize::from(index)).copied());
+                Some([head?, body?, legs?, feet?])
+            });
+        Some(oteryn_client_ui::inspection::OutfitPortrait {
             look_type: *look_type,
             addons: *addons,
-            colours: [head, body, legs, feet],
+            colours: tint,
         })
     }
 }

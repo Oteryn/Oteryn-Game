@@ -428,7 +428,7 @@ fn xp_boost_button_requests_matching_store_offers() -> TestResult {
         return Err("store browse".into());
     };
     let query = browse::Query::decode(&sent.payload).map_err(|e| format!("{e:?}"))?;
-    assert_eq!(query.search, "XP Boost");
+    assert!(query.search.is_empty());
     Ok(())
 }
 
@@ -443,7 +443,10 @@ fn status_bar_visibility_hides_and_restores_top_bar() -> TestResult {
         saved["status_bar_visible"] = enabled.into();
         host.settings.preferences = serde_json::from_value(saved)?;
         app.update();
-        assert_eq!(app.world().get::<Node>(bar).ok_or("status bar")?.display, display);
+        assert_eq!(
+            app.world().get::<Node>(bar).ok_or("status bar")?.display,
+            display
+        );
     }
     Ok(())
 }

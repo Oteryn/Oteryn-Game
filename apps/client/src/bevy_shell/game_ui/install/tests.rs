@@ -147,7 +147,7 @@ fn exercise_sort(
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     install_container_tools(&mut app);
     app.update();
-    if recursive {
+    if recursive != preference {
         let nested = app
             .world_mut()
             .query::<(&Text, &ChildOf)>()

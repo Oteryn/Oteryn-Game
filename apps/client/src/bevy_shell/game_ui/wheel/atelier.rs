@@ -405,10 +405,11 @@ fn project(
             {
                 for (position, id) in gem.modifiers.iter().enumerate() {
                     let kind = u8::from(position == 2);
-                    if let Some(modifier) = current
-                        .modifiers
-                        .iter()
-                        .find(|m| m.kind == kind && m.id == *id)
+                    if state.workshop_kind.is_none_or(|filter| filter == kind)
+                        && (!state.in_vessel || gem.vessel)
+                        && let Some(modifier) = current.modifiers.iter().find(|m| {
+                            m.kind == kind && m.id == *id && m.name.to_lowercase().contains(&search)
+                        })
                     {
                         add(
                             Kind::Action(GemControl::Modifier {

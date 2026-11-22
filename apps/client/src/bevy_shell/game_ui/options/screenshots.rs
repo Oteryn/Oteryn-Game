@@ -98,7 +98,7 @@ fn system_open(folder: &std::path::Path) -> std::io::Result<()> {
 fn open_directory(
     event: On<Activate>,
     owner: NonSend<HostOwner>,
-    state: Res<OptionsState>,
+    mut state: ResMut<OptionsState>,
     guard: ModalGuard,
     opener: Option<Res<FolderOpener>>,
 ) {
@@ -111,17 +111,29 @@ fn open_directory(
     }
     let configured = owner.settings.preferences.screenshots.effective().directory;
     let open: fn(&std::path::Path) -> std::io::Result<()> = opener.map_or(system_open, |o| o.0);
-    std::thread::spawn(move || {
-        let result =
-            crate::play::screenshot::screenshot_directory(std::path::Path::new(&configured))
-                .and_then(|directory| {
-                    crate::play::screenshot::ensure_screenshot_directory(&directory)?;
-                    open(&directory)
-                });
-        if let Err(error) = result {
-            warn!("Open screenshots directory: {error}");
-        }
-    });
+    if state
+        .opening_folder
+        .as_ref()
+        .is_some_and(|task| !task.is_finished())
+    {
+        return;
+    }
+    match std::thread::Builder::new()
+        .name("screenshots-folder".into())
+        .spawn(move || {
+            let result =
+                crate::play::screenshot::screenshot_directory(std::path::Path::new(&configured))
+                    .and_then(|directory| {
+                        crate::play::screenshot::ensure_screenshot_directory(&directory)?;
+                        open(&directory)
+                    });
+            if let Err(error) = result {
+                warn!("Open screenshots directory: {error}");
+            }
+        }) {
+        Ok(task) => state.opening_folder = Some(task),
+        Err(error) => warn!("Open screenshots directory: {error}"),
+    }
 }
 
 fn use_folder(
@@ -162,15 +174,44 @@ mod tests {
             .screenshots
             .directory = folder.to_string_lossy().into_owned();
         app.insert_resource(FolderOpener(|directory| {
-            std::fs::write(directory.join("opened"), [])
+            use std::io::Write;
+            let mut file = std::fs::File::options()
+                .append(true)
+                .create(true)
+                .open(directory.join("opened"))?;
+            file.write_all(b"1")?;
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            Ok(())
         }));
-        let button = app.world_mut().spawn_empty().observe(open_directory).id();
+        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+            .init_asset::<Font>()
+            .init_asset::<Image>()
+            .add_systems(
+                Startup,
+                (
+                    crate::bevy_shell::ui::setup,
+                    |mut commands: Commands, skins: Res<Skins>, owner: NonSend<HostOwner>| {
+                        let parent = commands.spawn(Node::default()).id();
+                        build(&mut commands, parent, &skins, &owner.settings.preferences);
+                    },
+                )
+                    .chain(),
+            );
+        app.update();
+        let button = app
+            .world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find_map(|(e, name)| (name.as_str() == "screenshots.open-directory").then_some(e))
+            .ok_or("installed folder control")?;
+        app.world_mut().trigger(Activate { entity: button });
         app.world_mut().trigger(Activate { entity: button });
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
         while !folder.join("opened").exists() && std::time::Instant::now() < deadline {
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
-        assert!(folder.join("opened").is_file());
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        assert_eq!(std::fs::read(folder.join("opened"))?, b"1");
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;

@@ -46,35 +46,8 @@ impl crate::play::PlayLink {
     pub(crate) fn take_window_notices(&self) -> std::collections::VecDeque<WindowNotice> {
         std::mem::take(&mut crate::play::mailbox::lock(&self.mailbox).window_notices)
     }
-    pub(crate) fn private_screen_message(
-        &self,
-        cursor: &mut Option<(u64, u64)>,
-    ) -> (bool, Option<String>) {
-        let mailbox = crate::play::mailbox::lock(&self.mailbox);
-        let panel = &mailbox.chat;
-        let previous = cursor.replace((panel.scope, panel.received));
-        let reset = previous.is_none_or(|(scope, _)| scope != panel.scope);
-        let received = previous.map_or(0, |(_, n)| n);
-        let count = usize::try_from(panel.received.wrapping_sub(received)).unwrap_or(usize::MAX);
-        let start = panel.lines.len().saturating_sub(count);
-        let latest = panel.lines[start..]
-            .iter()
-            .enumerate()
-            .rev()
-            .find_map(|(index, line)| {
-                if let oteryn_session::ChatLine::Private { speaker_name, text } = line
-                    && panel
-                        .recipients
-                        .get(start + index)
-                        .is_none_or(Option::is_none)
-                    && panel.console.communication.visible(line)
-                {
-                    Some(format!("{speaker_name}: {text}"))
-                } else {
-                    None
-                }
-            });
-        (reset, latest)
+    pub(crate) fn chat_scope(&self) -> u64 {
+        crate::play::mailbox::lock(&self.mailbox).chat.scope
     }
     pub(crate) fn look_message(&self) -> Option<LookMessage> {
         crate::play::mailbox::lock(&self.mailbox)

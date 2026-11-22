@@ -258,7 +258,7 @@ fn real_restore_projects_graphics_to_play_scene_and_actual_bevy_window() -> Test
     assert_eq!(play.view.preferences().interface_scale, 125);
     assert_eq!(play.view.preferences().ui_scale, 150);
     let mut window = bevy::prelude::Window::default();
-    super::super::apply_window(&host.settings.preferences, &mut window);
+    super::super::render_settings::apply_window(&host.settings.preferences, &mut window);
     assert!(matches!(
         window.mode,
         bevy::window::WindowMode::BorderlessFullscreen(_)
@@ -270,7 +270,7 @@ fn real_restore_projects_graphics_to_play_scene_and_actual_bevy_window() -> Test
         d.vsync = true;
     });
     host.apply(true);
-    super::super::apply_window(&host.settings.preferences, &mut window);
+    super::super::render_settings::apply_window(&host.settings.preferences, &mut window);
     assert_eq!(window.mode, bevy::window::WindowMode::Windowed);
     assert_eq!(window.present_mode, bevy::window::PresentMode::AutoVsync);
     Ok(())

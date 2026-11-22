@@ -425,7 +425,11 @@ fn private_message_receipt_reaches_game_window_only_when_enabled() -> TestResult
         .add_systems(Update, project);
     let text = app
         .world_mut()
-        .spawn((ScreenArea(Area::Top), Text::default(), TextColor::default()))
+        .spawn((
+            ScreenArea(Area::Private),
+            Text::default(),
+            TextColor::default(),
+        ))
         .id();
     for (seq, enabled, ignored) in [(1, true, true), (2, true, false), (3, false, false)] {
         let mut host = app.world_mut().non_send_mut::<HostOwner>();
@@ -521,6 +525,23 @@ fn incoming_private_message_projects_over_world() -> TestResult {
             .iter(app.world())
             .all(|t| t.0.is_empty()),
         "a recovery snapshot must not replay the previous private message"
+    );
+    outbox.bevy_party_selected(true, true, "Ann");
+    outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
+        server_sequence: 3,
+        base_revision: 2,
+        new_revision: 3,
+        value: oteryn_session::ChatLine::Private {
+            speaker_name: "Ann".into(),
+            text: "Own echo".into(),
+        },
+    })]);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .all(|t| t.0.is_empty())
     );
     Ok(())
 }
@@ -662,6 +683,49 @@ fn confirmed_loot_paints_each_item_at_its_own_value() -> TestResult {
             .iter(app.world())
             .any(|(_, color)| color.0 == Color::srgb_u8(170, 85, 255)),
         "confirmed market value colours the non-currency item"
+    );
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .view
+            .notification_input(&[NormalizedInputEvent::Key {
+                code: KeyCode::new(69)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Control)
+                    .with(Modifier::Alt)
+                    .with(Modifier::Shift),
+                repeat: false,
+            }])
+    );
+    app.update();
+    app.world_mut().non_send_mut::<HostOwner>().play = None;
+    app.update();
+    let (link, _commands, outbox) = play_channel();
+    app.world_mut().non_send_mut::<HostOwner>().play = Some(crate::bevy_shell::owner::ActivePlay {
+        link,
+        view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+    });
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: vec![AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: vec![],
+            gold: 5,
+        }],
+    })]);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&TextSpan>()
+            .iter(app.world())
+            .any(|text| text.0.contains('5')),
+        "first loot of new session"
     );
     Ok(())
 }

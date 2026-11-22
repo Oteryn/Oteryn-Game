@@ -10,7 +10,7 @@ impl PlayLink {
             .as_ref()
             .and_then(|inventory| {
                 inventory.equipment.iter().find(|entry| {
-                    entry.slot == oteryn_session::item_movement::EquipmentSlot::LeftHand
+                    entry.slot == oteryn_session::item_movement::EquipmentSlot::RightHand
                 })
             })
             .map(|entry| entry.item.item_definition_ref.get());

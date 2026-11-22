@@ -450,3 +450,51 @@ fn guild_channel_restore_requires_confirmed_membership() -> Result<(), Box<dyn s
     );
     Ok(())
 }
+
+#[test]
+fn replacing_preferences_restores_tabs_before_recording_the_open_console()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::ChannelTab;
+    let folder = tempfile::tempdir()?;
+    let profile = folder.path().join("profile.json");
+    let transfer = folder.path().join("transfer.json");
+    let mut settings = crate::play::SettingsState::new(Some(profile));
+    let (link, _commands, outbox) = play_channel();
+    let mut imported = settings.preferences.clone();
+    imported.console.local_channels = [false, false, true];
+    imported.console.conversations = vec!["Ada".into()];
+    let mut exported = crate::play::SettingsState::new(None);
+    exported.apply(imported);
+    exported.export_to(&transfer)?;
+    settings.sync_chat_context(&link);
+    link.chat_open_conversation("Bryn");
+    settings.sync_chat_context(&link);
+    settings.import_from(&transfer)?;
+    let verify = |settings: &mut crate::play::SettingsState| {
+        settings.sync_chat_context(&link);
+        assert_eq!(
+            settings.preferences.console.local_channels,
+            [false, false, true]
+        );
+        assert_eq!(settings.preferences.console.conversations, ["Ada"]);
+        let console = link.chat_panel().console;
+        assert!(console.channels.contains(&ChannelTab::Npc));
+        assert!(!console.channels.contains(&ChannelTab::Loot));
+        assert!(!console.channels.contains(&ChannelTab::ServerLog));
+        assert!(
+            console
+                .current
+                .as_ref()
+                .is_none_or(|tab| console.channels.contains(tab))
+        );
+    };
+    verify(&mut settings);
+    settings.reset_defaults()?;
+    settings.sync_chat_context(&link);
+    assert!(settings.preferences.console.conversations.is_empty());
+    settings.restore_backup()?;
+    verify(&mut settings);
+    outbox.screenshot_activity_handoff()?;
+    verify(&mut settings);
+    Ok(())
+}

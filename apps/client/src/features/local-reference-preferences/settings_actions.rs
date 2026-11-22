@@ -185,6 +185,8 @@ impl SettingsState {
     }
 
     pub(super) fn accept_replaced(&mut self, preferences: ReferencePreferences) {
+        self.chat_mode_seen = None;
+        self.change_screenshot_triggers(preferences.screenshots.triggers());
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
@@ -238,7 +240,7 @@ impl SettingsState {
             custom_choices_refreshed: None,
             pending_chat_mode: None,
             chat_mode_seen: None,
-            restoring_rooms: [false; 8],
+            room_retry: [None; 8],
             unconfirmed_rooms: [false; 8],
             restore_guild_channel: false,
             chat_context: None,
@@ -271,6 +273,9 @@ impl SettingsState {
             preferences: {
                 let mut preferences = preferences;
                 preferences.reconcile_controls(None);
+                if let Some(engine) = session_options.startup_engine {
+                    preferences.graphics.engine = engine;
+                }
                 preferences.miscellaneous = session_options;
                 preferences
             },
@@ -429,6 +434,9 @@ impl SettingsState {
             *record = (*record).max(current);
         }
         preferences.reconcile_controls(Some(&self.preferences));
+        if self.preferences.graphics.engine != preferences.graphics.engine {
+            preferences.miscellaneous.startup_engine = Some(preferences.graphics.engine);
+        }
         let result = self.persist_preferences(&preferences);
         // A disk error must not disable local controls for this process.
         if self.preferences.bar_actions != preferences.bar_actions {
@@ -463,6 +471,7 @@ impl SettingsState {
             self.pending_chat_mode = None;
             self.chat_context = None;
         }
+        self.change_screenshot_triggers(preferences.screenshots.triggers());
         self.preferences = preferences;
         self.feedback = match result {
             #[cfg(bevy_shell)]

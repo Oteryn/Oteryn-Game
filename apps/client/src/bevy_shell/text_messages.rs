@@ -39,7 +39,7 @@ struct ScreenMessages {
     dismissals: u64,
     last_sequence: Option<u64>,
     namespace: u64,
-    chat_cursor: Option<(u64, u64)>,
+    chat_scope: Option<u64>,
     last_look: Option<u64>,
 }
 
@@ -117,8 +117,8 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<GameRegions>) {
                     width: percent(80.),
                     top: match area {
                         Area::Loot => percent(50.),
-                        Area::Private => percent(27.),
                         Area::Top => percent(15.),
+                        Area::Private => percent(27.),
                         Area::Look => percent(40.),
                         Area::Center => percent(60.),
                         Area::Bottom => Val::Auto,
@@ -153,13 +153,24 @@ fn project(
             };
         }
         state.observe(&play.view, now);
+        let scope = play.link.chat_scope();
+        if state.chat_scope.replace(scope) != Some(scope)
+            && state.slots[Area::Private as usize]
+                .as_ref()
+                .is_some_and(|slot| {
+                    slot.kind
+                        == Some(crate::play::feature_local_text_messages::view::NoticeKind::Private)
+                })
+        {
+            state.slots[Area::Private as usize] = None;
+        }
         for notice in play.link.take_window_notices() {
             if !notice.kind.visible(&owner.settings.preferences) {
                 continue;
             }
             let (area, colour) = match notice.kind {
                 crate::play::feature_local_text_messages::view::NoticeKind::Private => {
-                    (Area::Top, [96, 250, 250])
+                    (Area::Private, [96, 250, 250])
                 }
                 _ => (Area::Bottom, [255; 3]),
             };
@@ -167,13 +178,6 @@ fn project(
             if let Some(slot) = &mut state.slots[area as usize] {
                 slot.kind = Some(notice.kind);
             }
-        }
-        let (reset, private) = play.link.private_screen_message(&mut state.chat_cursor);
-        if reset {
-            state.slots[Area::Private as usize] = None;
-        }
-        if let Some(text) = private {
-            state.show(Area::Private, &text, [95, 247, 247], now);
         }
         if let Some(message) = play.link.look_message() {
             state.observe_look(&message, now);

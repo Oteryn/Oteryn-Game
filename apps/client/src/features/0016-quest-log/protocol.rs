@@ -24,7 +24,14 @@ pub(in crate::play) async fn send<S: SessionStream>(
 
 impl Outbox {
     pub(in crate::play) fn quest_initialize(&self, state: QuestState) {
-        crate::play::mailbox::lock(&self.0).quest.state = state;
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        if matches!(
+            &state.log.view,
+            Some(oteryn_client_runtime::quest_log::QuestLogView::List(_))
+        ) {
+            mailbox.quest.tracker.observe(&state.list);
+        }
+        mailbox.quest.state = state;
     }
 
     pub(in crate::play) fn quest_result(&self, result: &oteryn_session::GatedCommandResult) {
@@ -44,10 +51,17 @@ impl Outbox {
                         tracked,
                     }) if tracked.is_empty() => {
                         let panel = &mut mailbox.quest;
+                        #[cfg(bevy_shell)]
+                        let prior = before_list(panel);
                         panel.tracker.observe(&list);
                         panel.state.list = list;
                         panel.tracker.confirm(&panel.state.log.tracked);
                         panel.state.refusal = None;
+                        #[cfg(bevy_shell)]
+                        if let Some(prior) = prior {
+                            let changes = list_changes(panel, &prior);
+                            mailbox.achievement_banners.extend(changes);
+                        }
                     }
                     _ => {
                         mailbox.quest.state.refusal =
@@ -73,6 +87,46 @@ impl Outbox {
     }
 }
 
+#[cfg(bevy_shell)]
+fn before_list(
+    panel: &oteryn_client_ui::quest_log::QuestPanel,
+) -> Option<std::collections::BTreeMap<u32, bool>> {
+    (panel.tracker.observed_list()
+        || !panel.state.list.is_empty()
+        || matches!(
+            panel.state.log.view,
+            Some(oteryn_client_runtime::quest_log::QuestLogView::List(_))
+        ))
+    .then(|| {
+        panel
+            .state
+            .list
+            .iter()
+            .map(|q| (q.quest_index, q.completed))
+            .collect()
+    })
+}
+
+#[cfg(bevy_shell)]
+fn list_changes(
+    panel: &oteryn_client_ui::quest_log::QuestPanel,
+    prior: &std::collections::BTreeMap<u32, bool>,
+) -> Vec<String> {
+    panel
+        .state
+        .list
+        .iter()
+        .filter_map(|entry| {
+            let label = match prior.get(&entry.quest_index) {
+                Some(false) if entry.completed => "Quest completed",
+                None if !entry.completed => "Quest started",
+                _ => return None,
+            };
+            Some(format!("{label}: {}", panel.title(entry.quest_index)))
+        })
+        .collect()
+}
+
 pub(in crate::play) fn reduce(
     mailbox: &mut crate::play::mailbox::Mailbox,
     deltas: Vec<QuestUpdate>,
@@ -80,36 +134,18 @@ pub(in crate::play) fn reduce(
     let panel = &mut mailbox.quest;
     for delta in deltas {
         #[cfg(bevy_shell)]
-        let prior = matches!(&delta, QuestUpdate::Delta(_)).then(|| {
-            (
-                panel
-                    .state
-                    .list
-                    .iter()
-                    .map(|q| (q.quest_index, q.completed))
-                    .collect::<std::collections::BTreeMap<_, _>>(),
-                matches!(
-                    panel.state.log.view,
-                    Some(oteryn_client_runtime::quest_log::QuestLogView::List(_))
-                ) || !panel.state.list.is_empty(),
-            )
-        });
+        let prior = matches!(&delta, QuestUpdate::Delta(_))
+            .then(|| before_list(panel))
+            .flatten();
         if let Err(refusal) = panel.state.apply_update(&delta) {
             panel.state.refusal = Some(refusal);
             continue;
         }
         #[cfg(bevy_shell)]
-        if let Some((prior, known_list)) = prior {
-            for entry in &panel.state.list {
-                let label = match prior.get(&entry.quest_index) {
-                    Some(false) if entry.completed => "Quest completed",
-                    None if known_list && !entry.completed => "Quest started",
-                    _ => continue,
-                };
-                mailbox
-                    .achievement_banners
-                    .push_back(format!("{label}: {}", panel.title(entry.quest_index)));
-            }
+        if let Some(prior) = prior {
+            mailbox
+                .achievement_banners
+                .extend(list_changes(panel, &prior));
         }
         if matches!(&delta, QuestUpdate::Snapshot(_)) {
             panel.tracker.reconcile();

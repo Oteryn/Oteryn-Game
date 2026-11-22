@@ -1,6 +1,9 @@
 //! The main-thread owner of the existing runtime, admitted play and preference store.
 mod device_sign_out;
 mod local_saves;
+mod play_end;
+#[cfg(test)]
+pub(crate) use play_end::offline_training_logout_status;
 mod options_draft;
 mod web_link;
 
@@ -437,21 +440,6 @@ impl HostOwner {
                     self.login.show();
                 }
             }
-        }
-    }
-    fn finish_play(&mut self, end: PlayEnd) {
-        let message = match end {
-            PlayEnd::LoggedOut => "Logged out. Choose a character after signing in again.".into(),
-            PlayEnd::Ended(class) => error_text(crate::GameplayEntryError::Rejected(class)),
-        };
-        self.leave(&message);
-        if matches!(end, PlayEnd::LoggedOut)
-            && self.entry.as_mut().is_some_and(|entry| {
-                entry.set_session_options(self.settings.preferences.miscellaneous);
-                entry.is_entering() || entry.request_picker()
-            })
-        {
-            self.phase = Phase::Entering;
         }
     }
     fn reset_input(&mut self) {

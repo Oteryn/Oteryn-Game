@@ -40,6 +40,7 @@ pub(in crate::bevy_shell) struct Installed;
 
 #[derive(Resource, Default)]
 struct OptionsState {
+    opening_folder: Option<std::thread::JoinHandle<()>>,
     page: Page,
     advanced: bool,
     choice: Option<&'static str>,

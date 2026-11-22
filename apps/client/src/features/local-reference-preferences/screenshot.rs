@@ -106,10 +106,7 @@ pub(crate) struct CaptureObservations {
     was_low: Option<bool>,
 }
 impl crate::play::mailbox::Mailbox {
-    pub(in crate::play) fn observe_capture_event(
-        &mut self,
-        event: &oteryn_session::SessionEvent,
-    ) {
+    pub(in crate::play) fn observe_capture_event(&mut self, event: &oteryn_session::SessionEvent) {
         use oteryn_session::analyser_transport::AnalyserImpact;
         use oteryn_session::{SessionEvent, analyser_transport::AnalyserFact};
         let mut observe = |fact: &AnalyserFact| {
@@ -119,14 +116,6 @@ impl crate::play::mailbox::Mailbox {
             } = fact
             {
                 self.screen_loot.record(corpse_items, *gold);
-            }
-            if let AnalyserFact::KillLoot { corpse_items, .. } = fact
-                && corpse_items
-                    .iter()
-                    .any(|item| self.analyser.loot_tracked.contains(&item.item_type.get()))
-            {
-                self.capture_observations.tracked_loot =
-                    self.capture_observations.tracked_loot.wrapping_add(1);
             }
             if matches!(fact, AnalyserFact::Kill { .. }) {
                 self.capture_observations.credited_kills =
@@ -162,7 +151,11 @@ impl crate::play::mailbox::Mailbox {
 }
 impl crate::play::PlayLink {
     fn capture_observations(&self) -> CaptureObservations {
-        crate::play::mailbox::lock(&self.mailbox).capture_observations
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        CaptureObservations {
+            tracked_loot: mailbox.analyser.tracked_loot_receipts,
+            ..mailbox.capture_observations
+        }
     }
 }
 pub(crate) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
