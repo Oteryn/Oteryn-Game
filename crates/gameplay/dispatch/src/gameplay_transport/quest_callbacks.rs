@@ -6,6 +6,7 @@ use super::{
 };
 mod admission;
 mod conditional_cells;
+mod creature_effects;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;

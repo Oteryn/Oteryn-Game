@@ -1182,7 +1182,7 @@ pub(super) async fn wire(
     result
 }
 
-pub(super) use scenario::scenario;
+pub(super) use scenario::{npc_scenario, scenario};
 
 #[allow(
     unused_imports,

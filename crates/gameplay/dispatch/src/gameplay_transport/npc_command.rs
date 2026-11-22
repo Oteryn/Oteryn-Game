@@ -60,6 +60,7 @@ mod marriage;
 mod monk;
 mod mordecai_shop;
 mod npc_item_exchanges;
+mod orc_king;
 mod planegazer_finale;
 mod premium_purchase;
 mod quest_dialogue;
@@ -916,6 +917,11 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
         )
         .await;
+    }
+    if let Some(step) = orc_king::prepare(admission, &runtime, actor, command, &intent) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     // Eligible reward callbacks own their exact keyword before dedicated NPC
     // dialogue; ineligible stages remain with that dialogue's native owner.
