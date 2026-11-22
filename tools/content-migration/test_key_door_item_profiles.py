@@ -19,7 +19,8 @@ class KeyDoorProfileTests(unittest.TestCase):
                                   (1649, 'DOOR', False), (2967, 'KEY', False),
                                   (2968, 'KEY', False), (5097, 'DOOR', True),
                                   (6248, 'DOOR', True), (5102, 'DOOR', True),
-                                  (5103, 'DOOR', False), (6264, 'DOOR', True),
+                                  (5103, 'DOOR', False), (5120, 'DOOR', True),
+                                  (5121, 'DOOR', False), (6264, 'DOOR', True),
                                   (6265, 'DOOR', False)]:
             with self.subTest(item=item):
                 row = profiles.get(f'oteryn:item.tibia.i{item}')
@@ -29,6 +30,14 @@ class KeyDoorProfileTests(unittest.TestCase):
                 self.assertIs(row['attributes']['blocks_movement'], solid)
                 self.assertIs(row['attributes']['blocks_projectile'], solid)
                 self.assertTrue(row['admission']['materializable'])
+
+    def test_koshei_corridor_decorations_do_not_block_movement(self):
+        rows = json.loads((ROOT / keys.PATH).read_bytes())['records']
+        profiles = {row['production_definition']['production_key']: row for row in rows}
+        for number in [1892, 1895, 1898, 1899, 3110, 3115, 3116, 6298]:
+            with self.subTest(number=number):
+                row = profiles[f'oteryn:item.tibia.i{number}']
+                self.assertIs(row['attributes']['blocks_movement'], False)
 
     def test_duplicate_identity_refuses_without_partially_changing_output(self):
         record = json.loads((ROOT / keys.PATH).read_bytes())['records'][0]

@@ -92,6 +92,11 @@ pub fn palette_mask(family: Family, key: &str) -> u8 {
     let Some(appearance) = palette_appearance(key) else {
         return 0;
     };
+    // The timed Koshei coffin is a canonical Item state outside the static
+    // floor catalogue. Crystal 201189f8 items.xml:223–226 gives it floorchange=down.
+    if family == Family::Item && appearance == 167 {
+        return DOWN;
+    }
     let lookup = |table: &[(u16, u8)]| {
         table
             .binary_search_by_key(&appearance, |(id, _)| *id)

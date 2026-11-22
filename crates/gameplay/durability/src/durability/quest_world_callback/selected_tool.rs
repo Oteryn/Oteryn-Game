@@ -1,7 +1,17 @@
 //! The carried selection accompanies a World turn without changing legacy contexts.
 use super::QuestWorldContext;
-use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseTarget};
-use serde::Serialize;
+use oteryn_protocol_oteryn::{
+    item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
+    world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
+    world_object::{CAPABILITY_ITEM_USE_V1, MapUseTarget, UseTarget, decode_use_intent_target},
+};
+use serde::{Deserialize, Serialize};
+
+const USE_CAPABILITIES: [u32; 3] = [
+    CAPABILITY_ITEM_VIEW_MOVE_V1,
+    CAPABILITY_ITEM_USE_V1,
+    CAPABILITY_WORLD_INTERACTION_V1,
+];
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct QuestWorldToolContext {
@@ -11,10 +21,13 @@ pub struct QuestWorldToolContext {
     pub(super) selected_tool: Option<SelectedQuestTool>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub(super) struct SelectedQuestTool {
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SelectedQuestTool {
     pub source: [u8; 16],
     pub intent: Vec<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(super) target: Option<SelectedGroundTarget>,
 }
 
 impl From<QuestWorldContext> for QuestWorldToolContext {
@@ -52,15 +65,7 @@ impl QuestWorldContext {
         if source == [0; 16] || intent.is_empty() || intent.len() > 4096 {
             return None;
         }
-        let decoded = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
-            &[
-                oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
-                oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
-                oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
-            ],
-            &intent,
-        )
-        .ok()?;
+        let decoded = decode_use_intent_target(&USE_CAPABILITIES, &intent).ok()?;
         if matches!(decoded.target, UseTarget::WorldObject(_))
             || decoded.use_with.is_some()
             || decoded.use_with_position.is_some()
@@ -70,7 +75,55 @@ impl QuestWorldContext {
         }
         Some(QuestWorldToolContext {
             world: self,
-            selected_tool: Some(SelectedQuestTool { source, intent }),
+            selected_tool: Some(SelectedQuestTool {
+                source,
+                intent,
+                target: None,
+            }),
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct SelectedGroundTarget {
+    pub item: [u8; 16],
+    pub actor_position: [i32; 3],
+    pub target_position: [i32; 3],
+}
+
+impl QuestWorldContext {
+    /// The current map-handle owner supplies the Ground instance and actor position.
+    pub fn with_selected_ground_tool(
+        self,
+        source: [u8; 16],
+        intent: Vec<u8>,
+        target: [u8; 16],
+        actor_position: [i32; 3],
+        target_position: [i32; 3],
+    ) -> Option<QuestWorldToolContext> {
+        if source == [0; 16] || target == [0; 16] || source == target || intent.len() > 4096 {
+            return None;
+        }
+        let decoded = decode_use_intent_target(&USE_CAPABILITIES, &intent).ok()?;
+        if matches!(decoded.target, UseTarget::WorldObject(_))
+            || decoded.use_with.is_some()
+            || decoded.use_with_position.is_some()
+            || !matches!(decoded.use_with_map_item, Some(MapUseTarget::Item(_)))
+        {
+            return None;
+        }
+        Some(QuestWorldToolContext {
+            world: self,
+            selected_tool: Some(SelectedQuestTool {
+                source,
+                intent,
+                target: Some(SelectedGroundTarget {
+                    item: target,
+                    actor_position,
+                    target_position,
+                }),
+            }),
         })
     }
 }

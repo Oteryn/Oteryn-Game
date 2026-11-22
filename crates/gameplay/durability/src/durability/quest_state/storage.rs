@@ -23,7 +23,12 @@ impl DurabilityRoot {
                 [row]=>{
                     let proof:serde_json::Value=serde_json::from_slice(&row.try_get::<Vec<u8>,_>("proof")?).map_err(|_|DurabilityError::InvalidStoredState)?;
                     let selected=proof.get("carried_use").or_else(||proof.get("context").and_then(|context|context.get("selected_tool"))).ok_or(DurabilityError::InvalidStoredState)?;
-                    let use_:super::super::reward_claim_mint::QuestCarriedUse=serde_json::from_value(selected.clone()).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    let use_:super::super::reward_claim_mint::QuestCarriedUse=if proof.get("carried_use").is_some() {
+                        serde_json::from_value(selected.clone()).map_err(|_|DurabilityError::InvalidStoredState)?
+                    } else {
+                        let tool:super::super::quest_world_callback::SelectedQuestTool=serde_json::from_value(selected.clone()).map_err(|_|DurabilityError::InvalidStoredState)?;
+                        super::super::reward_claim_mint::QuestCarriedUse { source:tool.source,intent:tool.intent,recipe_target:None }
+                    };
                     let source:sqlx::types::Uuid=row.try_get("item_instance_id")?;
                     if use_.source!=*source.as_bytes() {return Err(DurabilityError::InvalidStoredState);}
                     Some(use_.intent==intent)

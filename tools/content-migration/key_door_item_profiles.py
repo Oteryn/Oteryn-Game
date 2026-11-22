@@ -1,11 +1,15 @@
-"""Admit source-derived M06/M01c/Panpipe keys, locked doors and level-door pairs."""
+"""Admit source-derived M06/M01c/Panpipe keys, doors and Koshei catacomb route items."""
 import hashlib
 import json
 
 from native_profile_composition import encode_native_profile
 
 PATH = 'tools/content-schema/native-gameplay/key-door-item-profiles.json'
-IDS = {1628, 1631, 1646, 1647, 1648, 1649, 2967, 2968, 5097, 5102, 5103, 6248, 6264, 6265}
+IDS = {
+    1628, 1631, 1646, 1647, 1648, 1649, 1892, 1895, 1898, 1899,
+    2967, 2968, 3110, 3115, 3116, 5097, 5102, 5103, 5120, 5121, 6248, 6264,
+    6265, 6298,
+}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):

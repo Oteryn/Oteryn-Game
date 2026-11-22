@@ -771,6 +771,13 @@ mod tests {
             "engitem-ice-seal-2-2",
             "goblin-merchant-elevator-lower",
             "goblin-merchant-elevator-upper",
+            "koshei-amulet",
+            "koshei-statue-33276-32444",
+            "koshei-statue-33278-32450",
+            "koshei-statue-33281-32442",
+            "koshei-statue-33284-32450",
+            "koshei-statue-33286-32444",
+            "koshei-sundial",
             "last-creep-native-blightwalker",
             "last-creep-native-carniphila",
             "last-creep-native-exit",
@@ -827,7 +834,7 @@ mod tests {
         ] {
             assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
         }
-        assert_eq!(expected.len() - before_qmech_native, 69);
+        assert_eq!(expected.len() - before_qmech_native, 76);
         assert_eq!(
             callbacks
                 .into_iter()

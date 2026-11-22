@@ -324,7 +324,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                     | "oteryn:creature.the_old_widow"
             )
         }) {
-            // Retained native-goal, Hireling and BossYield owners qualify these Items.
+            // Retained native-goal, Hireling, BossYield and Koshei map sources qualify these Items.
             // Every remaining unavailable yield still refuses the complete table.
             for key in [
                 "oteryn:item.tibia.i3061",
@@ -333,6 +333,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:item.tibia.i3002",
                 "oteryn:item.tibia.i3069",
                 "oteryn:item.tibia.i3070",
+                "oteryn:item.tibia.i3116",
                 "oteryn:item.tibia.i7416",
             ] {
                 let facts = loot
@@ -348,10 +349,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:creature.the_old_widow" => {
                     ("oteryn:item.tibia.i5977", &["oteryn:item.tibia.i12320"])
                 }
-                _ => (
-                    "oteryn:item.tibia.i4097",
-                    &["oteryn:item.tibia.i3116", "oteryn:item.tibia.i3309"],
-                ),
+                _ => ("oteryn:item.tibia.i4097", &["oteryn:item.tibia.i3309"]),
             };
             assert_eq!(corpse.key, body);
             let binding = loot
@@ -468,6 +466,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 assert_eq!(tooth.item.revision, "definition-r1");
                 assert!(tooth.materializable);
                 assert!(tooth.stackable);
+            } else if policy.definition_key == "oteryn:creature.koshei_the_deathless" {
+                assert_eq!(corpse.key, "oteryn:item.tibia.i7535");
             }
             if matches!(
                 policy.definition_key.as_str(),
@@ -593,7 +593,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 261, 38, 37)
+        (52, 260, 38, 38)
     );
     assert_eq!(
         admitted,
@@ -623,6 +623,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.grand_mother_foulscale",
             "oteryn:creature.ice_overlord",
             "oteryn:creature.ichgahal",
+            "oteryn:creature.koshei_the_deathless",
             "oteryn:creature.mitmah_vanguard",
             "oteryn:creature.murcion",
             "oteryn:creature.outburst",
