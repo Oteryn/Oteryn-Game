@@ -667,7 +667,7 @@ fn storage_owner_preserves_order_and_rejects_unowned_effects() -> Result<(), Npc
 
 // The accepted source cohorts from both parents retain these exact predecessors.
 // Draconia has no historical definition; Stag and schema2 have separate owners.
-const EXPECTED_LEGACY_QUESTS: [&str; 25] = [
+const EXPECTED_LEGACY_QUESTS: [&str; 26] = [
     "oteryn:quest.a_father_s_burden_quest",
     "oteryn:quest.a_pirates_tail",
     "oteryn:quest.bigfoot_s_burden_quest",
@@ -690,6 +690,7 @@ const EXPECTED_LEGACY_QUESTS: [&str; 25] = [
     "oteryn:quest.the_hidden_city_of_beregar_quest",
     "oteryn:quest.the_inquisition_quest",
     "oteryn:quest.the_paradox_tower_quest",
+    "oteryn:quest.the_postman_missions_quest",
     "oteryn:quest.the_white_raven_monastery_quest",
     "oteryn:quest.tibia_tales",
     "oteryn:quest.tower_defence_quest",
@@ -823,6 +824,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         "oteryn:quest.the_inquisition_quest",
         "oteryn:quest.the_order_of_the_stag_quest",
         "oteryn:quest.the_paradox_tower_quest",
+        "oteryn:quest.the_postman_missions_quest",
         "oteryn:quest.the_white_raven_monastery_quest",
         "oteryn:quest.tibia_tales",
         "oteryn:quest.tower_defence_quest",
@@ -941,6 +943,17 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     // Paradox adds three source-backed Riddler tracks, also starting absent at -1.
     // Dream Courts, Tamoril, Gnomus, Julius and Citizen scopes remain registered.
     assert_eq!(defaults, BTreeMap::from([(-1, 214), (0, 54)]));
+    let postman = runtime
+        .program("oteryn:quest.the_postman_missions_quest")
+        .ok_or("Postman programme")?;
+    assert_eq!(postman.document.tracks.len(), 17);
+    assert!(
+        postman
+            .document
+            .tracks
+            .iter()
+            .all(|track| track.initial == 0)
+    );
     let paradox = NpcRuleCatalog::embedded()
         .map_err(|error| error.to_string())?
         .program("oteryn:quest.the_paradox_tower_quest")
@@ -1221,7 +1234,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
             .iter()
             .filter(|program| program.document.schema == 1)
             .count(),
-        28
+        29
     );
     // Canonical main adds the exact source cohort checked above; schema2
     // Mystery has no fabricated legacy definition or absent-value mapping.
