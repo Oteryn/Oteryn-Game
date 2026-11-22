@@ -78,6 +78,13 @@
       "identity_source": "data/XML/mounts.xml:246"
     },
     {
+      "key": "oteryn:item-grant.mount.227",
+      "kind": "mount",
+      "mount_id": 227,
+      "look_type": 1730,
+      "donor": "https://tibia.fandom.com/wiki/Special:PermanentLink/1194180"
+    },
+    {
       "key": "oteryn:item-grant.mount.23",
       "kind": "mount",
       "mount_id": 23,
@@ -5126,6 +5133,25 @@
         }
       ],
       "progress_key": "spiritual-horseshoe"
+    },
+    {
+      "item_id": 48424,
+      "donor": "https://tibia.fandom.com/wiki/Special:PermanentLink/1194180",
+      "mode": "direct",
+      "premium": false,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.227"
+          ],
+          "owned": "oteryn:item-grant.mount.227",
+          "required": [],
+          "cues": [],
+          "achievements": [
+            "oteryn:achievement/i_wanna_fly_away"
+          ]
+        }
+      ]
     },
     {
       "item_id": 50060,

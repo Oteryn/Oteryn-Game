@@ -211,21 +211,38 @@ fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestRes
 }
 
 fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) -> TestResult {
-    scenario_with_bootstrap(fault, elite_case_enabled, false)
+    scenario_with_bootstrap(fault, elite_case_enabled, Bootstrap::Default)
 }
 
 #[test]
 fn task_board_control_epoch_initializer_allows_live_query_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-control-epoch", || {
-        scenario_with_bootstrap(None, false, true)
+        scenario_with_bootstrap(None, false, Bootstrap::ControlEpoch)
     })
+}
+
+#[test]
+fn task_board_production_mount_offers_purchase_and_unlock() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-mounts", || {
+        scenario_with_bootstrap(None, false, Bootstrap::ProductionMounts)
+    })
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Bootstrap {
+    Default,
+    ControlEpoch,
+    ProductionMounts,
 }
 
 #[allow(clippy::too_many_lines)]
 fn scenario_with_bootstrap(
     fault: Option<RollbackFault>,
     elite_case_enabled: bool,
-    control_epoch_case: bool,
+    bootstrap: Bootstrap,
 ) -> TestResult {
     run(async move |admin| {
         let tag = fault.map_or("task_board_e2e", RollbackFault::tag);
@@ -240,14 +257,18 @@ fn scenario_with_bootstrap(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let cosmetics = cosmetic_cases::cosmetics_packet()?;
+        let cosmetics = if bootstrap == Bootstrap::ProductionMounts {
+            None
+        } else {
+            Some(cosmetic_cases::cosmetics_packet()?)
+        };
         let (controller, pin) =
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
                 world,
                 Some(include_bytes!(
                     "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
                 )),
-                Some(&cosmetics),
+                cosmetics.as_deref(),
             );
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
@@ -468,7 +489,7 @@ fn scenario_with_bootstrap(
         admitted.item_fence = Some(current.item_fence());
         admitted.first_entry = FirstEntryOutcome::Positioned;
 
-        if control_epoch_case {
+        if bootstrap == Bootstrap::ControlEpoch {
             // Execute the same Control initializer as login_local, against its
             // recorded activation. Runtime queries still cannot invent a calendar.
             let sql =
@@ -561,6 +582,16 @@ fn scenario_with_bootstrap(
             ],
         )
         .ok_or("selection")?;
+
+        if bootstrap == Bootstrap::ProductionMounts {
+            progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
+            assert_eq!(full_board(&owner, &mut admitted, 5, 0, "").await?.refusal, 0);
+            cosmetic_cases::production_mounts(&owner, &harness, &mut admitted).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
 
         let legacy = board(&owner, &mut admitted, 0, 0).await?;
         assert!(!legacy.refused);

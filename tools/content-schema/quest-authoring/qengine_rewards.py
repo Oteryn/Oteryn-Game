@@ -195,6 +195,7 @@ def build():
     construction.append_glider(item_packet, inputs[construction_path].decode(), inputs['data/XML/mounts.xml'],
         table_parser, json.loads((ROOT/'content/presentations/bindings/client-ids.json').read_bytes()),
         {'reference':'crystal:'+construction_path,'revision':PIN,'sha256':sha(inputs[construction_path])})
+    qengine_mounts.append_pegasus_feather(item_packet)
     # Retain every source row, but bind construction costs to the existing atomic
     # pieces owner. The ordinary one-item taming path cannot execute these rows.
     native_taming=json.loads((ROOT/'content/cosmetics/taming.json').read_bytes())
