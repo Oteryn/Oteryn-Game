@@ -95,7 +95,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'rock_steady', *qb_barbarian.DONOR_NPCS, *qb_citizen_warrior.DONOR_NPCS, *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
+        'dedoras', 'sven', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
@@ -420,20 +420,89 @@ def build():
     def requirement(track,value,maximum=None):
         return {'track':track,'minimum':value,'maximum':value if maximum is None else maximum}
     library=prefix+'u11_80/the_secret_library/'
+    permission = library+'library_permission'
+    # The retained corpus and Crystal201189f use identical Sven and Dedoras blobs.
+    def barbarian_and_library_source(npc, lines):
+        path=f'data-global/npc/{npc}.lua'
+        revision='201189f871d23597b82caf88fd611454a2ddefb8'
+        return f'crystal:{revision}:{path}:{lines}:sha256:{sha(inputs[path])}'
+    declarations=[{'key':permission, 'quest':'oteryn:quest.the_secret_library_quest',
+                         'initial':-1, 'min':-1, 'max':7, 'writable':True,
+                         'sources':[barbarian_and_library_source('dedoras','90-193')]}]
+    reports=[('isle','small_islands',4,'153-165'),('fishmen','liquid_death',8,'119-131'),
+             ('asuri','asuras',7,'142-153'),('order','falcon_bastion',3,'131-142'),
+             ('desert','darashia',9,'114-124'),('museum','mo_ta',8,'104-115')]
+    for keyword,name,value,lines in reports:
+        add('l2-battle-mage-report-'+keyword,'the_secret_library_quest','dedoras',[keyword],
+            [storage(library+name+'/questline',value-1,value),
+             storage(library+'questlog',-1,1,1)])
+        callbacks[-1]['state_ops']=[{'track':permission,
+            'from':{'kind':'between','minimum':-1,'maximum':5},
+            'effect':{'kind':'add_at_least','value':1,'minimum':1}}]
+        callbacks[-1]['reply']=['I will add your findings to the library research.']
+        callbacks[-1]['sources']=[barbarian_and_library_source('dedoras',lines)]
     library_ready=[storage(library+'library_permission',6,7),storage(library+'questlog',-1,1,1)]
-    for name,value in [('small_islands',4),('liquid_death',8),('asuras',7),('falcon_bastion',3),('darashia',9),('mo_ta',8)]:
+    for _,name,value,_ in reports:
         library_ready.append(storage(library+name+'/questline',value,value,preserve=True))
     add('l2-battle-mage-base','the_secret_library_quest','dedoras',['check'],library_ready,
         outfit=('battle_mage',0),achievement='oteryn:achievement/battle_mage')
     library_done=[requirement(library+'library_permission',7)]
     for name,bit,item,count,words in [('book',1,28792,5,['book','books','sturdy books']),('epaulettes',2,28793,20,['epaulettes'])]:
-        add('l2-battle-mage-'+name,'battle_mage_outfits_quest','dedoras',words,
-            [storage(prefix+'u11_80/battle_mage_outfits/addon'+str(bit),-1,1,0)],
-            take=[(item,count)],outfit=('battle_mage',bit),topic=3,requires=library_done)
+        addon=prefix+'u11_80/battle_mage_outfits/addon'
+        for final, minimum, maximum in [(False,-1,0),(True,1,1)]:
+            add('l2-battle-mage-'+name+('-exalted' if final else ''),'battle_mage_outfits_quest',
+                'dedoras',words,[storage(addon+str(bit),-1,1,0)],take=[(item,count)],
+                outfit=('battle_mage',bit),topic=3,
+                requires=library_done+[requirement(addon+str(3-bit),minimum,maximum)],
+                achievement='oteryn:achievement/exalted_battle_mage' if final else None)
+            callbacks[-1]['inventory']=[{'item':f'oteryn:item.tibia.i{item}',
+                                         'minimum':count+1,'maximum':4294967295}]
+            callbacks[-1]['failure_reply']=['Bring more of the required materials before we trade.']
+            callbacks[-1]['sources']=[barbarian_and_library_source('dedoras','198-216')]
+            if final:
+                callbacks[-1]['completes']=True
+                callbacks[-1]['sources'].append(
+                    'https://tibia.fandom.com/index.php?curid=85574&oldid=848685')
     for word,topic,next_topic in [('addon',0,1),('yes',1,2),('yes',2,3)]:
         offers.append({'npc':'oteryn:npc.dedoras','keywords':[word],'topic':topic,
             'next_topic':next_topic,'storage':[],'requires':library_done,
             'reply':['I need five sturdy books for the first addon or twenty epaulettes for the second.']})
+    barbarian=prefix+'u8_0/barbarian_test/'
+    ice='the_ice_islands_quest'
+    stage=barbarian+'questline'
+    for words,topic,next_topic,before,reply in [
+        (['barbarian'],0,1,-1,'Ask me about the test to become a barbarian.'),
+        (['test'],0,2,-1,'Are you willing to take the barbarian test?'),
+        (['test'],1,2,-1,'Are you willing to take the barbarian test?'),
+        (['yes'],2,3,-1,'Can you take ten sips of our mead without passing out?'),
+        (['mead','barbarian mead'],0,4,1,'Did you bring a honeycomb for the mead?'),
+    ]:
+        offers.append({'npc':'oteryn:npc.sven','keywords':words,'topic':topic,
+            'next_topic':next_topic,'storage':[storage(stage,before,before,preserve=True)],
+            'reply':[reply]})
+    add('sven-start',ice,'sven',['yes'],
+        [storage(stage,-1,1),storage(barbarian+'mission01',-1,1),
+         storage(prefix+'u8_0/the_ice_islands/questline',0,1)],topic=3)
+    callbacks[-1]['reply']=['Bring me a honeycomb and ask about mead.']
+    add('sven-honeycomb',ice,'sven',['yes'],
+        [storage(stage,1,2),storage(barbarian+'mission01',1,2),
+         storage(barbarian+'mead_total_sips',0,0,2147483647)],take=[(5902,1)],topic=4)
+    callbacks[-1]['reply']=['That buys twenty attempts at the mead barrel. Report back once you pass.']
+    add('sven-mead-report',ice,'sven',['mead','barbarian mead'],
+        [storage(stage,3,4),storage(barbarian+'mission02',-1,1,0)],give=(7140,1))
+    callbacks[-1]['reply']=['Take this horn, fill it at the barrel, and use it to calm the bear before hugging it.']
+    add('sven-bear-report',ice,'sven',['hug','bear hugging'],
+        [storage(stage,5,6),storage(barbarian+'mission03',-1,1,0)])
+    callbacks[-1]['reply']=['Your last test is to push the mammoth northwest of town. Come back when you succeed.']
+    add('sven-mammoth-report','barbarian_test','sven',['mammoth','mammoth pushing'],
+        [storage('oteryn:quest-progress/native/barbarian_test/completed',-1,1)],
+        achievement='oteryn:achievement/honorary_barbarian')
+    callbacks[-1].update(completes=True, participants=[{'quest':'oteryn:quest.'+ice,
+        'storage':[storage(stage,7,8)]}], reply=['You passed all three tests. Welcome as an honorary barbarian.'])
+    for name,lines in [('start','129-143'),('honeycomb','144-152'),('mead-report','84-94'),
+                       ('bear-report','96-105'),('mammoth-report','107-115')]:
+        next(c for c in callbacks if c['key']=='oteryn:quest-reward/sven-'+name)['sources']=[
+            barbarian_and_library_source('sven',lines)]
     feathers=prefix+'u11_02/the_first_dragon/feathers'
     add('l2-festive-base','the_first_dragon_quest','the_first_dragon',['reward'],
         [storage(feathers,1,2)],outfit=('festive',0))
@@ -488,8 +557,8 @@ def build():
         if finished_second:required.append(requirement(glooth+'addon2',1))
         add('l3-glooth-engineer-'+suffix,'glooth_engineer_outfits_quest','ezebeth',['addon'],
             [storage(glooth+'addon'+str(bit),-1,1,0)],outfit=('glooth_engineer',bit),requires=required)
-    declarations=[{'key':votes,'quest':'oteryn:quest.oramond_quest','initial':-1,'min':-1,'max':2147483647,
-        'sources':[f'crystal:{PIN}:data-global/npc/ezebeth.lua:93-103:sha256:{sha(inputs["data-global/npc/ezebeth.lua"])}']}]
+    declarations.append({'key':votes,'quest':'oteryn:quest.oramond_quest','initial':-1,'min':-1,'max':2147483647,
+        'sources':[f'crystal:{PIN}:data-global/npc/ezebeth.lua:93-103:sha256:{sha(inputs["data-global/npc/ezebeth.lua"])}']})
     noble=prefix+'u7_8/nobleman_outfits/'
     first=noble+'nobleman_first_addon'
     second=noble+'nobleman_second_addon'
@@ -1152,7 +1221,8 @@ def build():
         'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
-    greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
+    greetings = reward_greetings([c for c in callbacks if c['npc'] != 'oteryn:npc.sven']
+                                 + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))

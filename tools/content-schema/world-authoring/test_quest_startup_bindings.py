@@ -95,9 +95,25 @@ class QuestStartupBindingsTests(unittest.TestCase):
             ],
         )
 
+    def test_native_bear_battle_axe_and_beggar_selectors(self):
+        self.assert_native_selectors((
+            ((32302, 32257, 8), 355, "action", 101),
+            ((32149, 32110, 11), 355, "action", 101),
+            ((32148, 32105, 11), 2772, "action", 30006),
+            ((32145, 32100, 11), 1631, "action", 4601),
+            ((32150, 32112, 12), 2472, "unique", 5013),
+            ((32146, 32097, 11), 2472, "unique", 6114),
+            ((32144, 32096, 11), 2472, "unique", 6115),
+            ((32141, 32097, 11), 2472, "unique", 6116),
+            ((33167, 31600, 15), 2482, "unique", 6189),
+        ))
+
     def test_native_startup_selectors_match_exact_source_items(self):
+        self.assert_native_selectors(EXPECTED)
+
+    def assert_native_selectors(self, selectors):
         index = json.loads((ROOT / "content/world/placements/index.json").read_bytes())
-        for (x, y, z), appearance, attribute, expected in EXPECTED:
+        for (x, y, z), appearance, attribute, expected in selectors:
             with self.subTest(position=(x, y, z)):
                 raw = (
                     ROOT

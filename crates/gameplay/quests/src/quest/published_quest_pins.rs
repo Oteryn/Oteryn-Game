@@ -73,6 +73,35 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
+    // Source quest handoffs retain the saved definitions at 3e0991642.
+    (
+        "oteryn:quest.barbarian_test",
+        hash(b"18aa3b81e3b3462295a80b435696a7e9e66a739b0c26c199e6c0f1abbe6f89cb"),
+        &[hash(
+            b"036f08fefe3ff5f327c3801288be0dfae04987f4badfd00678a1db653490797b",
+        )],
+    ),
+    (
+        "oteryn:quest.battle_mage_outfits_quest",
+        hash(b"a19162baec7e41dd0e4c5b3332819dce4dd6b8f4a2bb300cd5f14ab58c4aff90"),
+        &[hash(
+            b"5ad0bfbad1d580750ff170af788693571ddf9dcd7cd544a4a001c315e74f38b9",
+        )],
+    ),
+    (
+        "oteryn:quest.the_ice_islands_quest",
+        hash(b"825a74759b817bb6d3bf39bfb339748ef62a5e30d96d5d0e2b93022734a71a6f"),
+        &[hash(
+            b"299b92c459921a7f30b4128518dc869fc7e7f6de3d50dbcf3be09ee05dcb44c0",
+        )],
+    ),
+    (
+        "oteryn:quest.the_secret_library_quest",
+        hash(b"22db0b0b39a6a299def5ea0466fd0def68f98d9ccba6e209ae2108ecefec0a6b"),
+        &[hash(
+            b"8d54b990bfdaf4e00123a18a7132517508dd920b997598f996419bbbb25ca008",
+        )],
+    ),
     (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
@@ -107,14 +136,15 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
     for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
         if catalogue.definition_hash(quest) == Some(current) {
-            catalogue
-                .predecessors
-                .entry(quest.into())
-                .or_default()
-                .extend(previous.iter().map(|&hash| NpcDefinitionPredecessor {
-                    hash,
-                    defaults: Default::default(),
-                }));
+            let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
+            for &hash in previous {
+                if !predecessors.iter().any(|entry| entry.hash == hash) {
+                    predecessors.push(NpcDefinitionPredecessor {
+                        hash,
+                        defaults: Default::default(),
+                    });
+                }
+            }
         }
     }
 }

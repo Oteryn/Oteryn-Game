@@ -240,6 +240,21 @@ class QuestCallbackProfiles(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'QUEST_CHEST_ITEM_PROFILE_CONFLICT'):
             profiles.admit_map_carriers(ROOT, document)
 
+    def test_barbarian_horn_and_numbered_bear_key_use_the_native_item_owner(self):
+        wanted = {f'oteryn:item.tibia.i{item}' for item in (2970, 7140, 7141)}
+        self.assertTrue(wanted <= profiles.requested_keys(ROOT))
+        callbacks = self.root / 'content/quests/world-callbacks'
+        callbacks.mkdir()
+        (callbacks / 'qm48-mammoth.json').symlink_to(
+            ROOT / 'content/quests/world-callbacks/qm48-mammoth.json')
+        self.admit()
+        rows = {row['production_definition']['production_key']: row
+                for row in json.loads(self.generated[PROFILE])['records']}
+        for key in sorted(wanted):
+            self.assertEqual(rows[key]['production_binding']['target']['key'], key)
+            self.assertEqual(rows[key]['production_binding']['disposition'], 'EXACT')
+            self.assertIn('CharacterInventory', rows[key]['admission']['legal_destinations'])
+
     def test_selected_nightmare_teddy_chest_admits_its_exact_canonical_reward(self):
         key = 'oteryn:item.tibia.i21982'
         document = json.loads(self.generated[PROFILE])

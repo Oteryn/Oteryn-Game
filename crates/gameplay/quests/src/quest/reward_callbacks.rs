@@ -2255,7 +2255,7 @@ mod tests {
                 "oteryn:quest.the_ice_islands_quest",
                 // M47 counters retain -1; distinct native seals also bind their
                 // separately owned painted-target counter and source callbacks.
-                "299b92c459921a7f30b4128518dc869fc7e7f6de3d50dbcf3be09ee05dcb44c0",
+                "825a74759b817bb6d3bf39bfb339748ef62a5e30d96d5d0e2b93022734a71a6f",
             ),
             (
                 "oteryn:quest.the_spirit_will_get_you_quest",
@@ -2295,9 +2295,9 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // shared-reward-callbacks.json has 207 existing rows plus the generated
-        // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior.
+        // QB routes: 17 Barbarian, 5 Citizen and 9 Warrior, plus 13 Sven and Dedoras rows.
         // The other terms are QuestPC7, other registered shards, M43 peer and Kingsday journal.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1);
+        assert_eq!(load()?.len(), 251 + 59 + 125 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2344,12 +2344,12 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 207);
+        assert_eq!(legacy.len(), 220);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
             .collect();
-        assert_eq!(original.len(), 195);
+        assert_eq!(original.len(), 208);
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
@@ -2361,16 +2361,29 @@ mod tests {
             assert!(legacy.iter().all(|old| old.key != callback.key));
         }
         for callback in original {
-            let crown = callback.key == "oteryn:quest-reward/l4-royal-costume-crown";
-            assert_eq!(callback.completes, crown);
+            let completion_quest = match callback.key.as_str() {
+                "oteryn:quest-reward/l4-royal-costume-crown" => {
+                    Some("oteryn:quest.royal_costume_outfits_quest")
+                }
+                "oteryn:quest-reward/l2-battle-mage-book-exalted"
+                | "oteryn:quest-reward/l2-battle-mage-epaulettes-exalted" => {
+                    Some("oteryn:quest.battle_mage_outfits_quest")
+                }
+                "oteryn:quest-reward/sven-mammoth-report" => Some("oteryn:quest.barbarian_test"),
+                _ => None,
+            };
+            assert_eq!(callback.completes, completion_quest.is_some());
+            if let Some(quest) = completion_quest {
+                assert_eq!(callback.quest, quest);
+            }
             assert_eq!(
                 serde_json::to_value(callback)
                     .map_err(|e| e.to_string())?
                     .get("completes")
                     .is_some(),
-                crown
+                completion_quest.is_some()
             );
-            if crown {
+            if callback.key == "oteryn:quest-reward/l4-royal-costume-crown" {
                 assert_eq!(callback.quest, "oteryn:quest.royal_costume_outfits_quest");
                 assert_eq!(
                     (callback.storage[0].minimum, callback.storage[0].set),
@@ -3351,6 +3364,73 @@ mod outfit_reward_predecessor_tests {
                 "case {case}"
             );
             assert_eq!(invalid, unchanged, "case {case}");
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod battle_mage_source_tests {
+    use super::*;
+
+    #[test]
+    fn dedoras_reports_increment_permission_and_both_addon_orders_award_exalted()
+    -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("battle-mage")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = offered_for(loaded.catalogue())?;
+        for (keyword, from, to) in [
+            ("isle", 3, 4),
+            ("fishmen", 7, 8),
+            ("asuri", 6, 7),
+            ("order", 2, 3),
+            ("desert", 8, 9),
+            ("museum", 7, 8),
+        ] {
+            let callback = callbacks
+                .iter()
+                .find(|c| {
+                    c.npc == "oteryn:npc.dedoras" && c.key.ends_with(&format!("report-{keyword}"))
+                })
+                .ok_or_else(|| format!("missing Dedoras report for {keyword}"))?;
+            assert_eq!(callback.keywords, [keyword]);
+            assert!(
+                callback
+                    .storage
+                    .iter()
+                    .any(|s| s.track.ends_with("/questline")
+                        && (s.minimum, s.maximum, s.set) == (from, from, to))
+            );
+            assert!(
+                callback
+                    .state_ops
+                    .iter()
+                    .any(|s| s.track.ends_with("/library_permission")
+                        && s.effect
+                            == StateMutation::AddAtLeast {
+                                value: 1,
+                                minimum: 1
+                            })
+            );
+        }
+        for (keyword, taken, other) in [("book", 5, "addon2"), ("epaulettes", 20, "addon1")] {
+            let exalted = callbacks
+                .iter()
+                .find(|c| {
+                    c.npc == "oteryn:npc.dedoras"
+                        && c.keywords.iter().any(|key| key == keyword)
+                        && c.achievement.as_deref()
+                            == Some("oteryn:achievement/exalted_battle_mage")
+                })
+                .ok_or_else(|| format!("missing exalted grant for {keyword}"))?;
+            assert!(
+                exalted
+                    .requires
+                    .iter()
+                    .any(|r| r.track.ends_with(other) && (r.minimum, r.maximum) == (1, 1))
+            );
+            assert_eq!(exalted.take[0].count, taken);
+            assert_eq!(exalted.inventory[0].minimum, u32::from(taken) + 1);
         }
         Ok(())
     }

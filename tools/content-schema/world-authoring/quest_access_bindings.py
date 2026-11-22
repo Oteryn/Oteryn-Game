@@ -1,7 +1,7 @@
 """Restore only the pinned startup selectors consumed by shared quest access.
 
 The normalized capture comes from Crystal201189f's LeverUnique, TileUnique,
-TileAction and TeleportAction tables. No placement or item identity is invented.
+TileAction, TeleportAction, TilePickAction and KeyDoorAction tables. No placement or item identity is invented.
 """
 
 import argparse
@@ -23,9 +23,19 @@ def capture_sources(source_root):
     import lua_tables
 
     requested = {
-        "lever.lua": {"LeverUnique": {30004, 30005, 30025, 30030, 30034}},
+        "lever.lua": {
+            "LeverUnique": {30004, 30005, 30025, 30030, 30034},
+            "LeverAction": {30006},
+        },
         "tile.lua": {"TileUnique": {25010}, "TileAction": {50022}},
         "teleport.lua": {"TeleportAction": {50022}},
+        "tile_pick.lua": {"TilePickAction": {101}},
+        "door_key.lua": {"KeyDoorAction": {4601}},
+    }
+    exact = {
+        "LeverAction": {(32148, 32105, 11): 2772},
+        "TilePickAction": {(32149, 32110, 11): 355, (32302, 32257, 8): 355},
+        "KeyDoorAction": {(32145, 32100, 11): 1631},
     }
     sources, bindings = [], []
     for name, groups in requested.items():
@@ -43,7 +53,14 @@ def capture_sources(source_root):
         fields = lua_tables.assignments(raw.decode(), set(groups))
         for group, ids in groups.items():
             for field in fields[group]["fields"]:
-                if not isinstance(field["key"], int) or field["key"] not in ids:
+                key = field["key"]
+                if (
+                    group == "KeyDoorAction"
+                    and isinstance(key, dict)
+                    and key.get("expr") == "Storage.Quest.Key.ID4601"
+                ):
+                    key = 4601
+                if not isinstance(key, int) or key not in ids:
                     continue
                 value = lua_tables.as_python(field["value"])
                 for item in value if isinstance(value, list) else [value]:
@@ -51,18 +68,31 @@ def capture_sources(source_root):
                     for position in (
                         positions if isinstance(positions, list) else [positions]
                     ):
+                        cell = tuple(position[k] for k in "xyz")
+                        if group in exact and (
+                            cell not in exact[group]
+                            or item["itemId"] not in (False, exact[group][cell])
+                        ):
+                            continue
                         bindings.append(
                             {
-                                "position": [position[k] for k in "xyz"],
-                                "item": item["itemId"],
+                                "position": list(cell),
+                                "item": item["itemId"] or exact[group][cell],
                                 "attribute": "unique"
                                 if group.endswith("Unique")
                                 else "action",
-                                "value": field["key"],
+                                "value": key,
                                 "source": path,
                                 "line": field["line"],
                             }
                         )
+    expected_exact = {
+        (cell, appearance)
+        for positions in exact.values()
+        for cell, appearance in positions.items()
+    }
+    if not expected_exact <= {(tuple(row["position"]), row["item"]) for row in bindings}:
+        raise ValueError("missing exact source access selector")
     expected = json.loads((ROOT / CAPTURE).read_bytes())
     if sources != expected["sources"]:
         raise ValueError("source tables differ from pinned Crystal201189f blobs")

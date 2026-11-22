@@ -191,7 +191,7 @@ def requested_keys(root, extra_keys=()):
 def _requested_inputs(root, extra_keys=()):
     # Retain both the selected startup source cohort and authored callback custody.
     sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
-    from quest_chest_bindings import panpipe_key_claim
+    from quest_chest_bindings import supported_source_key_claim
     sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
     import container_native
 
@@ -202,7 +202,8 @@ def _requested_inputs(root, extra_keys=()):
     authored_callbacks = []
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
-    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
+    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json',
+                     'world-callbacks/qm48-mammoth.json'):
         path = root / 'content/quests' / relative
         if not path.is_file():
             continue
@@ -271,7 +272,7 @@ def _requested_inputs(root, extra_keys=()):
             if definition['identity']['key'] in selected_chests:
                 # Filled-container/text claims already enter through the exact
                 # W15b native projection below; selection adds only map binding.
-                if definition.get('readiness') == 'ready' or panpipe_key_claim(definition):
+                if definition.get('readiness') == 'ready' or supported_source_key_claim(definition):
                     keys.update(item['item']['key'] for placement in definition['placements']
                                 for item in placement['reward']['items'])
                 elif (definition.get('readiness') != 'waiting_implementation'
