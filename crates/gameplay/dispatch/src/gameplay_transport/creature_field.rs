@@ -1,5 +1,8 @@
 //! Field entry and residual ticks use the actual native creature store/HP owner.
-use super::{ComposedFreshAdmission, actor_spell::ChannelSpellStates};
+use super::{
+    ComposedFreshAdmission,
+    actor_spell::{ChannelSpellStates, CreatureConditionTurn},
+};
 use crate::durability::DurabilityError;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
 use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
@@ -8,13 +11,13 @@ use oteryn_gameplay_foundation::foundation::condition::{
     ConditionDefinition, ConditionLineage, TickFacts,
 };
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct DeferredCreatureFieldEntry {
     actor: ExactActorRef,
     position_revision: u64,
     entry: CreatureFieldEntry,
+    application: Option<u32>,
 }
 
 impl ChannelSpellStates {
@@ -26,8 +29,11 @@ impl ChannelSpellStates {
     }
 
     pub(super) fn prune_deferred_creature_fields(&mut self, runtime: &ChannelRuntimeV1) {
-        self.deferred_creature_field_entries
-            .retain(|_, deferred| runtime.contains_live_creature(deferred.actor));
+        self.deferred_creature_field_entries.retain(|_, queue| {
+            queue
+                .front()
+                .is_some_and(|pending| runtime.contains_live_creature(pending.actor))
+        });
     }
 }
 
@@ -68,48 +74,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| DurabilityError::Unavailable)?;
         let mut plans = Vec::new();
         let mut source_players = Vec::new();
-        let mut deferred = Vec::new();
-        let mut replays = BTreeMap::new();
-
-        // Qualify retained contacts before reading their new tiles. The HP
-        // preview applies them in replay order on its cloned condition store.
-        let mut creatures = runtime.visible_entities().creatures;
-        if !states.deferred_creature_field_entries.is_empty() {
-            for visible in &creatures {
-                let key = visible.actor.placement_identity();
-                let Some(pending) = states.deferred_creature_field_entries.get(&key) else {
-                    continue;
-                };
-                if let Err(error) = runtime.assert_actor_spell_unreserved(visible.actor) {
-                    if error == CarrierError::PlanConflict {
-                        continue;
-                    }
-                    return Err(DurabilityError::Unavailable);
-                }
-                let snapshot = runtime
-                    .companion_snapshot(visible.actor)
-                    .map_err(|_| DurabilityError::Unavailable)?;
-                if !snapshot.state.conditions.accepts_time(now) {
-                    continue;
-                }
-                // The retained recipe survives caster retirement. Attribution,
-                // like a fresh field read, still requires a current exact actor.
-                let mut entry = pending.entry.clone();
-                if entry
-                    .source
-                    .is_some_and(|source| !runtime.borrow_exact_actor_lookup().contains(source))
-                {
-                    entry.source = None;
-                    entry.lineage = None;
-                }
-                replays.insert(key, (pending.position_revision, entry));
-            }
-            creatures.retain(|visible| {
-                let key = visible.actor.placement_identity();
-                replays.contains_key(&key)
-                    || !states.deferred_creature_field_entries.contains_key(&key)
-            });
-        }
+        let creatures = runtime.visible_entities().creatures;
         // Passive source creatures are outside the AI table, but still own field conditions.
         let positions = creatures
             .iter()
@@ -203,18 +168,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !snapshot.state.conditions.accepts_time(now) {
                 continue;
             }
-            if let Err(error) = runtime.assert_actor_spell_unreserved(visible.actor) {
-                if error != CarrierError::PlanConflict {
-                    return Err(DurabilityError::Unavailable);
+            let reserved = match runtime.assert_actor_spell_unreserved(visible.actor) {
+                Ok(()) => false,
+                Err(CarrierError::PlanConflict) => true,
+                Err(_) => return Err(DurabilityError::Unavailable),
+            };
+            let key = visible.actor.placement_identity();
+            let mut contacts = states
+                .deferred_creature_field_entries
+                .get(&key)
+                .cloned()
+                .unwrap_or_default();
+            if let Some(entry) = entry
+                && !runtime
+                    .creature_field_entry_is_current(
+                        visible.actor,
+                        snapshot.position_revision,
+                        &entry,
+                    )
+                    .map_err(|_| DurabilityError::Unavailable)?
+                && !contacts.iter().any(|pending| {
+                    pending.position_revision == snapshot.position_revision
+                        && pending.entry.occurrence == entry.occurrence
+                        && pending.entry.definition == entry.definition
+                })
+            {
+                contacts.push_back(DeferredCreatureFieldEntry {
+                    actor: visible.actor,
+                    position_revision: snapshot.position_revision,
+                    entry,
+                    application: None,
+                });
+            }
+            for pending in &mut contacts {
+                // A retained recipe survives the exact caster's retirement.
+                if pending
+                    .entry
+                    .source
+                    .is_some_and(|source| !runtime.borrow_exact_actor_lookup().contains(source))
+                {
+                    pending.entry.source = None;
+                    pending.entry.lineage = None;
                 }
-                if let Some(entry) = entry {
-                    deferred.push(DeferredCreatureFieldEntry {
-                        actor: visible.actor,
-                        position_revision: snapshot.position_revision,
-                        entry,
-                    });
-                }
-                continue;
             }
             let facts = TickFacts {
                 in_protection_zone: protection_zone,
@@ -233,32 +228,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             | crate::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::FourthTaint
                     )
                 });
-            let replay = if replays.is_empty() {
-                None
-            } else {
-                replays.remove(&visible.actor.placement_identity())
-            };
-            let due = runtime
-                .preview_creature_field_due(
-                    snapshot,
-                    now,
-                    replay.as_ref().map(|(revision, field)| (*revision, field)),
-                    entry.as_ref(),
-                    facts,
-                )
-                .map_err(|_| DurabilityError::Unavailable)?;
-            let sources = due.iter().filter_map(|tick| tick.provenance.source);
-            let hooked = runtime
-                .encounter_hooks()
-                .is_some_and(|hooks| hooks.contains(visible.actor));
-            let skip_hp = hooked
-                || sources
-                    .clone()
-                    .any(|source| periodic_source_busy(runtime, states, source));
-            if !skip_hp && needs_source_facts {
-                source_players.extend(sources);
+            if !reserved {
+                let due = runtime
+                    .preview_creature_field_due(
+                        snapshot,
+                        now,
+                        contacts.iter().map(|pending| {
+                            (
+                                pending.position_revision,
+                                &pending.entry,
+                                pending.application,
+                            )
+                        }),
+                        facts,
+                    )
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                if needs_source_facts
+                    && !runtime
+                        .encounter_hooks()
+                        .is_some_and(|hooks| hooks.contains(visible.actor))
+                {
+                    source_players.extend(
+                        due.into_iter()
+                            .filter_map(|tick| tick.provenance.source)
+                            .filter(|&source| !periodic_source_busy(runtime, states, source)),
+                    );
+                }
             }
-            plans.push((visible.actor, replay, entry, facts, skip_hp));
+            plans.push((visible.actor, key, contacts, facts, reserved));
         }
         if let Some(active) = self.active_generation {
             let room = map.room();
@@ -280,41 +277,131 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(DurabilityError::Unavailable);
         }
         states.prune_deferred_creature_fields(runtime);
-        for pending in deferred {
-            states
-                .deferred_creature_field_entries
-                .insert(pending.actor.placement_identity(), pending);
-        }
-        for (actor, replay, entry, facts, skip_hp) in plans {
-            if let Some((revision, field)) = replay {
-                runtime
-                    .commit_creature_field_entry_at(actor, now, revision, Some(&field))
-                    .map_err(|_| DurabilityError::Unavailable)?;
-                states.forget_deferred_creature_field(actor);
+        for (_, key, contacts, _, _) in &mut plans {
+            if !contacts.is_empty() {
+                states
+                    .deferred_creature_field_entries
+                    .insert(*key, std::mem::take(contacts));
             }
-            runtime
-                .commit_creature_field_entry(actor, now, entry.as_ref())
-                .map_err(|_| DurabilityError::Unavailable)?;
-            if skip_hp {
+        }
+        for (actor, key, _, facts, reserved) in plans {
+            if reserved {
                 continue;
             }
-            let observations = match native_health_names.observe(runtime, actor) {
-                Ok(observation) => observation.into_iter().collect::<Vec<_>>(),
-                // Only this required health callback lacks facts. The original
-                // condition/entry clock remains installed and its HP ticks
-                // remain unconsumed; unrelated actors continue normally.
-                Err(()) => continue,
-            };
-            states
-                .tick_source_creature_conditions_with_health_observations(
+            let hooked = runtime
+                .encounter_hooks()
+                .is_some_and(|hooks| hooks.contains(actor));
+            let can_tick = apply_field_contacts(
+                runtime,
+                states,
+                actor,
+                key,
+                facts,
+                now,
+                native_health_names,
+                hooked,
+            )?;
+            if can_tick {
+                tick_field_conditions(
                     runtime,
+                    states,
                     actor,
                     facts,
-                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
-                    &observations,
-                )
-                .map_err(|_| DurabilityError::Unavailable)?;
+                    now,
+                    native_health_names,
+                    None,
+                )?;
+            }
         }
         Ok(())
     }
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the contact and HP turns share the qualified field owner inputs"
+)]
+fn apply_field_contacts(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    actor: ExactActorRef,
+    key: [u8; 16],
+    facts: TickFacts,
+    now: u64,
+    names: &super::source_names::NativeHealthNamesData,
+    hooked: bool,
+) -> Result<bool, DurabilityError> {
+    while let Some(pending) = states
+        .deferred_creature_field_entries
+        .get_mut(&key)
+        .and_then(|queue| queue.front_mut())
+    {
+        let application = match pending.application {
+            Some(sequence) => Some(sequence),
+            None => runtime
+                .commit_creature_field_entry_at(
+                    actor,
+                    now,
+                    pending.position_revision,
+                    &pending.entry,
+                )
+                .map_err(|_| DurabilityError::Unavailable)?,
+        };
+        if let Some(sequence) = application {
+            pending.application = Some(sequence);
+            if hooked {
+                return Ok(false);
+            }
+            if !tick_field_conditions(runtime, states, actor, facts, now, names, Some(sequence))? {
+                // A busy application must wait, but an older lethal tick can still
+                // end the creature before the native owner reaches that source.
+                tick_field_conditions(runtime, states, actor, facts, now, names, None)?;
+                if !runtime.contains_live_creature(actor) {
+                    states.forget_deferred_creature_field(actor);
+                }
+                return Ok(false);
+            }
+            if !runtime.contains_live_creature(actor) {
+                states.forget_deferred_creature_field(actor);
+                return Ok(false);
+            }
+            let snapshot = runtime
+                .companion_snapshot(actor)
+                .map_err(|_| DurabilityError::Unavailable)?;
+            if snapshot.state.conditions.has_pending_application(sequence) {
+                return Ok(false);
+            }
+        }
+        if let Some(queue) = states.deferred_creature_field_entries.get_mut(&key) {
+            queue.pop_front();
+        }
+    }
+    states.forget_deferred_creature_field(actor);
+    Ok(!hooked)
+}
+
+fn tick_field_conditions(
+    runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    actor: ExactActorRef,
+    facts: TickFacts,
+    now: u64,
+    names: &super::source_names::NativeHealthNamesData,
+    application: Option<u32>,
+) -> Result<bool, DurabilityError> {
+    let Ok(observation) = names.observe(runtime, actor) else {
+        return Ok(false);
+    };
+    let observations: Vec<_> = observation.into_iter().collect();
+    states
+        .tick_source_creature_conditions_with_health_observations(
+            runtime,
+            actor,
+            facts,
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
+            &observations,
+            CreatureConditionTurn::Field(application),
+        )
+        .map(|receipt| receipt.is_some())
+        .map_err(|_| DurabilityError::Unavailable)
 }

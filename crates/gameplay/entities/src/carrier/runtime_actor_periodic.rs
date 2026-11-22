@@ -71,13 +71,12 @@ fn field_entry_is_current(
         }
 }
 
-fn preview_entry_and_due(
+fn apply_field_entry(
     state: &mut CompanionState,
     entry: Option<&CreatureFieldEntry>,
     now_us: u64,
-    facts: Option<TickFacts>,
     content_digest: [u8; 32],
-) -> Result<Vec<ConditionTick<ExactActorRef>>, CarrierError> {
+) -> Result<Option<u32>, CarrierError> {
     if let Some(field) = entry {
         let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(content_digest);
         let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
@@ -111,18 +110,17 @@ fn preview_entry_and_due(
                 &facts,
             )
         };
-        if let Err(refusal) = result
-            && !matches!(
-                refusal,
+        return match result {
+            Ok(applied) => Ok(Some(applied.sequence)),
+            Err(
                 ConditionRefusal::Immune
-                    | ConditionRefusal::KeptCurrent
-                    | ConditionRefusal::ReentryProtected
-            )
-        {
-            return Err(CarrierError::PlanConflict);
-        }
+                | ConditionRefusal::KeptCurrent
+                | ConditionRefusal::ReentryProtected,
+            ) => Ok(None),
+            Err(_) => Err(CarrierError::PlanConflict),
+        };
     }
-    Ok(facts.map_or_else(Vec::new, |facts| state.conditions.take_due(now_us, facts)))
+    Ok(None)
 }
 
 impl ChannelRuntimeV1 {
@@ -135,7 +133,8 @@ impl ChannelRuntimeV1 {
         now_us: u64,
         field: Option<&CreatureFieldEntry>,
     ) -> Result<(), CarrierError> {
-        self.commit_creature_field_entry_inner(actor, now_us, None, field)
+        self.commit_creature_field_entry_inner(actor, now_us, None, field, false)
+            .map(drop)
     }
 
     pub fn commit_creature_field_entry_at(
@@ -143,9 +142,45 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
         now_us: u64,
         position_revision: u64,
-        field: Option<&CreatureFieldEntry>,
+        field: &CreatureFieldEntry,
+    ) -> Result<Option<u32>, CarrierError> {
+        self.commit_creature_field_entry_inner(
+            actor,
+            now_us,
+            Some(position_revision),
+            Some(field),
+            false,
+        )
+    }
+
+    pub fn commit_creature_spike_trap_entry(
+        &mut self,
+        actor: ExactActorRef,
+        now_us: u64,
+        field: &CreatureFieldEntry,
     ) -> Result<(), CarrierError> {
-        self.commit_creature_field_entry_inner(actor, now_us, Some(position_revision), field)
+        self.commit_creature_field_entry_inner(actor, now_us, None, Some(field), true)
+            .map(drop)
+    }
+
+    pub fn creature_field_entry_is_current(
+        &self,
+        actor: ExactActorRef,
+        revision: u64,
+        field: &CreatureFieldEntry,
+    ) -> Result<bool, CarrierError> {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
+            return Err(CarrierError::NotCreature);
+        };
+        Ok(field_entry_is_current(
+            (
+                committed.field_entry_revision,
+                committed.field_entry.as_ref(),
+            ),
+            revision,
+            Some(field),
+        ))
     }
 
     fn commit_creature_field_entry_inner(
@@ -154,7 +189,8 @@ impl ChannelRuntimeV1 {
         now_us: u64,
         position_revision: Option<u64>,
         field: Option<&CreatureFieldEntry>,
-    ) -> Result<(), CarrierError> {
+        spike_trap: bool,
+    ) -> Result<Option<u32>, CarrierError> {
         self.assert_actor_spell_unreserved(actor)?;
         let before = self.companion_snapshot(actor)?;
         let position_revision = position_revision.unwrap_or(before.position_revision);
@@ -167,16 +203,22 @@ impl ChannelRuntimeV1 {
             committed.field_entry_revision,
             committed.field_entry.as_ref(),
         );
-        if field_entry_is_current(previous, position_revision, field) {
-            return Ok(());
+        let trap = field
+            .filter(|_| spike_trap)
+            .map(|field| (position_revision, field.occurrence));
+        if if spike_trap {
+            committed.spike_trap_entry == trap
+        } else {
+            field_entry_is_current(previous, position_revision, field)
+        } {
+            return Ok(None);
         }
         self.validate_creature_field_lineage(field)?;
         let mut next = before.state;
-        preview_entry_and_due(
+        let application = apply_field_entry(
             &mut next,
             field,
             now_us,
-            None,
             self.content_pin().server_artifact_digest(),
         )?;
         let Slot::CreatureOccupied {
@@ -188,9 +230,13 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::NotCreature);
         };
         *companion = Some(Box::new(next));
-        committed.field_entry_revision = Some(position_revision);
-        committed.field_entry = field.cloned();
-        Ok(())
+        if spike_trap {
+            committed.spike_trap_entry = trap;
+        } else {
+            committed.field_entry_revision = Some(position_revision);
+            committed.field_entry = field.cloned();
+        }
+        Ok(application)
     }
 
     fn validate_creature_field_lineage(
@@ -215,14 +261,13 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
-    /// The supplied snapshot owns a clone of the condition store. Only the
-    /// real entry and periodic turns can write back to the creature slot.
-    pub fn preview_creature_field_due(
+    /// Preview the sources of accepted immediate hits and residual work on a
+    /// cloned store, before the field pass publishes its existing source facts.
+    pub fn preview_creature_field_due<'a>(
         &self,
         mut snapshot: CompanionSnapshot,
         now_us: u64,
-        replay: Option<(u64, &CreatureFieldEntry)>,
-        field: Option<&CreatureFieldEntry>,
+        contacts: impl Iterator<Item = (u64, &'a CreatureFieldEntry, Option<u32>)>,
         facts: TickFacts,
     ) -> Result<Vec<ConditionTick<ExactActorRef>>, CarrierError> {
         let index = self
@@ -236,32 +281,31 @@ impl ChannelRuntimeV1 {
             committed.field_entry_revision,
             committed.field_entry.as_ref(),
         );
-        if let Some((revision, entry)) = replay
-            && !field_entry_is_current(previous, revision, Some(entry))
-        {
-            self.validate_creature_field_lineage(Some(entry))?;
-            preview_entry_and_due(
-                &mut snapshot.state,
-                Some(entry),
-                now_us,
-                None,
-                content_digest,
-            )?;
-            previous = (Some(revision), Some(entry));
+        let mut ticks = Vec::new();
+        for (revision, field, applied) in contacts {
+            let sequence = if applied.is_some() {
+                applied
+            } else if field_entry_is_current(previous, revision, Some(field)) {
+                None
+            } else {
+                self.validate_creature_field_lineage(Some(field))?;
+                previous = (Some(revision), Some(field));
+                apply_field_entry(&mut snapshot.state, Some(field), now_us, content_digest)?
+            };
+            if let Some(sequence) = sequence {
+                ticks.extend(
+                    snapshot
+                        .state
+                        .conditions
+                        .take_due_application(now_us, facts, sequence),
+                );
+                if snapshot.state.conditions.has_pending_application(sequence) {
+                    return Ok(ticks);
+                }
+            }
         }
-        let entry = if field_entry_is_current(previous, snapshot.position_revision, field) {
-            None
-        } else {
-            field
-        };
-        self.validate_creature_field_lineage(entry)?;
-        preview_entry_and_due(
-            &mut snapshot.state,
-            entry,
-            now_us,
-            Some(facts),
-            content_digest,
-        )
+        ticks.extend(snapshot.state.conditions.take_due(now_us, facts));
+        Ok(ticks)
     }
 
     /// Stages only a source-qualified physical actor's existing condition store.
@@ -272,7 +316,8 @@ impl ChannelRuntimeV1 {
         now_us: u64,
         facts: TickFacts,
     ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
-        self.stage_creature_periodic_turn_inner(actor, now_us, facts, None, &[])
+        self.stage_creature_periodic_turn_inner(actor, now_us, facts, None, &[], None, None)?
+            .ok_or(CarrierError::PlanConflict)
     }
     /// Source snapshots/PlayerSpellState reads are acquired and committed in
     /// one locked Channel-owner call. This is not a detached damage capability.
@@ -283,13 +328,17 @@ impl ChannelRuntimeV1 {
         facts: TickFacts,
         player_source: &mut CurrentPlayerPeriodicSource<'_>,
     ) -> Result<CreaturePeriodicReceipt, CarrierError> {
-        let prepared = self.stage_creature_periodic_turn_inner(
-            actor,
-            now_us,
-            facts,
-            Some(player_source),
-            &[],
-        )?;
+        let prepared = self
+            .stage_creature_periodic_turn_inner(
+                actor,
+                now_us,
+                facts,
+                Some(player_source),
+                &[],
+                None,
+                None,
+            )?
+            .ok_or(CarrierError::PlanConflict)?;
         self.commit_creature_periodic_turn(prepared)
     }
 
@@ -304,16 +353,53 @@ impl ChannelRuntimeV1 {
         player_source: &mut CurrentPlayerPeriodicSource<'_>,
         observations: &[super::native_health_change::NativeHealthChangeObservation],
     ) -> Result<CreaturePeriodicReceipt, CarrierError> {
-        let prepared = self.stage_creature_periodic_turn_inner(
+        let prepared = self
+            .stage_creature_periodic_turn_inner(
+                actor,
+                now_us,
+                facts,
+                Some(player_source),
+                observations,
+                None,
+                None,
+            )?
+            .ok_or(CarrierError::PlanConflict)?;
+        self.commit_creature_periodic_turn(prepared)
+    }
+
+    /// A field pass can wait for a genuinely reached busy source. The staged
+    /// turn is discarded in that case and owns no consumed ticks or HP writes.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the native periodic owner shares the exact field inputs"
+    )]
+    pub fn apply_creature_field_periodic_turn(
+        &mut self,
+        actor: ExactActorRef,
+        now_us: u64,
+        facts: TickFacts,
+        player_source: &mut CurrentPlayerPeriodicSource<'_>,
+        observations: &[super::native_health_change::NativeHealthChangeObservation],
+        application: Option<u32>,
+        source_busy: &dyn Fn(&Self, ExactActorRef) -> bool,
+    ) -> Result<Option<CreaturePeriodicReceipt>, CarrierError> {
+        self.stage_creature_periodic_turn_inner(
             actor,
             now_us,
             facts,
             Some(player_source),
             observations,
-        )?;
-        self.commit_creature_periodic_turn(prepared)
+            application,
+            Some(source_busy),
+        )?
+        .map(|prepared| self.commit_creature_periodic_turn(prepared))
+        .transpose()
     }
 
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the field pass and ordinary periodic turns share native staging"
+    )]
     fn stage_creature_periodic_turn_inner(
         &mut self,
         actor: ExactActorRef,
@@ -321,7 +407,9 @@ impl ChannelRuntimeV1 {
         facts: TickFacts,
         mut player_source: Option<&mut CurrentPlayerPeriodicSource<'_>>,
         observations: &[super::native_health_change::NativeHealthChangeObservation],
-    ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
+        application: Option<u32>,
+        source_busy: Option<&dyn Fn(&Self, ExactActorRef) -> bool>,
+    ) -> Result<Option<PreparedCreaturePeriodicTurn>, CarrierError> {
         if self.actor_spell_reserved(actor) {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
@@ -364,7 +452,12 @@ impl ChannelRuntimeV1 {
             .map_err(|_| CarrierError::AllocationFailed)?;
         let stamp = self.issue_owner_work()?;
         let mut after = before.state.clone();
-        let ticks = after.conditions.take_due(now_us, facts);
+        let ticks = match application {
+            Some(sequence) => after
+                .conditions
+                .take_due_application(now_us, facts, sequence),
+            None => after.conditions.take_due(now_us, facts),
+        };
         let mut impacts = Vec::new();
         let mut total = 0i64;
         let mut had_damage = false;
@@ -392,6 +485,9 @@ impl ChannelRuntimeV1 {
                             return Err(
                                 oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
                             );
+                        }
+                        if source_busy.is_some_and(|busy| busy(self, source)) {
+                            return Ok(None);
                         }
                         let source_percent = match self.companion_snapshot_including_dead(source) {
                             Ok(snapshot) if snapshot.health <= 0 => None,
@@ -812,7 +908,7 @@ impl ChannelRuntimeV1 {
         } else {
             None
         };
-        Ok(PreparedCreaturePeriodicTurn {
+        Ok(Some(PreparedCreaturePeriodicTurn {
             damage_contributors,
             impacts,
             health_events,
@@ -826,7 +922,7 @@ impl ChannelRuntimeV1 {
             next_ordinal,
             lethal_committed,
             native_death,
-        })
+        }))
     }
     fn record_periodic_contributor(
         &self,

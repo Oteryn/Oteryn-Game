@@ -140,7 +140,7 @@ fn silvered_trap_hit(
     }
 }
 
-fn spike_trap_hit(
+pub(in crate::gameplay_transport) fn spike_trap_hit(
     runtime: &mut ChannelRuntimeV1,
     states: &ChannelSpellStates,
     actor: crate::foundation::ExactActorRef,
@@ -200,7 +200,7 @@ fn spike_trap_hit(
         occurrence,
     };
     if runtime
-        .commit_creature_field_entry(actor, now, Some(&entry))
+        .commit_creature_spike_trap_entry(actor, now, &entry)
         .is_err()
     {
         return;

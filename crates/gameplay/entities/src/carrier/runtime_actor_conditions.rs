@@ -43,6 +43,7 @@ pub struct CreatureCommitState {
     pub(super) tile_entry_order: u64,
     damage: DamageReceipts,
     pub(super) conditions: ActorConditionState,
+    pub(super) spike_trap_entry: Option<(u64, oteryn_simulation_determinism::DecisionOccurrenceId)>,
     pub(super) field_entry_revision: Option<u64>,
     pub(super) field_entry: Option<super::runtime_actor_periodic::CreatureFieldEntry>,
 }

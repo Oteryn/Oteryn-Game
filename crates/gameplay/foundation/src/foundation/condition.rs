@@ -15,6 +15,10 @@ mod historical_source;
 pub use historical_source::ConditionHistoricalSource;
 
 type ConditionApplicationSource<'a, S> = dyn Fn(&ConditionProvenance<S>) -> bool + 'a;
+enum ConditionApplicationFilter<'a, S> {
+    Source(&'a ConditionApplicationSource<'a, S>),
+    Sequence(u32),
+}
 
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -1576,11 +1580,34 @@ impl<S: Clone> ConditionStore<S> {
             now,
             facts,
             true,
-            Some(&matches),
+            Some(ConditionApplicationFilter::Source(&matches)),
             RegenerationPzRewards::default(),
             usize::MAX,
         )
     }
+    /// Consume the exact accepted application's pending hit before replacing its slot.
+    pub fn take_due_application(
+        &mut self,
+        now: u64,
+        facts: TickFacts,
+        sequence: u32,
+    ) -> Vec<ConditionTick<S>> {
+        self.take_due_matching(
+            now,
+            facts,
+            true,
+            Some(ConditionApplicationFilter::Sequence(sequence)),
+            RegenerationPzRewards::default(),
+            1,
+        )
+    }
+
+    pub fn has_pending_application(&self, sequence: u32) -> bool {
+        self.instances
+            .iter()
+            .any(|instance| instance.sequence == sequence && instance.immediate_due.is_some())
+    }
+
     /// Independent qualified regeneration must not drain unknown combat ticks.
     pub fn take_due_non_damage(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
         self.take_due_matching(
@@ -1613,7 +1640,7 @@ impl<S: Clone> ConditionStore<S> {
         now: u64,
         facts: TickFacts,
         damage: bool,
-        application_source: Option<&ConditionApplicationSource<'_, S>>,
+        application: Option<ConditionApplicationFilter<'_, S>>,
         regeneration_rewards: RegenerationPzRewards,
         limit: usize,
     ) -> Vec<ConditionTick<S>> {
@@ -1630,9 +1657,16 @@ impl<S: Clone> ConditionStore<S> {
                 .iter()
                 .enumerate()
                 .filter_map(|(index, instance)| {
-                    if application_source.is_some_and(|matches| {
-                        !matches(&instance.provenance) || instance.immediate_due != Some(now)
-                    }) {
+                    let excluded = match &application {
+                        Some(ConditionApplicationFilter::Source(matches)) => {
+                            !matches(&instance.provenance) || instance.immediate_due != Some(now)
+                        }
+                        Some(ConditionApplicationFilter::Sequence(sequence)) => {
+                            instance.sequence != *sequence
+                        }
+                        None => false,
+                    };
+                    if excluded {
                         return None;
                     }
                     if !damage
@@ -1650,12 +1684,16 @@ impl<S: Clone> ConditionStore<S> {
                         .immediate_due
                         .map(|due| (due, instance.immediate_debt_us, true));
                     let scheduled = scheduled.map(|due| (due, instance.tick_debt_us, false));
-                    let (due, debt, immediate) = [immediate, scheduled]
-                        .into_iter()
-                        .flatten()
-                        .min_by_key(|(due, debt, immediate)| {
-                            (i128::from(*due) - i128::from(*debt), !immediate)
-                        })?;
+                    let (due, debt, immediate) =
+                        if matches!(application, Some(ConditionApplicationFilter::Sequence(_))) {
+                            immediate?
+                        } else {
+                            [immediate, scheduled].into_iter().flatten().min_by_key(
+                                |(due, debt, immediate)| {
+                                    (i128::from(*due) - i128::from(*debt), !immediate)
+                                },
+                            )?
+                        };
                     (due <= now).then_some((
                         i128::from(due) - i128::from(debt),
                         instance.sequence,

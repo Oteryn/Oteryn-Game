@@ -107,11 +107,51 @@ fn deferred_entry_is_pruned_when_a_companion_owner_changes_scope() -> TestResult
 }
 
 #[test]
-fn reserved_target_that_steps_off_takes_one_field_application() -> TestResult {
+fn failed_map_validation_preserves_deferred_entry_until_step_off_retry() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     run(admin, Case::TargetMoves)
+}
+
+#[test]
+fn an_applied_field_is_not_queued_after_a_spike_trap_hit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::AlreadyApplied)
+}
+
+#[test]
+fn deferred_immediate_hit_precedes_same_element_replacement() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::SameElement)
+}
+
+#[test]
+fn reservation_keeps_each_field_replacement_in_observed_order() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ReplacementQueue)
+}
+
+#[test]
+fn later_busy_source_does_not_suppress_earlier_lethal_tick() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::LethalFirst)
+}
+
+#[test]
+fn sourced_field_tick_uses_the_current_caster_lease() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::CurrentLease)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -124,6 +164,11 @@ enum Case {
     TargetRemoved,
     ScopeChange,
     TargetMoves,
+    AlreadyApplied,
+    SameElement,
+    ReplacementQueue,
+    LethalFirst,
+    CurrentLease,
 }
 
 fn run(admin: String, case: Case) -> TestResult {
@@ -219,16 +264,30 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
         ).map_err(debug)?;
     let source = (deps.actor, deps.admitted.game_session_id);
-    let cells = [cell(2), cell(3)];
+    let cells = [(cell(2), 21465), (cell(3), 21465)];
     let field_cells = match case {
-        Case::ReservedSource | Case::ScopeChange | Case::TargetMoves => &cells[..1],
+        Case::ReservedSource
+        | Case::ScopeChange
+        | Case::TargetMoves
+        | Case::AlreadyApplied
+        | Case::SameElement
+        | Case::ReplacementQueue
+        | Case::CurrentLease => &cells[..1],
         Case::ReadyPoison => &cells[1..],
         Case::TargetRemoved => &cells[..],
-        Case::Hooked | Case::PendingStance | Case::Replay => &[],
+        Case::Hooked | Case::PendingStance | Case::Replay | Case::LethalFirst => &[],
     };
-    if !field_cells.is_empty() {
-        seed_fire(harness, &deps, &owner, native, field_cells).await?;
-    }
+    let (current, _) =
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(harness.root.clone())
+            .current_session_at(source.1)
+            .await?;
+    let item_fence =
+        crate::gameplay_transport::item_fence_of(current).ok_or("current item fence")?;
+    let caster_lease = CharacterLease::new(
+        CharacterId::decode(item_fence.character_id.as_bytes()).map_err(debug)?,
+        item_fence.character_lease_generation,
+    )
+    .map_err(debug)?;
     let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
     let pass = FieldPass {
         owner: &owner,
@@ -237,8 +296,12 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
         permit: &permit,
     };
     let mut runtime = deps.runtime.lock().await;
+    if !field_cells.is_empty() {
+        pass.seed_fields(harness, &runtime, &item_fence, 0, field_cells)
+            .await?;
+    }
     let mut states = owner.states.spell_states.lock().await;
-    initialize_source(&mut runtime, &mut states, source, id(41))?;
+    initialize_source(&mut runtime, &mut states, source, caster_lease)?;
     let before = health(&runtime, first)?;
     let other_before = health(&runtime, second)?;
     if !matches!(case, Case::ReadyPoison | Case::TargetRemoved) {
@@ -293,7 +356,9 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
             runtime
                 .initialize_first_entry_position(poisoner)
                 .map_err(debug)?;
-            initialize_source(&mut runtime, &mut states, (poisoner, session), id(52))?;
+            let lease = CharacterLease::new(CharacterId::decode(&id(52)).map_err(debug)?, 1)
+                .map_err(debug)?;
+            initialize_source(&mut runtime, &mut states, (poisoner, session), lease)?;
             install_dot(&mut runtime, second, Some(poisoner), DotElement::Poison, 1)?;
             // An earlier due fire turn is the regression witness. The fire entry
             // on the poison target was already applied at its current revision.
@@ -354,6 +419,108 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
             assert_eq!(health(&runtime, first)?, before - 8);
             assert!(remaining(&runtime, first)?.is_empty());
         }
+        Case::AlreadyApplied => {
+            pass.tick(&mut runtime, &mut states, 0).await?;
+            assert_eq!(health(&runtime, first)?, before - 9);
+            let trap = crate::gameplay_transport::paced_movement::special_movement::trap(2145)
+                .ok_or("spike trap")?;
+            crate::gameplay_transport::paced_movement::monster_trap::spike_trap_hit(
+                &mut runtime,
+                &states,
+                first,
+                1,
+                trap,
+                1,
+            );
+            let after_trap = health(&runtime, first)?;
+            assert!(after_trap < before - 9);
+            observe_while_reserved(&pass, &mut runtime, &mut states, first, 2).await?;
+            assert!(states.deferred_creature_field_entries.is_empty());
+            pass.tick(&mut runtime, &mut states, 3).await?;
+            assert_eq!(health(&runtime, first)?, after_trap);
+        }
+        Case::SameElement | Case::ReplacementQueue => {
+            let proof = HeldTargets {
+                targets: &[first],
+                scope: runtime.binding().runtime_scope(),
+                generation: runtime.binding().scope_generation(),
+            };
+            let mut held = runtime
+                .prepare_scope_creature_reservation(&proof)
+                .map_err(debug)?;
+            runtime
+                .reserve_scope_creatures(&mut held, &proof)
+                .map_err(debug)?;
+            pass.tick(&mut runtime, &mut states, 0).await?;
+            if case == Case::SameElement {
+                // The fresh stronger fire field occupies the same conflict slot.
+                pass.seed_fields(harness, &runtime, &item_fence, 1, &[(cell(2), 2118)])
+                    .await?;
+            } else {
+                pass.seed_fields(harness, &runtime, &item_fence, 1, &[(cell(2), 105)])
+                    .await?;
+                pass.tick(&mut runtime, &mut states, 1).await?;
+                pass.seed_fields(harness, &runtime, &item_fence, 2, &[(cell(2), 2122)])
+                    .await?;
+                pass.tick(&mut runtime, &mut states, 2).await?;
+            }
+            assert_eq!(health(&runtime, first)?, before);
+            runtime
+                .release_scope_creatures_after_observed_outcome(held, &proof)
+                .map_err(debug)?;
+            pass.tick(&mut runtime, &mut states, 3).await?;
+            let expected = if case == Case::SameElement {
+                9 + 19
+            } else {
+                9 + 3 + 22
+            };
+            assert_eq!(health(&runtime, first)?, before - expected);
+            if case == Case::ReplacementQueue {
+                use oteryn_gameplay_domain::domain::condition::ConditionType;
+                let snapshot = runtime.companion_snapshot(first).map_err(debug)?;
+                let order: Vec<_> = snapshot
+                    .state
+                    .conditions
+                    .instances()
+                    .iter()
+                    .map(|condition| condition.definition().condition_type())
+                    .collect();
+                assert_eq!(
+                    order,
+                    [DotElement::Fire, DotElement::Poison, DotElement::Energy]
+                        .map(ConditionType::DamageOverTime)
+                );
+            }
+            assert!(states.deferred_creature_field_entries.is_empty());
+            pass.tick(&mut runtime, &mut states, 3).await?;
+            assert_eq!(health(&runtime, first)?, before - expected);
+        }
+        Case::LethalFirst => {
+            install_lethal(&mut runtime, first, before)?;
+            install_dot(&mut runtime, first, Some(source.0), DotElement::Fire, 2)?;
+            let proof = HeldSource(source);
+            let _held = hold_source(&mut runtime, &proof)?;
+            pass.tick(&mut runtime, &mut states, 2).await?;
+            assert_eq!(
+                runtime
+                    .companion_snapshot_including_dead(first)
+                    .map_err(debug)?
+                    .health,
+                0
+            );
+            assert_eq!(health(&runtime, second)?, other_before - 4);
+        }
+        Case::CurrentLease => {
+            assert_eq!(
+                runtime
+                    .bound_attacker_lease(source.0, source.1)
+                    .map_err(debug)?,
+                caster_lease
+            );
+            assert_eq!(caster_lease.generation(), 2);
+            pass.tick(&mut runtime, &mut states, 0).await?;
+            assert_eq!(health(&runtime, first)?, before - 9);
+        }
         Case::TargetRemoved | Case::ScopeChange | Case::TargetMoves => {
             let all_targets = [first, second];
             let targets = if case == Case::TargetRemoved {
@@ -398,20 +565,10 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
                     .borrow_movement_position()
                     .commit_creature_relocation(first, position, cell(4))
                     .map_err(debug)?;
-                // The carrier can still report a live creature outside the
-                // qualified Map. Refuse the pass after planning the first creature.
-                let second_position = runtime.read_actor_position(second).map_err(debug)?;
-                let outside = MovementLocalPosition {
-                    x: 4_096,
-                    ..second_position.position()
-                };
-                let displaced = runtime
-                    .borrow_movement_position()
-                    .commit_creature_relocation(second, second_position, outside)
-                    .map_err(debug)?;
                 let before_refusal = runtime.companion_snapshot(first).map_err(debug)?;
                 assert!(matches!(
-                    pass.tick(&mut runtime, &mut states, 1).await,
+                    pass.tick_with_validation_refusal(&mut runtime, &mut states, 1, true)
+                        .await,
                     Err(DurabilityError::Unavailable)
                 ));
                 assert_eq!(
@@ -424,17 +581,16 @@ async fn exercise(harness: &Harness, case: Case) -> TestResult {
                         .deferred_creature_field_entries
                         .contains_key(&first.placement_identity())
                 );
-                runtime
-                    .borrow_movement_position()
-                    .commit_creature_relocation(second, displaced, second_position.position())
-                    .map_err(debug)?;
-
                 let proof = HeldSource(source);
                 let held = hold_source(&mut runtime, &proof)?;
                 pass.tick(&mut runtime, &mut states, 1).await?;
                 assert_eq!(health(&runtime, first)?, before);
                 assert!(!remaining(&runtime, first)?.is_empty());
-                assert!(states.deferred_creature_field_entries.is_empty());
+                assert!(
+                    states
+                        .deferred_creature_field_entries
+                        .contains_key(&first.placement_identity())
+                );
                 runtime
                     .release_source_actors_after_observed_outcome(held, &proof)
                     .map_err(debug)?;
@@ -521,11 +677,32 @@ impl ScopeCreatureReservationProof for HeldTargets<'_> {
     }
 }
 
-fn kill_between_passes(
+async fn observe_while_reserved(
+    pass: &FieldPass<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
     actor: ExactActorRef,
-    hp: i64,
+    now: u64,
 ) -> TestResult {
+    let proof = HeldTargets {
+        targets: &[actor],
+        scope: runtime.binding().runtime_scope(),
+        generation: runtime.binding().scope_generation(),
+    };
+    let mut held = runtime
+        .prepare_scope_creature_reservation(&proof)
+        .map_err(debug)?;
+    runtime
+        .reserve_scope_creatures(&mut held, &proof)
+        .map_err(debug)?;
+    pass.tick(runtime, states, now).await?;
+    runtime
+        .release_scope_creatures_after_observed_outcome(held, &proof)
+        .map_err(debug)?;
+    Ok(())
+}
+
+fn install_lethal(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef, hp: i64) -> TestResult {
     let amount = u32::try_from(hp)?;
     let lethal = CreatureFieldEntry {
         definition: ConditionDefinition::new(
@@ -547,6 +724,15 @@ fn kill_between_passes(
     runtime
         .commit_creature_field_entry(actor, 1, Some(&lethal))
         .map_err(debug)?;
+    Ok(())
+}
+
+fn kill_between_passes(
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+    hp: i64,
+) -> TestResult {
+    install_lethal(runtime, actor, hp)?;
     let turn = runtime
         .stage_creature_periodic_turn(actor, 1, TickFacts::default())
         .map_err(debug)?;
@@ -608,6 +794,17 @@ impl FieldPass<'_, '_, '_> {
         states: &mut ChannelSpellStates,
         now: u64,
     ) -> Result<(), DurabilityError> {
+        self.tick_with_validation_refusal(runtime, states, now, false)
+            .await
+    }
+
+    async fn tick_with_validation_refusal(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        now: u64,
+        reject: bool,
+    ) -> Result<(), DurabilityError> {
         let owner = self.owner;
         let prepared = owner
             .capture_native_health_names(runtime)
@@ -647,9 +844,47 @@ impl FieldPass<'_, '_, '_> {
                         objects,
                         pass.native,
                     );
-                    pass.owner
+                    let positions: Vec<_> = runtime
+                        .visible_entities()
+                        .creatures
+                        .into_iter()
+                        .map(|v| v.position)
+                        .collect();
+                    if reject {
+                        map.prefetch_empty_tiles(runtime, &positions)
+                            .await
+                            .map_err(|_| DurabilityError::Unavailable)?;
+                        for &position in &positions {
+                            assert!(
+                                map.read_items(runtime, position)
+                                    .await
+                                    .map_err(|_| DurabilityError::Unavailable)?
+                                    .items
+                                    .is_empty()
+                            );
+                            assert!(map.protection_zone(runtime, position).is_some());
+                        }
+                        let (tx, _) = map.scope_transaction();
+                        assert!(
+                            sqlx::query("SELECT 1 / 0")
+                                .execute(&mut **tx)
+                                .await
+                                .is_err()
+                        );
+                    }
+                    let result = pass
+                        .owner
                         .tick_creature_fields(&mut map, runtime, states, pass.native, now, names)
-                        .await?;
+                        .await;
+                    if reject {
+                        assert!(
+                            positions
+                                .iter()
+                                .all(|&position| map.protection_zone(runtime, position).is_none()),
+                            "validate_transaction must invalidate the previously qualified map"
+                        );
+                    }
+                    result?;
                     drop(map);
                     tx.rollback().await?;
                     Ok(())
@@ -743,7 +978,7 @@ fn initialize_source(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     (actor, session): (ExactActorRef, GameSessionId),
-    character: [u8; 16],
+    lease: CharacterLease,
 ) -> TestResult {
     states
         .initialize(
@@ -762,8 +997,6 @@ fn initialize_source(
             SemanticTimeMicros::from_micros(0),
         )
         .ok_or("player spell state")?;
-    let lease =
-        CharacterLease::new(CharacterId::decode(&character).map_err(debug)?, 1).map_err(debug)?;
     runtime
         .bind_attacker_lease(actor, session, lease)
         .map_err(debug)?;
@@ -937,32 +1170,34 @@ fn set_guardian_gate(runtime: &mut ChannelRuntimeV1, actor: Option<ExactActorRef
     Ok(())
 }
 
-async fn seed_fire(
-    harness: &Harness,
-    deps: &Dependencies,
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    native: &NativeGameplayState,
-    positions: &[MovementLocalPosition],
-) -> TestResult {
-    use crate::durability::item_mint::TypedDefinitionRef;
-    let policy = native
-        .item_policy_for_source_id(21465)
-        .ok_or("native fire field")?;
-    let definition = qualify_source_field_chain(
-        native,
-        QualifiedItemDefinition::from_native_policy(policy).map_err(debug)?,
-    )
-    .map_err(debug)?;
-    let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
-    let mut operations = Vec::new();
-    {
-        let runtime = deps.runtime.lock().await;
-        for (index, &position) in positions.iter().enumerate() {
-            let target = SpellGroundTarget::for_native_tile_read(&deps.room, &runtime, position)
+impl FieldPass<'_, '_, '_> {
+    async fn seed_fields(
+        &self,
+        harness: &Harness,
+        runtime: &ChannelRuntimeV1,
+        fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
+        cast: u8,
+        placements: &[(MovementLocalPosition, u32)],
+    ) -> TestResult {
+        use crate::durability::item_mint::TypedDefinitionRef;
+        let owner = self.owner;
+        let native = self.native;
+        let deps = self.deps;
+        let mut operations = Vec::new();
+        for (index, &(position, field)) in placements.iter().enumerate() {
+            let policy = native
+                .item_policy_for_source_id(field)
+                .ok_or("native field")?;
+            let definition = qualify_source_field_chain(
+                native,
+                QualifiedItemDefinition::from_native_policy(policy).map_err(debug)?,
+            )
+            .map_err(debug)?;
+            let target = SpellGroundTarget::for_native_tile_read(&deps.room, runtime, position)
                 .map_err(debug)?;
             operations.push(SpellItemOperation::MintGround {
-                item_instance_id: id(180 + u8::try_from(index)?),
-                definition: definition.clone(),
+                item_instance_id: id(180 + cast * 3 + u8::try_from(index)?),
+                definition,
                 quantity: 1,
                 placement: target.placement(b"creature-field-deferral".to_vec()),
                 lifetime_millis: None,
@@ -979,67 +1214,62 @@ async fn seed_fire(
                 description: None,
             });
         }
-    }
-    let (current, _) =
-        crate::durability::fresh_admission::FreshAdmissionStore::from_root(harness.root.clone())
-            .current_session_at(deps.admitted.game_session_id)
-            .await?;
-    let fence = crate::gameplay_transport::item_fence_of(current).ok_or("field fence")?;
-    let command = CommandRef::new(
-        deps.admitted.game_session_id,
-        CommandId::new(4900).map_err(debug)?,
-    );
-    let request = SpellItemTransactionRequest {
-        swing_ordinal: None,
-        command,
-        spell: TypedDefinitionRef {
-            family: "Spell".into(),
-            production_key: "fixture:field.deferral".into(),
-            revision_ref: "definition-r1".into(),
-        },
-        catalog_digest: native.source_digest(),
-        transaction_id: id(188),
-        event_id: id(189),
-        cost: CastCostBinding {
-            vitals_revision_before: 1,
-            vitals_revision_after: 2,
-            mana_before: 200,
-            mana_after: 180,
-            soul_before: 100,
-            soul_after: 100,
-            cooldowns_before: Vec::new(),
-            cooldowns_after: vec![("spell:fixture_field_deferral".into(), 100_000)],
-            caster_digest_before: [11; 32],
-            caster_digest_after: [12; 32],
-        },
-        caster_origin: Some(SourceCasterOrigin {
-            actor: deps.actor,
-            character_lease_generation: fence.character_lease_generation,
-        }),
-        operations,
-        companion: None,
-        direct_companion: None,
-    };
-    let mut tx = harness.pool.begin().await?;
-    let authority = assert_spell_item_authority_in_transaction(
-        &mut tx,
-        &permit,
-        owner.root,
-        owner.character,
-        owner.holder,
-        &fence,
-        command,
-        native.source_digest(),
-    )
-    .await
-    .map_err(debug)?;
-    let origin = crate::gameplay_transport::world_required_field_guard::player_origin(
-        &owner.required_capabilities,
-    );
-    let outcome = apply_spell_items_in_transaction(&mut tx, &authority, &request, &origin)
+        let command = CommandRef::new(
+            deps.admitted.game_session_id,
+            CommandId::new(4900 + u64::from(cast)).map_err(debug)?,
+        );
+        let request = SpellItemTransactionRequest {
+            swing_ordinal: None,
+            command,
+            spell: TypedDefinitionRef {
+                family: "Spell".into(),
+                production_key: "fixture:field.deferral".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            catalog_digest: native.source_digest(),
+            transaction_id: id(200 + 2 * cast),
+            event_id: id(201 + 2 * cast),
+            cost: CastCostBinding {
+                vitals_revision_before: 1,
+                vitals_revision_after: 2,
+                mana_before: 200,
+                mana_after: 180,
+                soul_before: 100,
+                soul_after: 100,
+                cooldowns_before: Vec::new(),
+                cooldowns_after: vec![("spell:fixture_field_deferral".into(), 100_000)],
+                caster_digest_before: [11; 32],
+                caster_digest_after: [12; 32],
+            },
+            caster_origin: Some(SourceCasterOrigin {
+                actor: deps.actor,
+                character_lease_generation: fence.character_lease_generation,
+            }),
+            operations,
+            companion: None,
+            direct_companion: None,
+        };
+        let mut tx = harness.pool.begin().await?;
+        let authority = assert_spell_item_authority_in_transaction(
+            &mut tx,
+            self.permit,
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence,
+            command,
+            native.source_digest(),
+        )
         .await
         .map_err(debug)?;
-    assert!(matches!(outcome, SpellItemTransactionOutcome::Applied(_)));
-    tx.commit().await?;
-    Ok(())
+        let origin = crate::gameplay_transport::world_required_field_guard::player_origin(
+            &owner.required_capabilities,
+        );
+        let outcome = apply_spell_items_in_transaction(&mut tx, &authority, &request, &origin)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(outcome, SpellItemTransactionOutcome::Applied(_)));
+        tx.commit().await?;
+        Ok(())
+    }
 }

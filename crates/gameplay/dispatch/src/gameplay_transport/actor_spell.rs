@@ -115,7 +115,7 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 #[derive(Debug)]
 pub struct ChannelSpellStates {
     pub(super) deferred_creature_field_entries:
-        std::collections::BTreeMap<[u8; 16], super::creature_field::DeferredCreatureFieldEntry>,
+        std::collections::BTreeMap<[u8; 16], std::collections::VecDeque<super::creature_field::DeferredCreatureFieldEntry>>,
     #[cfg(test)]
     pub(super) drunk_seed_fixture: Option<[u8; 32]>,
     pub(super) encounter_phases: super::encounter_phases::Registry,
@@ -3096,6 +3096,11 @@ impl ChannelSpellStates {
     }
 }
 
+pub(super) enum CreatureConditionTurn {
+    Scheduled,
+    Field(Option<u32>),
+}
+
 impl ChannelSpellStates {
     /// Same locked Channel turn reads the canonical live attacker owner and
     /// commits Creature HP+store together. No player slot condition fallback.
@@ -3115,20 +3120,24 @@ impl ChannelSpellStates {
             facts,
             now,
             &[],
-        )
+            CreatureConditionTurn::Scheduled,
+        )?
+        .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)
     }
 
-    pub fn tick_source_creature_conditions_with_health_observations(
+    pub(super) fn tick_source_creature_conditions_with_health_observations(
         &self,
         runtime: &mut ChannelRuntimeV1,
         target: ExactActorRef,
         facts: crate::foundation::TickFacts,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
         observations: &[oteryn_gameplay_entities::NativeHealthChangeObservation],
+        turn: CreatureConditionTurn,
     ) -> Result<
-        crate::foundation::CreaturePeriodicReceipt,
+        Option<crate::foundation::CreaturePeriodicReceipt>,
         oteryn_gameplay_domain::domain::carrier_values::CarrierError,
     > {
+        let scheduled = matches!(turn, CreatureConditionTurn::Scheduled);
         let mut lookup = |r: &ChannelRuntimeV1, source: ExactActorRef, at: u64| {
             if !r.borrow_exact_actor_lookup().contains(source) {
                 return Ok(None);
@@ -3155,7 +3164,7 @@ impl ChannelSpellStates {
                     oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
                 );
             }
-            if super::creature_field::periodic_source_busy(r, self, source) {
+            if scheduled && super::creature_field::periodic_source_busy(r, self, source) {
                 return Err(
                     oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
                 );
@@ -3173,13 +3182,32 @@ impl ChannelSpellStates {
             });
             Ok(Some(if elite { percent / 2 } else { percent }))
         };
-        let receipt = runtime.apply_creature_periodic_turn_with_sources_and_health_observations(
-            target,
-            now.get(),
-            facts,
-            &mut lookup,
-            observations,
-        )?;
+        let receipt = match turn {
+            CreatureConditionTurn::Scheduled => Some(
+                runtime.apply_creature_periodic_turn_with_sources_and_health_observations(
+                    target,
+                    now.get(),
+                    facts,
+                    &mut lookup,
+                    observations,
+                )?,
+            ),
+            CreatureConditionTurn::Field(application) => runtime
+                .apply_creature_field_periodic_turn(
+                    target,
+                    now.get(),
+                    facts,
+                    &mut lookup,
+                    observations,
+                    application,
+                    &|runtime, source| {
+                        super::creature_field::periodic_source_busy(runtime, self, source)
+                    },
+                )?,
+        };
+        let Some(receipt) = receipt else {
+            return Ok(None);
+        };
         for impact in &receipt.impacts {
             if let Some(source) = impact.source
                 && let Some((_, session, _)) = self.actors.iter().find(|(actor, session, _)| {
@@ -3201,7 +3229,7 @@ impl ChannelSpellStates {
                 );
             }
         }
-        Ok(receipt)
+        Ok(Some(receipt))
     }
 }
 #[cfg(test)]
