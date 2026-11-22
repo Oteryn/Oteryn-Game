@@ -29,9 +29,10 @@ pub(super) fn publish(
     {
         return false;
     }
-    if admission.states.chat.end_engagement(session, npc.actor)
-        && let Some(conversation) = &mut outcome.conversation
-    {
+    if !admission.states.chat.end_engagement(session, npc.actor) {
+        return false;
+    }
+    if let Some(conversation) = &mut outcome.conversation {
         conversation.open = None;
     }
     let at = crate::foundation::MovementLocalPosition {

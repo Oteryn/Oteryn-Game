@@ -1,9 +1,11 @@
 use super::classic_quests_fixtures::{install, talk};
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use std::sync::Arc;
 
 const NPC: &str = "oteryn:npc.the_orc_king";
@@ -16,9 +18,10 @@ const SOURCE: &str =
 
 #[test]
 fn orc_king_first_greeting_claims_personal_flag_and_ambushes_only_once() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    drop(admin);
     super::kill_reward_e2e_fixtures::scenario_thread::run("orc-king-first-greeting", || {
         super::quest_world_callbacks_fixtures::npc_scenario(
             Position {
@@ -74,7 +77,56 @@ async fn exercise(
         .map_err(debug)?
         .len();
 
-    assert_eq!(talk(owner, admitted, king, 6301, "hi").await?, [AMBUSH]);
+    owner
+        .states
+        .npc_conversations
+        .fixture_interrupt_quest_dialogue_commit(admitted.game_session_id, 6301)?;
+    let item_fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?
+        .item_fence();
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: 6301,
+        item_fence: Some(item_fence),
+    };
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("clock")?;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let lost = owner
+        .npc_talk(
+            actor,
+            command,
+            NpcTalkIntent {
+                npc_actor: king,
+                text: "hi".into(),
+            },
+        )
+        .await;
+    assert!(lost.unknown && lost.conversation.is_none());
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .current_live_creature_census()
+            .map_err(debug)?
+            .len(),
+        before
+    );
+    let recovered = owner
+        .resume_npc_bank(actor, command)
+        .await
+        .ok_or("retained greeting")?;
+    assert_eq!(recovered.disposition, NpcIntentDisposition::Ok);
+    assert!(!recovered.unknown);
+    let greeting = recovered.conversation.ok_or("ambush reply")?;
+    assert_eq!(greeting.lines, [AMBUSH]);
+    assert!(greeting.open.is_none());
     assert!(
         owner
             .states

@@ -5,7 +5,9 @@ use super::*;
 use crate::domain::CharacterId;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef};
+use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 pub(super) type Context = (u64, u64, String);
 
@@ -146,6 +148,7 @@ struct Pending {
     context: Context,
     next_topic: Option<Topic>,
     reply: Vec<String>,
+    greeting: Option<Arc<RewardCallback>>,
 }
 
 /// Bind a pure, source-backed selector to the actual current conversation.
@@ -391,6 +394,13 @@ pub(super) async fn apply(
         transition_key: transition,
         cause: QuestCause::Command(CommandRef::new(command.game_session_id, id)),
     };
+    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
+        .ok()
+        .and_then(|callbacks| {
+            callbacks
+                .into_iter()
+                .find(|c| c.key == request.transition_key)
+        });
     {
         let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
             return rejected();
@@ -413,15 +423,12 @@ pub(super) async fn apply(
             context: step.context.clone(),
             next_topic: step.next_topic,
             reply: step.reply.clone(),
+            greeting: reward_callback
+                .as_ref()
+                .filter(|callback| !callback.greeting_encounter.is_empty())
+                .map(|callback| Arc::new(callback.clone())),
         });
     }
-    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
-        .ok()
-        .and_then(|callbacks| {
-            callbacks
-                .into_iter()
-                .find(|c| c.key == request.transition_key)
-        });
     let value_callback = reward_callback.is_some();
     let fee_payment = if reward_callback.as_ref().is_some_and(|c| c.fee.is_some()) {
         match super::endgame::prepare_reward_fee(admission, command, fence).await {
@@ -480,24 +487,6 @@ pub(super) async fn apply(
         eprintln!("quest reward commit: {error:?}");
     }
     let newly_committed = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
-    let greeting_published = if newly_committed
-        && let Some(callback) = reward_callback
-            .as_ref()
-            .filter(|c| !c.greeting_encounter.is_empty())
-    {
-        let mut runtime = admission.runtime.lock().await;
-        super::greeting_encounter::publish(
-            admission,
-            &mut runtime,
-            actor,
-            command,
-            &intent,
-            &mut rendered,
-            callback,
-        )
-    } else {
-        false
-    };
     match outcome {
         Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {
             #[cfg(test)]
@@ -508,6 +497,24 @@ pub(super) async fn apply(
                 state.quest_dialogue.interrupt_after_commit = None;
                 return unknown();
             }
+            let greeting_published = if newly_committed
+                && let Some(callback) = reward_callback
+                    .as_ref()
+                    .filter(|c| !c.greeting_encounter.is_empty())
+            {
+                let mut runtime = admission.runtime.lock().await;
+                super::greeting_encounter::publish(
+                    admission,
+                    &mut runtime,
+                    actor,
+                    command,
+                    &intent,
+                    &mut rendered,
+                    callback,
+                )
+            } else {
+                false
+            };
             finish(admission, command.game_session_id, true);
             admission
                 .refresh_quest_session(command.game_session_id, false)
@@ -611,6 +618,45 @@ pub(in crate::gameplay_transport) async fn resume(
         .await
     {
         Ok(receipt) => {
+            let mut resumed_greeting = None;
+            if receipt.is_some()
+                && let Some(callback) = pending.greeting.as_deref()
+            {
+                let mut runtime = admission.runtime.lock().await;
+                let mut rendered = reply(
+                    &admission.states.chat,
+                    command.game_session_id,
+                    &pending.context,
+                    &pending.intent,
+                    pending.reply.clone(),
+                );
+                if rendered.conversation.is_some()
+                    && admission
+                        .states
+                        .npc_conversations
+                        .current_npc(
+                            &admission.states.chat,
+                            &runtime,
+                            pending.actor,
+                            command.game_session_id,
+                            &pending.intent,
+                        )
+                        .as_ref()
+                        == Some(&pending.context)
+                    && super::greeting_encounter::publish(
+                        admission,
+                        &mut runtime,
+                        pending.actor,
+                        command,
+                        &pending.intent,
+                        &mut rendered,
+                        callback,
+                    )
+                {
+                    rendered.inventory_changed = value_callback;
+                    resumed_greeting = Some(rendered);
+                }
+            }
             finish(admission, command.game_session_id, receipt.is_some());
             if receipt.is_some() {
                 admission
@@ -619,6 +665,9 @@ pub(in crate::gameplay_transport) async fn resume(
                 admission
                     .refresh_level_up_vitals(pending.actor, command.game_session_id)
                     .await;
+                if let Some(rendered) = resumed_greeting {
+                    return Some(rendered);
+                }
                 let mut rendered = reply(
                     &admission.states.chat,
                     command.game_session_id,
