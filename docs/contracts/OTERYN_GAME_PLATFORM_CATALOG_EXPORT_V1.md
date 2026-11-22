@@ -212,7 +212,7 @@ That fixture proves the negative semantics: current absence of a broad native ca
 
 Unit tests may use synthetic supported records solely to exercise validation and determinism. Synthetic fixtures grant no native availability/completeness claim.
 
-`fixtures/supported-native-input.json` contains a sample of admitted public records. It declares partial coverage for the sampled capabilities and exercises the Game payload revision below.
+`fixtures/supported-native-input.json` contains a sample of admitted public records. It declares partial coverage for the sampled capabilities and exercises the Game payload revision below. Platform can use it to test wiki lists, search and version switching (F21). The opt-in `build.py --preproduction` path exports the WorldProject from the selected checkout’s committed HEAD.
 
 ## 14. Consumer obligations
 
@@ -233,7 +233,7 @@ A capability-specific additive contract must preserve stable native identity, pr
 
 ### Public WorldProject payloads, revision 1
 
-The `oteryn:profile.public-content-view-v1` snapshot profile carries the following Game-owned payloads for offline compatibility testing and inactive import. The v1.0.0 envelope is unchanged. Each record has an integer `data.payload_revision` equal to `1` and its `type` equals its `capability_id`. Only the fields listed here are accepted. A consumer must validate this exact revision before accepting the payload as production-relevant. The offline artifacts use the `preproduction-unallocated` authority epoch.
+The opt-in preproduction export of `oteryn:profile.public-content-view-v1` carries the following Game-owned payloads for offline compatibility testing and inactive import. The v1.0.0 envelope is unchanged. Each record has an integer `data.payload_revision` equal to `1` and its `type` equals its `capability_id`. Only the fields listed here are accepted. A consumer must validate this exact revision before accepting the payload as production-relevant. The offline artifacts use the `preproduction-unallocated` authority epoch.
 
 | Capability | Record and admitted source | Other `data` fields |
 | --- | --- | --- |
@@ -243,9 +243,9 @@ The `oteryn:profile.public-content-view-v1` snapshot profile carries the followi
 | `creature_loot` | Relation from a Creature to an Item, from the Creature's linked Reference loot table | Required `algorithm` with value `IndependentBernoulliPpm`, nonnegative integer `min_count` and `max_count` with `min_count <= max_count`, and integer `probability_ppm` in `0..=1000000`. This revision covers flat tables with independent rows. Tables with nested, unique, subtype, conditional, or other selection semantics are omitted as a unit. |
 | `npc_shop` | Relation from a public NPC to an Item, from an offer in a linked Service declaration | Required `direction` (`BuyFromPlayer` or `SellToPlayer`), nonnegative integer `unit_price`, nullable nonnegative integers `count` and `sub_type`, and nullable `currency` (an explicit native key resolving to an exported Item). Null `count` carries the source default of one. Null `currency` carries absence of an explicit currency. |
 
-Entity keys and the `definition_revision` strings come from the admitted definitions. Optional fields are emitted when the typed public source provides them. An omitted field carries no availability claim. Reference authoring metadata, raw source annotations and hidden or secret identities are excluded. Relation keys identify source rows by their zero-based ordinal in the admitted table or service offer list. A loot key has the form `<creature_key>.loot.<ordinal>`. A shop key has the form `<npc_key>.shop.<service_key>.row.<ordinal>` with the colon in the service key encoded as a dot. Row identities are scoped to the snapshot for version comparisons. Relations require exported endpoints. Shop offers with pending parity, hidden NPCs or unexported items or currencies are omitted.
+Entity keys and the `definition_revision` strings come from the admitted definitions. Optional fields are emitted when the typed public source provides them. An omitted field carries no availability claim. Reference authoring metadata, raw source annotations and hidden or secret identities are excluded. Relation keys identify source rows by their zero-based ordinal in the admitted table or service offer list. A loot key has the form `<creature_key>.loot.<ordinal>`. A shop key has the form `<npc_key>.shop.<service_key>.row.<ordinal>` with the colon in the service key encoded as a dot. Row identities are scoped to the snapshot for version comparisons. Relations require exported endpoints. Shop offers with pending parity, hidden NPCs or unexported items or currencies are omitted. Repeated links to the same Service emit one copy of each offer. The projection omits rows with ambiguous wire identities and requires loot references to match the native definition revision.
 
-Game derives each manifest entry from the same admitted project and public output. A capability has support once at least one contracted record is emitted. It is complete when every source record of that kind in the admitted project is emitted, including all linked rows for a relation capability. An omitted source record makes an otherwise supported capability partial. Zero emitted records give `unsupported/unknown`. The scope is the admitted WorldProject, so separate spell and quest loaders and uncontracted declaration families confer no support. Both producer and verifier reject records assigned to unsupported capabilities. The profile has no tombstone history source.
+For the opt-in preproduction export, Game derives each manifest entry from the same admitted project and public output. A capability has support once at least one contracted record is emitted. It is complete when every source record of that kind in the admitted project is emitted, including all linked rows for a relation capability. An omitted source record makes an otherwise supported capability partial. Zero emitted records give `unsupported/unknown`. The scope is the admitted WorldProject, so separate spell and quest loaders and uncontracted declaration families confer no support. Both producer and verifier reject records assigned to unsupported capabilities. The profile has no tombstone history source.
 
 ## 16. Cross-repository operational semantics
 
@@ -280,7 +280,13 @@ Implementations may use more specific local codes but must preserve these failur
 
 ### Rollout, mixed versions and rollback
 
-The rollout classification is `server-first-safe` for contract/producer availability: merging Game v1 does not change runtime or Platform behavior. Platform then implements an inactive consumer for this exact schema.
+The cross-repository lock records the Platform inactive consumer as
+`NOT_IMPLEMENTED_INACTIVE_CONSUMER_PENDING` and production as disabled.
+The protected-main build retains eight `unsupported/unknown` capabilities and
+empty record lists while matching consumer validation is pending. The opt-in
+preproduction build and committed sample provide fixture inputs for that
+validation and F21. Capability promotion and activation remain subject to the
+following order.
 
 Required order:
 

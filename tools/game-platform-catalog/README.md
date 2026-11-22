@@ -2,13 +2,16 @@
 
 This directory contains the schema-v1 deterministic producer/validator for `docs/contracts/OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md`.
 
-`build.py /tmp/game-platform-catalog.json` invokes the shared Rust CONTENT
-loader/view and this validator without retaining a normalized input file.
-The build emits the revision 1 public WorldProject payloads described in
+`build.py /tmp/game-platform-catalog.json` is the protected-main build path.
+Its eight v1 capabilities remain `unsupported/unknown` while Platform’s inactive
+consumer is pending. The artifact contains empty entity, relation and tombstone lists.
+
+Run `build.py --preproduction /tmp/game-platform-catalog-preproduction.json` to
+export the populated revision 1 WorldProject for offline use under
 [the export contract](../../docs/contracts/OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md#public-worldproject-payloads-revision-1).
-Support follows the records actually emitted. Completeness follows the admitted
-source coverage, including omissions for visibility and unsupported row shapes.
-The artifact pins `source_revision` and the UTC commit timestamp to HEAD.
+Support follows emitted records and completeness follows admitted source coverage.
+Both builds pin the Rust projection, WorldProject, Python producer and UTC commit
+timestamp to the same Git commit captured from HEAD.
 The Rust filesystem adapter runs on Linux, matching the existing CONTENT
 capture boundary. Test discovery requires Cargo and the repository's existing
 `jsonschema` schema-tool dependency; the Python producer itself remains portable.
@@ -48,7 +51,7 @@ The tests cover deterministic ordering, semantic and artifact digests, stable na
 `unsupported-native-input.json` is the negative-semantics fixture.
 `supported-native-input.json` samples admitted public records using the exact
 payload revision and declares partial coverage for the sampled capabilities.
-Build the full artifact with `build.py` against the desired Game commit.
+Build the populated artifact with `build.py --preproduction` from a checkout of the desired Game commit.
 
 ## Production boundary
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 import sys
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ CONTRACT_ID = "oteryn.game-platform-catalog"
 SCHEMA_VERSION = "1.0.0"
 CONTENT_AUTHORITY_ID = "oteryn-native"
 PUBLIC_VIEW_PROFILE = "oteryn:profile.public-content-view-v1"
+PUBLIC_VIEW_EPOCH = "preproduction-unallocated"
 KNOWN_CAPABILITIES = frozenset(
     {
         "item",
@@ -35,6 +37,8 @@ MAX_NESTING_DEPTH = 16
 MAX_OBJECT_MEMBERS = 4_096
 MAX_ARRAY_ENTRIES = 200_000
 MAX_INT = (1 << 63) - 1
+MAX_U32 = (1 << 32) - 1
+MAX_U16 = (1 << 16) - 1
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 TOKEN_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
@@ -375,6 +379,27 @@ def _public_int(value: Any, name: str, minimum: int = 0, maximum: int = MAX_INT)
         raise CatalogValidationError(f"invalid public payload {name}")
 
 
+def _public_revision(value: Any) -> None:
+    revision = _require_string(value, "definition_revision")
+    lower = revision.lower()
+    if (re.fullmatch(r"[!-~]{1,512}", revision) is None
+            or any(marker in lower for marker in ("fixture", "synthetic", "evidence", "test-only"))
+            or "test" in re.split(r"[:./_-]", lower)):
+        raise CatalogValidationError("invalid public payload definition_revision")
+
+
+def _public_source_text(value: Any, name: str) -> str:
+    text = _require_string(value, name)
+    if text.strip() != text or re.search(r"[\x00-\x1f\x7f-\x9f]", text):
+        raise CatalogValidationError(f"invalid public payload {name}")
+    return text
+
+
+def _require_increasing(values: list[str], name: str) -> None:
+    if any(left >= right for left, right in zip(values, values[1:])):
+        raise CatalogValidationError(f"public {name} must be sorted and unique")
+
+
 def _validate_public_view_payloads(
     entities: list[dict], relations: list[dict], tombstones: list[dict],
     support: dict[str, str], completeness: dict[str, str],
@@ -400,25 +425,35 @@ def _validate_public_view_payloads(
                 "Unknown", "StackCapable", "NonStackable",
             ):
                 raise CatalogValidationError("invalid public item payload")
+            if data["materializable"] and data["stack_class"] == "Unknown":
+                raise CatalogValidationError("public identity-only item cannot be materializable")
+            if "name" in data and len(_require_string(data["name"], "name").encode("utf-8")) > 46:
+                raise CatalogValidationError("public item name exceeds 46 UTF-8 bytes")
         elif cap == "creature":
             stats = {"health", "experience", "speed", "armor"}
             _require_exact_keys(data, "creature data", core, stats | {"name", "resistances", "immunities"})
             for field in stats & data.keys():
-                _public_int(data[field], field)
+                _public_int(data[field], field, minimum=int(field == "health"),
+                            maximum=MAX_U32 if field in {"speed", "armor"} else MAX_INT)
+            if "name" in data:
+                _public_source_text(data["name"], "name")
+            damage_types = []
             for entry in _require_list(data.get("resistances", []), "resistances", MAX_ARRAY_ENTRIES):
                 _require_exact_keys(entry, "resistance", {"damage_type", "percent"})
-                _require_string(entry["damage_type"], "resistance damage_type")
+                damage_types.append(_public_source_text(entry["damage_type"], "resistance damage_type"))
                 percent = _require_exact_keys(entry["percent"], "percent", {"numerator", "denominator"})
                 _public_int(percent["numerator"], "numerator", -MAX_INT - 1)
                 _public_int(percent["denominator"], "denominator", 1)
-            for immunity in _require_list(data.get("immunities", []), "immunities", MAX_ARRAY_ENTRIES):
-                _require_string(immunity, "immunity")
+                if math.gcd(percent["numerator"], percent["denominator"]) != 1:
+                    raise CatalogValidationError("public resistances must use reduced ratios")
+            _require_increasing(damage_types, "resistances")
+            immunities = _require_list(data.get("immunities", []), "immunities", MAX_ARRAY_ENTRIES)
+            _require_increasing([_public_source_text(value, "immunity") for value in immunities],
+                                "immunities")
         else:
             _require_exact_keys(data, "npc data", core)
-        _require_string(data["definition_revision"], "definition_revision")
+        _public_revision(data["definition_revision"])
         _public_int(data["payload_revision"], "payload_revision", 1, 1)
-        if "name" in data:
-            _require_string(data["name"], "name")
 
     entity_kinds = {row["content_key"]: row["capability_id"] for row in entities}
     for row in relations:
@@ -427,21 +462,34 @@ def _validate_public_view_payloads(
         if (row["type"] != cap or source_kind is None
                 or entity_kinds[row["source"]] != source_kind or entity_kinds.get(row["target"]) != "item"):
             raise CatalogValidationError("invalid public relation capability or endpoint type")
+        kind = ".loot." if cap == "creature_loot" else ".row."
+        prefix, _, ordinal = row["relation_key"].rpartition(kind)
+        if cap == "creature_loot":
+            matches_source = prefix == row["source"]
+        else:
+            shop_prefix = row["source"] + ".shop."
+            # The carrier has already checked the key alphabet. An encoded
+            # Service key must have a separator with a part on each side.
+            service_key = prefix.removeprefix(shop_prefix)
+            matches_source = prefix.startswith(shop_prefix) and "." in service_key[1:-1]
+        if not matches_source or re.fullmatch(r"0|[1-9][0-9]*", ordinal) is None:
+            raise CatalogValidationError("public relation_key must identify a source row and ordinal")
         if cap == "creature_loot":
             _require_exact_keys(data, "loot data", {"payload_revision", "algorithm", "min_count", "max_count", "probability_ppm"})
             if data["algorithm"] != "IndependentBernoulliPpm":
                 raise CatalogValidationError("invalid public loot algorithm")
-            _public_int(data["min_count"], "min_count")
-            _public_int(data["max_count"], "max_count", data["min_count"])
+            _public_int(data["min_count"], "min_count", 1, MAX_U32)
+            _public_int(data["max_count"], "max_count", data["min_count"], MAX_U32)
             _public_int(data["probability_ppm"], "probability_ppm", 0, 1_000_000)
         else:
             _require_exact_keys(data, "shop data", {"payload_revision", "direction", "unit_price", "count", "sub_type", "currency"})
             if data["direction"] not in ("BuyFromPlayer", "SellToPlayer"):
                 raise CatalogValidationError("invalid public shop direction")
             _public_int(data["unit_price"], "unit_price")
-            for field in ("count", "sub_type"):
-                if data[field] is not None:
-                    _public_int(data[field], field)
+            if data["count"] is not None:
+                _public_int(data["count"], "count", 1, MAX_U32)
+            if data["sub_type"] is not None:
+                _public_int(data["sub_type"], "sub_type", 0, MAX_U16)
             if data["currency"] is not None:
                 currency = _require_string(data["currency"], "currency", CONTENT_KEY_RE)
                 if entity_kinds.get(currency) != "item":
@@ -497,6 +545,8 @@ def _normalize_source(source: Any) -> tuple[dict, str]:
         source["tombstones"], support, completeness, entity_keys
     )
     if content_profile_id == PUBLIC_VIEW_PROFILE:
+        if authority_epoch != PUBLIC_VIEW_EPOCH:
+            raise CatalogValidationError(f"public view authority_epoch must be {PUBLIC_VIEW_EPOCH}")
         _validate_public_view_payloads(entities, relations, tombstones, support, completeness)
     semantic = {
         "contract_id": CONTRACT_ID,

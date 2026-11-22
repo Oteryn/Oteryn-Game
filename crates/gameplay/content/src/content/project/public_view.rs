@@ -67,22 +67,42 @@ impl PublicContentView {
             })
             .collect()
     }
-    /// Emit the Game-owned payloads registered for this profile in export contract §15.
+    /// Emit the locked v1 artifact, with capabilities gated on Platform validation.
     pub fn native_input(&self, source_revision: &str, generated_at: &str) -> Value {
+        self.catalog_input(source_revision, generated_at, false)
+    }
+
+    /// Emit the opt-in profile for offline compatibility under export contract §15.
+    pub fn preproduction_input(&self, source_revision: &str, generated_at: &str) -> Value {
+        self.catalog_input(source_revision, generated_at, true)
+    }
+
+    fn catalog_input(
+        &self,
+        source_revision: &str,
+        generated_at: &str,
+        preproduction: bool,
+    ) -> Value {
         let entities: Vec<_> = self
             .entities
             .iter()
             .filter(|row| {
-                matches!(
-                    row["capability_id"].as_str(),
-                    Some("item" | "creature" | "npc")
-                )
+                preproduction
+                    && matches!(
+                        row["capability_id"].as_str(),
+                        Some("item" | "creature" | "npc")
+                    )
             })
             .collect();
+        let relations = if preproduction {
+            self.relations.as_slice()
+        } else {
+            &[]
+        };
         let supported: BTreeSet<_> = entities
             .iter()
             .copied()
-            .chain(&self.relations)
+            .chain(relations)
             .filter_map(|row| row["capability_id"].as_str())
             .collect();
         json!({
@@ -99,7 +119,7 @@ impl PublicContentView {
                 "capability_id":id,"state":if !supported.contains(id) { "unknown" }
                     else if self.incomplete.contains(id) { "partial" } else { "complete" }
             })),
-            "entities": entities, "relations": self.relations, "tombstones": []
+            "entities": entities, "relations": relations, "tombstones": []
         })
     }
 }
@@ -141,6 +161,40 @@ fn entity(kind: &str, key: &str, revision: &str, source: &Value, fields: &[&str]
     json!({"type":kind,"content_key":key,"capability_id":kind,"data":data})
 }
 
+// The wire identity is shared across capabilities. Omit every claimant of an
+// ambiguous key so downstream relations cannot bind to an arbitrary definition.
+fn omit_ambiguous_rows(
+    rows: &mut Vec<Value>,
+    key_field: &str,
+    incomplete: &mut BTreeSet<&'static str>,
+) -> BTreeSet<String> {
+    let mut observed = BTreeSet::new();
+    let mut ambiguous = BTreeSet::new();
+    for row in rows.iter() {
+        if let Some(key) = row[key_field].as_str()
+            && !observed.insert(key)
+        {
+            ambiguous.insert(key.to_owned());
+        }
+    }
+    rows.retain(|row| {
+        if row[key_field]
+            .as_str()
+            .is_some_and(|key| ambiguous.contains(key))
+        {
+            if let Some(cap) = CATALOG_CAPABILITIES
+                .into_iter()
+                .find(|cap| row["capability_id"] == *cap)
+            {
+                incomplete.insert(cap);
+            }
+            return false;
+        }
+        true
+    });
+    ambiguous
+}
+
 /// Consume an already validated immutable WorldProject. The server and tools share
 /// capture_world_project / ProjectSnapshot::parse; there is deliberately no JSON input here.
 pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, ProjectError> {
@@ -158,12 +212,23 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
     let profiles: BTreeMap<_, _> = state
         .authoring_profiles
         .iter()
-        .map(|profile| (profile.target.key.as_str(), &profile.data))
+        .map(|profile| {
+            let target = &profile.target;
+            (
+                (target.family, target.key.as_str(), target.revision.as_str()),
+                &profile.data,
+            )
+        })
         .collect();
     let mut loot = BTreeMap::new();
     for record in &project.reference.records {
         let raw = project_json(record)?;
         let identity = record.identity();
+        let profile_key = (
+            ProjectV2Family::from_reference(&identity.family)?,
+            identity.key.as_str(),
+            identity.revision.as_str(),
+        );
         inventory(
             &raw,
             &format!("reference.{}", identity.family),
@@ -186,7 +251,7 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                 view.incomplete.insert("creature");
                 None
             }
-            ProjectReferenceRecord::Ability { .. } => match profiles.get(identity.key.as_str()) {
+            ProjectReferenceRecord::Ability { .. } => match profiles.get(&profile_key) {
                 Some(ProjectV2AuthoringProfileData::Ability(profile))
                     if profile.incantation.is_some() =>
                 {
@@ -197,7 +262,10 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             ProjectReferenceRecord::Loot {
                 algorithm, entries, ..
             } => {
-                loot.insert(identity.key.as_str(), (algorithm, entries));
+                loot.insert(
+                    (identity.key.as_str(), identity.revision.as_str()),
+                    (algorithm, entries),
+                );
                 None
             }
             _ => None,
@@ -220,7 +288,7 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             {
                 projected["data"]["name"] = json!(name);
             }
-            if let Some(profile) = profiles.get(identity.key.as_str()) {
+            if let Some(profile) = profiles.get(&profile_key) {
                 if let ProjectV2AuthoringProfileData::Creature(profile) = profile
                     && let Some(details) = &profile.details
                 {
@@ -291,13 +359,13 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             );
         match declaration {
             ProjectV2Declaration::Npc { services, .. } => {
-                npcs.push((identity.key.as_str(), services, hidden));
+                npcs.push((identity, services));
                 if hidden {
                     view.incomplete.insert("npc");
                 }
             }
             ProjectV2Declaration::Service { offers, .. } => {
-                shop_services.insert(identity.key.as_str(), offers);
+                shop_services.insert((identity.key.as_str(), identity.revision.as_str()), offers);
             }
             _ => {}
         }
@@ -347,26 +415,52 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             },
         });
     }
-    let items: BTreeSet<_> = view
+    let ambiguous = omit_ambiguous_rows(&mut view.entities, "content_key", &mut view.incomplete);
+    for row in &mut view.coverage {
+        if row.disposition == "projected" && ambiguous.contains(row.key.as_str()) {
+            row.disposition = "unsupported";
+            row.reason = "ambiguous public identity";
+        }
+    }
+    let endpoints: BTreeMap<_, _> = view
         .entities
         .iter()
-        .filter(|e| e["type"] == "item")
-        .filter_map(|e| e["content_key"].as_str())
+        .filter_map(|row| {
+            Some((
+                row["content_key"].as_str()?,
+                (
+                    row["type"].as_str()?,
+                    row["data"]["definition_revision"].as_str()?,
+                ),
+            ))
+        })
         .collect();
-    for (npc, services, hidden) in npcs {
+    let is_exported = |kind, key, revision| endpoints.get(key) == Some(&(kind, revision));
+
+    for (identity, services) in npcs {
+        let npc = identity.key.as_str();
+        let mut seen = BTreeSet::new();
         for service in services {
-            let Some(offers) = shop_services.get(service.key.as_str()) else {
+            if !seen.insert(service) {
+                continue;
+            }
+            let Some(offers) =
+                shop_services.get(&(service.key.as_str(), service.revision.as_str()))
+            else {
                 view.incomplete.insert("npc_shop");
                 continue;
             };
             for (ordinal, offer) in offers.iter().enumerate() {
-                if hidden
+                if !is_exported("npc", npc, &identity.revision)
                     || offer.parity_pending
-                    || !items.contains(offer.item.key.as_str())
-                    || offer
-                        .currency
-                        .as_ref()
-                        .is_some_and(|currency| !items.contains(currency.key.as_str()))
+                    || !is_exported(
+                        "item",
+                        offer.item.key.as_str(),
+                        offer.item.revision.as_str(),
+                    )
+                    || offer.currency.as_ref().is_some_and(|currency| {
+                        !is_exported("item", currency.key.as_str(), currency.revision.as_str())
+                    })
                 {
                     view.incomplete.insert("npc_shop");
                     continue;
@@ -385,24 +479,30 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
     for record in &project.reference.records {
         let ProjectReferenceRecord::Creature {
             identity,
-            client_projection,
             loot: Some(table),
             ..
         } = record
         else {
             continue;
         };
-        let Some((algorithm, entries)) = loot.get(table.key.as_str()) else {
+        let Some((algorithm, entries)) = loot.get(&(table.key.as_str(), table.revision.as_str()))
+        else {
             view.incomplete.insert("creature_loot");
             continue;
         };
         if entries.is_empty() {
             continue;
         }
-        let conditional = matches!(profiles.get(table.key.as_str()), Some(ProjectV2AuthoringProfileData::Loot(profile))
-            if profile.entries.iter().any(|entry| entry.skip_later_same_item_after_success));
-        if !matches!(client_projection, ProjectionDocument::ClientSafe)
-            || !matches!(algorithm, LootAlgorithmDocument::IndependentBernoulliPpm)
+        let conditional = matches!(
+            profiles.get(&(ProjectV2Family::Loot, table.key.as_str(), table.revision.as_str())),
+            Some(ProjectV2AuthoringProfileData::Loot(profile))
+                if profile.entries.iter().any(|entry| entry.skip_later_same_item_after_success)
+        );
+        if !is_exported(
+            "creature",
+            identity.key.as_str(),
+            identity.revision.as_str(),
+        ) || !matches!(algorithm, LootAlgorithmDocument::IndependentBernoulliPpm)
             || conditional
             || entries.iter().any(|entry| {
                 !entry.children.is_empty()
@@ -415,7 +515,11 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             continue;
         }
         for (ordinal, entry) in entries.iter().enumerate() {
-            if !items.contains(entry.item.key.as_str()) {
+            if !is_exported(
+                "item",
+                entry.item.key.as_str(),
+                entry.item.revision.as_str(),
+            ) {
                 view.incomplete.insert("creature_loot");
                 continue;
             }
@@ -428,6 +532,7 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             );
         }
     }
+    omit_ambiguous_rows(&mut view.relations, "relation_key", &mut view.incomplete);
     for profile in &state.authoring_profiles {
         inventory(
             &project_json(&profile.data)?,
@@ -453,39 +558,281 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
 mod tests {
     use super::*;
 
+    type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+    fn project_for_projection_test()
+    -> Result<WorldProject, Box<dyn std::error::Error + Send + Sync>> {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/world");
+        let limits = crate::content::npc_catalogue_preproduction_limits().project;
+        let locators = [
+            "project.json",
+            "manifest.json",
+            "content.lock.json",
+            "assets/catalog.json",
+            "definitions/declarations.json",
+            "definitions/reference.json",
+            "editor/author.json",
+            "presentations/bindings.json",
+            "provenance/imports.json",
+            "provenance/sources.json",
+            "worlds/world.json",
+        ];
+        let documents = locators
+            .into_iter()
+            .map(|locator| Ok((locator.to_owned(), std::fs::read(root.join(locator))?)))
+            .collect::<Result<Vec<_>, std::io::Error>>()?;
+        Ok(ProjectSnapshot::new(documents, limits)?.parse(limits)?)
+    }
+
+    fn project_mutation(
+        edit: impl FnOnce(&mut ProjectV2Draft) -> TestResult + Send + 'static,
+        check: impl FnOnce(PublicContentView) -> TestResult + Send + 'static,
+    ) -> TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || {
+                let mut draft = project_for_projection_test()?.migrate_to_v2();
+                edit(&mut draft)?;
+                let mut limits = crate::content::npc_catalogue_preproduction_limits().project;
+                limits.max_reference_records += 2;
+                let project = CanonicalProjectDocuments::from_v2_draft(draft, limits)?
+                    .into_snapshot(limits)?
+                    .parse(limits)?;
+                check(public_content_view(&project)?)
+            })?
+            .join()
+            .map_err(|_| "projection test thread panicked")?
+    }
+
+    const CLEDWYN: &str = "oteryn:npc.cledwyn";
+    const ABYSSADOR: &str = "oteryn:creature.abyssador";
+    const ABYSSADOR_LOOT: &str = "oteryn:loot.creature.abyssador";
+
+    fn cledwyn_services(draft: &mut ProjectV2Draft) -> Option<&mut Vec<ProjectV2DefinitionRef>> {
+        draft
+            .state
+            .declarations
+            .iter_mut()
+            .find_map(|row| match row {
+                ProjectV2Declaration::Npc {
+                    identity, services, ..
+                } if identity.key == CLEDWYN => Some(services),
+                _ => None,
+            })
+    }
+
+    #[test]
+    fn repeated_service_links_preserve_one_copy_of_each_offer() -> TestResult {
+        project_mutation(
+            |draft| {
+                let services = cledwyn_services(draft).ok_or("Cledwyn NPC missing")?;
+                services.push(services.first().ok_or("Cledwyn service missing")?.clone());
+                Ok(())
+            },
+            |view| {
+                let mut keys = BTreeSet::new();
+                for row in view.relations.iter().filter(|row| row["source"] == CLEDWYN) {
+                    assert!(
+                        keys.insert(row["relation_key"].as_str().ok_or("relation key missing")?)
+                    );
+                }
+                assert!(
+                    keys.contains("oteryn:npc.cledwyn.shop.oteryn.service.trade.cledwyn.row.0")
+                );
+                Ok(())
+            },
+        )
+    }
+
+    #[test]
+    fn colliding_service_keys_omit_ambiguous_offers() -> TestResult {
+        project_mutation(
+            |draft| {
+                let original = cledwyn_services(draft)
+                    .and_then(|refs| refs.first().cloned())
+                    .ok_or("Cledwyn service missing")?;
+                let service = draft
+                    .state
+                    .declarations
+                    .iter()
+                    .find(|row| row.identity().key == original.key)
+                    .ok_or("Cledwyn service definition missing")?
+                    .clone();
+                for key in ["a:b.c", "a.b:c"] {
+                    let mut declaration = service.clone();
+                    let ProjectV2Declaration::Service { identity, .. } = &mut declaration else {
+                        return Err("expected a Service".into());
+                    };
+                    identity.key = key.to_owned();
+                    draft.state.declarations.push(declaration);
+                    let mut reference = original.clone();
+                    reference.key = key.to_owned();
+                    cledwyn_services(draft)
+                        .ok_or("Cledwyn NPC missing")?
+                        .push(reference);
+                }
+                Ok(())
+            },
+            |view| {
+                assert!(!view.relations.iter().any(|row| {
+                    row["relation_key"]
+                        .as_str()
+                        .is_some_and(|key| key.starts_with("oteryn:npc.cledwyn.shop.a.b.c.row."))
+                }));
+                assert!(view.relations.iter().any(|row| row["relation_key"]
+                    == "oteryn:npc.cledwyn.shop.oteryn.service.trade.cledwyn.row.0"));
+                assert!(view.incomplete.contains("npc_shop"));
+                Ok(())
+            },
+        )
+    }
+
+    #[test]
+    fn colliding_entity_keys_omit_ambiguous_endpoints() -> TestResult {
+        project_mutation(
+            |draft| {
+                let mut npc = draft
+                    .state
+                    .declarations
+                    .iter()
+                    .find(|row| row.identity().key == CLEDWYN)
+                    .ok_or("Cledwyn NPC missing")?
+                    .clone();
+                let ProjectV2Declaration::Npc { identity, .. } = &mut npc else {
+                    return Err("expected NPC".into());
+                };
+                identity.key = ABYSSADOR.to_owned();
+                draft.state.declarations.push(npc);
+                Ok(())
+            },
+            |view| {
+                assert!(
+                    !view
+                        .entities
+                        .iter()
+                        .any(|row| row["content_key"] == ABYSSADOR)
+                );
+                assert!(!view.relations.iter().any(|row| row["source"] == ABYSSADOR));
+                for capability in ["creature", "npc", "creature_loot", "npc_shop"] {
+                    assert!(view.incomplete.contains(capability));
+                }
+                Ok(())
+            },
+        )
+    }
+
+    #[test]
+    fn stale_loot_table_revision_emits_no_rows() -> TestResult {
+        project_mutation(
+            |draft| {
+                let table = draft
+                    .core
+                    .records
+                    .iter_mut()
+                    .find_map(|row| match row {
+                        ProjectReferenceRecord::Creature { identity, loot, .. }
+                            if identity.key == ABYSSADOR =>
+                        {
+                            loot.as_mut()
+                        }
+                        _ => None,
+                    })
+                    .ok_or("Abyssador loot ref missing")?;
+                table.revision = "definition-r0".to_owned();
+                Ok(())
+            },
+            |view| {
+                assert!(!view.relations.iter().any(|row| row["source"] == ABYSSADOR));
+                assert!(view.incomplete.contains("creature_loot"));
+                Ok(())
+            },
+        )
+    }
+
+    #[test]
+    fn stale_loot_item_revision_omits_only_the_affected_row() -> TestResult {
+        project_mutation(
+            |draft| {
+                let entries = draft
+                    .core
+                    .records
+                    .iter_mut()
+                    .find_map(|row| match row {
+                        ProjectReferenceRecord::Loot {
+                            identity, entries, ..
+                        } if identity.key == ABYSSADOR_LOOT => Some(entries),
+                        _ => None,
+                    })
+                    .ok_or("Abyssador loot definition missing")?;
+                entries
+                    .first_mut()
+                    .ok_or("loot entry missing")?
+                    .item
+                    .revision = "definition-r0".to_owned();
+                Ok(())
+            },
+            |view| {
+                assert!(
+                    !view
+                        .relations
+                        .iter()
+                        .any(|row| row["relation_key"] == "oteryn:creature.abyssador.loot.0")
+                );
+                assert!(
+                    view.relations
+                        .iter()
+                        .any(|row| row["relation_key"] == "oteryn:creature.abyssador.loot.1")
+                );
+                assert!(view.incomplete.contains("creature_loot"));
+                Ok(())
+            },
+        )
+    }
+
+    #[test]
+    fn same_key_behavior_keeps_conditional_loot_suppressed() -> TestResult {
+        project_mutation(
+            |draft| {
+                const ANOMALY_LOOT: &str = "oteryn:loot.creature.anomaly";
+                let mut profile = draft
+                    .state
+                    .authoring_profiles
+                    .iter()
+                    .find(|row| row.target.key == "oteryn:behavior.creature.anomaly")
+                    .ok_or("Anomaly Behavior profile missing")?
+                    .clone();
+                profile.target.key = ANOMALY_LOOT.to_owned();
+                draft.core.records.push(ProjectReferenceRecord::Generic {
+                    identity: DefinitionIdentityDocument {
+                        family: "Behavior".to_owned(),
+                        key: ANOMALY_LOOT.to_owned(),
+                        revision: profile.target.revision.clone(),
+                    },
+                    client_projection: ProjectionDocument::ServerOnly,
+                });
+                draft.state.authoring_profiles.push(profile);
+                Ok(())
+            },
+            |view| {
+                assert!(
+                    !view
+                        .relations
+                        .iter()
+                        .any(|row| row["source"] == "oteryn:creature.anomaly")
+                );
+                assert!(view.relations.iter().any(|row| row["source"] == ABYSSADOR));
+                Ok(())
+            },
+        )
+    }
+
     #[test]
     fn public_view_coverage_visibility_and_determinism()
     -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         std::thread::Builder::new()
             .stack_size(64 << 20)
             .spawn(|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-                let root =
-                    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content");
-                // Exercise the portable server parser as well as Linux filesystem capture.
-                let limits = crate::content::npc_catalogue_preproduction_limits().project;
-                let locators = [
-                    "project.json",
-                    "manifest.json",
-                    "content.lock.json",
-                    "assets/catalog.json",
-                    "definitions/declarations.json",
-                    "definitions/reference.json",
-                    "editor/author.json",
-                    "presentations/bindings.json",
-                    "provenance/imports.json",
-                    "provenance/sources.json",
-                    "worlds/world.json",
-                ];
-                let documents = locators
-                    .into_iter()
-                    .map(|locator| {
-                        Ok((
-                            locator.to_owned(),
-                            std::fs::read(root.join("world").join(locator))?,
-                        ))
-                    })
-                    .collect::<Result<Vec<_>, std::io::Error>>()?;
-                let mut project = ProjectSnapshot::new(documents, limits)?.parse(limits)?;
+                let mut project = project_for_projection_test()?;
                 let first = public_content_view(&project)?;
                 let second = public_content_view(&project)?;
                 assert_eq!(serde_json::to_vec(&first)?, serde_json::to_vec(&second)?);
@@ -551,7 +898,7 @@ mod tests {
                     assert!(!String::from_utf8(serde_json::to_vec(&hidden)?)?.contains(key));
                     assert!(hidden.coverage.iter().any(|row| row.key == key && row.disposition == "hidden"));
                 }
-                let hidden_source = hidden.native_input(
+                let hidden_source = hidden.preproduction_input(
                     "d34807f5bd234ee8318e57ba454ba39be0df113d",
                     "2026-11-07T00:00:00Z",
                 );
@@ -561,7 +908,7 @@ mod tests {
                     Ok(rows.into_iter().filter_map(|mut row|
                         Some((row.remove("capability_id")?, row.remove("state")?))).collect())
                 };
-                let first_source = first.native_input(
+                let first_source = first.preproduction_input(
                     "d34807f5bd234ee8318e57ba454ba39be0df113d",
                     "2026-11-07T00:00:00Z",
                 );
