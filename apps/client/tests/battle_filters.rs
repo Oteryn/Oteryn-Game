@@ -121,25 +121,27 @@ fn official_numeric_types_route_confirmed_cues_through_subchannel_gains()
     // Official Sounds field 2, NumericSoundEffect fields 1 (id) and 2 (type).
     // File 1 and a title music template that references it.
     let mut metadata = vec![
-        10, 11, 8, 1, 18, 7, b'c', b'u', b'e', b'.', b'o', b'g', b'g', 42, 4, 16, 1, 24, 3,
+        10, 11, 8, 1, 18, 7, b'c', b'u', b'e', b'.', b'w', b'a', b'v', 42, 4, 16, 1, 24, 3,
     ];
     let mut cues = serde_json::Map::new();
     for kind in [1u8, 2, 3, 4, 5, 6, 7, 9, 10, 17, 19] {
         metadata.extend_from_slice(&[18, 4, 8, kind, 16, kind]);
-        cues.insert(kind.to_string(), serde_json::json!(["cue.ogg"]));
+        cues.insert(kind.to_string(), serde_json::json!(["cue.wav"]));
     }
     let fixture = tempfile::tempdir()?;
     let root = fixture.path();
     std::fs::write(root.join("sounds.dat"), &metadata)?;
+    // Mono PCM, 8 kHz, with two signed 16-bit samples.
+    let wav = b"RIFF\x28\0\0\0WAVEfmt \x10\0\0\0\x01\0\x01\0\x40\x1f\0\0\x80\x3e\0\0\x02\0\x10\0data\x04\0\0\0\x40\0\xc0\xff";
     let manifest = serde_json::to_vec(&serde_json::json!({
         "schema":"OTERYN_CLIENT_ASSET_MANIFEST/v1", "sound_data":"sounds.dat", "sound_cues":cues,
-        "files":[{"name":"sounds.dat","sha256":text_sha256(&metadata)},{"name":"cue.ogg","sha256":text_sha256(&[])}]
+        "files":[{"name":"sounds.dat","sha256":text_sha256(&metadata)},{"name":"cue.wav","sha256":text_sha256(wav)}]
     }))?;
     let path = root.join("manifest.json");
     std::fs::write(&path, &manifest)?;
     let catalog = SoundCatalog::open(root, &path, &text_sha256(&manifest))?;
-    std::fs::write(root.join("cue.ogg"), [])?;
-    assert_eq!(catalog.read_title()?, Some(vec![]));
+    std::fs::write(root.join("cue.wav"), wav)?;
+    assert_eq!(catalog.read_title()?, Some(wav.to_vec()));
     let mut settings = AudioSettings::default();
     let gain = |settings: AudioSettings, source, id| {
         settings.classified_gain(source, catalog.channel(id), catalog.battle_class(id))
