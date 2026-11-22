@@ -388,7 +388,8 @@ fn failed_layout_save_retries_after_directory_recovers() -> TestResult {
 
 #[test]
 fn unchanged_rejected_geometry_is_not_recorded_again() -> TestResult {
-    let path = std::env::temp_dir().join(format!("layout-rejected-{}.json", std::process::id()));
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("layout-rejected.json");
     let mut app = app_with(LayoutStore::load(Some(path.clone())));
     let mut windows = app
         .world_mut()
@@ -400,7 +401,7 @@ fn unchanged_rejected_geometry_is_not_recorded_again() -> TestResult {
     windows.single_mut(app.world_mut())?.position = WindowPosition::At(IVec2::new(40001, 80));
     app.update();
     assert_eq!(app.world().resource::<LayoutStore>().rejection_count, 2);
-    std::fs::remove_file(path)?;
+    assert!(!path.exists(), "rejected geometry must not be persisted");
     Ok(())
 }
 
