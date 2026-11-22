@@ -2507,6 +2507,88 @@ mod tests {
     }
 
     #[test]
+    fn galthen_internal_teleport_selectors_load() -> Result<(), String> {
+        let callbacks = load()?;
+        for (key, from, appearance, to) in [
+            (
+                "galthen-iksupan-internal-1",
+                (34038, 31726, -10),
+                33017,
+                (34000, 31733, -9),
+            ),
+            (
+                "galthen-iksupan-internal-2",
+                (34000, 31732, -9),
+                33017,
+                (34038, 31727, -10),
+            ),
+        ] {
+            let position = |(x, y, floor)| Position { x, y, floor };
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == format!("oteryn:quest-callback/{key}"))
+                .ok_or(key)?;
+            assert_eq!(callback.trigger, Trigger::Use);
+            assert_eq!(callback.selector.position, Some(position(from)));
+            assert_eq!(callback.selector.appearance, Some(appearance));
+            assert_eq!(callback.teleport, Some(position(to)));
+            assert_eq!(callback.effects.teleport_effect, Some(11));
+            assert!(!callback.requires_durable_commit());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn galthen_level_gated_routes_load_with_fenced_travel() -> Result<(), String> {
+        let callbacks = load()?;
+        for (suffix, trigger, from, to, level, appearance) in [
+            (
+                "forest-entry",
+                Trigger::StepIn,
+                (32424, 32500, -10),
+                (32405, 32497, -10),
+                250,
+                None,
+            ),
+            (
+                "forest-return",
+                Trigger::StepIn,
+                (32405, 32498, -10),
+                (32424, 32498, -10),
+                250,
+                None,
+            ),
+        ] {
+            let position = |(x, y, floor)| Position { x, y, floor };
+            let key = format!("oteryn:quest-callback/galthen-{suffix}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or(suffix)?;
+            assert_eq!(callback.trigger, trigger);
+            assert_eq!(callback.selector.position, Some(position(from)));
+            assert_eq!(callback.selector.appearance, appearance);
+            assert_eq!(callback.teleport, Some(position(to)));
+            assert_eq!(callback.minimum_level, Some(level));
+            assert!(callback.requires_world_admission);
+            assert_eq!(callback.return_on_failure, trigger == Trigger::StepIn);
+        }
+        let state = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        for suffix in ["forest-entry", "forest-return"] {
+            let key = format!("oteryn:quest-callback/galthen-{suffix}");
+            assert!(
+                !state
+                    .catalogue()
+                    .transition(&key)
+                    .ok_or("fenced route transition")?
+                    .completes
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn quest_world_callbacks_accept_only_pinned_donor_revisions() -> Result<(), String> {
         let mut source: serde_json::Value =
             serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;

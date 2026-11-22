@@ -882,6 +882,9 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     // Keep each route's future state out of this shared dispatcher's inline state.
+    if name == super::afflicted_loot_fixtures::HUNT {
+        return Box::pin(super::afflicted_loot_fixtures::hunt(owner, admitted, h)).await;
+    }
     if name.starts_with("qengine-rewards-fibula-completion") {
         return Box::pin(super::questpc6_fibula_completion_fixtures::exercise(
             owner, admitted, h, name,

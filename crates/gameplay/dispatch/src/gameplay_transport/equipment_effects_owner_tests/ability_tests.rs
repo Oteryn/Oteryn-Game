@@ -151,7 +151,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 23 training/exercise weapon profiles (tools/content-migration/loop_training_profiles.py):
     // 28552..=28557, 35279..=35290, 44065..=44067, 50294/50295. All have speed_bonus=0.
     ("LOOP-TRAIN-1", 23),
-    ("M01C-KEY-DOORS", 2),
+    ("M01C-KEY-DOORS", 5),
     // M06: the five door profiles 1628, 1646, 1647, 2967 and 2968
     // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
     ("M06-KEYS", 5),
@@ -807,7 +807,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         })
         .map(|(_, count)| count)
         .sum::<usize>();
-    assert_eq!(later_main_profiles, 2593);
+    assert_eq!(later_main_profiles, 2596);
     const QENGINE2_BASE_PROFILES: usize = 53;
     assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 115);
     let baseline = ORIGINAL_PROFILES

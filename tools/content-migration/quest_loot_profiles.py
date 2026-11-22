@@ -2,7 +2,7 @@
 
 The active Item provider is authoritative for materialization, not a stale canonical
 reference-only flag. This bridge reuses exact admitted profiles and existing loot
-owners; it never changes ordinary loot entries, probabilities, quantities or holds.
+owners. Pinned quest-drop rates supersede the ordinary table only for the selected entries.
 """
 from __future__ import annotations
 
@@ -23,8 +23,9 @@ def required_items(root, creatures, tables):
     objectives = {row['key']: row for row in json.loads((root / corpse.OBJECTIVES).read_bytes())['objectives']}
     rules = json.loads((root / corpse.RULES).read_bytes())['rules']
     rule_creatures = {objectives[rule['objective']]['creature'] for rule in rules}
-    ordinary = json.loads((root / corpse.REQUIREMENTS).read_bytes())['objectives']
-    selected = rule_creatures | {objectives[key]['creature'] for key in ordinary}
+    ordinary = json.loads((root / corpse.REQUIREMENTS).read_bytes())
+    selected = (rule_creatures | {objectives[key]['creature'] for key in ordinary['objectives']}
+                | ordinary.get('source_loot_probabilities_ppm', {}).keys())
     native = {row['profile']['target']['key']: row['profile']['target'] for row in creatures['records']}
     definitions = {}
     for path in sorted((root / 'content/creatures/definitions').glob('creatures-*.json')):
@@ -195,5 +196,30 @@ def apply_loot_facts(facts, root, creatures, tables, profiles=None):
             raise ValueError('QUEST_LOOT_SOURCE_ITEM_ABSENT')
         updates[key] = project(fact, native[key], matches[0],
                                source_charges_absent='charges' not in corpse.grizzly.source.attrs(xml[number]))
-    # Publish only after the complete scoped cohort passes; no partial input mutation.
+    ordinary = json.loads((root / corpse.REQUIREMENTS).read_bytes())
+    rates = ordinary.get('source_loot_probabilities_ppm', {})
+    if not rates.keys() <= ordinary.get('loot_creatures', {}).keys():
+        raise ValueError('QUEST_LOOT_RATE_CREATURE_NOT_ADMITTED')
+    projected_rates = []
+    # Rates belong to the existing ordinary table for each source creature.
+    # Reuse the verified canonical definition to resolve that table.
+    for path in sorted((root / 'content/creatures/definitions').glob('creatures-*.json')):
+        for row in json.loads(path.read_bytes())['records']:
+            creature = row['definition']
+            key = creature['identity']['key']
+            if key not in rates:
+                continue
+            table = tables[creature['loot']['key']]
+            pending = dict(rates[key])
+            for entry in table['entries']:
+                item = entry['item']['key']
+                if item in pending:
+                    rate = pending.pop(item)
+                    if type(rate) is not int or not 0 < rate <= 1_000_000:
+                        raise ValueError('QUEST_LOOT_SOURCE_RATE')
+                    projected_rates.append((entry, rate))
+            if pending:
+                raise ValueError('QUEST_LOOT_SOURCE_RATE_ITEM_MISSING')
+    for entry, rate in projected_rates:
+        entry['probability_ppm'] = rate
     facts.update(updates)
