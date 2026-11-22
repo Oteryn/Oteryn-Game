@@ -360,3 +360,50 @@ fn review_3376_exit_after_active_vault_clear_replays_without_token_in_marker() -
             server.finish().await
         })
 }
+
+#[test]
+fn c2a_cancel_during_begin_preserves_family_for_retry() -> TestResult {
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let folder = tempfile::tempdir()?;
+        let vault = Arc::new(Vault::default());
+        vault::Vault::write(vault.as_ref(), &enrollment_response()?)
+            .map_err(std::io::Error::other)?;
+        let login = || DeviceLogin {
+            enabled: true,
+            forget_requested: Default::default(),
+            journal: test_server::journal(Some(folder.path().into())),
+            vault: vault.clone(),
+            state: Default::default(),
+            folder: Some(folder.path().into()),
+        };
+        let cancelled = CancellationToken::new();
+        let failed = Server::start(vec![(500, Vec::new())]).await?;
+        let options = MiscellaneousPreferences {
+            stay_logged_in: true,
+            remember_device: true,
+            ..Default::default()
+        };
+        {
+            let first = login();
+            let held = first.state.lock().await;
+            let attempt = first.begin(&failed.client, options, cancelled.clone());
+            tokio::pin!(attempt);
+            tokio::select! {
+                biased;
+                _ = &mut attempt => return Err("begin bypassed the credential guard".into()),
+                () = tokio::task::yield_now() => cancelled.cancel(),
+            }
+            drop(held);
+            assert!(attempt.await.is_err());
+        }
+        failed.finish().await?;
+        let replay = Server::start(vec![(200, fixture("revoke-response.json")?)]).await?;
+        drop(
+            login()
+                .begin(&replay.client, options, CancellationToken::new())
+                .await?,
+        );
+        assert_eq!(replay.requests.lock().map_err(|_| "requests")?.len(), 1);
+        replay.finish().await
+    })
+}

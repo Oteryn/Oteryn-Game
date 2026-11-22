@@ -4,6 +4,16 @@ pub trait Vault: Send + Sync {
     fn available(&self) -> bool;
     fn read(&self) -> Result<Option<Vec<u8>>, String>;
     fn write(&self, bytes: &[u8]) -> Result<(), String>;
+    /// A process-only family can retain its retry credential in memory when
+    /// the optional persistent backend is unavailable.
+    fn write_process(&self, bytes: &[u8]) -> Result<bool, String> {
+        if self.available() {
+            self.write(bytes)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
     fn clear(&self) -> Result<(), String>;
 }
 #[cfg(windows)]

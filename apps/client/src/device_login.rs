@@ -78,6 +78,9 @@ impl DeviceLogin {
         if !self.enabled && self.folder.as_ref().is_none_or(|folder| !folder.exists()) {
             return Ok(None);
         }
+        if cancel.is_cancelled() {
+            return self.cancel_begin(client).await;
+        }
         let Ok(mut state) =
             tokio::time::timeout(CREDENTIAL_LOCK_TIMEOUT, self.state.clone().lock_owned()).await
         else {
@@ -126,16 +129,31 @@ impl DeviceLogin {
                 return Ok(None);
             }
         } else if !options.stay_logged_in || attempt.state.remembered != remembered {
-            attempt.sign_out(client).await;
+            if self.folder.is_some() && attempt.state.remembered {
+                attempt.revoke_before_vault_clear(client).await?;
+            } else {
+                attempt.sign_out(client).await;
+            }
         } else {
             let _ = attempt.revoke_pending(client).await;
         }
         if cancel.is_cancelled() {
-            attempt.sign_out(client).await;
-            return Err(storage_error());
+            drop(attempt);
+            return self.cancel_begin(client).await;
         }
         Ok(self.enabled.then_some(attempt))
     }
+    async fn cancel_begin(
+        &self,
+        client: &NativeLoginClient,
+    ) -> Result<Option<DeviceAttempt>, NativeLoginError> {
+        // Explicit UI cancellation has already queued its own worker.
+        if !self.forget_requested.load(Ordering::Acquire) {
+            self.sign_out(client).await?;
+        }
+        Err(storage_error())
+    }
+
     async fn lock_credential(&self) -> Result<Option<std::fs::File>, NativeLoginError> {
         let Some(folder) = self.folder.clone() else {
             return Ok(None);

@@ -236,34 +236,9 @@ pub(super) async fn authorize(
                 token = Some(fresh);
             }
             SelectionAction::Refresh => {}
-            SelectionAction::Cancel => {
-                config
-                    .device_sessions
-                    .block_remembered()
-                    .map_err(login_rejected)?;
-                if let Some(path) = &config.preference_path
-                    && let Err(error) =
-                        crate::play::MiscellaneousPreferences::disable_remember_device_at(
-                            &path.with_extension("session-options.json"),
-                        )
-                {
-                    eprintln!("Could not save the remember-device choice: {error}");
-                }
-                if let Some(attempt) = &mut device {
-                    config
-                        .device_sessions
-                        .finish_attempt_sign_out(attempt, client)
-                        .await
-                        .map_err(login_rejected)?;
-                } else {
-                    config
-                        .device_sessions
-                        .finish_sign_out(client)
-                        .await
-                        .map_err(login_rejected)?;
-                }
-                return Err(rejected(PublicClass::RetryLogin));
-            }
+            // The UI schedules revocation on explicit Cancel or Escape. The selector
+            // also returns Cancel on timeout or shutdown, which only ends admission.
+            SelectionAction::Cancel => return Err(rejected(PublicClass::RetryLogin)),
         }
     };
     let mut from_device = false;

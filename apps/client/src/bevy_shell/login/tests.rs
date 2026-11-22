@@ -529,3 +529,20 @@ fn review_3376_login_defers_contended_writes_to_a_worker() -> TestResult {
     assert!(path.is_file());
     Ok(())
 }
+
+#[test]
+fn c2a_sign_out_disarms_contended_login_save() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.join("login.json");
+    let mut owner = HostOwner::new(None)?;
+    owner.configure_login(Some(path.clone()), |_| None);
+    owner.request_login();
+    owner.login.form.settings = settings(&temp)?;
+    let lock = crate::atomic_file::lock(&path)?;
+    owner.submit_login();
+    assert!(owner.login.save_pending());
+    owner.sign_out_device();
+    drop(lock);
+    assert!(!owner.login.save_pending());
+    Ok(())
+}
