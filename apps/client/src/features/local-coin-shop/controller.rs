@@ -251,8 +251,8 @@ async fn refresh(
         accept(view, order.clone())?;
     }
     for order in &catalogue.recent_orders {
-        if order.state.completed() {
-            view.history.settled(&order.request_id);
+        if !view.history.record(order) {
+            return Err(PlatformClientError::InvalidPayload.into());
         }
     }
     let balance = client.coin_balance(token, cancel).await?;
@@ -286,11 +286,7 @@ fn known_open_order(view: &View, id: &str) -> bool {
     view.pending
         .as_ref()
         .is_some_and(|request| request.request_id == id)
-        || view
-            .order
-            .iter()
-            .chain(view.catalogue.iter().flat_map(|c| &c.recent_orders))
-            .any(|o| o.request_id == id && !o.state.completed())
+        || view.history.known_open(id)
 }
 fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
     if let Some(request) = &view.pending {
@@ -307,18 +303,7 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
             return Err(PlatformClientError::InvalidPayload.into());
         }
     }
-    if let Some(old) = &view.order
-        && old.request_id == order.request_id
-        && (old.order_id != order.order_id
-            || old.package_id != order.package_id
-            || old.quote_id != order.quote_id
-            || old.character_id != order.character_id
-            || old.coins != order.coins
-            || old.price != order.price
-            || order.revision < old.revision
-            || (order.revision == old.revision && old != &order)
-            || !order.state.can_follow(old.state))
-    {
+    if !view.history.record(&order) {
         return Err(PlatformClientError::InvalidPayload.into());
     }
     if view
@@ -329,9 +314,6 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
         view.pending = None;
         view.confirmed = None;
         view.post_refusal_status = None;
-    }
-    if order.state.completed() {
-        view.history.settled(&order.request_id);
     }
     view.prior.reconcile(&order.request_id);
     view.quote_until.remove(&order.quote_id);

@@ -78,30 +78,3 @@ impl Session {
         }
     }
 }
-
-#[derive(Default, Clone)]
-pub(crate) struct HistoryStatus {
-    pub(crate) unverified: BTreeSet<String>,
-    terminal: BTreeSet<String>,
-}
-
-impl HistoryStatus {
-    pub(crate) fn lookup_failed(&mut self, id: String) {
-        if !self.terminal.contains(&id) {
-            self.unverified.insert(id);
-        }
-    }
-
-    pub(crate) fn settled(&mut self, id: &str) {
-        self.unverified.remove(id);
-        self.terminal.insert(id.to_owned());
-    }
-}
-
-impl std::fmt::Debug for HistoryStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("HistoryStatus")
-            .field("count", &self.unverified.len())
-            .finish()
-    }
-}

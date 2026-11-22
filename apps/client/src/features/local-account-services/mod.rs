@@ -1,5 +1,6 @@
 //! Native account services run outside an admitted character session.
 mod controller;
+mod history;
 mod session;
 pub(crate) mod status_lookup;
 pub(crate) use session::{PriorRequests, Session};
@@ -16,7 +17,7 @@ use oteryn_platform_client::native_login::{AccessToken, AttemptRef, NativeLoginC
 use oteryn_platform_client::{PlatformClientError::HttpStatus, native_login::NativeLoginError};
 use std::{sync::Arc, time::Instant};
 
-pub(crate) use session::HistoryStatus;
+pub(crate) use history::HistoryStatus;
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -58,7 +59,7 @@ pub struct View {
     prior: PriorRequests,
     pending: Option<BazaarRequest>,
     post_refusal_status: Option<u16>,
-    history: HistoryStatus,
+    history: HistoryStatus<OperationReceipt>,
     unresolved: std::collections::BTreeSet<String>,
     quote_until: Option<Instant>,
 }
@@ -122,7 +123,9 @@ impl View {
                     continue;
                 }
             };
-            self.history.unverified.remove(&row.request_id);
+            if !controller::verify(self, &receipt) {
+                continue;
+            }
             if self.prior.contains(&receipt.request_id)
                 || self
                     .pending
@@ -137,7 +140,6 @@ impl View {
             } else if receipt.state == OperationState::Pending {
                 self.unresolved.insert(receipt.request_id.clone());
             } else {
-                self.history.settled(&receipt.request_id);
                 self.unresolved.remove(&receipt.request_id);
             }
             page.recent_operations.push(receipt);

@@ -526,3 +526,54 @@ fn terminal_receipt_survives_history_lookup_outage() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn inspecting_a_paid_order_after_another_purchase_refuses_stale_checkout() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let browser: Browser = Arc::new(|_| true);
+        let mut view = View::new(None);
+        let execute = |view: &mut View, action| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                &token,
+                &browser,
+                CancellationToken::new(),
+            ))
+        };
+        let purchase = || Action::Purchase {
+            package_id: PACKAGE.into(),
+            confirmed: true,
+        };
+        execute(&mut view, Action::Refresh);
+        execute(&mut view, purchase());
+        let stale = view.order.clone().ok_or("first checkout")?;
+        let (body, sig) = mock.signed_event(&stale, EventKind::Paid)?;
+        assert_eq!(mock.webhook(&body, &sig)?, 200);
+        execute(&mut view, Action::Status);
+        assert_eq!(
+            view.order.as_ref().ok_or("paid order")?.state,
+            PurchaseState::Paid
+        );
+        execute(&mut view, purchase());
+        let second = view.order.clone().ok_or("second checkout")?;
+        assert_ne!(stale.request_id, second.request_id);
+        mock.with_coins(|c| {
+            c.orders
+                .get_mut(&stale.request_id)
+                .map(|(_, order)| *order = stale.clone())
+        })?
+        .ok_or("stored order")?;
+        execute(&mut view, Action::Inspect(stale.request_id.clone()));
+        assert_eq!(
+            view.order.as_ref(),
+            Some(&second),
+            "stale reply reopened a paid order"
+        );
+        Ok(())
+    })
+}

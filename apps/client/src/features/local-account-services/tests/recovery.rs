@@ -547,3 +547,53 @@ fn terminal_bid_survives_history_lookup_outage() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn history_rejects_a_regressing_receipt_after_selection_changes() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        seed_bids(&mock, &client, &token, 2)?;
+        let mut view = View::default();
+        let execute = |view: &mut View, action| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                &token,
+                CancellationToken::new(),
+            ))
+        };
+        execute(&mut view, Action::Refresh(AuctionView::History));
+        let rows = view.page.as_ref().ok_or("page")?.recent_operations.clone();
+        assert_eq!(rows.len(), 2);
+        execute(&mut view, Action::Receipt(rows[1].request_id.clone()));
+        {
+            let mut authority = mock.authority.lock().map_err(|_| "lock")?;
+            authority.pending_first = true;
+            let receipt = &mut authority
+                .commands
+                .get_mut(&rows[0].request_id)
+                .ok_or("bid")?
+                .1;
+            receipt.state = OperationState::Pending;
+            receipt.receipt_id = None;
+            receipt.charged_coins = 0;
+        }
+        execute(&mut view, Action::Refresh(AuctionView::History));
+        assert!(!view.pending(), "a stale history row fenced another bid");
+        execute(&mut view, Action::Receipt(rows[0].request_id.clone()));
+        assert!(!view.pending());
+        assert!(
+            !view
+                .page
+                .as_ref()
+                .ok_or("history")?
+                .recent_operations
+                .iter()
+                .any(|r| r.state == OperationState::Pending)
+        );
+        Ok(())
+    })
+}

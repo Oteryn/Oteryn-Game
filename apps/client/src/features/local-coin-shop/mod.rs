@@ -34,7 +34,7 @@ pub struct View {
     pending: Option<CoinOrderRequest>,
     post_refusal_status: Option<u16>,
     checkout_unverified: bool,
-    history: crate::account_services::HistoryStatus,
+    history: crate::account_services::HistoryStatus<CoinOrder>,
     confirmed: Option<CoinPackage>,
     quote_until: BTreeMap<String, Instant>,
 }

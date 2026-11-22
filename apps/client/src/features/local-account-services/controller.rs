@@ -253,16 +253,19 @@ async fn submit(
     accept(view, result?);
     Ok(())
 }
-pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
-    view.history.unverified.remove(&receipt.request_id);
-    if view.receipt.as_ref().is_some_and(|old| {
-        old.request_id == receipt.request_id
-            && old.state != OperationState::Pending
-            && old != &receipt
-    }) {
+pub(super) fn verify(view: &mut View, receipt: &OperationReceipt) -> bool {
+    if !view.history.record(receipt) {
         view.feedback =
             tr!("Conflicting terminal receipt; keep the original receipt and contact support.")
                 .into();
+        return false;
+    }
+    view.history.unverified.remove(&receipt.request_id);
+    true
+}
+
+pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
+    if !verify(view, &receipt) {
         return;
     }
     if view
@@ -286,7 +289,6 @@ pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
         view.unresolved.remove(&receipt.request_id);
     }
     if receipt.state != OperationState::Pending {
-        view.history.settled(&receipt.request_id);
         view.prior.reconcile(&receipt.request_id);
     }
     view.feedback = match receipt.state {
