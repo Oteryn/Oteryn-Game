@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "af00196a0ba01fe32439f0a6db80ae969879530ba28d778b6451a0e74049c73a",
+  "input_sha256": "9c6f4d5497ad5ef5638fbcdaa110f06d770690d627755b204c1a3595b9b04e4b",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2053,7 +2053,6 @@
     "oteryn:creature.draken_spellweaver",
     "oteryn:creature.draken_warmaster",
     "oteryn:creature.draptor",
-    "oteryn:creature.drillworm",
     "oteryn:creature.dryad",
     "oteryn:creature.duskbringer",
     "oteryn:creature.dwarf",
@@ -2671,7 +2670,6 @@
     "oteryn:creature.crypt_warrior",
     "oteryn:creature.crystal_spider",
     "oteryn:creature.crystal_wolf",
-    "oteryn:creature.crystalcrusher",
     "oteryn:creature.cult_believer",
     "oteryn:creature.cult_enforcer",
     "oteryn:creature.cult_scholar",
@@ -2728,7 +2726,6 @@
     "oteryn:creature.draken_spellweaver",
     "oteryn:creature.draken_warmaster",
     "oteryn:creature.draptor",
-    "oteryn:creature.drillworm",
     "oteryn:creature.dryad",
     "oteryn:creature.duskbringer",
     "oteryn:creature.dwarf",

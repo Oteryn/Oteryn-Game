@@ -28,6 +28,8 @@ def required_items(root, creatures, tables):
     selected = (rule_creatures | {objectives[key]['creature'] for key in ordinary['objectives']}
                 | ordinary.get('source_loot_probabilities_ppm', {}).keys())
     selected |= {"oteryn:creature." + name for name in QUEST_REWARD_BOSSES}
+    # Crystal Spike hunts share the ordinary corpse and loot transaction.
+    selected |= {'oteryn:creature.crystalcrusher', 'oteryn:creature.drillworm'}
     native = {row['profile']['target']['key']: row['profile']['target'] for row in creatures['records']}
     definitions = {}
     for path in sorted((root / 'content/creatures/definitions').glob('creatures-*.json')):

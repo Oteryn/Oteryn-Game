@@ -157,16 +157,6 @@ pub const COUNTERS: &[Counter] = &[
         world_change: None,
     },
     Counter {
-        transition: "oteryn:quest-transition/native-kills/cave-explorer",
-        creature: "oteryn:creature.crystal_spider",
-        quest: "oteryn:quest.cave_explorer_outfits_quest",
-        track: "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
-        gate: "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
-        maximum: 20,
-        authored_stage: false,
-        world_change: None,
-    },
-    Counter {
         transition: "oteryn:quest-transition/native-kills/fire-fighter",
         creature: "oteryn:creature.lava_lurker",
         quest: "oteryn:quest.fire_fighter_outfits_quest",

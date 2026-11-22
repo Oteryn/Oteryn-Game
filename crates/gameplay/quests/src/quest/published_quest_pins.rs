@@ -1,4 +1,4 @@
-//! Definition pins captured from the published 871c1dec7 catalogue and the reviewed 0f605da3 catalogue.
+//! Definition pins from published and reviewed quest catalogues.
 use super::{NpcDefinitionPredecessor, QuestStateCatalogue};
 
 type DefinitionHash = [u8; 32];
@@ -154,6 +154,52 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
 ];
 
+// Main at 3e09916423 before the donor routes attached new tracks and transitions.
+const SOURCE_ROUTE_PREDECESSORS: &[(&str, DefinitionHash)] = &[
+    (
+        "oteryn:quest.captain_iglues_treasure_quest",
+        hash(b"fb2d072d598f8543e7007e182645ef920900cb1b413e99aa2f114bf43a300477"),
+    ),
+    (
+        "oteryn:quest.cave_explorer_outfits_quest",
+        hash(b"9f18e63d91bb37882efd544b61e2d14dde49dc6b04422a006049aba3dc3f3c6c"),
+    ),
+    (
+        "oteryn:quest.chayenne_realm",
+        hash(b"245b1686c81a2abef73c1525e7ed55e6fc628ea056d9da81963b962f59f69a08"),
+    ),
+    (
+        "oteryn:quest.children_of_the_revolution_quest",
+        hash(b"e91b65cb6e0a69e9b4473bb83db970a115bd631acbfae34b7a7e5f8d740e52c2"),
+    ),
+    (
+        "oteryn:quest.crystal_wand_quest",
+        hash(b"84012a12a60d5371070c5fea63caf66af7b05807b9f3d36a6c8d77a7cfeea557"),
+    ),
+    (
+        "oteryn:quest.spike_task",
+        hash(b"056a2e30ee5ff71b52331a31967a02804df035b2f8b0befe321d8869809829bb"),
+    ),
+];
+
+pub(super) fn retain_source_route_predecessors(catalogue: &mut QuestStateCatalogue) {
+    for &(quest, saved) in SOURCE_ROUTE_PREDECESSORS {
+        if catalogue
+            .definition_hash(quest)
+            .is_some_and(|current| current != saved)
+        {
+            catalogue
+                .predecessors
+                .entry(quest.into())
+                .or_default()
+                .push(NpcDefinitionPredecessor {
+                    hash: saved,
+                    defaults: Default::default(),
+                });
+        }
+    }
+}
+
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {
     CITATION_REFRESHES
         .iter()
@@ -203,6 +249,29 @@ mod tests {
             )
             .is_some()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn source_routes_keep_exact_main_quest_pins() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        for &(quest, saved) in SOURCE_ROUTE_PREDECESSORS {
+            let current = catalogue.definition_hash(quest).ok_or(quest)?;
+            if current != saved {
+                assert!(
+                    npc_rules::legacy_defaults(catalogue, quest, &saved).is_some(),
+                    "{quest}"
+                );
+            }
+            let mut unrelated = saved;
+            unrelated[0] ^= 1;
+            assert!(
+                npc_rules::legacy_defaults(catalogue, quest, &unrelated).is_none(),
+                "{quest}"
+            );
+        }
         Ok(())
     }
 

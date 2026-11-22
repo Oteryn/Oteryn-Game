@@ -30,6 +30,10 @@ class NativeQuestLootFacts(unittest.TestCase):
                      [281, 3006, 3036, 3037, 3038, 5809, 5892, 5904, 7414, 7427, 23529, 23531, 23533, 23542, 23543, 23544, 25759, 30192, 30195, 30275, 30276, 30277, 30278, 30279, 30280, 30281, 30282, 30283, 30284, 30285, 30318, 30319, 30320, 30321, 30322]}
         expected |= {f'oteryn:item.tibia.i{number}' for number in
                      [3120, 3741, 5901, 9686, 12517, 12551, 12552, 12553, 12554, 12555, 12556]}
+        spike_drops = {f'oteryn:item.tibia.i{number}' for number in
+                       [814, 7452, 10305, 10422, 12600, 15793, 16122, 16123, 16124,
+                        16133, 16135, 16138, 16142]}
+        expected |= spike_drops
         # Main now admits these seven canonical Items before native projection.
         # Model the pre-projection admission view this bridge test exercises,
         # retaining every source quantity and all unrelated canonical facts.

@@ -518,8 +518,6 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
             record["world_change_binding"] = "EVENTS-WORLD-1 W6/W10; WORLD-SRC-1105 native activation"
         for identity in identities:
             reconcile_global(record, wiki[identity])
-        if key == "raid:abdendriel.chayenne":
-            record["inactive_reasons"].append("global_raid_membership_unproven:donor_chayenne_has_no_archived_global_identity")
         qualify(record, creatures, placements)
         records.append(record)
     for key, observed in sorted(wiki.items()):

@@ -95,7 +95,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'rock_steady', *qb_barbarian.DONOR_NPCS, *qb_citizen_warrior.DONOR_NPCS, *wizard_cosmetics.DONOR_NPCS, *qmech_m39.NPCS, 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'sven', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
+        'dedoras', 'sven', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'gnomilly', 'gnombold', 'gnomargery', 'flickering_soul', 'bloodshade_rotten', 'cledwyn', *questl2_ready.NPCS)]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
@@ -1123,7 +1123,6 @@ def build():
     # L12: owner-selected fixed hunting trials; native deaths are the only counter writer.
     for label,family,quest,npc,level,counts,materials in [
         ('dragon-slayer','dragon_slayer','authored.dragon_slayer_outfits_quest','a_sweaty_cyclops',0,[('dragons',20),('dragon_lords',20)],[(5920,10),(5882,10)]),
-        ('cave-explorer','cave_explorer','cave_explorer_outfits_quest','gnommander',80,[('kills',20)],[]),
         ('fire-fighter','fire_fighter','fire_fighter_outfits_quest','gnomadness',250,[('kills',10)],[])]:
         root='oteryn:quest-progress/chosen-trial/'+family+'/'
         provenance='owner:chosen-trial:'+family+':fixed-native-creature-deaths:questpc3-engine-5e72a3f0b'
@@ -1136,7 +1135,7 @@ def build():
         callbacks[-1]['sources'].append(provenance)
         add('l12-'+label+'-base',quest,npc,[family.replace('_',' ')+' report'],
             [storage(root+'phase',1,2)]+[storage(root+track,maximum,maximum,preserve=True) for track,maximum in counts],
-            take=materials,outfit=(family,0),fee={'gold':1000,'include_bank':False} if label=='cave-explorer' else None)
+            take=materials,outfit=(family,0))
         callbacks[-1].update(requires_premium=True,forbids_outfits=['oteryn:outfit.'+family])
         if level:callbacks[-1]['minimum_level']=level
         callbacks[-1]['sources'].append(provenance)
@@ -1144,16 +1143,86 @@ def build():
         for bit in (1,2):
             add('l12-'+label+'-'+('first' if bit==1 else 'second'),quest,npc,[family.replace('_',' ')+' addon '+str(bit)],[],
                 take=[(39544 if bit==1 else 39545,1)] if label=='fire-fighter' else [],outfit=(family,bit),
-                fee={'gold':2000 if bit==1 else 3000,'include_bank':False} if label=='cave-explorer' else None,
                 achievement='oteryn:achievement/friendly_fire' if label=='fire-fighter' and bit==2 else None)
             callbacks[-1].update(minimum_level=level,requires_premium=True,requires_outfits=['oteryn:outfit.'+family],
                 forbids_addons=[{'outfit':'oteryn:outfit.'+family,'addons':bit}])
             if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.'+family,'addons':1}]
             callbacks[-1]['sources'].append(provenance)
+    # The Spike task reports share the same character-owned fame balance.
+    spike = 'oteryn:quest-progress/spike/'
+    cave = 'cave_explorer_outfits_quest'
+    fame = spike + 'fame'
+    fame_max = 2_147_483_647
+    gnommander = 'oteryn:npc.gnommander'
+    outfit = 'oteryn:outfit.cave_explorer'
+    pin = 'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/'
+
+    def spike_track(key, maximum, source):
+        declarations.append({'key': key, 'quest': 'oteryn:quest.spike_task', 'initial': 0,
+                             'min': 0, 'max': maximum, 'writable': True, 'sources': [source]})
+
+    def fame_change(minimum, maximum, delta):
+        return {'track': fame, 'from': {'kind': 'between', 'minimum': minimum, 'maximum': maximum},
+                'effect': {'kind': 'add', 'value': delta}}
+
+    source = pin + 'gnommander.lua:75-169'
+    spike_track(fame, fame_max, source)
+    offers.extend([
+        {'npc': gnommander, 'keywords': ['reward'], 'topic': 0, 'any_topic': True,
+         'next_topic': 0, 'storage': [], 'reply': ['Your Spike fame makes you eligible for outfit rewards. Ask if you are worthy.']},
+        {'npc': gnommander, 'keywords': ['worthy'], 'topic': 0, 'any_topic': True,
+         'next_topic': 20, 'storage': [], 'requires': [requirement(fame, 100, fame_max)],
+         'reply': ['The basic outfit costs 1,000 gold. The first addon costs 2,000 and the second costs 3,000.'],
+         'failure_reply': ['You need at least 100 Spike fame.']},
+    ])
+    for label, level, addon, gold in [('basic', 25, 0, 1000), ('first', 50, 1, 2000), ('second', 80, 2, 3000)]:
+        topic = 21 + addon
+        offers.append({'npc': gnommander, 'keywords': [label], 'topic': 20,
+                       'next_topic': topic, 'storage': [], 'minimum_level': level,
+                       'requires': [requirement(fame, 100, fame_max)],
+                       'reply': [f'Buy the {label} outfit reward for {gold:,} gold and 100 Spike fame?'],
+                       'failure_reply': ['You need more experience or Spike fame.']})
+        name = 'base' if addon == 0 else label
+        add('l12-cave-explorer-' + name, cave, 'gnommander', ['yes'], [], topic=topic,
+            outfit=('cave_explorer', addon), fee={'gold': gold, 'include_bank': False})
+        row = callbacks[-1]
+        row.update(minimum_level=level, requires_premium=True,
+                   participants=[{'quest': 'oteryn:quest.spike_task', 'storage': [],
+                                  'state_ops': [fame_change(100, fame_max, -100)]}],
+                   sources=[source], reply=['Here is your reward.'])
+        if addon:
+            row.update(requires_outfits=[outfit], forbids_addons=[{'outfit': outfit, 'addons': addon}],
+                       achievement_progress=[{'key': 'oteryn:achievement/cave_completionist', 'target': 2}])
+            row['sources'].append('tibiawiki:Cave Completionist:846114')
+        else:
+            row['forbids_outfits'] = [outfit]
+    for tier, npc, level, xp, report in [
+        ('upper', 'gnomilly', 25, 1000, 'killing'),
+        ('middle', 'gnombold', 50, 2000, 'killing'),
+        ('lower', 'gnomargery', 80, 3500, 'kill'),
+    ]:
+        task = spike + tier + '/'
+        phase, kills, timer = (task + name for name in ('phase', 'kills', 'reported_at'))
+        source = pin + npc + '.lua'
+        spike_track(timer, 9_223_372_036_854_775_807, source)
+        offers.extend([
+            {'npc': 'oteryn:npc.' + npc, 'keywords': ['kill'], 'topic': 0,
+             'next_topic': 24, 'minimum_level': level, 'storage': [storage(phase, 0, 0, preserve=True)],
+             'reply': ['Will you take on the local hunting task?']},
+            {'npc': 'oteryn:npc.' + npc, 'keywords': ['report'], 'topic': 0, 'any_topic': True,
+             'next_topic': 25, 'storage': [], 'reply': ['Which task are you reporting?']},
+        ])
+        add('l12-spike-' + tier + '-accept', 'spike_task', npc, ['yes'], [storage(phase, 0, 1)], topic=24)
+        callbacks[-1].update(minimum_level=level, state_ops=[elapsed(timer, 72_001)], sources=[source],
+                             reply=['Hunt seven of the local targets and then report back.'])
+        add('l12-spike-' + tier + '-report', 'spike_task', npc, [report],
+            [storage(phase, 1, 0), storage(kills, 7, 0)], topic=25)
+        callbacks[-1].update(experience=xp, state_ops=[stamp(timer), fame_change(0, fame_max - 1, 1)],
+                             sources=[source], reply=['Your report earns one point of Spike fame.'])
     engoutfit_m36.append(add, storage, callbacks, offers, declarations,
         f'crystal:{PIN}:data-global/npc/rock_steady.lua:56-98:sha256:{sha(inputs["data-global/npc/rock_steady.lua"])}')
     qmech_m39.append(add, callbacks, offers, declarations, inputs, PIN)
-    m39_keys = ('l2-cael-tome-', 'l2-zalamon-tome', 'l2-alliance-', 'l2-bone-', 'bone-pit-lost-sample')
+    m39_keys = ('l2-cael-tome-', 'l2-zalamon-', 'l2-alliance-', 'l2-bone-', 'bone-pit-lost-sample')
     m39_callbacks = [callback for callback in callbacks if callback['key'].split('/')[-1].startswith(m39_keys)]
     callbacks = [callback for callback in callbacks if callback not in m39_callbacks]
     m39_tracks = [track for track in declarations if track['key'].endswith('/corruption_hole')]

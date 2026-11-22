@@ -203,14 +203,17 @@ def _requested_inputs(root, extra_keys=()):
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
     for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json',
-                     'world-callbacks/qm48-mammoth.json'):
+                     'world-callbacks/children-grease.json', 'world-callbacks/crystal-wand.json',
+                     'world-callbacks/m07-realm-trial.json', 'world-callbacks/qm48-mammoth.json'):
         path = root / 'content/quests' / relative
         if not path.is_file():
             continue
         for callback in json.loads(path.read_bytes())['callbacks']:
             authored_callbacks.append(callback)
             reward = callback.get('give') or callback.get('effects', {}).get('item_reward')
-            if reward:
+            if reward and reward['item'] != 'oteryn:item.tibia.i637':
+                # The Tactical Map uses the document already admitted by the
+                # pinned Writing provider. Keep that provider's full profile.
                 authored_keys.add(reward['item'])
                 authored_keys.update(child['item'] for field in ('contents', 'backpack_outputs')
                                      for child in reward.get(field, []))
@@ -449,7 +452,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     import quests_2_emperor_item_profiles
     source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
     import authored_quest_item_custody
-    missing_authored = [definitions[key] for key in sorted(authored_keys - present.keys())
+    # Qualify the existing map-only Twinkiller parchment for inventory custody.
+    text_carrier = 'oteryn:item.tibia.i2835'
+    missing_authored = [definitions[key] for key in sorted((authored_keys - present.keys()) | {text_carrier})
                         if key in definitions]
     custody_inputs = (authored_quest_item_custody.qualification_inputs(root, missing_authored, raw)
                       if missing_authored else None)
@@ -496,6 +501,14 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
                 profile, _ = authored_quest_timed_custody.qualify(root, definition, raw, authored_callbacks, _inputs=custody_inputs)
                 document['records'].append(profile)
                 continue
+        if (key in authored_keys and key == text_carrier and key in present
+                and not present[key]['admission']['materializable']):
+            profile = authored_quest_item_custody.qualify(root, definition, raw, _inputs=custody_inputs)
+            existing = present[key]
+            existing['admission'] = profile['admission']
+            for group in ('physical', 'stack', 'container'):
+                existing['semantics'][group] = profile['semantics'][group]
+            continue
         if key in authored_keys and not definition['materializable'] and definition['stack_class'] == 'Unknown':
             import authored_quest_item_custody
             if key in present:

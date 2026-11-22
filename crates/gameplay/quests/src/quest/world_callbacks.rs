@@ -16,7 +16,7 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1038;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -704,6 +704,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     )?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/children-grease.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/crystal-wand.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m39-stories.json"
@@ -3176,6 +3179,10 @@ mod worldchg_grimvale_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "world_callbacks/cq07_source_tests.rs"]
+mod cq07_source_tests;
 
 #[cfg(test)]
 #[path = "world_callbacks/phase_tests.rs"]

@@ -10,6 +10,8 @@
     "imports/canary/items-xml/items.xml#17449-17450",
     "content/creatures/definitions/spell-native-profiles.json#exact-ordinary-creature-corpse-bindings",
     "imports/canary/items-xml/items.xml#corpse-capacity-and-decay",
+    "imports/canary/items-xml/items.xml#34734-34739",
+    "imports/canary/items-xml/items.xml#35347-35352",
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/feverish_citizen.lua:32,90-95",
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humanoids/swamp_troll.lua:33,90"
   ],
@@ -27,7 +29,9 @@
   "loot_creatures": {
     "oteryn:creature.behemoth": 5999,
     "oteryn:creature.bonebeast": 6030,
+    "oteryn:creature.crystalcrusher": 16197,
     "oteryn:creature.dipthrah": 6031,
+    "oteryn:creature.drillworm": 17425,
     "oteryn:creature.dworc_voodoomaster": 6055,
     "oteryn:creature.faun": 25815,
     "oteryn:creature.feverish_citizen": 18114,

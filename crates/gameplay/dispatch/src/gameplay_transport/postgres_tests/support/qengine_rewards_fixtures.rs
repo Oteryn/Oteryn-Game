@@ -35,6 +35,8 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps_fixtures::SOURCE
+            } else if name == "qengine-rewards-l12-cave-explorer-story" {
+                Position { x: 32246, y: 32600, floor: -14 }
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -114,7 +116,7 @@ pub(super) async fn talk(
             },
         )
         .await;
-    assert!(!outcome.unknown, "NPC command must have a known outcome");
+    assert!(!outcome.unknown, "NPC command {id} ({text}) must have a known outcome");
     Ok(outcome.disposition)
 }
 

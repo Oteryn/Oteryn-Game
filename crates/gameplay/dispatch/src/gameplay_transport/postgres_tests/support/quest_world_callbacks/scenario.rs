@@ -33,7 +33,11 @@ fn scenario_case(
     let m07_repair = name.starts_with("m07/machinery-repair-");
     let m07_machinery = name.starts_with("m07/machinery-");
     let m07_machinery_level49 = m07_machinery && name.ends_with("-level49");
-    let m07_realm = name.starts_with("m07/realm-");
+    let m07_realm = name == super::super::m07_realm_trials_fixtures::NAME;
+    let source_reward = matches!(
+        name,
+        "m07/realm-draconia-book" | "m07/realm-reward" | "crystal-wand-twinkiller"
+    );
     let lion_trial = matches!(
         name,
         "lions-rock-strength-first" | "lions-rock-beauty" | "lions-rock-tears"
@@ -64,6 +68,7 @@ fn scenario_case(
     let m03_pits = name == super::super::qengine_m03_pits_fixtures::NAME;
     let nomads_window = name.starts_with(super::super::qengine_m02_use_fixtures::NAME);
     let m01b_explore = name.starts_with("m01b/");
+    let iglues = name == "captain-iglues-left-chest";
     let qready_craft = name == super::super::qready1_crafting_fixtures::NAME;
     let qready_workbench = super::super::qready1_workbenches_fixtures::matches(name);
     let small_ruby = name.starts_with("l6-small-ruby");
@@ -105,6 +110,8 @@ fn scenario_case(
         || m07_dreamer
         || qready_workbench
         || qready_craft
+        || iglues
+        || source_reward
         || m03_pits
         || nomads_window
         || qm48
@@ -125,7 +132,12 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if name == "crystal-wand-twinkiller" {
+        Position {
+            y: trigger.y + 1,
+            ..trigger
+        }
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -1103,6 +1115,14 @@ fn scenario_case(
                     .ok_or("workbench native policies")?,
                 name,
             )?
+        } else if iglues || source_reward {
+            use crate::map::overlay::TilePos;
+            let tile = TilePos { x: trigger.x, y: trigger.y, floor: trigger.floor };
+            let spawn = TilePos { x: start.x, y: start.y, floor: start.floor };
+            let min = TilePos { x: tile.x.min(spawn.x), y: tile.y.min(spawn.y), ..tile };
+            let max = TilePos { x: tile.x.max(spawn.x), y: tile.y.max(spawn.y), ..tile };
+            let native = generation.native_gameplay().ok_or("native")?;
+            super::super::source_world_crop::world(min, max, spawn, native)?
         } else if qready_craft {
             super::super::qready1_crafting_fixtures::world(
                 generation
@@ -1996,6 +2016,14 @@ fn scenario_case(
                 name,
             ))
             .await?;
+        } else if source_reward {
+            Box::pin(super::super::cq07_source_rewards::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                &callback,
+            ))
+            .await?;
         } else if qready_craft {
             Box::pin(super::super::qready1_crafting_fixtures::exercise(
                 &owner,
@@ -2006,7 +2034,7 @@ fn scenario_case(
             .await?;
         } else if matches!(
             name,
-            "qready1-bewitched-contribution" | "qready1-threatened-raven-herb"
+            "qready1-bewitched-contribution" | "qready1-threatened-raven-herb" | "captain-iglues-left-chest"
         ) {
             Box::pin(super::super::qready1_world_clocks_fixtures::exercise(
                 &owner,
