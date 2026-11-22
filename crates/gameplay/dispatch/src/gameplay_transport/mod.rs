@@ -243,6 +243,7 @@ mod timed_item_clock;
 mod timed_item_content;
 mod timed_item_use;
 mod timed_item_wire;
+mod torch_lifecycle;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
