@@ -627,46 +627,49 @@ pub(super) async fn cleanup_terminal<'a, 'f, 's>(
         .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)
 }
 
-pub(super) async fn leave_registered<'a, 'f, 's>(
-    admission: &ComposedFreshAdmission<'a, 'f, 's>,
-    registered: &RegisteredRuntime<'a>,
-    binding: SoulpitActivityBinding,
-    members: &[SoulpitMembership],
-    slot: u8,
-    now: u64,
-) -> Result<(), SoulpitRuntimeError> {
-    let view = admission.runtime_view(registered);
-    let mut owner = Owner {
-        admission: &view,
-        binding,
-        members,
-        species: None,
-        now,
-        visible: Vec::new(),
-    };
-    let stored = owner.read_encounter().await?;
-    if stored.encounter.snapshot().phase.is_terminal()
-        || !stored.encounter.snapshot().surviving_slots.contains(&slot)
-    {
-        return Ok(());
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn leave_soulpit(
+        &self,
+        binding: SoulpitActivityBinding,
+        members: &[SoulpitMembership],
+        member: SoulpitMembership,
+        now: u64,
+    ) -> Result<(), SoulpitRuntimeError> {
+        let mut owner = Owner {
+            admission: self,
+            binding,
+            members,
+            species: None,
+            now,
+            visible: Vec::new(),
+        };
+        let stored = owner.read_encounter().await?;
+        let snapshot = stored.encounter.snapshot();
+        if !snapshot.surviving_slots.contains(&member.slot) {
+            return Ok(());
+        }
+        if snapshot.phase == EncounterPhase::Completed {
+            // The exit command can run between cadence retries. Queue this
+            // survivor's notice before its Instance connection is transferred.
+            return self.queue_soulpit_completion_for(&stored, Some(member.session));
+        }
+        if snapshot.phase.is_terminal() {
+            return Ok(());
+        }
+        owner.refresh_survivors().await?;
+        let survivors = owner
+            .survivors()?
+            .into_iter()
+            .filter(|fence| fence.character_id != member.character)
+            .collect();
+        let step = super::runtime::request(
+            binding,
+            &stored,
+            now,
+            SoulpitAction::Leave { slot: member.slot },
+            survivors,
+        )?;
+        owner.commit_progress(step).await?;
+        Ok(())
     }
-    owner.refresh_survivors().await?;
-    let survivors = owner
-        .survivors()?
-        .into_iter()
-        .filter(|fence| {
-            !members
-                .iter()
-                .any(|member| member.slot == slot && member.character == fence.character_id)
-        })
-        .collect();
-    let step = super::runtime::request(
-        binding,
-        &stored,
-        now,
-        SoulpitAction::Leave { slot },
-        survivors,
-    )?;
-    owner.commit_progress(step).await?;
-    Ok(())
 }

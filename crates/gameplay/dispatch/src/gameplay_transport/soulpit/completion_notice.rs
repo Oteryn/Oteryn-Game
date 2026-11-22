@@ -1,7 +1,9 @@
 use super::super::ComposedFreshAdmission;
 use super::runtime::{SoulpitActivityBinding, SoulpitRuntimeError};
 use crate::domain::soulpit::{soul_core_for_monster, soulpit_entry_monster_name};
-use crate::durability::soulpit::{SoulpitStepOutcome, SoulpitStepRequest, SoulpitWriteError};
+use crate::durability::soulpit::{
+    SoulpitStepOutcome, SoulpitStepRequest, SoulpitStoredEncounter, SoulpitWriteError,
+};
 use crate::foundation::GameSessionId;
 use oteryn_protocol_oteryn::zones_nologout::ServerMessage;
 
@@ -53,11 +55,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(super::owner_runtime::durable)?
             .ok_or(SoulpitRuntimeError::InvalidState)?;
-        let completion = stored.completion.ok_or(SoulpitRuntimeError::InvalidState)?;
+        self.queue_soulpit_completion_for(&stored, None)
+    }
+
+    pub(super) fn queue_soulpit_completion_for(
+        &self,
+        stored: &SoulpitStoredEncounter,
+        recipient: Option<GameSessionId>,
+    ) -> Result<(), SoulpitRuntimeError> {
+        let completion = stored
+            .completion
+            .as_ref()
+            .ok_or(SoulpitRuntimeError::InvalidState)?;
         self.publish_soulpit_completion(
             &stored.species,
             completion.occurrence,
-            completion.recipients,
+            completion
+                .recipients
+                .iter()
+                .copied()
+                .filter(|(session, _)| recipient.is_none_or(|id| id == *session)),
         )
     }
 

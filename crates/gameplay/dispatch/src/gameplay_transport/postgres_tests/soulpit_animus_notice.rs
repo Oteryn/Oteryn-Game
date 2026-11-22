@@ -3,12 +3,14 @@ use super::fixture::{Harness, debug, id, run};
 use super::soulpit_shared_entry_fixtures::{admit, prepare_source};
 use super::{Dependencies, TestResult};
 use crate::domain::soulpit::{EncounterEffect, soulpit_entry_monster_name};
+use crate::durability::activity_handoff::soulpit::SoulpitMembership;
 use crate::durability::soulpit::{SoulpitAction, SoulpitStepRequest};
 use crate::foundation::GameSessionId;
 use crate::gameplay_transport::capabilities::{
     PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+use crate::gameplay_transport::soulpit::runtime::{SoulpitActivityBinding, SoulpitRuntimeError};
 use oteryn_protocol_oteryn::zones_nologout::{CAPABILITY_ZONES_NOLOGOUT_V1, ServerMessage};
 
 #[test]
@@ -43,12 +45,21 @@ fn soulpit_postgres_terminal_retry_waits_for_completion_queue_space() -> TestRes
     scenario(admin, Delivery::FullQueue)
 }
 
+#[test]
+fn soulpit_postgres_manual_exit_waits_for_completion_notice_queue_space() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, Delivery::ExitFullQueue)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Delivery {
     Acked,
     Replay,
     LostAck,
     FullQueue,
+    ExitFullQueue,
 }
 
 fn scenario(admin: String, delivery: Delivery) -> TestResult {
@@ -150,7 +161,7 @@ fn scenario(admin: String, delivery: Delivery) -> TestResult {
 
             let queued = oteryn_gameplay_encounter_rules::raid::MAX_ANNOUNCEMENTS;
             let filler = ServerMessage::Advance("Earlier notice".into());
-            if delivery == Delivery::FullQueue {
+            if matches!(delivery, Delivery::FullQueue | Delivery::ExitFullQueue) {
                 for _ in 0..queued {
                     assert!(messages.send_current(session, filler.clone()));
                 }
@@ -178,16 +189,30 @@ fn scenario(admin: String, delivery: Delivery) -> TestResult {
             .await?;
             assert_eq!(credits, 1);
             assert_eq!(messages.take(bystander, 1), None);
+            let binding = SoulpitActivityBinding {
+                handoff_id: admitted.handoff_id,
+                scope: survivor.runtime_scope,
+                generation: survivor.scope_ownership_generation,
+            };
+            if delivery == Delivery::ExitFullQueue {
+                let members = [SoulpitMembership {
+                    character: survivor.character_id,
+                    session,
+                    slot: 0,
+                }];
+                let leave = || owner.leave_soulpit(binding, &members, members[0], completion.now_micros);
+                assert!(matches!(leave().await, Err(SoulpitRuntimeError::AdapterUnavailable)));
+                for _ in 0..queued {
+                    assert_eq!(messages.take(session, generation), Some(filler.clone()));
+                }
+                leave().await.map_err(debug)?;
+                leave().await.map_err(debug)?;
+            }
             if matches!(delivery, Delivery::LostAck | Delivery::FullQueue) {
-                let binding = crate::gameplay_transport::soulpit::runtime::SoulpitActivityBinding {
-                    handoff_id: admitted.handoff_id,
-                    scope: survivor.runtime_scope,
-                    generation: survivor.scope_ownership_generation,
-                };
                 if delivery == Delivery::FullQueue {
                     assert!(matches!(
                         owner.queue_committed_soulpit_completion(binding).await,
-                        Err(crate::gameplay_transport::soulpit::runtime::SoulpitRuntimeError::AdapterUnavailable)
+                        Err(SoulpitRuntimeError::AdapterUnavailable)
                     ));
                     for _ in 0..queued {
                         assert_eq!(messages.take(session, generation), Some(filler.clone()));
