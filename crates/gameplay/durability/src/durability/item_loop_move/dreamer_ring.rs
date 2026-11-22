@@ -157,7 +157,7 @@ impl DurabilityRoot {
                 sqlx::query("INSERT INTO game_dreamer_ring_offerings(transaction_id,event_id,move_transaction_id,game_session_id,command_id,character_id,world_id,channel_id,item_instance_id,before_item,before_ground,intent,placement,reset_epoch,object_revision,trees_before,map_revision,content_digest,occurred_at,envelope_sha256,basin_uid,basin_recipient) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9::uuid,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,sha256($20),$21,$22)")
                     .bind(&transaction).bind(&event).bind(receipt.transaction_id.as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
                     .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&item).bind(&before).bind(&before_ground)
-                    .bind(&intent).bind(&placement).bind(scope.reset_epoch).bind(revision).bind(trees).bind(&scope.map_revision)
+                    .bind(&intent).bind(placement).bind(scope.reset_epoch).bind(revision).bind(trees).bind(&scope.map_revision)
                     .bind(content.loop_content_digest().as_slice()).bind(occurred).bind(&envelope).bind(basin).bind(&recipient).execute(&mut **tx).await?;
                 sqlx::query("UPDATE game_item_instances SET quantity=0,lifecycle=2,last_transaction_id=$2::uuid WHERE item_instance_id=$1::uuid")
                     .bind(&item).bind(&transaction).execute(&mut **tx).await?;

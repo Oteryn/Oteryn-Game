@@ -137,6 +137,7 @@ fn scenario(
                 );
             }
             drop(authority);
+            drop(seal);
             h.cleanup().await
         })
     })?;

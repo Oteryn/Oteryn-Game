@@ -814,7 +814,7 @@ pub(crate) mod tests {
         )
         .map_err(|error| error.to_string())?;
         let mut runtime = channel_runtime_with(128);
-        place(&mut runtime, boot.as_ref()).map_err(|error| error.to_string())?;
+        place(&mut runtime, boot.as_ref(), &[]).map_err(|error| error.to_string())?;
         let visible = runtime.visible_entities();
         let positions: Vec<_> = visible
             .npcs
