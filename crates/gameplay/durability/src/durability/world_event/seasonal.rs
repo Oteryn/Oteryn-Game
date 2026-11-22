@@ -40,14 +40,17 @@ pub(super) async fn active(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     key: &str,
+    epoch: Option<u64>,
 ) -> Result<bool, DurabilityError> {
     Ok(sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_world_seasonal_occurrences s
          JOIN game_world_reset_active a USING(world_id,reset_epoch)
-         WHERE s.world_id=encode($1,'hex')::uuid AND s.event_key=$2)",
+         WHERE s.world_id=encode($1,'hex')::uuid AND s.event_key=$2
+         AND ($3::text IS NULL OR s.reset_epoch=$3::text::numeric))",
     )
     .bind(world.as_bytes().as_slice())
     .bind(key)
+    .bind(epoch.map(|epoch| epoch.to_string()))
     .fetch_one(&mut **tx)
     .await?)
 }

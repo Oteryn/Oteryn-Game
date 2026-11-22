@@ -55,14 +55,14 @@ fn scenario(
                 .open_character_authority(&seal)
                 .await
                 .map_err(debug)?;
-            sqlx::query(&format!(
+            sqlx::query(sqlx::AssertSqlSafe(format!(
                 "CREATE FUNCTION seasonal_occurrences_test_clock() RETURNS trigger LANGUAGE plpgsql AS $$
                 BEGIN
                     NEW.activated_at = (({date_expression}) + TIME '06:00') AT TIME ZONE 'Europe/Berlin';
                     NEW.reset_month = to_char(NEW.activated_at AT TIME ZONE 'Europe/Berlin', 'YYYY-MM');
                     RETURN NEW;
                 END $$"
-            ))
+            )))
             .execute(&h.pool)
             .await?;
             sqlx::query("CREATE TRIGGER seasonal_occurrences_test_clock BEFORE INSERT ON game_world_reset_epochs FOR EACH ROW EXECUTE FUNCTION seasonal_occurrences_test_clock()")
@@ -101,5 +101,42 @@ fn scenario(
             drop(authority);
             h.cleanup().await
         })
+    })
+}
+
+#[test]
+fn seasonal_occurrences_tinder_step_and_bones_use_refuse_outside_the_window() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("seasonal-tinder-dispatch", || {
+        super::quest_world_callbacks_fixtures::scenario(
+            "authored-tinder-box-offseason",
+            oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: 32084,
+                y: 31025,
+                floor: -1,
+            },
+            false,
+        )
+    })
+}
+
+#[test]
+fn seasonal_occurrences_last_creep_marker_refuses_eligible_players_outside_the_window() -> TestResult
+{
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("seasonal-last-creep-dispatch", || {
+        super::quest_world_callbacks_fixtures::scenario(
+            "qengine-rewards-m23-last-creep-offseason",
+            oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: 33261,
+                y: 32365,
+                floor: -7,
+            },
+            false,
+        )
     })
 }

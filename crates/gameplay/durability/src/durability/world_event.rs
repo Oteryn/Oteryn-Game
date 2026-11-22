@@ -406,7 +406,7 @@ pub(super) async fn change_active(
 ) -> Result<bool, DurabilityError> {
     lock_admission_relations(tx).await?;
     if oteryn_gameplay_world_change::seasonal::KEYS.contains(&key) {
-        return seasonal::active(tx, world, key).await;
+        return seasonal::active(tx, world, key, None).await;
     }
     let row: Option<(String,bool)> = sqlx::query_as("SELECT s.reset_epoch::text,s.active FROM game_world_change_states s JOIN game_world_reset_active a USING(world_id,reset_epoch) WHERE s.world_id=encode($1,'hex')::uuid AND s.change_key=$2 FOR SHARE OF s")
         .bind(world.as_bytes().as_slice()).bind(key).fetch_optional(&mut **tx).await?;

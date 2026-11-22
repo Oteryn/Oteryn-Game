@@ -954,9 +954,6 @@ pub(super) async fn exercise(
         ))
         .await;
     }
-    if name == "qengine-rewards-m23-last-creep" {
-        return Box::pin(super::m23_last_creep_fixtures::exercise(owner, admitted, h)).await;
-    }
     if name == "qengine-rewards-srvgap-disguise" {
         return Box::pin(super::srvgap_quest_disguise_fixtures::exercise(owner, admitted, h)).await;
     }
