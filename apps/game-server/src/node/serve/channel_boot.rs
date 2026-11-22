@@ -312,7 +312,7 @@ pub(super) async fn prepare_channel(
             .map_err(|_| BootError::Readiness("boss spawn configuration"))?;
     }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
-    bundle_npcs::place(&mut channel_runtime, npc_boot)?;
+    bundle_npcs::place(&mut channel_runtime, npc_boot, &seasonal)?;
     if daily.world_counters {
         let cycles = oteryn_gameplay_world_change::counter::CounterKind::ALL
             .into_iter()

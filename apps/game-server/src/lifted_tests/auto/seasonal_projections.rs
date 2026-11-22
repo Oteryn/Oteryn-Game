@@ -2,9 +2,10 @@ use crate::foundation::{ChannelId, ChannelRuntimeV1, NodeId, WorldId};
 use crate::map::boot::{self, BootPins};
 use crate::map::overlay::TilePos;
 use crate::node::serve::{
-    bundle_npcs::{NpcBoot, TimedNpcSpawns},
+    bundle_npcs::{NpcBoot, TimedNpcSpawns, place},
     daily_world_changes::bind_layers,
 };
+use oteryn_gameplay_entities::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
 use oteryn_gameplay_world_change::{
     daily::DailyWorldChanges,
     seasonal::{KINGSDAY, LAST_CREEP, SPRING, at_save},
@@ -95,14 +96,30 @@ fn seasonal_occurrences_place_casper_once_and_leave_offseason_channels_empty() -
     let world = WorldId::decode(&id(42))?;
     let channel = ChannelId::decode(&id(43))?;
     let node = NodeId::decode(&id(1))?;
-    let boot = NpcBoot::Place {
-        table: Default::default(),
-        catalogue_sha256: String::new(),
-        admitted: ["oteryn:npc.casper".to_owned()].into(),
-        production: true,
-        talk: Default::default(),
-    };
-    for (day, count) in [(20, 1), (25, 0)] {
+    for (day, count, authored) in [(20, 1, false), (25, 0, false), (20, 1, true), (25, 0, true)] {
+        let position = TilePos {
+            x: if authored { 33262 } else { 33261 },
+            y: 32363,
+            floor: -7,
+        };
+        let placement = NpcPlacements {
+            key: "oteryn:npc.casper".to_owned(),
+            placements: vec![NpcPlacement {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+                direction: MovementFacing::South,
+            }],
+        };
+        let boot = NpcBoot::Place {
+            table: NpcPlacementTable {
+                npcs: authored.then_some(placement).into_iter().collect(),
+            },
+            catalogue_sha256: String::new(),
+            admitted: ["oteryn:npc.casper".to_owned()].into(),
+            production: true,
+            talk: Default::default(),
+        };
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
             channel,
@@ -124,6 +141,7 @@ fn seasonal_occurrences_place_casper_once_and_leave_offseason_channels_empty() -
             .into_iter()
             .map(|event| event.key)
             .collect::<Vec<_>>();
+        place(&mut runtime, Some(&boot), &keys).map_err(|error| format!("{error:?}"))?;
         let mut spawns =
             TimedNpcSpawns::from_boot(Some(&boot)).with_seasonal(Some(&boot), &keys, |tile| {
                 tile == TilePos {
@@ -147,7 +165,11 @@ fn seasonal_occurrences_place_casper_once_and_leave_offseason_channels_empty() -
             assert_eq!(runtime.npc_key(npc.actor), Some("oteryn:npc.casper"));
             assert_eq!(
                 (npc.position.x, npc.position.y, npc.position.floor),
-                (33261, 32363, -7)
+                (
+                    i32::from(position.x),
+                    i32::from(position.y),
+                    i16::from(position.floor)
+                )
             );
         }
     }

@@ -4,7 +4,11 @@ use crate::foundation::{ChannelId, WorldId};
 
 #[test]
 fn seasonal_occurrences_keep_identity_across_saves_and_close_tinder_and_spring() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     scenario(
+        admin,
         "DATE '2026-04-15' + CASE NEW.reset_epoch WHEN 1 THEN 1 WHEN 2 THEN 2 WHEN 3 THEN 8 WHEN 4 THEN 16 ELSE 17 END",
         5,
         &[("spring_into_life", &[1, 2]), ("tinder_box", &[1, 2, 3, 4])],
@@ -13,7 +17,11 @@ fn seasonal_occurrences_keep_identity_across_saves_and_close_tinder_and_spring()
 
 #[test]
 fn seasonal_occurrences_open_last_creep_in_eligible_months_and_close_at_save() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     scenario(
+        admin,
         "CASE NEW.reset_epoch WHEN 1 THEN DATE '2026-03-20' WHEN 2 THEN DATE '2026-04-20' WHEN 3 THEN DATE '2026-04-24' WHEN 4 THEN DATE '2026-04-25' ELSE DATE '2026-05-20' END",
         5,
         &[("last_creep_standing", &[2, 3, 5])],
@@ -22,8 +30,12 @@ fn seasonal_occurrences_open_last_creep_in_eligible_months_and_close_at_save() -
 
 #[test]
 fn seasonal_occurrences_kingsday_roll_is_frozen_for_one_save() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     // For World id(42) the v1 draw selects save 21 and closes at save 22.
     scenario(
+        admin,
         "DATE '2026-06-01' + NEW.reset_epoch::integer",
         22,
         &[("kingsday", &[21])],
@@ -31,13 +43,12 @@ fn seasonal_occurrences_kingsday_roll_is_frozen_for_one_save() -> TestResult {
 }
 
 fn scenario(
+    admin: String,
     date_expression: &'static str,
     epochs: u64,
     events: &'static [(&'static str, &'static [i32])],
 ) -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        return Ok(());
-    };
+    let started = std::time::Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run("seasonal-occurrences", move || {
         run(async move |_| {
             reset();
@@ -78,6 +89,23 @@ fn scenario(
             )
             .await?;
 
+            assert!(
+                h.root
+                    .active_world_seasonal_occurrences(world, epochs - 1)
+                    .await
+                    .is_err()
+            );
+            let projected = h
+                .root
+                .active_world_seasonal_occurrences(world, epochs)
+                .await?;
+            assert_eq!(
+                h.root
+                    .active_world_seasonal_occurrences(world, epochs)
+                    .await?,
+                projected
+            );
+
             for &(key, expected) in events {
                 let rows: Vec<(i32, Vec<u8>)> = sqlx::query_as(
                     "SELECT reset_epoch::integer, occurrence_id FROM game_world_seasonal_occurrences WHERE event_key=$1 ORDER BY reset_epoch",
@@ -93,15 +121,30 @@ fn scenario(
                 if key == "tinder_box" || key == "spring_into_life" {
                     assert!(rows.windows(2).all(|pair| pair[0].1 == pair[1].1));
                 }
+                let final_epoch = i32::try_from(epochs)?;
                 assert_eq!(
                     h.root.world_change_active(world, key).await?,
-                    expected.contains(&i32::try_from(epochs)?),
+                    expected.contains(&final_epoch),
+                );
+                assert_eq!(
+                    projected
+                        .iter()
+                        .find(|event| event.key == key)
+                        .map(|event| event.id.as_slice()),
+                    rows.iter()
+                        .find(|(epoch, _)| *epoch == final_epoch)
+                        .map(|(_, id)| id.as_slice()),
                 );
             }
             drop(authority);
             h.cleanup().await
         })
-    })
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED seasonal_occurrences epochs={epochs} duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 #[test]

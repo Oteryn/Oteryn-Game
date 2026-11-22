@@ -91,8 +91,10 @@ impl SeasonalNpcSpawns {
                 && enterable(TilePos { x, y, floor: -z })
         });
         let (x, y, z) = BRUTUS_POSITION;
+        let needs_casper_placement = matches!(boot, Some(NpcBoot::Place { table, admitted, .. })
+            if admitted.contains(CASPER) && !table.npcs.iter().any(|entry| entry.key == CASPER));
         let casper = (seasonal.iter().any(|event| event == LAST_CREEP)
-            && boot.is_some_and(|boot| boot.admits(CASPER))
+            && needs_casper_placement
             && enterable(CASPER_POSITION))
         .then(|| {
             ConditionalNpcActor::new(
