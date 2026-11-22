@@ -24,10 +24,17 @@ pub(super) async fn read_in_transaction(
     fence: &CurrentCharacterGameplayFence,
     creature: &str,
     premium: bool,
+    live_stamina: Option<u16>,
 ) -> Result<HuntingXpModifiers, DurabilityError> {
     let stamina: Option<i32> = sqlx::query_scalar(
         "SELECT stamina_minutes FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let stamina = stamina
+        .unwrap_or(2520)
+        .min(live_stamina.map_or(i32::MAX, i32::from));
+    let character = fence.character_id.as_bytes();
+    let world = fence.runtime_scope.world_id();
+    super::store_hunting_xp::advance(tx, character, world.as_bytes(), stamina).await?;
     // The fenced root lock already serializes level writers; the XP commit locks this row later.
     // A Character without progression state has no XP commit to bonus; level 50 adds nothing.
     let level: Option<i64> = sqlx::query_scalar(
@@ -40,14 +47,8 @@ pub(super) async fn read_in_transaction(
         prey_epoch: None,
         prey_grade: None,
         prey_percent: 0,
-        xp_boost_percent: xp_boost_lines(
-            tx,
-            fence.character_id.as_bytes().as_slice(),
-            fence.runtime_scope.world_id().as_bytes().as_slice(),
-        )
-        .await?
-        .percent(),
-        stamina_minutes: stamina.unwrap_or(2520),
+        xp_boost_percent: xp_boost_with_stamina(tx, character, world.as_bytes(), stamina).await?,
+        stamina_minutes: stamina,
         level: level
             .map(u32::try_from)
             .transpose()
@@ -82,6 +83,22 @@ pub(super) async fn read_in_transaction(
     Ok(result)
 }
 
+async fn xp_boost_with_stamina(
+    tx: &mut Transaction<'_, Postgres>,
+    character: &[u8],
+    world: &[u8],
+    stamina: i32,
+) -> Result<i16, DurabilityError> {
+    let lines = load_boost_lines(
+        tx,
+        character,
+        world,
+        stamina >= super::store_hunting_xp::MIN_STAMINA_MINUTES,
+    )
+    .await?;
+    Ok(lines.percent())
+}
+
 /// Winter Update 2026 (thread 565): the Daily Reward and Store XP boosts are separate
 /// lines whose percentages add; only the newest Daily Reward grant counts. Both lines run
 /// on the daily effect clock. Reads at most two daily grants and eight Store grants.
@@ -89,6 +106,15 @@ pub(super) async fn xp_boost_lines(
     connection: &mut PgConnection,
     character: &[u8],
     world: &[u8],
+) -> Result<XpBoostLines, DurabilityError> {
+    load_boost_lines(connection, character, world, true).await
+}
+
+async fn load_boost_lines(
+    connection: &mut PgConnection,
+    character: &[u8],
+    world: &[u8],
+    include_hunting: bool,
 ) -> Result<XpBoostLines, DurabilityError> {
     let rows = sqlx::query(
         "WITH instant AS MATERIALIZED (SELECT public.game_daily_effect_now() AS at) \
@@ -108,11 +134,17 @@ pub(super) async fn xp_boost_lines(
             FROM public.game_character_store_xp_boosts s,instant \
             WHERE s.character_id=encode($1,'hex')::uuid AND s.world_id=encode($2,'hex')::uuid \
               AND s.starts_at<=instant.at AND s.expires_at>instant.at \
-            ORDER BY s.expires_at DESC LIMIT 8)) lines \
+            ORDER BY s.expires_at DESC LIMIT 8) \
+           UNION ALL \
+           SELECT 3,1::bigint,50::smallint,0::bigint,b.remaining_minutes::bigint*60000 \
+           FROM public.game_store_hunting_xp_boosts b \
+           WHERE $3 AND b.character_id=encode($1,'hex')::uuid AND b.world_id=encode($2,'hex')::uuid \
+               AND b.remaining_minutes>0) lines \
          ORDER BY source,rank",
     )
     .bind(character)
     .bind(world)
+    .bind(include_hunting)
     .fetch_all(connection)
     .await?;
     let (mut daily, mut store) = (Vec::with_capacity(2), Vec::with_capacity(8));

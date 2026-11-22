@@ -36,6 +36,8 @@ pub(super) struct Ledger {
     pub(super) intents: BTreeMap<String, serde_json::Value>,
     pub(super) receipts: usize,
     pub(super) malformed: bool,
+    pub(super) premium_days: Option<u16>,
+    pub(super) service_grants: bool,
     pub(super) answers: BTreeMap<String, (String, serde_json::Value)>,
 }
 
@@ -75,9 +77,18 @@ impl StoreTransport for FakePlatform {
                     let n = u8::try_from(ledger.debits.len()).expect("few orders");
                     let operation = uuid(&id(100 + n));
                     let order = uuid(&id(120 + n));
-                    let intent = platform_intent(&request, &operation, &order);
-                    ledger.intents.insert(operation.clone(), intent);
+                    let mut intent = platform_intent(&request, &operation, &order);
                     let mut answer = platform_answer(&request, Some((&order, &operation)), ledger.balance, body);
+                    if let Some(days) = ledger.premium_days {
+                        intent["product_id"] = "oteryn.premium_time".into();
+                        intent["unit_kind"] = "PREMIUM_TIME".into();
+                        intent["grant_key"] = "premium_time".into();
+                        intent["quantity"] = days.into();
+                        answer["units"][0]["unit_kind"] = "PREMIUM_TIME".into();
+                    } else if ledger.service_grants {
+                        intent["grant_key"] = request["offer_key"].clone();
+                    }
+                    ledger.intents.insert(operation.clone(), intent);
                     ledger.answers.insert(request_id, (body.to_owned(), answer.clone()));
                     if ledger.malformed {
                         let unit = answer["units"][0].clone();

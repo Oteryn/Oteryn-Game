@@ -6,12 +6,55 @@ use super::super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
+use super::super::store::{StoreService, StoreServiceDelivery};
 use super::super::{DurabilityError, DurabilityRoot};
 use super::*;
 use crate::foundation::CommandRef;
 use sqlx::{Postgres, Row, Transaction};
 
+pub(super) struct ExpansionDelivery {
+    pub(super) reference: String,
+    pub(super) store: Option<StoreServiceDelivery>,
+}
+
 impl DurabilityRoot {
+    pub async fn grant_store_task_board_expansion(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        store: StoreServiceDelivery,
+        catalogue: Arc<TaskBoardCatalogue>,
+    ) -> Result<TaskBoardCommit, CharacterProgressionError> {
+        if !matches!(store.service, StoreService::WeeklyTaskExpansion)
+            || store.validate(&fence).is_err()
+        {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
+        let reference = store.task_board_reference();
+        let mut binding = b"oteryn:taskboard:expansion-delivery:v1:".to_vec();
+        binding.extend_from_slice(reference.as_bytes());
+        self.commit_task_board_inner(
+            authority,
+            node,
+            fence,
+            TaskBoardCommand {
+                cause: QuestCause::Command(command),
+                action: TaskBoardAction::GrantExpansion,
+                payload_binding: binding,
+                fee_change: None,
+            },
+            catalogue,
+            None,
+            Some(ExpansionDelivery {
+                reference,
+                store: Some(store),
+            }),
+        )
+        .await
+    }
+
     /// Grant the permanent entitlement after a trusted delivery owner has accepted
     /// its immutable reference. There is deliberately no matching wire action.
     /// The delivery reference is unique across sessions and cannot be rebound to
@@ -48,7 +91,10 @@ impl DurabilityRoot {
             },
             catalogue,
             None,
-            Some(delivery_reference.to_owned()),
+            Some(ExpansionDelivery {
+                reference: delivery_reference.to_owned(),
+                store: None,
+            }),
         )
         .await
     }

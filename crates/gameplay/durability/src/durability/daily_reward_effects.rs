@@ -67,7 +67,11 @@ pub(super) async fn grant(
             None => (0, None),
         };
         let requested = i16::from(reward.prey_wildcards);
-        let credited = requested.min(52 - before);
+        let cap: i16 = sqlx::query_scalar(
+            "SELECT coalesce((SELECT 50-amount FROM game_store_service_purchases
+                 WHERE account_id=$1::text::uuid AND world_id=encode($2,'hex')::uuid AND kind='PREY_WILDCARDS' AND operation_id IS NULL),52)::smallint",
+        ).bind(&account).bind(world.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
+        let credited = requested.min(cap - before);
         sqlx::query("INSERT INTO public.game_account_prey_wildcard_entries(claim_id,account_id,world_id,previous_claim_id,kind,requested,credited,balance_before,balance_after) VALUES(encode($1,'hex')::uuid,$2::text::uuid,encode($3,'hex')::uuid,$4::text::uuid,'DAILY_REWARD',$5,$6,$7,$8)")
             .bind(claim).bind(&account).bind(world.as_bytes().as_slice()).bind(last)
             .bind(requested).bind(credited).bind(before).bind(before+credited).execute(&mut ***tx).await?;
