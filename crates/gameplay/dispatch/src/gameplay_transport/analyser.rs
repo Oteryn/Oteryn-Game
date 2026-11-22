@@ -51,6 +51,10 @@ struct Stream {
     attributed: bool,
     pending: AnalyserPendingQueue,
     totals: super::analyser_party::Totals,
+    hunt: Option<(
+        super::analyser_party::shared::Boundary,
+        super::analyser_party::Totals,
+    )>,
     started: std::time::Instant,
     items: Option<Arc<crate::content::item_ref::ItemDefinitionIndex>>,
 }
@@ -98,6 +102,7 @@ impl AnalyserStreams {
                 attributed,
                 pending: AnalyserPendingQueue::default(),
                 totals: Default::default(),
+                hunt: None,
                 started: std::time::Instant::now(),
                 items,
             },
@@ -128,6 +133,9 @@ impl AnalyserStreams {
             && let Some(held) = streams.get_mut(&session).filter(|held| held.actor == actor)
         {
             held.totals.observe(&fact);
+            if let Some((_, totals)) = &mut held.hunt {
+                totals.observe(&fact);
+            }
             let attacker = attacker
                 .filter(|attacker| held.attributed && *attacker != actor)
                 .filter(|_| {
@@ -159,6 +167,56 @@ impl AnalyserStreams {
             held.totals.clone(),
             held.items.clone(),
         ))
+    }
+
+    pub(super) fn hunt_accounting(
+        &self,
+        member: super::analyser_party::shared::LocalMember,
+        interval: u64,
+    ) -> Option<(
+        super::analyser_party::Totals,
+        Option<Arc<crate::content::item_ref::ItemDefinitionIndex>>,
+    )> {
+        let streams = self.0.lock().ok()?;
+        let held = streams
+            .get(&member.session)
+            .filter(|held| held.actor == member.actor)?;
+        let totals = if interval == 0 {
+            held.totals.clone()
+        } else {
+            held.hunt
+                .as_ref()
+                .filter(|(boundary, _)| *boundary == member.boundary)
+                .map(|(_, totals)| totals.clone())
+                .unwrap_or_else(|| super::analyser_party::Totals::missing_history())
+        };
+        Some((totals, held.items.clone()))
+    }
+
+    pub(super) fn set_hunt_boundaries(
+        &self,
+        members: &[super::analyser_party::shared::LocalMember],
+        reset: bool,
+    ) -> Option<()> {
+        let mut streams = self.0.lock().ok()?;
+        for member in members {
+            if let Some(held) = streams
+                .get_mut(&member.session)
+                .filter(|held| held.actor == member.actor)
+                && held
+                    .hunt
+                    .as_ref()
+                    .is_none_or(|(boundary, _)| *boundary != member.boundary)
+            {
+                let totals = if reset {
+                    super::analyser_party::Totals::default()
+                } else {
+                    super::analyser_party::Totals::missing_history()
+                };
+                held.hunt = Some((member.boundary, totals));
+            }
+        }
+        Some(())
     }
 
     pub(super) fn next(

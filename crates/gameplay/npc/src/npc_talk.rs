@@ -338,6 +338,29 @@ pub struct NpcTalkBook {
     /// The revision the trade windows carry: derived from the catalogue's source tree digest, so
     /// it changes exactly when the content the offers come from changes. Never 0.
     catalogue_revision: u64,
+    mean_buy_prices: HashMap<(String, String), u64>,
+}
+
+fn mean_buy_prices(model: &NpcServiceModel) -> HashMap<(String, String), u64> {
+    use crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer;
+    let mut sums = HashMap::<_, (u128, u128)>::new();
+    for service in model.services().values() {
+        for offer in &service.offers {
+            if offer.direction != BuyFromPlayer || offer.unit_price == 0 {
+                continue;
+            }
+            let (sum, samples) = sums.entry(&offer.item).or_default();
+            *sum += u128::from(offer.unit_price);
+            *samples += 1;
+        }
+    }
+    sums.into_iter()
+        .filter_map(|(item, (sum, samples))| {
+            u64::try_from(sum / samples)
+                .ok()
+                .map(|price| ((item.key.clone(), item.revision.clone()), price))
+        })
+        .collect()
 }
 
 impl NpcTalkBook {
@@ -355,6 +378,12 @@ impl NpcTalkBook {
         self.source_voices = crate::npc_voice::profiles_from_catalogue(catalogue, model, qualify)?;
         self.source_walks = Some(walks);
         Ok(())
+    }
+
+    pub fn mean_buy_price(&self, key: &str, revision: &str) -> Option<u64> {
+        self.mean_buy_prices
+            .get(&(key.to_owned(), revision.to_owned()))
+            .copied()
     }
 
     pub fn source_walks(&self) -> Option<&crate::npc_actor::NpcWalkBook> {
@@ -418,6 +447,7 @@ impl NpcTalkBook {
             )),
             ..Self::default()
         };
+        book.mean_buy_prices = mean_buy_prices(model);
         for (reference, npc) in model.npcs() {
             book.display_names
                 .insert(reference.key.clone(), npc.name.clone());
