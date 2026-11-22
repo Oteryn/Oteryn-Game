@@ -1,6 +1,8 @@
 use super::{DurabilityError, DurabilityRoot, NodeIncarnationProof, RaidStepIdentity, effects};
 use crate::durability::db::{begin_semantic_transaction, commit_semantic_transaction};
-use oteryn_gameplay_encounter_rules::raid::{PALE_COUNT_EXIT_DELAY_MS, PALE_COUNT_RAID};
+use oteryn_gameplay_encounter_rules::raid::{
+    PALE_COUNT_EXIT_DELAY_MS, PALE_COUNT_OPEN_DELAY_MS, PALE_COUNT_RAID,
+};
 
 impl DurabilityRoot {
     /// The admitted deadline is bound to the scheduled first announcement.
@@ -32,11 +34,13 @@ impl DurabilityRoot {
                      AND t.owner_generation=$4::text::numeric AND r.owner_generation=t.owner_generation
                      AND e.owner_generation=t.owner_generation AND e.step_ordinal=0
                      AND e.action_kind=1 AND e.state=2 AND f.state=1 AND r.state=1
-                     AND f.deadline_ms >= f.fired_at_ms + $5 AND f.deadline_ms > $6
-                     AND f.reset_epoch=$7::text::numeric AND f.bundle_digest=$8"
+                     AND f.deadline_ms - f.fired_at_ms >= $5
+                     AND $6 >= f.deadline_ms - $7 AND $6 < f.deadline_ms
+                     AND f.reset_epoch=$8::text::numeric AND f.bundle_digest=$9"
                 ).bind(identity.firing_id.as_slice()).bind(PALE_COUNT_RAID)
                     .bind(identity.channel.as_bytes().as_slice()).bind(identity.generation.get().to_string())
-                    .bind(PALE_COUNT_EXIT_DELAY_MS).bind(now_ms).bind(reset_epoch.to_string())
+                    .bind(PALE_COUNT_EXIT_DELAY_MS).bind(now_ms)
+                    .bind(PALE_COUNT_EXIT_DELAY_MS - PALE_COUNT_OPEN_DELAY_MS).bind(reset_epoch.to_string())
                     .bind(bundle_digest.as_slice()).fetch_optional(&mut *tx).await?;
                 commit_semantic_transaction(tx, deadline).await?;
                 Ok(close)

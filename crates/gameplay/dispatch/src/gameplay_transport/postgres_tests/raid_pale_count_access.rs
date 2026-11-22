@@ -142,6 +142,18 @@ async fn exercise(h: &Harness) -> TestResult {
         )
         .await
         .map_err(|_| "Pale Count announcement")?;
+    assert_eq!(walk().await.0.disposition, StepDisposition::Blocked);
+    owner
+        .drive_raid_firing(
+            firing,
+            &key,
+            &catalogue,
+            digest,
+            fired_at + 241_000,
+            &mut progress,
+        )
+        .await
+        .map_err(|_| "Pale Count four-minute opening")?;
     assert_eq!(walk().await.0.disposition, StepDisposition::Moved);
     assert_eq!(
         owner

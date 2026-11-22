@@ -387,7 +387,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(RaidWrite::CompareFailed) | Err(_) => return Err(()),
             }
         }
-        if progress.boss_end_open(identity.firing_id)
+        // The lair remains open for its announced window even if the boss dies.
+        if selected.pale_count_lair.is_none()
+            && progress.boss_end_open(identity.firing_id)
             && let Some(bosses) = dead_bosses(selected, &statuses)
             && let Some(step) = self
                 .root

@@ -7,7 +7,7 @@ use oteryn_gameplay_encounter_rules::raid::{
     RaidCatalogue, RaidPosition,
 };
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(in crate::gameplay_transport) struct PaleCountAccess {
     lair: PaleCountLair,
     identity: RaidStepIdentity,
@@ -17,7 +17,8 @@ pub(in crate::gameplay_transport) struct PaleCountAccess {
 impl PaleCountAccess {
     fn open(self, now: i64) -> bool {
         self.deadline.is_some_and(|close| {
-            (close - PALE_COUNT_EXIT_DELAY_MS + PALE_COUNT_OPEN_DELAY_MS..close).contains(&now)
+            let open = close - PALE_COUNT_EXIT_DELAY_MS + PALE_COUNT_OPEN_DELAY_MS;
+            (open..close).contains(&now)
         })
     }
 }
@@ -41,7 +42,11 @@ impl PaleCountBlocker<'_> {
             static LAIR: std::sync::OnceLock<Option<PaleCountLair>> = std::sync::OnceLock::new();
             *LAIR.get_or_init(|| {
                 let key = crate::content::ProductionKey::new(PALE_COUNT_RAID).ok()?;
-                RaidCatalogue::embedded().ok()?.get(&key)?.pale_count_lair
+                RaidCatalogue::embedded()
+                    .ok()?
+                    .get(&key)
+                    .filter(|raid| raid.active)?
+                    .pale_count_lair
             })
         })
     }
@@ -113,6 +118,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         lair: PaleCountLair,
         identity: RaidStepIdentity,
     ) -> Result<(), ()> {
+        let _permit = self.spell_lane_permit().await.ok_or(())?;
         let map = self.bundle_map().ok_or(())?;
         let mut runtime = self.runtime.lock().await;
         if runtime.binding().scope_generation() != identity.generation

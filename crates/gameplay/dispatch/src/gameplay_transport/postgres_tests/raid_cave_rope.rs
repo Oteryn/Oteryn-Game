@@ -59,18 +59,19 @@ async fn exercise(h: &Harness, boss_present: bool) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("current player")?;
     let before = {
         let mut runtime = owner.runtime.lock().await;
-        if boss_present {
-            runtime
-                .admit_pinned_monster_lab_creature(
-                    MovementLocalPosition {
-                        x: 32137,
-                        y: 31147,
-                        floor: 2,
-                    },
-                    "oteryn:creature.man_in_the_cave",
-                    485,
-                )
-                .map_err(debug)?;
+        let boss = runtime
+            .admit_pinned_monster_lab_creature(
+                MovementLocalPosition {
+                    x: 32137,
+                    y: 31147,
+                    floor: 2,
+                },
+                "oteryn:creature.man_in_the_cave",
+                485,
+            )
+            .map_err(debug)?;
+        if !boss_present {
+            runtime.set_test_creature_health(boss, 0).map_err(debug)?;
         }
         runtime.read_actor_position(actor).map_err(debug)?
     };

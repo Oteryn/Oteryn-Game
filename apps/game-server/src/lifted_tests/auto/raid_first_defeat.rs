@@ -90,7 +90,14 @@ async fn exercise(h: &Harness) -> TestResult {
             }],
         }],
     };
-    let candidate = |key, tag| RaidScheduleCandidate {
+    // TibiaWiki (Gaz'Haragoth, Dreamcatcher Hill): the initial reset
+    // appearance is separate from Crystal's announced prison invasion.
+    let mut hill_definition = definition.clone();
+    hill_definition.announcements.clear();
+    hill_definition.waves[0].delay_ms = 0;
+    hill_definition.waves[0].entries[0].area_anchor =
+        ProductionKey::new("area:dreamcatcher_hill").map_err(debug)?;
+    let candidate = |key, tag, definition: &RaidDefinition| RaidScheduleCandidate {
         key,
         definition: definition.clone(),
         eligible: true,
@@ -107,7 +114,10 @@ async fn exercise(h: &Harness) -> TestResult {
         reset_epoch: 1,
         now_ms: 0,
         bundle_digest: digest,
-        candidates: vec![candidate(prison.clone(), 80), candidate(hill.clone(), 81)],
+        candidates: vec![
+            candidate(prison.clone(), 80, &definition),
+            candidate(hill.clone(), 81, &hill_definition),
+        ],
     };
     assert!(
         h.root
@@ -121,32 +131,7 @@ async fn exercise(h: &Harness) -> TestResult {
         .root
         .check_raid_schedules(&authority, &h.node, request.clone())
         .await?;
-    assert_eq!(started.firings, vec![(id(81), hill)]);
-    request.now_ms += 80_000;
-    for _ in 0..definition.announcements.len() {
-        let step = h
-            .root
-            .advance_raid_run(
-                &h.node,
-                id(81),
-                channel,
-                generation,
-                definition.clone(),
-                request.now_ms,
-            )
-            .await?
-            .ok_or("announcement")?;
-        assert!(matches!(
-            step.action,
-            CommittedRaidAction::Announcement { .. }
-        ));
-        assert_eq!(
-            h.root
-                .acknowledge_raid_effect(&h.node, step.identity, vec![], request.now_ms)
-                .await?,
-            RaidWrite::Applied
-        );
-    }
+    assert_eq!(started.firings, vec![(id(81), hill.clone())]);
     let step = h
         .root
         .advance_raid_run(
@@ -154,11 +139,11 @@ async fn exercise(h: &Harness) -> TestResult {
             id(81),
             channel,
             generation,
-            definition.clone(),
+            hill_definition.clone(),
             request.now_ms,
         )
         .await?
-        .ok_or("wave")?;
+        .ok_or("hill wave")?;
     let CommittedRaidAction::Wave { creatures, .. } = step.action else {
         return Err("Gaz wave".into());
     };
@@ -195,10 +180,29 @@ async fn exercise(h: &Harness) -> TestResult {
             .await?,
         RaidWrite::Replayed
     );
-    request.candidates = vec![candidate(prison.clone(), 80)];
-    h.root
-        .check_raid_schedules(&authority, &h.node, request.clone())
-        .await?;
+    // The marker survives a server save, and admitting the prison raid does
+    // not schedule another first appearance during the new reset.
+    request.reset_epoch = 2;
+    request.now_ms += 1;
+    request.candidates = vec![
+        candidate(prison.clone(), 80, &definition),
+        candidate(hill, 82, &hill_definition),
+    ];
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,2,$2,'raid-test-map',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(60),'1970-01')")
+        .bind(world.as_bytes().as_slice()).bind(digest.as_slice()).execute(&h.pool).await?;
+    sqlx::query(
+        "UPDATE game_world_reset_active SET reset_epoch=2 WHERE world_id=encode($1,'hex')::uuid",
+    )
+    .bind(world.as_bytes().as_slice())
+    .execute(&h.pool)
+    .await?;
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, request.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
     request.now_ms += 60_000;
     assert_eq!(
         h.root
