@@ -457,6 +457,70 @@ async fn observe_look_item(
         ItemLookOutcome::Text(text) => ItemLookResult::Text(text),
         ItemLookOutcome::Unavailable => return Err(unavailable),
     };
+    // Crystal svargrond_arena.lua:175-190 and item.cpp:3265-3269.
+    if let ItemKey::Instance(instance) = key
+        && let Some(difficulty) = match definition.production_key.as_str() {
+            "oteryn:item.tibia.i5805" => Some("warlord"),
+            "oteryn:item.tibia.i5806" => Some("scrapper"),
+            "oteryn:item.tibia.i5807" => Some("greenhorn"),
+            _ => None,
+        }
+    {
+        let item_fence = fence
+            .filter(|fence| fence.game_session_id == session)
+            .ok_or(unavailable)?;
+        // Prove the same scope owner and actor before the durable read and before replying.
+        let owner_is_current = |runtime: &ChannelRuntimeV1| {
+            let binding = runtime.binding();
+            item_fence.runtime_scope == binding.runtime_scope()
+                && item_fence.scope_ownership_generation == binding.scope_generation()
+                && runtime.owner_fence().is_ok()
+                && runtime
+                    .player_control_facts(actor, session)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+        };
+        if !owner_is_current(&runtime) {
+            return Err(unavailable);
+        }
+        let pin = content_generation(&runtime);
+        drop(runtime);
+        let inscription = admission
+            .root
+            .read_authored_item_text(
+                admission.character,
+                admission.holder,
+                item_fence,
+                instance,
+                &definition,
+            )
+            .await
+            .map_err(|_| unavailable)?;
+        let current = observe_item(admission, actor, session, fence, views, target).await?;
+        let runtime = admission.runtime.lock().await;
+        if current != (definition, count, distance)
+            || content_generation(&runtime) != pin
+            || !owner_is_current(&runtime)
+        {
+            return Err(unavailable);
+        }
+        return Ok(match (ordinary, inscription) {
+            (ItemLookResult::Text(text), Some(inscription)) => {
+                let description = if let Some(name) = inscription
+                    .strip_prefix("Awarded to ")
+                    .and_then(|name| name.strip_suffix('.'))
+                {
+                    let period = if difficulty == "greenhorn" { "" } else { "." };
+                    format!(
+                        "It is given to the courageous victor of the barbarian arena in {difficulty} difficulty. Awarded to {name}{period}"
+                    )
+                } else {
+                    inscription
+                };
+                ItemLookResult::Text(bounded_text(format!("{text}\n{description}")))
+            }
+            (ordinary, _) => ordinary,
+        });
+    }
     if definition.production_key == "oteryn:item.tibia.i9585"
         && distance <= 4
         && let ItemKey::Instance(instance) = key
