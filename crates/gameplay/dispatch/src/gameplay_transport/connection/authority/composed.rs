@@ -607,9 +607,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             let Ok(runtime) = self.runtime.try_lock() else {
                 return Vec::new();
             };
-            crate::gameplay_transport::guild_chat::qualified_chat_fence(&admitted, &runtime)
+            party_command::party_notice_fence(&admitted, &runtime)
         };
-        let Some(fence) = fence else {
+        let Some((fence, house)) = fence else {
             return Vec::new();
         };
         self.root

@@ -14,6 +14,46 @@ pub struct SessionPartyView {
     pub(super) hunt_prices: Vec<oteryn_protocol_oteryn::analyser_party::Price>,
     pub(super) hunt_reply: Option<Vec<u8>>,
 }
+pub(super) fn party_notice_fence(
+    admitted: &AdmittedSession,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+) -> Option<(
+    crate::durability::item_transfer::CurrentCharacterItemFence,
+    Option<crate::durability::house_scope_handoff::HouseId>,
+)> {
+    let fence = admitted.item_fence?;
+    let actor = admitted.runtime_actor?;
+    let binding = runtime.binding();
+    if fence.game_session_id != admitted.game_session_id
+        || fence.connection_generation.get() != admitted.continuity.connection_generation
+        || admitted.world_id != binding.world_id()
+        || runtime.owner_fence().is_err()
+    {
+        return None;
+    }
+    if let Ok(state) = runtime.house_actor_state(actor, admitted.game_session_id) {
+        let house =
+            crate::durability::house_scope_handoff::HouseId::new(admitted.world_id, &state.house)?;
+        return (state.scope == fence.runtime_scope
+            && house.runtime_scope().ok()? == fence.runtime_scope
+            && state.generation == fence.scope_ownership_generation
+            && state.lease.generation() == fence.character_lease_generation
+            && state.lease.character_id().as_bytes() == fence.character_id.as_bytes()
+            && runtime
+                .house_player_control_facts(actor, admitted.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none()))
+        .then_some((fence, Some(house)));
+    }
+    // A transferred activity retains the origin Channel in the admission.
+    // Match the item fence against the current tagged runtime scope.
+    (fence.runtime_scope == binding.runtime_scope()
+        && fence.scope_ownership_generation == binding.scope_generation()
+        && runtime
+            .player_control_facts(actor, admitted.game_session_id)
+            .is_ok_and(|facts| facts.control_loss.is_none()))
+    .then_some((fence, None))
+}
+
 pub(super) fn party_member_handle(admitted: AdmittedSession, id: [u8; 16]) -> Option<u64> {
     party_handle(admitted, 1, id)
 }

@@ -29,6 +29,7 @@ impl super::super::DurabilityRoot {
         authority: &super::super::character_authority::ReconciledCharacterAuthority<'_, '_>,
         node: &super::super::runtime_scope_assignment::NodeIncarnationProof,
         fence: super::super::item_transfer::CurrentCharacterItemFence,
+        house: Option<super::super::house_scope_handoff::HouseId>,
     ) -> std::result::Result<Vec<MembershipNotice>, super::super::DurabilityError> {
         use super::super::DurabilityError;
         use super::super::db::{
@@ -57,16 +58,31 @@ impl super::super::DurabilityRoot {
                     }
                     super::super::character_authority::assert_recovery_fence(&mut tx, &recovery).await?;
                     try_lock_admission_relations(&mut tx).await?;
-                    if super::super::character_progression::assert_session_fence(&mut tx, &fence, &node)
-                        .await?.is_err()
-                    {
+                    let current = if let Some(house) = house {
+                        super::super::consume_transform::house_action_current_in_transaction(
+                            &mut tx, &node, fence, &house,
+                        ).await?
+                    } else {
+                        super::super::character_progression::assert_session_fence(
+                            &mut tx, &fence, &node,
+                        ).await?.is_ok()
+                    };
+                    if !current {
                         return Ok(Vec::new());
                     }
                     let events: Option<Vec<Vec<u8>>> = sqlx::query_scalar(
-                        "DELETE FROM game_party_membership_notices n USING game_durability_reconnect_sessions s
+                        "DELETE FROM game_party_membership_notices n
+                         USING game_durability_reconnect_sessions s,
+                               game_durability_admission_character_guards g,
+                               game_durability_admission_account_guards a
                          WHERE n.character_id=encode($1,'hex')::uuid AND n.game_session_id=encode($2,'hex')::uuid
                            AND n.connection_generation=$3::text::numeric(20,0)
-                           AND s.game_session_id=n.game_session_id AND s.session_state=2
+                           AND s.game_session_id=n.game_session_id AND s.character_id=n.character_id
+                           AND s.session_state=2 AND g.character_id=n.character_id
+                           AND g.eligible AND g.lease_generation=s.character_lease_generation
+                           AND g.holder_game_session_id=n.game_session_id AND g.world_id=s.world_id
+                           AND a.account_id=s.account_id AND a.account_id=g.account_id
+                           AND a.holder_game_session_id=n.game_session_id AND a.presence_character_id=n.character_id
                          RETURNING n.events",
                     )
                     .bind(fence.character_id.as_bytes().as_slice())
