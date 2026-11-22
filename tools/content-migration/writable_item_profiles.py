@@ -1,11 +1,12 @@
 """WRITE-CONTENT-1: bounded document facts from the two owner-pinned sources.
 
-This layer qualifies text semantics, never ItemInstance mint/custody permission.
-Decision 25 makes transform targets fixed. Zero source lengths and unresolved
-transform mappings remain evidence, never invented limits or transform targets.
+Decision 25 makes existing transform targets fixed. Crystal's positive lengths
+and explicit transform IDs qualify portable writes with source-checked custody.
+Zero source lengths and cyclic transforms remain evidence.
 """
 import argparse
 import copy
+from functools import lru_cache
 import hashlib
 import json
 
@@ -21,14 +22,17 @@ CRYSTAL_PATH = "imports/crystalserver/writable-item-facts.json"
 CRYSTAL_SHA256 = "d1d738adf2d3626219d02e0c9408a3c459552d7956dd97c8c631d4640cd1c55f"
 MAX_CHARACTERS = 4_000  # WRITE0-RL-01; owner reserved row 1600.
 FIELDS = {"readable", "writeable", "maxtextlen", "writeonceitemid"}
-PRESERVED_NONWRITABLE = {*range(173, 180), 6533}
+# Canonical content supplies these read-only editorial defaults. Crystal enables
+# rewrites of the inscription, independently of the template description.
+READ_ONLY_OVERRIDES = {*range(173, 180), 6533}
+STATIONARY_WRITABLE = {15633, 19072, 19073}
+OFFICIAL_APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 CANARY_LENGTH_OVERRIDES = {27932, 27933, 27934}
 # The two-way source cycle needs a direction before either definition can be
 # promoted as a writable source with a nonwritable target.
 CYCLIC_BOOKS = {2816, 2837}
-# Decision 25's identified rewrite items, plus the already accepted editable
-# blackboards. Other source-writable items need a fixed target; an absent
-# writeonceitemid must never silently turn a card/book/trophy into a rewrite.
+# Decision 25's existing rewrite owners, including stationary blackboards.
+# Keep their separate physical admission and existing blank-paper decision.
 REWRITE_IDS = {2598, 2605, 2813, 2814, 2815, 3505, 3507, 7879}
 
 
@@ -66,7 +70,7 @@ def source_facts(raw, expected_digest):
     return result
 
 
-def outputs(root=ROOT):
+def outputs(root=ROOT, *, crystal_carried=True):
     canary = source_facts((root / reading.SOURCE).read_bytes(), reading.SOURCE_SHA256)
     crystal_raw = (root / CRYSTAL_PATH).read_bytes()
     if hashlib.sha256(crystal_raw).hexdigest() != CRYSTAL_SHA256:
@@ -74,6 +78,17 @@ def outputs(root=ROOT):
     crystal = json.loads(crystal_raw)
     other = {r["id"]: r["facts"] for r in crystal["records"]}
     rows = reading.item_rows(root)
+    if crystal_carried:
+        for number in other.keys() - canary.keys():
+            facts = other[number]
+            name = rows[f"oteryn:item.tibia.i{number}"]["semantics"]["presentation"]["value"]["name"]["value"]
+            canary[number] = {"name": name, "source_facts": facts,
+                              "effective_readable": facts.get("writeable") == 1}
+    fixed_paper = old_paper_definition(root)
+    if crystal_carried:
+        rows[fixed_paper["identity"]["key"]] = fixed_paper
+    else:
+        rows.pop(fixed_paper["identity"]["key"], None)
     fixed_targets = {r["source_facts"]["writeonceitemid"] for number, r in canary.items()
                      if r["source_facts"].get("writeonceitemid")
                      and number not in CYCLIC_BOOKS | {2813}
@@ -95,22 +110,29 @@ def outputs(root=ROOT):
         readable = source["effective_readable"]
         if number in CYCLIC_BOOKS:
             qualification = "PENDING_WRITE_ONCE_RULING"
-        elif number in PRESERVED_NONWRITABLE:
+        elif not crystal_carried and number in READ_ONLY_OVERRIDES:
             qualification = "PRESERVED_NONWRITABLE"
         elif number in fixed_targets:
             qualification = "FIXED_TEXT_SEMANTICS_ONLY"
             writable = False
             target = 0
+        elif crystal_carried and number == 8747 and target == 8748 and maximum == 511:
+            qualification = "CRYSTAL_CARRIED_WRITE_ONCE"
         elif target:
             qualification = ("WRITE_ONCE_TEXT_SEMANTICS_ONLY"
                              if f"oteryn:item.tibia.i{target}" in rows
                              else "MISSING_WRITE_ONCE_TARGET")
         elif not writable or not readable or maximum == 0:
             qualification = "READ_ONLY_OR_ZERO_LIMIT"
-        elif number not in REWRITE_IDS:
-            qualification = "UNRESOLVED_WRITE_ONCE_TARGET"
-        else:
+        elif number in REWRITE_IDS:
             qualification = "REWRITE_TEXT_SEMANTICS_ONLY"
+        elif not crystal_carried:
+            qualification = "UNRESOLVED_WRITE_ONCE_TARGET"
+        elif number in STATIONARY_WRITABLE:
+            qualification = "STATIONARY_TEXT_SEMANTICS_ONLY"
+        else:
+            # Crystal game.cpp:5013–5016 transforms only a nonzero XML target.
+            qualification = "CRYSTAL_CARRIED_REWRITE"
         old_group = item.get("semantics", {}).get("readable_writeable", {})
         if qualification == "REWRITE_TEXT_SEMANTICS_ONLY":
             if old_group.get("state") == "KNOWN":
@@ -142,9 +164,10 @@ def outputs(root=ROOT):
         if key not in present:
             records.append({"item": rows[key]["identity"], "name": None,
                             "readable": True, "writable": False, "write_policy": None,
-                            "max_characters": 0, "write_once_to": None,
+                            "max_characters": 511 if number == 8748 else 0, "write_once_to": None,
                             "source_write_once_id": None,
-                            "qualification": "FIXED_TEXT_SEMANTICS_ONLY"})
+                            "qualification": ("CRYSTAL_FIXED_TARGET" if key == fixed_paper["identity"]["key"]
+                                              else "FIXED_TEXT_SEMANTICS_ONLY")})
     records.sort(key=lambda record: record["item"]["key"])
     return {PATH: reading.encode({
         "schema": "OTERYN_WRITABLE_ITEM_PROFILES/v1",
@@ -175,7 +198,70 @@ def owner_replace(group, field, expected, allowed):
     group[field] = expected
 
 
-def apply_native(root, generated, profile_path, manifest_path, order, canonical):
+@lru_cache(maxsize=2)
+def appearance_objects(root):
+    from dispenser_item_profiles import APPEARANCES, source
+
+    raw = (root / APPEARANCES).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != OFFICIAL_APPEARANCES_SHA256:
+        raise ValueError("WRITABLE_APPEARANCE_DIGEST")
+    return source.engine_items.load_appearance_objects(raw)
+
+
+def old_paper_definition(root):
+    # Crystal 8747 explicitly transforms to 8748. The target has an appearance
+    # record but no Item XML row. Its weight is retained TibiaWiki rev 1015886.
+    # The reader can echo inscriptions up to the source limit after the transform.
+    appearance = appearance_objects(root)[8748]
+    flags = appearance["flags"]
+    wiki = json.loads((root / "imports/tibiawiki/facts/items-stats.json").read_bytes())
+    observation, = wiki["records"]["8748"]["observations"]
+    if (appearance["name"] != "old piece of paper" or not flags.get("flags.take")
+            or any(flags.get("flags." + key) for key in ("unmove", "cumulative", "write", "write_once"))
+            or observation["wiki_title"] != "Old Piece of Paper" or observation["revision_id"] != 1015886
+            or observation["fields"]["weight"] != "2.00"):
+        raise ValueError("WRITABLE_FIXED_OLD_PAPER_SOURCE")
+    return {
+        "kind": "Item",
+        "identity": {"family": "Item", "key": "oteryn:item.tibia.i8748", "revision": "definition-r1"},
+        "client_projection": "ClientSafe",
+        "materializable": True,
+        "stack_class": "NonStackable",
+        "semantics": {
+            "presentation": known({"name": known(appearance["name"]), "description": {"state": "UNKNOWN"}}),
+            "physical": known({"weight": known(200), "movable": known(True), "pickupable": known(True)}),
+            "stack": known({"stackable": known(False), "stack_max": {"state": "NOT_APPLICABLE"}}),
+            "readable_writeable": known({"readable": known(True), "writeable": known(False),
+                                         "max_text_length": known(511),
+                                         "distance_read": {"state": "UNKNOWN"},
+                                         "write_once_target": {"state": "NOT_APPLICABLE"}}),
+        },
+    }
+
+
+def qualify_carried(record, appearance):
+    flags = appearance["flags"]
+    if not flags.get("flags.take") or flags.get("flags.unmove") or flags.get("flags.cumulative"):
+        raise ValueError("WRITABLE_CARRIED_APPEARANCE")
+    for field, leaves in (("physical", [("movable", True), ("pickupable", True)]),
+                          ("stack", [("stackable", False)])):
+        original = record["semantics"].get(field, {"state": "UNKNOWN"})
+        if original["state"] not in {"KNOWN", "UNKNOWN"}:
+            raise ValueError("WRITABLE_CARRIED_SEMANTICS")
+        untouched_leaf = "weight" if field == "physical" else "stack_max"
+        group = original.get("value", {untouched_leaf: {"state": "UNKNOWN"}})
+        for leaf, value in leaves:
+            qualify_leaf(group, leaf, value)
+        record["semantics"][field] = known(group)
+    admission = record["admission"]
+    if not admission["materializable"]:
+        admission["materializable"] = True
+        admission["legal_destinations"] = ["CharacterInventory", "Ground"]
+    elif "CharacterInventory" not in admission["legal_destinations"]:
+        raise ValueError("WRITABLE_CARRIED_DESTINATION")
+
+
+def apply_native(root, generated, profile_path, manifest_path, order, canonical, *, stage="complete"):
     expected = outputs(root)[PATH]
     if (root / PATH).read_bytes() != expected:
         raise ValueError("WRITABLE_PROFILE_DRIFT")
@@ -184,17 +270,33 @@ def apply_native(root, generated, profile_path, manifest_path, order, canonical)
     rows = reading.item_rows(root)
     bindings = {r["target"]["key"]: r for r in json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes())["bindings"]}
-    for profile in json.loads(expected)["records"]:
-        if profile["qualification"] not in {"REWRITE_TEXT_SEMANTICS_ONLY",
-                                           "WRITE_ONCE_TEXT_SEMANTICS_ONLY",
-                                           "FIXED_TEXT_SEMANTICS_ONLY",
-                                           "UNRESOLVED_WRITE_ONCE_TARGET"}:
+    appearances = appearance_objects(root)
+    fixed_paper = old_paper_definition(root)
+    paper_identity = fixed_paper["identity"]
+    rows[paper_identity["key"]] = fixed_paper
+    bindings[paper_identity["key"]] = {
+        "source_key": "oteryn:source.crystalserver", "source_revision": reading.CRYSTAL_REVISION,
+        "identity_namespace": "ots/item_server_id", "external_id": "8748",
+        "target": paper_identity, "disposition": "EXACT",
+    }
+    profiles = outputs(root, crystal_carried=False)[PATH] if stage == "legacy" else expected
+    carried_qualifications = {"CRYSTAL_CARRIED_REWRITE", "CRYSTAL_CARRIED_WRITE_ONCE"}
+    additions = carried_qualifications | {"CRYSTAL_FIXED_TARGET"}
+    selected = {"REWRITE_TEXT_SEMANTICS_ONLY", "WRITE_ONCE_TEXT_SEMANTICS_ONLY",
+                "FIXED_TEXT_SEMANTICS_ONLY", "STATIONARY_TEXT_SEMANTICS_ONLY",
+                "UNRESOLVED_WRITE_ONCE_TARGET"} | additions
+    if stage == "carried":
+        selected = additions
+    new_records = []
+    for profile in json.loads(profiles)["records"]:
+        if profile["qualification"] not in selected:
             continue
         identity = profile["item"]
         key = identity["key"]
         source, binding = rows[key], bindings[key]
         if binding["target"] != identity or binding["disposition"] != "EXACT":
             raise ValueError("WRITABLE_BINDING")
+        carried = profile["qualification"] in carried_qualifications
         if key not in policies:
             materializable = source["materializable"]
             if materializable:
@@ -214,10 +316,14 @@ def apply_native(root, generated, profile_path, manifest_path, order, canonical)
                 "production_binding": binding, "production_binding_qualification": None,
             }
             document["records"].append(record)
+            new_records.append(record)
         else:
             record = policies[key]
         if record["admission"]["stack_class"] != "NonStackable":
             raise ValueError("WRITABLE_STACKABLE")
+        number = int(key.rsplit("i", 1)[1])
+        if carried:
+            qualify_carried(record, appearances[number])
         stack = record["semantics"].get("stack", {"state": "UNKNOWN"})
         if stack["state"] == "KNOWN" and stack["value"]["stackable"] == known(True):
             raise ValueError("WRITABLE_STACKABLE")
@@ -230,28 +336,28 @@ def apply_native(root, generated, profile_path, manifest_path, order, canonical)
                            ("readable", "writeable", "distance_read", "max_text_length", "write_once_target")})
         if group["state"] != "KNOWN":
             raise ValueError("WRITABLE_GROUP_CONFLICT")
-        number = int(key.rsplit("i", 1)[1])
         # These are the exact owner-authorized replacements of promoted source
         # facts. All other conflicting leaves still fail atomically.
-        if profile["qualification"] == "FIXED_TEXT_SEMANTICS_ONLY":
+        if profile["qualification"] in {"FIXED_TEXT_SEMANTICS_ONLY", "CRYSTAL_FIXED_TARGET"}:
             owner_replace(group["value"], "writeable", known(False),
                           [{"state": "UNKNOWN"}, known(True), known(False)])
             qualify_leaf(group["value"], "write_once_target", None)
         if number in CANARY_LENGTH_OVERRIDES:
             owner_replace(group["value"], "max_text_length", known(profile["max_characters"]),
                           [known(1499), known(1500)])
-        unresolved = profile["qualification"] == "UNRESOLVED_WRITE_ONCE_TARGET"
-        if unresolved:
-            # Preserve readable/length evidence, without asserting a writable
-            # runtime policy whose required fixed target cannot be qualified.
+        if profile["qualification"] == "UNRESOLVED_WRITE_ONCE_TARGET":
             owner_replace(group["value"], "writeable", {"state": "UNKNOWN"},
                           [{"state": "UNKNOWN"}, known(True)])
             owner_replace(group["value"], "write_once_target", {"state": "UNKNOWN"},
                           [{"state": "UNKNOWN"}, {"state": "NOT_APPLICABLE"}])
+        if carried and number in READ_ONLY_OVERRIDES:
+            owner_replace(group["value"], "writeable", known(True),
+                          [{"state": "UNKNOWN"}, known(False), known(True)])
         target = profile["write_once_to"]
         target = {field: target[field] for field in ("key", "revision")} if target else None
         leaves = [("readable", True)]
-        if not unresolved:
+        if profile["qualification"] not in {"STATIONARY_TEXT_SEMANTICS_ONLY",
+                                            "UNRESOLVED_WRITE_ONCE_TARGET"}:
             leaves.extend([("writeable", profile["writable"]), ("write_once_target", target)])
         if profile["max_characters"]:
             leaves.append(("max_text_length", profile["max_characters"]))
@@ -261,8 +367,13 @@ def apply_native(root, generated, profile_path, manifest_path, order, canonical)
             except ValueError as error:
                 raise ValueError(f"WRITABLE_LEAF_CONFLICT:{key}:{field}") from error
         record["semantics"]["readable_writeable"] = group
+    if stage == "carried":
+        # These records enter after the normal House source pass. Apply the same
+        # top-order facts here so the SRX-1 supplement only carries its own rows.
+        from house_decoration_actions import PROFILES, apply_top_order
+        apply_top_order(new_records, json.loads((root / PROFILES).read_bytes()))
     document["records"].sort(key=order)
-    raw = encode_native_profile(document)
+    raw = canonical(document) if stage == "carried" else encode_native_profile(document)
     manifest = json.loads(generated[manifest_path])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(raw).hexdigest()
     # No partial output if a later row conflicts.
@@ -279,7 +390,7 @@ def main():
                 raise SystemExit("WRITABLE_PROFILE_DRIFT")
         else:
             (ROOT / path).write_bytes(raw)
-    print("PASS writable Item source profiles; no new mint or command authority")
+    print("PASS writable Item source profiles")
 
 
 if __name__ == "__main__":

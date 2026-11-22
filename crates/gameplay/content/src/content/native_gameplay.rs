@@ -1286,6 +1286,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("W02 Sugar corpse identity collision"));
         }
+        // Crystal 201189f items.xml binds the written 8747 to the exact 8748
+        // appearance. The fixed variant has no separate XML override.
+        let old_paper_binding = serde_json::from_value(serde_json::json!({
+            "source_key": "oteryn:source.crystalserver",
+            "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+            "identity_namespace": "ots/item_server_id", "external_id": "8748",
+            "target": {"family": "Item", "key": "oteryn:item.tibia.i8748", "revision": "definition-r1"},
+            "disposition": "EXACT"
+        })).map_err(|_| invalid("written old piece of paper binding"))?;
+        if admitted
+            .insert("8748".to_owned(), old_paper_binding)
+            .is_some()
+        {
+            return Err(invalid("written old piece of paper binding collision"));
+        }
         let cradle_profiles = qready1_cradle::profiles()?;
         for (id, record) in &cradle_profiles {
             if admitted

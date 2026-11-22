@@ -310,6 +310,8 @@ def materialize_item_tree(reference, declarations, editor, sources):
     # Global healing potion facts win over the legacy package (HEALPAR).
     from healing_global_overrides import apply_definitions as apply_global_potions
     apply_global_potions(item_records)
+    from writable_item_profiles import old_paper_definition
+    item_records.append(old_paper_definition(ROOT))
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
