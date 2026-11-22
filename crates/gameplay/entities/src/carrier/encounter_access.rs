@@ -25,6 +25,79 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
         self.runtime.carrier = self.carrier;
         (self.runtime, self.output)
     }
+
+    /// Install the native projection under the exclusive owner borrow. The
+    /// caller can now record installation durably before exposing its effects.
+    pub fn install(
+        self,
+        admission: [u8; 16],
+    ) -> (
+        InstalledQuestEncounter<'owner>,
+        Vec<MovementPositionSnapshot>,
+        T,
+    ) {
+        let previous = std::mem::replace(&mut self.runtime.carrier, self.carrier);
+        (
+            InstalledQuestEncounter {
+                runtime: self.runtime,
+                previous: Some(previous),
+                admission,
+            },
+            self.output.0,
+            self.output.1,
+        )
+    }
+}
+
+/// A local installation that rolls back if its durable confirmation fails or
+/// the command is cancelled before it can publish the rest of the projection.
+pub struct InstalledQuestEncounter<'owner> {
+    runtime: &'owner mut ChannelRuntimeV1,
+    previous: Option<ChannelActorCarrier>,
+    admission: [u8; 16],
+}
+
+impl InstalledQuestEncounter<'_> {
+    pub fn proof(&self) -> InstalledQuestEncounterProof {
+        let binding = self.runtime.binding();
+        InstalledQuestEncounterProof {
+            admission: self.admission,
+            scope: binding.runtime_scope(),
+            generation: binding.scope_generation(),
+        }
+    }
+
+    pub fn publish(mut self, project: impl FnOnce(&mut ChannelRuntimeV1)) {
+        self.previous = None;
+        project(self.runtime);
+    }
+}
+
+/// Evidence that a staged carrier was installed under this exact owner borrow.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct InstalledQuestEncounterProof {
+    admission: [u8; 16],
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+}
+
+impl InstalledQuestEncounterProof {
+    pub fn matches(
+        self,
+        admission: [u8; 16],
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+    ) -> bool {
+        self.admission == admission && self.scope == scope && self.generation == generation
+    }
+}
+
+impl Drop for InstalledQuestEncounter<'_> {
+    fn drop(&mut self) {
+        if let Some(previous) = self.previous.take() {
+            self.runtime.carrier = previous;
+        }
+    }
 }
 
 /// Runtime-owned encounter state. The carrier calls these at the existing damage,

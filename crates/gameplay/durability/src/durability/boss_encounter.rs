@@ -434,7 +434,7 @@ pub(crate) mod cooldown_storage;
 
 #[path = "boss_encounter/court_warlock.rs"]
 mod court_warlock;
-pub use court_warlock::{SourceBossAdmission, SourceBossLever};
+pub use court_warlock::{SourceBossAdmission, SourceBossLever, SourceBossRecovery};
 mod elemental_arrival;
 pub(super) use elemental_arrival::{ElementalClockSource, claim_elemental_clock};
 mod world_spawns;

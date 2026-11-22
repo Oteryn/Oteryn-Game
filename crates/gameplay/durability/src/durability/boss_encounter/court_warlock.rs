@@ -10,6 +10,7 @@ use super::super::{DurabilityError, DurabilityRoot};
 use super::cooldown_storage::{self, BossCooldownAdmissionData, BossCooldownChange, BossRewardKey};
 use crate::domain::CharacterId;
 use crate::foundation::{RuntimeScopeRefV1, ScopeOwnershipGeneration};
+use oteryn_gameplay_entities::carrier::encounter_access::InstalledQuestEncounterProof;
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 use sqlx::{Postgres, Transaction};
 
@@ -28,7 +29,14 @@ pub enum SourceBossAdmission {
     Reserve,
     Reconcile,
     Publish,
+    ConfirmProjection(InstalledQuestEncounterProof),
     Refund,
+}
+
+/// Exact recovery candidate. The read does not authorize a refund.
+pub struct SourceBossRecovery {
+    scope: RuntimeScopeRefV1,
+    admission: [u8; 16],
 }
 
 impl SourceBossLever {
@@ -49,8 +57,8 @@ impl SourceBossLever {
 }
 
 impl DurabilityRoot {
-    /// Reserve the exact staging party before its native projection. Publication
-    /// and compensation are mutually exclusive decisions of the same admission.
+    /// Reserve the exact staging party, authorize publication, and seal the
+    /// installed native projection. Only an unsealed admission can be refunded.
     #[allow(
         clippy::too_many_arguments,
         reason = "party, cooldown owner and exact admission are independently fenced"
@@ -71,6 +79,11 @@ impl DurabilityRoot {
         party.sort_by_key(|fence| *fence.character_id.as_bytes());
         let scope = party[0].runtime_scope;
         let generation = party[0].scope_ownership_generation;
+        if let SourceBossAdmission::ConfirmProjection(proof) = operation
+            && !proof.matches(admission, scope, generation)
+        {
+            return Ok(false);
+        }
         if party
             .windows(2)
             .any(|pair| pair[0].character_id == pair[1].character_id)
@@ -98,40 +111,54 @@ impl DurabilityRoot {
             let party_bytes: Vec<u8> = keys.iter()
                 .flat_map(|key| key.character.as_bytes().iter().copied()).collect();
             let scope_key = assignment_scope_key(scope);
-            let row: Option<(bool, i16)> = sqlx::query_as(
+            let row: Option<(bool, i16, bool)> = sqlx::query_as(
                 "SELECT scope_key=$2 AND scope_generation=$3::text::numeric AND boss_key=$4 AND party=$5,
-                        state FROM game_source_boss_admissions
+                        state,projection_pending FROM game_source_boss_admissions
                   WHERE admission=encode($1,'hex')::uuid FOR UPDATE",
             )
             .bind(admission.as_slice()).bind(scope_key.as_slice()).bind(generation.get().to_string())
             .bind(lever.boss()).bind(&party_bytes).fetch_optional(&mut *tx).await?;
 
-            if row.is_some_and(|(exact, _)| !exact) {
+            if row.is_some_and(|(exact, _, _)| !exact) {
                 return Ok(false);
             }
             if operation == SourceBossAdmission::Refund {
-                if row == Some((true, RESERVED)) {
+                if matches!(row, Some((true, RESERVED, false) | (true, PUBLISHED, true))) {
                     refund_source_admission(&mut tx, &keys, &admission).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                 }
                 return Ok(true);
             }
-            // Reconcile a lost publication acknowledgement even if a participant
-            // moved after the durable decision. This branch cannot perform writes.
-            if operation == SourceBossAdmission::Publish && row == Some((true, PUBLISHED)) {
-                return Ok(true);
+            if let Some((true, PUBLISHED, pending)) = row {
+                match operation {
+                    // A replay only reads the previously fenced decision.
+                    SourceBossAdmission::Publish => return Ok(true),
+                    SourceBossAdmission::ConfirmProjection(_) if !pending => return Ok(true),
+                    SourceBossAdmission::ConfirmProjection(_) => {
+                        if !exact_cooldowns(&mut tx, &keys, &admission).await? {
+                            return Ok(false);
+                        }
+                        confirm_source_projection(&mut tx, &admission).await?;
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(true);
+                    }
+                    _ => return Ok(false),
+                }
+            }
+            if matches!(operation, SourceBossAdmission::ConfirmProjection(_)) {
+                return Ok(false);
             }
             for fence in &party {
                 if assert_item_only_fence(&mut tx, fence, &node).await?.is_err() {
                     return Ok(false);
                 }
             }
-            if row == Some((true, RESERVED)) {
+            if row == Some((true, RESERVED, false)) {
                 if !exact_cooldowns(&mut tx, &keys, &admission).await? {
                     return Ok(false);
                 }
                 if operation == SourceBossAdmission::Publish {
-                    transition_source_admission(&mut tx, &admission, PUBLISHED).await?;
+                    authorize_source_publication(&mut tx, &admission).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                 }
                 return Ok(true);
@@ -180,15 +207,47 @@ impl DurabilityRoot {
         })).await
     }
 
-    /// Called while holding the current native owner. Fence the ready generation
-    /// and compensate up to one abandoned reservation, including older owners'.
-    pub async fn refund_abandoned_source_boss_lever(
+    /// Find at most one unsealed admission. With no candidate this only reads
+    /// the pending index, and it never waits for an in-flight admission row.
+    pub async fn source_boss_recovery(
+        &self,
+        scope: RuntimeScopeRefV1,
+    ) -> Result<Option<SourceBossRecovery>, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let admission: Option<Vec<u8>> = sqlx::query_scalar(
+                        "SELECT uuid_send(admission) FROM game_source_boss_admissions
+                          WHERE scope_key=$1 AND (state=1 OR (state=2 AND projection_pending))
+                          ORDER BY scope_generation,admission LIMIT 1 FOR UPDATE SKIP LOCKED",
+                    )
+                    .bind(assignment_scope_key(scope).as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    admission
+                        .map(|admission| {
+                            let admission = admission
+                                .try_into()
+                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                            Ok(SourceBossRecovery { scope, admission })
+                        })
+                        .transpose()
+                })
+            })
+            .await
+    }
+
+    /// Revalidate the candidate against the ready owner and lock the exact row.
+    /// The caller excludes a live source lever turn without holding the runtime.
+    pub async fn refund_source_boss_recovery(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
-        scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
-    ) -> Result<(), DurabilityError> {
+        candidate: SourceBossRecovery,
+    ) -> Result<bool, DurabilityError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -199,22 +258,25 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if !assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? {
-                        return Ok(());
+                    if !assert_runtime_scope_fence(&mut tx, candidate.scope, generation, &node)
+                        .await?
+                    {
+                        return Ok(false);
                     }
-                    let row: Option<(Vec<u8>, String, Vec<u8>)> = sqlx::query_as(
-                "SELECT uuid_send(admission),boss_key,party FROM game_source_boss_admissions
-                  WHERE scope_key=$1 AND scope_generation<=$2::text::numeric AND state=1
-                  ORDER BY scope_generation,admission LIMIT 1 FOR UPDATE",
-            ).bind(assignment_scope_key(scope).as_slice()).bind(generation.get().to_string())
-                .fetch_optional(&mut *tx).await?;
-                    let Some((admission, boss, party)) = row else {
-                        commit_semantic_transaction(tx, deadline).await?;
-                        return Ok(());
+                    let row: Option<(String, Vec<u8>)> = sqlx::query_as(
+                        "SELECT boss_key,party FROM game_source_boss_admissions
+                          WHERE scope_key=$1 AND scope_generation<=$2::text::numeric
+                            AND admission=encode($3,'hex')::uuid
+                            AND (state=1 OR (state=2 AND projection_pending)) FOR UPDATE",
+                    )
+                    .bind(assignment_scope_key(candidate.scope).as_slice())
+                    .bind(generation.get().to_string())
+                    .bind(candidate.admission.as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    let Some((boss, party)) = row else {
+                        return Ok(false);
                     };
-                    let admission = admission
-                        .try_into()
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let keys = party
                         .chunks_exact(16)
                         .map(|id| {
@@ -227,9 +289,9 @@ impl DurabilityRoot {
                                 .map_err(|_| DurabilityError::InvalidStoredState)
                         })
                         .collect::<Result<Vec<_>, _>>()?;
-                    refund_source_admission(&mut tx, &keys, &admission).await?;
+                    refund_source_admission(&mut tx, &keys, &candidate.admission).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(())
+                    Ok(true)
                 })
             })
             .await
@@ -275,25 +337,52 @@ async fn refund_source_admission(
         .execute(&mut **tx)
         .await?;
     }
-    transition_source_admission(tx, admission, REFUNDED).await
+    let changed = sqlx::query(
+        "UPDATE game_source_boss_admissions SET state=$2, projection_pending=false
+          WHERE admission=encode($1,'hex')::uuid AND (state=1 OR (state=2 AND projection_pending))",
+    )
+    .bind(admission.as_slice())
+    .bind(REFUNDED)
+    .execute(&mut **tx)
+    .await?;
+    require_one_transition(changed.rows_affected())
 }
 
-async fn transition_source_admission(
+async fn authorize_source_publication(
     tx: &mut Transaction<'_, Postgres>,
     admission: &[u8; 16],
-    state: i16,
 ) -> Result<(), DurabilityError> {
     let changed = sqlx::query(
-        "UPDATE game_source_boss_admissions SET state=$2
+        "UPDATE game_source_boss_admissions SET state=$2, projection_pending=true
           WHERE admission=encode($1,'hex')::uuid AND state=$3",
     )
     .bind(admission.as_slice())
-    .bind(state)
+    .bind(PUBLISHED)
     .bind(RESERVED)
     .execute(&mut **tx)
     .await?;
-    if changed.rows_affected() != 1 {
-        return Err(DurabilityError::InvalidStoredState);
+    require_one_transition(changed.rows_affected())
+}
+
+async fn confirm_source_projection(
+    tx: &mut Transaction<'_, Postgres>,
+    admission: &[u8; 16],
+) -> Result<(), DurabilityError> {
+    let changed = sqlx::query(
+        "UPDATE game_source_boss_admissions SET projection_pending=false
+          WHERE admission=encode($1,'hex')::uuid AND state=$2 AND projection_pending",
+    )
+    .bind(admission.as_slice())
+    .bind(PUBLISHED)
+    .execute(&mut **tx)
+    .await?;
+    require_one_transition(changed.rows_affected())
+}
+
+fn require_one_transition(changed: u64) -> Result<(), DurabilityError> {
+    if changed == 1 {
+        Ok(())
+    } else {
+        Err(DurabilityError::InvalidStoredState)
     }
-    Ok(())
 }

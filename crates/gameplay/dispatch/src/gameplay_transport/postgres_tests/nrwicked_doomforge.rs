@@ -91,6 +91,14 @@ fn nrwicked_successor_refunds_only_unpublished_boss_admissions() -> TestResult {
     run_case(admin, "nrwicked_successor_admission", FORGE, Scenario::AdmissionRecovery)
 }
 
+#[test]
+fn nrwicked_successor_refunds_publication_interrupted_before_projection() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin, "nrwicked_projection_owner_loss", FORGE, Scenario::ProjectionOwnerLoss)
+}
+
 #[derive(Clone, Copy)]
 enum Scenario {
     Portal,
@@ -99,6 +107,7 @@ enum Scenario {
     ReconnectGrace,
     AdmissionAckLost,
     AdmissionRecovery,
+    ProjectionOwnerLoss,
 }
 
 fn run(admin: String, fixture_name: &'static str, destination: TilePos) -> TestResult {
@@ -193,7 +202,16 @@ fn scenario(
                 if encounter { 16 } else { 2 },
             )?;
             let recovery_source = if matches!(case, Scenario::ReconnectGrace) {
-                deps.combat_room = Some(room);
+                deps.combat_room = Some(room.bundle_view(
+                    cells.clone(),
+                    pin.frame_binding_digest(),
+                    pin.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: i32::from(spawn.x),
+                        y: i32::from(spawn.y),
+                        floor: 14,
+                    },
+                ).ok_or("qualified Doomforge AI bundle room")?);
                 Some(super::house_transfer_fixtures::RecoverySource::start(&h).await?)
             } else {
                 None
@@ -243,7 +261,7 @@ fn scenario(
                     .bind(pin.server_artifact_digest().as_slice()).bind(pin.client_artifact_digest().as_slice())
                     .bind(pin.frame_binding_digest().as_slice()).execute(&h.pool).await?;
                 two_player_encounter(
-                    &h, &mut owner, deps.admitted, lever_placement, map.facts(), case,
+                    &h, &deps, &mut owner, deps.admitted, lever_placement, map.facts(), case,
                 )
                     .await?;
                 drop(owner);
@@ -380,6 +398,7 @@ fn portal_fixture(
 
 async fn two_player_encounter(
     h: &Harness,
+    deps: &Dependencies,
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: super::AdmittedSession,
     lever_placement: Vec<u8>,
@@ -533,17 +552,39 @@ async fn two_player_encounter(
         owner.states.quest_callbacks.lose_source_boss_commit_ack.store(true, Ordering::Release);
         owner.states.quest_callbacks.lose_source_boss_publish_ack.store(true, Ordering::Release);
     }
+    if matches!(case, Scenario::ProjectionOwnerLoss) {
+        owner.states.quest_callbacks.interrupt_source_boss_before_projection.store(true, Ordering::Release);
+    }
     let outcome = owner.use_object(first, UseCommand {
         game_session_id: session, command_id: 1, item_fence: Some(fence.item_fence()),
     }, WorldObjectTarget { placement: lever_placement.clone(), expected_revision: 0 }).await;
+    if matches!(case, Scenario::ProjectionOwnerLoss) {
+        assert_eq!(outcome.disposition, UseDisposition::Rejected);
+        assert!(!owner.states.quest_callbacks.interrupt_source_boss_before_projection.load(Ordering::Acquire));
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            assert!(states.encounter_phases.active.lock().map_err(|_| "phases")?.is_empty());
+            assert!(runtime.positioned_actor_census().map_err(debug)?.iter().all(
+                |(_, _, session)| session.is_some(),
+            ));
+            for ((actor, _), y) in players.into_iter().zip(STAGING.y..=STAGING.y + 1) {
+                let position = runtime.read_actor_position(actor).map_err(debug)?.position();
+                assert_eq!((position.x, position.y), (i32::from(STAGING.x), i32::from(y)));
+            }
+        }
+        let key = bundle::placement_key(LEVER.floor, LEVER.x, LEVER.y, 2).ok_or("lever key")?;
+        assert_eq!(crate::map::view::MapFacts::object_revision(facts, key), 0);
+        return exercise_source_boss_handoff(h, deps, owner, fence.item_fence(), None).await;
+    }
     assert_eq!(outcome.disposition, UseDisposition::Committed, "production Arbaziloth lever");
     if let Some(unpublished) = unpublished {
-        return exercise_source_boss_handoff(h, owner, fence.item_fence(), unpublished).await;
+        return exercise_source_boss_handoff(h, deps, owner, fence.item_fence(), Some(unpublished)).await;
     }
     if matches!(case, Scenario::AdmissionAckLost) {
         assert!(!owner.states.quest_callbacks.lose_source_boss_commit_ack.load(Ordering::Acquire));
         assert!(!owner.states.quest_callbacks.lose_source_boss_publish_ack.load(Ordering::Acquire));
-        owner.refund_unpublished_source_boss_lever().await;
+        assert!(!owner.recover_source_boss_admission().await?);
         let cooldowns: (i64, i64, i64) = sqlx::query_as(
             "SELECT count(*), count(DISTINCT admission), count(DISTINCT available_at)
                FROM game_character_boss_cooldowns WHERE boss_key='oteryn:boss.arbaziloth'",
@@ -661,10 +702,15 @@ async fn two_player_encounter(
             let retry = |nonce| UseCommand {
                 game_session_id: session, command_id: nonce, item_fence: Some(fence.item_fence()),
             };
+            let action_window = crate::gameplay_transport::map_door::WORLD_ACTION_COOLDOWN;
+            owner.clock_origin = owner.clock_origin.checked_sub(action_window)
+                .ok_or("Doomforge action clock")?;
             assert_eq!(owner.use_object(first, retry(2), target.clone()).await.disposition,
                 UseDisposition::Rejected, "the cooldown applies to a fresh lever use after the room clears");
             sqlx::query("UPDATE game_character_boss_cooldowns SET available_at=1 WHERE boss_key='oteryn:boss.arbaziloth'")
                 .execute(&h.pool).await?;
+            owner.clock_origin = owner.clock_origin.checked_sub(action_window)
+                .ok_or("Doomforge action clock")?;
             assert_eq!(owner.use_object(first, retry(3), target).await.disposition,
                 UseDisposition::Committed, "the encounter registry released the expired attempt");
             let mut runtime = owner.runtime.lock().await;
@@ -900,7 +946,6 @@ async fn exercise_reconnect_grace(
         .map_err(debug)?
         .control_loss
         .ok_or("Arbaziloth retained loss")?;
-    drive_encounter_ai(owner).await?;
     assert!(owner.runtime.lock().await.contains_live_creature(boss));
 
     let token = super::house_transfer_fixtures::RecoverySource::token(93)?;
@@ -934,14 +979,35 @@ async fn exercise_reconnect_grace(
             .control_loss,
         Some(mark)
     );
+    let facts = &owner.bundle_map().ok_or("Doomforge AI bundle")?.facts;
+    let purple_fire = || {
+        facts.movement_item_entries().into_iter()
+            .filter(|(_, entry)| entry.facts.appearance_id == 49362)
+            .count()
+    };
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let health = runtime.companion_snapshot(boss).map_err(debug)?.health;
+        runtime.borrow_exact_actor_commit().commit_damage(
+            boss,
+            crate::foundation::OwnerDamageCommand {
+                target: b"oteryn:creature.arbaziloth",
+                occurrence: b"nrwicked-reconnect-shield",
+                binding: b"nrwicked-reconnect-shield\0damage",
+                damage: health,
+            },
+        ).map_err(debug)?;
+    }
+    assert_eq!(purple_fire(), 0);
     // Advance only the AI's wall observation across the original grace boundary.
     // The committed resume is still paused before its native restore.
     let before = super::HOST_NOW.replace(Some(mark.grace_deadline));
-    let ai = drive_encounter_ai(owner).await;
+    let ai = drive_encounter_ai_until(owner, async || purple_fire() == 1).await;
     super::HOST_NOW.set(before);
     barrier.1.notify_one();
     let resumed = resuming.await.map_err(debug)?;
     ai?;
+    assert_eq!(purple_fire(), 1, "the qualified AI phase tick projected shield fire");
     {
         let runtime = owner.runtime.lock().await;
         assert!(runtime.contains_live_creature(boss));
@@ -993,7 +1059,10 @@ async fn exercise_reconnect_grace(
         owner.release_after_grace(resumed).await,
         GraceExpiryResult::Released
     );
-    drive_encounter_ai(owner).await?;
+    drive_encounter_ai_until(owner, async || {
+        !owner.runtime.lock().await.contains_live_creature(boss)
+    }).await?;
+    assert_eq!(purple_fire(), 0, "the post-release AI phase tick cleared the fight");
     let runtime = owner.runtime.lock().await;
     assert!(!runtime.contains_live_creature(boss));
     assert!(!runtime.contains_live_creature(forgemaster));
@@ -1012,43 +1081,40 @@ async fn exercise_reconnect_grace(
     Ok(())
 }
 
-async fn drive_encounter_ai(
+async fn drive_encounter_ai_until(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    phase_changed: impl AsyncFnMut() -> bool,
 ) -> TestResult {
-    let (sequence, due) = {
-        let states = owner.states.spell_states.lock().await;
-        (states.monster_ai_sequence, states.next_monster_ai_pass_us)
-    };
-    for _ in 0..8 {
-        super::srx3_native_source_cast_fixtures::drain_ready_monster_melee_at(
-            owner,
-            owner.owner_now().get().max(due),
-        )
-        .await?;
-        if owner.states.spell_states.lock().await.monster_ai_sequence > sequence {
-            return Ok(());
-        }
-    }
-    Err("creature AI did not reach the encounter phase tick".into())
+    let room = owner.rooms().gate_monster_ai().ok_or("Doomforge AI gate")?;
+    assert!(matches!(room.movement_cells().index(),
+        crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)));
+    let due = owner.states.spell_states.lock().await.next_monster_ai_pass_us;
+    assert!(
+        super::srx3_native_source_cast_fixtures::settle_monster_melee_at_until(
+            owner, owner.owner_now().get().max(due), phase_changed,
+        ).await?,
+        "the qualified AI turn did not apply the expected encounter phase"
+    );
+    Ok(())
 }
 
 async fn exercise_source_boss_handoff(
     h: &Harness,
+    deps: &Dependencies,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     published: crate::durability::item_transfer::CurrentCharacterItemFence,
-    unpublished: [u8; 16],
+    unpublished: Option<[u8; 16]>,
 ) -> TestResult {
     use crate::durability::runtime_scope_assignment::{
         AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
         RuntimeScopeAssignmentWriter,
     };
-    use crate::foundation::ScopeOwnershipGeneration;
-
     let scope = published.runtime_scope;
     let admission_state = || async {
-        sqlx::query_as::<_, (i16, bool)>(
-            "SELECT a.state, EXISTS(
-                 SELECT 1 FROM game_character_boss_cooldowns c
+        sqlx::query_as::<_, (i16, bool, i64)>(
+            "SELECT a.state, a.projection_pending, (
+                 SELECT count(*)
+                   FROM game_character_boss_cooldowns c
                   WHERE c.admission=a.admission AND c.boss_key=a.boss_key)
                FROM game_source_boss_admissions a
               WHERE a.boss_key='oteryn:boss.arbaziloth' ORDER BY a.state",
@@ -1056,7 +1122,17 @@ async fn exercise_source_boss_handoff(
         .fetch_all(&h.pool)
         .await
     };
-    assert_eq!(admission_state().await?, [(1, true), (2, true)]);
+    let before = if unpublished.is_some() {
+        vec![(1, false, 1), (2, false, 1)]
+    } else {
+        vec![(2, true, 2)]
+    };
+    let after = if unpublished.is_some() {
+        vec![(2, false, 1), (3, false, 0)]
+    } else {
+        vec![(3, false, 0)]
+    };
+    assert_eq!(admission_state().await?, before);
     sqlx::query(
         "INSERT INTO game_control_scope_grants VALUES
         (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 2)",
@@ -1072,7 +1148,7 @@ async fn exercise_source_boss_handoff(
         .map_err(debug)?
         .ok_or("source boss predecessor")?;
     let successor = super::fixture::registered_node(&h.root, 2).await?;
-    let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "nrwicked-source-boss-handoff")
+    let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "sequencer-writer")
         .await
         .map_err(debug)?;
     let moved = writer
@@ -1096,26 +1172,41 @@ async fn exercise_source_boss_handoff(
     )
     .await?;
 
-    owner.refund_unpublished_source_boss_lever().await;
+    assert!(!owner.recover_source_boss_admission().await?);
     assert_eq!(
         admission_state().await?,
-        [(1, true), (2, true)],
+        before,
         "stale runtime cannot refund either outcome"
     );
-    let generation = ScopeOwnershipGeneration::new(2).map_err(debug)?;
-    for _ in 0..2 {
-        h.root
-            .refund_abandoned_source_boss_lever(owner.character, &successor, scope, generation)
-            .await?;
-        assert_eq!(admission_state().await?, [(2, true), (3, false)]);
+    let content = owner.runtime.lock().await.content_pin().clone();
+    let assignment = moved.assignment;
+    let fact = successor.fact();
+    let runtime = crate::foundation::ChannelRuntimeV1::from_committed_scope_assignment(
+        scope,
+        fact.node_id(),
+        fact.registration_revision(),
+        assignment.ownership_generation,
+        assignment.source_revision,
+        &assignment.decision_identity,
+        2,
+        content,
+    ).map_err(debug)?;
+    let runtime = tokio::sync::Mutex::new(runtime);
+    let mut replacement = deps.owner_from(&h.root, &successor, owner.character);
+    replacement.runtime = (&runtime).into();
+    assert!(replacement.recover_source_boss_admission().await?, "successor applied the refund");
+    assert_eq!(admission_state().await?, after);
+    assert!(!replacement.recover_source_boss_admission().await?, "refund replay is a no-op");
+    assert_eq!(admission_state().await?, after);
+    if let Some(unpublished) = unpublished {
+        let retained: (Vec<u8>, Vec<u8>) = sqlx::query_as(
+            "SELECT uuid_send(character_id),uuid_send(admission) FROM game_character_boss_cooldowns
+              WHERE boss_key='oteryn:boss.arbaziloth'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(retained.0, published.character_id.as_bytes());
+        assert_ne!(retained.1, unpublished);
     }
-    let retained: (Vec<u8>, Vec<u8>) = sqlx::query_as(
-        "SELECT uuid_send(character_id),uuid_send(admission) FROM game_character_boss_cooldowns
-          WHERE boss_key='oteryn:boss.arbaziloth'",
-    )
-    .fetch_one(&h.pool)
-    .await?;
-    assert_eq!(retained.0, published.character_id.as_bytes());
-    assert_ne!(retained.1, unpublished);
     Ok(())
 }

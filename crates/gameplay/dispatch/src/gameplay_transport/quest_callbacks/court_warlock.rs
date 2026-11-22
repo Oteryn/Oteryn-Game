@@ -35,6 +35,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let QuestCause::Use(command) = cause else {
             return UseDisposition::Rejected;
         };
+        let Ok(_turn) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
+            return UseDisposition::Exhausted;
+        };
         let ready = self.execute_quest_encounter(
             runtime, states, actor, session, map, callback, key, revision, after, true, cause,
             None, None,
@@ -148,8 +151,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return disposition;
             }
         };
-        // Nothing from the staged carrier or lever is observable before this
-        // durable linearization point. Reissuing Publish reads the same receipt.
+        // Authorize the staged publication. Until installation is confirmed,
+        // the same durable admission remains eligible for recovery.
         let retry = super::super::AdmissionRetryBudget::for_command(self.root);
         let publish = || self.source_boss_admission(&admission, SourceBossAdmission::Publish);
         let publication = retry.retry_durability("source_boss_publish", publish).await;
@@ -177,8 +180,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match publication {
             Ok(true) => {
-                self.publish_staged_source_boss(staged, states, map, lever_projection);
-                UseDisposition::Committed
+                #[cfg(test)]
+                if self
+                    .states
+                    .quest_callbacks
+                    .interrupt_source_boss_before_projection
+                    .swap(false, std::sync::atomic::Ordering::AcqRel)
+                {
+                    return UseDisposition::Rejected;
+                }
+                let installed = staged.install(admission.id);
+                let proof = installed.proof();
+                let confirm = || {
+                    self.source_boss_admission(
+                        &admission,
+                        SourceBossAdmission::ConfirmProjection(proof),
+                    )
+                };
+                let confirmed = retry
+                    .retry_durability("source_boss_projected", confirm)
+                    .await;
+                let confirmed = if matches!(
+                    confirmed,
+                    Err(DurabilityError::CommitOutcomeUnknown
+                        | DurabilityError::RootPassDeadlineExceeded)
+                ) {
+                    retry
+                        .retry_durability("source_boss_projected_reconcile", confirm)
+                        .await
+                } else {
+                    confirmed
+                };
+                match confirmed {
+                    Ok(true) => {
+                        self.publish_installed_source_boss(
+                            installed,
+                            states,
+                            map,
+                            lever_projection,
+                        );
+                        UseDisposition::Committed
+                    }
+                    Ok(false) => {
+                        drop(installed);
+                        self.try_refund_source_boss_lever(&admission).await;
+                        UseDisposition::Rejected
+                    }
+                    Err(error) => {
+                        super::super::operator_event(&format!(
+                            "source_boss_projection_deferred reason={error:?}"
+                        ));
+                        UseDisposition::Rejected
+                    }
+                }
             }
             Ok(false) => {
                 self.try_refund_source_boss_lever(&admission).await;
@@ -221,26 +275,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(in crate::gameplay_transport) async fn refund_unpublished_source_boss_lever(&self) {
-        // A current USE holds this same native guard from reserve through publish.
-        // Keep it across recovery so an unpublished row never races a live turn.
-        let Ok(runtime) = self.runtime.try_lock() else {
-            return;
-        };
-        let Ok(fence) = runtime.owner_fence() else {
-            return;
-        };
-        if let Err(error) = self
-            .root
-            .refund_abandoned_source_boss_lever(
-                self.character,
-                self.holder,
-                runtime.binding().runtime_scope(),
-                fence.generation(),
-            )
-            .await
-        {
+        if let Err(error) = self.recover_source_boss_admission().await {
             super::super::operator_event(&format!("source_boss_refund_deferred reason={error:?}"));
         }
+    }
+
+    pub(in crate::gameplay_transport) async fn recover_source_boss_admission(
+        &self,
+    ) -> Result<bool, DurabilityError> {
+        use crate::foundation::RuntimeScopeRefV1;
+
+        let scope = RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
+        let Some(candidate) = self.root.source_boss_recovery(scope).await? else {
+            return Ok(false);
+        };
+        // The source command excludes recovery for its whole turn. This gate
+        // does not block the Channel runtime while SQL revalidates the refund.
+        let Ok(_turn) = self.states.quest_callbacks.source_boss_turn.try_lock() else {
+            return Ok(false);
+        };
+        let generation = {
+            let Ok(runtime) = self.runtime.try_lock() else {
+                return Ok(false);
+            };
+            let Ok(fence) = runtime.owner_fence() else {
+                return Ok(false);
+            };
+            if runtime.binding().runtime_scope() != scope {
+                return Ok(false);
+            }
+            fence.generation()
+        };
+        self.root
+            .refund_source_boss_recovery(self.character, self.holder, generation, candidate)
+            .await
     }
 }
 

@@ -29,7 +29,7 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
 }
 
 /// `WORLDINT0-RL-02`: the per-actor `world_action` cooldown.
-const WORLD_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(200);
+pub(super) const WORLD_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(200);
 /// `WORLDINT0-RL-08`: world interactions admitted per Channel per owner turn.
 const WORLD_ACTIONS_PER_TURN: u32 = 512;
 /// Crystal 201189f config.lua.dist:469 and game.cpp:11325-11396: 500 - 10 ms.

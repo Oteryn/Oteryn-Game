@@ -3,7 +3,7 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 use oteryn_gameplay_entities::carrier::encounter_access::{
-    EncounterDefenders, StagedQuestEncounter,
+    EncounterDefenders, InstalledQuestEncounter, InstalledQuestEncounterProof, StagedQuestEncounter,
 };
 
 struct PreparedPhase {
@@ -21,6 +21,33 @@ pub(super) struct StagedSourceBoss<'owner> {
     native: StagedQuestEncounter<'owner, PreparedPhase>,
     players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
     capture: Option<EncounterCreditPublication>,
+}
+
+pub(super) struct InstalledSourceBoss<'owner> {
+    native: InstalledQuestEncounter<'owner>,
+    snapshots: Vec<MovementPositionSnapshot>,
+    prepared: PreparedPhase,
+    players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
+    capture: Option<EncounterCreditPublication>,
+}
+
+impl<'owner> StagedSourceBoss<'owner> {
+    pub(super) fn install(self, admission: [u8; 16]) -> InstalledSourceBoss<'owner> {
+        let (native, snapshots, prepared) = self.native.install(admission);
+        InstalledSourceBoss {
+            native,
+            snapshots,
+            prepared,
+            players: self.players,
+            capture: self.capture,
+        }
+    }
+}
+
+impl InstalledSourceBoss<'_> {
+    pub(super) fn proof(&self) -> InstalledQuestEncounterProof {
+        self.native.proof()
+    }
 }
 
 pub(in crate::gameplay_transport) fn room_contains(
@@ -149,31 +176,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         staged.ok_or(disposition)
     }
 
-    pub(super) fn publish_staged_source_boss(
+    pub(super) fn publish_installed_source_boss(
         &self,
-        staged: StagedSourceBoss<'_>,
+        installed: InstalledSourceBoss<'_>,
         states: &mut ChannelSpellStates,
         map: &BundleMap,
         lever: crate::map::facts::SourceBossLeverProjection,
     ) {
-        let (runtime, (snapshots, prepared)) = staged.native.publish();
-        if let (Some(capture), Some(roster)) = (staged.capture, prepared.roster) {
-            capture
-                .cache
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .publish_encounter(capture.prepared, roster);
-        }
-        if let Some(phase) = prepared.phase {
-            states
-                .encounter_phases
-                .active
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .push(phase);
-        }
-        lever.publish();
-        self.project_encounter_movements(runtime, states, map, staged.players, snapshots);
+        installed.native.publish(|runtime| {
+            if let (Some(capture), Some(roster)) = (installed.capture, installed.prepared.roster) {
+                capture
+                    .cache
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .publish_encounter(capture.prepared, roster);
+            }
+            if let Some(phase) = installed.prepared.phase {
+                states
+                    .encounter_phases
+                    .active
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .push(phase);
+            }
+            lever.publish();
+            self.project_encounter_movements(
+                runtime,
+                states,
+                map,
+                installed.players,
+                installed.snapshots,
+            );
+        });
     }
 
     #[allow(clippy::too_many_arguments)]
