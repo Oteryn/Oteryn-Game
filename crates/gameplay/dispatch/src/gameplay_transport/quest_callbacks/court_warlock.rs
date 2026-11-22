@@ -2,17 +2,19 @@
 use super::*;
 use crate::durability::{
     DurabilityError,
-    boss_encounter::{SourceBossAdmission, SourceBossLever},
-    item_transfer::CurrentCharacterItemFence,
+    boss_encounter::{SourceBossAdmission, SourceBossLever, SourceBossReservation},
 };
 use oteryn_gameplay_entities::carrier::encounter_access::PublishedQuestEncounterProof;
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 
-#[derive(Clone)]
-struct SourceBossReservation {
-    id: [u8; 16],
-    lever: SourceBossLever,
-    party: Vec<CurrentCharacterItemFence>,
+pub(super) struct SourceBossUse<'a> {
+    pub(super) map: &'a BundleMap,
+    pub(super) callback: &'a Callback,
+    pub(super) key: u64,
+    pub(super) revision: u64,
+    pub(super) after: crate::map::view::EntryFacts,
+    pub(super) cause: QuestCause,
+    pub(super) lever: SourceBossLever,
 }
 
 #[derive(Clone)]
@@ -28,24 +30,23 @@ tokio::task_local! {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "the source hook shares the existing lever owner turn"
-    )]
     pub(super) async fn execute_source_boss_lever(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
         session: GameSessionId,
-        map: &BundleMap,
-        callback: &Callback,
-        key: u64,
-        revision: u64,
-        after: crate::map::view::EntryFacts,
-        cause: QuestCause,
-        lever: SourceBossLever,
+        source_use: SourceBossUse<'_>,
     ) -> UseDisposition {
+        let SourceBossUse {
+            map,
+            callback,
+            key,
+            revision,
+            after,
+            cause,
+            lever,
+        } = source_use;
         let QuestCause::Use(command) = cause else {
             return UseDisposition::Rejected;
         };
@@ -300,9 +301,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .source_boss_lever_admission(
                 self.character,
                 self.holder,
-                admission.lever,
-                admission.party.clone(),
-                admission.id,
+                admission.clone(),
                 self.reset_epoch,
                 operation,
             )

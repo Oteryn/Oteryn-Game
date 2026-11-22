@@ -555,13 +555,22 @@ async fn two_player_encounter(
         .map_err(|()| "Arbaziloth lever fence")?.ok_or("missing Arbaziloth lever fence")?;
     use std::sync::atomic::Ordering;
     let unpublished = if matches!(case, Scenario::AdmissionRecovery) {
-        use crate::durability::boss_encounter::{SourceBossAdmission, SourceBossLever};
+        use crate::durability::boss_encounter::{
+            SourceBossAdmission, SourceBossLever, SourceBossReservation,
+        };
         let party = vec![owner.current_quest_fence(other_session).await
             .map_err(|_| "unpublished party fence")?.ok_or("unpublished party")?.item_fence()];
         let occurrence = id(202);
         assert!(owner.root.source_boss_lever_admission(
-            owner.character, owner.holder, SourceBossLever::Arbaziloth, party,
-            occurrence, owner.reset_epoch, SourceBossAdmission::Reserve,
+            owner.character,
+            owner.holder,
+            SourceBossReservation {
+                id: occurrence,
+                lever: SourceBossLever::Arbaziloth,
+                party,
+            },
+            owner.reset_epoch,
+            SourceBossAdmission::Reserve,
         ).await?);
         Some(occurrence)
     } else {

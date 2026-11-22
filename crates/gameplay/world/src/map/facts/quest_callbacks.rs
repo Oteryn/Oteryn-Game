@@ -1746,11 +1746,6 @@ impl BundleFacts {
         Some(replacement.facts)
     }
 
-    /// Apply a prevalidated lever and passage batch under the Channel owner lock.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "one atomic projection binds the lever revision and its bounded map effects"
-    )]
     /// Reserve the exact source lever revision while its encounter and cooldown are staged.
     pub fn reserve_source_boss_lever(
         &self,
@@ -1777,6 +1772,11 @@ impl BundleFacts {
         })
     }
 
+    /// Apply a prevalidated lever and passage batch under the Channel owner lock.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one atomic projection binds the lever revision and its bounded map effects"
+    )]
     pub fn apply_quest_callback(
         &self,
         key: u64,

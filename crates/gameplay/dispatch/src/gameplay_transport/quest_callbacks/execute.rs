@@ -1375,13 +1375,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     states,
                     actor,
                     session,
-                    map,
-                    callback,
-                    key,
-                    expected_revision,
-                    after,
-                    cause,
-                    lever,
+                    court_warlock::SourceBossUse {
+                        map,
+                        callback,
+                        key,
+                        revision: expected_revision,
+                        after,
+                        cause,
+                        lever,
+                    },
                 )
                 .await;
         }

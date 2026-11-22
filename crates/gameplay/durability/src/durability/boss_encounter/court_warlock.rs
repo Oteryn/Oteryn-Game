@@ -26,6 +26,13 @@ pub enum SourceBossLever {
     Arbaziloth,
 }
 
+#[derive(Clone)]
+pub struct SourceBossReservation {
+    pub id: [u8; 16],
+    pub lever: SourceBossLever,
+    pub party: Vec<CurrentCharacterItemFence>,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum SourceBossAdmission {
     Reserve,
@@ -68,20 +75,19 @@ impl SourceBossLever {
 impl DurabilityRoot {
     /// Reserve the exact staging party, authorize publication, and seal the
     /// installed native projection. Only an unsealed admission can be refunded.
-    #[allow(
-        clippy::too_many_arguments,
-        reason = "party, cooldown owner and exact admission are independently fenced"
-    )]
     pub async fn source_boss_lever_admission(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
-        lever: SourceBossLever,
-        mut party: Vec<CurrentCharacterItemFence>,
-        admission: [u8; 16],
+        reservation: SourceBossReservation,
         reset_epoch: u64,
         operation: SourceBossAdmission,
     ) -> Result<bool, DurabilityError> {
+        let SourceBossReservation {
+            id: admission,
+            lever,
+            mut party,
+        } = reservation;
         if !(1..=5).contains(&party.len()) || !cooldown_storage::reward_uuid(&admission) {
             return Ok(false);
         }
