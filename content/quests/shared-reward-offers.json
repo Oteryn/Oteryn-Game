@@ -2217,6 +2217,25 @@
         "sniper gloves"
       ],
       "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "We are always looking for sniper gloves. They are supposed to raise accuracy. If you find a pair, bring them here. Maybe I can offer you a nice trade."
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
       "next_topic": 8,
       "storage": [
         {
@@ -2227,8 +2246,16 @@
         }
       ],
       "reply": [
-        "Will you help me with this task?"
-      ]
+        "You found sniper gloves?! Incredible! Listen, if you give them to me, I will grant you the right to wear the sniper gloves accessory. How about it?"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "premium": true
     },
     {
       "npc": "oteryn:npc.elane",
@@ -2247,7 +2274,14 @@
         }
       ],
       "reply": [
-        "Would you sell the sniper gloves for 2000 gold pieces?"
+        "Did you find sniper gloves AGAIN?! Incredible! I cannot grant you other accessories, but would you like to sell them to me for 2000 gold pieces?"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
       ]
     },
     {
@@ -2317,6 +2351,45 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "no"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "No problem, maybe another time."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "no"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Maybe another time."
       ]
     },
     {
@@ -3848,6 +3921,25 @@
         "sniper gloves"
       ],
       "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "We are always looking for sniper gloves. They are supposed to raise accuracy. If you find a pair, bring them here. Maybe I can offer you a nice trade."
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
       "next_topic": 1,
       "storage": [
         {
@@ -3858,8 +3950,16 @@
         }
       ],
       "reply": [
-        "Will you help me with this task?"
-      ]
+        "You found sniper gloves?! Incredible! Listen, if you give them to me, I will grant you the right to wear the sniper gloves accessory. How about it?"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "premium": true
     },
     {
       "npc": "oteryn:npc.legola",
@@ -3878,7 +3978,53 @@
         }
       ],
       "reply": [
-        "Would you sell the sniper gloves for 2000 gold pieces?"
+        "Did you find sniper gloves AGAIN?! Incredible! I cannot grant you other accessories, but would you like to sell them to me for 2000 gold pieces?"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "No problem, maybe another time."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Maybe another time."
       ]
     },
     {

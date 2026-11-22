@@ -607,6 +607,343 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/ape-city-amphora-40092",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32792,
+          "y": 32527,
+          "floor": -10
+        },
+        "unique": 40092,
+        "action": null,
+        "appearance": 4995,
+        "native": {
+          "position": {
+            "x": 32792,
+            "y": 32527,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 4995
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 17,
+          "maximum": 18,
+          "set": 17,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:23-40",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4835",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 4996,
+        "reset_after_ms": 300000,
+        "magic": {
+          "position": {
+            "x": 32792,
+            "y": 32527,
+            "floor": -10
+          },
+          "effect": 3
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-amphora-40093",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32823,
+          "y": 32525,
+          "floor": -10
+        },
+        "unique": 40093,
+        "action": null,
+        "appearance": 4995,
+        "native": {
+          "position": {
+            "x": 32823,
+            "y": 32525,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 4995
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 17,
+          "maximum": 18,
+          "set": 17,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:23-40",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4835",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 4996,
+        "reset_after_ms": 300000,
+        "magic": {
+          "position": {
+            "x": 32823,
+            "y": 32525,
+            "floor": -10
+          },
+          "effect": 3
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-amphora-40094",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32876,
+          "y": 32584,
+          "floor": -10
+        },
+        "unique": 40094,
+        "action": null,
+        "appearance": 4995,
+        "native": {
+          "position": {
+            "x": 32876,
+            "y": 32584,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 4995
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 17,
+          "maximum": 18,
+          "set": 17,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:23-40",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4835",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 4996,
+        "reset_after_ms": 300000,
+        "magic": {
+          "position": {
+            "x": 32876,
+            "y": 32584,
+            "floor": -10
+          },
+          "effect": 3
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-amphora-40095",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32744,
+          "y": 32586,
+          "floor": -10
+        },
+        "unique": 40095,
+        "action": null,
+        "appearance": 4995,
+        "native": {
+          "position": {
+            "x": 32744,
+            "y": 32586,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 4995
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 17,
+          "maximum": 18,
+          "set": 17,
+          "at_least": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/actions_mission9_snake_destroyer.lua:23-40",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4835",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "effects": {
+        "transform": 4996,
+        "reset_after_ms": 300000,
+        "magic": {
+          "position": {
+            "x": 32744,
+            "y": 32586,
+            "floor": -10
+          },
+          "effect": 3
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ape-city-catacombs-amphora-gate",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32854,
+          "y": 32544,
+          "floor": -10
+        },
+        "unique": 9258,
+        "action": null,
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 32854,
+            "y": 32544,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32885,
+        "y": 32632,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You need to break all 4 large amphoras to use this teleporter.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ape_city/movements_mission9_the_deepest_catacomb_teleport.lua:19-28",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32792,
+            "y": 32527,
+            "floor": -10
+          },
+          "appearance": 4996
+        },
+        {
+          "position": {
+            "x": 32823,
+            "y": 32525,
+            "floor": -10
+          },
+          "appearance": 4996
+        },
+        {
+          "position": {
+            "x": 32876,
+            "y": 32584,
+            "floor": -10
+          },
+          "appearance": 4996
+        },
+        {
+          "position": {
+            "x": 32744,
+            "y": 32586,
+            "floor": -10
+          },
+          "appearance": 4996
+        }
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
       "key": "oteryn:quest-callback/ape-city-decipher",
       "quest": "oteryn:quest.the_ape_city_quest",
       "trigger": "step_in",

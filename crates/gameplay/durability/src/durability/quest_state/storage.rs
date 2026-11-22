@@ -627,7 +627,7 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
                 && self.counter_quests.get(helper).is_some_and(|progress| progress.completed);
             return Some(oteryn_gameplay_quests::quest::log::QuestLogState {
                 pinned_content_revision: &state.pinned_content_revision,
-                completed: personal.unwrap_or(false) || shared,
+                completed: personal.unwrap_or(shared),
             });
         }
         let scoped = self.save_restart_defaults.contains_key(quest);
@@ -653,7 +653,7 @@ mod tests {
     use oteryn_gameplay_quests::quest::log::QuestLogFacts;
 
     #[test]
-    fn hive_checkpoint_keeps_completed_shared_mission_in_the_journal() {
+    fn hive_checkpoint_shows_the_unfinished_personal_journal() -> std::result::Result<(), String> {
         let quest = "oteryn:quest.authored.hive_born_world_change";
         let phase = "oteryn:quest-progress/world-change-journal/hive_born/phase";
         let helper = oteryn_gameplay_quests::quest::shared_world_progress::HIVE_QUEST;
@@ -679,6 +679,21 @@ mod tests {
         );
         assert!(copy.quest_state(quest).is_some_and(|state| state.completed));
         copy.tracks.insert(phase.into(), 4);
-        assert!(copy.quest_state(quest).is_some_and(|state| state.completed));
+        let state = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let logs = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&state)?;
+        let index = logs
+            .content
+            .titles(&copy)
+            .into_iter()
+            .find(|(_, title)| title.contains("Hive Born"))
+            .ok_or("Hive journal in the quest list")?
+            .0;
+        let line = logs.content.line(&copy, index).ok_or("Hive quest line")?;
+        assert!(line.missions.iter().any(|mission| !mission.done));
+        assert!(!line.completed, "shared completion cannot finish the personal journal");
+        copy.tracks.insert(phase.into(), 7);
+        assert!(logs.content.line(&copy, index).is_some_and(|line| line.completed));
+        Ok(())
     }
 }

@@ -41,6 +41,10 @@ pub(super) fn load(admission: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Off
     if offers.offers.len() > 512
         || offers.offers.iter().any(|offer| {
             offer.requires.len() > 8
+                || offer.inventory.len() > 8
+                || offer.inventory.iter().any(|rule| {
+                    !rule.item.starts_with("oteryn:item.") || rule.minimum > rule.maximum
+                })
                 || offer.minimum_level == Some(0)
                 || offer.failure_reply.len() > 8
                 || offer.failure_reply.iter().any(|line| {

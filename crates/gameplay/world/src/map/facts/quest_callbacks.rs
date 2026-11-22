@@ -77,6 +77,12 @@ pub enum QuestCallbackProjection {
         due: u64,
         restore: EntryFacts,
     },
+    /// The last strike starts one restoration deadline for all four amphoras.
+    TimedAmphoras {
+        due: u64,
+        restore: EntryFacts,
+        others: [(u64, u64, EntryFacts); 3],
+    },
     /// A source glyph and its native portal share one revision-fenced deadline.
     TimedEntrance {
         due: u64,
@@ -360,6 +366,39 @@ impl CallbackStates {
                     if let Some(after) = after {
                         self.changed.insert(*key, (revision + 1, *after));
                     }
+                }
+            }
+            QuestCallbackProjection::TimedAmphoras {
+                due,
+                restore,
+                others,
+            } => {
+                if close
+                    || others.iter().any(|(key, _, _)| *key == owner)
+                    || !self
+                        .readset_matches(others.iter().map(|(key, revision, _)| (*key, *revision)))
+                {
+                    return false;
+                }
+                if !self.project(
+                    owner,
+                    &QuestCallbackProjection::TimedTransform {
+                        due: *due,
+                        restore: *restore,
+                    },
+                    false,
+                ) {
+                    return false;
+                }
+                for (key, revision, restore) in others {
+                    self.movement_decays.insert(
+                        (*due, *key),
+                        MovementDecay {
+                            revision: *revision,
+                            restore: *restore,
+                            overlay: None,
+                        },
+                    );
                 }
             }
             QuestCallbackProjection::TimedTransform { due, restore } => {
@@ -1860,6 +1899,9 @@ impl BundleFacts {
                         }
                     })
                 }
+                QuestCallbackProjection::TimedAmphoras { others, .. } => {
+                    others.iter().any(|(key, _, _)| states.key_reserved(*key))
+                }
                 QuestCallbackProjection::TimedTransform { .. } => false,
             })
             || expected == u64::MAX
@@ -2453,6 +2495,44 @@ mod lifecycle_tests {
             state.changed.get(&2).map(|(_, value)| value.appearance_id),
             Some(2074)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn fourth_amphora_starts_one_expiry_for_the_group() -> Result<(), String> {
+        let facts = BundleFacts::default();
+        let original = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 4995,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        };
+        let broken = EntryFacts {
+            appearance_id: 4996,
+            ..original
+        };
+        for key in 1..=3 {
+            assert!(facts.apply_quest_callback(key, 0, broken, &[], &[], false, None));
+        }
+        assert_eq!(facts.next_movement_decay_time(), None);
+        let deadline = 320_000_000;
+        let reset = QuestCallbackProjection::TimedAmphoras {
+            due: deadline,
+            restore: original,
+            others: [(1, 1, original), (2, 1, original), (3, 1, original)],
+        };
+        assert!(facts.apply_quest_callback(4, 0, broken, &[], &[], false, Some(&reset)));
+        assert_eq!(facts.next_movement_decay_time(), Some(deadline));
+        assert_eq!(facts.expire_movement_items(deadline - 1), 0);
+        assert_eq!(facts.expire_movement_items(deadline), 4);
+        let state = facts.callbacks.lock().map_err(|_| "callback lock")?;
+        for key in 1..=4 {
+            assert_eq!(state.changed.get(&key), Some(&(2, original)));
+        }
         Ok(())
     }
 

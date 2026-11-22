@@ -2212,6 +2212,21 @@ pub(super) async fn exercise(
                 .refresh_quest_session(admitted.game_session_id, false)
                 .await;
         }
+        let glove_offer = family == "hunter" && callback.key.ends_with("-gloves");
+        if glove_offer {
+            use super::classic_quests_fixtures::talk;
+            let current = owner.premium_coordinator.take();
+            talk(owner, admitted, npc, 31_000, "hi").await?;
+            let lines = talk(owner, admitted, npc, 31_001, "sniper gloves").await?;
+            assert!(!lines.is_empty(), "the source informational reply must be delivered");
+            assert_eq!(
+                owner.states.npc_conversations.fixture_quest_topic(admitted.game_session_id)?,
+                0,
+                "a free character without gloves must receive information before an offer"
+            );
+            super::qengine_rewards_fixtures::talk(owner, admitted, npc, 31_002, "bye").await?;
+            owner.premium_coordinator = current;
+        }
         let needed: Vec<_> = callback.take.iter().chain(&callback.present).collect();
         let mut missing = false;
         for item in &needed {
@@ -2454,6 +2469,27 @@ pub(super) async fn exercise(
         let mut held = BTreeMap::new();
         for item in &needed {
             held.insert(item.item.clone(), quantity(h, &item.item).await?);
+        }
+        if glove_offer {
+            use super::classic_quests_fixtures::talk;
+            let before = counts(h).await?;
+            for (base, topic) in [(31_010, 9), (31_020, callback.topic)] {
+                let current = if topic == 9 { owner.premium_coordinator.take() } else { None };
+                talk(owner, admitted, npc, base, "hi").await?;
+                talk(owner, admitted, npc, base + 1, "sniper gloves").await?;
+                assert_eq!(owner.states.npc_conversations.fixture_quest_topic(admitted.game_session_id)?, topic);
+                talk(owner, admitted, npc, base + 2, "no").await?;
+                assert_eq!(owner.states.npc_conversations.fixture_quest_topic(admitted.game_session_id)?, 0);
+                super::qengine_rewards_fixtures::talk(owner, admitted, npc, base + 3, "yes").await?;
+                assert_eq!(counts(h).await?, before, "yes after declining cannot commit an exchange");
+                for (item, count) in &held {
+                    assert_eq!(quantity(h, item).await?, *count, "declining leaves the gloves");
+                }
+                super::qengine_rewards_fixtures::talk(owner, admitted, npc, base + 4, "bye").await?;
+                if topic == 9 {
+                    owner.premium_coordinator = current;
+                }
+            }
         }
         if let Some(fee) = &callback.fee {
             let before = counts(h).await?;

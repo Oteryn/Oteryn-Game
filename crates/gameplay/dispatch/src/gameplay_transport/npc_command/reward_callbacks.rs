@@ -34,6 +34,8 @@ pub(super) struct Offer {
     storage: Vec<Storage>,
     #[serde(default)]
     requires: Vec<reward_callbacks::TrackRequirement>,
+    #[serde(default)]
+    inventory: Vec<reward_callbacks::InventoryRequirement>,
     reply: Vec<String>,
     #[serde(default)]
     minimum_level: Option<u32>,
@@ -207,8 +209,16 @@ pub(super) fn prepare(
                     premium == required
                 })
             };
+            let carried_matches = |offer: &Offer| {
+                offer
+                    .inventory
+                    .iter()
+                    .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+            };
             if let Some(offer) = offers.offers.iter().find(|c| {
-                c.admits(&context.2, topic.number, &text, catalogue, tracks) && account_matches(c)
+                c.admits(&context.2, topic.number, &text, catalogue, tracks)
+                    && carried_matches(c)
+                    && account_matches(c)
             }) {
                 if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
@@ -242,6 +252,7 @@ pub(super) fn prepare(
                     && offer.matches_topic(topic.number)
                     && offer.keywords.contains(&text)
                     && eligible(&offer.storage)
+                    && carried_matches(offer)
                     && account_matches(offer)
                     && !offer.requires.iter().all(|r| r.holds(catalogue, tracks))
             });

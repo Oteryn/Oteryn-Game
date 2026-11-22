@@ -3470,3 +3470,80 @@ mod ape_city_map_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[test]
+fn ape_city_amphoras_and_dread_lord_benefits_are_admitted() -> Result<(), String> {
+    use std::collections::BTreeMap;
+
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = load_for(catalogue)?;
+    let by_uid = |uid| {
+        callbacks
+            .iter()
+            .find(|callback| {
+                callback.selector.unique == Some(uid) && callback.selector.native.is_some()
+            })
+            .ok_or_else(|| format!("native callback UID {uid}"))
+    };
+
+    let gate = by_uid(9258)?;
+    assert_eq!(gate.trigger, Trigger::StepIn);
+    assert!(gate.return_on_failure);
+    assert_eq!(gate.world_requirements.len(), 4);
+    for uid in 40092..=40095 {
+        let strike = by_uid(uid)?;
+        assert_eq!(strike.trigger, Trigger::Use);
+        assert!(strike.item_on_target.as_ref().is_some_and(|tool| {
+            tool.item == "oteryn:item.tibia.i4835" && tool.selected_instance && tool.reusable
+        }));
+        assert_eq!(strike.effects.reset_after_ms, Some(300_000));
+        assert!(gate.world_requirements.iter().any(|requirement| {
+            Some(requirement.position) == strike.selector.position
+                && Some(requirement.appearance) == strike.effects.transform
+        }));
+        let transition = catalogue
+            .transition(&strike.key)
+            .ok_or("amphora transition")?;
+        for (stage, eligible) in [(16, false), (17, true), (18, true)] {
+            let tracks = BTreeMap::from([(strike.storage[0].track.clone(), stage)]);
+            assert_eq!(catalogue.evaluate(transition, &tracks, 0).is_ok(), eligible);
+        }
+    }
+
+    for uid in [3047, 3054, 3055, 3056] {
+        let benefit = by_uid(uid)?;
+        let transition = catalogue
+            .transition(&benefit.key)
+            .ok_or("Dread Lord transition")?;
+        let rank = benefit.storage[0].track.clone();
+        let nightmare = rank.replace("brotherhood_", "nightmare_");
+        for (brotherhood, nightmare_rank, eligible) in [(3, 0, false), (0, 3, false), (4, 0, true)]
+        {
+            let tracks = BTreeMap::from([
+                (rank.clone(), brotherhood),
+                (nightmare.clone(), nightmare_rank),
+            ]);
+            assert_eq!(
+                catalogue.evaluate(transition, &tracks, 0).is_ok(),
+                eligible,
+                "UID {uid}"
+            );
+        }
+        if uid == 3047 {
+            assert_eq!(benefit.trigger, Trigger::Use);
+            assert_eq!(benefit.offerings.len(), 1);
+            assert!(benefit.item_reward().is_some());
+            assert_eq!(benefit.effects.reset_after_ms, Some(4000));
+        } else {
+            assert_eq!(benefit.trigger, Trigger::StepIn);
+            assert!(benefit.teleport.is_some() && benefit.return_on_failure);
+            assert!(benefit.item_on_target.as_ref().is_some_and(|crystal| {
+                crystal.on_step && !crystal.reusable && crystal.item == "oteryn:item.tibia.i5021"
+            }));
+        }
+    }
+    Ok(())
+}

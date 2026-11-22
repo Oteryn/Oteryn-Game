@@ -893,17 +893,51 @@ def build():
         source_offer('elane',words,0,topic,states)
         if name=='hat':targets(('hunter',1,'male'),('hunter',2,'female'))
     glove=hunter+'hunter/addon_glove'
-    for npc,name,topic in [('legola','gloves',1),('elane','elane-gloves',8)]:
-        states=[storage(glove,-1,1,0)]
-        add('l8-hunter-'+name,general,npc,['yes'],states,take=[(5875,1)],topic=topic)
-        callbacks[-1]['requires_premium']=True
-        targets(('hunter',2,'male'),('hunter',1,'female'))
-        source_offer(npc,['sniper gloves'],0,topic,states)
-        states=[storage(glove,1,1,preserve=True)]
-        add('l8-hunter-'+name+'-sale',general,npc,['yes'],states,take=[(5875,1)],give=(3035,20),topic=topic)
-        callbacks[-1]['repeatable']=True
-        source_offer(npc,['sniper gloves'],0,topic,states)
-        offers[-1]['reply']=['Would you sell the sniper gloves for 2000 gold pieces?']
+    free_glove_offers = []
+    glove_item = "oteryn:item.tibia.i5875"
+    for npc, name, topic in [("legola", "gloves", 1), ("elane", "elane-gloves", 8)]:
+        source = inputs[f"data-global/npc/{npc}.lua"].decode()
+        (information,) = re.findall(
+            r'addKeyword\(\{ "sniper gloves" \}, StdModule.say, '
+            r'\{ npcHandler = npcHandler, text = "([^"]+)" \}, function\(player\)',
+            source,
+        )
+        free, resale, addon = [
+            re.findall(r'"([^"\n]+)"', block)
+            for block in re.findall(
+                r"addGloveKeyword\(\{(.*?)\}, function", source, re.DOTALL
+            )
+        ]
+        source_offer(npc, ["sniper gloves"], 0, 0, [])
+        offers[-1].update(
+            reply=[information],
+            inventory=[{"item": glove_item, "minimum": 0, "maximum": 0}],
+        )
+        unclaimed = [storage(glove, -1, 1, 0)]
+        claimed = [storage(glove, 1, 1, preserve=True)]
+        for next_topic, states, lines, premium in (
+            (9, unclaimed, free, False),
+            (topic, unclaimed, addon, True),
+            (topic, claimed, resale, None),
+        ):
+            source_offer(npc, ["sniper gloves"], 0, next_topic, states)
+            offers[-1].update(
+                reply=lines[:1],
+                inventory=[{"item": glove_item, "minimum": 1, "maximum": 2**32 - 1}],
+            )
+            if premium is not None:
+                offers[-1]["premium"] = premium
+            source_offer(npc, ["no"], next_topic, 0, states)
+            offers[-1]["reply"] = lines[1:2]
+            if next_topic == 9:
+                free_glove_offers.extend(offers[-2:])
+                del offers[-2:]
+
+        add("l8-hunter-" + name, general, npc, ["yes"], unclaimed, take=[(5875, 1)], topic=topic)
+        callbacks[-1]["requires_premium"] = True
+        targets(("hunter", 2, "male"), ("hunter", 1, "female"))
+        add("l8-hunter-" + name + "-sale", general, npc, ["yes"], claimed, take=[(5875, 1)], give=(3035, 20), topic=topic)
+        callbacks[-1]["repeatable"] = True
     mage=prefix+'u7_8/mage_and_summoner_outfits/'
     wand=mage+'addon_wand'
     states=[storage(wand,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',0,1,1)]
@@ -1208,6 +1242,7 @@ def build():
         elif name in ('l6-citizen-rook-backpack', 'qb-citizen-backpack'):
             callback['account_reservation'] = {'action': 'finish', 'key': backpack}
     callbacks.sort(key=lambda c:c['key'])
+    free_glove_offers.sort(key=lambda offer: (offer["npc"], offer["topic"]))
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})
@@ -1228,6 +1263,9 @@ def build():
             'content/quests/npc-callbacks/fibula.json': encoded({'schema':1,'tracks':fibula_tracks,'callbacks':fibula_callbacks}),
             'content/quests/npc-callbacks/l13-outfits.json': encoded({'schema':1,'callbacks':l13_callbacks}),
             'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),
+            "content/quests/npc-offers/hunter-glove-sales.json": encoded(
+                {"schema": 1, "offers": free_glove_offers}
+            ),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/npc-callbacks/l2-ready-stories.json'] = encoded({
         'schema':1,'tracks':[],'callbacks':ready_callbacks})

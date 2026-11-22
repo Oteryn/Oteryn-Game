@@ -195,6 +195,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
+        if callback.key == super::amphoras::GATE {
+            map.facts.expire_movement_items(self.owner_now().get());
+        }
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
@@ -248,6 +251,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 due,
                 restore: before,
             });
+        }
+        if super::amphoras::is_strike(callback) {
+            projection = match super::amphoras::prepare(
+                self.callback_content(),
+                map,
+                key,
+                before,
+                projection,
+            ) {
+                Ok(projection) => projection,
+                Err(refusal) => return refusal,
+            };
         }
         if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
             let Some(crate::map::facts::QuestCallbackProjection::TimedTransform { due, restore }) =
@@ -518,6 +533,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => Some(key),
             },
             Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { .. }) => Some(key),
+            _ if super::amphoras::is_strike(callback) => Some(key),
             Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
                 if callback
                     .item_on_target
@@ -1461,6 +1477,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
                         due,
                         ..
+                    })
+                    | Some(crate::map::facts::QuestCallbackProjection::TimedAmphoras {
+                        due, ..
                     })
                     | Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
                         reset: Some((due, _)),
