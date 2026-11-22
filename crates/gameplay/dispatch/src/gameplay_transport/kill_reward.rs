@@ -196,7 +196,11 @@ pub(super) fn tracks_native_progression(creature: &str) -> bool {
     oteryn_gameplay_quests::quest::soul_war::SoulWarBoss::from_creature(creature).is_some()
         || oteryn_gameplay_quests::quest::rotten_blood::RottenBloodBoss::from_creature_key(creature)
             .is_some()
-        || creature == "oteryn:creature.the_primal_menace"
+        || matches!(
+            creature,
+            "oteryn:creature.the_primal_menace"
+                | oteryn_gameplay_quests::quest::source_deaths::ARBAZILOTH_ENRAGED
+        )
 }
 
 impl PendingKillSettlement {
