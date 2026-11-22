@@ -66,7 +66,7 @@ pub(super) const MAIN: [Row; 16] = [
     ),
     number!(
         "graphics.monitor",
-        "Fullscreen Monitor (0 = current)",
+        "Monitor (0 = current)",
         0,
         32,
         u16,
@@ -76,7 +76,14 @@ pub(super) const MAIN: [Row; 16] = [
         id: "graphics.engine",
         label: "Rendering Engine (Restart Required)",
         editor: Editor::Choice {
-            values: &["System Default", "Vulkan"],
+            values: &[
+                if cfg!(windows) {
+                    "Direct3D 12"
+                } else {
+                    "System Default"
+                },
+                "Vulkan",
+            ],
             read: |p| usize::from(p.graphics.engine == oteryn_renderer::GraphicsEngine::Vulkan),
             write: |p, i| p.graphics.engine = oteryn_renderer::GraphicsEngine::ALL[i],
         },

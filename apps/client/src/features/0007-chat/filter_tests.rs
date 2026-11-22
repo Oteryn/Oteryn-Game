@@ -65,7 +65,7 @@ fn console_filters_route_real_notices_store_results_and_private_tabs()
     );
 
     #[cfg(bevy_shell)]
-    assert!(link.take_window_notice().is_some_and(|notice| notice.text.contains("OfferUnavailable")));
+    assert!(link.take_window_notices().pop_back().is_some_and(|notice| notice.text.contains("OfferUnavailable")));
     let terms = [
         "ridge event",
         "safe area",

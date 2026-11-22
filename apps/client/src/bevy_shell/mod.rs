@@ -256,12 +256,25 @@ fn project_window(
     mut window: Query<&mut Window, With<PrimaryWindow>>,
     mut scale: ResMut<UiScale>,
     mut sampling: Query<&mut Msaa, With<Camera2d>>,
+    mut previous_display: Local<Option<(bool, u16)>>,
 ) {
     let samples = Msaa::from_samples(owner.settings.preferences.graphics.antialiasing.samples());
     for mut msaa in &mut sampling {
         msaa.set_if_neq(samples);
     }
     if let Ok(mut window) = window.single_mut() {
+        let graphics = owner.settings.preferences.graphics;
+        let display = (graphics.fullscreen, graphics.monitor);
+        if *previous_display != Some(display) {
+            if !graphics.fullscreen
+                && let Some(index) = graphics.monitor.checked_sub(1)
+            {
+                window.position = bevy::window::WindowPosition::Centered(
+                    bevy::window::MonitorSelection::Index(usize::from(index)),
+                );
+            }
+            *previous_display = Some(display);
+        }
         apply_window(&owner.settings.preferences, &mut window);
     }
     let next = owner.settings.preferences.interface_scale as f32 / 100.;

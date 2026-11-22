@@ -190,3 +190,35 @@ fn graphics_selectors_apply_supported_backend_and_sampling_mode() -> TestResult 
     assert_eq!(graphics.antialiasing.samples(), 4);
     Ok(())
 }
+
+#[test]
+fn windowed_monitor_choice_centres_once_and_preserves_manual_moves() -> TestResult {
+    use bevy::window::{MonitorSelection, PrimaryWindow, WindowPosition};
+    let mut app = App::new();
+    let mut owner = HostOwner::new(None)?;
+    owner.settings.preferences.graphics.fullscreen = false;
+    owner.settings.preferences.graphics.monitor = 2;
+    app.insert_non_send(owner)
+        .init_resource::<UiScale>()
+        .add_systems(Update, crate::bevy_shell::project_window);
+    let entity = app
+        .world_mut()
+        .spawn((PrimaryWindow, Window::default()))
+        .id();
+    app.update();
+    assert_eq!(
+        app.world().get::<Window>(entity).ok_or("window")?.position,
+        WindowPosition::Centered(MonitorSelection::Index(1))
+    );
+    let moved = WindowPosition::At(IVec2::new(123, 456));
+    app.world_mut()
+        .get_mut::<Window>(entity)
+        .ok_or("window")?
+        .position = moved;
+    app.update();
+    assert_eq!(
+        app.world().get::<Window>(entity).ok_or("window")?.position,
+        moved
+    );
+    Ok(())
+}

@@ -185,7 +185,7 @@ fn daily_boost_shell_input_queries_selected_session() {
     });
 
     #[cfg(bevy_shell)]
-    assert!(link.take_window_notice().is_some_and(|notice| notice.text.contains("Boosted creature: Rat")));
+    assert!(link.take_window_notices().pop_back().is_some_and(|notice| notice.text.contains("Boosted creature: Rat")));
     assert_eq!(
         oteryn_client_ui::daily_boost::panel_text(&link.daily_boost_panel()),
         "Daily spotlight\nReset epoch: 42\nBoosted creature: Rat\nrat\nBoosted boss: Boss\nboss\n"

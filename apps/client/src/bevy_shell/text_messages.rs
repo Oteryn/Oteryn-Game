@@ -141,7 +141,10 @@ fn project(
             };
         }
         state.observe(&play.view, now);
-        if let Some(notice) = play.link.take_window_notice() {
+        for notice in play.link.take_window_notices() {
+            if !notice.kind.visible(&owner.settings.preferences) {
+                continue;
+            }
             let (area, colour) = match notice.kind {
                 crate::play::feature_local_text_messages::view::NoticeKind::Private => {
                     (Area::Top, [96, 250, 250])

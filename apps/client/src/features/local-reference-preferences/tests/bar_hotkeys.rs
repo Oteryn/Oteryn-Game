@@ -88,7 +88,7 @@ fn action_bar_hotkeys_cover_three_rows_via_real_cast_dispatch()
         for action in settings.take_custom_actions() {
             assert!(link.custom_hotkey_action(&play, &action));
     #[cfg(bevy_shell)]
-    assert!(link.take_window_notice().is_some_and(|notice| notice.text.contains("Hotkey")));
+    assert!(link.take_window_notices().pop_back().is_some_and(|notice| notice.text.contains("Hotkey")));
 
         }
         for slot in router.route(&events) {

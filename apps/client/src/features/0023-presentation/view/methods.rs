@@ -65,7 +65,8 @@ impl PlayView {
         let world = self.local.world();
         let resource_options = resources::Options::from(self.preferences());
         let effects = self.preferences().show_effects;
-        let own_ref = self.scene.own_identity().and_then(|identity| {
+        let own_identity = self.scene.own_identity();
+        let own_ref = own_identity.and_then(|identity| {
             self.appearances
                 .iter()
                 .find(|entry| entry.entity.entity.identity == identity)
@@ -260,8 +261,15 @@ impl PlayView {
                     }
                 }
                 PresentationEventKind::SpellWords {
-                    position, spell, ..
+                    position, spell, caster
                 } if position.floor == self.floor && progress < 1.0 => {
+                    let own = Some(caster.identity) == own_identity;
+                    if (own && !game_window.own_spells)
+                        || (!own && !game_window.other_spells && self.entities.iter().any(|actor|
+                            actor.entity == caster && actor.kind == oteryn_session::EntityKind::Player))
+                    {
+                        continue;
+                    }
                     if let Some(words) = self.spell_words.get(&spell) {
                         visual::words(batch, view, atlas, font, position, words, progress)?;
                     }

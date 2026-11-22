@@ -427,9 +427,14 @@ fn private_message_receipt_reaches_game_window_only_when_enabled() -> TestResult
         .world_mut()
         .spawn((ScreenArea(Area::Top), Text::default(), TextColor::default()))
         .id();
-    for (seq, enabled) in [(1, true), (2, false)] {
+    for (seq, enabled, ignored) in [(1, true, true), (2, true, false), (3, false, false)] {
         let mut host = app.world_mut().non_send_mut::<HostOwner>();
         let mut saved = serde_json::to_value(host.settings.preferences.game_window)?;
+        assert!(host.play.as_ref().ok_or("play")?.link.chat_communication(
+            Some(oteryn_client_ui::chat::CommunicationList::Ignore),
+            "Bryn",
+            ignored
+        ));
         saved["private_messages"] = enabled.into();
         host.settings.preferences.game_window = serde_json::from_value(saved)?;
         outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
@@ -441,6 +446,15 @@ fn private_message_receipt_reaches_game_window_only_when_enabled() -> TestResult
                 text: "Hello".into(),
             },
         })]);
+        // A second receipt for a different screen area arrives before Bevy's next frame.
+        let play = host.play.as_ref().ok_or("play")?;
+        let (_, action) = play
+            .link
+            .custom_hotkey_choices()
+            .into_iter()
+            .find(|(label, _)| label.to_lowercase().contains("whitelist"))
+            .ok_or("ignore list shortcut")?;
+        assert!(play.link.custom_hotkey_action(&play.view, &action));
         app.update();
         assert_eq!(
             app.world()
@@ -448,7 +462,7 @@ fn private_message_receipt_reaches_game_window_only_when_enabled() -> TestResult
                 .ok_or("text")?
                 .0
                 .contains("Bryn: Hello"),
-            enabled
+            enabled && !ignored
         );
     }
     Ok(())
