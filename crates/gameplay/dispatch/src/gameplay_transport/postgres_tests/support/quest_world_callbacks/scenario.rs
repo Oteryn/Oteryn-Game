@@ -1057,11 +1057,12 @@ fn scenario_case(
             )?;
         let generation = controller.active().ok_or("generation")?;
         let world = if let Some(access) = classic_access {
-            super::super::qc_pinned_world::crop(
-                generation.native_gameplay().ok_or("native pinned world policies")?,
-                access.start,
-                &[access.source, access.destination],
-            )?
+            let native = generation.native_gameplay().ok_or("native pinned world policies")?;
+            if super::super::classic_quest_parity_fixtures::ICE_DELIVERY.contains(&access.name) {
+                super::super::classic_quest_parity_fixtures::ice_delivery_world(native, access)?
+            } else {
+                super::super::qc_pinned_world::crop(native, access.start, &[access.source, access.destination])?
+            }
         } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation

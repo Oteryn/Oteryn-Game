@@ -17,6 +17,7 @@ pub(crate) struct CoinAuthority {
     pub fail_after_create: bool,
     pub fail_balance: bool,
     pub fail_catalogue: bool,
+    pub fail_order_status: bool,
     pub hide_recent_orders: bool,
     pub creations: u32,
     pub credits: u32,
@@ -52,6 +53,7 @@ impl CoinAuthority {
             fail_after_create: false,
             fail_balance: false,
             fail_catalogue: false,
+            fail_order_status: false,
             hide_recent_orders: false,
             creations: 0,
             credits: 0,
@@ -181,6 +183,9 @@ impl CoinAuthority {
         if method == "GET"
             && let Some(id) = target.strip_prefix("/api/v1/native-account/coin-purchases/requests/")
         {
+            if self.fail_order_status {
+                return Some((503, String::new()));
+            }
             return Some(self.orders.get(id).map_or((404, String::new()), |(_, o)| {
                 (200, serde_json::to_string(o).unwrap_or_default())
             }));

@@ -10,9 +10,21 @@ pub(crate) mod test_server;
 mod tests;
 
 use oteryn_foundation::CancellationToken;
+use oteryn_platform_client::PlatformClientError;
 use oteryn_platform_client::native_login::bazaar::*;
-use oteryn_platform_client::native_login::{AccessToken, AttemptRef, NativeLoginClient};
+use oteryn_platform_client::native_login::{
+    AccessToken, AttemptRef, NativeLoginClient, NativeLoginError,
+};
 use std::{sync::Arc, time::Instant};
+
+pub(crate) fn status_temporarily_unavailable(error: &NativeLoginError) -> bool {
+    matches!(
+        error,
+        NativeLoginError::Platform(
+            PlatformClientError::Request | PlatformClientError::HttpStatus(408 | 429 | 500..=599)
+        )
+    )
+}
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -95,11 +107,19 @@ impl View {
         cancel: CancellationToken,
     ) {
         for listed in std::mem::take(&mut page.recent_operations) {
-            let Ok(receipt) = client
+            let receipt = match client
                 .bazaar_status(token, &listed.request_id, cancel.clone())
                 .await
-            else {
-                continue;
+            {
+                Ok(receipt) => receipt,
+                Err(error)
+                    if listed.state == OperationState::Pending
+                        && status_temporarily_unavailable(&error) =>
+                {
+                    self.unresolved.insert(listed.request_id);
+                    continue;
+                }
+                Err(_) => continue,
             };
             if self.prior.contains(&receipt.request_id)
                 || self

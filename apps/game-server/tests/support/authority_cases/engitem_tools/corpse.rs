@@ -98,7 +98,8 @@ pub(super) async fn sample(
         .ok_or("tool reference")?;
     let source: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i17670'").fetch_one(&h.pool).await?;
     let source: [u8; 16] = source.try_into().map_err(|_| "source UUID")?;
-    let old = mint_body(h, authority, native, &mut runtime, at, 901).await?;
+    let species = callback.creature_target.as_deref().ok_or("slug species")?;
+    let old = mint_body(h, authority, native, &mut runtime, at, 901, species).await?;
     // Production freshness remains ten seconds. No shortened clock or quest writes.
     tokio::time::sleep(std::time::Duration::from_millis(10050)).await;
     let far = mint_body(
@@ -108,9 +109,10 @@ pub(super) async fn sample(
         &mut runtime,
         crate::foundation::MovementLocalPosition { x: at.x + 3, ..at },
         903,
+        species,
     )
     .await?;
-    let fresh = mint_body(h, authority, native, &mut runtime, at, 902).await?;
+    let fresh = mint_body(h, authority, native, &mut runtime, at, 902, species).await?;
     let intent = UseIntent {
         target: UseTarget::ItemByDefinition(definition),
         use_with: None,
@@ -204,6 +206,90 @@ pub(super) async fn sample(
     Ok(())
 }
 
+pub(super) async fn explorer_sample(
+    h: &f::Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    pin: &NativeEntryContentPin,
+    native: &NativeGameplayState,
+    callback: RewardCallback,
+) -> f::TestResult {
+    let tracks = callback.storage.iter().map(|rule| QuestTrack {
+        key: rule.track.clone(),
+        quest: callback.quest.clone(),
+        initial: rule.minimum,
+        min: rule.minimum,
+        max: rule.set,
+    }).collect();
+    let catalogue = Arc::new(QuestStateCatalogue::new(
+        "content-1", tracks, vec![reward_callbacks::primary_transition(&callback)?],
+    ).map_err(f::debug)?);
+    let revision: i64 = sqlx::query_scalar(
+        "SELECT character_revision::bigint FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+    let fence = f::fence(u64::try_from(revision)?)?;
+    let (mut runtime, actor) = super::live::runtime(pin, fence)?;
+    let at = runtime.read_actor_position(actor).map_err(f::debug)?.position();
+    native.install_companion_policies(&mut runtime).map_err(f::debug)?;
+    let species = callback.creature_target.as_deref().ok_or("corpse species")?;
+    let body = mint_body(h, authority, native, &mut runtime, at, 904, species).await?;
+    let wait_ms: i64 = sqlx::query_scalar(
+        "SELECT greatest(0, expires_at_unix_ms - floor(extract(epoch FROM clock_timestamp())*1000)::bigint)
+         FROM game_spell_field_temporal_schedules WHERE item_instance_id=encode($1,'hex')::uuid AND source_stage=1",
+    ).bind(body.as_slice()).fetch_one(&h.pool).await?;
+    tokio::time::sleep(std::time::Duration::from_millis(wait_ms.try_into()?)).await;
+    let lane = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(fence.runtime_scope)
+        .await.map_err(f::debug)?;
+    assert_eq!(h.root.drain_spell_item_deadlines(
+        &lane, authority, &h.node, fence.runtime_scope, fence.scope_ownership_generation.get(),
+    ).await.map_err(f::debug)?, 1);
+    drop(lane);
+    let key = callback.carried_item.as_deref().ok_or("carried collection tool")?;
+    let index = native.item_index().ok_or("native index")?;
+    let definition = index.definition_ref("Item", key, index.revision(key).ok_or("tool revision")?)
+        .ok_or("tool reference")?;
+    let source: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1",
+    ).bind(key).fetch_one(&h.pool).await?;
+    let intent = UseIntent {
+        target: UseTarget::ItemByDefinition(definition),
+        use_with: None,
+        use_with_map_item: Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(
+            std::num::NonZeroU64::MIN,
+        )),
+        use_with_position: None,
+    };
+    let command = command(9700)?;
+    let proof = QuestCreatureUseProof::read_current_corpse(
+        &runtime, actor, fence, command, &callback, &intent, body,
+    ).ok_or("corpse proof")?;
+    let carried = QuestCarriedUse {
+        recipe_target: None,
+        source: source.try_into().map_err(|_| "source UUID")?,
+        intent: encode_item_use_intent(&intent).map_err(f::debug)?,
+    };
+    let weights = Weights(native);
+    let result = h.root.commit_fixture_quest_reward(
+        authority, &h.node, fence,
+        QuestTransitionRequest {
+            transition_key: callback.key.clone(),
+            cause: QuestCause::Command(command),
+        },
+        catalogue,
+        QuestRewardAdmission {
+            native, weights: &weights, fee_payment: None, actor_conditions: None,
+            carried_use: Some(&carried), creature_use: Some(&proof), peer_use: None,
+        },
+        callback,
+    ).await.map_err(f::debug)?;
+    assert!(matches!(result, QuestTransitionOutcome::Committed(_)), "{result:?}");
+    let after: (i16, i64, bool) = sqlx::query_as(
+        "SELECT lifecycle,quantity,EXISTS(SELECT 1 FROM game_item_ground_locations g WHERE g.item_instance_id=i.item_instance_id)
+         FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid",
+    ).bind(body.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(after, (2, 0, false), "successful collection must retire its native corpse");
+    Ok(())
+}
+
 async fn mint_body(
     h: &f::Harness,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
@@ -211,6 +297,7 @@ async fn mint_body(
     runtime: &mut crate::foundation::ChannelRuntimeV1,
     position: crate::foundation::MovementLocalPosition,
     source: u16,
+    species: &str,
 ) -> f::TestResult<[u8; 16]> {
     use crate::durability::item_mint::{
         CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintOutcome,
@@ -225,7 +312,7 @@ async fn mint_body(
         .realize_native_qualification_spawn_for_source(
             source,
             pin,
-            "oteryn:creature.slug",
+            species,
             position,
         )
         .map_err(f::debug)?;
@@ -245,7 +332,7 @@ async fn mint_body(
     };
     let row = native
         .reward_table()
-        .row("oteryn:creature.slug")
+        .row(species)
         .map_err(f::debug)?;
     let corpse = row.corpse_item.as_ref().ok_or("corpse profile")?;
     let definition = TypedDefinitionRef {
@@ -253,7 +340,9 @@ async fn mint_body(
         production_key: corpse.production_key.clone(),
         revision_ref: corpse.revision_ref.clone(),
     };
-    assert_eq!(definition.production_key, "oteryn:item.tibia.i12526");
+    if species == "oteryn:creature.slug" {
+        assert_eq!(definition.production_key, "oteryn:item.tibia.i12526");
+    }
     let cause = ItemMintCause::from_creature_death(
         death,
         definition.clone(),

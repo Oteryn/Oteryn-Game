@@ -778,26 +778,34 @@ fn source_questpc7_corpse_capacity(creature: &str, corpse: &SectionRef) -> Optio
     }
 }
 
+const SOURCE_PLAIN_CORPSES: &[(&str, &str)] = &[
+    (
+        "oteryn:creature.aspect_of_power",
+        "oteryn:item.tibia.i33949",
+    ),
+    ("oteryn:creature.blue_butterfly", "oteryn:item.tibia.i4993"),
+    ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793"),
+    (
+        "oteryn:creature.necromantic_focus",
+        "oteryn:item.tibia.i33984",
+    ),
+    ("oteryn:creature.poor_soul", "oteryn:item.tibia.i33891"),
+    (
+        "oteryn:creature.purple_butterfly",
+        "oteryn:item.tibia.i4992",
+    ),
+    ("oteryn:creature.red_butterfly", "oteryn:item.tibia.i4991"),
+    (
+        "oteryn:creature.symbol_of_hatred",
+        "oteryn:item.tibia.i33792",
+    ),
+    ("oteryn:creature.weeping_soul", "oteryn:item.tibia.i33876"),
+];
+
 fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
     corpse.family == "Item"
         && corpse.revision == "definition-r1"
-        && matches!(
-            (creature, corpse.key.as_str()),
-            (
-                "oteryn:creature.symbol_of_hatred",
-                "oteryn:item.tibia.i33792"
-            ) | ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793")
-                | ("oteryn:creature.weeping_soul", "oteryn:item.tibia.i33876")
-                | ("oteryn:creature.poor_soul", "oteryn:item.tibia.i33891")
-                | (
-                    "oteryn:creature.aspect_of_power",
-                    "oteryn:item.tibia.i33949"
-                )
-                | (
-                    "oteryn:creature.necromantic_focus",
-                    "oteryn:item.tibia.i33984"
-                )
-        )
+        && SOURCE_PLAIN_CORPSES.contains(&(creature, corpse.key.as_str()))
 }
 
 fn verified_soul_war_corpses(
@@ -831,9 +839,7 @@ fn verified_soul_war_corpses(
             && matches!(&record.semantics.physical, F::Known(value)
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
-        let source_plain = matches!(definition.production_key.as_str(),
-            "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
-            | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984")
+        let source_plain = SOURCE_PLAIN_CORPSES.iter().any(|(_, key)| *key == definition.production_key)
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
         let questpc7_capacity = match definition.production_key.as_str() {
@@ -1445,6 +1451,49 @@ mod protected_loot_tests {
             "../../../../../tools/content-schema/native-gameplay/loot-tables.json"
         ))?;
         Ok((creatures, loot))
+    }
+
+    #[test]
+    fn explorer_society_butterflies_admit_the_authored_plain_corpses()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let items = serde_json::from_str(include_str!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        let table = CreatureRewardTable::from_pin_with_native_corpses(
+            &creatures,
+            Some(&loot),
+            Some(&items),
+        );
+        let callbacks: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/npc-callbacks/explorer-society.json"
+        ))?;
+        let mut count = 0;
+        for callback in callbacks["callbacks"].as_array().ok_or("callbacks")? {
+            let Some(species) = callback["creature_target"].as_str() else {
+                continue;
+            };
+            if !species.ends_with("_butterfly") {
+                continue;
+            }
+            let appearance = callback["corpse_target"]["appearance"]
+                .as_u64()
+                .ok_or("appearance")?;
+            let reward = table.row(species).map_err(NoSettlementReason::as_str)?;
+            let corpse = reward.corpse_item.as_ref().ok_or("missing native corpse")?;
+            assert_eq!(
+                corpse.production_key,
+                format!("oteryn:item.tibia.i{appearance}")
+            );
+            assert!(reward.loot_table.entries.is_empty());
+            count += 1;
+        }
+        assert_eq!(count, 3);
+        Ok(())
     }
 
     #[test]

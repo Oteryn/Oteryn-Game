@@ -78,7 +78,14 @@ async fn apply(
                     .as_ref()
                     .map(|p| &p.request_id)
                     .or_else(|| view.order.as_ref().map(|o| &o.request_id))
-                {
+                    .or_else(|| {
+                        view.catalogue
+                            .as_ref()?
+                            .recent_orders
+                            .iter()
+                            .find(|order| !order.state.completed())
+                            .map(|order| &order.request_id)
+                    }) {
                     Some(id) => id.clone(),
                     None => return Ok(()),
                 },
@@ -191,28 +198,32 @@ async fn refresh(
             )
         })
         .collect();
+    let mut verified = Vec::new();
     for listed in std::mem::take(&mut catalogue.recent_orders) {
-        let Ok(order) = client
+        match client
             .coin_order_status(token, &listed.request_id, cancel.clone())
             .await
-        else {
-            continue;
-        };
-        catalogue.recent_orders.push(order);
+        {
+            Ok(order) => {
+                catalogue.recent_orders.push(order.clone());
+                verified.push(order);
+            }
+            Err(error) if crate::account_services::status_temporarily_unavailable(&error) => {
+                catalogue.recent_orders.push(listed);
+            }
+            Err(_) => {}
+        }
     }
     if let Some(request_id) = view
         .pending
         .as_ref()
         .map(|request| &request.request_id)
         .or_else(|| view.order.as_ref().map(|order| &order.request_id))
-        && let Some(order) = catalogue
-            .recent_orders
-            .iter()
-            .find(|o| &o.request_id == request_id)
+        && let Some(order) = verified.iter().find(|o| &o.request_id == request_id)
     {
         accept(view, order.clone())?;
     }
-    for order in &catalogue.recent_orders {
+    for order in &verified {
         if view.order.is_none() && view.pending.is_none() && view.prior.contains(&order.request_id)
         {
             accept(view, order.clone())?;
@@ -220,10 +231,7 @@ async fn refresh(
     }
     if view.order.is_none()
         && !view.pending()
-        && let Some(order) = catalogue
-            .recent_orders
-            .iter()
-            .find(|o| !o.state.completed())
+        && let Some(order) = verified.iter().find(|o| !o.state.completed())
     {
         accept(view, order.clone())?;
     }

@@ -146,7 +146,15 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         )
         self.assertEqual("NATIVE_BINDINGS_PENDING", legion_helmet["implementation_state"])
         self.assertEqual("NOT_ASSESSED", legion_helmet["playable_verification"])
-        owner_enabled = enabled + 2
+        # These additional applied chest bindings also belong to quests whose
+        # broader native implementation is still pending.
+        for title in ("Mad Mage Room Quest", "Stealth Ring Quest"):
+            self.assertEqual(
+                "REWARD_CLAIM_USE_ENABLED",
+                by_title[title]["reward_claim_owner"]["state"],
+            )
+            self.assertEqual("NATIVE_BINDINGS_PENDING", by_title[title]["work_state"])
+        owner_enabled = enabled + 4
         self.assertEqual(
             {
                 "REWARD_CLAIM_DATA_PENDING": 3,

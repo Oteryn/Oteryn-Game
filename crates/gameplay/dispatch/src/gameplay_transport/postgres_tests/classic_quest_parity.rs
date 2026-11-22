@@ -96,3 +96,18 @@ fn classic_quest_terrain_tools_well_and_lamp_use_committed_sources() -> TestResu
 fn classic_quest_npcs_offer_and_exchange_with_confirmed_inputs() -> TestResult {
     super::qengine_rewards_fixtures::scenario(super::classic_quest_parity_fixtures::NPC_CASE)
 }
+
+#[test]
+fn explorer_society_ice_delivery_retains_its_selected_pick() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    use super::classic_quest_parity_fixtures::ICE_DELIVERY;
+    super::kill_reward_e2e_fixtures::scenario_thread::run("explorer-society-ice-delivery", || {
+        for name in ICE_DELIVERY {
+            let access = super::classic_quest_parity_fixtures::access(name).ok_or("icicle access")?;
+            super::quest_world_callbacks_fixtures::scenario(name, access.source, false)?;
+        }
+        Ok(())
+    })
+}

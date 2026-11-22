@@ -2,7 +2,16 @@ use super::*;
 
 #[test]
 fn bazaar_reopened_window_recovers_pending_before_allowing_another_mutation() -> TestResult {
-    test_thread(|| {
+    reopened_bazaar(false)
+}
+
+#[test]
+fn bazaar_reopened_window_retains_pending_when_status_is_unavailable() -> TestResult {
+    reopened_bazaar(true)
+}
+
+fn reopened_bazaar(fail_status: bool) -> TestResult {
+    test_thread(move || {
         let mock = MockPlatform::start()?;
         let client = mock.client()?;
         let token = mock.token(&client)?;
@@ -30,6 +39,10 @@ fn bazaar_reopened_window_recovers_pending_before_allowing_another_mutation() ->
             )
             .await;
             assert!(first.pending());
+            mock.authority
+                .lock()
+                .map_err(|_| "lock")?
+                .fail_bazaar_status = fail_status;
             let mut reopened = View::default();
             controller::execute(
                 &mut reopened,
@@ -39,8 +52,10 @@ fn bazaar_reopened_window_recovers_pending_before_allowing_another_mutation() ->
                 CancellationToken::new(),
             )
             .await;
-            assert!(reopened.pending());
-            assert!(!reopened.can_retry());
+            if !fail_status {
+                assert!(reopened.pending());
+                assert!(!reopened.can_retry());
+            }
             mock.authority.lock().map_err(|_| "lock")?.pending_first = false;
             controller::execute(
                 &mut reopened,
@@ -56,6 +71,12 @@ fn bazaar_reopened_window_recovers_pending_before_allowing_another_mutation() ->
             )
             .await;
             assert_eq!(mock.authority.lock().map_err(|_| "lock")?.commands.len(), 1);
+            assert!(reopened.pending());
+            assert!(!reopened.can_retry());
+            mock.authority
+                .lock()
+                .map_err(|_| "lock")?
+                .fail_bazaar_status = false;
             controller::execute(
                 &mut reopened,
                 Action::Status,

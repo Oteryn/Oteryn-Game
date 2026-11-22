@@ -12,6 +12,11 @@ use std::num::NonZeroU64;
 
 pub(super) const NPC_CASE: &str = "qengine-rewards-classic-exchanges";
 pub(super) const ACCESS_PREFIX: &str = "classic-quest-access/";
+pub(super) const ICE_DELIVERY: [&str; 2] = [
+    "explorer-society-ice-delivery-1",
+    "explorer-society-ice-delivery-2",
+];
+
 const MARID_LAMP: &str = "marid-lamp";
 
 #[derive(Clone, Copy)]
@@ -153,8 +158,44 @@ pub(super) const ACCESS: [Access; 10] = [
 ];
 
 pub(super) fn access(name: &str) -> Option<Access> {
+    if let Some(&key) = ICE_DELIVERY.iter().find(|&&key| key == name) {
+        let callback = super::quest_world_callbacks_fixtures::callback(key).ok()?;
+        let selected = callback.selector.native?;
+        let start = Position { x: selected.position.x - 1, ..selected.position };
+        let item = callback.item_on_target?.item;
+        return Some(Access {
+            name: key,
+            source: selected.position,
+            start,
+            tool: Some((item.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?, None)),
+            ordinal: selected.ordinal,
+            destination: start,
+        });
+    }
     let name = name.strip_prefix(ACCESS_PREFIX)?;
     ACCESS.into_iter().find(|case| case.name == name)
+}
+
+pub(super) fn ice_delivery_world(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    access: Access,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use super::l6_world_pickups_fixtures::{NativeCrop, native_crop};
+    let bytes: &[u8] = if access.name == ICE_DELIVERY[0] {
+        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z09-x125-y123.b3"))
+    } else {
+        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z10-x132-y124.b3"))
+    };
+    let source = access.source;
+    native_crop(native, NativeCrop {
+        bytes,
+        region: (source.floor.unsigned_abs(), source.x / 256, source.y / 256),
+        bounds: (source.x - 1, source.y - 1, source.x + 1, source.y + 1),
+        start: (access.start.x, access.start.y),
+        expected: Vec::new(),
+    })
 }
 
 pub(super) async fn access_exercise(
@@ -191,6 +232,16 @@ pub(super) async fn access_exercise(
         placement,
         expected_revision: map.facts.object_revision(key),
     };
+    let ice_delivery = ICE_DELIVERY.contains(&case.name)
+        .then(|| super::quest_world_callbacks_fixtures::callback(case.name))
+        .transpose()?;
+    if let Some(callback) = &ice_delivery {
+        let stage = callback.storage.iter()
+            .map(|track| (track.track.clone(), track.minimum)).collect::<Vec<_>>();
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h, owner, admitted, &stage, 123,
+        ).await?;
+    }
     let command = admitted.continuity.next_command_id;
     if case.name == MARID_LAMP {
         let mission = "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03";
@@ -266,6 +317,24 @@ pub(super) async fn access_exercise(
             "{}",
             case.name
         );
+    }
+    if let Some(callback) = &ice_delivery {
+        let retained: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_quest_world_tool_reads r JOIN game_item_instances i
+             USING(item_instance_id) WHERE r.transition_key=$1 AND i.lifecycle=1 AND i.quantity=1",
+        ).bind(&callback.key).fetch_one(&h.pool).await?;
+        assert_eq!(retained, 1);
+        let reward = callback.item_reward().as_ref().ok_or("icicle reward")?;
+        let sample: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1",
+        ).bind(&reward.item).fetch_one(&h.pool).await?;
+        assert_eq!(sample, 1);
+        for track in &callback.storage {
+            let value: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            ).bind(&track.track).fetch_one(&h.pool).await?;
+            assert_eq!(value, track.set);
+        }
     }
     if case.name == MARID_LAMP {
         assert_eq!(quantity(h, 3231).await?, 0);
