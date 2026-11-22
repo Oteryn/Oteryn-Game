@@ -131,8 +131,11 @@ impl PreferenceStore {
 
     pub fn backup_path(&self) -> PathBuf {
         let pending = self.path.with_added_extension("pending-backup");
+        let ready = self.path.with_added_extension("ready-backup");
         if pending.is_file() {
             pending
+        } else if ready.is_file() {
+            ready
         } else {
             self.path.with_extension("backup.json")
         }

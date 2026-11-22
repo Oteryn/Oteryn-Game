@@ -1,5 +1,6 @@
 //! T067 consumer: browser bootstrap, process sessions and opt-in OS-vault families.
 mod attempt;
+mod commerce;
 mod revocation_intent;
 mod revocation_journal;
 pub mod vault;
@@ -29,6 +30,7 @@ struct State {
     remembered: bool,
 }
 pub struct DeviceLogin {
+    commerce: commerce::Commerce,
     enabled: bool,
     forget_requested: AtomicBool,
     journal: Arc<revocation_journal::Journal>,
@@ -43,6 +45,7 @@ impl Default for DeviceLogin {
             forget_requested: AtomicBool::new(false),
             journal: Arc::new(revocation_journal::Journal::new(None)),
             vault: vault::system("Oteryn/native-disabled".into()),
+            commerce: Default::default(),
             state: Default::default(),
             folder: None,
         }
@@ -65,6 +68,7 @@ impl DeviceLogin {
             forget_requested: AtomicBool::new(false),
             journal: Arc::new(revocation_journal::Journal::new(Some(folder.clone()))),
             vault: vault::system(format!("Oteryn/NativeDevice/{key}")),
+            commerce: Default::default(),
             state: Default::default(),
             folder: Some(folder),
         }

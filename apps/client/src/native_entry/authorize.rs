@@ -198,11 +198,14 @@ pub(super) async fn authorize(
                 }
             }
             SelectionAction::AccountServices => {
+                let session = config
+                    .device_sessions
+                    .commerce_session(&config.platform_url, &config.oauth_client_id);
                 let services = access_token(client, config, cancellation.clone(), true).await;
                 match services {
                     Ok(services) => {
-                        // Commerce state lives only as long as this services authorization.
-                        let mut services_session = crate::account_services::Session::default();
+                        let mut services_session = session.lock().await;
+                        services_session.reopen();
                         crate::account_services::run(
                             client,
                             &services,

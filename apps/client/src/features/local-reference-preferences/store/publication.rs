@@ -66,10 +66,18 @@ impl PreferenceStore {
         load: impl FnOnce(&Path) -> io::Result<ReferencePreferences>,
     ) -> io::Result<ReferencePreferences> {
         let _lock = crate::atomic_file::lock(path)?;
-        Self::finish_pending_backup(path)?;
-        let replacement = load(path)?;
+        let retained = Self::finish_pending_backup(path)?;
+        let restoring_pending = retained && order == BackupOrder::ActiveFirst;
+        let ready = path.with_added_extension("ready-backup");
+        let (replacement, bytes) = if restoring_pending {
+            let bytes = Self::transfer_bytes(&ready)?;
+            (Self::decode_transfer(&bytes)?, bytes)
+        } else {
+            let replacement = load(path)?;
+            let bytes = Self::serialized(&replacement)?;
+            (replacement, bytes)
+        };
         Self::serialized(previous)?;
-        let bytes = Self::serialized(&replacement)?;
         let backup = match Self::transfer_bytes(path).and_then(|bytes| {
             Self::decode_transfer(&bytes)?;
             Ok(bytes)
@@ -85,16 +93,25 @@ impl PreferenceStore {
         let slot = path.with_extension("backup.json");
         if let Some(backup) = backup {
             match order {
-                BackupOrder::BackupFirst => crate::atomic_file::replace(&slot, &backup, true)?,
+                BackupOrder::BackupFirst => {
+                    if !retained {
+                        crate::atomic_file::replace(&slot, &backup, true)?;
+                    }
+                }
                 BackupOrder::ActiveFirst => {
-                    let pending = path.with_added_extension("pending-backup");
-                    crate::atomic_file::replace(&pending, &backup, true)?;
+                    let staging = path.with_added_extension("pending-backup");
+                    crate::atomic_file::replace(&staging, &backup, true)?;
                     sync_parent(path)?;
                     crate::atomic_file::replace(path, &bytes, true)?;
                     sync_parent(path)?;
+                    std::fs::rename(staging, &ready)?;
+                    sync_parent(path)?;
                     #[cfg(test)]
                     check_backup_write()?;
-                    std::fs::rename(pending, slot)?;
+                    if !retained {
+                        std::fs::rename(ready, slot)?;
+                        sync_parent(path)?;
+                    }
                     return Ok(replacement);
                 }
             }
@@ -105,19 +122,26 @@ impl PreferenceStore {
     }
 
     // Resolve an interrupted swap under the same lock as every subsequent write.
-    fn finish_pending_backup(path: &Path) -> io::Result<()> {
+    fn finish_pending_backup(path: &Path) -> io::Result<bool> {
         let pending = path.with_added_extension("pending-backup");
-        let backup = match Self::transfer_bytes(&pending) {
-            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
-            result => result?,
-        };
-        match Self::transfer_bytes(path) {
-            // Publication stopped before replacing active. Keep the original backup slot.
-            Ok(active) if active == backup => std::fs::remove_file(pending)?,
-            Err(error) if error.kind() != io::ErrorKind::NotFound => return Err(error),
-            _ => std::fs::rename(pending, path.with_extension("backup.json"))?,
+        let ready = path.with_added_extension("ready-backup");
+        if pending.try_exists()? {
+            let backup = Self::transfer_bytes(&pending)?;
+            match Self::transfer_bytes(path) {
+                // Active was never replaced. Keep the previously committed backup.
+                Ok(active) if active == backup => std::fs::remove_file(pending)?,
+                Err(error) if error.kind() != io::ErrorKind::NotFound => return Err(error),
+                _ => std::fs::rename(pending, &ready)?,
+            }
+            sync_parent(path)?;
         }
-        sync_parent(path)
+        if ready.try_exists()? {
+            if std::fs::rename(ready, path.with_extension("backup.json")).is_err() {
+                return Ok(true);
+            }
+            sync_parent(path)?;
+        }
+        Ok(false)
     }
 }
 
@@ -204,5 +228,53 @@ fn restore_recovers_original_bytes_after_backup_write_failure() -> io::Result<()
     let mut restarted = SettingsState::new(Some(path));
     restarted.restore_backup()?;
     assert_eq!(restarted.preferences.ui_scale, 125);
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn pending_promotion_allows_later_settings_writes() -> io::Result<()> {
+    use super::super::SettingsState;
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
+    let active = ReferencePreferences {
+        ui_scale: 125,
+        ..Default::default()
+    };
+    let original = serde_json::to_vec(&active)?;
+    std::fs::write(&path, &original)?;
+    let slot = path.with_extension("backup.json");
+    PreferenceStore::export_to(&ReferencePreferences::default(), &slot)?;
+    let mut state = SettingsState::new(Some(path.clone()));
+    FAIL_BACKUP_WRITE.set(true);
+    assert!(state.restore_backup().is_err());
+    std::fs::remove_file(&slot)?;
+    std::fs::create_dir(&slot)?;
+    let edited = ReferencePreferences {
+        ui_scale: 140,
+        ..Default::default()
+    };
+    state.apply(edited.clone());
+    assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 140);
+    let import = root.path().join("import.json");
+    PreferenceStore::export_to(&active, &import)?;
+    state.import_from(&import)?;
+    assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 125);
+    state.reset_defaults()?;
+    assert_eq!(
+        PreferenceStore::read_transfer(&path)?.ui_scale,
+        ReferencePreferences::default().ui_scale
+    );
+    assert_eq!(
+        std::fs::read(PreferenceStore::load(path.clone())?.backup_path())?,
+        original
+    );
+    let before_restore = std::fs::read(&path)?;
+    state.restore_backup()?;
+    assert_eq!(std::fs::read(&path)?, original);
+    assert_eq!(
+        std::fs::read(PreferenceStore::load(path)?.backup_path())?,
+        before_restore
+    );
     Ok(())
 }

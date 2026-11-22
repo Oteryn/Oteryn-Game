@@ -86,6 +86,12 @@ impl Reentry {
             return false;
         }
         if let Some(previous) = &self.client.native_login
+            && (previous.platform_url != config.platform_url
+                || previous.oauth_client_id != config.oauth_client_id)
+        {
+            previous.device_sessions.clear_commerce();
+        }
+        if let Some(previous) = &self.client.native_login
             && previous.platform_url == config.platform_url
             && previous.oauth_client_id == config.oauth_client_id
         {
