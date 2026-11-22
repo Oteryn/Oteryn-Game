@@ -25,6 +25,7 @@ fn scenario_case(
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let koshei = name == super::super::koshei_the_deathless_journey::NAME;
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -79,7 +80,7 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
-    let native_crop = pinned_qc_world
+    let native_crop = koshei || pinned_qc_world
         || m03_use
         || qd_world
         || engenc_asura
@@ -134,6 +135,8 @@ fn scenario_case(
         super::super::qh_authored_cases_fixtures::dig_start()
     } else if qd_world {
         super::super::qd_world_fixtures::start(name)?
+    } else if koshei {
+        Position { x: trigger.x - 1, ..trigger }
     } else if engenc_asura {
         super::super::engenc_asura_dispatch_fixtures::start(name)?
     } else if m07_too_hot {
@@ -361,6 +364,8 @@ fn scenario_case(
         super::super::qengine_m03_use_fixtures::callback()?
     } else if qd_world {
         super::super::qd_world_fixtures::callback(name)?
+    } else if koshei {
+        super::super::koshei_the_deathless_journey::callback()?
     } else if engenc_asura {
         super::super::engenc_asura_dispatch_fixtures::callback(name)?
     } else if m03_pits {
@@ -1020,9 +1025,15 @@ fn scenario_case(
                 eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
             }
         }
-        prepare_current_session(&h)
-            .await
-            .map_err(|e| format!("callback session: {e}"))?;
+        let recovery = if koshei {
+            let source = super::super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+            Some(source)
+        } else {
+            prepare_current_session(&h).await
+                .map_err(|e| format!("callback session: {e}"))?;
+            None
+        };
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -1036,7 +1047,9 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if pinned_qc_world {
+        let world = if koshei {
+            super::super::koshei_the_deathless_journey::world(generation.native_gameplay().ok_or("Koshei native content")?)?
+        } else if pinned_qc_world {
             super::super::qc_pinned_world::world(
                 generation
                     .native_gameplay()
@@ -1394,6 +1407,7 @@ fn scenario_case(
         };
 
         let initial_level: Option<u32> = match name {
+            super::super::koshei_the_deathless_journey::NAME => Some(40),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
@@ -1585,7 +1599,7 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.starts_with("authored-")
+        let premium = if koshei || name.starts_with("authored-")
             || name == "nx6-wayfarer"
             || name == "m07-carrot-premium"
             || m03_use
@@ -1710,6 +1724,9 @@ fn scenario_case(
             );
         }
 
+        if let Some(recovery) = &recovery {
+            owner.evidence = &recovery.evidence;
+        }
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
         if let Some(room) = bundle_room.as_ref() {
@@ -1883,7 +1900,7 @@ fn scenario_case(
                 "source eligibility uses the actual durable starting level"
             );
         }
-        if name == "nx6-wayfarer"
+        if koshei || name == "nx6-wayfarer"
             || qm03
             || m07_too_hot
             || mead
@@ -1899,7 +1916,9 @@ fn scenario_case(
             owner.admit_premium(id(40), admitted.game_session_id);
         }
         owner.admit_quest_session(&admitted).await;
-        if m03_use {
+        if koshei {
+            Box::pin(super::super::koshei_the_deathless_journey::exercise(&mut owner, &mut admitted, &h)).await?;
+        } else if m03_use {
             Box::pin(super::super::qengine_m03_use_fixtures::exercise(
                 &mut owner,
                 &mut admitted,

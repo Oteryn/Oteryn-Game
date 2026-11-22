@@ -1,0 +1,234 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.koshei_the_deathless_quest",
+      "recipe_sha256": "1f55ae5a341d3761bdead27782f4a0f5128c744e693a89af901676fe2255961d",
+      "admission": {
+        "minimum_level": 40,
+        "premium": true,
+        "prerequisites": []
+      },
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua#L20-L45",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/koshei_the_deathless_quest/action_boss.lua#L3-L13",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2459-L2472",
+        "tools/content-schema/world-authoring/samples/quest-door-bindings.json:4008"
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 4
+        },
+        {
+          "key": "oteryn:quest-progress/qnpcfx/koshei/amulet",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "key": "oteryn:quest-progress/koshei/tomb-entered",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/koshei/tomb-defeated",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/reward_door",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s3-tomb-entry",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/koshei/tomb-entry",
+              "quest": "oteryn:quest.koshei_the_deathless_quest",
+              "trigger": "use",
+              "admission": {
+                "premium": true
+              },
+              "minimum_level": 40,
+              "lever": null,
+              "teleport": null,
+              "failure_message": null,
+              "selector": {
+                "position": {
+                  "x": 33281,
+                  "y": 32447,
+                  "floor": -8
+                },
+                "appearance": 7534,
+                "native": {
+                  "position": {
+                    "x": 33281,
+                    "y": 32447,
+                    "floor": -8
+                  },
+                  "appearance": 7534,
+                  "ordinal": 1
+                }
+              },
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 4,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/qnpcfx/koshei/amulet",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/reward_door",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 0,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/koshei/tomb-entered",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "sources": [
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua#L20-L45",
+                "content/world/spawns/held-bosses.json"
+              ],
+              "effects": {
+                "encounter": {
+                  "minimum_level": 40,
+                  "players": [
+                    {
+                      "from": {
+                        "x": 33280,
+                        "y": 32447,
+                        "floor": -8
+                      },
+                      "to": {
+                        "x": 33270,
+                        "y": 32406,
+                        "floor": -12
+                      }
+                    }
+                  ],
+                  "monsters": [
+                    {
+                      "position": {
+                        "x": 33271,
+                        "y": 32406,
+                        "floor": -12
+                      },
+                      "creature": "oteryn:creature.koshei_the_deathless"
+                    }
+                  ],
+                  "room_min": {
+                    "x": 33269,
+                    "y": 32403,
+                    "floor": -12
+                  },
+                  "room_max": {
+                    "x": 33274,
+                    "y": 32409,
+                    "floor": -12
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "s3-tomb-kill",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/koshei-tomb",
+              "creature": "oteryn:creature.koshei_the_deathless",
+              "track": "oteryn:quest-progress/koshei/tomb-defeated",
+              "gate": "oteryn:quest-progress/koshei/tomb-entered",
+              "gate_value": 1,
+              "maximum": 1,
+              "encounter_source": "oteryn:quest-callback/koshei/tomb-entry"
+            }
+          }
+        },
+        {
+          "key": "s4-seal",
+          "completes": false,
+          "trigger": {
+            "kind": "carried_use",
+            "callback": {
+              "key": "oteryn:quest-reward/koshei/tomb-seal",
+              "quest": "oteryn:quest.koshei_the_deathless_quest",
+              "npc": "oteryn:npc.a_sweaty_cyclops",
+              "carried_item": "oteryn:item.tibia.i7532",
+              "creature_target": "oteryn:creature.koshei_the_deathless",
+              "corpse_target": {
+                "appearance": 7535,
+                "maximum_age_ms": 10000
+              },
+              "keywords": [],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/koshei/tomb-defeated",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/reward_door",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i7532",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "At last... I have it back, my precious amulet."
+              ],
+              "sources": [
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/koshei_the_deathless_quest/action_boss.lua#L3-L13"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
