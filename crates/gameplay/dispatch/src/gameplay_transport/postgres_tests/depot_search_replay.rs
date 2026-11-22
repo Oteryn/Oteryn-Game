@@ -29,7 +29,7 @@ fn scenario(change_request: bool) -> TestResult {
     world_scenario!(
         "depot_search_stash_replay",
         |h,
-         request,
+         _request,
          seal,
          authority,
          world_id,
