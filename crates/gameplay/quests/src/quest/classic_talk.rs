@@ -438,16 +438,26 @@ fn queen(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Op
     None
 }
 
+/// Reward rows share the donor's ordered keyword matching and static vetoes.
+pub fn rottin_keyword(text: &str) -> Option<&'static str> {
+    if static_keyword_intercepts(ROTTIN, text) || super::quests_2_focus::intercepts(text) {
+        return None;
+    }
+    ["mission", "yes", "no", "task", "lucky charms", "repairs"]
+        .into_iter()
+        .find(|keyword| contains(text, keyword))
+}
+
 fn rottin(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> Option<Choice> {
-    // rottin_wood.lua:88-179. Only Mission 02's acceptance is state-only;
-    // the neighbouring acceptances include ribbons/nets and remain deferred.
+    // The shared reward router runs the value-bearing branches before these replies.
     if contains(text, "mission") {
         return Some(match value(tracks, ROTTIN_STATE, "questline") {
             stage if stage < 1 => choice(Some(Topic::Rottin(1)), "line-91", None),
             1 => choice(Some(Topic::Rottin(3)), "line-94", None),
             2 => choice(Some(Topic::Rottin(4)), "line-98", None),
             3 => choice(Some(Topic::Rottin(5)), "line-107", None),
-            4 | 5 => deferred(topic),
+            4 => choice(Some(Topic::Rottin(6)), "line-111", None),
+            5 => deferred(topic),
             _ => choice(None, "line-141", None),
         });
     }
@@ -465,7 +475,11 @@ fn rottin(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> O
             5 if tracks.get(ROTTIN_WALLCOUNT).copied().unwrap_or(0) < 6 => {
                 choice(None, "line-192", None)
             }
-            2 | 3 | 5 | 6 | 7 | 9 | 10 | 11 | 12 => deferred(topic),
+            12 if tracks.get(ROTTIN_WALLCOUNT).copied().unwrap_or(0) < 6 => {
+                choice(None, "line-289", None)
+            }
+            6 => choice(Some(Topic::Rottin(7)), "line-197", None),
+            2 | 3 | 5 | 7 | 9 | 10 | 11 | 12 => deferred(topic),
             _ => return None,
         });
     }
@@ -478,6 +492,7 @@ fn rottin(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> O
             3 => Some(choice(None, "line-304", None)),
             4 => Some(choice(None, "line-307", None)),
             5 => Some(choice(None, "line-310", None)),
+            6 | 7 | 9 | 11 => Some(choice(None, "line-313", None)),
             _ => None,
         };
     }
@@ -488,10 +503,22 @@ fn rottin(text: &str, topic: Option<Topic>, tracks: &BTreeMap<String, i64>) -> O
             _ => choice(None, "line-336", None),
         });
     }
-    if (contains(text, "lucky charms") || contains(text, "repairs"))
-        && topic == Some(Topic::Rottin(8))
-    {
-        return Some(deferred(topic));
+    if topic == Some(Topic::Rottin(8)) {
+        let stage = value(tracks, ROTTIN_STATE, "questline");
+        if stage >= 2 && contains(text, "lucky charms") {
+            return Some(if value(tracks, ROTTIN_STATE, "task01") == 1 {
+                choice(Some(Topic::Rottin(10)), "line-345", None)
+            } else {
+                choice(Some(Topic::Rottin(9)), "line-348", None)
+            });
+        }
+        if stage >= 4 && contains(text, "repairs") {
+            return Some(if value(tracks, ROTTIN_STATE, "task02") == 1 {
+                choice(Some(Topic::Rottin(12)), "line-357", None)
+            } else {
+                choice(Some(Topic::Rottin(11)), "line-360", None)
+            });
+        }
     }
     None
 }
