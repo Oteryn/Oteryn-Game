@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug, id, run};
 use super::quest_world_callbacks_fixtures::{wire, world_with_objects};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{
@@ -207,7 +208,7 @@ fn scenario(transform: bool) -> TestResult {
             .map_err(debug)?;
         deps.initialize(&owner).await;
         admitted.continuity.selected_capabilities =
-            super::SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
                 .ok_or("map use capabilities")?;
         super::item_look_fixtures::seed_main_backpack(&h, &[(KNIFE, 1)]).await?;
         owner.admit_quest_session(&admitted).await;
