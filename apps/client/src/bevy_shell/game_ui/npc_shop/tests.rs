@@ -744,7 +744,7 @@ fn sell_all_visits_owned_sell_quotes_without_row_selection() -> Result {
             new_revision: 1,
             value: oteryn_session::CharacterInventory {
                 main_backpack: Some(item(1)?),
-                entries: vec![item(42)?, item(44)?],
+                entries: vec![item(42)?, item(43)?, item(44)?],
                 equipment: vec![],
             },
         }),
@@ -775,6 +775,18 @@ fn sell_all_visits_owned_sell_quotes_without_row_selection() -> Result {
         };
         assert_eq!(request.0.offer_index, expected);
         assert!(commands.try_recv().is_err());
+        if expected == 0 {
+            outbox.push(vec![SessionEvent::Inventory(AppliedDelta {
+                server_sequence: 10,
+                base_revision: 1,
+                new_revision: 2,
+                value: oteryn_session::CharacterInventory {
+                    main_backpack: Some(item(1)?),
+                    entries: vec![item(44)?],
+                    equipment: vec![],
+                },
+            })]);
+        }
         outbox.bevy_npc_sale_accepted();
         app.update();
     }
@@ -844,6 +856,14 @@ fn shop_weight_sort_and_capacity_use_inspected_weight_and_live_free_capacity() -
                 .map_err(|_| "request")?,
             oteryn_client_ui::inspection::Request::Catalogue(item)
         );
+        if item == 42 {
+            click(&mut app, |k| matches!(k,Kind::Select(q) if q.item==42))?;
+            click(&mut app, |k| matches!(k, Kind::Trade))?;
+            assert!(
+                commands.try_recv().is_err(),
+                "capacity check is waiting for the requested weight"
+            );
+        }
         let payload = encode_reply(&Reply {
             status: 1,
             catalogue: None,

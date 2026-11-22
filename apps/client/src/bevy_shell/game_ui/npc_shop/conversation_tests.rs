@@ -158,6 +158,28 @@ fn actual_server_conversation_opens_the_single_floating_npc_window_without_shop(
             .mode,
         before.next()
     );
+    app.world_mut().trigger(Activate { entity: mode });
+    app.update();
+    assert!(
+        app.world()
+            .get::<bevy::ui::InteractionDisabled>(widgets.conversation.message)
+            .is_some()
+    );
+    app.world_mut()
+        .entity_mut(widgets.conversation.message)
+        .insert(EditableText::new("hi"));
+    app.world_mut().trigger(Activate {
+        entity: widgets.conversation.send,
+    });
+    app.update();
+    assert!(commands.try_recv().is_err());
+    app.world_mut().trigger(Activate { entity: mode });
+    app.update();
+    assert!(
+        app.world()
+            .get::<bevy::ui::InteractionDisabled>(widgets.conversation.message)
+            .is_none()
+    );
     let keyword = app.world_mut().query::<(Entity, &conversation::Control)>().iter(app.world())
         .find(|(_,control)|matches!(&control.kind, conversation::Kind::Keyword(word) if word == "trade"))
         .map(|(entity,_)|entity).ok_or("server keyword")?;

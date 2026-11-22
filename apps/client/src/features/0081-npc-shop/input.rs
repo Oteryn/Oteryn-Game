@@ -24,6 +24,8 @@ pub(in crate::play) fn trade_request(
     amount: u32,
 ) {
     let mut mailbox = lock(shared);
+    // Headless callers can submit without opening the weight inspector.
+    mailbox.npc_shop.live.inspection_selected = mailbox.npc_shop.live.weight_pending.is_some();
     mailbox.npc_shop.live.free_capacity = mailbox.inventory.capacity.map(|c| c.free);
     if mailbox.npc_shop.pending {
         return;
@@ -42,35 +44,40 @@ pub(in crate::play) fn offer_request(
     commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,
     quote: oteryn_client_ui::npc_shop::Quote,
     sell_all: bool,
-) {
+) -> bool {
     let mut mailbox = lock(shared);
     if mailbox.npc_shop.live.pending {
-        return;
+        return false;
     }
     if sell_all
         && (quote.side != oteryn_client_ui::npc_shop::NpcTradeSide::Sell || quote.count != 1)
     {
-        return;
+        return false;
     }
-    if let Some(look) = mailbox.npc_shop.live.look(quote)
-        && let Some(command) = oteryn_client_ui::npc_shop::request(
-            &mut mailbox.npc_shop,
-            if sell_all {
-                Intent::SellAll(look)
-            } else {
-                Intent::Look(look)
-            },
-        )
-        && commands.send(PlayCommand::NpcShop(command)).is_err()
-    {
+    let Some(look) = mailbox.npc_shop.live.look(quote) else {
+        return false;
+    };
+    let Some(command) = oteryn_client_ui::npc_shop::request(
+        &mut mailbox.npc_shop,
+        if sell_all {
+            Intent::SellAll(look)
+        } else {
+            Intent::Look(look)
+        },
+    ) else {
+        return false;
+    };
+    if commands.send(PlayCommand::NpcShop(command)).is_err() {
         mailbox.npc_shop.pending = false;
         mailbox.npc_shop.feedback = Some(tr!("Session ended"));
+        return false;
     }
+    true
 }
 
 impl PlayLink {
-    pub fn npc_sell_all_request(&self, quote: oteryn_client_ui::npc_shop::Quote) {
-        offer_request(&self.mailbox, &self.commands, quote, true);
+    pub fn npc_sell_all_request(&self, quote: oteryn_client_ui::npc_shop::Quote) -> bool {
+        offer_request(&self.mailbox, &self.commands, quote, true)
     }
 }
 

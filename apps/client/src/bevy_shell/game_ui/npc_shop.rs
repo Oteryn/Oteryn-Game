@@ -8,6 +8,7 @@ use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::
 use oteryn_client_ui::npc_shop::{LiveShop, NpcTradeSide, Quote};
 use oteryn_client_ui_bevy as source;
 mod conversation;
+mod sales;
 mod submission;
 #[cfg(test)]
 mod tests;
@@ -88,6 +89,7 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
     };
     if matches!(action.kind, Kind::Close) {
         let visible = play.link.npc_shop_is_open() || play.link.npc_dialogue_is_visible();
+        state.sales.clear();
         play.link.npc_dialogue_close();
         state.selection = None;
         state.conversation = conversation::Ui::default();
@@ -172,8 +174,11 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
                 })
                 .collect();
             if let Some(first) = state.sales.pop_front() {
-                play.link.npc_sell_all_request(first);
-                true
+                let sent = play.link.npc_sell_all_request(first);
+                if !sent {
+                    state.sales.clear();
+                }
+                sent
             } else {
                 false
             }
@@ -351,23 +356,7 @@ fn project(
         };
         state.widgets = Some(widgets::build(&mut commands, &skins, generation));
     }
-    if !state.sales.is_empty() && !panel.pending {
-        if owner.modal_active()
-            || !play.link.npc_shop_is_open()
-            || panel.feedback.is_some()
-            || !panel.result.as_ref().is_some_and(|r| {
-                r.disposition == oteryn_session::NpcIntentDisposition::Ok && r.sold_units > 0
-            })
-        {
-            state.sales.clear();
-        } else if let Some(quote) = state.sales.pop_front() {
-            if panel.live.look(quote).is_some() && panel.live.owned(quote.item) > 0 {
-                play.link.npc_sell_all_request(quote);
-            } else {
-                state.sales.clear();
-            }
-        }
-    }
+    sales::advance(&mut state, &owner, &play.link, &panel);
     if panel.live.weight_pending.is_none() {
         let needed = state
             .selection

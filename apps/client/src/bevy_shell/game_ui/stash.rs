@@ -84,6 +84,9 @@ fn perform(owner: &HostOwner, state: &mut State, kind: Kind) {
     };
     match kind {
         Kind::ManageContainers if state.amount.is_none() => {
+            if !play.link.quick_loot_panel().selected {
+                return;
+            }
             play.link.stash_close();
             play.link.discovery_open(98);
         }

@@ -31,12 +31,20 @@ impl Outbox {
         let mut response = session
             .stash(&page_command(physical, command.intent.action)?)
             .await?;
-        if logical == 0 && command.intent.action == StashAction::Browse {
+        // The mutation may have created a new final page, or removed the last row.
+        // Keep its receipt while read-only probes locate the new end.
+        let initial_physical = physical;
+        let committed =
+            (response.reply.outcome == stash::StashOutcome::Committed).then(|| response.clone());
+        if logical == 0 && (command.intent.action == StashAction::Browse || committed.is_some()) {
             // Find the final page in logarithmic reads. Never repeat a stow or withdrawal.
             let mut low = 0;
             let mut high = None;
             for _ in 0..32 {
-                if response.reply.outcome != stash::StashOutcome::Opened {
+                if !matches!(
+                    response.reply.outcome,
+                    stash::StashOutcome::Opened | stash::StashOutcome::Committed
+                ) {
                     break;
                 }
                 if response.reply.has_more {
@@ -66,6 +74,19 @@ impl Outbox {
                     .await?;
             }
             lock(&self.0).stash.last_server_page = Some(last);
+        }
+        if let Some(receipt) = committed {
+            if !matches!(
+                response.reply.outcome,
+                stash::StashOutcome::Opened | stash::StashOutcome::Committed
+            ) {
+                physical = initial_physical;
+                response.reply.rows = receipt.reply.rows;
+            }
+            response.reply.outcome = receipt.reply.outcome;
+            response.reply.stowed_quantity = receipt.reply.stowed_quantity;
+            response.reply.transaction = receipt.reply.transaction;
+            response.status = receipt.status;
         }
         response.reply.rows.reverse();
         response.reply.has_more = physical > 0

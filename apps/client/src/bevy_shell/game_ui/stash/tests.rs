@@ -407,7 +407,19 @@ fn stash_left_right_adjust_and_confirm_through_keyboard() -> TestResult {
 
 #[test]
 fn manage_containers_opens_quick_loot_from_the_stash() -> TestResult {
-    let (mut app, _commands, _) = fixture()?;
+    let (mut app, _commands, outbox) = fixture()?;
+    click(&mut app, Kind::ManageContainers)?;
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .stash_panel()
+            .open
+    );
+    outbox.bevy_quick_loot_selected(true);
     click(&mut app, Kind::ManageContainers)?;
     let play = app
         .world()

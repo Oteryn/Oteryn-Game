@@ -36,10 +36,13 @@ impl LiveShop {
         self.valid_amount(quote, amount)
             && (quote.side != NpcTradeSide::Buy
                 || self.options.ignore_capacity
-                || self
-                    .free_capacity
-                    .zip(self.total_weight(quote, amount))
-                    .is_none_or(|(free, weight)| weight <= u128::from(free)))
+                || (!self.inspection_selected
+                    || self.free_capacity.is_none()
+                    || self.weights.contains_key(&quote.item))
+                    && self
+                        .free_capacity
+                        .zip(self.total_weight(quote, amount))
+                        .is_none_or(|(free, weight)| weight <= u128::from(free)))
             && (quote.side != NpcTradeSide::Buy
                 || self.options.ignore_capacity
                 || self.free_slots() != Some(0)

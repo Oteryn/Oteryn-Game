@@ -11,6 +11,7 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 #[derive(Default)]
 struct Peer {
     reverse_pages: bool,
+    emptied_last: bool,
     queries: Option<std::sync::Arc<std::sync::Mutex<Vec<stash::StashFilter>>>>,
 }
 impl Stepper for Peer {
@@ -44,13 +45,23 @@ impl Stepper for Peer {
             }],
         };
         if self.reverse_pages {
-            reply.has_more = intent.page < 3;
-            if intent.page > 3 { reply.rows.clear(); } else {
+            let last = if self.emptied_last { 2 } else { 3 };
+            reply.has_more = intent.page < last;
+            if intent.page > last { reply.rows.clear(); } else {
                 reply.rows[0].handle = [intent.page as u8 + 1;16];
             }
             if let stash::StashAction::Withdraw { row, .. } = intent.action {
-                assert_eq!(intent.page, 2);
-                assert_eq!(row, [3;16]);
+                if intent.page == 3 {
+                    assert!(!self.emptied_last, "withdrawal must execute once");
+                    assert_eq!(row,[4;16]);
+                    self.emptied_last = true;
+                    reply.rows.clear();
+                    reply.outcome = stash::StashOutcome::Committed;
+                    reply.transaction = Some([9;16]);
+                } else {
+                    assert_eq!(intent.page, 2);
+                    assert_eq!(row, [3;16]);
+                }
             }
         }
         let wire = stash::encode_stash_reply(&reply).map_err(|_| SessionError::SessionUnusable)?;
@@ -287,6 +298,13 @@ fn reverse_stash_pages_start_at_last_and_keep_withdraw_handle() -> Result<(), Er
             assert_eq!(page.rows[0].handle, [3;16]);
             link.stash_request(Intent::Withdraw { row: 0, amount: 1 });
             ready(&link).await?;
+            link.stash_request(Intent::Previous);
+            ready(&link).await?;
+            link.stash_request(Intent::Withdraw { row: 0, amount: 12 });
+            ready(&link).await?;
+            let refreshed = link.stash_panel();
+            assert_eq!(refreshed.page, 0);
+            assert_eq!(refreshed.rows[0].handle, [3;16]);
             drop(link);
             task.await?;
             Ok::<(), Error>(())

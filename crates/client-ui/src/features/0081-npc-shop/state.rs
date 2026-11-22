@@ -20,6 +20,7 @@ pub struct LiveShop {
     pub options: ShopOptions,
     pub weights: std::collections::BTreeMap<u32, Option<u32>>,
     pub weight_pending: Option<Quote>,
+    pub inspection_selected: bool,
     pub free_capacity: Option<u32>,
     pub selected: bool,
     pub resources_selected: bool,

@@ -134,25 +134,33 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
             } else {
                 // General Stats includes promotions. Market filters use the base vocation.
                 let character = play.link.cyclopedia_character_panel();
-                if character.target.is_some() {
-                    return false;
-                }
-                let family = match character.vocation_id {
+                let (hud_vocation, hud_pending) = play.link.own_hud_vocation();
+                let vocation = character
+                    .vocation_id
+                    .filter(|_| character.target.is_none())
+                    .or(hud_vocation);
+                let family = match vocation {
                     Some(1) => 6,
                     Some(2 | 3) => 1,
                     Some(4 | 5) => 5,
                     Some(6 | 7) => 2,
                     Some(8 | 9) => 4,
                     Some(10 | 11) => 3,
-                    None if character.selected
-                        && character.extensions.vocation
-                        && !character.pending =>
-                    {
+                    None if character.selected && character.extensions.vocation => {
                         use oteryn_client_runtime::cyclopedia_character::CharacterTab;
                         use oteryn_client_ui::cyclopedia_character::Intent;
-                        if play.link.cyclopedia_character_request(Intent::SelectTab(
-                            CharacterTab::GeneralStats,
-                        )) {
+                        let independent = character.pending
+                            || character.target.is_some()
+                            || character.tab != CharacterTab::GeneralStats
+                            || hud_pending;
+                        let requested = if independent {
+                            hud_pending || play.link.request_hud_stamina()
+                        } else {
+                            play.link.cyclopedia_character_request(Intent::SelectTab(
+                                CharacterTab::GeneralStats,
+                            ))
+                        };
+                        if requested {
                             state.character_filter = Some(action);
                         }
                         return false;
@@ -266,10 +274,10 @@ pub(super) fn finish_character_filter(owner: &HostOwner, state: &mut State) {
         (skills.pending, skills.complete.is_some())
     } else {
         let stats = play.link.cyclopedia_character_panel();
-        (
-            stats.pending,
-            stats.target.is_none() && stats.vocation_id.is_some(),
-        )
+        let (hud_vocation, hud_pending) = play.link.own_hud_vocation();
+        let available =
+            hud_vocation.is_some() || (stats.target.is_none() && stats.vocation_id.is_some());
+        (hud_pending || (stats.pending && !available), available)
     };
     if !waiting {
         state.character_filter = None;
