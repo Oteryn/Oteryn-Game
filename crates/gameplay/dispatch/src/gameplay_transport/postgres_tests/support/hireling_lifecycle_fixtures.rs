@@ -110,6 +110,7 @@ pub(super) enum Case {
     PositionAcl,
     PositionOccupied,
     BedRest,
+    CakeHouseRegeneration,
 }
 
 pub(super) async fn bed_rest_fresh(
@@ -124,13 +125,17 @@ pub(super) fn bed_rest_case() -> TestResult {
 }
 
 pub(super) fn run_case(case: Case) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         return Ok(());
-    }
+    };
+    run_case_with_admin(case, admin)
+}
+
+pub(super) fn run_case_with_admin(case: Case, admin: String) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
-            run(async move |admin| {
+            run(async move |_| {
                 // The fresh-relog composition case obtains its progression from the
                 // actual native admission owner, not the generic level-50 row seed.
                 let initialized = !matches!(case, Case::PositionRelog | Case::BedRest);
@@ -629,6 +634,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             house_store.ok_or("House Store producer")?,
         )
         .await;
+    }
+    if matches!(case, Case::CakeHouseRegeneration) {
+        return super::cake_world_bonus_fixtures::assert_house_regeneration(
+            h, &owner, admitted, deps.actor,
+        ).await;
     }
     if matches!(case, Case::BedRest) {
         return super::bed_sleep_dispatch_fixtures::production_rest(h, &owner, admitted, deps.actor).await;

@@ -314,6 +314,7 @@ async fn settle_kill(
             base_xp: 5,
             death_at_ms: u64::from(serial),
             death_at_us: u64::from(serial) * 1000,
+            died_at_unix_ms: 0,
             shared: false,
             party_id: None,
             party_revision: None,
