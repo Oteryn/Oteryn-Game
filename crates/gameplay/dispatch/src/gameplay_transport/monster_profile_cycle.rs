@@ -92,6 +92,14 @@ tokio::task_local! {
 }
 
 #[cfg(test)]
+pub(super) async fn with_native_ai_seed<T>(
+    seed: [u8; 32],
+    turn: impl std::future::Future<Output = T>,
+) -> T {
+    NATIVE_PROFILE_TEST_SEED.scope(seed, turn).await
+}
+
+#[cfg(test)]
 pub(super) async fn with_main_native_ai_seed<T>(turn: impl std::future::Future<Output = T>) -> T {
     // Replay the native think sequence from main 294cc0a4.
     const SEED: [u8; 32] = [
@@ -99,7 +107,7 @@ pub(super) async fn with_main_native_ai_seed<T>(turn: impl std::future::Future<O
         0x9d, 0xfa, 0x46, 0xa5, 0x46, 0x73, 0x01, 0x18, 0xe8, 0x6a, 0xe7, 0xb9, 0xca, 0x43, 0x3b,
         0x73, 0x75,
     ];
-    NATIVE_PROFILE_TEST_SEED.scope(SEED, turn).await
+    with_native_ai_seed(SEED, turn).await
 }
 
 #[cfg(test)]

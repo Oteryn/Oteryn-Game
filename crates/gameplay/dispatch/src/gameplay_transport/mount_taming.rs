@@ -146,7 +146,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| {
-                entry.item.definition.production_key == required.item
+                quest_objects::is_required_tool(required, &entry.item.definition.production_key)
                     && quest_objects::matches_source(
                         &intent.target,
                         source,
