@@ -374,7 +374,6 @@ fn scenario(tokens: bool) -> TestResult {
     })
 }
 
-
 async fn buy_catalogue_expansion(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -408,16 +407,18 @@ async fn buy_catalogue_expansion(
             let page = Page::decode(&rows[0].1).map_err(debug)?;
             let expected = (total - offset).min(page_size);
             assert_eq!(page.products.len(), expected, "{category}");
-            assert_eq!(page.next.is_empty(), offset + expected == total, "{category}");
+            assert_eq!(
+                page.next.is_empty(),
+                offset + expected == total,
+                "{category}"
+            );
             query.cursor = page.next;
             products.extend(page.products);
         }
         assert_eq!(products.len(), total, "{category}");
-        assert_eq!(
-            products.iter().map(|product| &product.offer.offer_key).collect::<std::collections::BTreeSet<_>>().len(),
-            total,
-            "{category}"
-        );
+        let keys: std::collections::BTreeSet<_> =
+            products.iter().map(|product| &product.offer.offer_key).collect();
+        assert_eq!(keys.len(), total, "{category}");
         for (slug, price, looks, _) in picks {
             let key = format!("store:{prefix}:{}", slug.replace('_', "-"));
             let product = products

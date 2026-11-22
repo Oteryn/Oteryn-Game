@@ -112,13 +112,7 @@ pub(super) async fn production_mounts(
     harness: &Harness,
     admitted: &mut AdmittedSession,
 ) -> TestResult {
-    let mut fixture = harness.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *fixture)
-        .await?;
-    sqlx::query("UPDATE game_character_roots SET sex=2 WHERE character_id=encode($1,'hex')::uuid AND sex IS NULL")
-        .bind(id(41).as_slice()).execute(&mut *fixture).await?;
-    fixture.commit().await?;
+    seed_creation_sex(harness).await?;
 
     let mut points = 4 * 145_000_u64;
     fixture_track(harness, task_board::POINTS, i64::try_from(points)?).await?;

@@ -24108,6 +24108,70 @@
         ]
       },
       {
+        "grant_key": "oteryn:taskboard/shop/offer-0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.feral_trapper"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.feral_trapper",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.feral_trapper",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-3",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.falconer"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-4",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.falconer",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-5",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.falconer",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:taming.rapid_boar",
         "target": {
           "kind": "Mount",
@@ -25012,70 +25076,6 @@
         "target": {
           "kind": "Mount",
           "mount_key": "oteryn:content.mount.antelope"
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-0",
-        "target": {
-          "kind": "Outfit",
-          "outfit_key": "oteryn:outfit.feral_trapper"
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-1",
-        "target": {
-          "kind": "Addon",
-          "outfit_key": "oteryn:outfit.feral_trapper",
-          "addon": 1
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-2",
-        "target": {
-          "kind": "Addon",
-          "outfit_key": "oteryn:outfit.feral_trapper",
-          "addon": 2
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-3",
-        "target": {
-          "kind": "Outfit",
-          "outfit_key": "oteryn:outfit.falconer"
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-4",
-        "target": {
-          "kind": "Addon",
-          "outfit_key": "oteryn:outfit.falconer",
-          "addon": 1
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-5",
-        "target": {
-          "kind": "Addon",
-          "outfit_key": "oteryn:outfit.falconer",
-          "addon": 2
         },
         "compatible_provenance": [
           "task-board-shop-v1"
@@ -40276,6 +40276,70 @@
           ]
         },
         {
+          "grant_key": "oteryn:taskboard/shop/offer-0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.feral_trapper"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.feral_trapper",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.feral_trapper",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-3",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.falconer"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-4",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.falconer",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-5",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.falconer",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
           "grant_key": "oteryn:taming.rapid_boar",
           "target": {
             "kind": "Mount",
@@ -41180,70 +41244,6 @@
           "target": {
             "kind": "Mount",
             "mount_key": "oteryn:content.mount.antelope"
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-0",
-          "target": {
-            "kind": "Outfit",
-            "outfit_key": "oteryn:outfit.feral_trapper"
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-1",
-          "target": {
-            "kind": "Addon",
-            "outfit_key": "oteryn:outfit.feral_trapper",
-            "addon": 1
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-2",
-          "target": {
-            "kind": "Addon",
-            "outfit_key": "oteryn:outfit.feral_trapper",
-            "addon": 2
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-3",
-          "target": {
-            "kind": "Outfit",
-            "outfit_key": "oteryn:outfit.falconer"
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-4",
-          "target": {
-            "kind": "Addon",
-            "outfit_key": "oteryn:outfit.falconer",
-            "addon": 1
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-5",
-          "target": {
-            "kind": "Addon",
-            "outfit_key": "oteryn:outfit.falconer",
-            "addon": 2
           },
           "compatible_provenance": [
             "task-board-shop-v1"

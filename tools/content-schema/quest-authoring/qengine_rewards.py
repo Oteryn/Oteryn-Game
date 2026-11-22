@@ -234,11 +234,11 @@ def build():
                 mappings.append({'grant_key':row['key']+f'/quest-grant/{sex}/{addon}',
                         'target':{'kind':'Outfit','outfit_key':row['key']} if addon==0 else {'kind':'Addon','outfit_key':row['key'],'addon':addon},
                         'sex':sex,'compatible_provenance':[PROVENANCE]})
+    earned_outfit_catalogue.append_task_board_outfit_mappings(outfits, mappings)
     mount_source = {'reference': 'crystal:data/XML/mounts.xml', 'revision': PIN,
                     'sha256': sha(inputs['data/XML/mounts.xml'])}
     mounts, mount_mappings = qengine_mounts.populate(ROOT, inputs, looks, mount_source, item_packet)
     mappings.extend(mount_mappings)
-    earned_outfit_catalogue.append_task_board_outfit_mappings(outfits, mappings)
     lane_programmes=load_module('questpc7_costume_sources','tools/content-schema/quest-authoring/questpc7_outfit_programmes.py')
     lane_programmes.consumptive_mappings(ROOT,outfits,mappings)
     atlas = load_module('qengine_atlas_palette', 'tools/game-atlas-appearances/export.py')

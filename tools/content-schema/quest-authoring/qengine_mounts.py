@@ -93,6 +93,13 @@ def populate(root, inputs, looks, source, item_packet):
         mappings.append({'grant_key': grant['key'],
                          'target': {'kind': 'Mount', 'mount_key': admitted[grant['mount_id']]},
                          'compatible_provenance': [item_packet['provenance']]})
+    # The current ordinals overlap retained acquisition inputs (Reliable Ram was 250).
+    raw = inputs[CATALOGUE_INPUT]
+    catalogue_source = {'reference': 'crystal:' + MOUNTS_XML, 'revision': CATALOGUE_REVISION,
+                        'sha256': hashlib.sha256(raw).hexdigest()}
+    catalogue_rows = {row.get('name'): row.attrib for row in ET.fromstring(raw)}
+    for name in ('Jaracal', 'Radiant Nimbus'):
+        mounts.append(definition(catalogue_rows[name], identities.get(name_key(name)), catalogue_source))
     # Crystal 201189f data/scripts/lib/task_board_shop.lua:95-126. The existing
     # shop owner resolves the look in the admitted catalogue before it spends points.
     for offer, mount_id, look, slug in (
@@ -109,11 +116,4 @@ def populate(root, inputs, looks, source, item_packet):
         mappings.append({'grant_key': f'oteryn:taskboard/shop/offer-{offer}',
                          'target': {'kind': 'Mount', 'mount_key': admitted[mount_id]},
                          'compatible_provenance': ['task-board-shop-v1']})
-    # The current ordinals overlap retained acquisition inputs (Reliable Ram was 250).
-    raw = inputs[CATALOGUE_INPUT]
-    catalogue_source = {'reference': 'crystal:' + MOUNTS_XML, 'revision': CATALOGUE_REVISION,
-                        'sha256': hashlib.sha256(raw).hexdigest()}
-    catalogue_rows = {row.get('name'): row.attrib for row in ET.fromstring(raw)}
-    for name in ('Jaracal', 'Radiant Nimbus'):
-        mounts.append(definition(catalogue_rows[name], identities.get(name_key(name)), catalogue_source))
     return sorted(mounts, key=lambda r: r['key']), mappings

@@ -33,7 +33,8 @@ struct Source {
 static CATALOGUE: LazyLock<Option<Document>> = LazyLock::new(|| {
     let document: Document = serde_json::from_slice(DOCUMENT).ok()?;
     // Catalogue size is independent of the existing 32-offer wire page.
-    (document.offers.len() <= 128 && document.offers.iter().all(|o| o.price > 0)).then_some(document)
+    (document.offers.len() <= 128 && document.offers.iter().all(|o| o.price > 0))
+        .then_some(document)
 });
 pub fn offers() -> Option<&'static [StoreCosmeticOffer]> {
     Some(&CATALOGUE.as_ref()?.offers)
@@ -222,8 +223,20 @@ mod tests {
             }
         }
         let offers = offers().ok_or("catalogue")?;
-        assert_eq!(offers.iter().filter(|offer| offer.category == "cosmetics.outfits").count(), expected.len() + 3);
-        assert_eq!(offers.iter().filter(|offer| offer.category == "cosmetics.mounts").count(), 16);
+        assert_eq!(
+            offers
+                .iter()
+                .filter(|offer| offer.category == "cosmetics.outfits")
+                .count(),
+            expected.len() + 3
+        );
+        assert_eq!(
+            offers
+                .iter()
+                .filter(|offer| offer.category == "cosmetics.mounts")
+                .count(),
+            16
+        );
         assert_eq!(offers.len(), expected.len() + 3 + 16);
         Ok(())
     }
