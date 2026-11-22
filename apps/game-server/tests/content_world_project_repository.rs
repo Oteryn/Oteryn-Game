@@ -155,6 +155,8 @@ const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
 /// Full generated population, including qualified source proxies and Wiki metadata.
 const CREATURES: usize = 1_893;
+// Shared Creature definitions retain every distinct source receipt.
+const CREATURE_SOURCE_BINDINGS: usize = CREATURES + 16;
 const CREATURE_RECORDS: usize = 26_810;
 const CREATURE_PROFILES: usize = 25_657;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
@@ -1575,7 +1577,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(
         v2.source_identity_bindings.len(),
-        550 + 289 + CREATURES + ENCOUNTERS + NPC_BINDINGS + 22
+        550 + 289 + CREATURE_SOURCE_BINDINGS + ENCOUNTERS + NPC_BINDINGS + 22
     );
     assert_eq!(v2.editor.len(), 550);
     let new_source = v2
@@ -2005,7 +2007,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(crystal_spawn_bindings.is_empty());
     assert_eq!(
         creature_files.len(),
-        CREATURES + 16 - d44_wiki_bindings - thaian_wiki_bindings
+        CREATURE_SOURCE_BINDINGS - d44_wiki_bindings - thaian_wiki_bindings
     );
     assert_eq!(npc_bindings, NPC_BINDINGS);
     assert_eq!(encounter_bindings, ENCOUNTERS);
