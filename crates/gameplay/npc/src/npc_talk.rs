@@ -801,18 +801,6 @@ impl NpcTalkBook {
             } else {
                 continue;
             };
-            // Admit authored clock keywords for NPCs with an existing talk entry.
-            let mut dialogue_keywords = dialogue_keywords;
-            if let Some(dialogue) = &npc.bank_dialogue {
-                for keyword in &dialogue.keywords {
-                    if literal_keyword(keyword)
-                        && keyword.reply[0].contains("|TIME|")
-                        && !dialogue_keywords.contains(keyword)
-                    {
-                        dialogue_keywords.push(keyword.clone());
-                    }
-                }
-            }
             book.npcs.insert(
                 reference.key.clone(),
                 NpcTalkEntry {
