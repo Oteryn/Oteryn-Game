@@ -52,25 +52,35 @@ impl QuestWorldContext {
         if source == [0; 16] || intent.is_empty() || intent.len() > 4096 {
             return None;
         }
-        let decoded = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
-            &[
-                oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
-                oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
-                oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
-            ],
-            &intent,
-        )
-        .ok()?;
-        if matches!(decoded.target, UseTarget::WorldObject(_))
-            || decoded.use_with.is_some()
-            || decoded.use_with_position.is_some()
-            || !matches!(decoded.use_with_map_item, Some(MapUseTarget::Object(_)))
-        {
-            return None;
-        }
+        map_target(&intent)?;
         Some(QuestWorldToolContext {
             world: self,
             selected_tool: Some(SelectedQuestTool { source, intent }),
         })
     }
+}
+
+/// The selected-tool proof keeps the original ingress for exact command replay.
+pub(super) fn map_target(
+    intent: &[u8],
+) -> Option<oteryn_protocol_oteryn::world_object::WorldObjectTarget> {
+    let decoded = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+        &[
+            oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
+            oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
+            oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
+        ],
+        intent,
+    )
+    .ok()?;
+    if matches!(decoded.target, UseTarget::WorldObject(_))
+        || decoded.use_with.is_some()
+        || decoded.use_with_position.is_some()
+    {
+        return None;
+    }
+    let Some(MapUseTarget::Object(target)) = decoded.use_with_map_item else {
+        return None;
+    };
+    Some(target)
 }

@@ -11,6 +11,7 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.item_on_target.is_some()
         && (callback.key == targuna_ram::KEY
             || callback.key == TOP_OF_THE_CITY_DIG
+            || callback.skinning_target().is_some()
             || (callback
                 .item_on_target
                 .as_ref()

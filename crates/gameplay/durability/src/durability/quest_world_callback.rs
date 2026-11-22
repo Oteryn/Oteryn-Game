@@ -9,6 +9,7 @@ pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]
 mod npc_input;
 mod selected_tool;
+mod skinning;
 mod tool_reads;
 pub use selected_tool::QuestWorldToolContext;
 
@@ -818,6 +819,19 @@ async fn consume_inputs(
             inputs.push(input);
         } else if required.selected_instance
             && !tool_reads::record(tx, fence, request, callback, context, &input).await?
+        {
+            return Ok(false);
+        }
+        if let Some(target) = callback.skinning_target()
+            && !skinning::apply(
+                tx,
+                fence,
+                command,
+                context,
+                target,
+                required.target_replacement,
+            )
+            .await?
         {
             return Ok(false);
         }
