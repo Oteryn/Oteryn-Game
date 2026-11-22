@@ -201,21 +201,21 @@ pub(super) async fn authorize(
                 let services = access_token(client, config, cancellation.clone(), true).await;
                 match services {
                     Ok(services) => {
-                        let session = config.device_sessions.commerce_session(
-                            &config.platform_url,
-                            &config.oauth_client_id,
-                            &services,
-                        );
+                        let session = config
+                            .device_sessions
+                            .commerce_session(&config.platform_url, &config.oauth_client_id);
                         let mut services_session = session.lock().await;
                         services_session.reopen();
-                        crate::account_services::run(
+                        let result = crate::account_services::run(
                             client,
                             &services,
                             config,
                             &mut services_session,
                             cancellation.clone(),
                         )
-                        .await?
+                        .await;
+                        services_session.reopen();
+                        result?
                     }
                     Err(_) => {
                         let mut view = crate::account_services::View::default();

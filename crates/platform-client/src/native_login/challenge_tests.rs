@@ -42,7 +42,7 @@ fn production_routes_machine_calls_to_api_and_authorize_to_web() -> TestResult {
 
         let redirect = "http://127.0.0.1:1234/callback";
         let cancel = CancellationToken::new();
-        let token = || AccessToken(SecretText("access".into()), None);
+        let token = || AccessToken(SecretText("access".into()));
         assert!(directory.fetch_directory(cancel.clone()).await.is_err());
         assert!(
             native

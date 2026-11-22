@@ -1,5 +1,7 @@
 //! Native account services run outside an admitted character session.
 mod controller;
+mod session;
+pub(crate) use session::{PriorRequests, Session};
 #[cfg(test)]
 mod native;
 #[cfg(test)]
@@ -49,6 +51,7 @@ pub struct View {
     pub receipt: Option<OperationReceipt>,
     pub feedback: String,
     pub selected_view: AuctionView,
+    prior: PriorRequests,
     pending: Option<BazaarRequest>,
     post_refusal_status: Option<u16>,
     unresolved: std::collections::BTreeSet<String>,
@@ -63,6 +66,7 @@ impl Default for View {
             feedback: tr!("Browse Oteryn auctions, sell an offline character, or transfer worlds.")
                 .into(),
             selected_view: AuctionView::All,
+            prior: Default::default(),
             pending: None,
             post_refusal_status: None,
             unresolved: Default::default(),
@@ -72,7 +76,7 @@ impl Default for View {
 }
 impl View {
     pub fn pending(&self) -> bool {
-        self.pending.is_some() || !self.unresolved.is_empty()
+        self.prior.blocked() || self.pending.is_some() || !self.unresolved.is_empty()
     }
     pub fn can_retry(&self) -> bool {
         self.pending.is_some() && self.post_refusal_status.is_none()
@@ -85,10 +89,11 @@ impl View {
     }
     fn install_page(&mut self, page: BazaarPage) {
         for receipt in &page.recent_operations {
-            if self
-                .pending
-                .as_ref()
-                .is_some_and(|request| request.request_id == receipt.request_id)
+            if self.prior.contains(&receipt.request_id)
+                || self
+                    .pending
+                    .as_ref()
+                    .is_some_and(|request| request.request_id == receipt.request_id)
                 || self
                     .receipt
                     .as_ref()
@@ -137,6 +142,12 @@ impl View {
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
+        if self.prior.blocked() {
+            text.push('\n');
+            text.push_str(tr!(
+                "Resolve the pending operation before starting another."
+            ));
+        }
         if let Some(id) = self.pending_id() {
             text.push_str(&lfmt!(
                 "\nUnresolved operation {id}: check status before another action.",
@@ -176,32 +187,6 @@ pub fn present(view: &View, cancel: CancellationToken) -> Action {
     }
 }
 
-#[derive(Default)]
-pub(crate) struct Session {
-    account: View,
-    coin: crate::coin_shop::View,
-}
-
-impl Session {
-    pub(crate) fn reopen_coins(
-        &mut self,
-        character_id: Option<String>,
-    ) -> &mut crate::coin_shop::View {
-        self.coin.reopen(character_id);
-        &mut self.coin
-    }
-
-    pub(crate) fn reopen(&mut self) {
-        self.account = View {
-            pending: self.account.pending.take(),
-            post_refusal_status: self.account.post_refusal_status,
-            unresolved: std::mem::take(&mut self.account.unresolved),
-            ..Default::default()
-        };
-        self.reopen_coins(None);
-    }
-}
-
 pub(crate) async fn run(
     client: &NativeLoginClient,
     token: &AccessToken,
@@ -224,6 +209,9 @@ pub(crate) async fn run(
     loop {
         let (_, action) = ask(view.clone(), &config.account_services, cancel.clone()).await?;
         if matches!(action, Action::Back) || cancel.is_cancelled() {
+            if view.post_refusal_status == Some(409) {
+                controller::execute(view, Action::Status, client, token, cancel.clone()).await;
+            }
             return Ok(());
         }
         if matches!(action, Action::Premium) {
