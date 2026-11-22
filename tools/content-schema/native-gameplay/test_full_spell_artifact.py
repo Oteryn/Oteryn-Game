@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -276,6 +277,14 @@ class ItemKeySetTests(unittest.TestCase):
 class LootTablesTests(unittest.TestCase):
     """ARCH-KILL-REWARD-LOGOUT-1 §1.1: the loot section is generated from the Content definitions."""
 
+    def test_arbaziloth_multi_count_yields_keep_their_stack_facts(self):
+        _, creatures = full.read(full.CREATURE_PROFILES)
+        document = json.loads(full.loot_tables(creatures))
+        facts = {row['item']['key']: row for row in document['items']}
+        for item in (3043, 7642, 23373, 7643, 23375, 23374, 3041, 3037):
+            with self.subTest(item=item):
+                self.assertIs(facts[f'oteryn:item.tibia.i{item}'].get('stackable'), True)
+
     def test_corruptor_projects_current_items_and_native_corpse_without_changing_source(self):
         _, creatures = full.read(full.CREATURE_PROFILES)
         document = json.loads(full.loot_tables(creatures))
@@ -314,7 +323,13 @@ class LootTablesTests(unittest.TestCase):
 
     def test_checked_in_section_is_generated_from_the_production_profiles(self):
         _, creatures = full.read(full.CREATURE_PROFILES)
-        raw = full.loot_tables(creatures)
+        sys.path.insert(0, str(full.ROOT / 'tools/content-migration'))
+        import register_spell_families
+
+        # Use the final registration, which applies the pinned quest loot
+        # refinements after building the base loot tables.
+        loot_path = full.LOOT_TABLES.relative_to(full.ROOT).as_posix()
+        raw = register_spell_families.outputs()[loot_path]
         self.assertEqual(raw, full.LOOT_TABLES.read_bytes())
         self.assertLessEqual(len(raw), full.LIMITS['loot_tables'])
         document = json.loads(raw)
