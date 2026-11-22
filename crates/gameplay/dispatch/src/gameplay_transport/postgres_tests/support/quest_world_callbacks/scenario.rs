@@ -299,7 +299,7 @@ fn scenario_case(
         || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
-        || name == "questpc7-friends";
+        || name.starts_with("questpc7-friends");
     let classic_npc = shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
@@ -2693,6 +2693,10 @@ fn scenario_case(
         } else if name.starts_with("questpc7-eligibility-") {
             super::super::questpc7_eligibility_fixtures::exercise(&mut owner, &mut admitted, &h, name)
                 .await?;
+        } else if name == super::super::questpc7_friends_fixtures::LEGACY_CASE {
+            super::super::questpc7_friends_fixtures::exercise_legacy(&mut owner, &mut admitted, &h).await?;
+        } else if let Some(case) = name.strip_prefix("questpc7-friends-draconian-") {
+            super::super::qc_npc_programmes_fixtures::exercise(&mut owner, &mut admitted, &h, case).await?;
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
