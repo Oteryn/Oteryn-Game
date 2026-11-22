@@ -59,7 +59,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return;
         }
-        let Some(_permit) = self.spell_lane_permit().await else {
+        let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
         let Ok(Some(mut fence)) = self.current_quest_fence(session).await else {
@@ -110,7 +110,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if read.replay.is_some() || read.state != live.state {
             if read.state.run == live.state.run && read.state.pit == live.state.pit {
                 let _ = self
-                    .restore_arena_projection(live.actor, session, &read.state, read.now_ms)
+                    .restore_arena_projection(live.actor, session, &read.state, read.now_ms, &permit, fence)
                     .await;
             }
             return;
@@ -149,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if wire::decode_match_result(&bytes).is_ok_and(|result| result.disposition == D::Applied) {
             let _ = self
-                .restore_arena_projection(live.actor, session, &after, read.now_ms)
+                .restore_arena_projection(live.actor, session, &after, read.now_ms, &permit, fence)
                 .await;
         }
     }

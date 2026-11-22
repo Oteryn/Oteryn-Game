@@ -3,6 +3,8 @@
 //! revision slot, runtime, then the leaf live-match registry. No runtime guard awaits SQL.
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::arena_match::{self as durable, MatchState, MatchTransition, donor};
+use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
@@ -306,7 +308,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let bytes = self.arena_match_native(
             ArenaCaller { actor, supplied, world: admitted.world_id, channel: admitted.channel_id },
-            command.into(), action, payload, None,
+            command.into(), action, payload, None, None,
         ).await?;
         let result = wire::decode_match_result(&bytes).ok()?;
         if result.state.completed_rank == 3 && result.state.claimed_masks.iter().all(|mask| mask & 8 != 0) {
@@ -349,6 +351,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         action: A,
         payload: &[u8],
         expected: Option<crate::foundation::MovementPositionSnapshot>,
+        native_permit: Option<&SpellLanePermit>,
     ) -> Option<Vec<u8>> {
         let actor = caller.actor;
         let supplied = caller.supplied;
@@ -363,6 +366,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let _gate = arena_command_gate(&self.states.arena_matches.command, matches!(cause, durable::MatchCause::Step { .. })).await?;
+        let owned_permit;
+        let permit = if let Some(permit) = native_permit {
+            permit
+        } else {
+            owned_permit = self.spell_lane_permit().await?;
+            &owned_permit
+        };
         let mut fence = self
             .current_quest_fence(session)
             .await
@@ -416,6 +426,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 &read.state,
                 read.now_ms,
+                permit,
+                fence,
             )
             .await?;
         }
@@ -651,7 +663,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(bytes);
         }
-        self.restore_arena_projection(actor, session, &after, read.now_ms)
+        self.restore_arena_projection(actor, session, &after, read.now_ms, permit, fence)
             .await?;
         Some(bytes)
     }
@@ -662,6 +674,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         state: &MatchState,
         now_ms: i64,
+        permit: &SpellLanePermit,
+        fence: CurrentCharacterGameplayFence,
     ) -> Option<()> {
         let existing = self
             .states
@@ -723,11 +737,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 return Some(());
             }
-            let _ = pillar::project(self, state, PillarProjection::Fighting);
-            let current = runtime.read_actor_position(actor).ok()?.position();
-            if !at_entrance(current) && !(1..=10).any(|pit| in_pit(current, pit)) {
+            let current = runtime.read_actor_position(actor).ok()?;
+            let at = current.position();
+            if !at_entrance(at) && !(1..=10).any(|pit| in_pit(at, pit)) {
                 return None;
             }
+            drop(runtime);
+            pit_reset::reset_items(self, actor, session, permit, fence, state).await?;
+            let mut runtime = self.runtime.lock().await;
+            if runtime.read_actor_position(actor) != Ok(current)
+                || self.states.spell_states.try_lock().ok()?.is_dead(actor)
+            {
+                return None;
+            }
+            let _ = pillar::project(self, state, PillarProjection::Fighting);
             pit_reset::reset_monsters(&mut runtime, actor, session, state)?;
             let mut summon = destination;
             summon.y += 2;

@@ -43,7 +43,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return None;
         }
-        let _permit = self.spell_lane_permit().await?;
+        let permit = self.spell_lane_permit().await?;
         let mut fence = self.current_quest_fence(session).await.ok()??;
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         fence.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
@@ -85,7 +85,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Reconcile a lost reset acknowledgement from the committed state.
             if read.state.rank == 0 {
                 return self
-                    .restore_arena_projection(live.actor, session, &read.state, read.now_ms)
+                    .restore_arena_projection(live.actor, session, &read.state, read.now_ms, &permit, fence)
                     .await;
             }
             return None;
@@ -115,7 +115,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if wire::decode_match_result(&bytes).ok()?.disposition != D::Applied {
             return None;
         }
-        self.restore_arena_projection(live.actor, session, &after, read.now_ms)
+        self.restore_arena_projection(live.actor, session, &after, read.now_ms, &permit, fence)
             .await
     }
 }
