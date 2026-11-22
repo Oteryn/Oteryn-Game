@@ -13,7 +13,10 @@ use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use crate::gameplay_transport::quest_log::QuestLogLines;
-use crate::map::{overlay::TilePos, view::placement_key};
+use crate::map::{
+    overlay::TilePos,
+    view::{MapFacts, placement_key},
+};
 use oteryn_protocol_oteryn::quest_log::{
     COMMAND_TYPE_QUEST_LOG_QUERY, QuestLogQuery, QuestLogView, decode_quest_log,
     encode_quest_log_query,
