@@ -293,7 +293,9 @@ async fn acquire(
             route(world, here, |at| {
                 n.placements
                     .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
+                    .any(|p| p.floor == at.floor
+                            && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)))
+                                <= wire::TALK_RANGE_TILES)
             })
             .map(|p| (n, p))
         })

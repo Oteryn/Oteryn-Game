@@ -223,34 +223,88 @@ fn adjacent_creature(client: &DevClientSession) -> Option<oteryn_dev_client::Ent
 /// The spawn creature whose content health is the lowest one that a spell hit cannot cap, else the
 /// healthiest reachable one; the measurement gate below still refuses any possibly capped sample.
 fn pick_creature(
-    world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
-    from: TilePos,
     health: &std::collections::BTreeMap<String, u64>,
+    search: impl FnOnce(&dyn Fn(TilePos) -> bool),
+    combat_tile: impl Fn(TilePos) -> bool,
 ) -> TestResult<(String, u64)> {
-    let mut found: Vec<(String, u64)> = Vec::new();
-    for creature in &spawns.creatures {
-        let Some(hp) = health.get(&creature.key).copied() else { continue };
-        let points: Vec<_> = spawns
-            .sources
-            .iter()
-            .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
-            .filter(|(_, point)| spawns.creatures.get(point.creature as usize).is_some_and(|c| c.key == creature.key))
-            .collect();
-        if route(world, from, |at| {
-            !world.base().tile(at.x, at.y, at.floor).is_none_or(|t| t.protection_zone())
-                && points.iter().any(|(floor, p)| at.floor == *floor && at.x.abs_diff(p.x) <= 1 && at.y.abs_diff(p.y) <= 1)
-        }).is_some() {
-            found.push((creature.key.clone(), hp));
+    use std::cell::Cell;
+    use std::collections::HashMap;
+
+    let mut targets = HashMap::new();
+    for source in &spawns.sources {
+        for point in &source.points {
+            let index = point.creature as usize;
+            let Some(hp) = spawns.creatures.get(index).and_then(|creature| health.get(&creature.key)).copied() else {
+                continue;
+            };
+            // Prefer the lowest health >= 3,000, else the highest fallback.
+            // Preserve creature-table order for equal preferred health and
+            // reverse it for equal fallback health, as in the old stable sort.
+            let rank = if hp >= 3_000 {
+                (false, hp, index)
+            } else {
+                (true, u64::MAX - hp, usize::MAX - index)
+            };
+            let candidate = (rank, index, hp);
+            for x in point.x.saturating_sub(1)..=point.x.saturating_add(1) {
+                for y in point.y.saturating_sub(1)..=point.y.saturating_add(1) {
+                    let at = TilePos { x, y, floor: source.floor };
+                    targets.entry(at)
+                        .and_modify(|best| *best = candidate.min(*best))
+                        .or_insert(candidate);
+                }
+            }
         }
     }
-    found.sort_by_key(|(_, hp)| *hp);
-    found
-        .iter()
-        .find(|(_, hp)| *hp >= 3_000)
-        .or_else(|| found.last())
-        .cloned()
-        .ok_or_else(|| "no reachable creature spawn has content health".into())
+    let best_possible = targets.values().min().copied().ok_or("no creature spawn has content health")?;
+    let best_reached = Cell::new(None);
+    // Visit each reachable tile once. Stop early only at the best possible
+    // candidate, otherwise retain the best target seen when the search ends.
+    search(&|at| {
+        if let Some(candidate) = targets.get(&at).copied().filter(|_| combat_tile(at)) {
+            best_reached.set(Some(best_reached.get().map_or(candidate, |best| candidate.min(best))));
+        }
+        best_reached.get() == Some(best_possible)
+    });
+    let (_, index, hp) = best_reached.into_inner().ok_or("no reachable creature spawn has content health")?;
+    Ok((spawns.creatures[index].key.clone(), hp))
+}
+
+#[test]
+fn c12_selects_spell_target_in_one_reachability_search() -> TestResult {
+    use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+
+    let from = TilePos { x: 25, y: 25, floor: -7 };
+    let points = [(0, 25), (1, 29), (2, 27), (3, 26)]
+        .map(|(creature, x)| Point {
+            creature,
+            x,
+            y: 25,
+            direction: Direction::North,
+            respawn_ms: 60_000,
+            boss_policy: None,
+        });
+    let health = [("fallback", 500), ("inaccessible", 3_000), ("preferred", 3_100), ("stronger", 4_000)];
+    let spawns = Table {
+        creatures: health.iter().map(|(key, _)| Creature { key: (*key).into(), period: Period::All }).collect(),
+        sources: vec![Source { key: "source".into(), floor: -7, x: 25, y: 25, points: points.into() }],
+    };
+    let mut traversals = 0;
+    let selected = pick_creature(
+        &spawns,
+        &health.into_iter().map(|(key, hp)| (key.into(), hp)).collect(),
+        |goal| {
+            traversals += 1;
+            let _ = find_route(from, goal, |at, step| {
+                (step == StepDirection::East && at.x < 27).then_some(TilePos { x: at.x + 1, ..at })
+            });
+        },
+        |at| at != from,
+    )?;
+    assert_eq!(selected, ("preferred".into(), 3_100));
+    assert_eq!(traversals, 1);
+    Ok(())
 }
 
 struct Hunt<'a> {
@@ -504,7 +558,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_world(clients, 0xc2).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (creature, health) = pick_creature(world, &metadata.spawns, from, &creature_health()?)?;
+    let (creature, health) = pick_creature(
+        &metadata.spawns,
+        &creature_health()?,
+        |goal| { let _ = route(world, from, goal); },
+        |at| world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone()),
+    )?;
     let hunt = Hunt { world, spawns: &metadata.spawns, creature, health };
 
     let baseline = samples(&hunt, &mut client, spell).await?;
