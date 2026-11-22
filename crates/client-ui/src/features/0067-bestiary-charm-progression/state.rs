@@ -19,6 +19,7 @@ pub struct Panel {
     pub open: bool,
     pub classic_open: bool,
     pub pending: bool,
+    pub discard_capture: bool,
     pub capture_pending: bool,
     pub capture_stages: Option<BestiaryStages>,
     pub pending_kind: u32,

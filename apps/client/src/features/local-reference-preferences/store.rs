@@ -33,6 +33,8 @@ pub struct PreferenceStore {
     #[cfg(bevy_shell)]
     deferred_impact_records: Option<[u32; 2]>,
     #[cfg(bevy_shell)]
+    retry_impact_at: Option<std::time::Instant>,
+    #[cfg(bevy_shell)]
     io_baseline: Option<std::sync::Arc<std::sync::Mutex<ReferencePreferences>>>,
 }
 
@@ -157,6 +159,8 @@ impl PreferenceStore {
             #[cfg(bevy_shell)]
             deferred_impact_records: None,
             #[cfg(bevy_shell)]
+            retry_impact_at: None,
+            #[cfg(bevy_shell)]
             io_baseline: None,
         }
     }
@@ -180,6 +184,8 @@ impl PreferenceStore {
             queued: 0,
             #[cfg(bevy_shell)]
             deferred_impact_records: None,
+            #[cfg(bevy_shell)]
+            retry_impact_at: None,
             #[cfg(bevy_shell)]
             io_baseline: None,
         })

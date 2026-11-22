@@ -331,3 +331,62 @@ fn burst_of_impact_records_saves_the_last_record_for_the_outgoing_character()
     assert_eq!(reopened.preferences.impact_records, [0, 12]);
     Ok(())
 }
+
+#[test]
+fn failed_background_impact_reset_retries_without_another_hit()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = tempfile::tempdir()?;
+    let base = root.path().join("prefs.json");
+    let identity = [1; 16];
+    let mut state = crate::play::SettingsState::new(Some(base.clone()));
+    state.select_character(Some(identity));
+    let (link, _rx, outbox) = crate::play::play_channel();
+    outbox.bevy_hud_fixture(&[], None);
+    let now = std::time::Instant::now();
+    outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: vec![oteryn_session::analyser_transport::AnalyserFact::Impact(
+                oteryn_session::analyser_transport::AnalyserImpact::Healing(100u32.try_into()?),
+            )],
+        },
+    )]);
+    state.prepare_screenshots(now, Some(&link));
+    assert_eq!(state.preferences.impact_records, [0, 100]);
+    let file = crate::play::PreferenceStore::character_path(&base, identity);
+    let saved = std::fs::read(&file)?;
+    std::fs::write(&file, "invalid")?;
+    bevy_tasks::IoTaskPool::get_or_init(|| {
+        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+    });
+    state.use_background_preferences();
+    link.analyser_open();
+    assert!(link.analyser_select("impact"));
+    link.analyser_reset();
+    state.prepare_screenshots(now, Some(&link));
+    let deadline = now + std::time::Duration::from_secs(10);
+    loop {
+        if state.poll_background_save().error.is_some() {
+            break;
+        }
+        if std::time::Instant::now() > deadline {
+            return Err("expected write failure".into());
+        }
+        std::thread::yield_now();
+    }
+    std::fs::write(&file, saved)?;
+    state.prepare_screenshots(now, Some(&link));
+    while state.local_preference_writes_pending() {
+        state.poll_background_save();
+        if std::time::Instant::now() > deadline {
+            return Err("retry stalled".into());
+        }
+        std::thread::yield_now();
+    }
+    let mut reopened = crate::play::SettingsState::new(Some(base));
+    reopened.select_character(Some(identity));
+    assert_eq!(reopened.preferences.impact_records, [0, 0]);
+    Ok(())
+}

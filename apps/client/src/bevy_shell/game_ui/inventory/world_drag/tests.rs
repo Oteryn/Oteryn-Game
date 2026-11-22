@@ -455,3 +455,30 @@ fn world_drag_accepts_configured_left_handed_button() -> TestResult {
     assert!(gesture.active);
     Ok(())
 }
+
+#[test]
+fn shift_stack_without_count_capability_never_sends_whole_stack() -> TestResult {
+    for (counted, equipped, destination) in [
+        (false, false, ItemMoveDestination::MainBackpack),
+        (true, true, ItemMoveDestination::MainBackpack),
+        (
+            true,
+            false,
+            ItemMoveDestination::Equipment(oteryn_session::item_movement::EquipmentSlot::Head),
+        ),
+    ] {
+        let (link, mut commands, outbox) = crate::play::play_channel();
+        crate::play::PlayLink::bevy_items_fixture(&outbox, None, None, counted, true);
+        assert!(
+            link.item_drag_begin(oteryn_client_ui::inventory::movement::DragItem {
+                handle: 7.try_into()?,
+                count: 5,
+                equipped
+            })
+        );
+        link.drop_stack(Some(destination), false, true);
+        assert!(commands.try_recv().is_err());
+        assert!(!link.item_movement().pending);
+    }
+    Ok(())
+}

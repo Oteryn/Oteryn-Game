@@ -199,8 +199,11 @@ fn confirmed_party_summons_are_excluded_only_from_lists_that_hide_them()
         .with_entities(vec![creature])?;
     view.tick(&link).map_err(|_| "tick")?;
     let plain = view.scene().sprites().len();
-    link.party_request(oteryn_client_ui::party::Intent::Refresh);
-    assert!(matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Party(_)));
+    assert!(!link.party_is_open());
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Party(_)
+    ));
     outbox.party_result(&oteryn_client_runtime::party::PartyResponse {
         status: oteryn_session::CommandStatus::Accepted,
         operation: bytes.clone(),

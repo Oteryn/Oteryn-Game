@@ -149,33 +149,54 @@ impl Terrain {
             return Err("No map artwork for this area and floor".into());
         }
         let mut pixels = vec![0; 640 * 480 * 4];
-        for (std::cmp::Reverse(z), std::cmp::Reverse(lod), x, y, name) in chunks {
-            let data = store.map_chunk(name).map_err(|e| e.to_string())?;
-            let target = i32::from(self.floor);
-            let opacity = if z == target {
+        for floor in chunks.chunk_by(|a, b| a.0 == b.0) {
+            let mut layer = vec![0u8; pixels.len()];
+            for &(std::cmp::Reverse(_), std::cmp::Reverse(lod), x, y, name) in floor {
+                let data = store.map_chunk(name).map_err(|e| e.to_string())?;
+                let span = 16 * lod;
+                let screen = |v: i32, origin: i32| ((v - origin) as f64 * scale).ceil() as i32;
+                for py in oy + screen(y.max(top), top)..oy + screen((y + span).min(bottom + 1), top)
+                {
+                    let sy = (((py - oy) as f64 / scale + f64::from(top - y)) * 32.
+                        / f64::from(lod)) as usize;
+                    for px in
+                        ox + screen(x.max(left), left)..ox + screen((x + span).min(right + 1), left)
+                    {
+                        let sx = (((px - ox) as f64 / scale + f64::from(left - x)) * 32.
+                            / f64::from(lod)) as usize;
+                        let src = &data[(sy.min(511) * 512 + sx.min(511)) * 4..][..4];
+                        let dst = &mut layer[((py * 640 + px) * 4) as usize..][..4];
+                        let alpha = u32::from(src[3]);
+                        for c in 0..3 {
+                            dst[c] = ((u32::from(src[c]) * alpha
+                                + u32::from(dst[c]) * (255 - alpha))
+                                / 255) as u8;
+                        }
+                        dst[3] = (alpha + u32::from(dst[3]) * (255 - alpha) / 255) as u8;
+                    }
+                }
+            }
+            let opacity = if floor[0].0.0 == i32::from(self.floor) {
                 100
             } else {
                 u32::from(self.opacity)
             };
-            let span = 16 * lod;
-            let screen = |v: i32, origin: i32| ((v - origin) as f64 * scale).ceil() as i32;
-            for py in oy + screen(y.max(top), top)..oy + screen((y + span).min(bottom + 1), top) {
-                let sy = (((py - oy) as f64 / scale + f64::from(top - y)) * 32. / f64::from(lod))
-                    as usize;
-                for px in
-                    ox + screen(x.max(left), left)..ox + screen((x + span).min(right + 1), left)
-                {
-                    let sx = (((px - ox) as f64 / scale + f64::from(left - x)) * 32.
-                        / f64::from(lod)) as usize;
-                    let src = &data[(sy.min(511) * 512 + sx.min(511)) * 4..][..4];
-                    let dst = &mut pixels[((py * 640 + px) * 4) as usize..][..4];
-                    let alpha = u32::from(src[3]) * opacity / 100;
-                    for c in 0..3 {
-                        dst[c] = ((u32::from(src[c]) * alpha + u32::from(dst[c]) * (255 - alpha))
-                            / 255) as u8;
-                    }
-                    dst[3] = 255;
+            for (source, dest) in layer
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .zip(pixels.as_chunks_mut::<4>().0.iter_mut())
+            {
+                if source[3] == 0 {
+                    continue;
                 }
+                let alpha = u32::from(source[3]) * opacity / 100;
+                for c in 0..3 {
+                    dest[c] = (u32::from(source[c]) * opacity / 100
+                        + u32::from(dest[c]) * (255 - alpha) / 255)
+                        .min(255) as u8;
+                }
+                dest[3] = 255;
             }
         }
         use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};

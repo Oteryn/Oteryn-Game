@@ -103,6 +103,12 @@ impl SettingsState {
     pub(crate) fn prepare_screenshots(&mut self, now: Instant, link: Option<&PlayLink>) -> CaptureAction {
         let preferences = self.preferences.screenshots.effective();
         let signals = link.map(|link| {
+            if preferences.automatic_disabled
+                || !(preferences.bestiary_complete || preferences.bestiary_unlock)
+            {
+                link.invalidate_capture_bestiary();
+                self.screenshot_runtime.last_bestiary_query = None;
+            }
             Signals::read(
                 link,
                 !preferences.automatic_disabled

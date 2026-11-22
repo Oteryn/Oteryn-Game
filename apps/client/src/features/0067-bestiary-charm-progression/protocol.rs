@@ -60,6 +60,9 @@ pub(in crate::play) fn apply(
         )
     {
         panel.capture_pending = false;
+        if std::mem::take(&mut panel.discard_capture) {
+            return;
+        }
         if accepted(result)
             && let Ok(reply) = wire::decode_charm_progression_reply(&result.payload)
             && reply.outcome == wire::CharmProgressionOutcome::Query

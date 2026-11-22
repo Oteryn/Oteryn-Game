@@ -528,6 +528,22 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
     assert!(receiver.try_recv().is_err());
     app.update();
     assert!(labels(&mut app).contains("Assign Dodge to Frog?"));
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .refresh_capture_bestiary();
+    let periodic = command(&mut receiver)?;
+    app.update();
+    assert!(labels(&mut app).contains("Assign Dodge to Frog?"));
+    publish(
+        &periodic,
+        charm_reply(Outcome::Query, 0, (1, None, 200), Some(7))?,
+    );
+    app.update();
+    assert!(labels(&mut app).contains("Assign Dodge to Frog?"));
     click(&mut app, Kind::Confirm(Intent::Assign))?;
     let assign = command(&mut receiver).map_err(|error| format!("assign: {error}"))?;
     assert_eq!(

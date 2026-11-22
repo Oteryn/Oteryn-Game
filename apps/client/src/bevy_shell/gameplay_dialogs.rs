@@ -220,7 +220,11 @@ impl HostOwner {
                     browse: None,
                     npc: None,
                     player: None,
-                    attack: None,
+                    attack: self
+                        .play
+                        .as_ref()
+                        .and_then(|play| play.view.row_attack_target(target, &play.link))
+                        .map(Box::new),
                 },
             );
         }
@@ -309,13 +313,18 @@ impl HostOwner {
             (
                 Content::Context {
                     attack: Some(attack),
+                    menu,
                     ..
                 },
                 Choice::Attack,
             ) => self.play.as_ref().is_some_and(|play| {
                 let (tile, (target, attacking)) = *attack;
                 if play.view.gameplay_input_blocked(&play.link)
-                    || play.view.attack_target(tile, &play.link) != Some((target, attacking))
+                    || if menu.as_ref().is_some_and(|menu| menu.tile.is_none()) {
+                        play.view.row_attack_target(target, &play.link) != Some(*attack)
+                    } else {
+                        play.view.attack_target(tile, &play.link) != Some((target, attacking))
+                    }
                 {
                     return false;
                 }

@@ -7,6 +7,12 @@ impl PreferenceStore {
         background: bool,
     ) -> io::Result<()> {
         let records = preferences.impact_records;
+        if background {
+            self.deferred_impact_records = Some(records);
+            if self.retry_impact_at.is_some() {
+                return Ok(());
+            }
+        }
         let result = if background {
             self.apply_in_background(preferences)
         } else {
@@ -23,7 +29,7 @@ impl PreferenceStore {
     }
 
     pub(super) fn flush_impact_records(&mut self) -> io::Result<()> {
-        if let Some(records) = self.deferred_impact_records.take() {
+        if let Some(records) = self.deferred_impact_records {
             let mut preferences = self.preferences.clone();
             preferences.impact_records = records;
             self.apply_in_background(preferences)?;
@@ -144,7 +150,7 @@ impl PreferenceStore {
     }
 
     pub(in super::super) fn saving(&self) -> bool {
-        self.save_task.is_some()
+        self.save_task.is_some() || self.retry_impact_at.is_some()
     }
 
     pub(in super::super) fn at_path(&self, path: &Path) -> bool {
@@ -152,6 +158,15 @@ impl PreferenceStore {
     }
 
     pub(in super::super) fn poll_background_save(&mut self) -> Option<Vec<SaveResult>> {
+        if self
+            .retry_impact_at
+            .is_some_and(|at| std::time::Instant::now() >= at)
+        {
+            self.retry_impact_at = None;
+            if let Err(error) = self.flush_impact_records() {
+                return Some(vec![Err(error)]);
+            }
+        }
         let mut results = bevy_tasks::futures::check_ready(self.save_task.as_mut()?)?;
         self.save_task = None;
         self.queued = 0;
@@ -168,7 +183,13 @@ impl PreferenceStore {
         {
             self.preferences = restored.clone();
         }
-        if let Err(error) = self.flush_impact_records() {
+        if self.deferred_impact_records == Some(self.preferences.impact_records) {
+            self.deferred_impact_records = None;
+        }
+        if self.deferred_impact_records.is_some() && results.iter().any(Result::is_err) {
+            self.retry_impact_at =
+                Some(std::time::Instant::now() + std::time::Duration::from_secs(1));
+        } else if let Err(error) = self.flush_impact_records() {
             results.push(Err(error));
         }
         Some(results)

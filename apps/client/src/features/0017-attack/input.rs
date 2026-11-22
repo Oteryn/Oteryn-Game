@@ -47,6 +47,35 @@ impl crate::play::PlayView {
         Some((target, attacking))
     }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn row_attack_target(
+        &self,
+        target: oteryn_session::EntityRef,
+        link: &PlayLink,
+    ) -> Option<(TileCoord, (oteryn_session::EntityRef, bool))> {
+        let position = self.context_creature_position(target)?;
+        let mailbox = lock(&link.mailbox);
+        if Some(target.identity) == self.scene.own_identity()
+            || !mailbox
+                .battle
+                .rows
+                .iter()
+                .any(|actor| actor.entity == target && actor.position == position)
+        {
+            return None;
+        }
+        Some((
+            TileCoord::new(position.x, position.y),
+            (
+                target,
+                mailbox
+                    .battle
+                    .combat
+                    .is_some_and(|combat| combat.target == Some(target)),
+            ),
+        ))
+    }
+
     /// Alt+click on an opponent: stops the attack when it is the current target, else attacks it.
     pub fn attack_toggle_click(&self, tile: TileCoord, link: &PlayLink) -> bool {
         // Same guard as `PlayView::click`: no world input while dead or under a server modal.

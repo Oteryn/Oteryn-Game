@@ -48,6 +48,20 @@ impl PlayLink {
                 destination,
             )
         });
+        if single
+            && mailbox.item_movement.dragged.is_some_and(|item| {
+                item.count > 1
+                    && (!counted
+                        || item.equipped
+                        || matches!(
+                            destination,
+                            Some(oteryn_session::ItemMoveDestination::Equipment(_))
+                        ))
+            })
+        {
+            mailbox.item_movement.cancel();
+            return;
+        }
         let mut request = mailbox
             .item_movement
             .drop_on(destination, counted && (!whole || single));

@@ -13,12 +13,21 @@ impl Filters {
         if self == Self::default() {
             return;
         }
+        link.request_equipment_details();
         let character = link.cyclopedia_character_panel();
         let level = character.general.map(|stats| stats.level);
         let profession = character
             .vocation_id
             .and_then(oteryn_client_ui::cyclopedia_character::vocation_title);
-        panel.catalogue.retain(|_, item| {
+        panel.catalogue.retain(|id, row| {
+            let Some(Some(item)) = panel.equipment_details.get(id) else {
+                return false;
+            };
+            for (key, value) in &item.attributes {
+                if !row.attributes.iter().any(|(name, _)| name == key) {
+                    row.attributes.push((key.clone(), value.clone()));
+                }
+            }
             let field = |name| {
                 item.attributes
                     .iter()

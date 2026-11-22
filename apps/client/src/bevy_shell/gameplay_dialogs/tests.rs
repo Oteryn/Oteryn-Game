@@ -372,7 +372,7 @@ fn secondary_list_context_keeps_attack_for_the_unambiguous_creature() -> Result 
         display_name: None,
     };
     let mut host = HostOwner::new(None)?;
-    let (link, _commands, outbox) = play_channel();
+    let (link, mut commands, outbox) = play_channel();
     outbox.bevy_world_look_selected();
     outbox.battle_publish(None, Some(7), &[creature]);
     let mut lists = vec![
@@ -400,5 +400,35 @@ fn secondary_list_context_keeps_attack_for_the_unambiguous_creature() -> Result 
             ..
         }
     ));
+    let other = WorldSpatialEntity {
+        entity: EntityRef {
+            identity: [4; 16],
+            generation: 1,
+        },
+        ..creature
+    };
+    outbox.battle_publish(None, Some(7), &[creature, other]);
+    let play = host.play.as_mut().ok_or("play")?;
+    play.view = PlayView::new(own, 7, &[])?.with_entities(vec![creature, other])?;
+    for selected in [creature.entity, other.entity] {
+        host.request_creature_context(selected);
+        let Some(Request {
+            id,
+            content:
+                Content::Context {
+                    attack: Some(attack),
+                    ..
+                },
+            ..
+        }) = &host.dialogs.pending
+        else {
+            return Err("stacked row missing attack".into());
+        };
+        assert_eq!(attack.1.0, selected);
+        assert!(host.choose_dialog(*id, Choice::Attack));
+        assert!(
+            matches!(commands.try_recv()?,crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Attack(id)) if id==selected)
+        );
+    }
     Ok(())
 }

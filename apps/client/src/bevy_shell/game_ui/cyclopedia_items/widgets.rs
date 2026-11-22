@@ -5,7 +5,7 @@ pub(super) fn build(
     skin: &Skins,
     panel: &Panel,
     details: &str,
-    search_value: &str,
+    (search_value, own_draft): (&str, Option<&str>),
     control: Control,
     (can_continue_drops, loot, filters): (bool, LootControls, Filters),
 ) -> Entity {
@@ -115,7 +115,11 @@ pub(super) fn build(
             OwnPrice,
             TextInput,
             bevy::input_focus::tab_navigation::TabIndex(1),
-            EditableText::new(loot.value.map(|v| v.to_string()).as_deref().unwrap_or("")),
+            EditableText::new(
+                own_draft
+                    .or(loot.value.map(|v| v.to_string()).as_deref())
+                    .unwrap_or(""),
+            ),
             source::font(skin.font.clone(), false),
             TextColor(source::TEXT_COLOR),
             Node {

@@ -405,7 +405,13 @@ impl SettingsState {
         if self.preference_transfer_pending() {
             return [false; 2];
         }
-        if self.character.is_some() && records != self.preferences.impact_records {
+        if self.character.is_some()
+            && (records != self.preferences.impact_records
+                || self
+                    .store
+                    .as_ref()
+                    .is_some_and(|store| store.preferences().impact_records != records))
+        {
             self.preferences.impact_records = records;
             if let Some(store) = &mut self.store {
                 #[cfg(bevy_shell)]

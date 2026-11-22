@@ -59,7 +59,7 @@ impl PlayView {
         );
         (!menu.entries.is_empty()).then_some(menu)
     }
-    fn context_creature_position(
+    pub(in crate::play) fn context_creature_position(
         &self,
         target: oteryn_session::EntityRef,
     ) -> Option<oteryn_session::ActorPosition> {
@@ -286,7 +286,18 @@ impl PlayView {
             }
         };
         self.world_context_for(tile, link, true)
-            .is_some_and(|menu| self.world_context_choose(link, &menu, action))
+            .is_some_and(|menu| {
+                let action = if action == Action::UseWith
+                    && matches!(
+                        menu.target,
+                        oteryn_client_runtime::world_interaction::Target::Object(_)
+                    ) {
+                    Action::Use
+                } else {
+                    action
+                };
+                self.world_context_choose(link, &menu, action)
+            })
     }
 
     /// Ordinary modifier clicks use the same observed target and negotiated command as menus.

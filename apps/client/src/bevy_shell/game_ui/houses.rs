@@ -238,7 +238,8 @@ fn project(
         &panel.model,
         &message,
     );
-    let houses = oteryn_client_ui::house::map_houses(&panel.model);
+    let houses =
+        oteryn_client_ui::house::filtered_map_houses(&panel.model, state.guildhalls, state.rented);
     state.map &= !houses.is_empty();
     if state.map {
         entrance_map(&mut commands, &skin, owner.generation(), root, &houses);

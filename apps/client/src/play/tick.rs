@@ -88,6 +88,23 @@ impl PlayView {
             link.party_skull_request(oteryn_client_ui::party_skull::Intent::Query);
             self.party_icons_refresh = Some(icon_now);
         }
+        if self
+            .entities
+            .iter()
+            .any(|actor| actor.kind == oteryn_session::EntityKind::Creature)
+            && self.party_summons_refresh.is_none_or(|last| {
+                icon_now.duration_since(last) >= std::time::Duration::from_secs(2)
+            })
+        {
+            let refresh = {
+                let mailbox = super::mailbox::lock(&link.mailbox);
+                mailbox.party.selected && !mailbox.party.open && mailbox.party.pending.is_none()
+            };
+            if refresh {
+                link.party_request(oteryn_client_ui::party::Intent::Refresh);
+            }
+            self.party_summons_refresh = Some(icon_now);
+        }
         self.party_icons = party.icons;
         self.party_summons = super::mailbox::lock(&link.mailbox).party_summons();
         self.sync_spell_words(link);

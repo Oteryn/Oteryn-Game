@@ -460,7 +460,12 @@ pub(super) fn render(
     }
     body
 }
-fn text(commands: &mut Commands, skin: &Skins, parent: Entity, value: impl Into<String>) {
+pub(super) fn text(
+    commands: &mut Commands,
+    skin: &Skins,
+    parent: Entity,
+    value: impl Into<String>,
+) {
     let row = commands
         .spawn((
             source::text(value, source::font(skin.font.clone(), false)),

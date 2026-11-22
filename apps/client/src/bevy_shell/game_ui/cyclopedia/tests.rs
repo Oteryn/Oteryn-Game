@@ -521,6 +521,34 @@ fn general_stats_opens_store_filtered_to_xp_boosts() -> TestResult {
         commands.try_recv()?,
         PlayCommand::ServerMechanic(_)
     ));
+    use oteryn_client_runtime::cui3::store::browse;
+    outbox.bevy_store_reply(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 2,
+            server_sequence: 2,
+            status: CommandStatus::Accepted,
+            payload: browse::Page {
+                categories: vec![],
+                products: vec![],
+                next: String::new(),
+                total: 0,
+                transferable: 0,
+                transferable_known: true,
+            }
+            .encode()
+            .map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    app.update();
+    let owner = app.world().non_send::<HostOwner>();
+    let play = owner.play.as_ref().ok_or("play")?;
+    assert!(play.link.cyclopedia_character_panel().open);
+    assert!(!play.link.store_panel().open);
+    assert!(
+        texts(&mut app)
+            .iter()
+            .any(|s| s.contains("XP boosts are unavailable"))
+    );
     Ok(())
 }
 

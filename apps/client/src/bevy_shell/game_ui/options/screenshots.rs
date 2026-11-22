@@ -108,23 +108,44 @@ fn open_folder(
         let folder =
             crate::play::screenshot::screenshot_directory(std::path::Path::new(&directory))?;
         crate::play::screenshot::create_capture_directory(&folder)?;
-        let status = crate::bevy_shell::diagnostics::folder_command(&folder)
+        let mut command = crate::bevy_shell::diagnostics::folder_command(&folder);
+        command
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status()?;
-        // Windows Explorer can return 1 when it hands the folder to an existing process.
-        if status.success() || cfg!(windows) && status.code() == Some(1) {
-            Ok(())
-        } else {
-            Err(std::io::Error::other(format!(
-                "folder launcher exited with {status}"
-            )))
-        }
+            .stderr(std::process::Stdio::null());
+        crate::bevy_shell::diagnostics::launch_folder(command).await
     });
     launch.0 = Some((owner.generation(), task));
 }
 
+#[cfg(all(test, unix))]
+#[test]
+fn folder_launcher_releases_io_worker_while_browser_is_open()
+-> Result<(), Box<dyn std::error::Error>> {
+    use std::{os::unix::net::UnixStream, process::Command, time::Duration};
+    let (reader, writer) = UnixStream::pair()?;
+    let mut command = Command::new("cat");
+    command
+        .stdin(std::os::fd::OwnedFd::from(reader))
+        .stdout(std::process::Stdio::null());
+    let pool = bevy_tasks::TaskPoolBuilder::new().num_threads(1).build();
+    let (started, signal) = std::sync::mpsc::channel();
+    let browser = pool.spawn(async move {
+        let _ = started.send(());
+        crate::bevy_shell::diagnostics::launch_folder(command).await
+    });
+    signal.recv_timeout(Duration::from_secs(5))?;
+    let (done, signal) = std::sync::mpsc::channel();
+    pool.spawn(async move {
+        let _ = done.send(());
+    })
+    .detach();
+    let progress = signal.recv_timeout(Duration::from_secs(2));
+    drop(writer);
+    bevy_tasks::block_on(browser)?;
+    progress?;
+    Ok(())
+}
 fn use_folder(
     event: On<Activate>,
     fields: Query<&EditableText, With<Folder>>,
@@ -270,6 +291,7 @@ mod bestiary_tests {
         for (id, expected) in [
             ("screenshots.bestiary_unlock", &[1, 2][..]),
             ("screenshots.bestiary_complete", &[3][..]),
+            ("screenshots.bestiary_unlock", &[2][..]),
         ] {
             let mut app = super::super::tests::app(Page::Screenshots, None)?;
             let checkbox = app
@@ -289,6 +311,11 @@ mod bestiary_tests {
             let start = std::time::Instant::now();
             for (i, kills) in [0, 10, 20, 30, 30].into_iter().enumerate() {
                 let now = start + std::time::Duration::from_secs(4 * i as u64);
+                if expected == [2] && i == 1 {
+                    owner.settings.preferences.screenshots.automatic_disabled = true;
+                    owner.settings.prepare_screenshots(now, Some(&link));
+                    owner.settings.preferences.screenshots.automatic_disabled = false;
+                }
                 owner.settings.prepare_screenshots(now, Some(&link));
                 let crate::combat_input::PlayCommand::Feature(query) = receiver.try_recv()? else {
                     return Err("missing bestiary request".into());
@@ -373,6 +400,36 @@ mod reward_tests {
             let mut owner = app.world_mut().non_send_mut::<HostOwner>();
             owner.apply(true);
             owner.settings.prepare_screenshots(now, Some(&link));
+            use oteryn_client_runtime::cyclopedia_tracker::{
+                TrackerEntry, TrackerSnapshot, encode_domain_snapshot,
+            };
+            let mut seen = false;
+            for kills in [0, 1, 1] {
+                let payload = encode_domain_snapshot(
+                    &TrackerSnapshot {
+                        boss: false,
+                        entries: vec![],
+                    },
+                    &TrackerSnapshot {
+                        boss: true,
+                        entries: vec![TrackerEntry {
+                            creature_key: "oteryn:boss.test".into(),
+                            kill_count: kills,
+                            thresholds: [5, 25, 250],
+                            completed: false,
+                        }],
+                    },
+                )
+                .ok_or("snapshot")?;
+                outbox.bevy_cyclopedia_tracker_push(payload);
+                let save = matches!(
+                    owner.settings.prepare_screenshots(now, Some(&link)),
+                    crate::play::screenshot::CaptureAction::Save
+                );
+                assert_eq!(save, boss && kills == 1 && !seen);
+                seen |= kills == 1;
+                owner.settings.cancel_screenshot();
+            }
             link.boss_encounter_edit(0, "oteryn:boss.test".into());
             link.boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Defeated);
             assert!(
@@ -393,13 +450,10 @@ mod reward_tests {
                 )
                 .map_err(|e| format!("{e:?}"))?,
             });
-            assert_eq!(
-                matches!(
-                    owner.settings.prepare_screenshots(now, Some(&link)),
-                    crate::play::screenshot::CaptureAction::Save
-                ),
-                boss
-            );
+            assert!(!matches!(
+                owner.settings.prepare_screenshots(now, Some(&link)),
+                crate::play::screenshot::CaptureAction::Save
+            ));
             owner.settings.cancel_screenshot();
             for status in [CommandStatus::DuplicateReplay, CommandStatus::Accepted] {
                 outbox.bevy_boss_rewards_result(&BossRewardsResponse {

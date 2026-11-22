@@ -62,9 +62,7 @@ pub(in crate::bevy_shell::game_ui::hud) fn hover(
         let actor = panel.visible_actors.iter().find(|a| a.entity == target)?;
         let scene = play.view.scene();
         let tile = oteryn_renderer::TileCoord::new(actor.position.x, actor.position.y);
-        if !scene.view().contains(tile) {
-            return None;
-        }
+
         let (w, h) = scene.view().viewport_px();
         let clip = Vec2::new(w as f32, h as f32);
         let size = viewport
@@ -79,9 +77,14 @@ pub(in crate::bevy_shell::game_ui::hud) fn hover(
                 .map_or(Vec2::ZERO, Vec2::from)
             + ((size - clip) * 0.5).floor()
             - size * 0.5;
-        Some((at, scene.view().tile_px() as f32))
+        Some((
+            at,
+            scene.view().tile_px() as f32,
+            ((size - clip) * 0.5).floor() - size * 0.5,
+            clip,
+        ))
     });
-    let Some((at, side)) = target else {
+    let Some((at, side, origin, clip)) = target else {
         for e in borders.drain(..) {
             commands.entity(e).try_despawn();
         }
@@ -97,7 +100,7 @@ pub(in crate::bevy_shell::game_ui::hud) fn hover(
     .into_iter()
     .enumerate()
     {
-        let center = at + offset + size * 0.5;
+        let (center, size) = border_strip(at + offset, size, origin, clip);
         let transform = Transform::from_xyz(center.x / scale, -center.y / scale, 101.);
         let sprite = Sprite::from_color(Color::WHITE, size / scale);
         if let Some(e) = borders.get(i) {
@@ -118,4 +121,33 @@ pub(in crate::bevy_shell::game_ui::hud) fn hover(
             );
         }
     }
+}
+
+fn border_strip(at: Vec2, size: Vec2, origin: Vec2, clip: Vec2) -> (Vec2, Vec2) {
+    let start = at.max(origin);
+    let end = (at + size).min(origin + clip);
+    let visible = (end - start).max(Vec2::ZERO);
+    (start + visible * 0.5, visible)
+}
+#[test]
+fn moving_hover_strips_stay_inside_the_world_clip() {
+    let origin = Vec2::new(-16., -16.);
+    assert_eq!(
+        border_strip(
+            Vec2::new(-20., 0.),
+            Vec2::new(32., 1.),
+            origin,
+            Vec2::splat(32.)
+        ),
+        (Vec2::new(-2., 0.5), Vec2::new(28., 1.))
+    );
+    assert_eq!(
+        border_strip(
+            Vec2::new(14., 12.),
+            Vec2::new(1., 32.),
+            origin,
+            Vec2::splat(32.)
+        ),
+        (Vec2::new(14.5, 14.), Vec2::new(1., 4.))
+    );
 }

@@ -12,11 +12,25 @@ impl Outbox {
         panel.widget_feedback[slot] = panel.feedback;
     }
     pub(in crate::play) fn cyclopedia_tracker_push(&self, payload: Vec<u8>) {
-        let panel = &mut lock(&self.0).cyclopedia_tracker;
+        let mut mailbox = lock(&self.0);
+        let panel = &mut mailbox.cyclopedia_tracker;
         if !oteryn_client_ui::cyclopedia_tracker::apply_snapshot(panel, &payload) {
-            // A domain-98 push carries both trackers.
             panel.widget_feedback = [panel.feedback; 2];
+            return;
         }
+        let latest = panel.bosstiary_snapshot.clone();
+        if let Some((old, new)) = mailbox.capture_boss_tracker.as_ref().zip(latest.as_ref())
+            && new.entries.iter().any(|entry| {
+                old.entries.iter().any(|before| {
+                    before.creature_key == entry.creature_key
+                        && before.kill_count < entry.kill_count
+                })
+            })
+        {
+            mailbox.combat_capture.boss_defeats =
+                mailbox.combat_capture.boss_defeats.saturating_add(1);
+        }
+        mailbox.capture_boss_tracker = latest;
     }
 }
 

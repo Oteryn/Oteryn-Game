@@ -72,11 +72,6 @@ fn catalogue_window() -> Result<CatalogueWindow, Box<dyn std::error::Error>> {
                     tier: 0,
                     name: "Confirmed sword".into(),
                     attributes: vec![
-                        ("Attack".into(), "30".into()),
-                        ("Classification".into(), "2".into()),
-                        ("Body Position".into(), "both hands".into()),
-                        ("Professions".into(), "druid".into()),
-                        ("Required Level".into(), "50".into()),
                         ("Catalogue next".into(), "42".into()),
                         ("Catalogue categories".into(), "Weapons".into()),
                         ("Category".into(), "Weapons".into()),
@@ -90,7 +85,6 @@ fn catalogue_window() -> Result<CatalogueWindow, Box<dyn std::error::Error>> {
     );
     app.update();
     assert!(visible(&mut app).contains("Confirmed sword"));
-    assert!(visible(&mut app).contains("Attack: 30"));
     Ok((app, link, receiver, outbox))
 }
 
@@ -515,7 +509,8 @@ fn selected_item_reaches_quick_loot_lists_and_container_manager() -> TestResult 
 #[test]
 fn item_equipment_filters_match_confirmed_attributes_and_player_stats() -> TestResult {
     use oteryn_client_runtime::cyclopedia_character::{GeneralStats, TabExtension, TabView};
-    let (mut app, _, mut receiver, outbox) = catalogue_window()?;
+    let (mut app, link, mut receiver, outbox) = catalogue_window()?;
+    let mut details = link.inspection_panel().reply.ok_or("browse reply")?;
     outbox.bevy_cyclopedia_initialize(true, true, true);
     let selectable = |app: &mut App| {
         app.world_mut()
@@ -524,9 +519,34 @@ fn item_equipment_filters_match_confirmed_attributes_and_player_stats() -> TestR
             .any(|c| c.action == Action::Select(42))
     };
     click(&mut app, Action::Hands)?;
+    let PlayCommand::ServerMechanic(cmd) = receiver.try_recv()? else {
+        return Err("equipment details".into());
+    };
+    assert_eq!(
+        wire::decode_request(&cmd.payload).map_err(|e| format!("{e:?}"))?,
+        wire::Request::Catalogue(42)
+    );
+    details.items[0].attributes = vec![
+        ("Attack".into(), "30".into()),
+        ("Classification".into(), "2".into()),
+        ("Body Position".into(), "both hands".into()),
+        ("Professions".into(), "druid".into()),
+        ("Required Level".into(), "50".into()),
+    ];
+    link.bevy_item_details_response(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 2,
+            server_sequence: 2,
+            status: oteryn_client_runtime::server_mechanic::CommandStatus::Accepted,
+            payload: wire::encode_reply(&details).map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    app.update();
     assert!(!selectable(&mut app));
     click(&mut app, Action::Hands)?;
     assert!(selectable(&mut app));
+    click(&mut app, Action::Select(42))?;
+    assert!(visible(&mut app).contains("Attack: 30"));
     click(&mut app, Action::Class)?;
     assert!(!selectable(&mut app));
     click(&mut app, Action::Class)?;
@@ -614,9 +634,22 @@ fn item_valuation_uses_confirmed_market_or_entered_unit_price() -> TestResult {
             },
         })
     };
+    app.world_mut()
+        .query_filtered::<&mut EditableText, With<OwnPrice>>()
+        .single_mut(app.world_mut())?
+        .editor_mut()
+        .set_text("123");
     outbox.push(vec![shop(1, 32)]);
     app.update();
     assert!(visible(&mut app).contains("Current merchant buys 1 for 32 gold"));
+    assert_eq!(
+        app.world_mut()
+            .query_filtered::<&EditableText, With<OwnPrice>>()
+            .single(app.world())?
+            .value()
+            .to_string(),
+        "123"
+    );
     click(&mut app, Action::MerchantValue)?;
     assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&32));
     outbox.push(vec![shop(2, 41)]);

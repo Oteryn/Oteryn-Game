@@ -133,6 +133,10 @@ fn keyboard(
         play.link.item_catalogue_set_open(false);
     }
 }
+type ItemEditors<'w, 's> = (
+    Query<'w, 's, &'static EditableText, With<Search>>,
+    Query<'w, 's, &'static EditableText, With<OwnPrice>>,
+);
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
@@ -140,8 +144,9 @@ fn project(
     mut state: ResMut<State>,
     mut focus: ResMut<InputFocus>,
     parents: Query<&ChildOf>,
-    search: Query<&EditableText, With<Search>>,
+    editors: ItemEditors,
 ) {
+    let (search, own_price) = editors;
     let generation = owner.generation();
     let snapshot = owner
         .play
@@ -203,6 +208,15 @@ fn project(
             }
         })
         .unwrap_or_default();
+    let own_draft = state.snapshot.as_ref().zip(snapshot.as_ref()).and_then(
+        |((old_gen, old, _, old_loot), (generation, panel, _, _))| {
+            if old_gen != generation || old.catalogue_definition != panel.catalogue_definition {
+                return None;
+            }
+            let text = own_price.single().ok()?.value().to_string();
+            (text != old_loot.value.map(|v| v.to_string()).unwrap_or_default()).then_some(text)
+        },
+    );
     state.snapshot = snapshot;
     let Some((generation, panel, text, loot)) = &state.snapshot else {
         return;
@@ -221,7 +235,7 @@ fn project(
         &skin,
         panel,
         text,
-        &search_value,
+        (&search_value, own_draft.as_deref()),
         control,
         (continuation.is_some(), *loot, state.filters),
     );

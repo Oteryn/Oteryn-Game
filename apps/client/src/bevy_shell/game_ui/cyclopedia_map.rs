@@ -18,7 +18,7 @@ struct State {
     flags: Vec<(u16, u16, u8, String)>,
     hidden_flags: u8,
     surface: bool,
-    chose_mode: bool,
+    chosen_surface: Option<bool>,
     no_satellite: Option<([u16; 4], i8)>,
     faded: u8,
     generation: u64,
@@ -99,7 +99,7 @@ fn activate(
             {
                 return;
             }
-            state.chose_mode = true;
+            state.chosen_surface = Some(!state.surface);
             state.surface = !state.surface;
             state.snapshot = None;
         }
@@ -217,7 +217,7 @@ fn project(
         state.flags.clear();
         state.hidden_flags = 0;
         state.surface = false;
-        state.chose_mode = false;
+        state.chosen_surface = None;
         state.no_satellite = None;
         state.faded = 0;
         state.generation = owner.generation();
@@ -231,9 +231,10 @@ fn project(
         .is_some_and(|bounds| state.no_satellite == Some((bounds, panel.geometry.floor)));
     if panel.geometry.floor > 7 || missing {
         state.surface = false;
-    } else if !state.chose_mode && panel.geometry.bounds.is_some() {
-        state.surface =
-            terrain_cache.root.is_some() || std::env::var_os(crate::map::ASSET_DIR_ENV).is_some();
+    } else if panel.geometry.bounds.is_some() {
+        state.surface = state.chosen_surface.unwrap_or_else(|| {
+            terrain_cache.root.is_some() || std::env::var_os(crate::map::ASSET_DIR_ENV).is_some()
+        });
     }
     let flags = panel
         .geometry

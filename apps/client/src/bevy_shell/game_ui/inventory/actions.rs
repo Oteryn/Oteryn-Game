@@ -127,10 +127,15 @@ pub(super) fn click(
         } else {
             Control::Context(
                 *slot,
-                if action == Some(Action::UseWith) {
-                    Action::UseWith
-                } else {
-                    Action::Use
+                match action {
+                    Some(Action::Look)
+                        if owner.settings.preferences.controls.scheme
+                            == crate::play::MouseScheme::LeftSmart =>
+                    {
+                        Action::Look
+                    }
+                    Some(Action::UseWith) => Action::UseWith,
+                    _ => Action::Use,
                 },
             )
         };

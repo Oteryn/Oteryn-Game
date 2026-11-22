@@ -176,6 +176,21 @@ impl PlayLink {
             panel.category = category.into();
         }
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn request_equipment_details(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.discovery.inspection;
+        if let Some(command) = oteryn_client_ui::inspection::request_equipment(panel)
+            && self
+                .commands
+                .send(PlayCommand::ServerMechanic(command))
+                .is_err()
+        {
+            panel.equipment_pending = None;
+            panel.pending = false;
+            panel.feedback = "The session has ended".into();
+        }
+    }
     pub fn item_catalogue_request(&self, action: usize) {
         submit(&mut lock(&self.mailbox), &self.commands, action);
     }
@@ -332,7 +347,11 @@ pub(in crate::play) fn submit(
         _ => return,
     };
     // A refused or malformed reply must not leave a cursor from an older query usable.
-    if matches!(query, Request::CatalogueQuery(catalogue::Query::Items { .. })) {
+    if matches!(
+        query,
+        Request::CatalogueQuery(catalogue::Query::Items { .. })
+    ) {
+        panel.equipment_details.clear();
         panel.catalogue_next = None;
     }
     if matches!(query, Request::CatalogueQuery(catalogue::Query::Drops { .. })) {

@@ -146,6 +146,8 @@ pub(super) struct HoldingsSearch;
 struct State {
     generation: u64,
     serial: u64,
+    xp_request: Option<u64>,
+    xp_unavailable: bool,
     tab: Tab,
     grid: bool,
     snapshot: Option<CyclopediaCharacterPanel>,
@@ -183,6 +185,34 @@ fn project(
     mut focus: ResMut<InputFocus>,
     parents: Query<&ChildOf>,
 ) {
+    if let Some(generation) = state.xp_request {
+        if Some(generation) != owner.play.as_ref().map(|_| owner.generation())
+            || owner.phase != Phase::Playing
+        {
+            state.xp_request = None;
+        } else if let Some(play) = &owner.play {
+            let store = play.link.store_panel();
+            if !store.open || store.browser.search != "XP Boost" {
+                state.xp_request = None;
+            } else if !store.pending {
+                state.xp_request = None;
+                if store.feedback.is_none()
+                    && store
+                        .browser
+                        .page
+                        .as_ref()
+                        .is_some_and(|page| page.products.is_empty())
+                {
+                    play.link.store_set_open(false);
+
+                    state.xp_unavailable = true;
+                    state.snapshot = None;
+                } else if store.feedback.is_none() && play.link.cyclopedia_character_panel().open {
+                    play.link.window_toggle(WINDOW, &[]);
+                }
+            }
+        }
+    }
     let panel = owner
         .play
         .as_ref()
@@ -202,6 +232,7 @@ fn project(
         state.generation = owner.generation();
         state.tab = Tab::default();
         state.grid = false;
+        state.xp_unavailable = false;
     }
     let Some(mut panel) = panel else {
         return;
@@ -251,6 +282,7 @@ fn project(
         serial,
         kind: Kind::Close,
     };
+    let xp_unavailable = state.xp_unavailable && tab == Tab::General;
     let widgets = state
         .widgets
         .get_or_insert_with(|| widgets::build(&mut commands, &skins));
@@ -269,6 +301,14 @@ fn project(
         grid,
         &panel,
     ));
+    if xp_unavailable && let Some(content) = widgets.content {
+        widgets::text(
+            &mut commands,
+            &skins,
+            content,
+            "XP boosts are unavailable in the current Store catalogue.",
+        );
+    }
     state.snapshot = Some(panel);
 }
 fn perform(
@@ -324,9 +364,9 @@ fn perform(
         Kind::XpBoost if state.tab == Tab::General => {
             let store = play.link.store_panel();
             if store.selected && !store.pending && store.confirmed_purchase.is_none() {
+                state.xp_request = Some(owner.generation());
                 play.link.store_browse("featured", "XP Boost", 0, 0);
                 play.link.store_set_open(true);
-                play.link.window_toggle(WINDOW, &[]);
             }
             return;
         }

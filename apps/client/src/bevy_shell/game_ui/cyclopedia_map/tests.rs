@@ -168,6 +168,16 @@ fn cyclopedia_map_bevy_browses_subareas_and_submits_poi_exploration()
     app.update();
     click(&mut app, Kind::Surface)?;
     assert!(has_text(&mut app, "Surface view"));
+    click(&mut app, Kind::Atlas(7))?;
+    let down = receive(&mut rx)?;
+    reply(&outbox, &down, geometry_data(8)?);
+    app.update();
+    assert!(has_text(&mut app, "Map view"));
+    click(&mut app, Kind::Atlas(6))?;
+    let up = receive(&mut rx)?;
+    reply(&outbox, &up, geometry_data(7)?);
+    app.update();
+    assert!(has_text(&mut app, "Surface view"));
     click(&mut app, Kind::Opacity)?;
     assert!(has_text(&mut app, "Background floors: 100%"));
     click(&mut app, Kind::Atlas(6))?;
@@ -531,5 +541,27 @@ fn area_view_and_separator_change_the_rendered_map_pixels() -> Result<(), Box<dy
         faded != second,
         "background floors must change in the composited image"
     );
+    for _ in 0..3 {
+        press(&mut app, Kind::Opacity)?;
+        layer(&mut app)?;
+    }
+    let clear = layer(&mut app)?;
+    let mut compared = 0;
+    for ((full, partial), foreground) in second
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .zip(faded.as_chunks::<4>().0.iter())
+        .zip(clear.as_chunks::<4>().0.iter())
+    {
+        if foreground[..3] == [0; 3] && full[0] > 40 {
+            compared += 1;
+            assert!(
+                (i32::from(partial[0]) - i32::from(full[0]) * 191 / 255).abs() <= 2,
+                "75% background: {partial:?} from {full:?}"
+            );
+        }
+    }
+    assert!(compared > 0);
     Ok(())
 }

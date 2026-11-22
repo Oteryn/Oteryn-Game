@@ -58,6 +58,12 @@ impl PlayLink {
             .capture_stages
             .clone()
     }
+    pub(crate) fn invalidate_capture_bestiary(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.charm_progression;
+        panel.capture_stages = None;
+        panel.discard_capture = panel.capture_pending;
+    }
     pub(crate) fn refresh_capture_bestiary(&self) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.properties.charm_progression;

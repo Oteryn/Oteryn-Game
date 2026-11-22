@@ -20,16 +20,7 @@ impl Outbox {
             return;
         }
         let mut mailbox = lock(&self.0);
-        let defeat = mailbox.boss_encounter.pending
-            && mailbox.boss_encounter.pending_kind
-                == oteryn_client_runtime::boss_encounter::COMMAND_TYPE_BOSS_DEFEATED;
-        if oteryn_client_ui::boss_encounter::apply_result(&mut mailbox.boss_encounter, response)
-            && defeat
-            && response.status == oteryn_session::CommandStatus::Accepted
-        {
-            mailbox.combat_capture.boss_defeats =
-                mailbox.combat_capture.boss_defeats.saturating_add(1);
-        }
+        oteryn_client_ui::boss_encounter::apply_result(&mut mailbox.boss_encounter, response);
     }
 }
 

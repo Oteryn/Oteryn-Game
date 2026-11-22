@@ -35,6 +35,7 @@ impl PlayView {
             resource_hud: Default::default(),
             party_icon_epoch: std::time::Instant::now(),
             party_summons: Default::default(),
+            party_summons_refresh: None,
             party_icons_refresh: None,
             party_icons: Vec::new(),
             guild_emblems: Vec::new(),

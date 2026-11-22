@@ -858,3 +858,72 @@ fn configured_direct_click_opens_the_backpack_without_a_context_menu() -> TestRe
     }
     Ok(())
 }
+
+#[test]
+fn left_smart_inventory_click_looks_at_a_blocking_item() -> TestResult {
+    use bevy::picking::{backend::HitData, pointer::PointerButton};
+    use oteryn_client_assets::{
+        AppearanceIndex, AssetStore, Catalog,
+        world::{MANIFEST_PATH, MANIFEST_SHA256},
+    };
+    use oteryn_client_ui::world_interaction::menu::Action;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let store = AssetStore::open_pinned(
+        &root.join("content/assets/files"),
+        &root.join(MANIFEST_PATH),
+        MANIFEST_SHA256,
+    )?;
+    let appearances = AppearanceIndex::load(&store, &Catalog::load(&store)?)?;
+    let id = appearances
+        .iter()
+        .find(|a| a.unpassable && !a.container && !a.multi_use && !a.usable)
+        .ok_or("blocking appearance")?
+        .id;
+    let item = ItemEntry {
+        appearance_id: id.try_into()?,
+        ..entry(77, 1)?
+    };
+    let (link, mut commands, outbox) = play_channel();
+    PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(CharacterInventory {
+            entries: vec![item],
+            ..Default::default()
+        }),
+        None,
+        false,
+        true,
+    );
+    let mut owner = host(link)?;
+    owner.settings.preferences.controls.scheme = crate::play::MouseScheme::LeftSmart;
+    let view = &mut owner.play.as_mut().ok_or("play")?.view;
+    view.prime_icon_assets(root);
+    view.prepare_item_icons(std::iter::once(&item))?;
+    assert_eq!(
+        view.scene().smart_item_action(item.appearance_id),
+        Some(Action::Look)
+    );
+    let slot = Slot {
+        generation: owner.generation(),
+        location: Location::Inventory,
+        item: Some(item),
+        destination: None,
+    };
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .init_resource::<InventoryUi>()
+        .insert_resource(UiScale(1.));
+    let entity = app.world_mut().spawn(slot).observe(actions::click).id();
+    app.world_mut().trigger(PointerClick {
+        entity,
+        button: PointerButton::Primary,
+        pointer: pointer(),
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    assert!(
+        matches!(commands.try_recv()?,crate::combat_input::PlayCommand::WorldContext(cmd) if cmd.action==Action::Look)
+    );
+    Ok(())
+}
