@@ -102,7 +102,22 @@ pub(super) fn apply(
     .into_iter()
     .filter(|(kind, _, _)| changes.world_counters && counter_admitted(*kind))
     .map(|(_, key, at)| (key, at));
-    for (key, (x, y, z)) in changes.npcs().chain(trader).chain(shared_npcs) {
+    // Fandom Maeryn revid 1116853 locates her downstairs normally. TibiaWiki BR
+    // Maeryn revid 396987 supplies the upstairs cell she uses during the full moon.
+    let maeryn = std::iter::once((
+        "oteryn:npc.maeryn",
+        if changes.grimvale_full_moon {
+            (33332, 31686, 6)
+        } else {
+            (33331, 31686, 7)
+        },
+    ));
+    for (key, (x, y, z)) in changes
+        .npcs()
+        .chain(trader)
+        .chain(shared_npcs)
+        .chain(maeryn)
+    {
         if !npc_boot.is_some_and(|boot| boot.admits(key)) {
             continue;
         }
@@ -317,6 +332,20 @@ pub(crate) mod tests {
         assert_eq!(apply(&mut runtime, None, &june, None), 0);
         assert!(npc_keys(&runtime).is_empty());
     }
+
+    #[test]
+    fn maeryn_moves_upstairs_only_during_the_grimvale_full_moon() {
+        let admitted = boot(&["oteryn:npc.maeryn"]);
+        for (day, expected) in [(12, (33331, 31686, 7)), (13, (33332, 31686, 6))] {
+            let mut runtime = channel_runtime();
+            let changes = DailyWorldChanges::roll(41, 1, day, |_| u64::MAX);
+            assert_eq!(apply(&mut runtime, Some(&admitted), &changes, None), 1);
+            assert_eq!(npc_keys(&runtime), ["oteryn:npc.maeryn"]);
+            let position = &runtime.visible_entities().npcs[0].position;
+            assert_eq!((position.x, position.y, position.floor), expected);
+        }
+    }
+
     #[test]
     fn sp02_yasir_requires_a_ship_map() {
         let mut runtime = channel_runtime();

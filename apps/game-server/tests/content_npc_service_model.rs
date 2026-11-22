@@ -49,7 +49,7 @@ fn pinned_catalogue_service_model_counts() {
     assert_eq!(model.services().len(), 405);
     assert_eq!(model.admitted_offer_count(), 12_688);
     assert_eq!(model.admitted_route_count(), 199);
-    assert_eq!(model.generated_reply_npc_count(), 446);
+    assert_eq!(model.generated_reply_npc_count(), 430);
     let expected: BTreeMap<&str, usize> = BTreeMap::from([
         // Exact subtype qualification preserves the existing arbitrage protection.
         ("ArbitragePaying", 0),
@@ -63,4 +63,125 @@ fn pinned_catalogue_service_model_counts() {
         ("UnknownItem", 0),
     ]);
     assert_eq!(counts, expected);
+}
+
+#[test]
+fn regional_npc_service_model_loads_crystal_dialogue() -> Result<(), Box<dyn std::error::Error>> {
+    let catalogue = build();
+    let model = catalogue.service_model_for_project()?;
+    let source: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../content/dialogues/regional.authoring.json"
+    ))?;
+    let entries = source["npcs"].as_object().ok_or("regional NPC dialogue")?;
+    for (name, expected) in entries {
+        let key = format!("oteryn:npc.{name}");
+        let (reference, npc) = model
+            .npcs()
+            .iter()
+            .find(|(reference, _)| reference.key == key)
+            .ok_or_else(|| format!("missing NPC {key}"))?;
+        let dialogue = npc
+            .dialogue
+            .as_ref()
+            .ok_or_else(|| format!("missing donor dialogue on {key}"))?;
+        assert_eq!(dialogue.revision, reference.revision);
+        let Some(ProjectV2Declaration::Dialogue {
+            greet,
+            farewell,
+            walkaway,
+            send_trade,
+            keywords,
+            ..
+        }) = catalogue.declaration(dialogue)
+        else {
+            return Err(format!("unresolved dialogue on {key}").into());
+        };
+        for (message, actual) in [
+            ("greet", greet),
+            ("farewell", farewell),
+            ("walkaway", walkaway),
+            ("send_trade", send_trade),
+        ] {
+            if let Some(lines) = expected["fields"].get(message) {
+                assert_eq!(serde_json::to_value(actual)?, *lines, "{key} {message}");
+            }
+        }
+        for entry in expected["keywords"].as_array().ok_or("regional keywords")? {
+            let keyword = keywords
+                .iter()
+                .find(|keyword| entry["key"] == keyword.key)
+                .ok_or_else(|| format!("missing {key} keyword {}", entry["key"]))?;
+            assert_eq!(serde_json::to_value(&keyword.triggers)?, entry["triggers"]);
+            assert_eq!(serde_json::to_value(&keyword.reply)?, entry["reply"]);
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn regional_npc_talk_opens_crystal_literal_topics() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_gameplay_entities::speech::ChatPosition;
+    use oteryn_gameplay_npc::npc_talk::{NpcTalkBook, TalkNpc, talk};
+
+    let catalogue = build();
+    let model = catalogue.service_model_for_project()?;
+    let book = NpcTalkBook::from_model(&model);
+    let entry = book
+        .get("oteryn:npc.a_bearded_woman")
+        .ok_or("A Bearded Woman has no talk entry")?;
+    let position = ChatPosition {
+        x: 32594,
+        y: 31615,
+        floor: 10,
+    };
+    let actor = [TalkNpc {
+        id: 1u8,
+        position,
+        entry,
+    }];
+    let mut focused = None;
+    assert_eq!(
+        talk(position, "hi", &actor, &mut focused)
+            .ok_or("greet")?
+            .text,
+        "GET ME OUT OF HERE! NOW!"
+    );
+    assert_eq!(
+        talk(position, "job", &actor, &mut focused)
+            .ok_or("keyword")?
+            .text,
+        "I am a great and famous actor! Not a princess, at all. I was only PRETENDING to be a princess. But try explaining that to those stupid pirates."
+    );
+    assert!(entry.offers().is_empty());
+    assert!(talk(position, "mission", &actor, &mut focused).is_none());
+    let brewmaster = book
+        .get("oteryn:npc.brewmaster_bhaan")
+        .ok_or("Brewmaster Bhaan has no talk entry")?;
+    let actor = [TalkNpc {
+        id: 2u8,
+        position,
+        entry: brewmaster,
+    }];
+    assert_eq!(
+        talk(position, "hi", &actor, &mut focused)
+            .ok_or("greet")?
+            .text,
+        "Welcome, welcome! Come, try my latest {brew}!"
+    );
+    assert_eq!(
+        talk(position, "brew", &actor, &mut focused)
+            .ok_or("brew")?
+            .text,
+        "Brewing is both an art and a science. The perfect balance of ingredients, temperature, and time."
+    );
+    assert_eq!(brewmaster.walkaway(), "Come back when you're thirsty!");
+    let hardek = book
+        .get("oteryn:npc.hardek")
+        .ok_or("Hardek has no trade entry")?;
+    assert!(hardek.offers().iter().any(|offer| {
+        offer.item.key == "oteryn:item.tibia.i3274"
+            && offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
+            && offer.unit_price == 20
+    }));
+    Ok(())
 }

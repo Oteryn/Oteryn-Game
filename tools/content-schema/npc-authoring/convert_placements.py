@@ -30,6 +30,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import native_contacts
+import regional_placements
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -155,6 +156,8 @@ def apply_authored_placements(candidates: dict, scope: dict, admitted: set[str],
 
 
 def provenance(candidate: dict, placement: dict) -> list[dict]:
+    if "regional_provenance" in placement:
+        return [placement["regional_provenance"]]
     if "placement_override_provenance" in candidate:
         return copy.deepcopy(candidate["placement_override_provenance"])
     if placement.get("origin") == "native_wiki_br":
@@ -212,6 +215,7 @@ def convert() -> dict[str, str]:
     candidates = apply_placement_overrides(candidates, scope)
     admitted = admitted_keys()
     candidates = apply_authored_placements(candidates, scope, admitted)
+    regional_placements.apply(candidates, scope, admitted, ROOT)
     npcs = sorted(scope["npcs"])
     if len(set(npcs)) != len(npcs):
         sys.exit("the scope lists an NPC twice")
@@ -303,6 +307,7 @@ def convert() -> dict[str, str]:
                     "identity": {"key": key, "revision": "definition-r1"},
                     "npc": npc,
                     "provenance": rows,
+                    **({"block_solid_contact": True} if placement.get("block_solid_contact") else {}),
                 }
             }
     for record in records.values():
@@ -340,6 +345,9 @@ def convert() -> dict[str, str]:
             "inputs": {
                 "candidates_sha256": hashlib.sha256(CANDIDATES.read_bytes()).hexdigest(),
                 "scope_sha256": hashlib.sha256(SCOPE.read_bytes()).hexdigest(),
+                "regional_placements_sha256": hashlib.sha256(
+                    regional_placements.SELECTION.read_bytes()
+                ).hexdigest(),
                 **({"native_contacts_sha256": hashlib.sha256(dump(native).encode()).hexdigest()}
                    if native else {}),
             },

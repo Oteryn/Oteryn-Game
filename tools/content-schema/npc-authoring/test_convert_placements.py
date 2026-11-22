@@ -104,6 +104,8 @@ class ConvertPlacementsTest(unittest.TestCase):
 
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])
+        regional = json.loads(cp.regional_placements.SELECTION.read_text())["placements"]
+        scope.update(f"oteryn:npc.{row['npc']}" for row in regional)
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})
         self.assertLessEqual(scope, cp.admitted_keys())
 
