@@ -1,0 +1,1959 @@
+{
+  "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "scope": "Static AST of indexed Python test files in migration, quest and item; not semantic or runtime review",
+  "files": [
+    {
+      "path": "tools/content-migration/test_amber_item_semantics.py",
+      "sha256": "263b8ffdaa5415e2669246ec6a42c1adc5821893614dc5b3cf2859cff59b09a9"
+    },
+    {
+      "path": "tools/content-migration/test_apply_mitigation_estimates.py",
+      "sha256": "16828a3449a9295941773e3c7d54c83f14f8a74b589a6e3a4dffa765d7e7e29d"
+    },
+    {
+      "path": "tools/content-migration/test_apply_monster_field_patches.py",
+      "sha256": "7fbcf6641a063f6fa19eac7bbd23fd5d09a830d9d19e56042a8a1342af92064e"
+    },
+    {
+      "path": "tools/content-migration/test_audit_house_decoration_sources.py",
+      "sha256": "7fee10d207a044e10edeea19012489f7a7a413accd842a60cf0f0964b627200d"
+    },
+    {
+      "path": "tools/content-migration/test_authored_npc_item_profiles.py",
+      "sha256": "213e870d2a77b4b9e5c4dcc1fd02eede39c3649caf3da25d4c1f1da4b2add3fc"
+    },
+    {
+      "path": "tools/content-migration/test_authored_quest_custody_weights.py",
+      "sha256": "fdccd38c513712ab7c8e601d1ef56d61d8a9d6b37b7ed477c2a9a39c96f5a9ae"
+    },
+    {
+      "path": "tools/content-migration/test_authored_quest_timed_custody.py",
+      "sha256": "5dae443229e976f89c2f3546f4d379e739b8f8117619c1f64838543f311c2545"
+    },
+    {
+      "path": "tools/content-migration/test_authored_static_item_constructors.py",
+      "sha256": "9fa29dd1572e66b543f417ed14c909bf5fd46506f5ac598d4873b482906ac3d4"
+    },
+    {
+      "path": "tools/content-migration/test_bestiary_inventory.py",
+      "sha256": "296315e4981abb3ae6ce241a99f94c547831f59668de9694d40490885686b497"
+    },
+    {
+      "path": "tools/content-migration/test_bind_monster_source_definitions.py",
+      "sha256": "496f999eae7d5e8b2cc09d7cc1724cbf63d1c2905d68de85a71b375388ae3237"
+    },
+    {
+      "path": "tools/content-migration/test_boss2_craft_profile_join.py",
+      "sha256": "8d97359c005c5e0848239ec38caecf508c602576789699df3b6c2ce036b6cbe6"
+    },
+    {
+      "path": "tools/content-migration/test_boss2_native_corpse_profile_coherence.py",
+      "sha256": "f1da9e2b5ca0c31e511f5b79567950502b757b3e4a989f5505569712641c6f64"
+    },
+    {
+      "path": "tools/content-migration/test_boss_complete_order_metadata.py",
+      "sha256": "eb5ab7e90edb8b782fa21014c73b719bbbfba23d6c15d00d6933c63a08bf3f99"
+    },
+    {
+      "path": "tools/content-migration/test_boss_conditional_bag_profile.py",
+      "sha256": "f2685dac3932093ea187b1440787d58e843a848dbd8c4f06d167bdea5d615159"
+    },
+    {
+      "path": "tools/content-migration/test_boss_corpse_profiles.py",
+      "sha256": "f56b50c6476b76554c88487efe55e2b0be58999cd2324765e469c3fd2dc95f0f"
+    },
+    {
+      "path": "tools/content-migration/test_boss_corpse_terminal_reference.py",
+      "sha256": "aa5495586e9d352791f31830b7a3f4d75112cf072803c5eb99c87704e76651d4"
+    },
+    {
+      "path": "tools/content-migration/test_boss_movement_profiles.py",
+      "sha256": "66ce97e5165143caad61a6e30b2a569dc24d83360efbbd7365fbcf3d5ee95258"
+    },
+    {
+      "path": "tools/content-migration/test_boss_reward_binding_policy.py",
+      "sha256": "8f1731da79859e2edbb9e16554c454a4c9cb05603480751e311e272442db94d8"
+    },
+    {
+      "path": "tools/content-migration/test_boss_reward_item_profiles.py",
+      "sha256": "e35ec0e1a5ca47cbb57711cace7e8423261aeac27e1d41097f7164cceae64d13"
+    },
+    {
+      "path": "tools/content-migration/test_boss_reward_yield_profiles.py",
+      "sha256": "fbeeb1f34913325462f26b27267a6ef78d40c38a512b2a7c0f2900aa5ab409a4"
+    },
+    {
+      "path": "tools/content-migration/test_cake_bridge_reference.py",
+      "sha256": "5cfc565100624e77df1c05ef3d6695dbda8905db3a5e9428b8c1eb5647b212b4"
+    },
+    {
+      "path": "tools/content-migration/test_cake_creature_admission.py",
+      "sha256": "28c593bd38a6de047ba496675598693ca26725c3380aeb2d8b5e4f609966a2fd"
+    },
+    {
+      "path": "tools/content-migration/test_cake_native_successor.py",
+      "sha256": "d4c0915e7f9381be18e5377345f86f57f99c0ae136835ec12e0d5459e88137b5"
+    },
+    {
+      "path": "tools/content-migration/test_classify_monster_population.py",
+      "sha256": "894683bf91329b39b41a58c05fef98b2f1eab5a11aa0517e324d811348405737"
+    },
+    {
+      "path": "tools/content-migration/test_coin_converter_profiles.py",
+      "sha256": "f445b23522ec7c686266a2142970e18967a614e00d563d0f3f50274ded608690"
+    },
+    {
+      "path": "tools/content-migration/test_compact_record_json.py",
+      "sha256": "82ae16dcc944e9b78914262b5aa975c61d1ae36fbffddf840a27048e5e664bcc"
+    },
+    {
+      "path": "tools/content-migration/test_complete_captured_loot_alias_delta.py",
+      "sha256": "df3d5f739e8042511e0ea54e46278ef8014c9a96bd2fdd186bd8b6f2480ad705"
+    },
+    {
+      "path": "tools/content-migration/test_complete_creature_dependencies.py",
+      "sha256": "b5d4db5396d92d7c1cffb533c2024049f5a53fedd2242f84964633793832baca"
+    },
+    {
+      "path": "tools/content-migration/test_complete_familiar_population.py",
+      "sha256": "d929d6fd4d0e07b81d01b734a1d61026a3d63db5ecb2f60838f16eca7735db37"
+    },
+    {
+      "path": "tools/content-migration/test_complete_loot_quality_fields.py",
+      "sha256": "1594a7c274c04e936cd73bd58ba33e5fe74f2be566796f8230ad2b89fd85436e"
+    },
+    {
+      "path": "tools/content-migration/test_complete_monster_audio_fields.py",
+      "sha256": "71f4fa7a9a97c4c727ca84acfed824e00569326d1ef31b057a9058f78d71fa22"
+    },
+    {
+      "path": "tools/content-migration/test_complete_monster_behavior_fields.py",
+      "sha256": "297317a5b2b8855f95e1ed1db5f9a49b148b3e6f72ae6a56db0198feaf19ccfb"
+    },
+    {
+      "path": "tools/content-migration/test_complete_monster_quality.py",
+      "sha256": "209e8dfabced32df2f66ad4fc9bd94002a323f9bf1d5ae26a489d9c5b18885bf"
+    },
+    {
+      "path": "tools/content-migration/test_complete_monster_source_gaps.py",
+      "sha256": "639e894bfafb9175d7b57812bff27fb2735cb79d44890c4eab656f9e88cf3dcc"
+    },
+    {
+      "path": "tools/content-migration/test_complete_monster_wiki_narratives.py",
+      "sha256": "59baf0d739e5b2d9a323523d63e6d004f8243a9f963a61e0fee94800468bea96"
+    },
+    {
+      "path": "tools/content-migration/test_complete_optional_creature_behavior_fields.py",
+      "sha256": "7344651ca198eb9d8bcfd9efbf8e4c4e4136089de132078239bf22b202ac3ad1"
+    },
+    {
+      "path": "tools/content-migration/test_complete_optional_wiki_fields.py",
+      "sha256": "7d51be5a903248538eb251c9a627ed99971989bf6be42f4b2ecc385a9feab728"
+    },
+    {
+      "path": "tools/content-migration/test_complete_presentation_optional_fields.py",
+      "sha256": "9aa76feee69134af706924fed5f55da3a09970af5e745bca8ec3612bc15579b9"
+    },
+    {
+      "path": "tools/content-migration/test_complete_remaining_loot_fields.py",
+      "sha256": "c26b12d5d5e9efa8dcd14d879a5407452503dd10b89894ebd42cce9f2eb2f01d"
+    },
+    {
+      "path": "tools/content-migration/test_complete_remaining_monster_mechanics.py",
+      "sha256": "dc1572147c8881d41fb4e65b9110919e245fb1ff2a44713aa2c488fb2eacdd4e"
+    },
+    {
+      "path": "tools/content-migration/test_complete_remaining_source_definitions.py",
+      "sha256": "81678535070110ad20ef281800eaafff938a3acc1ff97502fcd57c46c0b0f9bd"
+    },
+    {
+      "path": "tools/content-migration/test_complete_residual_monster_mechanics.py",
+      "sha256": "d767db33946e161bd8e81a4fdd621cf0ca652aeac2d0a853969ffe640a1e9d90"
+    },
+    {
+      "path": "tools/content-migration/test_complete_soul_core_fields.py",
+      "sha256": "18c70ab855f865dd39e0a9d697694623ed830d37e1ed2ffd9641e1575ed142cf"
+    },
+    {
+      "path": "tools/content-migration/test_complete_wiki_monster_fields.py",
+      "sha256": "a3aa8fa9bd0abc469362ce61adda07268b839afe0cc8eb99c7981111d5071dab"
+    },
+    {
+      "path": "tools/content-migration/test_compose_monster_current_sources.py",
+      "sha256": "bcdb071b8a8cb79ce56a23cf3a65726fb391671123b82a8367013e32d7bfddee"
+    },
+    {
+      "path": "tools/content-migration/test_condition_potion_profiles.py",
+      "sha256": "649c0b4ce15e828dc96fc7e527023d93bbcc72bb7e34172f3c9b31135fde5aeb"
+    },
+    {
+      "path": "tools/content-migration/test_craft_runtime_profiles.py",
+      "sha256": "5d268405abe5e0e90f6c98dad21d1fd1ea3b40cb24325ec570cb92074fc0088a"
+    },
+    {
+      "path": "tools/content-migration/test_creature_admission_stage.py",
+      "sha256": "b5ea2915ead51f2ad2a271c33fa7675d0b8dbc29c91aacf1e2a78befc737655f"
+    },
+    {
+      "path": "tools/content-migration/test_creature_condition_preservation.py",
+      "sha256": "1b8c9916999fd6890e8ac2ea27a7a60be1246b12504a7d28a1dd956effa9dbcd"
+    },
+    {
+      "path": "tools/content-migration/test_creature_initial_health.py",
+      "sha256": "3b8257f72ec49e0e3ef9f08951f12e6e5ff6542e37b10669a68798d1509e7c90"
+    },
+    {
+      "path": "tools/content-migration/test_creature_level_rating.py",
+      "sha256": "8da4719ee1e3dd7ccf7c3a9203e23512e96deb642ad38f0d8a2a4cd5a6182b78"
+    },
+    {
+      "path": "tools/content-migration/test_creature_reference_closure.py",
+      "sha256": "2e30dbf1317b8ebbf28bcf5957db1847a6de565a6bd8c7d9cd8ab01291875baa"
+    },
+    {
+      "path": "tools/content-migration/test_dispenser_item_profiles.py",
+      "sha256": "8e438cae1874a19eb560ab77cd127840189a47b6846d3c8032fbf0821886f7f5"
+    },
+    {
+      "path": "tools/content-migration/test_drome_item_profiles.py",
+      "sha256": "47a2af97589bdc68ef0e9b9480a0b7358bf62f8dabd2923ea19bdcb597f2add4"
+    },
+    {
+      "path": "tools/content-migration/test_elemental_arrival_profiles.py",
+      "sha256": "9a73a33b9f0742c349fcbd4af4c171b7628d7ac1ec92fb99ce1b04867592a6d3"
+    },
+    {
+      "path": "tools/content-migration/test_elemental_spheres_profiles.py",
+      "sha256": "c762fb94547c46da58c818fd3e776d4bb9bafcbf627acfb4f0ee06ec9696cebe"
+    },
+    {
+      "path": "tools/content-migration/test_elephant_corpse_profiles.py",
+      "sha256": "447307579348f7870bffc8c4dd3060fd9334e542c8938befb1869e4cfcadb507"
+    },
+    {
+      "path": "tools/content-migration/test_encounter_loot_item_admissions.py",
+      "sha256": "15d84c91580dc3e47c3cb0a9bc0c1a4d65903c2f4f499ee2bcd91fc431dd915a"
+    },
+    {
+      "path": "tools/content-migration/test_engenc2_fugue_profile.py",
+      "sha256": "c4d531c0949314295770f1fcbdc4bd54f8bacc7a48f82dc5ffc66075dd6c962c"
+    },
+    {
+      "path": "tools/content-migration/test_engenc2_nomads_window.py",
+      "sha256": "d2c5e1b2fd7b4317c74c77ef2d7d97b8148a1c8a2e0af6ea895ef9dbba8f19c4"
+    },
+    {
+      "path": "tools/content-migration/test_engenc_elemental_profiles.py",
+      "sha256": "04f78ee954cfd8ea67996c5f4c7208bcd6b7765ef13f7bbd00197dc4d61daf97"
+    },
+    {
+      "path": "tools/content-migration/test_engenc_training_profiles.py",
+      "sha256": "e74519f860af6dbcf4e5fcdcdda1d23023afb25b6462559b408a2db2326935c2"
+    },
+    {
+      "path": "tools/content-migration/test_engnpc2_perfume_profiles.py",
+      "sha256": "528359c1ef032fec467ad913d95fca918153ed6ad2eb3faee7154b7b48c540b2"
+    },
+    {
+      "path": "tools/content-migration/test_engnpc2_slug_corpse_profiles.py",
+      "sha256": "a8ac6f39b6ffd857a06e11fa20ca651f6a4fa0be01a23f38d5a9b588295124e5"
+    },
+    {
+      "path": "tools/content-migration/test_engnpc_m04_item_profiles.py",
+      "sha256": "d162b57246efe403983613532f2c62b7b7bce37f59b8cbde85e2dae2e668adbe"
+    },
+    {
+      "path": "tools/content-migration/test_engnpc_m05_item_profiles.py",
+      "sha256": "c470152eb58170113f5d9ca8553bf0e8ddcd984492b8f6d98b2664fc3b2c461a"
+    },
+    {
+      "path": "tools/content-migration/test_equipment_known_speed_pin.py",
+      "sha256": "34b42e635157794b95434946437b251453b3a9ec8a6b57983bce31e1b31eda82"
+    },
+    {
+      "path": "tools/content-migration/test_equipment_source_overlaps.py",
+      "sha256": "73facbf29e4a9d3291a822d4e4f06823b66b871e95e51ee7137e04777a8ff585"
+    },
+    {
+      "path": "tools/content-migration/test_estimate_monster_mitigation.py",
+      "sha256": "baa5c4b823b33e12618c39b38123e37ee149a5cac94aae5888480a848f25dac6"
+    },
+    {
+      "path": "tools/content-migration/test_event_item_profiles.py",
+      "sha256": "2e3d675a6170d7050b88d655108960ffef929c8edb366ebe36c25d02fa7771ab"
+    },
+    {
+      "path": "tools/content-migration/test_feroxa_maps.py",
+      "sha256": "bcc488a365e1ab166442e634ece9f7447e734a9fd9df8da1f80b4906423e0d93"
+    },
+    {
+      "path": "tools/content-migration/test_first_dragon_item_profiles.py",
+      "sha256": "ee9a03144c4d5e5f07309480908b96ee352e4a2cb426c1d844a6a64fb3e4ffff"
+    },
+    {
+      "path": "tools/content-migration/test_fluid_container_profiles.py",
+      "sha256": "017d6f7747fd9b126d293d69a4162dc6565890dafd15ffd9dc01d863af58c6d8"
+    },
+    {
+      "path": "tools/content-migration/test_forge_core_profiles.py",
+      "sha256": "c17d01d1e827cdb49b927a24010c0c0e529507ef44ed362366cc3257a2b5b389"
+    },
+    {
+      "path": "tools/content-migration/test_forge_item_profiles.py",
+      "sha256": "1d3d53d2c7f6d9040113ea4a57450f09ab0ae0e9299650fd8b2e7ebac92d7f2c"
+    },
+    {
+      "path": "tools/content-migration/test_forge_sql_admission.py",
+      "sha256": "654bb32aaad94c24150cd9c91059547bffba0b743af0f072c4a8530169d0f749"
+    },
+    {
+      "path": "tools/content-migration/test_forge_sql_admission_forward.py",
+      "sha256": "7901e246f698a3a9a9633d8f6ead7bb5b34f2f913f62ddf1847fced05af6eed2"
+    },
+    {
+      "path": "tools/content-migration/test_galthen_boss_furniture.py",
+      "sha256": "d75d1bf08b53bbd1ad6d5bc54c034134e640a2600e16974669cf80c2973da7fe"
+    },
+    {
+      "path": "tools/content-migration/test_galthen_boss_loot.py",
+      "sha256": "6fb466ba7198322203e541efe422070ac9e498047c75878c46af026535d3a0dc"
+    },
+    {
+      "path": "tools/content-migration/test_gathering_item_profiles.py",
+      "sha256": "235363f410fc4e7e3d9b8cb6ee71fa193e0208bbd962181be6abe044e827e80e"
+    },
+    {
+      "path": "tools/content-migration/test_grizzly_debris_profiles.py",
+      "sha256": "7b379c35f1cb4c9169bf6ac3fd5bbe97a9c24828797ee432d200aee49ae832f7"
+    },
+    {
+      "path": "tools/content-migration/test_grizzly_shop_profiles.py",
+      "sha256": "692395bfd79c621226eaa2eb5a2cab1eca322ab5713ab19f207ee8450fb3ba22"
+    },
+    {
+      "path": "tools/content-migration/test_group_encounter_callbacks.py",
+      "sha256": "6693b37fafa422eb12c60a9d6bd5c982ad3e8a9ad2c866a3c3ecf33a0479f6c4"
+    },
+    {
+      "path": "tools/content-migration/test_hand_weapon_kinds.py",
+      "sha256": "fb377ef4c1708b30fc924460e7c4ff6ea28aeb72e843d6c1e5c429c733babadc"
+    },
+    {
+      "path": "tools/content-migration/test_harvest_item_profiles.py",
+      "sha256": "b0deeae2fd19d4a4441cb2414fdf86a4bc16ac9ab1bca13cbb76e9946f269759"
+    },
+    {
+      "path": "tools/content-migration/test_healing_global_overrides.py",
+      "sha256": "62930ff84b47f8ac52e55085bbac4026703731e2cc49dfa49ccb9fb1200bc6e6"
+    },
+    {
+      "path": "tools/content-migration/test_hireling_item_profiles.py",
+      "sha256": "d2a9e08bbb58d3147328cce33aec59072b86a57efd0b0e61e6955006fa5e31d6"
+    },
+    {
+      "path": "tools/content-migration/test_house_decoration_actions.py",
+      "sha256": "ac7ea0623fef98d50ddeb99b57ba37ef05bcf8d74cc874d38124394e859c242c"
+    },
+    {
+      "path": "tools/content-migration/test_import_current_spell_sources.py",
+      "sha256": "1c765667b605359dafb3b28083b0acd44fb917e0744946053714e8175da0ecd4"
+    },
+    {
+      "path": "tools/content-migration/test_import_cyclopedia_global.py",
+      "sha256": "808ea3eea29c44f0e53d737d4342ca25e32f9237977ab1a919751742732097cd"
+    },
+    {
+      "path": "tools/content-migration/test_import_spell_families.py",
+      "sha256": "50a0e4caabcaf7c805816e77061ae7ccb122f2447fa99f794336483f3abbbaeb"
+    },
+    {
+      "path": "tools/content-migration/test_item_bootstrap.py",
+      "sha256": "feb4f18561dcf498aff8e146db595ec2752528d0ef7d8e87d2d19933708d8221"
+    },
+    {
+      "path": "tools/content-migration/test_item_bounded7_navigation.py",
+      "sha256": "e887967e1d31d1f90f1dc96b0abf9a12eee712022471ceb5ba25a9debb8b04c7"
+    },
+    {
+      "path": "tools/content-migration/test_item_engine_navigation.py",
+      "sha256": "b18edb87dab1c383fe7d56ac58f9e4e8a1257943ac5502255dc2ed0365b99d28"
+    },
+    {
+      "path": "tools/content-migration/test_item_external_family_refinement.py",
+      "sha256": "25c3219bd95eae9799fcd8a80075ca04229248e7d64a01cc39ce56a50630791c"
+    },
+    {
+      "path": "tools/content-migration/test_item_navigation_source_supplement.py",
+      "sha256": "00a9bd6baed471d4d5e1d43eeb4f972ef86631670adca6a241de1d7bb2573cb3"
+    },
+    {
+      "path": "tools/content-migration/test_item_official_navigation.py",
+      "sha256": "596930dca89b7f23c78c79734674bedf40202845a0f63ae3815691087f777a3e"
+    },
+    {
+      "path": "tools/content-migration/test_item_taxonomy.py",
+      "sha256": "8d56e4a66a2d7f769ed4fed9f1293e22a0701619434bf078a1675aa73eb7c3cf"
+    },
+    {
+      "path": "tools/content-migration/test_itemhold_q.py",
+      "sha256": "ef8fdcbf46e1398321ff9dae02c1b23954b0a7a038427cd7911482e181d696e3"
+    },
+    {
+      "path": "tools/content-migration/test_key_door_item_profiles.py",
+      "sha256": "a23ae65e7f1bbaaafae3c7469e14e5b75762d22fd10f0085a02f01a832fc0593"
+    },
+    {
+      "path": "tools/content-migration/test_lion_trial_item_profiles.py",
+      "sha256": "409041b4ae4869988f27ed36fbdd3c0bf0d0a99ac0a08b2f5f1ef4245fb8af09"
+    },
+    {
+      "path": "tools/content-migration/test_m01c_key_door_equipment_pin.py",
+      "sha256": "c0c12b28db152d6abfa0d0dbb10c1a62928cbb1fa7e9c9aa55f8d619282c20af"
+    },
+    {
+      "path": "tools/content-migration/test_m26_endgame_item_profiles.py",
+      "sha256": "d50ce52bb59aee496ea2254a7baf48444fe092a9bea067aa203b324dac4f973c"
+    },
+    {
+      "path": "tools/content-migration/test_m41_quest_item_profiles.py",
+      "sha256": "38a08e20af2aded35673f459a98cc92fc11ca6fff33cafd26e0b52805be12fea"
+    },
+    {
+      "path": "tools/content-migration/test_m42_cooking_canonical.py",
+      "sha256": "e9a529422fe0e6d37df2990cd2b1b1173df0d3dee5076a2423c58f46e0566b71"
+    },
+    {
+      "path": "tools/content-migration/test_m42_cooking_receipt_keys_postgres.py",
+      "sha256": "198516e23cbb4191970b89ff5f1c77a425603eed449cbc4c5886c36418be3e33"
+    },
+    {
+      "path": "tools/content-migration/test_m42_hot_recipe_custody.py",
+      "sha256": "6864dbefdc76ee4024237813489106f84128c0f5e2bd5eb7e3b6146f3b9bba5f"
+    },
+    {
+      "path": "tools/content-migration/test_mail_item_profiles.py",
+      "sha256": "19b8cc7e6106564bdadce498b405e18eb4e616fe7d7cf211d1236b263b94da3d"
+    },
+    {
+      "path": "tools/content-migration/test_marriage_item_profiles.py",
+      "sha256": "16da44af298d02a8bbb0afceb75eccab5ad45ecc101756790c0f03821db4c657"
+    },
+    {
+      "path": "tools/content-migration/test_merge_completion_packets.py",
+      "sha256": "39157ea6bff24c2310772e3b4901a79441c3b1fc41203c90d30902acf19f0c7c"
+    },
+    {
+      "path": "tools/content-migration/test_mining_item_profiles.py",
+      "sha256": "6841bb0153e024eb179ef19c1430c8b2321003ef2a1d721eb1d0b9b85cd0ebcd"
+    },
+    {
+      "path": "tools/content-migration/test_monk_profiles.py",
+      "sha256": "64fb89269f3f620ba01f8f6afee309cb6dff5c43b13faefd40e63ff8c91dbbc8"
+    },
+    {
+      "path": "tools/content-migration/test_monk_reward_profiles.py",
+      "sha256": "1bfba92504d02798e79d288c1d708d3c5d67b57b120eb87fb2482d1dc6af106f"
+    },
+    {
+      "path": "tools/content-migration/test_monster_reference_level.py",
+      "sha256": "09a42aa0d32c295adf274ee94fd156f3ecca74b87c330af7c45b76165f27fcaf"
+    },
+    {
+      "path": "tools/content-migration/test_monster_seven_spell_overlay.py",
+      "sha256": "b1d0b797ebfcd66cf221db326161a159327626396ab36b71d8cfae54f968e6d0"
+    },
+    {
+      "path": "tools/content-migration/test_native_item_key_pin.py",
+      "sha256": "6f52224dc4d0313c9e11938ace2be490931d46575c3908f7eb0947cab8fac51f"
+    },
+    {
+      "path": "tools/content-migration/test_native_profile_composition.py",
+      "sha256": "7bb9e6b44742beca81024fdbf46d53f944269c9bb3ac967b64149df11c7c0c87"
+    },
+    {
+      "path": "tools/content-migration/test_native_world_canonicalization.py",
+      "sha256": "7d3820ccd418a8ac07a38b2ad9ae91fbd3baa3e54ca985ab8c25e481783c218e"
+    },
+    {
+      "path": "tools/content-migration/test_newhaven_starter_profiles.py",
+      "sha256": "929ad56b9427f89e8eec329890ac852d2cecdac5613eb52742471ebe429d0294"
+    },
+    {
+      "path": "tools/content-migration/test_normalize_optional_core_packet.py",
+      "sha256": "150e956ea1801a8297788ef24d110ee13059719baf1f3a9da5009141e4e1ca3f"
+    },
+    {
+      "path": "tools/content-migration/test_npc_bulk_enrich.py",
+      "sha256": "81f7e27110127f7b8f54717ee88d4d2b83b2eefc7879a81156f3e0124b038dfa"
+    },
+    {
+      "path": "tools/content-migration/test_npc_bulk_finish.py",
+      "sha256": "994ff2ba81add004d16c66ada7a62cd05dc5e25ce95a65aee741d036ce8f9958"
+    },
+    {
+      "path": "tools/content-migration/test_npc_bulk_followup.py",
+      "sha256": "22f6c85db3324a5d0249018b12d3281f181caf6f85d9dfcb767853e39babb20d"
+    },
+    {
+      "path": "tools/content-migration/test_npc_bulk_stage.py",
+      "sha256": "ff167e715b869f1774d75ec12f52fa9c1eefc643983eb1113762ae3ce60cc444"
+    },
+    {
+      "path": "tools/content-migration/test_npc_corrective_overlay.py",
+      "sha256": "ac94ec77cfbe4728b2748c64fbc256c9d588a5367b40049b27da26ba7fc99707"
+    },
+    {
+      "path": "tools/content-migration/test_npc_presence_stage.py",
+      "sha256": "142de37ecdc70a9b7c5d496e5f46e753a61309124541adbeabd5392ddc300a4c"
+    },
+    {
+      "path": "tools/content-migration/test_npc_quest_binding_stage.py",
+      "sha256": "958ca6b43f7b20ab37aed27c49471002e8af9ec1091fe916a6600f50d119932e"
+    },
+    {
+      "path": "tools/content-migration/test_npc_quest_dialogue_followup.py",
+      "sha256": "ad674f29511e3325f1896254a5ed30dbbcafc5f91b2254d6114b62f2a6e02e62"
+    },
+    {
+      "path": "tools/content-migration/test_npc_source_dialogue_stage.py",
+      "sha256": "0229299733ae14a526172137b5c59d16197f60e9ffc000574399a73064e0f9a0"
+    },
+    {
+      "path": "tools/content-migration/test_npc_source_item_references.py",
+      "sha256": "897ef85c7542016c37da377ee7a41d05ec351becaa48f9e4795d3c5d5ea241fa"
+    },
+    {
+      "path": "tools/content-migration/test_npc_source_refine.py",
+      "sha256": "ee68da65a5b7febfb4b3a608c6355087b7c8e47b8799b43674b50220fcdde199"
+    },
+    {
+      "path": "tools/content-migration/test_npc_visual_appearance_followup.py",
+      "sha256": "5cb7b5b2ab7e29c9c5e86046205b0563f17f52a9a082a8508df96c3a9b2e115b"
+    },
+    {
+      "path": "tools/content-migration/test_npc_visual_appearance_stage.py",
+      "sha256": "8d799ca2d6cdec2111843b54555d2d306686eeaf29b301ec20c822a442da86b1"
+    },
+    {
+      "path": "tools/content-migration/test_npc_visual_invisible_stage.py",
+      "sha256": "26869a5c1d49cd481872c615b122425dc2278b0c3bc81046523a5824404f1447"
+    },
+    {
+      "path": "tools/content-migration/test_official_creature_balance.py",
+      "sha256": "340a19ed6f55775f93e4cdfd758f51001479d7908fa1a2c8a379db1f02070ebd"
+    },
+    {
+      "path": "tools/content-migration/test_parallel_checks.py",
+      "sha256": "845e04855fb0ad4bfa928791698c55c72d0725391130ec4ff2b200c1d1fbc483"
+    },
+    {
+      "path": "tools/content-migration/test_party_rite_item_profiles.py",
+      "sha256": "30accddb59db9e55c7e71d0eff31a30bbcfac8a51172070d0fdc7ee836d48e81"
+    },
+    {
+      "path": "tools/content-migration/test_podium_item_profiles.py",
+      "sha256": "a1985b167aa1ca522735e8895dbde09ff837dd5af0c29b76858eed6caef83c16"
+    },
+    {
+      "path": "tools/content-migration/test_power_score.py",
+      "sha256": "f15778e49296c4634cad840e8a3c80b3605eba7a060812aa49c24674c8114561"
+    },
+    {
+      "path": "tools/content-migration/test_prebuilt.py",
+      "sha256": "bac24f37df6119fb430d1579c76e41c05d1834412fe9083a9024ebfc844fb311"
+    },
+    {
+      "path": "tools/content-migration/test_prepare_candy_decay_item.py",
+      "sha256": "5f149927a64a0e8d85264033aac4e3f6c4800ea39539bfaaaa433b164cf0b8e7"
+    },
+    {
+      "path": "tools/content-migration/test_prepare_canonical_corpse_item_candidates.py",
+      "sha256": "d504a3a149e5c9d6e26dc196d31da5248b0e961c715175fcbb750eeab9b176d4"
+    },
+    {
+      "path": "tools/content-migration/test_prepare_creature_item_fact_packets.py",
+      "sha256": "55db3919c97865191c05b082159f5c94e438d99034befc864ab2715f5ec892e8"
+    },
+    {
+      "path": "tools/content-migration/test_prepare_loot_completion.py",
+      "sha256": "159f0dbeea93ec7e262a9f23e9b53985520ec7ec3f1e14e8a30ba724b0f486df"
+    },
+    {
+      "path": "tools/content-migration/test_prepare_noncorpse_item_candidates.py",
+      "sha256": "744725c96a0118b8738a26491f13ea0a7d1f3c81efd24d84354971d4bdbd3781"
+    },
+    {
+      "path": "tools/content-migration/test_prey_difficulty.py",
+      "sha256": "7f41c301b9b1aba2c624c7794be49a79efb5730badcddffdd52c7c698865dd8b"
+    },
+    {
+      "path": "tools/content-migration/test_primal_item_profiles.py",
+      "sha256": "d83b3c679b997bc2b4527e41e52d2e4974a9786aeda3b291537da48dcbaaccc4"
+    },
+    {
+      "path": "tools/content-migration/test_primal_reference_overlay.py",
+      "sha256": "01c1a8b3136c8a18e067e97b4470556d7f346f109b934ca477b9202999db1d6c"
+    },
+    {
+      "path": "tools/content-migration/test_qengine_equipment_cohort.py",
+      "sha256": "e162f3462182ab96f84fe50ffe0f1f7185d74756c108d6e2d15ad7387fc104c8"
+    },
+    {
+      "path": "tools/content-migration/test_qengine_reward_equipment_pin.py",
+      "sha256": "9623875614f4905c0a09bd81c44ad63d81426d63ca1c826327757138712c7e3b"
+    },
+    {
+      "path": "tools/content-migration/test_qengine_reward_item_profiles.py",
+      "sha256": "dc36369ea63617b4f0f502969fd4b75841ff50e175fd38f4dda34b3f70bbf463"
+    },
+    {
+      "path": "tools/content-migration/test_qm50_elevator_profiles.py",
+      "sha256": "bb4fe6339dc82edbe18d30247d3939e3bbc51c5385bb3805abcbb3dc32ac3cf7"
+    },
+    {
+      "path": "tools/content-migration/test_qmech_npcfix2_item_profiles.py",
+      "sha256": "54d473c451d56e8f9cd4b12e8faff59632e1e324ea855529b5cee1043e4587b0"
+    },
+    {
+      "path": "tools/content-migration/test_qnpcfx_m10_profiles.py",
+      "sha256": "1117b93a2b8d89b95106ca388b61a9a507f44a53e51ca378de8d78c4ca5a14d6"
+    },
+    {
+      "path": "tools/content-migration/test_qualify_creature_assets.py",
+      "sha256": "2fd3114cd80f39aec3047124a159616b7afc179960b69e8aadd0331f598a7ceb"
+    },
+    {
+      "path": "tools/content-migration/test_quest_batch3_item_profiles.py",
+      "sha256": "e310008b9b196f2f4010cf60a581ca8888b8eaa5ad1f1ecc3cec5b86f7fcbd0b"
+    },
+    {
+      "path": "tools/content-migration/test_quest_callback_profiles.py",
+      "sha256": "494f951b8dec0660a79aabfde304176fc7144d83952e7aae7fada2835bc91054"
+    },
+    {
+      "path": "tools/content-migration/test_quest_corpse_profiles.py",
+      "sha256": "8c07df041a51e3156d091da68445bca21d1d57c1aebabcd9770dab24c5020efc"
+    },
+    {
+      "path": "tools/content-migration/test_quest_finish_newhaven_items.py",
+      "sha256": "f15dff4579aea5d93868c20cdc334176b6e8ffcc6dee332a2d7f4fc4ac823e78"
+    },
+    {
+      "path": "tools/content-migration/test_quest_loot_profiles.py",
+      "sha256": "b7a2a513c8d340570975a7f296941cee6f652332e9b6225190b3f39ade37451d"
+    },
+    {
+      "path": "tools/content-migration/test_quest_registration_preservation.py",
+      "sha256": "9dfd0994b704e2de61418a36c307051f45bf3b1239d3d731a83ac7d13a4664c2"
+    },
+    {
+      "path": "tools/content-migration/test_quest_reward_item_semantics.py",
+      "sha256": "76a98b82cf32a5fda0cd564390e3651d57fcd9486261b84fa8ea480dbd2a02c5"
+    },
+    {
+      "path": "tools/content-migration/test_quest_shared_boss_corpses.py",
+      "sha256": "bc347cbea18018fbd7884a532fa23b9b0b4001d264d84c5755a13e54728126c0"
+    },
+    {
+      "path": "tools/content-migration/test_questpc2_ladder_composition.py",
+      "sha256": "6377dcf92366810133220dea7a4fa5f62600aa5a4ef982a8ae4da387a2f8a657"
+    },
+    {
+      "path": "tools/content-migration/test_questpc4_stag_item_profiles.py",
+      "sha256": "08b998df696120134d8378a6d1c1122dcbe2f3fd153042faff98913d736a8a0a"
+    },
+    {
+      "path": "tools/content-migration/test_questpc4_treasure_reward_profiles.py",
+      "sha256": "5f8dac608facdfae46913d5bf03d8012544295dabd96c94c947fe7d7c8b5ae70"
+    },
+    {
+      "path": "tools/content-migration/test_questpc5_parchment_profile.py",
+      "sha256": "7520f3f111da5bce094d12a5a6a26a06a29406534acce913ce7a6d56bb0989fe"
+    },
+    {
+      "path": "tools/content-migration/test_questpc5_reward_child_text_pg.py",
+      "sha256": "451d8f2a3b78c541417d43c5165c27280b5def7752ada7226c08ee87c0380ace"
+    },
+    {
+      "path": "tools/content-migration/test_questpc7_item_owner_preservation.py",
+      "sha256": "0009eb14db0b4c17f5c8fcd2418fa3dab88ad542e9fe14d05ce3011a31de7988"
+    },
+    {
+      "path": "tools/content-migration/test_questpc7_merge_audit_callbacks.py",
+      "sha256": "eba41d6503d25059a9bc7f121afa6d921a90709e4136551906fcee6e79cacc55"
+    },
+    {
+      "path": "tools/content-migration/test_questpc8_nail_custody.py",
+      "sha256": "d046cbf1ecfc48af76754ff9d6d54dbd5138ee8c4f000bab70f8f1155fa74819"
+    },
+    {
+      "path": "tools/content-migration/test_questpc8_wrath_profile_expectation.py",
+      "sha256": "5e1763e6970ebb2473612d837e7282d1f876a07306bece896e664ad86bb5d6aa"
+    },
+    {
+      "path": "tools/content-migration/test_quests_2_classic_authoring.py",
+      "sha256": "a005d87631d27678268100c4cbab02ff00336e386d1509820734317e42692c49"
+    },
+    {
+      "path": "tools/content-migration/test_quests_2_emperor_dialogues.py",
+      "sha256": "b48966a35005f450e8d4c11fed2be70cd2f76579b42c597f59b63a8dcdcb0200"
+    },
+    {
+      "path": "tools/content-migration/test_quests_2_emperor_item_profiles.py",
+      "sha256": "0c19fb945adda2cd7223a42c7b5964c5e71803add0eb3483251aff3a2a439ff3"
+    },
+    {
+      "path": "tools/content-migration/test_quests_2_review_snapshots.py",
+      "sha256": "2ae0dbc310bda2c8842f408b272149e890e7e7e2c3f34ebe66cbf56baf36f2cb"
+    },
+    {
+      "path": "tools/content-migration/test_quick_loot_item_profiles.py",
+      "sha256": "a85e28d6dcd66e2b4273a2f8bbd636ccadf881475d1e6f3d2333c905e0de3df2"
+    },
+    {
+      "path": "tools/content-migration/test_raid_catalogue.py",
+      "sha256": "35ec27729c50530a18fcbd1b198ff0c7ae3c6020c147a0a6f71c15a9fcb4f932"
+    },
+    {
+      "path": "tools/content-migration/test_ranged_item_profiles.py",
+      "sha256": "7490658647c264f44a17241441a85f83fecfa389bf8d29905fd76e3acc16ccac"
+    },
+    {
+      "path": "tools/content-migration/test_readable_item_profiles.py",
+      "sha256": "e3d2370f9ac6a555e9c00a5e8ffdcef2eddc8d429d9cdf6e2642158bec81ba92"
+    },
+    {
+      "path": "tools/content-migration/test_refresh_equipment_profile_pin.py",
+      "sha256": "67b48e85e92b27cc3fd9c58113919434a3d55851a03685fea3de9f3e4529e626"
+    },
+    {
+      "path": "tools/content-migration/test_refresh_item_overlay_inputs.py",
+      "sha256": "b86f77340cc11727a26153370237e824db322373dcbdc4f215b1b158b70955f0"
+    },
+    {
+      "path": "tools/content-migration/test_refresh_reward_stack_weight_proof.py",
+      "sha256": "646daf55c3fc067dfd5c14df889950735fdfbee82a120438c2bd79b76fa281eb"
+    },
+    {
+      "path": "tools/content-migration/test_refresh_season_creature_inventory.py",
+      "sha256": "a7b7b2c8d2e45219c2d3b3ed60d28cd78d17e04c19e977cd1036e2a85cf51ffd"
+    },
+    {
+      "path": "tools/content-migration/test_regenerate_content.py",
+      "sha256": "73bdb59d3bf4e42b5dd1ff90caa1bef0c01cb7a4b753c591bdbac985cc773cc8"
+    },
+    {
+      "path": "tools/content-migration/test_repair_primal_source_references.py",
+      "sha256": "09e3d3bea5e9e930be8739b45cf5510be3dc42ce0038c68cec75a01b2b54db0b"
+    },
+    {
+      "path": "tools/content-migration/test_repair_shared_monster_presentation_variant.py",
+      "sha256": "4bd8356747e3c16ae8619c0dd961839e487eb6426c9d65fd336043b347be4c98"
+    },
+    {
+      "path": "tools/content-migration/test_reward_bag_catalogue.py",
+      "sha256": "aabdcc8a906a66c1be822176be3a155a9727dae47473abb5e13c328bb4ff9d27"
+    },
+    {
+      "path": "tools/content-migration/test_reward_bag_profiles.py",
+      "sha256": "10c9afea6ee08854dc711ded18a9c14e9b02ccca2aea8bc87f2ae28b410402a6"
+    },
+    {
+      "path": "tools/content-migration/test_season_creature_inventory.py",
+      "sha256": "bf5c0de69ae78a3dc120545ea3bbf0a1100870c47d766483d6b8fdb2a9e453c4"
+    },
+    {
+      "path": "tools/content-migration/test_seasonal_item_profiles.py",
+      "sha256": "087ce601110066af38d0a426499b6100cc352eb41dfce22b579ab052be67d92a"
+    },
+    {
+      "path": "tools/content-migration/test_seasonal_raids.py",
+      "sha256": "2d8789a0851329050b11c34954c2d624de5bd2de660fc08f13c3439e13f3009f"
+    },
+    {
+      "path": "tools/content-migration/test_solo_item_source_recovery.py",
+      "sha256": "7d1112d9a74c9eb13d6f7eaff979d7e10da79425cef0ead7e365a02c01fbfec8"
+    },
+    {
+      "path": "tools/content-migration/test_soul_war_appearance_profiles.py",
+      "sha256": "8a6cd03e3b3adaa8e96e921d2bf1db2e419f6f38ef0a3fe7f6df001ff8444e9a"
+    },
+    {
+      "path": "tools/content-migration/test_soulpit_echo_item_profiles.py",
+      "sha256": "df3a2fa44c04285abd6224f4c8bc55556bc0ec77b55d1b83bdc1b0e9e180c061"
+    },
+    {
+      "path": "tools/content-migration/test_source_gate_item_profiles.py",
+      "sha256": "1356870ca36487aa530d378608f4f4ff434a6a0cd9a2d814cf60cf859d21e8af"
+    },
+    {
+      "path": "tools/content-migration/test_source_loot_stack_promotions.py",
+      "sha256": "bf54582c320397cb8896d00b5ab20236305808b8d1a8bfdf821a110f1359ff79"
+    },
+    {
+      "path": "tools/content-migration/test_source_relocations.py",
+      "sha256": "fa1dbc280ea1be8d895e574f8a33e1b4de9c9c5f6748e3b5aaad09049e7183d1"
+    },
+    {
+      "path": "tools/content-migration/test_srx1_potion_variants.py",
+      "sha256": "7af1ea3b3f3222592866d7cd5dc3355251f9b6fc9c0a67667424a322b94453c7"
+    },
+    {
+      "path": "tools/content-migration/test_srx1_profile_updates.py",
+      "sha256": "50e59e4694a9bdbdb9b14d091bcc706ff7c3022a9032dd5dc501a20a1b8f656c"
+    },
+    {
+      "path": "tools/content-migration/test_stage_monster_optional_documents.py",
+      "sha256": "24824d1f56a108b3659ecad7fbe819cf8dc254eef36a9ef9bc02458793d92423"
+    },
+    {
+      "path": "tools/content-migration/test_starting_loadout_composition.py",
+      "sha256": "d897f184ff15e5a1d76aa2e0a5e1da371d72215bd5bb33ac63392287b93217d4"
+    },
+    {
+      "path": "tools/content-migration/test_starting_loadout_profiles.py",
+      "sha256": "58fc2d69a8727bf727a01390149d2b7ba84f36d171febcf8567d73d894509f9e"
+    },
+    {
+      "path": "tools/content-migration/test_task_board_item_profiles.py",
+      "sha256": "20f6386755ecaa6d88bdba4aba131234c9de1f31da4910b5df777903ba22981f"
+    },
+    {
+      "path": "tools/content-migration/test_threatened_dreams_dialogue.py",
+      "sha256": "762a67714c698e7fca02d3766ff155be4f18fe834aeba5a618e5f63698da8ae4"
+    },
+    {
+      "path": "tools/content-migration/test_tool_item_profiles.py",
+      "sha256": "a2e09c5587674690cb5d49e2092737114fe4260afb07f4e46419b2815dd61d76"
+    },
+    {
+      "path": "tools/content-migration/test_verify_spyrat_corpse_source_boundaries.py",
+      "sha256": "b931fc15364b87fa491cf631e48b11dc0794c853c0fa0bcbd7777a39a5c50411"
+    },
+    {
+      "path": "tools/content-migration/test_weapon_equip_requirements.py",
+      "sha256": "0d0a88afe12c9788cde9faaf772993005cd7904dd935ce819d90eb53a24267c0"
+    },
+    {
+      "path": "tools/content-migration/test_wheel_gem_item_profiles.py",
+      "sha256": "90cf63441020579af93c81a4d4df101d63abcb3f6dc061f27f23ea45e58ec1bc"
+    },
+    {
+      "path": "tools/content-migration/test_world_compiler_artifact.py",
+      "sha256": "dea8075de55e73bc89329b9bebd617f4f00c220fca622d78a66c9eea40c97b59"
+    },
+    {
+      "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+      "sha256": "dcca590aaed8df321ecd1d7ccb2d7092291663e48bc035311c42e67a8611bede"
+    },
+    {
+      "path": "tools/content-migration/test_writable_item_profiles.py",
+      "sha256": "b6bfdb3f1390bcbfc4fdead4945cae642667fee52d4e32369180658e60326b14"
+    },
+    {
+      "path": "tools/content-migration/test_writing_item_admission.py",
+      "sha256": "f098b7dc4a3296fc2c9075e7dfaa0325271e038c624ae302884405c1f057f929"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_appearance_membership.py",
+      "sha256": "4c223b282c3b42d33ff4f01e51c4d8d21c3940cca7c29ffec1a977c2f100ebc9"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_client_appearance_census.py",
+      "sha256": "92aa858b9458d0b5e5e53ca7dec899f6388ff7e364fa67b79c1db84493246889"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_donor_census.py",
+      "sha256": "7c7f4d5b188162e83b9e5aa247f64939197ca15d897b1bcfe5dff62627cc4270"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_engine_appearance_scope.py",
+      "sha256": "6087bbd0f650020309f7af38946facd012a2c4b39957d7928bda54ff41928fd0"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_engine_items.py",
+      "sha256": "5cbfdcafbac2d66b1ecd456c16a01dda6e72fec67fd4a19098d59220ffeadee9"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_imbuement_limits.py",
+      "sha256": "f3736a5e0c1098d72ce765d73c9242fa9d718622a2565dd3699b3cf260096c0e"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_item_weapon_proficiency.py",
+      "sha256": "990058c953932ffe5541f8f381ffa01e86b6283887d7e0887e76a1b2c07b332c"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_key_ring5801_source_selection.py",
+      "sha256": "f71b914e848f8ef0c2dbd879f090e7c9843a60422acc6639d49b79644e149967"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_leech_fields.py",
+      "sha256": "1347985b2d07719ec644ac4fc99d6f4aa548d50f2a6a711cfa6dc542a7e05bdc"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_bed_packet.py",
+      "sha256": "f710d4a189c9534af59454bc5a0b9d8415d2732fdda422f1bc482c5a55daba0e"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_client_market_crystal_parity_packet.py",
+      "sha256": "9ea1352090f2605841936fda96701dec4d391826a616b499b5efdd57a19e1398"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_client_market_d289_packet.py",
+      "sha256": "20a18decb9f2daf8c87807e8fb4773931d8e2c62464816ab96d6c46d65c5cc21"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_client_market_packet.py",
+      "sha256": "36adce47f3508632dd6092765e7c40c69ccc2f8c3f9873e394ef0419e11d3797"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_client_physical_packet.py",
+      "sha256": "5c2dca6d9b06c2fe6838487157f65668b85751fb1fb2f40076a6642f3d2f4a6e"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_elemental_magic_modifier_packet.py",
+      "sha256": "6d3303a90863b109036d944ac92dcd495ee15e53df352e3a5eedfd0d873ff3ba"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_equip_abilities_packet.py",
+      "sha256": "9b488bd630bf57ded5d2a7ec1cab69198d89f0e4498380beab04ff42c7fb1f65"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_consumption_packet.py",
+      "sha256": "b4d857a80fc7b13bb2cc81d0e55a9e09184ba274f4e12397d7040db0323c3df5"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_description_packet.py",
+      "sha256": "95c88f88ca273aa566c1294e6caab47c3b54b9ac1503c6472cabaa7c11604ed5"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_description_wiki_packet.py",
+      "sha256": "08319bfb6e8d4c1dca9aceb0af6563da15c32a8399e76ccabe0e9e3c97f7cd0b"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_document_packet.py",
+      "sha256": "9930eaeee512c5a35db3440437dab7ec51f04c84ab0363d341bef65f1aa5e270"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_forge289_packet.py",
+      "sha256": "1f5ce27e248c5b710682909c495361aba64831928475dcdbdbe9328422b70991"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_forge3332_packet.py",
+      "sha256": "d0420bfc39d2db6e820ff0396280aa2aa1be7bf0548ee238e6095402df7a4b13"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_hit_magic_packet.py",
+      "sha256": "d8fb3fd6a31ec5ee4022dff7d38b2ee910a7423d235bfaaf8f585f88f209ef65"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_name15_packet.py",
+      "sha256": "ce72c5259bd4a0273c6df6f35a477de62034f235c4bed42378c1f9813575429f"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_name_packet.py",
+      "sha256": "f96d5964fe4c584071693b9907515fc4fa588d371c366db4c6a1b02408c751c8"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py",
+      "sha256": "dabdb65c3f3662ed3803ec94471ac5cd94b211cc0c96789ba07fea2145d0b2f4"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_weapon_metadata_packet.py",
+      "sha256": "45a595a0eb65e7904601a5c177b766f5a35a0699517eb449c3ac89151cc3f09e"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_mantra_bond_modifier_packet.py",
+      "sha256": "8bc0304cc1f0e8bddc4c337bcaf0a844e75aeed6d9f8fde47caf1b43da599a25"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_numeric_modifier17_packet.py",
+      "sha256": "5f2b23d6346bf85aa5fc991d5aa78a43ea05a6746a2709bfde559b8fd6cd1625"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_promotion_packet.py",
+      "sha256": "46b677f6617caf5a25bdac557cae15c674bb582d94758dec0d536fa24606891d"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_ranged_packet.py",
+      "sha256": "70f60584396870f4cbd72310bf8ce2acbe964cde42cee346593a1698d3d59333"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_timed_item_packet.py",
+      "sha256": "e88869e090e8350dbbd9563d979a5e9d640215d0d0106225b976a1bb57d73bb5"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_capacity_packet.py",
+      "sha256": "3af9a656479346385fe128d6770f074d9aacc17ae8a178563fe79e28c902ebd4"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_movable_d289_packet.py",
+      "sha256": "0510b14891fe4deaf7a9aa1c1239e6f0e586839f1c7935c5f2c660e7b4b9ef6f"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_movable_packet.py",
+      "sha256": "2ffbe4970ed00914d14f53f27fcd12a980fc0a17311fb99e46dec9c663360e2c"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_stack_default_packet.py",
+      "sha256": "388d40b5ea38ab7aeab77b95d1944cfbeb32fbb0602e6c37ef6dafc8598380d1"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_stack_false_packet.py",
+      "sha256": "03a4b177156920aedc6a85d6ddb64e4becb05aee297b6eadb80cdf415aa92995"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_stack_historical_packet.py",
+      "sha256": "03f245a30d076fe33f9172e107209e401546c8dd05ff6cd4d403698009b96a43"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_stats_packet.py",
+      "sha256": "f77a40d88177c2b0da932b9b48662de52f51ec33bf62a008b63124769ed9c1cc"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_navigation_supplement.py",
+      "sha256": "2a3a67a139072ddf79f5e0d7c7cb9c04fafb771505b580206507a3b7de56e731"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py",
+      "sha256": "1e51511452e51bc30025e071ddea1ff23d55c3ec9415d70b9ac2e9b459a344de"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_shield_hand_equipment.py",
+      "sha256": "67486704444880323fe1a20ae7914a91fdcbd197948b0605faa27bd1bf35c87e"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_stack_default_historical_context.py",
+      "sha256": "b7dc47b1f179fd919950be1cb0beadece76db594e0968f41bb53356172325210"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_stack_default_successor8.py",
+      "sha256": "ca54d90178a6232c7e0eeacf0cec2d7bf9526ce88ba6e36e98a1c9aa3575a673"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_wiki_modifiers_packet.py",
+      "sha256": "366b6d3afa686f4d64cb43ba18061ac0262c305ef76e25d19524ec5add2c537f"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_wiki_resistances_packet.py",
+      "sha256": "145a06ee33be786d4b76ee6b062273c3b7fc56c2959b31b3676770b62684fe6e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/test_build_dialogues.py",
+      "sha256": "545889972a345114b71a9f02c8fea133c9c519e366d119a4fb81b8d7152f2414"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/test_capture_monk.py",
+      "sha256": "220f7dab261ca51dc175701a9758124f1b2e46c479ab63ff17ebe0431636932a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/test_capture_yalahar.py",
+      "sha256": "c01b6643b8025f5e1c449f3b1405684593c6e23229ebd871917e07312f17636e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_a/test_lower_dialogue.py",
+      "sha256": "df0dbff6bc46620d38b4848d94e585977f19af32ecc076280f63c3731c688704"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/components/boss/test_builder.py",
+      "sha256": "66808969c9b1d4a7368432730061e48fadb56d7d247dee1412abbb5667ab9fa4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/components/dialogue/test_dialogue_supplement.py",
+      "sha256": "29e1487256e6b707d4dfabf59cdacbaef89407ae60060d459790296db220bdd9"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/components/events/test_builder.py",
+      "sha256": "e934aea0fd0580c36c7bb5e211716205d7babf1f304e4a6f0763634e96ec4485"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/components/joins/test_component_crosswalk.py",
+      "sha256": "ebddd45ec19142727d29989e2a96554177a29dabd0b6ad764eb4246be6de6e5a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/components/other/test_builder.py",
+      "sha256": "8d503a133a4e303b5a08cdd1b4337c3e836509110890188e05720f35ed38b7ec"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/maps/test_nodes.py",
+      "sha256": "07f734e36dab0b46c598f9ec972598752dfb92d006bef1ae0bfa5c8cfbcc67a1"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/maps/test_portable.py",
+      "sha256": "33b369bdceb7d4c55b5a6a908e9209f126958650659eff855ae55351f48185bd"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/composition/test_builder.py",
+      "sha256": "f1b26abdc53f63d9d69aed140fb4c1fcb837d7b99450a3fe0367c90f00a35833"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/conditions/test_builder.py",
+      "sha256": "5bfd5f88da0610dc40974b57098d431acd88c774d2bef8d20c6df7f04e147acb"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/dialogue/test_quest_dialogue_links_all.py",
+      "sha256": "7d3dbe966e0f16adbb5d79c6fb0268199764855cc0f46b4e51f015ea640e86a0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/dialogue/test_scoped_storage_aliases.py",
+      "sha256": "a12668cc25f4c36015155c4e58cf749a688d1cec32d1201d9b92c93e0e7f6e4a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/entity_predicates/test_engine.py",
+      "sha256": "24c035ea4bde17e16da9748a41e26042929c6b69b0c9ca878f9d34b264662b7d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/entity_values/test_getter_values.py",
+      "sha256": "234eb5a4d1daa4be4ad4bf903babbc1770af17fbd37535a8dc129ed3f4420092"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/fields/test_builder.py",
+      "sha256": "01f4cb55c99db7aae9489df5e73dfe65aca2837a578498b886b1bd6c0ae3cd6e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/helpers/test_builder.py",
+      "sha256": "3ab5a217e98590f4c2c064915db6fc22a1609278ae3680bc6d9de237b18967a6"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/joins/test_builder.py",
+      "sha256": "c03009de423b4818d04a1bd50c081a286e5378a955742797ddf045fc3b82d82a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/joins_next/test_builder.py",
+      "sha256": "c7d80b1b167ddb2870e6d2e60a71418ea25e89b009613b73befd7f2b68bd5d1b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/joins_next2/test_builder.py",
+      "sha256": "af431940bc27dd8120f39ddcad28dd1194d699c96942d0b4c70464f54c2866e4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/progress/test_builder.py",
+      "sha256": "14a197ded8c9c430ef1ff73df672e12c708afde73166ae34ad852fbbe02ebc5b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/progress_config/test_builder.py",
+      "sha256": "6bb3bdbadd3707ec9440650a269dd91bdce25bce02adf2bf73db202d11f1c145"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/server-completion/chosen-progress/test_builder.py",
+      "sha256": "d5db2eddb5de073d020726da9723c3062aaf7de45a51723e51382db9588626a7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/server-completion/chosen-source-events-rewards/test_packet.py",
+      "sha256": "6df3db4575caa9a0609b96d7ab7b392adfadeae34fc62e035390fe06ba94f8cb"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/server-completion/events-rewards/test_packet.py",
+      "sha256": "d2f5660d6bb30c640c7b25fb55d8ae320b38d56ccf594e5af67b7a6451cc1795"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/server-completion/npc-dialogue/test_builder.py",
+      "sha256": "2783ad486ef0e39ffa1ff4f8a05c3f7df5d6e88aec3edba4621509ea9b9d8f8b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/server-completion/readiness242/test_audit.py",
+      "sha256": "f2116cbbd946f32194a003f6d09119930f1c1511e80bfbd8c40f16bf3d10ee22"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/state-effect-refinements/test_refinements.py",
+      "sha256": "743f98a71e07a2bda08947e22444658f414f1646ec4c8202e45f5635d0f15d9b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_arena_completion.py",
+      "sha256": "cc6b0c839000a1b85a099f8e87da67a5727ad4f064c0cafd066aa36a71c8c8ee"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_authored_quest_authoring.py",
+      "sha256": "2db98f16adb89a35664e6df0040f5e2e046c3dcb0243d6271c024c153a8f5998"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_batch3_world.py",
+      "sha256": "705f18db8da65d5aa0fe570c8f65c3c08c7ce6b76dec73bb3f81e2c39a386a7f"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_bundle_authoring.py",
+      "sha256": "23fcc320071dba4dfe8af95d98ca24a5c61ff25b19c760d7967535d6b3bc79a0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_chosen_source_binding_plan.py",
+      "sha256": "c5fd34b95c91fcca961ec6831bad504a25d6ff65b986b1ae12a9b2449ed3fef7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_chosen_source_progress.py",
+      "sha256": "26d872392d69ed52216d83eabefef208cec74dce2c186443ddf47d583613cdfd"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_collect_claim_candidates.py",
+      "sha256": "951ca82434be8a2c1b59ff5a901a94a4dbe8df4052d13793479fc63e5fc73b39"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_converter_enrichment.py",
+      "sha256": "30add9f20efee753cf43fef2048dd8990695a4bf8b7932811a7f851676f36671"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_curated_interaction_links.py",
+      "sha256": "5964bb43863b34347758a238b50335c9e8c6b70159120b1b09e52fadc8a9b2cd"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_missing_record_nil.py",
+      "sha256": "71424cb6ba847aa63aa12ca750c5d290fd8adf5371c71cf2e60644227320244c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_semantic_conditions.py",
+      "sha256": "5b225518e30cb7d94bbf20f9d67a1cc2b46d0578b089337419070538b9d2812e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_semantic_rewards.py",
+      "sha256": "8e0e494e372021dae079f0d6c07dc290dbd796f3e2817a567f5af494766d0855"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_source_archive.py",
+      "sha256": "729c7fed767097c7db2102c04208b5e4dfa626457f306d99c8c53b9aef9480b4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_source_ast.py",
+      "sha256": "508e9f015ac4798019afa6f5fe0a451a0bfbb4864da76f55c35003a42b8498d7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_source_corpus.py",
+      "sha256": "abd29ae82aeb310bd5507a162a32474f67288f569ab5b0c97442c4d1508df328"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_source_dependencies.py",
+      "sha256": "0bee89b73d330a578f2ed1a50759885c4167674195f7df1e1171d0bbb649af91"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_source_dialogue.py",
+      "sha256": "06e4b5c1913e452db5aa9c2240731fae7c292c1da3c2670f35e41cc02e739eab"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_source_inventory.py",
+      "sha256": "1e53438de614e7f65054a4ee0b3341df0a2c3db74496b63825acec9cefe0e460"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_source_maps.py",
+      "sha256": "b8f899d8ac4675de6bec30d3871c82ad2d32391f3b8ec6425844603afa544d02"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_donor_source_rewards.py",
+      "sha256": "5c60c765387e9d320d70f1328614434f4cfb9f290bb701377d620f55b9de7ad9"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_engclaim_m35.py",
+      "sha256": "d68daad934532eb7dc4dae7d9b58df1c303f862d37a81dc36457c926dc033b51"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_engclaim_native.py",
+      "sha256": "2d9479f74c816cfbc4e7a9de5112168f55f6bd0574ad75063ec238cde6eb4362"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_engenc_asura_chambers.py",
+      "sha256": "fc7060ebe9b2d76fee0d12945301deac925bb71808533943542e711f82c44111"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_engenc_asura_entry.py",
+      "sha256": "3c3b6a07bcf7b59fa6c518db828816bc062d743bb096c3d5675bee42a85fceb8"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_engitem_native_seals.py",
+      "sha256": "edfe6eb960599f7091f93d51f44a1b32ea70acb02fd8b322c003c45c879af977"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_engitem_oramond_native.py",
+      "sha256": "6a15fb06e6d0ac3ec277e156768760275bdfc1fa28cce5d2cc0bd6c469ff2e20"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_engnpc2_player_name.py",
+      "sha256": "54afea6c5df9a8f53a09b969b3e61bc371e67475e8efa8b2e31597d8f8c3185c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_engnpc_m05_native_reward.py",
+      "sha256": "621e1ccbfb7f1bc97f03cb04438cccc14167318c5bd622a4e50f816a6efe14be"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_engoutfit_m36.py",
+      "sha256": "f8daf5775ec83f345fcaad705d7c1600c3aff70801392d420568250354259c34"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_engworldchg_m31.py",
+      "sha256": "7fc5d6da6d720cbd2b0adfd8ac8606a3ac839936ae63b36d36f8d81661830f81"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_explicit_track_storage.py",
+      "sha256": "a2bfd5fa7cb07cbad4ac59c08787bea69c3cafea0600e49db36cbb984aa05c24"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_first_dragon_activity.py",
+      "sha256": "9ae843c98fd3f23d07ad2fced8ca2a3c65e7ef3de478b6dd4aae37378f60e621"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_galthen_native_kills.py",
+      "sha256": "d84b23032c0006b1fe3f14ab4da3807c330d221810a8f68c773119fb5b13dee9"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_grizzly_rooms.py",
+      "sha256": "96d2172639cb150610af61aea089fccbe71648874e90e9aaa811441d359e2768"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_grizzly_source.py",
+      "sha256": "bc11b664477160a239c768265f3d4832aa4e22860456deb2d405f104623d3b34"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_guarded_target_predicates.py",
+      "sha256": "5555ac990f6715c34d975db6a92f1d6d29d18f1a0a9946f7dde3fb191314ef99"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_legacy_procedural_writers.py",
+      "sha256": "a03413f34a23494cd6f80fa86c5580af9952a82cf4d481b391d21f4db2abec69"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_local_relocation_helper.py",
+      "sha256": "591bdd971093754a831da90535dbd5f91eb0cd24054d433531077cc3f3c39985"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_lua_writer_comment_filter.py",
+      "sha256": "65539454889bc27f03aa17eedf32cbdf322b1733d730bbfdd087be6dd65f2555"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m01a_talk_routes.py",
+      "sha256": "1506ff2c44752051be1cb540c49708377ae8282035f75d65e7a5ae07381bb5ac"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_cooking_witness_refresh.py",
+      "sha256": "3c5466d797e9d64a716f8a8e1e79d54f1263be4e850f4e44bddeac7fbaf0a3f6"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_counter_schema.py",
+      "sha256": "3bd0c8ae381e0bf238f3266ace243c10b39a4e2665e746694fbcc0d804b2afe4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_lion_tears.py",
+      "sha256": "389e500ca2ad9a26856222b41d739290bde18ed7c5eb550279afd2615ce6798e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_machinery_burn.py",
+      "sha256": "1b40b05b6f331ed2b844f720ba07bf7ebb4a68304bf3c52c18802fce1d4c3722"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_machinery_catapults.py",
+      "sha256": "2a192b29299a29bc3c3c92bf14a41f4b0faab6e154704cf4a678d876516a4c76"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_machinery_repairs.py",
+      "sha256": "1a625a69e227a649f1e8df018bdda990495fc479934ef2f8fbfad5f08b6fc23f"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_machinery_wheels.py",
+      "sha256": "e8714b0c84775934f1b5fefba10e9cd2e54619b341fbd0a79bdf8d7c13eddca4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_profile_overlap.py",
+      "sha256": "9d3b454cc550728fc424f8567951a709f9ffeb0dd992e2dbfcf07a0688b9d1fa"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_realm_trial.py",
+      "sha256": "a5f907938e855c02657091dbe17b3c1a5dea53f144ea7b3fb497ccbb5ebf8660"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_reward_capture_subset.py",
+      "sha256": "052fa53eccb9bc412712a4a243e318a4c367e2081e7193b066cba15cbd091cf2"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m07_too_hot_columns.py",
+      "sha256": "b3280148ca880b7eaa31d7d62fc4aa4b4919f9228678066522048d31f976e7c8"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m09_rewards.py",
+      "sha256": "65b04413d097fb082132fb7b0cc8744dc20a6dec69f11aea91e628b8e0528f4d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m20_recipes.py",
+      "sha256": "4816b9c239995e3e341826df4ec5054dea7502074038d6fceba7fa7927a91721"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m35_reward_use_rebind.py",
+      "sha256": "b9bd011df462d3648f6196595c2b8103a4f4b60d014024504ab3d9552fc967f1"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_m41_npc_sources.py",
+      "sha256": "e261117eaece4d0ff55edb03a10a852ac5e7e815d0eee74f14b3d598645669ee"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_monk_native_lowering.py",
+      "sha256": "7ea6d0114becb378c85ddd0ebcaf7636d193ea636d688fac199b364180fdab53"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_morguthis_progress.py",
+      "sha256": "eedf09763bd76baf9f28f9c7e74cb74a42c0e698c21ebe518f18dae27b5ea88d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_multiline_conditions.py",
+      "sha256": "2e1e9c2bc0cbc6cf724e63c786485703d0658a1bdba8af61cd7dd52e14b55287"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_native_claim_source_readiness.py",
+      "sha256": "4530c5c2a481afefca9a2876fd1825e82f74ef5831e598ab7940060c40cd9a28"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_native_kill_goals.py",
+      "sha256": "8f8dc5ca796e32fcb107bd0f17211d0367f5c86e96a93ca22e2a170adbb82179"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_native_talk_binding_evidence.py",
+      "sha256": "14f64e94c74bf5f9ee021993a8bfeffec04a1cfd594a7d1ed5fc4b95c461d2f2"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_npc_progress_retention.py",
+      "sha256": "c60744dfd3c6f4a1c69ae0e8409699192641f31ee51e047b04f6198cb66f2577"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_progress_enrichment.py",
+      "sha256": "48d34c8c810349d9848bc13cf6df4f31d6e1c95d2dd9e122a3e5b2f842282f77"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_progress_reference_shape.py",
+      "sha256": "44e947fdb6ee0801a51b0fe99cfebfdb245b8bd011778da7fc5dea00b2936ccc"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_progress_source_occurrences.py",
+      "sha256": "f6acbdbe69611d4867d01c5cb9ef0de6cf63399f4946977293b21820fa6a48d6"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qengine_effect_authoring.py",
+      "sha256": "29c6d02c559cef96fefa54710604b10994e2ffbf9d6acb835ee2d1b56f23bbe2"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qengine_m03_pits.py",
+      "sha256": "aefffa7a89296cace061636008502568464156722cdf8eaa40ee9e3c50dc497d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qengine_m03_time_machine.py",
+      "sha256": "b7540e5e868547c9776d9f44201e677802b8a82f2b183832eb477450f0bc526c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qengine_native_compatibility.py",
+      "sha256": "3d9b4b550470a7f817d371f72cffc45a6a3ca77c47a8f14ec8f60f72d4ccd300"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qengine_rewards.py",
+      "sha256": "2596118db5db1d655848eabce2d3d66437c3a14ba278ea343c580f2436c30326"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qm03_world_admission.py",
+      "sha256": "947a3454b354271ccc937f6d87962279e0c8201f8d65025b571ea2eddee0d629"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qm15_nomads_cabinet.py",
+      "sha256": "f6446cee726d3a737776a218c802ecc33a0327cbb32150f7c665ea7091648271"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qmech_m03_entry_bindings.py",
+      "sha256": "95e0a171b198a82b8eb98d87001ace230ef669e5f33bad4cac2187e420a4e5a5"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qmech_m24_kill_bindings.py",
+      "sha256": "13cdf45bc938d0b9357dc25bc53a34d43087ffb364b32b92416e4623afbf2d72"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qmech_m39.py",
+      "sha256": "e90f0e40ac1c3369d66215f5db1842580c3769fafbbfefdfa698b3064569e366"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qmech_m55_daily_bank.py",
+      "sha256": "fe1a1a3577e04a37147c69659d329255940f653831e4d7744ab26f57bee01b8d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qready1_clocks.py",
+      "sha256": "83456ee36e37e0e768d85c6f70faf394d9354d1013ee1d6178d3b80373cdf6fe"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qready1_crafting.py",
+      "sha256": "1caff23a19c5d7202e228d02af6d1be3d799d641a29abd6ad62860cf5d157409"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qready1_native_rewards.py",
+      "sha256": "5535662758591b8714ec674e63f3f53c7f95d4cbe508f88756239a522f9027c4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qready1_reward_use_proofs.py",
+      "sha256": "b09793a9adaf0c1b81b13b9fc1cbce9531f1f4c94bd6d6ce12f117cc02544fc5"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qready1_source_bindings.py",
+      "sha256": "dd5c5041b60c7e8490877543fb2c19742eb5b166e0dd53ee147a816efd596fa6"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_batch4.py",
+      "sha256": "8592217c57ebdeeb7ac2015167fc3758d6b9687c53cec2acc14de8f5933f73f6"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_binding_crosswalk.py",
+      "sha256": "20d89c83e56cd904abfc0723b27943d046810afd4ee6d6cf1e2b4f78ac25470d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_binding_index.py",
+      "sha256": "40ebb3f61422dade466ddff0e2834ca79632ee4df7275cbde53b4f3e2e544192"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_catalogue_authoring.py",
+      "sha256": "cfe208ba6706539240f20c903b327486c0482f3ff8082c70651eb2730fa7a491"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_chosen_journal.py",
+      "sha256": "6eedc1766793e86d78da3b365c2672123b907fe59e9ab6b22d2ba48918fbdc37"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_claim_qualification.py",
+      "sha256": "ba00928d685a4ff607a85a51625c28e2c4b00601e9224c4f575b615d216d6085"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_completeness.py",
+      "sha256": "242c86c7e382d321e9238e89955c386c64fdb1b648c4299df39129bdd1cbffbd"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_completion_authoring.py",
+      "sha256": "bda86c3031ad41a1aecb3791504bf04bb771966c5eca95739f7a4e1a8a64b556"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_completion_import.py",
+      "sha256": "5451f0383bf73b3d4f9b03f7357c313a9cefd975b294afa2f51098ca2443cdd7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_completion_matrix.py",
+      "sha256": "8d984ece244112da29563c00576fe77f3770e82019ace6f09bfc54fcd7db0d73"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_components.py",
+      "sha256": "a93512bb96b20ad4df600b621146edeae699e91c4ad572aa86e398743a8a1229"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_donor_attachment.py",
+      "sha256": "e88a36e3f02886442acfe383da537a459c437c77c5ef4881f08a6aa00745ea57"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_donor_refinements.py",
+      "sha256": "de3fb3fc7c01190edecfb47325cc233625f73952edf53f15a1ff1c7745bcab21"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_enrichment_authoring.py",
+      "sha256": "f3fada697505374f87ddd0e60f64dcb4c5af4752bef2e352578d6471da82d815"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_explore_area_candidates.py",
+      "sha256": "389fecd3821e85fa58e1fc7521c9be913348eddffcde19bdc326781d44da3e5e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_identity.py",
+      "sha256": "0dcc9aff3ee1a817c73fb298cb161a9d7cba9c866d65dde920c35abc575a9f8c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_item_disguises.py",
+      "sha256": "1da96206ca907bd8bf7d19417855a431247c5df91ffa3a2bc48aac614b44a8fb"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_item_keys.py",
+      "sha256": "7cf3abea95c37a3c0d90ed3bcd8e21732063fba45c52883e8bf1306ca6372518"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_native_binding_preflight.py",
+      "sha256": "eaad25f388df4a947109231322d75d43c60107a41e66b6b3d1032d8db37c0677"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_recipe_followup.py",
+      "sha256": "f599fa75a02d6a4509dc3e88a7ab74e7f6f2d07b839f4f25bfc80484b87dfa63"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_recipe_refinements.py",
+      "sha256": "b550d28da55fb33fe56edecf9b547338c799cf151a17ebec0c72bf96c91a4fb0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_requirement_followup.py",
+      "sha256": "4278384faa71479b706e15a7f0f439fda9dc96494cd0aa7d9c0ffc03aa54a409"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_requirement_interpretations.py",
+      "sha256": "d9088f5a4900cfb72a3026cd06738e97bcbf1b9d106e55ca6a06446261e5e44d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_reward_followup.py",
+      "sha256": "855d4cd9b25612fc4cf1c6f7a06bbaef338b77b49d4dee5a6ff0cd1e958390aa"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_reward_only_binding_candidates.py",
+      "sha256": "a926e067a3e50a8969de06a5d1952b08ff8799980b23f6603c644ee532690210"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_reward_use_proofs.py",
+      "sha256": "8279a903a699332c7c9fa2eb1e58e54270adc0b15339d0f51d8a1a03f62661c1"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_rollout_authoring.py",
+      "sha256": "33fb82b2185736ec0d62d6c4fd3f7931c5f8adb61139533b4c45a5f07dab0eb0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_state_lowering.py",
+      "sha256": "fcb3dd37adc19c144100ed0902899bcd5dba912e45dbd30039d5803eb3499e28"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_talk_npc_candidates.py",
+      "sha256": "6f96a8466f25c3350930fec4ece9145808e7b60044c209e76fe3ab420ad4fc85"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_terminal_stage_refinements.py",
+      "sha256": "3bd8cbf7b6c9a39daf67dc8ccaeb1d04a0fc5e580f374bfc6b72724c57283295"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_tree_authoring.py",
+      "sha256": "3546dd9a3f8fe8f3b421301362cd69e981fe13f59ee9ea54ee27798e81802e4a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_v2_export.py",
+      "sha256": "f560c49f6ee555f295fe16e15e3b7c8b7e331dfd654b0f6bc73d8547267e4f88"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questlog_primary_selection.py",
+      "sha256": "344c2f16524efd8f3082735429d5056c7f577fcd50e54ad1ad021e38f25dbee8"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_albinius_rules.py",
+      "sha256": "02ec0912d30681c669009d06531430b79f7926935c1d61b0337c88619471f648"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_effect_authoring.py",
+      "sha256": "a55fd75a8b83350c140b4d739fa27fd6d45d98d29b74fef1fb1d170ca8c86dc7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_gerimor_rules.py",
+      "sha256": "2c442df2a7a54ab7fa1db933df4c4951291b2b2f345ed80910cd0dd840d8a61b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_gnomus_rules.py",
+      "sha256": "e5dce5155ddd6e3f89056aaebecd4779a20bb14cbd4ed6351784d28182bc3715"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_henricus_rules.py",
+      "sha256": "d5affeffe3997fbebda7b2db279baede3889c78c692f7eee0af953fffc3da013"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_oldrak_rules.py",
+      "sha256": "55c57d6f2a419fbaffae626ec474531934c45f553b2df1e6f29e49c4f6d7349a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_reward_capture.py",
+      "sha256": "04990767f1bc9616fba6bded40f58709bdbdee673822f1fd0f51f3e032832c8e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_rotten_item_facts.py",
+      "sha256": "15d85bd51266fc7c12cffb5286f4fe315871c97e671a6600b85a9ea2d5fd6435"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_rotten_membership_facts.py",
+      "sha256": "bc4cda451736846de7a1b00d7ebad378775c70bd2716e6d339a9b95c97c7855c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_soul_entries.py",
+      "sha256": "9f401b35d553d6f2325320dfaa358885dcde5f0e03c68f064d5810d3adc6b717"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc3_collectors.py",
+      "sha256": "a740a8da55d54d253ad6ce46c6c34c0d71d53ddc9ab80bb3cb24908e923d62a6"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc3_native_entries.py",
+      "sha256": "06ca5494d0d9debd7089c14b76fbfb0e70c7a8b588d9cd535947c51674a735c2"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc5_targuna_map.py",
+      "sha256": "eb3e797984da20bda1d160cb1e4e8b26208c9892d15a5166f14565c2268ae572"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc7_goblin.py",
+      "sha256": "d51c2ebece3ffecf621a86143153c3b5c7ff513d3a30b6ea8f296d10f642e204"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc7_index_witness.py",
+      "sha256": "574664af4e1c9d02eb9c85694b6bcefa9af8f62a5133f85945648770ed9e80d5"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc7_programmes.py",
+      "sha256": "8131bbd85d58f515160b1f4354de043f3c39feadb21cee7282484e9adde082f4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc7_smith_programme.py",
+      "sha256": "c1469a08659afd31da55e162f961a268fdda0630f972d87f8bae2e722a9d5020"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_cauldron_approach.py",
+      "sha256": "13e25a374315389bc16db2c149f225cf4fe5a1f9041d70c1deef3e18b344523d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_chest_completion.py",
+      "sha256": "910cbaa533367aa178781d81f18cc9ade0abb4312fc24b0f373fad567176125e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_cobra_approach.py",
+      "sha256": "b6685f6fd8b0e53ef9536486966e21e538c72585c5558012646299c4e869cc3e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_completed_quests.py",
+      "sha256": "f0ebd10e9e102b2b91fb41393a2c5a714fffabfa6f2452c041c09b39f4fb9293"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_deeplings_activation.py",
+      "sha256": "465996f4d30064f8d4bd96ed1931e8981653444535685a33cd413d97d5a58b6a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_explore_bindings.py",
+      "sha256": "f69736ec881ff6c6970ed51d1084bf40193e0a0e41c84c581aaa35fe808c94c3"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_fire_earth_activation.py",
+      "sha256": "93b84534b4998c67329b96efd32c4fc55dd58d86dac004b8dcda10f975150da2"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_followup_exploration.py",
+      "sha256": "4a6a95d4d47e0a1a51c40e9b65c0822bfdf759471818ca8b46cef1bdfcde1ef8"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_fury_approaches.py",
+      "sha256": "fb6ba5a1eee4d22328774f4efe0ee24edd7b66acf587fdf446485993a36d9702"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_hero_fire_approach.py",
+      "sha256": "0a39f725994e46bb210281bfbed09f5861e77c9227acd18c0fc2f491fab3ed5c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_iceberg_approach.py",
+      "sha256": "36a224b9b51b7e8737ceb61711b9ecef73aacdc871deb751c302f59fe4896328"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_iceberg_chamber.py",
+      "sha256": "e110263cb00e8e174a5de96451e8cb1e608808c194c393bc087035e4c82cb006"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_native_anchors.py",
+      "sha256": "c33dae833aa3a7258a201af4797464c1f69db7638efacf186dc897c1dcd8068a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc_station_approach.py",
+      "sha256": "1eccbaea887d9173bd1344da470b7144e5e4ced5cf4bb6f9a423d0e514db01d7"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quests_2_emperor_state.py",
+      "sha256": "009d811c704859c4d1c7cbde3a586b78293d8d93d795f70ce5a32045a0f00f7a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_refresh_donor_crosswalk_witness.py",
+      "sha256": "7d1552c56439fde132b255c97931b1fe63b0092f1394fed366964989d3df2049"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_reward_aliases.py",
+      "sha256": "2a8843b92220202522eaf3180624c9e873fb257195531380449ad406d7043976"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_reward_claim_runtime.py",
+      "sha256": "b3a541cce6877648e81e66c0955abc22081216b31dbadcfe8fc21258bfec6668"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_reward_greeting_ownership.py",
+      "sha256": "173546779d780db3a620a5eeb1dc141fa1d97ee40eca7d986b10bcdb0ee283cf"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_reward_lookup.py",
+      "sha256": "e9398785bb2b108113fc4d470e6d5e425935e0f01967c32b65b11ef5a5bfb6df"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_scoped_interaction_storage.py",
+      "sha256": "6a8d8dd0457181d412f8894854833e4cc052249c0ef33f7b2f739c90eafc16de"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_scoped_storage_aliases.py",
+      "sha256": "d9f3f3763f1f0882a203b7ac56029428b200931309e74a38f3a8347c75f5011b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_shared_actor_tables.py",
+      "sha256": "917f94afe755bfbc286f4071d92e005eb88d9b15c0249baf7d28c24d7fa8650c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_soul_war_reconstruction.py",
+      "sha256": "d1b6652ce4b8dea49168fc5a88abfe4602c8a7ba1a6fad2339efacc74152d65f"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_comment_write_guard.py",
+      "sha256": "f1ec68db79d727eb0cac575ba3583893201719483f778046dee7b91f8bf4c503"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_curations.py",
+      "sha256": "e9f1d7fb6b8d7e3e4713291b5522e75466626740e3fb924e0ab694caddad2cf8"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_facts.py",
+      "sha256": "c543fcbde88f07fd0d6343b314dc0f3ecabd89c211822b6e04f206593d9c78da"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_fix_guard.py",
+      "sha256": "b3586a856c30a451e5b1c68ea9fbdb29572ea310da869b9500936552c795a9e0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_kilmaresh_owner_guard.py",
+      "sha256": "59b85e1af8faada21f3bbbb15fbe5f28134831f4d6bc1b3e9a31ad0215fe1099"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_lowered_binding_plan.py",
+      "sha256": "c2666e4a9db9cd1ed6e58d549b2442146ebed2bb76e14429cac6b53f0f8d872c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_monk_native_guard.py",
+      "sha256": "a43043e3314cf320062df8699436f251d26d6de04331d1cd2af5e28021eb7c33"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_npc_exchange.py",
+      "sha256": "b1fd364478ef55c55b3f2108362d746073a5f0fd9beec13451e0333c426c61c9"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_npc_exchange_guard.py",
+      "sha256": "e952dd4298ea9ad42bd28c5f8cc154b2141ade61cc940df621f80101e53ffcf3"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_occurrences.py",
+      "sha256": "a3849d39d0eb9d438eb2eaedc9928589789dfedecf2718ea26095132b2bd4a1a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_owner_guard.py",
+      "sha256": "d1e75c1cdf9d48112b448921aea6957da656ea2ebf6acf28eadb59bd6c4059a4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_reference_tracks.py",
+      "sha256": "0beaa409a8d4b132e299fdea2f877ba4fc4b7c7acc396f1de09660bd520f9d43"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_texts.py",
+      "sha256": "1b15a2a13e623ccec7648954122ff907e80d3a1de83a0c1e6b00b04e0304cd5d"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_srv7_reliable_ram.py",
+      "sha256": "f69502f5251955058675a73647e351e9b41dcf092f46375e178a422da14ce07c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_srvgap2_taming.py",
+      "sha256": "6c0704ee6e5d6430c9f3cd6c9fa67097a4cbcbbe33269ac970f8723c162cc2e1"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_srvgap2_wizard.py",
+      "sha256": "e21d794eb4eeb3d53b94b95a0eeb389919d646686d1045017cb2eda9749cd79f"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_srvwld_first_dragon.py",
+      "sha256": "3bbb5a7aa05703d47691bf1a441b7b72f1f70ae801941e434aff58e84358bca4"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_tile_copy_proof.py",
+      "sha256": "c39e0d5a8b5d2f1ca0963d22f9ac8bef645ca1b2b6ae933d0a4918c084629776"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_tile_item_remove.py",
+      "sha256": "79b322f6fe228e80c8f27d7adc150de76b00b262ebaa2507dbabb37679b3622b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_uid_range.py",
+      "sha256": "4653fea6ca1862fa19c6e6b1de80309ec2dbe04af404ebc6078d65d4c8cf856b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_use_trigger_candidates.py",
+      "sha256": "9e1c867e25d21ae21a69a7a7ffd80318eb5b340a340211df6b911d2688307103"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_variant_quest_holds.py",
+      "sha256": "ea20eeeac40b9319cbcbccec946ba9000f680f262cb5c778b617991144a09a4a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_visibility_bundle_receipt.py",
+      "sha256": "44812c25ad64be670706a934103c0cf8a6f51714a3d977fa14efa342ebea3a58"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_white_pearl_curation.py",
+      "sha256": "7f7d4e3a6d9a34c2b9e4141befb904aeea9455935e89b90a162fccadc3b5727c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_wiki_all_source_inventory.py",
+      "sha256": "e6d50e0b9b8f64f4a335a019b8c7d51231a52847a65115d6a21b2bcc5b0eba15"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_wiki_requirement_interpretations.py",
+      "sha256": "fdec801ae85a5408579e56c38c9de069f4b38fef388e36bb3909554c679ff088"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_wiki_source_inventory.py",
+      "sha256": "e9b4bdc94e48686f2aa2553cc5155eb00cb712c991e3ff8583988173f50853b5"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_wiki_source_supplements.py",
+      "sha256": "45fc588cfb459fd705887879b0cbefcbb440546b996b6ef2d8d765fc1f5557f9"
+    }
+  ],
+  "parse_errors": [],
+  "cross_file_class_method_body_clusters": [
+    [
+      {
+        "path": "tools/content-schema/quest-authoring/test_npc_progress_retention.py",
+        "class": "NpcProgressRetentionTests",
+        "test": "test_missing_declaration_keeps_explicit_unknown",
+        "line": 65
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_progress_enrichment.py",
+        "class": "ProgressEnrichmentTests",
+        "test": "test_missing_storage_declaration_fails",
+        "line": 62
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/quest-authoring/test_quest_explore_area_candidates.py",
+        "class": "QuestExploreAreaCandidatesTest",
+        "test": "test_committed_packet_matches_generator",
+        "line": 116
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_quest_reward_only_binding_candidates.py",
+        "class": "RewardOnlyCompletionCandidatesTest",
+        "test": "test_committed_packet_matches_generator",
+        "line": 100
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_quest_talk_npc_candidates.py",
+        "class": "QuestTalkNpcCandidatesTest",
+        "test": "test_committed_packet_matches_generator",
+        "line": 111
+      }
+    ],
+    [
+      {
+        "path": "tools/content-schema/quest-authoring/test_questpc2_albinius_rules.py",
+        "class": "AlbiniusRules",
+        "test": "test_source_pin_reproduces_exact_runtime_program",
+        "line": 11
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_questpc2_gerimor_rules.py",
+        "class": "GerimorRules",
+        "test": "test_source_pin_reproduces_runtime_assignment_program",
+        "line": 11
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_questpc2_gnomus_rules.py",
+        "class": "GnomusRules",
+        "test": "test_source_pin_reproduces_runtime_program",
+        "line": 11
+      },
+      {
+        "path": "tools/content-schema/quest-authoring/test_questpc2_henricus_rules.py",
+        "class": "HenricusRules",
+        "test": "test_pinned_source_reproduces_the_exact_runtime_program",
+        "line": 11
+      }
+    ]
+  ],
+  "methodology": "Compare test method bodies without location attributes or method names. Ignore imports/class setup for hinting; those must be manually checked before action. Top-level function clone search is not covered.",
+  "manual_disposition": "All three clusters resolve to distinct imported generators or different class fixtures; no repeated identical execution proved by these clusters."
+}

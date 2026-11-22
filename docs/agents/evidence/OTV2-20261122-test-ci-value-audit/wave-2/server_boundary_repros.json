@@ -1,0 +1,37 @@
+{
+  "scope": "actual shell cleanup and execution/verdict tail, synthetic test command only",
+  "source": "tools/qualification/wp5_s3b/run.sh",
+  "source_sha256": "fb4d265f8cf8c98ec6e6ecc2bc08a3ae334a467b9a28f1cce97dd1196f185e63",
+  "tail_first_line": 176,
+  "topology_started": false,
+  "rust_tests_executed": false,
+  "cases": [
+    {
+      "case": "zero_tests",
+      "synthetic_command_rc": 0,
+      "actual_shell_rc": 0,
+      "verdict": "SEAM_PASS",
+      "stdout": "running 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 1 filtered out\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=SEAM_PASS\n",
+      "stderr": "",
+      "oracle_gap": true
+    },
+    {
+      "case": "one_test_control",
+      "synthetic_command_rc": 0,
+      "actual_shell_rc": 0,
+      "verdict": "SEAM_PASS",
+      "stdout": "running 1 test\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 filtered out\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=SEAM_PASS\n",
+      "stderr": "",
+      "oracle_gap": false
+    },
+    {
+      "case": "failed_command_control",
+      "synthetic_command_rc": 1,
+      "actual_shell_rc": 1,
+      "verdict": "COMPOSED_FAIL",
+      "stdout": "test result: FAILED. 0 passed; 1 failed\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "",
+      "oracle_gap": false
+    }
+  ]
+}

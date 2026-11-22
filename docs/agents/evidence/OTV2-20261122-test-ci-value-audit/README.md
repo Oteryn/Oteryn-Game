@@ -1,5 +1,7 @@
 # Test and CI value audit — first candidate
 
+The [second-wave supplement](wave-2/README.md) adds bounded durability, server admission/recovery and content-tooling findings with exact remaining scopes. It does not apply additional code changes.
+
 ## Evidence basis and status
 
 **PROVEN:** baseline [8e9f0e16631aab1beb8416f8d5ca707aa3031083](https://github.com/Oteryn/Oteryn-Game/commit/8e9f0e16631aab1beb8416f8d5ca707aa3031083), tree `cef077886adb38c7b86bdb5d56b877a8833e7b1e`, is the squash of already merged [PR #3391](https://github.com/Oteryn/Oteryn-Game/pull/3391). The static scan read all 11,650 scoped Rust/Python source files and checked their Git blob hashes: zero missing, modified or Python-parse-error files. It identified 5,437 candidate/test-bearing files, 18,270 literal Rust test attributes and 6,749 Python `test_*` definitions across 68 workspace members. These are source counts, not executed cases or semantic coverage.
