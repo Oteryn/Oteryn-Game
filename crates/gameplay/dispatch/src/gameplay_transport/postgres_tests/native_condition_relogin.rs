@@ -1,21 +1,23 @@
 use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session};
 use super::*;
 use crate::durability::item_use::ItemUseError;
-use crate::gameplay_transport::connection::{ConnectionIdentifiers, FirstEntryOutcome, LogoutReply};
-use crate::gameplay_transport::paced_movement::underwater_drown::{DROWN_SOURCE, drown_definition};
-use oteryn_gameplay_entities::{
-    ActorConditionTransition, ConditionSource,
+use crate::gameplay_transport::connection::{
+    ConnectionIdentifiers, FirstEntryOutcome, LogoutReply,
 };
+use crate::gameplay_transport::paced_movement::underwater_drown::{
+    DROWN_DEFINITION_KEY, DROWN_SOURCE, drown_definition,
+};
+use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
+use oteryn_gameplay_entities::{ActorConditionTransition, ConditionSource};
 use oteryn_gameplay_foundation::foundation::condition::{
     ApplicationFacts, ConditionDefinition, ConditionSourceKind, TickFacts, TickKind,
 };
-use oteryn_gameplay_domain::domain::condition::{ConditionValues, ConflictKey};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use std::time::Duration;
 
 const REGENERATION: ConflictKey = ConflictKey::SpellRegeneration(0);
 const DURATION_US: u64 = 60_000_000;
-const FIRST_TICK_US: u64 = 10_000_000;
+const FIRST_TICK_US: u64 = 2_000_000;
 
 #[test]
 fn native_finite_condition_postgres_relogin_preserves_remaining_ticks() -> TestResult {
@@ -40,7 +42,10 @@ fn on_thread(admin: String, with_environment: bool) -> TestResult {
             let run = || -> TestResult {
                 let rt = crate::bestiary_postgres_harness::runtime()?;
                 let h = rt.block_on(Harness::create_with_admission_seed(
-                    admin, "native_condition_relogin", true, false,
+                    admin,
+                    "native_condition_relogin",
+                    true,
+                    false,
                 ))?;
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     rt.block_on(scenario(&h, with_environment))
@@ -76,38 +81,61 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
     let recovery = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let deps = Dependencies::new()?;
     let mut owner = deps.owner(h, &authority);
     owner.evidence = &recovery.evidence;
-    owner.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .initialize_first_entry_position(deps.actor)
+        .map_err(debug)?;
     deps.initialize(&owner).await;
     let mut admitted = deps.admitted;
     let session = admitted.game_session_id;
-    let (current, _) = FreshAdmissionStore::from_root(h.root.clone()).current_session_at(session).await?;
+    let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session_at(session)
+        .await?;
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
     admitted.first_entry = FirstEntryOutcome::Positioned;
     let old_fence = admitted.item_fence.ok_or("old lease fence")?;
     let applied_at = install_conditions(&owner, &deps, with_environment).await?;
     owner.clock_origin -= Duration::from_millis(750);
-    let before_logout = owner.owner_now().get();
+    let _clock = owner.freeze_owner_clock_for_test();
+    let elapsed_at_save = owner.owner_now().get() - applied_at;
     assert_eq!(
         owner.logout_session(admitted).await,
         LogoutReply::Result(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     );
-    let after_logout = owner.owner_now().get();
-    let saved = h.root.read_character_conditions(&authority, old_fence.character_id)
-        .await.map_err(debug)?.ok_or("terminal release snapshot")?;
+    let saved = h
+        .root
+        .read_character_conditions(&authority, old_fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("terminal release snapshot")?;
     assert_eq!(saved.lease_generation, old_fence.character_lease_generation);
-    let rows = saved.conditions["conditions"].as_array().ok_or("saved conditions")?;
+    let rows = saved.conditions["conditions"]
+        .as_array()
+        .ok_or("saved conditions")?;
     if with_environment {
-        assert!(rows.iter().all(|row| row["definition"]["key"] != "environment.drowning"),
-            "drowning is re-established by the map");
+        assert!(
+            rows.iter()
+                .all(|row| row["definition"]["key"] != DROWN_DEFINITION_KEY),
+            "drowning is re-established by the map"
+        );
     }
-    assert_eq!(rows.len(), 1, "terminal release saves the eligible native condition");
+    assert_eq!(
+        rows.len(),
+        1,
+        "terminal release saves the eligible native condition"
+    );
     let ends_in = rows[0]["ends_at"].as_u64().ok_or("remaining duration")?;
-    assert!((DURATION_US.saturating_sub(after_logout - applied_at)
-        ..=DURATION_US - (before_logout - applied_at)).contains(&ends_in));
+    assert_eq!(ends_in, DURATION_US - elapsed_at_save);
 
     let fresh_deps = Dependencies::new()?;
     let mut fresh_owner = fresh_deps.owner(h, &authority);
@@ -122,18 +150,31 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
             client_build_id: "native-condition-relogin",
             supported_capabilities: &[],
         },
-    ).map_err(debug)?;
+    )
+    .map_err(debug)?;
     let (mut server, _client) = tokio::io::duplex(1 << 20);
     let fresh = crate::gameplay_transport::connection::admit_frame(
-        &mut server, &frame, &fresh_owner, &FreshIds,
-    ).await.map_err(debug)?;
+        &mut server,
+        &frame,
+        &fresh_owner,
+        &FreshIds,
+    )
+    .await
+    .map_err(debug)?;
     let fresh_fence = fresh.item_fence.ok_or("fresh lease fence")?;
     assert!(fresh_fence.character_lease_generation > saved.lease_generation);
     let restored = {
         let runtime = fresh_deps.runtime.lock().await;
         let states = fresh_owner.states.spell_states.lock().await;
-        states.get(&runtime, fresh.runtime_actor.ok_or("fresh actor")?, fresh.game_session_id)
-            .ok_or("fresh spell state")?.owned_conditions().clone()
+        states
+            .get(
+                &runtime,
+                fresh.runtime_actor.ok_or("fresh actor")?,
+                fresh.game_session_id,
+            )
+            .ok_or("fresh spell state")?
+            .owned_conditions()
+            .clone()
     };
     verify_restored_phase(restored, ends_in)?;
 
@@ -141,13 +182,23 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
         let mut replacement = saved.clone();
         replacement.conditions = serde_json::json!({"schema": 1, "conditions": []});
         assert!(matches!(
-            h.root.save_character_conditions(
-                &authority, &h.node, old_fence, *fresh.channel_id.as_bytes(), replacement,
-            ).await,
+            h.root
+                .save_character_conditions(
+                    &authority,
+                    &h.node,
+                    old_fence,
+                    *fresh.channel_id.as_bytes(),
+                    replacement,
+                )
+                .await,
             Err(ItemUseError::AuthorityRejected)
         ));
-        let current = h.root.read_character_conditions(&authority, old_fence.character_id)
-            .await.map_err(debug)?.ok_or("snapshot after stale save")?;
+        let current = h
+            .root
+            .read_character_conditions(&authority, old_fence.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("snapshot after stale save")?;
         assert_eq!(current.lease_generation, saved.lease_generation);
         assert_eq!(current.conditions, saved.conditions);
     }
@@ -180,11 +231,12 @@ async fn install_conditions(
             duration_ms: 60_000,
             sub_id: 0,
             health_gain: 3,
-            health_interval_ms: 10_000,
+            health_interval_ms: 2_000,
             mana_gain: 2,
-            mana_interval_ms: 13_000,
+            mana_interval_ms: 3_000,
         },
-    ).ok_or("native regeneration definition")?;
+    )
+    .ok_or("native regeneration definition")?;
     let transition = ActorConditionTransition::Apply {
         definition: &definition,
         source: ConditionSource {
@@ -195,15 +247,26 @@ async fn install_conditions(
         immunities: &[],
         facts,
     };
-    let plan = runtime.prepare_actor_condition(deps.actor, Some(session), transition, now)
+    let plan = runtime
+        .prepare_actor_condition(deps.actor, Some(session), transition, now)
         .map_err(debug)?;
     assert!(runtime.commit_actor_condition(&plan, now).map_err(debug)?);
-    let native = runtime.actor_conditions(deps.actor, Some(session)).map_err(debug)?;
-    assert_eq!(native.get(REGENERATION).ok_or("native regeneration")?.provenance().source,
-        Some(deps.actor));
+    let native = runtime
+        .actor_conditions(deps.actor, Some(session))
+        .map_err(debug)?;
+    assert_eq!(
+        native
+            .get(REGENERATION)
+            .ok_or("native regeneration")?
+            .provenance()
+            .source,
+        Some(deps.actor)
+    );
     if with_environment {
         let mut states = owner.states.spell_states.try_lock().map_err(debug)?;
-        let state = states.get_mut(&runtime, deps.actor, session).ok_or("source spell state")?;
+        let state = states
+            .get_mut(&runtime, deps.actor, session)
+            .ok_or("source spell state")?;
         let before = state.owned_conditions().clone();
         let mut next = before.clone();
         next.apply(
@@ -212,8 +275,11 @@ async fn install_conditions(
             ConditionSourceKind::Field,
             &[],
             &facts,
-        ).map_err(debug)?;
-        state.apply_batch_conditions(&before, &next).map_err(debug)?;
+        )
+        .map_err(debug)?;
+        state
+            .apply_batch_conditions(&before, &next)
+            .map_err(debug)?;
     }
     Ok(now.get())
 }
@@ -222,22 +288,41 @@ fn verify_restored_phase(
     mut conditions: oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
     ends_in: u64,
 ) -> TestResult {
-    let restored = conditions.get(REGENERATION).ok_or("restored native regeneration")?;
+    let restored = conditions
+        .get(REGENERATION)
+        .ok_or("restored native regeneration")?;
     assert!(restored.provenance().is_unattributed());
     let elapsed_at_save = DURATION_US - ends_in;
     assert!((750_000..FIRST_TICK_US).contains(&elapsed_at_save));
     let first_tick = restored.started_at() + FIRST_TICK_US - elapsed_at_save;
-    assert_eq!(restored.remaining_duration_ms(restored.started_at()), Some((ends_in / 1000).try_into()?));
-    assert!(conditions.take_due(first_tick - 1, TickFacts::default()).is_empty());
+    assert_eq!(
+        restored.remaining_duration_ms(restored.started_at()),
+        Some((ends_in / 1000).try_into()?)
+    );
+    assert!(
+        conditions
+            .take_due(first_tick - 1, TickFacts::default())
+            .is_empty()
+    );
     let ticks = conditions.take_due(first_tick, TickFacts::default());
     assert_eq!(ticks.len(), 1);
-    assert_eq!(ticks[0].kind, TickKind::SpellRegeneration {
-        health_gain: 3, mana_gain: 0, suppressed: false,
-    });
-    let ticks = conditions.take_due(first_tick + 3_000_000, TickFacts::default());
+    assert_eq!(
+        ticks[0].kind,
+        TickKind::SpellRegeneration {
+            health_gain: 3,
+            mana_gain: 0,
+            suppressed: false,
+        }
+    );
+    let ticks = conditions.take_due(first_tick + 1_000_000, TickFacts::default());
     assert_eq!(ticks.len(), 1);
-    assert_eq!(ticks[0].kind, TickKind::SpellRegeneration {
-        health_gain: 0, mana_gain: 2, suppressed: false,
-    });
+    assert_eq!(
+        ticks[0].kind,
+        TickKind::SpellRegeneration {
+            health_gain: 0,
+            mana_gain: 2,
+            suppressed: false,
+        }
+    );
     Ok(())
 }
