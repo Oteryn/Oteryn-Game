@@ -5,7 +5,7 @@
 //! 1. After P12c's prerequisite PvP fight has been completed by the immediately preceding
 //!    E2EF7 player journey, admit its killer and send `QuerySelf(offset=0, limit=50)`; require
 //!    an accepted Character Info summary containing the character's real level/experience,
-//!    bounded item counters, and at least one recent PvP kill.
+//!    bounded item counters, and record the recent PvP kill count. Check the PvP prerequisite after testing PvE death.
 //! 2. Send the paged `QuerySelf(offset=1, limit=1)` player command and require an accepted,
 //!    strictly decoded bounded page (the history counts may be zero at that offset).
 //! 3. Send `QueryVisible` for the other provisioned character without Friends/VIP consent;
@@ -135,6 +135,10 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
+fn one_pve_death(before: Page, after: Page) -> bool {
+    after.deaths == before.deaths.saturating_add(1) && after.pvp_kills == before.pvp_kills
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -147,8 +151,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let mut client = connect_character(clients, 0xca, 0).await?;
     let baseline = query(&mut client, 0, 50).await?;
-    if baseline.level == 0 || baseline.pvp_kills == 0 {
-        return Err(format!("step 1 query-self: observed={baseline:?}; need nonzero native level and the preceding real PvP frag").into());
+    if baseline.level == 0 {
+        return Err(
+            format!("step=character-summary observed={baseline:?}; need=nonzero-level").into(),
+        );
     }
     let _paged = query(&mut client, 1, 1).await?;
 
@@ -179,7 +185,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "oteryn:creature.poison_spider",
     )
     .await
-    .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step 4 walk-to-combat: observed={error}; need reachable authored lethal spawn"), error) })?;
+    .map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        verdict::context(
+            format!(
+                "step 4 walk-to-combat: observed={error}; need reachable authored lethal spawn"
+            ),
+            error,
+        )
+    })?;
     client.session_mut().attack_target(None).await?;
     let encounter = client.world_spatial().actor_position;
     let health = client
@@ -209,7 +223,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
     }
     let after = query(&mut client, 0, 50).await?;
-    if after.deaths != baseline.deaths.saturating_add(1) || after.pvp_kills < baseline.pvp_kills {
+    if !one_pve_death(baseline, after) {
         return Err(format!("step 4 history delta: before={baseline:?} after={after:?}; need one death and retained PvP kill").into());
     }
     let old_session = client.join_snapshot().game_session_id;
@@ -223,32 +237,55 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step 5 durable recheck: before-logout={after:?} fresh={durable:?}; need identical summary/history counts").into());
     }
     logout(&mut client).await?;
+    if durable.pvp_kills == 0 {
+        return Err("step=pvp-kill-history observed=0 need=credited-unjustified-Open-PvP-kill-on-this-character; source:crates/gameplay/durability/src/durability/character_title.rs:309".into());
+    }
     Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients))).await;
-    match result {
-        Ok(Ok(())) => evidence(&format!(
-            "e2e_all scenario=P12c.full status=PASS seconds={:.3}",
-            started.elapsed().as_secs_f64()
-        )),
-        Ok(Err(error)) => evidence(&format!(
-            "e2e_all scenario=P12c.full status=FAIL seconds={:.3} evidence={}",
-            started.elapsed().as_secs_f64(),
-            error.to_string().replace(' ', "_")
-        )),
-        Err(_) => evidence(&format!(
-            "e2e_all scenario=P12c.full status=FAIL seconds={:.3} evidence=step_deadline_observed=timeout_need=server_reply_or_delta",
-            started.elapsed().as_secs_f64()
-        )),
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients)))
+            .await;
+    let failure = match result {
+        Ok(Ok(())) => None,
+        Ok(Err(error)) => Some(error.to_string()),
+        Err(_) => Some("step=pve-death-or-durability observed=360s-timeout".into()),
+    };
+    if let Some(error) = &failure {
+        evidence(&format!("P12C_GAP {error}"));
     }
+    evidence(&format!(
+        "e2e_all scenario=P12c.full status={} seconds={:.3}",
+        if failure.is_none() { "PASS" } else { "FAIL" },
+        started.elapsed().as_secs_f64()
+    ));
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn pve_history_can_advance_before_pvp_and_cannot_credit_a_frag() {
+        let entry = Page {
+            level: 8,
+            experience: 4200,
+            counters: [0; 6],
+            deaths: 0,
+            pvp_kills: 0,
+        };
+        let after = Page { deaths: 1, ..entry };
+        assert!(one_pve_death(entry, after));
+        assert!(!one_pve_death(
+            entry,
+            Page {
+                pvp_kills: 1,
+                ..after
+            }
+        ));
+    }
+
     #[test]
     fn page_decoder_is_bounded_and_strict() -> TestResult {
         let mut bytes = vec![0];

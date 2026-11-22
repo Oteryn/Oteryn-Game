@@ -9,7 +9,8 @@
 //!    character revision and pool, followed by the server ending the session.
 //! 4. Make a fresh admission after that logout and query General Stats; expect a new game session
 //!    and the durable offline-training pool (with the first ten minutes excluded from accrual) to
-//!    remain present, then perform an ordinary accepted logout.
+//!    remain present.
+//! 5. Find and use the donor training book (11441); require its instructional dialog.
 use super::*;
 use oteryn_dev_client::{DevClientError, DevClientSession};
 use oteryn_protocol_oteryn::item_view::ItemHandle;
@@ -18,6 +19,8 @@ use oteryn_protocol_oteryn::loop_training::{
 };
 use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
 use std::num::{NonZeroU32, NonZeroU64};
+
+const BOOK: &str = "oteryn:item.tibia.i11441";
 
 const STATUES: [&str; 6] = [
     "oteryn:item.tibia.i16198",
@@ -30,7 +33,9 @@ const STATUES: [&str; 6] = [
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
     let result = match result {
         Ok(result) => result,
         Err(_) => {
@@ -45,6 +50,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64()
     ));
+}
+
+fn matches_short_offline_pool(seconds: u32, fresh_minutes: u16) -> bool {
+    fresh_minutes != 0 && u32::from(fresh_minutes) == seconds / 60
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -67,7 +76,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 })
         })
         .collect::<TestResult<_>>()?;
-    let positions = statue_positions(&bytes, &index)?;
+    let positions = placement_positions(&bytes, &references)?;
     let mut client = connect_world(clients, 0xb4).await?;
     let offered = client
         .selected_capabilities()
@@ -96,8 +105,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .ok_or("step=walk-to-statue observed=no-reachable-authored-statue need=statue-population-near-provisioned-character")?;
     walk(&mut client, world, &path).await?;
-    let statue = map_statue_handle(&mut client, &references)?;
+    let statue = adjacent_map_handle(&mut client, &references).ok_or(
+        "step=statue-handle observed=authored-statue-without-live-handle need=map-item-handle",
+    )?;
     let selected = training(&mut client, statue).await?;
+    if selected == TrainingResult::REFUSED {
+        let current_pool = general_stats(&mut client).await?;
+        if current_pool != before_pool || client.join_snapshot().game_session_id != before_session {
+            return Err(format!(
+                "step=statue-refusal changed state; pool={before_pool}->{current_pool}"
+            )
+            .into());
+        }
+        let reply = client.session_mut().logout().await?;
+        if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("step=statue-refusal logout={reply:?}").into());
+        }
+        return Err("step=offline-statue-training observed=authored-statue-refused-without-state-change need=current-Premium-and-unlocked-character; source:crates/gameplay/dispatch/src/gameplay_transport/loop_training/mod.rs:481".into());
+    }
     if selected.disposition != 3 || selected.revision == 0 || selected.pool_seconds == 0 {
         return Err(format!(
             "step=select-statue observed={selected:?} need=disposition-3-nonzero-revision-and-pool"
@@ -131,10 +156,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let mut fresh = connect_world(clients, 0xb5).await?;
     let fresh_pool = general_stats(&mut fresh).await?;
-    let expected_minutes = u16::try_from(selected.pool_seconds / 60)?;
     if fresh.join_snapshot().game_session_id == before_session
-        || fresh_pool == 0
-        || fresh_pool > expected_minutes
+        || !matches_short_offline_pool(selected.pool_seconds, fresh_pool)
     {
         return Err(format!(
             "step=fresh-admission observed=session={:?},pool-minutes={fresh_pool},selected-pool-seconds={} need=new-session-with-durable-pool",
@@ -143,38 +166,50 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    evidence(&format!(
+        "P14_CHECK step=4 status=PASS observed=fresh-session,durable-pool-minutes-{fresh_pool}"
+    ));
+    let book = probe_training_book(&mut fresh, world, &bytes, &index).await;
     if fresh.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=final-logout observed=refused need=accepted-ordinary-logout".into());
     }
-    evidence(&format!(
-        "P14_CHECK step=4 status=PASS observed=fresh-session,durable-pool-minutes-{fresh_pool},accepted-logout"
-    ));
-    Ok(())
+    book
+}
+
+async fn probe_training_book(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    bytes: &[u8],
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult {
+    let reference = index.definition_ref("Item", BOOK, "definition-r1")
+        .ok_or("step=offline-training-book observed=unindexed-i11441; source:content/items/definitions/items-01000-01499.json:1")?;
+    let positions = placement_positions(bytes, &[reference])?;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        positions.iter().any(|book| adjacent(at, *book))
+    }).ok_or("step=offline-training-book observed=no-reachable-i11441-placement; source:content/items/definitions/items-01000-01499.json:1")?;
+    walk(client, world, &path).await?;
+    let handle = adjacent_map_handle(client, &[reference])
+        .ok_or("step=offline-training-book observed=no-live-i11441-handle")?;
+    let observed = client.use_item(handle).await?;
+    Err(format!("step=offline-training-book observed=use-status-{:?},disposition-{:?} need=map-book-instruction-dialog; source:crates/gameplay/dispatch/src/gameplay_transport/item_inscription.rs:61", observed.status, observed.disposition).into())
 }
 
 fn adjacent(a: TilePos, b: TilePos) -> bool {
     a.floor == b.floor && a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)) <= 1
 }
 
-fn statue_positions(
-    bytes: &[u8],
-    index: &crate::content::item_ref::ItemDefinitionIndex,
-) -> TestResult<Vec<TilePos>> {
-    let references: Vec<u32> = STATUES
-        .iter()
-        .filter_map(|key| index.definition_ref("Item", key, "definition-r1"))
-        .map(NonZeroU32::get)
-        .collect();
+fn placement_positions(bytes: &[u8], references: &[NonZeroU32]) -> TestResult<Vec<TilePos>> {
     let mut positions = Vec::new();
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
         for tile in sector.tiles {
-            if tile
-                .items
-                .iter()
-                .any(|item| references.contains(&(manifest.palette[item.palette as usize].id + 1)))
-            {
+            if tile.items.iter().any(|item| {
+                references.iter().any(|reference| {
+                    reference.get() == manifest.palette[item.palette as usize].id + 1
+                })
+            }) {
                 positions.push(TilePos {
                     x: tile.x,
                     y: tile.y,
@@ -187,15 +222,12 @@ fn statue_positions(
     Ok(positions)
 }
 
-fn map_statue_handle(
+fn adjacent_map_handle(
     client: &mut DevClientSession,
     references: &[NonZeroU32],
-) -> TestResult<ItemHandle> {
-    let snapshot = client
-        .session_mut()
-        .world_map_snapshot()
-        .ok_or("step=statue-handle observed=missing-map-snapshot need=handle-bearing-map-view")?;
-    let player = tile(client.world_spatial().actor_position)?;
+) -> Option<ItemHandle> {
+    let snapshot = client.session_mut().world_map_snapshot()?;
+    let player = tile(client.world_spatial().actor_position).ok()?;
     snapshot
         .tiles
         .iter()
@@ -208,10 +240,6 @@ fn map_statue_handle(
                 Some(handle)
             }
             _ => None,
-        })
-        .ok_or_else(|| {
-            "step=statue-handle observed=authored-statue-without-live-handle need=map-item-handle"
-                .into()
         })
 }
 
@@ -328,6 +356,12 @@ async fn general_stats(client: &mut DevClientSession) -> TestResult<u16> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn quick_relog_must_not_spend_training_pool() {
+        assert!(super::matches_short_offline_pool(3_616, 60));
+        assert!(!super::matches_short_offline_pool(3_616, 59));
+    }
+
     use super::*;
 
     #[test]

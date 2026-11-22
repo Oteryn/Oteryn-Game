@@ -1,26 +1,6 @@
-//! P23c — Prey Hunting Tasks: reward options, claim and points.
-//!
-//! Concrete player scenario, derived from the P23c audit/matrix row and the named
-//! Task Board owner (`quest/task_board.rs`):
-//! 1. Log in with a node-boot character and query the hunting-task board; expect
-//!    an accepted reply containing the offered creature tasks and current points.
-//! 2. Select one offered task with the native player command; expect an accepted,
-//!    non-refused reply whose selected task changes while kills and points do not.
-//! 3. Repeat that select while a task is active; expect a refused reply and no
-//!    selected-task, kill, point, or claim-time delta.
-//! 4. Walk to the selected creature's authored spawn and kill the required count
-//!    through ordinary combat; after each kill, query and expect the kill delta,
-//!    with points and claim time unchanged before claim.
-//! 5. Send the task claim command; expect selection/kills to clear, points to rise
-//!    by 25, and that option's claim timestamp to become nonzero.
-//! 6. Claim the same option again; expect refusal with no state delta.
-//! 7. Log out, freshly admit the same character, and query; expect the points and
-//!    claim timestamp to persist and the completed task to remain unselected.
-//!
-//! The journey starts at step 1 and sends step 2 even on servers which expose the
-//! board but retire hunting-task selection. Such a runtime refusal is reported as
-//! FAIL with the observed reply and the server capability needed for steps 3–7;
-//! it is never converted into a source-only or pre-decided verdict.
+//! P23c: check the legacy Prey Hunting Tasks query, selection and claim against
+//! the served board. The production owner retired both mutations and exposes
+//! balances through the legacy query. The replacement weekly and bounty board is exercised by P04.
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, client_runtime::task_board};
@@ -30,7 +10,8 @@ const ROW: &str = "P23c";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let failure = match result {
         Ok(Ok(())) => None,
         Ok(Err(error)) => Some(error.to_string()),
@@ -38,13 +19,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     };
     match failure {
         None => evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario={ROW}.full status=PASS seconds={:.3}",
+            "e2e_all scenario={ROW}.full status=PASS seconds={:.3}",
             started.elapsed().as_secs_f64()
         )),
         Some(error) => {
             evidence(&format!("P23C_GAP {error}"));
             evidence(&format!(
-                "SEAM_EVIDENCE e2e_all scenario={ROW}.full status=FAIL seconds={:.3} evidence={}",
+                "e2e_all scenario={ROW}.full status=FAIL seconds={:.3} evidence={}",
                 started.elapsed().as_secs_f64(),
                 token(&error)
             ));
@@ -75,61 +56,47 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
 
     let initial = command(&mut client, 0, 0).await?;
-    if initial.status != CommandStatus::Accepted
-        || initial.reply.refused
-        || initial.reply.tasks.is_empty()
-    {
-        return Err(format!("step-1 query-invalid;observed={initial:?};need=task-options").into());
+    if initial.status != CommandStatus::Accepted || initial.reply.refused {
+        return Err(
+            format!("step=hunting-task-query observed={initial:?} need=accepted-board").into(),
+        );
     }
-    evidence(&format!(
-        "P23C_CHECK step=1 status=PASS observed=options:{};points:{}",
-        initial.reply.tasks.len(),
-        initial.reply.points
-    ));
-
-    let selected = command(&mut client, 1, 1).await?;
-    if selected.status != CommandStatus::Accepted
-        || selected.reply.refused
-        || selected.reply.selected != 1
-        || selected.reply.kills != 0
-        || selected.reply.points != initial.reply.points
-    {
-        if !same_durable_view(&initial.reply, &selected.reply) {
-            return Err(format!(
-                "step-2 select-refused-with-delta;observed={selected:?};need=atomic-hunting-task-selection"
-            )
-            .into());
-        }
-        // Re-check the refusal across a real logout and fresh admission. This is
-        // durable negative-path evidence, not a substitute for the missing claim.
-        logout(&mut client).await?;
-        drop(client);
-        let mut fresh = connect_character(clients, 0xc4, 1).await?;
-        let persisted = command(&mut fresh, 0, 0).await?;
-        logout(&mut fresh).await?;
-        if persisted.status != CommandStatus::Accepted
-            || persisted.reply.refused
-            || !same_durable_view(&initial.reply, &persisted.reply)
+    let offered = initial.reply.tasks.len();
+    let task = 1;
+    // The legacy fixed board numbers its first task 1. Even with no offers in
+    // the projection, exercise both recognized command codes and check custody.
+    for (action, name) in [(1, "select"), (2, "claim")] {
+        let reply = command(&mut client, action, task).await?;
+        if reply.status != CommandStatus::Accepted
+            || !reply.reply.refused
+            || !same_durable_view(&initial.reply, &reply.reply)
         {
-            return Err(format!(
-                "step-2 refused-select-mutated-after-relog;select={selected:?};fresh={persisted:?}"
-            )
-            .into());
+            return Err(format!("step=hunting-task-{name}: expected inert retired action; baseline={initial:?} observed={reply:?}; source:crates/gameplay/dispatch/src/gameplay_transport/task_board.rs:82").into());
         }
+        evidence(&format!(
+            "P23C_CHECK action={name} observed=retired-action-refused points={}",
+            reply.reply.points
+        ));
+    }
+
+    let session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_character(clients, 0xc4, 1).await?;
+    let persisted = command(&mut fresh, 0, 0).await?;
+    logout(&mut fresh).await?;
+    if fresh.join_snapshot().game_session_id == session
+        || persisted.status != CommandStatus::Accepted
+        || persisted.reply.refused
+        || !same_durable_view(&initial.reply, &persisted.reply)
+    {
         return Err(format!(
-            "step-2 select-refused;observed=status:{:?},refused:{},selected:{},kills:{},points:{};need=player-hunting-task-select-kill-claim-owner",
-            selected.status,
-            selected.reply.refused,
-            selected.reply.selected,
-            selected.reply.kills,
-            selected.reply.points
+            "step=hunting-task-durability observed={persisted:?} baseline={initial:?}"
         )
         .into());
     }
 
-    // A supported server reaches here. Keeping later lifecycle work behind the
-    // successful selection prevents a refusal from being mistaken for progress.
-    Err("step-3 lifecycle-not-reached-after-supported-select;need=complete-combat-route".into())
+    Err(format!("step=hunting-task-reward observed=options-{offered},select-refused,claim-refused need=Prey-Hunting-Task-options-kill-credit-and-reward-claim; source:crates/gameplay/dispatch/src/gameplay_transport/task_board.rs:82").into())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -144,6 +111,10 @@ fn same_durable_view(left: &wire::TaskBoardReply, right: &wire::TaskBoardReply) 
     left.selected == right.selected
         && left.kills == right.kills
         && left.points == right.points
+        && left.bounty_points == right.bounty_points
+        && left.talisman_levels == right.talisman_levels
+        && left.talisman_bonuses == right.talisman_bonuses
+        && left.talisman_next_costs == right.talisman_next_costs
         && left.tasks == right.tasks
 }
 
@@ -163,6 +134,29 @@ fn token(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retired_action_cannot_change_either_currency_or_talisman_state() {
+        let initial = wire::TaskBoardReply {
+            refused: false,
+            selected: 0,
+            kills: 0,
+            points: 25,
+            bounty_points: 10,
+            talisman_levels: [0; 4],
+            talisman_bonuses: [0; 4],
+            talisman_next_costs: [5; 4],
+            tasks: Vec::new(),
+        };
+        let mut refused = initial.clone();
+        refused.refused = true;
+        assert!(same_durable_view(&initial, &refused));
+        refused.bounty_points += 1;
+        assert!(!same_durable_view(&initial, &refused));
+        refused.bounty_points = initial.bounty_points;
+        refused.talisman_levels[0] += 1;
+        assert!(!same_durable_view(&initial, &refused));
+    }
 
     #[test]
     fn evidence_token_has_no_whitespace() {

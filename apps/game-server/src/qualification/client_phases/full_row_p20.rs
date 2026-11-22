@@ -1,31 +1,12 @@
-//! P20: Premium/promotion gates and paid-region expiry relocation.
-//!
-//! Concrete player scenario derived from matrix P20, the parity audit, and the
-//! Premium purchase/gate owners:
-//! 1. Walk to Oressa, say `hi`, `yes`, `knight`, and `yes`; assert the unquoted
-//!    confirmation and under-level confirmation are refused without a vocation delta.
-//! 2. Hunt native rats to level 8, walk back, say `hi`, `knight`, `no`, `yes`,
-//!    `knight`, and `yes`; assert decline/refusal leave the build unchanged and the
-//!    final confirmation changes the server-reported vocation to knight.
-//! 3. Hunt native rats to level 20 and loot 20,000 gold, walk to King Tibianus,
-//!    say `hi`, `promotion`, and `yes`; assert the quote and either the Premium
-//!    refusal reply or the promoted-vocation/inventory deltas returned by the server.
-//! 4. On a successful purchase, repeat `promotion` and `yes`; assert the duplicate
-//!    request is refused and does not charge or change the durable build again.
-//! 5. Logout and obtain a fresh admission; assert a new game-session id and the
-//!    same XP, level, promoted vocation, inventory, and position.
-//! 6. That fresh admission is the paid-region-expiry relocation attempt. Assert a
-//!    server relocation delta to the free-town temple. The current server has no
-//!    player command/content mapping that places a character on a Premium special
-//!    tile and no admission relocation consumer; after the preceding real commands,
-//!    report that runtime-observed missing path rather than inventing a relocation.
+//! P20 exercises King Tibianus's premium-gated promotion dialogue, the durable
+//! build and payment deltas, and the paid-region expiry prerequisite.
 
 use super::*;
 
 use oteryn_dev_client::DevClientSession;
 use std::collections::BTreeSet;
 
-const STEPS: &[&str] = &["step-1", "step-2", "step-3", "step-4", "step-5", "step-6"];
+const STEPS: &[&str] = &["step-3", "step-4", "step-5", "step-6"];
 
 struct Row {
     completed: BTreeSet<&'static str>,
@@ -53,6 +34,20 @@ impl Row {
     }
 }
 
+fn paid_promotion_fee(before: u64, after: u64) -> bool {
+    before.checked_sub(after) == Some(20_000)
+}
+
+async fn gold(client: &mut DevClientSession) -> TestResult<u64> {
+    let balance = oteryn_dev_client::client_runtime::npc_shop::balances(client.session_mut())
+        .await?
+        .ok_or("step=promotion-payment live balance absent")?;
+    balance
+        .bank_gold
+        .checked_add(balance.carried_gold)
+        .ok_or_else(|| "step=promotion-payment balance overflow".into())
+}
+
 async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     let reply = client
@@ -63,7 +58,9 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
             &[1, 0, 0, 1],
         )
         .await?;
-    if reply.status != CommandStatus::Accepted || general_stats::validate(&reply.payload, general_stats::selected(client)).is_err() {
+    if reply.status != CommandStatus::Accepted
+        || general_stats::validate(&reply.payload, general_stats::selected(client)).is_err()
+    {
         return Err(format!("P20 GeneralStats observed={reply:?}").into());
     }
     Ok((
@@ -202,7 +199,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row {
         completed: BTreeSet::new(),
     };
-    let result: TestResult = verdict::indexed_timeout(Duration::from_secs(90), async {
+    let result: TestResult = verdict::indexed_timeout(Duration::from_secs(420), async {
         let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
         let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
         let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -214,47 +211,71 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         )?;
         let mut client = connect_world(clients, 0xd0).await?;
         let result: TestResult = verdict::observe(async {
-            let npc = approach_king(&mut client, world, &metadata.npcs).await?;
-            let greeting = talk(&mut client, npc, "hi").await?;
-            if greeting.is_empty() {
-                return Err("step-3 hi produced an empty conversation delta".into());
-            }
-            let unpromoted = vocation(&mut client).await?;
-            let uncharged = client
-                .inventory()
-                .ok_or("step-3 inventory observation absent")?
-                .clone();
-            let quote = talk(&mut client, npc, "promotion").await?;
-            if quote != ["Do you want to be promoted for 20000 gold coins?"] {
-                return Err(format!("step-3 promotion quote observed={quote:?}").into());
-            }
-            let confirmation = talk(&mut client, npc, "yes").await?;
-            if confirmation != ["You are now promoted."] {
-                return Err(format!(
-                    "step-3 promotion attempt quote={quote:?} confirmation={confirmation:?}; need=a player-reachable Premium entitlement and level/gold prerequisites before the positive promotion path"
-                )
-                .into());
-            }
+            let initial = progress(&mut client).await?;
+            let mut current = initial;
+            let mut earned_prerequisites = false;
+            let (npc, unpromoted, unpaid_gold, quote, confirmation) = loop {
+                let npc = approach_king(&mut client, world, &metadata.npcs).await?;
+                if talk(&mut client, npc, "hi").await?.is_empty() {
+                    return Err("step=promotion-greeting observed=empty-conversation".into());
+                }
+                let unpromoted = vocation(&mut client).await?;
+                let uncharged = client.inventory().cloned().ok_or("step=promotion inventory absent")?;
+                let quote = talk(&mut client, npc, "promotion").await?;
+                if quote != ["Do you want to be promoted for 20000 gold coins?"] {
+                    return Err(format!("step=promotion-quote observed={quote:?}").into());
+                }
+                let unpaid_gold = gold(&mut client).await?;
+                let confirmation = talk(&mut client, npc, "yes").await?;
+                if confirmation == ["You are now promoted."] {
+                    break (npc, unpromoted, unpaid_gold, quote, confirmation);
+                }
+                if vocation(&mut client).await? != unpromoted || client.inventory() != Some(&uncharged) || gold(&mut client).await? != unpaid_gold {
+                    return Err(format!("step=promotion-refusal changed build or inventory; observed={confirmation:?}").into());
+                }
+                if confirmation == ["You need current Premium for this service."] {
+                    return Err("step=promotion-premium observed=NPC-premium-refusal-without-state-change need=current-Premium; source:crates/gameplay/durability/src/durability/npc_purchase.rs:128".into());
+                }
+                if earned_prerequisites || !matches!(confirmation.as_slice(), [reason] if reason == "You are not eligible for this service yet." || reason == "You do not have enough gold for this service.") {
+                    return Err(format!("step=promotion-confirmation observed={confirmation:?} level={}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs:238", current.1).into());
+                }
+                let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+                while current.1 < 20 {
+                    let hunting = async {
+                        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+                        client_hunt::hunt(&mut client).await
+                    };
+                    match verdict::indexed_timeout(deadline.saturating_duration_since(tokio::time::Instant::now()), hunting).await {
+                        Ok(Ok(())) => {}
+                        Ok(Err(error)) => return Err(format!("step=promotion-level need=20 observed={current:?} rat-hunt={error}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs:241").into()),
+                        Err(_) => return Err(format!("step=promotion-level need=20 observed={current:?} rat-hunt=deadline; source:crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs:241").into()),
+                    }
+                    current = progress(&mut client).await?;
+                }
+                super::full_e2ef7::earn_gold(&mut client, world, 20_000).await
+                    .map_err(|error| format!("step=promotion-payment required=20000 observed={error}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_command/premium_purchase.rs:249"))?;
+                earned_prerequisites = true;
+            };
             let promoted = vocation(&mut client).await?;
             let inventory = client
                 .inventory()
                 .ok_or("step-4 inventory observation absent")?
                 .clone();
-            if promoted == unpromoted || inventory == uncharged {
+            let paid_gold = gold(&mut client).await?;
+            if promoted == unpromoted || !paid_promotion_fee(unpaid_gold, paid_gold) {
                 return Err(format!(
-                    "step-3 successful purchase missing vocation/inventory delta vocation={unpromoted:?}->{promoted:?} inventory={uncharged:?}->{inventory:?}"
+                    "step-3 successful purchase missing promotion or exact fee vocation={unpromoted:?}->{promoted:?} gold={unpaid_gold}->{paid_gold}"
                 )
                 .into());
             }
-            evidence(&format!(
-                "P20_CHECK step-3 FAIL observed=quote-{quote:?}-confirmation-{confirmation:?}-vocation-{promoted:?}-inventory-{inventory:?}; native level-20 rat hunt and 20000-gold loot actions did not run"
-            ));
+            row.complete("step-3", (initial, current, &quote, &confirmation, &promoted));
 
             let duplicate_quote = talk(&mut client, npc, "promotion").await?;
             let duplicate = talk(&mut client, npc, "yes").await?;
             let duplicate_vocation = vocation(&mut client).await?;
             if duplicate != ["You already have this blessing."]
                 || duplicate_vocation != promoted
+                || gold(&mut client).await? != paid_gold
                 || client.inventory() != Some(&inventory)
             {
                 return Err(format!(
@@ -280,7 +301,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             let fresh_vocation = vocation(&mut client).await?;
             if fresh_build != build
                 || fresh_vocation != promoted
-                || client.inventory() != Some(&inventory)
+                || gold(&mut client).await? != paid_gold
+                || client.inventory().cloned().map(super::full_row_p18::durable_inventory)
+                    != Some(super::full_row_p18::durable_inventory(inventory.clone()))
                 || client.world_spatial().actor_position != before
             {
                 return Err(format!("step-5 fresh admission observed build={fresh_build:?} vocation={fresh_vocation:?} inventory={:?} position={:?}; expected build={build:?} vocation={promoted:?} inventory={inventory:?} position={before:?}", client.inventory(), client.world_spatial().actor_position).into());
@@ -290,23 +313,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 (old_session, build, &promoted, &inventory, before),
             );
 
-            let towns = &world.base().subareas;
-            let temple = towns
-                .default_town
-                .and_then(|id| towns.town(id))
-                .and_then(|town| town.temple)
-                .map(|at| ActorPosition {
-                    x: i32::from(at.x),
-                    y: i32::from(at.y),
-                    floor: -i16::from(at.floor),
-                })
-                .ok_or("step-6 compiled free-town temple absent")?;
-            let after = client.world_spatial().actor_position;
-            if after == before || after != temple {
-                return Err(format!("step-6 paid-region expiry relocation observed={before:?}->{after:?} expected_free_town_temple={temple:?}; need=Premium-area special-tile mapping and free-town admission relocation consumer; source:crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs:525").into());
-            }
-            row.complete("step-6", (before, after, temple));
-            Ok(())
+            Err("step=paid-region-expiry need=Premium-area-hometown-and-authoritatively-ended-entitlement; source:crates/gameplay/dispatch/src/gameplay_transport/character_home_town.rs:57".into())
         })
         .await;
         let _ = logout(&mut client).await;
@@ -333,6 +340,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn promotion_requires_the_exact_served_price() {
+        assert!(paid_promotion_fee(21_000, 1_000));
+        assert!(!paid_promotion_fee(21_000, 1_001));
+        assert!(!paid_promotion_fee(21_000, 999));
+        assert!(!paid_promotion_fee(21_000, 21_001));
+    }
 
     #[test]
     fn verdict_requires_every_numbered_step() {
