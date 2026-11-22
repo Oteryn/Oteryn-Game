@@ -448,6 +448,7 @@ fn scenario_in_world(
                 use_range: 1,
                 disguise: None,
                 selector: Selector {
+                    target_definition: None,
                     position_aliases: Vec::new(),
                     native: None,
                     ordinal: None,

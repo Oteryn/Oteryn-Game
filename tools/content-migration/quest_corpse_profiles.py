@@ -134,6 +134,10 @@ def decay_closure(roots, xml):
                     or set(attributes) - {'duration', 'decayto', 'stopduration', 'containersize',
                                           'weight', 'fluidsource', 'description', 'primarytype'}):
                 raise ValueError('QUEST_CORPSE_UNSUPPORTED_SOURCE_SYSTEM')
+            # Crystal 201189f8 items.xml:20777–20802 ends Koshei's decay
+            # chain at untimed remains. The pinned Canary XML agrees.
+            if root == 7535 and current == 7540 and attributes == {'decayto': '0'}:
+                break
             if ('duration' not in attributes or 'decayto' not in attributes
                     or not 1 <= int(attributes['duration']) <= 366 * 24 * 60 * 60
                     or attributes.get('stopduration', '0') not in ('0', 'false')):

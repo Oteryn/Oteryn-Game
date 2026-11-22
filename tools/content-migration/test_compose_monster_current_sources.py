@@ -26,6 +26,17 @@ class ComposeTests(unittest.TestCase):
         # The pre-existing final binder supplies canonical attack closures and
         # explicit nullable MRL defaults. Preserve the entire qualified record.
         expected_adopted = json.loads(bind_definitions(self.root, self.adopted)[compose.CREATURES])
+        # The only intended non-melee change: Koshei's fresh remains (Crystal 201189f),
+        # in the profile and in its attack-definition copy.
+        koshei_key = "oteryn:creature.koshei_the_deathless"
+        koshei = next(row for row in expected_adopted["records"]
+                      if row["profile"]["target"]["key"] == koshei_key)
+        profiles = [koshei["profile"], next(profile for profile in koshei["attack_definitions"]["profiles"]
+                                           if profile["target"]["key"] == koshei_key)]
+        for profile in profiles:
+            profile["data"]["profile"]["details"]["corpse_item"] = {
+                "family": "Item", "key": "oteryn:item.tibia.i7535", "revision": "definition-r1",
+            }
         adopted = compose.indexed(expected_adopted)
         incoming = compose.indexed(json.loads(self.current[compose.CREATURES]))
         baseline = compose.indexed(json.loads(self.base[compose.CREATURES]))

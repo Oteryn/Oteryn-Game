@@ -4,6 +4,7 @@ pub(super) mod carrot;
 pub(crate) mod character_requirements;
 mod completed_quests;
 pub(super) mod completion;
+mod definition_target;
 mod ground_read;
 pub(crate) mod ground_stack;
 #[path = "quest_world_callback_npc_input.rs"]
@@ -11,6 +12,7 @@ mod npc_input;
 mod selected_tool;
 mod tool_reads;
 pub use selected_tool::QuestWorldToolContext;
+pub(crate) use selected_tool::SelectedQuestTool;
 
 /// Test-only entry for the lifted PostgreSQL harness; the opaque transaction
 /// authority and all production Ground locks are checked by the same participant.
@@ -735,6 +737,9 @@ async fn consume_inputs(
             return Ok(false);
         }
         lock_location(tx, &input).await?;
+        if !definition_target::require(tx, permit, fence, callback, context).await? {
+            return Ok(false);
+        }
         if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
             // Crystal actions_sacrifice.lua:15-18: stage one needs a real
             // carried tear but consumes none. All other stages use the same

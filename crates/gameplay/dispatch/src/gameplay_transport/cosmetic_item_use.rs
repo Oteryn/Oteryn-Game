@@ -373,7 +373,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        self.use_carried_quest_item_selected(actor, command, intent, source, None, true)
+        self.use_carried_quest_item_selected(actor, command, intent, source, None, true, None)
             .await
     }
 
@@ -385,11 +385,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
-        self.use_carried_quest_item_selected(actor, command, intent, source, target, false)
+        self.use_carried_quest_item_selected(actor, command, intent, source, target, false, None)
             .await
     }
 
-    async fn use_carried_quest_item_selected(
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "reuses an already resolved quest USE admission"
+    )]
+    pub(super) async fn use_carried_quest_item_selected(
         &self,
         actor: ExactActorRef,
         command: UseCommand,
@@ -397,6 +401,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
         disguise_only: bool,
+        prepared: Option<super::quest_tool_use::CarriedQuestUseRead<'_>>,
     ) -> Result<Option<UseOutcome>, ()> {
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
@@ -412,33 +417,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return Ok(None);
         }
-        let command_ref = CommandRef::new(
-            command.game_session_id,
-            CommandId::new(command.command_id).map_err(|_| ())?,
-        );
-        let encoded =
-            oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
         let outcome = |disposition| UseOutcome {
             disposition,
             ..UseOutcome::rejected()
         };
-        if let Some(matches) = self
-            .root
-            .reconcile_quest_carried_use(
-                self.character,
-                item_fence.character_id,
-                command_ref,
-                encoded.clone(),
-            )
-            .await
-            .map_err(|_| ())?
-        {
-            return Ok(Some(outcome(if matches {
-                UseDisposition::Committed
-            } else {
-                UseDisposition::Rejected
-            })));
-        }
+        let (command_ref, encoded, inventory) = if let Some(prepared) = prepared {
+            (prepared.command, prepared.encoded, Some(prepared.inventory))
+        } else {
+            let command_ref = CommandRef::new(
+                command.game_session_id,
+                CommandId::new(command.command_id).map_err(|_| ())?,
+            );
+            let encoded = oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent)
+                .map_err(|_| ())?;
+            if let Some(matches) = self
+                .root
+                .reconcile_quest_carried_use(
+                    self.character,
+                    item_fence.character_id,
+                    command_ref,
+                    encoded.clone(),
+                )
+                .await
+                .map_err(|_| ())?
+            {
+                if matches && intent.use_with_map_item.is_some() {
+                    self.refresh_quest_session(command.game_session_id, false)
+                        .await;
+                }
+                return Ok(Some(outcome(if matches {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                })));
+            }
+            (command_ref, encoded, None)
+        };
         // Recipe receipts remain replayable after both inventory handles retire.
         // Fresh map tools and unowned World targets belong to their existing owner.
         if matches!(
@@ -456,12 +470,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_), None) => None,
             _ => return Ok(None),
         };
-        let Ok(inventory) = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, item_fence)
-            .await
-        else {
-            return Ok(None);
+        let retained;
+        let inventory = match inventory {
+            Some(inventory) => inventory,
+            None => {
+                let Ok(read) = self
+                    .root
+                    .read_item_use_inventory(self.character, self.holder, item_fence)
+                    .await
+                else {
+                    return Ok(None);
+                };
+                retained = read;
+                &retained
+            }
         };
         let Some(item) = inventory
             .backpack

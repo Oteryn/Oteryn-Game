@@ -1118,6 +1118,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_koshei_corpse(actor, command, item).await {
+            return Some(outcome);
+        }
         self.use_ladder_handle(actor, command, item).await
     }
 
@@ -1255,11 +1258,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
-        if let Some(outcome) = self
-            .use_carried_quest_item(actor, command, &intent, source, corpse)
-            .await?
-        {
-            return Ok(Some(outcome));
+        if matches!(source, Some(item_view::ItemKey::Instance(_))) {
+            return self
+                .use_carried_quest_item(actor, command, &intent, source, corpse)
+                .await;
         }
         self.use_carried_quest_item_with_target(actor, command, &intent, source, target)
             .await
