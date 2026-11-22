@@ -40,11 +40,15 @@ async fn exercise(
     let quest = "oteryn:quest.what_a_foolish_quest";
     let track = "oteryn:quest-progress/what-a-foolish/cat-basket";
     let source = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/what_a_foolish_quest/action_cat_basket.lua:18-39";
+    let recipe_sha256: String = <sha2::Sha256 as sha2::Digest>::digest(source)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
         "schema": 1,
         "quests": [{
             "quest": quest,
-            "recipe_sha256": format!("{:x}", <sha2::Sha256 as sha2::Digest>::digest(source)),
+            "recipe_sha256": recipe_sha256,
             "sources": [source],
             "tracks": [{"key": track, "initial": 0, "minimum": 0, "maximum": 1}],
             "stages": [{"key": "cat-basket", "completes": false, "trigger": {

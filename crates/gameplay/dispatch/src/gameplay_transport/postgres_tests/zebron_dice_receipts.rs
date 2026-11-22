@@ -46,13 +46,17 @@ fn round(name: &str, minimum: i64, maximum: i64, next: i64) -> serde_json::Value
 
 async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
+    admitted: &mut AdmittedSession,
     harness: &Harness,
 ) -> TestResult {
+    let recipe_sha256: String = <sha2::Sha256 as sha2::Digest>::digest(SOURCE)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
     let bindings = Bindings::parse(&serde_json::to_vec(&serde_json::json!({
         "schema": 1, "quests": [{
             "quest": "oteryn:quest.authored.kissing_a_pig_quest",
-            "recipe_sha256": format!("{:x}", <sha2::Sha256 as sha2::Digest>::digest(SOURCE)),
+            "recipe_sha256": recipe_sha256,
             "sources": [SOURCE],
             "tracks": [{"key": TRACK, "initial": 0, "minimum": 0, "maximum": 3}],
             "stages": [{"key": "zebron-dice", "completes": false, "trigger": {
