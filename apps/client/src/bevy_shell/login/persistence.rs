@@ -67,7 +67,9 @@ impl LoginState {
     }
 
     pub(in crate::bevy_shell) fn save_pending(&self) -> bool {
-        self.saving.is_some()
+        self.saving
+            .as_ref()
+            .is_some_and(|save| save.revision == self.revision)
     }
 
     pub(in crate::bevy_shell) fn set_pending_assets(&mut self, assets: Option<OsString>) {

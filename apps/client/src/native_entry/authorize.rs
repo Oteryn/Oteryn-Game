@@ -458,11 +458,12 @@ impl crate::NativeLoginConfig {
         self.device_sessions
             .block_remembered()
             .map_err(|error| error.to_string())?;
-        if let Some(path) = &self.preference_path {
-            crate::play::MiscellaneousPreferences::disable_remember_device_at(
+        if let Some(path) = &self.preference_path
+            && let Err(error) = crate::play::MiscellaneousPreferences::disable_remember_device_at(
                 &path.with_extension("session-options.json"),
             )
-            .map_err(|error| error.to_string())?;
+        {
+            eprintln!("Could not save the remember-device choice: {error}");
         }
         Ok(())
     }
