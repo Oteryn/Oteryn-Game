@@ -28,13 +28,16 @@ struct Row {
 
 impl Row {
     fn fail(self, observed: impl std::fmt::Display) {
+        let observed = observed.to_string();
         evidence(&format!(
-            "W15D_FAIL step={} observed={observed}",
+            "W15D_GAP step={} observed={observed}",
             self.step
         ));
         evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=W15d.full status=FAIL seconds={:.3}",
-            self.started.elapsed().as_secs_f64()
+            "SEAM_EVIDENCE e2e_all scenario=W15d.full status=FAIL seconds={:.3} evidence=step-{}:{}",
+            self.started.elapsed().as_secs_f64(),
+            self.step,
+            observed.replace(char::is_whitespace, "_")
         ));
     }
 }
@@ -113,6 +116,10 @@ fn shrine_target(world: &BundleWorld) -> TestResult<WorldObjectTarget> {
     })
 }
 
+fn shrine_revision(base: u64, published: Option<u64>) -> u64 {
+    published.unwrap_or(base).max(base)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -152,9 +159,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
 
     row.step = "repeat-use-refusal";
+    let observed_revision = client.world_object_overlay().iter()
+        .find(|entry| entry.placement == target.placement)
+        .map(|entry| entry.revision);
+    let revision = shrine_revision(target.expected_revision, observed_revision);
     let second = client
         .session_mut()
-        .use_object(&target.placement, target.expected_revision)
+        .use_object(&target.placement, revision)
         .await?;
     if second.status != CommandStatus::Rejected || second.disposition != UseDisposition::Rejected {
         return Err(format!(
@@ -184,4 +195,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("fresh admission logout refused".into());
     }
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn journey_regression_replays_with_the_published_shrine_revision() {
+        assert_eq!(shrine_revision(2, None), 2);
+        assert_eq!(shrine_revision(2, Some(3)), 3);
+    }
 }

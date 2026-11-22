@@ -18,9 +18,8 @@
 //!    require the committed selections/timers and prior loot custody to survive the new session.
 
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind};
+use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{charm_progression as charm, daily_boost, prey};
-use oteryn_protocol_oteryn::attack as attacks;
 use std::collections::BTreeSet;
 
 const STEPS: &[u8] = &[1, 2, 3, 4, 5, 6, 7];
@@ -47,6 +46,9 @@ impl Row {
         let complete = STEPS.iter().all(|step| self.ran.contains(step) && self.passed.contains(step));
         let executed = self.ran.iter().map(u8::to_string).collect::<Vec<_>>().join(",");
         let detail = if complete { format!("steps={executed}") } else { format!("steps={executed};{}", self.failures.join("|")) };
+        for failure in &self.failures {
+            evidence(&format!("W22B_GAP {failure}"));
+        }
         evidence(&format!("e2e_all scenario=W22b.full status={} seconds={:.3} evidence={}", if complete { "PASS" } else { "FAIL" }, self.started.elapsed().as_secs_f64(), sanitize(&detail)));
     }
 }
@@ -82,8 +84,41 @@ async fn charm_request(client: &mut DevClientSession, action: charm::CharmProgre
     charm::decode_charm_progression_reply(&reply.payload).map_err(|e| format!("charm reply:{e:?}").into())
 }
 
+fn rat_loot_bonus(creature: &str, bonus: u8, percent: u8, seconds: u32) -> bool {
+    creature == "oteryn:creature.rat" && bonus == 4 && percent > 0 && seconds > 0
+}
+
+fn gut_and_rat_indexes() -> TestResult<(std::num::NonZeroU32, std::num::NonZeroU32)> {
+    let catalogue = crate::content::charm_source::CanonicalCharmCatalogue::embedded()
+        .map_err(|error| format!("Gut catalogue: {error:?}"))?;
+    let gut = catalogue.catalogue().definitions()
+        .position(|definition| definition.key.as_str() == "oteryn:charm.gut")
+        .ok_or("Gut absent from the canonical Charm catalogue")?;
+    let races = crate::content::canonical_bestiary_rows(crate::content::ProjectEvidenceLimits {
+        max_documents: 5,
+        max_document_bytes: 2_500_000,
+        max_total_bytes: 8_000_000,
+        max_json_depth: 10,
+        max_decoded_fields: 65_000,
+        max_string_bytes: 1_000_000,
+        max_locator_bytes: 128,
+        max_locator_segments: 5,
+        max_reference_records: 4096,
+        max_import_records: 1,
+        max_reimport_states: 1,
+    }).map_err(|error| format!("Rat Bestiary catalogue: {error:?}"))?;
+    let rat = races.iter().position(|(race, _)| race.key() == "oteryn:creature.rat")
+        .ok_or("Rat absent from the canonical Bestiary catalogue")?;
+    Ok((
+        std::num::NonZeroU32::try_from(u32::try_from(gut + 1)?)?,
+        std::num::NonZeroU32::try_from(u32::try_from(rat + 1)?)?,
+    ))
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let spawns = &metadata.spawns;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_character(clients, 0xd2, 1).await?;
@@ -96,43 +131,94 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         if listed.status != 0 { return Err(format!("prey ListReroll status={}", listed.status).into()); }
         let index = listed.slots.iter().find(|s| s.slot == slot).and_then(|s| s.creatures.iter().position(|key| key == "oteryn:creature.rat")).map(|i| i + 1).ok_or("prey reroll did not offer oteryn:creature.rat")?;
         let reply = prey_request(&mut client, &prey::Request::Select { slot, index: u8::try_from(index)? }).await?;
-        let active = reply.slots.iter().find(|s| s.slot == slot && s.selected == "oteryn:creature.rat" && s.bonus != 0).ok_or_else(|| format!("prey Select status={} missing active rat loot slot", reply.status))?;
+        let active = reply.slots.iter().find(|s| {
+            s.slot == slot
+                && s.state == 2
+                && rat_loot_bonus(&s.selected, s.bonus, s.percent, s.hunting_seconds)
+        }).filter(|_| reply.status == 0).ok_or_else(|| {
+            format!("prey Select status={} missing active rat loot bonus", reply.status)
+        })?;
         selected = Some((active.slot, active.selection_epoch, active.hunting_seconds));
         Ok(())
     }.await;
     row.observed(1, step1);
 
-    let first_loot = hunt_rat(&mut client, world).await;
-    row.observed(2, match first_loot { Ok(count) => { let after = prey_request(&mut client, &prey::Request::Query).await?; let expected = selected.ok_or("step 1 produced no selected prey state")?; let slot = after.slots.iter().find(|s| s.slot == expected.0 && s.selection_epoch == expected.1).ok_or("prey selection was not retained through kill")?; if slot.hunting_seconds > expected.2 { Err("prey hunting clock increased after credited kill".into()) } else { evidence(&format!("W22B_LOOT prey corpse_entries={count}")); Ok(()) } }, Err(e) => Err(e) });
+    let step2 = async {
+        let count = hunt_rat(&mut client, world, spawns).await?;
+        let after = prey_request(&mut client, &prey::Request::Query).await?;
+        let (id, epoch, seconds) = selected.ok_or("step 1 produced no selected prey state")?;
+        let slot = after.slots.iter().find(|slot| {
+            slot.slot == id && slot.selection_epoch == epoch
+        }).ok_or("prey selection was not retained through kill")?;
+        if slot.hunting_seconds > seconds {
+            return Err("prey hunting clock increased after credited kill".into());
+        }
+        evidence(&format!("W22B_LOOT prey corpse_entries={count}"));
+        Ok(())
+    }.await;
+    row.observed(2, step2);
 
     let step3 = async {
         let reply = command(&mut client, daily_boost::CAPABILITY_DAILY_BOOST_V1, daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY, &[]).await?;
         if reply.status != CommandStatus::Accepted { return Err(format!("daily boost query status={:?} payload={:?}", reply.status, reply.payload).into()); }
         let key = decode_boosted_creature(&reply.payload)?;
-        let count = hunt_rat(&mut client, world).await?;
-        if key != "oteryn:creature.rat" { return Err(format!("boosted creature {key} is not the reachable rat actually killed; corpse_entries={count}").into()); }
-        evidence(&format!("W22B_LOOT daily-boost corpse_entries={count}")); Ok(())
+        travel_to_spawn(&mut client, world, spawns, &key).await
+            .map_err(|error| format!("daily boost selects {key}; authored spawn route failed: {error}"))?;
+        let profiles: serde_json::Value = serde_json::from_slice(&native_input()?.creature_profiles.bytes)?;
+        let name = profiles["records"].as_array().and_then(|records| {
+            records.iter().find_map(|record| {
+                let profile = &record["profile"];
+                if profile["target"]["key"].as_str() != Some(key.as_str()) {
+                    return None;
+                }
+                profile["data"]["profile"]["details"]["display_name"].as_str()
+            })
+        }).ok_or_else(|| format!("daily boost selects {key}; pinned creature display name absent"))?;
+        let count = super::full_row_w22a::kill_and_open(&mut client, name).await?.len();
+        evidence(&format!("W22B_LOOT daily-boost creature={key} corpse_entries={count}"));
+        Ok(())
     }.await;
     row.observed(3, step3);
 
     let step4 = async {
         let before = charm_request(&mut client, charm::CharmProgressionAction::Query).await?;
-        // The admitted catalogue is ordered wound, zap, Gut, bless; the wire intentionally
-        // projects bounded catalogue indices rather than production keys.
-        let gut = before.charms.charms.iter().find(|state| state.charm.get() == 3).copied().ok_or("Gut index 3 absent from served charm catalogue")?;
-        let unlock = charm_request(&mut client, charm::CharmProgressionAction::Unlock { charm: gut.charm, expected_stage: gut.unlocked_stage }).await?;
-        let assign = charm_request(&mut client, charm::CharmProgressionAction::Assign { charm: gut.charm, race: std::num::NonZeroU32::new(1).ok_or("race index")? }).await?;
+        let (gut, rat) = gut_and_rat_indexes()?;
+        let state = before.charms.charms.iter().find(|state| state.charm == gut)
+            .ok_or("Gut missing from the served Charm progression view")?;
+        let unlock = charm_request(&mut client, charm::CharmProgressionAction::Unlock {
+            charm: gut,
+            expected_stage: state.unlocked_stage,
+        }).await?;
+        if unlock.outcome != charm::CharmProgressionOutcome::Unlock(
+            oteryn_protocol_oteryn::charm::CharmUnlockDisposition::Unlocked,
+        ) && (unlock.charms != before.charms || unlock.bestiary != before.bestiary) {
+            return Err(format!("Gut unlock refusal mutated state: unlock={:?}", unlock.outcome).into());
+        }
+        let assign = charm_request(&mut client, charm::CharmProgressionAction::Assign {
+            charm: gut,
+            race: rat,
+        }).await?;
         let after = charm_request(&mut client, charm::CharmProgressionAction::Query).await?;
-        let committed = after.charms.charms.iter().find(|state| state.charm == gut.charm).is_some_and(|state| state.assigned_race.is_some() && state.effect_active);
-        if !committed { if before != after { return Err(format!("Gut refusal mutated state: unlock={:?} assign={:?}", unlock.outcome, assign.outcome).into()); } return Err(format!("Gut refused without mutation: unlock={:?} assign={:?}; need player-earned Bestiary charm points/race stage", unlock.outcome, assign.outcome).into()); }
-        let count = hunt_rat(&mut client, world).await?; evidence(&format!("W22B_LOOT gut corpse_entries={count}")); Ok(())
+        let committed = after.charms.charms.iter().find(|state| state.charm == gut)
+            .is_some_and(|state| state.assigned_race == Some(rat) && state.effect_active);
+        if !committed {
+            if unlock.charms != after.charms || unlock.bestiary != after.bestiary {
+                return Err(format!("Gut assignment refusal mutated state: assign={:?}", assign.outcome).into());
+            }
+            return Err(format!(
+                "Gut could not be activated on Rat: unlock={:?} assign={:?}; need player-earned Minor Charm Echoes and the Rat Bestiary discovery stage",
+                unlock.outcome, assign.outcome
+            ).into());
+        }
+        let count = hunt_rat(&mut client, world, spawns).await?;
+        evidence(&format!("W22B_LOOT gut corpse_entries={count}"));
+        Ok(())
     }.await;
     row.observed(4, step4);
 
-    let step5 = hunt_rat(&mut client, world).await.map(|count| { evidence(&format!("W22B_LOOT wealth-second-roll corpse_entries={count}")); }).and_then(|_| Err("Wealth Duplex second roll was attempted by a real kill but no legitimately acquired active concoction/state delta was observed; need an obtainable player item route".into()));
-    row.observed(5, step5);
+    row.observed(5, Err("need a starter acquisition and USE route for Wealth Duplex (oteryn:item.tibia.i36727) before its independent loot roll can be observed".into()));
 
-    let step6 = async { let stamina = stamina(&mut client).await?; let count = hunt_rat(&mut client, world).await?; if stamina > 840 { return Err(format!("low-stamina kill executed at served stamina={stamina}, corpse_entries={count}; need <=840 obtained through ordinary hunting").into()); } else if count != 0 { return Err(format!("low-stamina corpse was not empty: stamina={stamina} entries={count}").into()); } Ok(()) }.await;
+    let step6 = async { let stamina = stamina(&mut client).await?; let count = hunt_rat(&mut client, world, spawns).await?; if stamina > 840 { return Err(format!("low-stamina kill executed at served stamina={stamina}, corpse_entries={count}; need <=840 obtained through ordinary hunting").into()); } else if count != 0 { return Err(format!("low-stamina corpse was not empty: stamina={stamina} entries={count}").into()); } Ok(()) }.await;
     row.observed(6, step6);
 
     let step7 = async { let prey_before = prey_request(&mut client, &prey::Request::Query).await?; let charm_before = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_before = stamina(&mut client).await?; release(&mut client).await?; client = connect_character(clients, 0xd3, 1).await?; let prey_after = prey_request(&mut client, &prey::Request::Query).await?; let charm_after = charm_request(&mut client, charm::CharmProgressionAction::Query).await?; let stamina_after = stamina(&mut client).await?; if prey_before != prey_after || charm_before != charm_after || stamina_before != stamina_after { return Err(format!("fresh admission durable delta mismatch: prey={} charm={} stamina={stamina_before}->{stamina_after}", prey_before != prey_after, charm_before != charm_after).into()); } Ok(()) }.await;
@@ -152,20 +238,13 @@ async fn stamina(client: &mut DevClientSession) -> TestResult<u16> {
     Ok(u16::from_be_bytes([reply.payload[41], reply.payload[42]]))
 }
 
-async fn hunt_rat(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<usize> {
-    let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| world.base().tile(at.x, at.y, at.floor).is_some_and(|t| !t.protection_zone()) && client.world_entities().is_some_and(|entities| entities.iter().any(|e| e.kind == EntityKind::Creature && e.position.floor == -i16::from(at.floor) && e.position.x.abs_diff(i32::from(at.x)).max(e.position.y.abs_diff(i32::from(at.y))) <= 1))).ok_or("no reachable visible rat")?;
-    walk(client, world, &path).await?;
-    let at = client.world_spatial().actor_position;
-    let target = client.world_entities().and_then(|es| es.iter().find(|e| e.kind == EntityKind::Creature && e.position.floor == at.floor && e.position.x.abs_diff(at.x).max(e.position.y.abs_diff(at.y)) <= 1)).copied().ok_or("no adjacent creature after walk")?;
-    let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
-    if attack.disposition != attacks::AttackIntentDisposition::Ok { return Err(format!("attack refusal:{attack:?}").into()); }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
-    loop { client.service_liveness(Duration::from_millis(50)).await?; client.take_events(); if !client.world_entities().is_some_and(|es| es.iter().any(|e| e.entity == target.entity)) { break; } else if tokio::time::Instant::now() >= deadline { return Err("kill timeout after accepted attack".into()); } }
-    client.session_mut().attack_target(None).await?;
-    let corpse = client.world_entities().and_then(|es| es.iter().find(|e| e.kind == EntityKind::Corpse && e.position == target.position)).and_then(|e| match e.detail { EntityDetail::Object { item_handle, .. } => item_handle, _ => None }).ok_or("death emitted no corpse handle")?;
-    client.use_item(corpse).await?;
-    Ok(client.open_container().ok_or("corpse USE emitted no container frame")?.entries.len())
+async fn hunt_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult<usize> {
+    travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
+    Ok(super::full_row_w22a::kill_and_open(client, "Rat").await?.len())
 }
 
 async fn release(client: &mut DevClientSession) -> TestResult {
@@ -176,6 +255,21 @@ async fn release(client: &mut DevClientSession) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn gut_assignment_uses_current_canonical_indices() -> TestResult {
+        let (gut, rat) = gut_and_rat_indexes()?;
+        assert_ne!(gut.get(), 3);
+        assert_ne!(rat.get(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn journey_regression_requires_a_live_rat_loot_bonus() {
+        assert!(rat_loot_bonus("oteryn:creature.rat", 4, 20, 60));
+        assert!(!rat_loot_bonus("oteryn:creature.rat", 3, 20, 60));
+        assert!(!rat_loot_bonus("oteryn:creature.rat", 4, 20, 0));
+    }
+
     #[test]
     fn pass_requires_every_executed_step() { let mut row = Row::new(); row.ran.extend([1, 2, 3, 4, 7]); row.passed.extend([1, 2, 3, 4, 7]); assert!(!STEPS.iter().all(|s| row.ran.contains(s) && row.passed.contains(s))); }
     #[test]

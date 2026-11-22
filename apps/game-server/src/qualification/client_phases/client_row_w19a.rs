@@ -1,4 +1,4 @@
-//! W19a client replay capture: the Character carries a blue surprise bag (bought from the
+//! W19a client replay capture: the Character carries a red Christmas bundle (bought from the
 //! Messenger of Santa by the full row), is refused a USE-WITH-position on it, then uses it. The
 //! client-visible reward is the character inventory: the before and after views are the
 //! session-owned views read through `DevClientSession::inventory`, re-encoded with the production
@@ -9,7 +9,7 @@ use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::{item_view, world_object as use_wire};
 use std::collections::BTreeMap;
 
-const BAG_ID: u32 = 6506;
+use super::full_row_w19a::{BAG_ID, random_outcome_matches};
 
 fn capture(name: &str, bytes: &[u8]) {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
@@ -45,7 +45,7 @@ async fn wait_inventory(client: &mut DevClientSession) -> TestResult<oteryn_dev_
             }
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("blue surprise bag inventory delta timeout".into());
+            return Err("red Christmas bundle inventory delta timeout".into());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
     }
@@ -60,19 +60,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let rule = rules
         .iter()
         .find(|rule| rule.item_id == BAG_ID)
-        .ok_or("step=rules blue surprise bag rule absent")?;
+        .ok_or("step=rules red Christmas bundle rule absent")?;
     let rewards = rule
         .rewards
         .iter()
-        .map(|reward| provisioning::item_reference(&index, reward.item_id).map(std::num::NonZeroU32::get))
-        .collect::<TestResult<Vec<u32>>>()?;
+        .map(|reward| {
+            provisioning::item_reference(&index, reward.item_id)
+                .map(|reference| (reference.get(), (reward.minimum, reward.maximum)))
+        })
+        .collect::<TestResult<BTreeMap<_, _>>>()?;
     let before = client.inventory().cloned().ok_or("step=inventory snapshot absent")?;
     let bag = before
         .entries
         .iter()
         .find(|item| item.item_definition_ref == bag_ref)
         .copied()
-        .ok_or("step=carry the Character holds no blue surprise bag")?;
+        .ok_or("step=carry the Character holds no red Christmas bundle")?;
     let before_payload = item_view::encode_character_inventory_with_equip_drop(&before, true)
         .map_err(|error| format!("inventory encode: {error:?}"))?;
     let held_before = units(&before);
@@ -112,18 +115,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let after = wait_inventory(&mut client).await?;
     let held_after = units(&after);
-    let changed: Vec<u32> = held_before
-        .keys()
-        .chain(held_after.keys())
-        .copied()
-        .filter(|key| held_before.get(key) != held_after.get(key))
-        .collect::<std::collections::BTreeSet<_>>()
-        .into_iter()
-        .collect();
-    let spent = held_before.get(&bag_ref.get()).copied().unwrap_or(0) == held_after.get(&bag_ref.get()).copied().unwrap_or(0) + 1;
-    let minted: Vec<u32> = changed.iter().copied().filter(|key| *key != bag_ref.get()).collect();
-    if !spent || minted.len() != 1 || !rewards.contains(&minted[0]) || held_after.get(&minted[0]).copied().unwrap_or(0) <= held_before.get(&minted[0]).copied().unwrap_or(0) {
-        return Err(format!("step=outcome before={held_before:?} after={held_after:?}").into());
+    let mut consumed = held_before.clone();
+    let id = bag_ref.get();
+    let remaining = consumed.get_mut(&id).ok_or("step=outcome source missing")?;
+    *remaining -= 1;
+    if *remaining == 0 {
+        consumed.remove(&id);
+    }
+    if !random_outcome_matches(&consumed, &held_after, &rewards, rule.picks) {
+        return Err(format!("step=outcome before={held_before:?} after={held_after:?} need={} distinct admitted rewards", rule.picks).into());
     }
     let after_payload = item_view::encode_character_inventory_with_equip_drop(&after, true)
         .map_err(|error| format!("inventory encode: {error:?}"))?;
@@ -134,7 +134,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         visible(&after).as_bytes(),
     );
     let _ = client.session_mut().logout().await;
-    Ok(format!("bag={} reward={}", bag_ref.get(), minted[0]))
+    Ok(format!("bundle={} rewards={}", bag_ref.get(), rule.picks))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

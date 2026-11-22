@@ -61,13 +61,24 @@ impl Journey {
             "FAIL"
         };
         let detail = match result {
-            Ok(()) => "all-eight-player-steps-observed".to_owned(),
+            Ok(()) => step_detail(self.completed),
             Err(error) => compact(&error.to_string()),
         };
+        if status == "FAIL" {
+            evidence(&format!("W17_GAP {detail}"));
+        }
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W17.full status={status} seconds={:.3} evidence={detail}",
             self.started.elapsed().as_secs_f64()
         ));
+    }
+}
+
+fn step_detail(completed: usize) -> String {
+    if completed == 8 {
+        "all-eight-player-steps-observed".to_owned()
+    } else {
+        format!("step-{}-not-observed", completed + 1)
     }
 }
 
@@ -134,6 +145,10 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn arena_entrance(at: TilePos) -> bool {
+    at.floor == -6 && (32220..=32260).contains(&at.x) && (31080..=31105).contains(&at.y)
+}
+
 async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xb7).await?;
     if !client.selected_capabilities().contains(&wire::CAPABILITY_ARENA_V1) {
@@ -198,6 +213,19 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
 
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, arena_entrance).ok_or_else(|| {
+        format!("step-4 Svargrond entrance has no starter walking route from {start:?}; need x=32220..32260,y=31080..31105,floor=6")
+    })?;
+    walk(&mut client, world, &path).await?;
     let entered = command(&mut client, ArenaAction::Enter).await?;
     if entered.disposition != ArenaDisposition::Applied
         || entered.state.active_rank == 0
@@ -216,7 +244,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let premature = command(&mut client, ArenaAction::Advance).await?;
     if premature.disposition == ArenaDisposition::WrongState && premature.state == entered.state {
         return Err(format!(
-            "step-5 Advance-after-Enter observed={premature:?}; server-needs=arena-opponent-exposed-to-native-client-combat-journey"
+            "step-5 Advance-after-Enter observed={premature:?}; need=credited-arena-opponent-kill-before-Advance"
         ).into());
     }
     Err(format!("step-5 unexpected Advance-after-Enter observed={premature:?}").into())
@@ -225,6 +253,12 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn journey_regression_names_the_first_unobserved_arena_step() {
+        assert_eq!(step_detail(3), "step-4-not-observed");
+        assert_eq!(step_detail(8), "all-eight-player-steps-observed");
+    }
 
     #[test]
     fn compact_evidence_is_one_token() {

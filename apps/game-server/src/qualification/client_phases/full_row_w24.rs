@@ -1,7 +1,8 @@
 //! W24 full-row player scenario, derived from the matrix/audit and the native
 //! ambient owner in `gameplay_transport/ambient_sounds.rs`:
 //! 1. Admit the provisioned character and require the private ambient snapshot
-//!    delta (`AmbientSound { cue_id: 0 }` outside a supported city).
+//!    delta (`AmbientSound { cue_id: 0 }` outside a supported city). If an earlier
+//!    row left the character in a city, walk out and freshly admit there first.
 //! 2. Send ordinary STEP commands along the compiled map from the current tile
 //!    into a supported city subarea; require every Moved reply and require the
 //!    city's non-zero day/night ambient replacement delta.
@@ -68,20 +69,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 fn ambient(client: &mut DevClientSession) -> Vec<u32> {
-    client
-        .take_events()
-        .into_iter()
-        .filter_map(|event| match event {
-            SessionEvent::Presentation(delta) => delta.value.into_iter().find_map(|event| {
-                if let PresentationEventKind::AmbientSound { cue_id } = event.kind {
-                    Some(cue_id)
-                } else {
-                    None
-                }
-            }),
-            _ => None,
-        })
-        .collect()
+    let mut cues = Vec::new();
+    for event in client.take_events() {
+        if let SessionEvent::Presentation(delta) = event {
+            cues.extend(delta.value.into_iter().filter_map(|event| match event.kind {
+                PresentationEventKind::AmbientSound { cue_id } => Some(cue_id),
+                _ => None,
+            }));
+        }
+    }
+    cues
 }
 
 fn zone(world: &BundleWorld, at: TilePos) -> Option<&str> {
@@ -97,6 +94,32 @@ fn zone(world: &BundleWorld, at: TilePos) -> Option<&str> {
         "venore" | "thais" | "carlin" | "edron" | "kazordoon" | "port_hope"
     )
     .then_some(city)
+}
+
+fn city_replacement(city: &str, cues: &[u32]) -> bool {
+    // Crystal 201189f8 data-global/scripts/custom/ambient_sounds.lua.
+    matches!(
+        (city, cues.last()),
+        ("venore", Some(23 | 28))
+            | ("thais" | "carlin", Some(25 | 28))
+            | ("edron", Some(3 | 36))
+            | ("kazordoon", Some(15 | 41))
+            | ("port_hope", Some(11 | 8))
+    )
+}
+
+async fn wait_for_cue(
+    client: &mut DevClientSession,
+    mut cues: Vec<u32>,
+    matches: impl Fn(&[u32]) -> bool,
+) -> TestResult<Vec<u32>> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
+    cues.extend(ambient(client));
+    while !matches(&cues) && tokio::time::Instant::now() < deadline {
+        client.service_liveness(Duration::from_millis(25)).await?;
+        cues.extend(ambient(client));
+    }
+    Ok(cues)
 }
 
 async fn step(client: &mut DevClientSession, direction: StepDirection) -> TestResult<Vec<u32>> {
@@ -146,8 +169,41 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             "step=admission observed=ambient-capability-not-selected need=capability-288".into(),
         );
     }
-    let initial = ambient(&mut client);
-    if !initial.contains(&0) {
+    let from = tile(client.world_spatial().actor_position)?;
+    let start_city = zone(world, from);
+    let mut initial = wait_for_cue(&mut client, Vec::new(), |cues| {
+        start_city.map_or_else(|| cues.last() == Some(&0), |city| city_replacement(city, cues))
+    }).await?;
+    if let Some(city) = start_city {
+        if !city_replacement(city, &initial) {
+            return Err(format!(
+                "step=starting-city-snapshot observed=ambient-cues:{initial:?} need={city}-day-or-night-cue"
+            ).into());
+        }
+        let path = route(world, from, |at| zone(world, at).is_none())
+            .ok_or("step=outside-snapshot-route observed=no-city-exit need=reachable-outside-tile")?;
+        let cues = follow(&mut client, &path).await?;
+        let cues = wait_for_cue(&mut client, cues, |cues| cues.last() == Some(&0)).await?;
+        if cues.last() != Some(&0) {
+            return Err(format!("step=outside-snapshot-route observed=ambient-cues:{cues:?} need=cue-0").into());
+        }
+        let outside = client.world_spatial().actor_position;
+        if client.session_mut().logout().await?.result
+            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
+            return Err("step=outside-snapshot-logout observed=refused need=Accepted".into());
+        }
+        drop(client);
+        client = connect_character(clients, 0x26, 1).await?;
+        if client.world_spatial().actor_position != outside {
+            return Err(format!(
+                "step=outside-snapshot-admission observed={:?} need={outside:?}",
+                client.world_spatial().actor_position
+            ).into());
+        }
+        initial = wait_for_cue(&mut client, Vec::new(), |cues| cues.last() == Some(&0)).await?;
+    }
+    if initial.last() != Some(&0) {
         return Err(
             format!("step=outside-snapshot observed=ambient-cues:{initial:?} need=cue-0").into(),
         );
@@ -158,9 +214,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let into = route(world, from, |at| zone(world, at).is_some())
         .ok_or("step=city-entry observed=no-compiled-player-route need=reachable-supported-city")?;
     let city_cues = follow(&mut client, &into).await?;
-    if !city_cues.iter().any(|cue| *cue != 0) {
+    let city = zone(world, tile(client.world_spatial().actor_position)?)
+        .ok_or("step=city-entry observed=outside-city-after-walking")?;
+    let city_cues = wait_for_cue(&mut client, city_cues, |cues| city_replacement(city, cues)).await?;
+    if !city_replacement(city, &city_cues) {
         return Err(format!(
-            "step=city-entry observed=ambient-cues:{city_cues:?} need=nonzero-city-replacement"
+            "step=city-entry observed=ambient-cues:{city_cues:?} need={city}-day-or-night-cue"
         )
         .into());
     }
@@ -191,7 +250,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let out = route(world, at, |candidate| zone(world, candidate).is_none())
         .ok_or("step=city-exit observed=no-compiled-player-route need=outside-city")?;
     let exit_cues = follow(&mut client, &out).await?;
-    if !exit_cues.contains(&0) {
+    let exit_cues = wait_for_cue(&mut client, exit_cues, |cues| cues.last() == Some(&0)).await?;
+    if exit_cues.last() != Some(&0) {
         return Err(
             format!("step=city-exit observed=ambient-cues:{exit_cues:?} need=cue-0").into(),
         );
@@ -205,9 +265,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     .ok_or("step=city-reentry observed=no-compiled-player-route need=supported-city")?;
     let reentry_cues = follow(&mut client, &back).await?;
     let expected_position = client.world_spatial().actor_position;
-    if !reentry_cues.iter().any(|cue| *cue != 0) {
+    let city = zone(world, tile(expected_position)?)
+        .ok_or("step=city-reentry observed=outside-city-after-walking")?;
+    let reentry_cues = wait_for_cue(&mut client, reentry_cues, |cues| city_replacement(city, cues)).await?;
+    if !city_replacement(city, &reentry_cues) {
         return Err(format!(
-            "step=city-reentry observed=ambient-cues:{reentry_cues:?} need=nonzero-city-replacement"
+            "step=city-reentry observed=ambient-cues:{reentry_cues:?} need={city}-day-or-night-cue"
         )
         .into());
     }
@@ -219,11 +282,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
 
     let mut fresh = connect_character(clients, 0x25, 1).await?;
-    let fresh_cues = ambient(&mut fresh);
+    let fresh_cues = wait_for_cue(&mut fresh, Vec::new(), |cues| city_replacement(city, cues)).await?;
     if fresh.world_spatial().actor_position != expected_position
-        || !fresh_cues.iter().any(|cue| *cue != 0)
+        || !city_replacement(city, &fresh_cues)
     {
-        return Err(format!("step=fresh-admission observed=position:{:?},ambient:{fresh_cues:?} need=position:{expected_position:?}+nonzero-replacement", fresh.world_spatial().actor_position).into());
+        return Err(format!("step=fresh-admission observed=position:{:?},ambient:{fresh_cues:?} need=position:{expected_position:?}+{city}-day-or-night-cue", fresh.world_spatial().actor_position).into());
     }
     row.pass("fresh-admission");
     if fresh.session_mut().logout().await?.result
@@ -249,6 +312,14 @@ fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleW
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn journey_regression_requires_the_destination_city_cue() {
+        assert!(city_replacement("edron", &[3]));
+        assert!(city_replacement("edron", &[36]));
+        assert!(!city_replacement("edron", &[25]));
+        assert!(!city_replacement("edron", &[3, 0]));
+    }
 
     #[test]
     fn row_requires_the_complete_lifecycle() {
