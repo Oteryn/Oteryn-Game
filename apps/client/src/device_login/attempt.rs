@@ -42,6 +42,12 @@ impl DeviceAttempt {
         self.save(client, session).await
     }
     fn take(&mut self) -> Result<DeviceSession, NativeLoginError> {
+        if self.remembered {
+            let session = self.state.session.as_ref().ok_or_else(storage_error)?;
+            // A cancellation can arrive after the live vault is cleared but before
+            // the Platform returns the successor. Preserve the family for replay.
+            self.journal.stage(&session.device_credential)?;
+        }
         let session = self.state.session.take().ok_or_else(storage_error)?;
         self.remember_revocation(session.device_credential.clone());
         // Delete BEFORE the uncertain request. A crash must never reuse a consumed predecessor.
@@ -65,6 +71,20 @@ impl DeviceAttempt {
         self.state.vault_clear_failed = false;
         Ok(())
     }
+    async fn save_rotation(
+        &mut self,
+        client: &NativeLoginClient,
+        predecessor: &DeviceCredential,
+        session: DeviceSession,
+    ) -> Result<(), NativeLoginError> {
+        self.state.pending.retain(|pending| pending != predecessor);
+        self.save(client, session).await?;
+        if self.remembered {
+            self.journal.discard(predecessor)?;
+        }
+        Ok(())
+    }
+
     pub async fn characters(
         &mut self,
         client: &NativeLoginClient,
@@ -73,10 +93,8 @@ impl DeviceAttempt {
         let previous = self.take()?;
         match client.device_characters(&previous, cancel).await {
             Ok((session, characters)) => {
-                self.state
-                    .pending
-                    .retain(|pending| pending != &previous.device_credential);
-                self.save(client, session).await?;
+                self.save_rotation(client, &previous.device_credential, session)
+                    .await?;
                 Ok(characters)
             }
             Err(error) => {
@@ -98,10 +116,8 @@ impl DeviceAttempt {
         };
         match result {
             Ok((session, ticket)) => {
-                self.state
-                    .pending
-                    .retain(|pending| pending != &previous.device_credential);
-                self.save(client, session).await?;
+                self.save_rotation(client, &previous.device_credential, session)
+                    .await?;
                 Ok(ticket)
             }
             Err(error) => {
@@ -192,6 +208,9 @@ impl DeviceAttempt {
                 .await
             {
                 Ok(()) => {
+                    if self.remembered {
+                        self.journal.discard(credential)?;
+                    }
                     self.state.pending.remove(index);
                 }
                 Err(error) => {
