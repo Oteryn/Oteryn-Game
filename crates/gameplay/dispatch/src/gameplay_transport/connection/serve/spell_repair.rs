@@ -69,6 +69,7 @@ where
                     return if repaired {
                         Ok(())
                     } else {
+                        record_join_progress("spell_repair_returned_false", admitted.first_entry);
                         Err(ServeEnd::Closed(FoundationProtocolError::NotSupported))
                     };
                 }
@@ -90,6 +91,116 @@ where
         }
         Ok(Err(ServeEnd::Closed(error))) => Err(close(stream, *admitted, error).await),
         Ok(Err(end)) => Err(end),
-        Err(_) => Err(close(stream, *admitted, FoundationProtocolError::NotSupported).await),
+        Err(_) => {
+            record_join_progress("spell_repair_deadline_expired", admitted.first_entry);
+            Err(close(stream, *admitted, FoundationProtocolError::NotSupported).await)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{error::Error, time::Duration};
+
+    struct RepairAuthority {
+        stall: bool,
+    }
+
+    impl FreshAdmissionAuthority for RepairAuthority {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn repair_pending_spells(&self, _: AdmittedSession) -> bool {
+            if self.stall {
+                std::future::pending().await
+            } else {
+                false
+            }
+        }
+    }
+
+    #[test]
+    fn pending_spell_repair_reports_distinct_e1200_close_phases() -> Result<(), Box<dyn Error>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| exercise_repair_closes().map_err(|error| error.to_string()))?
+            .join()
+            .map_err(|_| "spell repair connection thread panicked")??;
+        Ok(())
+    }
+
+    fn exercise_repair_closes() -> Result<(), Box<dyn Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .start_paused(true)
+            .build()?;
+        let fixture_id = |tag| {
+            let mut bytes = [tag; 16];
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes
+        };
+        let world_id = WorldId::decode(&fixture_id(1))?;
+        let channel_id = ChannelId::decode(&fixture_id(2))?;
+        let admitted = AdmittedSession {
+            game_session_id: GameSessionId::decode(&fixture_id(3))?,
+            world_id,
+            channel_id,
+            runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+            first_entry: FirstEntryOutcome::AwaitingSpellRepair,
+            controller: None,
+            continuity: SessionContinuity::FRESH,
+            item_fence: None,
+        };
+        let policy = LivenessPolicy {
+            interval: Duration::from_millis(20),
+            missed_limit: 1,
+        };
+        let error = FoundationProtocolError::NotSupported;
+        let expected_wire =
+            encode_protocol_error(error, admitted.continuity.connection_generation)?;
+        for (stall, expected_phase) in [
+            (false, "spell_repair_returned_false"),
+            (true, "spell_repair_deadline_expired"),
+        ] {
+            let mut result = Ok(());
+            let lines = oteryn_error_codes::capture(|| {
+                result = runtime.block_on(async {
+                    let (mut server, mut client) = tokio::io::duplex(4096);
+                    let end = serve_admitted_actor(
+                        &mut server,
+                        admitted,
+                        &RepairAuthority { stall },
+                        policy,
+                    )
+                    .await;
+                    assert!(matches!(end, ConnectionEnd::AdmittedThenClosed(_, closed) if closed == error));
+                    drop(server);
+                    // The deadline case may write one probe before closing the connection.
+                    let mut frame = read_frame(&mut client).await?;
+                    if decode_wire_envelope(&frame)?.message_type() == MessageType::LivenessProbe {
+                        frame = read_frame(&mut client).await?;
+                    }
+                    assert_eq!(frame, expected_wire);
+                    Ok::<(), Box<dyn Error>>(())
+                });
+            });
+            result?;
+            let phases: Vec<_> = lines
+                .iter()
+                .filter(|line| line.contains("event=join_progress "))
+                .filter_map(|line| {
+                    line.split_whitespace()
+                        .find_map(|field| field.strip_prefix("phase="))
+                })
+                .collect();
+            assert_eq!(phases, [expected_phase], "{lines:?}");
+        }
+        Ok(())
     }
 }

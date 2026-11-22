@@ -831,7 +831,10 @@ events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'session_durability_failed', 'logout_unknown', 'logout_busy',
           'control_loss_reconcile_pending', 'control_loss_result',
           'control_loss_publication', 'control_loss_grace', 'character_authority_check_failed',
-          'appearance_initial_failed', 'appearance_observation_failed'}
+          'appearance_initial_failed', 'appearance_observation_failed',
+          'qualification_spawn_refused', 'join_progress', 'fresh_admission_pending',
+          'admission_entry_decision'}
+spell_repair_phases = {'spell_repair_returned_false', 'spell_repair_deadline_expired'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
@@ -869,14 +872,28 @@ labels = {
                       'proficiency_history', 'familiar_chain', 'spell_familiar_group',
                       'spell_item_chain', 'audit_payload'},
     'reason': {'transferred', 'disconnected', 'control_lost', 'logged_out',
-               'protocol_error', 'commit_outcome_unknown', 'closed', 'no_evidence'},
+               'protocol_error', 'commit_outcome_unknown', 'closed', 'no_evidence',
+               'fence', 'no_free_tile', 'session_unknown', 'unknown_creature'},
+    'outcome': {'playable', 'retries_exhausted', 'unplayable'},
+    'first_entry': {'NotApplicable', 'Positioned', 'Reconciled', 'RefusedStaleAuthority',
+                    'RefusedUnavailable', 'AwaitingSpellRepair', 'RefusedByChannel'},
     'path': {'server_message_timeout', 'liveness_missed', 'probe_write_timeout',
              'updates_timeout', 'activity_transfer', 'house_transfer'},
     'guard': {'house_transfer_input', 'activity_transfer_input'},
     'phase': {'activity_scope', 'initial', 'items', 'sessions', 'world',
               'trade_open', 'trade_observation', 'inventory', 'visibility', 'appearances',
               'frame', 'frame_error', 'held', 'step_due', 'probe', 'server_message',
-              'serene', 'quest_log', 'chat', 'combat', 'chase', 'target_move', 'npc'},
+              'serene', 'quest_log', 'chat', 'combat', 'chase', 'target_move', 'npc',
+              'baseline', 'held_unplayable', 'held_no_baseline', 'snapshot_encode',
+              'snapshot_write', 'snapshot_flushed', 'live_sounds', 'live_movement_effects',
+              'live_ready', 'automatic_spells', 'spell_facts', 'resolve_session',
+              'reserve_precondition', 'conditions', 'gourmet', 'daily_streak', 'cast_facts',
+              'known_spells', 'monk', 'build', 'stamina', 'stance', 'equipment',
+              'familiar_group', 'spell_lane', 'revalidate_character', 'revalidate_session',
+              'authority_guard', 'death_items', 'home_town', 'tutorial_position',
+              'premium_temple', 'equipment_effects', 'channel_owner', 'premium_relocation',
+              'party_presence', 'progression', 'familiar_login', 'interpretation',
+              'starter_backpack', 'starter_kit', 'starting_loadout'} | spell_repair_phases,
     'deadline_exceeded': {'true', 'false'},
     'ready': {'true', 'false'},
 }
@@ -885,7 +902,7 @@ authority_stages = {'recovery_fence', 'offline_training', 'npc_purchase', 'creat
                     'proficiency_history', 'familiar_chain', 'spell_familiar_group',
                     'spell_item_chain', 'audit_payload'}
 numbers = {'ts', 'next_command_id', 'server_sequence', 'command_type', 'command_id',
-           'ms', 'connections', 'lifecycles', 'held_ms'}
+           'ms', 'connections', 'lifecycles', 'held_ms', 'attempts', 'elapsed_ms'}
 counts = collections.Counter()
 event_counts = collections.Counter()
 emitted = 0
@@ -928,14 +945,17 @@ def report(line):
              'logout_busy': 16, 'control_loss_reconcile_pending': 16,
              'control_loss_grace': 16,
              'character_authority_check_failed': 16}.get(event, 8)
-    if event_counts[event] >= limit or emitted >= 128:
-        if event not in limited:
+    # Successful joins can fill their event quota before any repair failure occurs.
+    phase = fields.get('phase')
+    bucket = (event, phase) if event == 'join_progress' and phase in spell_repair_phases else event
+    if event_counts[bucket] >= limit or emitted >= 128:
+        if bucket not in limited:
             print(f'NODE_BOOT_RUNTIME_LIMIT stage={stage} world_bundle={world} '
-                  f'event={event} records={event_counts[event]}')
-            limited.add(event)
+                  f'event={event} records={event_counts[bucket]}')
+            limited.add(bucket)
         return
     counts[identity] += 1
-    event_counts[event] += 1
+    event_counts[bucket] += 1
     for key in sorted(numbers):
         if re.fullmatch(r'[0-9]{1,20}', fields.get(key, '')):
             safe.append((key, fields[key]))
