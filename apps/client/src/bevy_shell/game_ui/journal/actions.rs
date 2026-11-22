@@ -263,6 +263,24 @@ pub(super) fn perform(
                 level
             };
         }
+        Kind::MyVocation => {
+            let Some(vocation) = link.cyclopedia_character_panel().vocation_id else {
+                link.cyclopedia_character_request(
+                    oteryn_client_ui::cyclopedia_character::Intent::SelectTab(
+                        oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats,
+                    ),
+                );
+                state.feedback =
+                    "Waiting for character vocation. Try again after character stats arrive."
+                        .into();
+                return false;
+            };
+            filter.vocation = if filter.vocation == vocation {
+                0
+            } else {
+                vocation
+            };
+        }
         Kind::Vocation => {
             filter.vocation = ((usize::from(filter.vocation) + 1) % SPELLBOOK_VOCATIONS.len()) as u8
         }

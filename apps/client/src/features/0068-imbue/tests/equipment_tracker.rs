@@ -229,13 +229,19 @@ fn equipment_tracker_discards_an_inflight_reply_after_unequip() -> Result<(), St
 }
 
 #[test]
-fn equipment_tracker_filters_each_slot_through_inspection_and_playlink() -> Result<(), String> {
+fn equipment_tracker_filters_whole_items_through_inspection_and_playlink() -> Result<(), String> {
     let (link, mut commands, outbox) = play_channel();
     {
         let mut m = mailbox::lock(&outbox.0);
         m.discovery.inspection.selected = true;
         m.imbue.tracker_open = true;
-        for (slot, number) in [(EquipmentSlot::Head, 0), (EquipmentSlot::Armor, 1)] {
+        for (slot, number) in [
+            (EquipmentSlot::Head, 0),
+            (EquipmentSlot::Armor, 1),
+            (EquipmentSlot::Legs, 2),
+            (EquipmentSlot::Feet, 3),
+            (EquipmentSlot::Ring, 4),
+        ] {
             m.depot.items.inventory.equipment.push(EquippedItem {
                 slot,
                 item: ItemEntry {
@@ -248,7 +254,13 @@ fn equipment_tracker_filters_each_slot_through_inspection_and_playlink() -> Resu
             });
         }
     }
-    for (number, name, time) in [(0, "Helmet", "00:04"), (1, "Plate", "00:10")] {
+    for (number, name, time) in [
+        (0, "Helmet", "00:04"),
+        (1, "Plate", "00:10"),
+        (2, "Leggings", "01:00"),
+        (3, "Boots", ""),
+        (4, "Band", "03:00"),
+    ] {
         assert!(link.imbue_tracker_refresh());
         let Ok(PlayCommand::ServerMechanic(command)) = commands.try_recv() else {
             return Err("missing inspection".into());
@@ -274,19 +286,16 @@ fn equipment_tracker_filters_each_slot_through_inspection_and_playlink() -> Resu
                         count: 1,
                         tier: 0,
                         name: name.into(),
-                        attributes: vec![
-                            (
-                                "Imbuement Slot 2".into(),
-                                "Powerful Void, lasts 04:00h while fighting.".into(),
-                            ),
-                            ("Imbuement Slot 3".into(), "empty".into()),
-                            (
-                                "Imbuement Slot 1".into(),
-                                format!(
-                                    "Basic Strike (critical damage), lasts {time}h while fighting."
-                                ),
-                            ),
-                        ],
+                        attributes: {
+                            let mut slots = vec![("Imbuement Slot 3".into(), "empty".into())];
+                            if !time.is_empty() {
+                                slots.push(("Imbuement Slot 1".into(), format!("Basic Strike (critical damage), lasts {time}h while fighting.")));
+                            }
+                            if number == 1 {
+                                slots.push(("Imbuement Slot 2".into(), "Powerful Void, lasts 04:00h while fighting.".into()));
+                            }
+                            slots
+                        },
                     }],
                 })
                 .map_err(|e| format!("{e:?}"))?,
@@ -296,13 +305,22 @@ fn equipment_tracker_filters_each_slot_through_inspection_and_playlink() -> Resu
     for group in [0, 1, 2, 3] {
         link.imbue_tracker_toggle_group(group);
         let text = oteryn_client_ui::imbue::tracker_text(&link.imbue_panel());
-        assert_eq!(text.contains("10 minutes"), group != 0, "group {group}");
+        assert_eq!(text.contains("10 minutes"), group != 2, "group {group}");
+        assert_eq!(text.contains("180 minutes"), group != 2, "group {group}");
         assert_eq!(text.contains("240 minutes"), group != 2, "group {group}");
         assert_eq!(
-            text.contains("unused imbuement slot"),
-            group != 3,
+            text.lines()
+                .any(|line| line.contains("Plate") && line.contains("unused imbuement slot")),
+            group != 2,
             "group {group}"
         );
+        for (expected, name) in ["Helmet", "Leggings", "Plate", "Boots"].iter().enumerate() {
+            assert_eq!(
+                text.contains(name),
+                group != expected,
+                "{name} group {group}"
+            );
+        }
         link.imbue_tracker_toggle_group(group);
     }
     Ok(())

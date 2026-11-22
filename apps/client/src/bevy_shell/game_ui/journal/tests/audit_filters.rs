@@ -167,3 +167,64 @@ fn fallback_filter_controls_and_search_preserve_selections() -> Result {
     );
     Ok(())
 }
+
+#[test]
+fn spell_list_my_vocation_uses_confirmed_character() -> Result {
+    use oteryn_client_runtime::cyclopedia_character::{GeneralStats, TabExtension, TabView};
+    let (mut owner, mut commands, outbox) = host()?;
+    outbox.bevy_cyclopedia_initialize(true, true, false);
+    owner
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .cyclopedia_character_request(oteryn_client_ui::cyclopedia_character::Intent::Tab);
+    commands.try_recv()?;
+    outbox.bevy_cyclopedia_result(&result(
+        TabView::GeneralStats(GeneralStats::default())
+            .encode_extended(&TabExtension {
+                vocation_id: Some(7),
+                deaths: None,
+            })
+            .map_err(|_| "stats")?,
+    ));
+    outbox.bevy_journal_spellbook_select();
+    open_spells(&mut owner);
+    commands.try_recv()?;
+    outbox.bevy_journal_spellbook_result(&result(
+        Page {
+            page: 0,
+            total: 0,
+            entries: vec![],
+        }
+        .encode()
+        .ok_or("page")?,
+    ));
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    let button = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "My vocation").then_some(parent.parent()))
+        .ok_or("my vocation control")?;
+    app.world_mut().trigger(Activate { entity: button });
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("spellbook query".into());
+    };
+    assert_eq!(
+        SpellQuery::decode(&command.payload)
+            .ok_or("filter")?
+            .vocation,
+        7
+    );
+    Ok(())
+}

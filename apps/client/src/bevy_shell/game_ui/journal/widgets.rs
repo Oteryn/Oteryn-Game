@@ -113,6 +113,15 @@ pub(super) fn build(
         .id();
     commands.entity(left).add_child(title);
     if key.tab == Tab::Spells && book.selected {
+        action(
+            commands,
+            skin,
+            left,
+            key,
+            Kind::MyVocation,
+            "My vocation",
+            320.,
+        );
         for kind in [Kind::Vocation, Kind::Premium, Kind::Group, Kind::Castable] {
             let button = action(commands, skin, left, key, kind, "", 320.);
             let caption = commands

@@ -11,14 +11,18 @@ use bevy::{
 };
 use oteryn_client_ui::prey::{Intent, PreyPanel, creature_label};
 use oteryn_client_ui_bevy as source;
+mod catalogue;
+mod portraits;
 #[cfg(test)]
 mod tests;
+mod tracker;
 mod view;
 use view::project;
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Kind {
     Close,
     Refresh,
+    ToggleTracker,
     Store,
     Reroll(u8),
     Confirm,
@@ -49,15 +53,20 @@ struct State {
     candidate: Option<(u8, u8)>,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(
-        Update,
-        (
-            escape.after(crate::bevy_shell::input::route),
-            project,
-            refresh_rerolls,
-        )
-            .chain(),
-    );
+    portraits::install(app);
+    app.add_systems(Update, catalogue::project.after(project))
+        .init_resource::<tracker::Tracker>()
+        .add_systems(Update, tracker::project)
+        .init_resource::<State>()
+        .add_systems(
+            Update,
+            (
+                escape.after(crate::bevy_shell::input::route),
+                project,
+                refresh_rerolls,
+            )
+                .chain(),
+        );
 }
 fn escape(
     owner: NonSend<HostOwner>,
@@ -82,6 +91,12 @@ fn escape(
     if !pending && let Some(play) = &owner.play {
         play.link.prey_set_open(false);
     }
+}
+fn bonus_name(bonus: u8) -> &'static str {
+    ["None", "Damage", "Defense", "Experience", "Loot"]
+        .get(usize::from(bonus))
+        .copied()
+        .unwrap_or("Unknown")
 }
 fn slot_title(state: u8) -> &'static str {
     match state {
@@ -153,6 +168,7 @@ fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
     fields: Query<(&Wildcard, &EditableText)>,
+    mut tracker: ResMut<tracker::Tracker>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     guard: ModalGuard,
@@ -174,6 +190,13 @@ fn activate(
         return;
     }
     match action.kind {
+        Kind::ToggleTracker => {
+            tracker.visible = if tracker.visible == Some(owner.generation()) {
+                None
+            } else {
+                Some(owner.generation())
+            };
+        }
         Kind::Close => {
             play.link.prey_set_open(false);
             state.confirmation = None;

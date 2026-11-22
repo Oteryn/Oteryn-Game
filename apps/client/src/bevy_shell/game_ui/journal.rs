@@ -51,6 +51,7 @@ enum Kind {
     Previous,
     Next,
     Vocation,
+    MyVocation,
     Premium,
     Group,
     Assign(usize),

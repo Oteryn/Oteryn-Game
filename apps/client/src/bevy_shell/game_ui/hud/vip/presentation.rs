@@ -34,6 +34,7 @@ impl Sort {
 pub(super) struct Preferences {
     pub sort: Sort,
     pub hide_offline: bool,
+    pub grouped: bool,
     pub context: Option<(u64, u64, u64)>,
     atlas: Handle<Image>,
 }
@@ -139,6 +140,22 @@ pub(super) fn setup(
             commands.entity(menu).add_child(entity);
         }
     }
+    let toggle = button(
+        &mut commands,
+        &skins,
+        Control {
+            generation: 0,
+            revision: 0,
+            command: Action::Grouped,
+        },
+        "Toggle grouped display",
+        view::MENU_WIDTH,
+        "vip.grouped",
+    );
+    commands.entity(toggle).observe(view::close_list_menu);
+    for menu in &menus {
+        commands.entity(menu).add_child(toggle);
+    }
 }
 
 pub(super) fn click(
@@ -201,7 +218,7 @@ pub(super) fn project(
     lists: Query<(Entity, &Children), With<List>>,
     mut icons: Query<(&Icon, &mut ImageNode)>,
     mut captions: Query<(&Caption, &mut Text)>,
-    mut menu: Local<Option<((u64, u64, u64), Entity)>>,
+    mut menu: Local<Option<(((u64, u64, u64), bool), Entity)>>,
 ) {
     let Some(play) = &owner.play else {
         preferences.context = None;
@@ -240,15 +257,16 @@ pub(super) fn project(
             } else {
                 Display::Flex
             };
-        order.push((entity, contact));
+        order.push((entity, contact, row.group));
     }
-    order.sort_by(|(_, a), (_, b)| {
+    order.sort_by(|(_, a, ga), (_, b, gb)| {
         let primary = match preferences.sort {
             Sort::Name => std::cmp::Ordering::Equal,
             Sort::Status => rank(a.entry).cmp(&rank(b.entry)),
             Sort::Icon => b.icon.cmp(&a.icon),
         };
-        primary
+        ga.cmp(gb)
+            .then(primary)
             .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
             .then_with(|| a.entry.cmp(&b.entry))
     });
@@ -257,7 +275,7 @@ pub(super) fn project(
             .iter()
             .filter(|entity| rows.get(*entity).is_err())
             .collect();
-        next.extend(order.iter().map(|(entity, _)| *entity));
+        next.extend(order.iter().map(|(entity, _, _)| *entity));
         if children.iter().ne(next.iter().copied()) {
             commands.entity(list).replace_children(&next);
         }
@@ -302,7 +320,12 @@ pub(super) fn project(
     {
         preferences.context = None;
     }
-    if menu.as_ref().map(|(key, _)| *key) != preferences.context {
+    let private = play.link.chat_private_panel();
+    let owns_channel = private.selected
+        && !private.pending
+        && private.list.and_then(|list| list.own_channel).is_some();
+    let context = preferences.context.map(|key| (key, owns_channel));
+    if menu.as_ref().map(|(key, _)| *key) != context {
         if let Some((_, entity)) = menu.take() {
             commands.entity(entity).despawn();
         }
@@ -319,12 +342,18 @@ pub(super) fn project(
                 .id();
             for (label, command) in [
                 ("Message", Action::Message(entry)),
+                ("Copy name", Action::CopyName(entry)),
+                ("Invite to private chat", Action::Invite(entry)),
+                ("Exclude from private chat", Action::Exclude(entry)),
                 ("Edit", Action::Edit(entry)),
                 ("Withdraw consent", Action::Withdraw(entry)),
                 ("Remove", Action::Remove(entry)),
                 ("Add", Action::Add),
                 ("Close", Action::MenuClose),
             ] {
+                if matches!(command, Action::Invite(_) | Action::Exclude(_)) && !owns_channel {
+                    continue;
+                }
                 let entity = button(
                     &mut commands,
                     &skins,
@@ -334,12 +363,21 @@ pub(super) fn project(
                         command,
                     },
                     label,
-                    if matches!(command, Action::Withdraw(_)) {
+                    if matches!(
+                        command,
+                        Action::Withdraw(_)
+                            | Action::Invite(_)
+                            | Action::Exclude(_)
+                            | Action::CopyName(_)
+                    ) {
                         115.
                     } else {
                         45.
                     },
                     match command {
+                        Action::Invite(_) => "vip.channel.invite",
+                        Action::Exclude(_) => "vip.channel.exclude",
+                        Action::CopyName(_) => "vip.copy",
                         Action::Message(_) => "vip.message",
                         Action::Withdraw(_) => "vip.menu.withdraw",
                         _ => "vip.menu.action",
@@ -348,7 +386,7 @@ pub(super) fn project(
                 commands.entity(root).add_child(entity);
             }
             commands.entity(regions.vip).add_child(root);
-            *menu = Some(((generation, revision, entry), root));
+            *menu = Some((((generation, revision, entry), owns_channel), root));
         }
     }
 }

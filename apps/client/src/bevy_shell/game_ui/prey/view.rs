@@ -76,6 +76,20 @@ pub(super) fn project(
         Kind::Close,
         "Close",
     );
+    if panel.selected {
+        let toggle = button(
+            &mut commands,
+            &skin,
+            root,
+            generation,
+            &panel,
+            Kind::ToggleTracker,
+            "Toggle prey tracker",
+        );
+        commands
+            .entity(toggle)
+            .insert(Name::new("prey.tracker.toggle"));
+    }
     if let Some(confirmed) = &panel.confirmed {
         label(
             &mut commands,
@@ -216,12 +230,29 @@ pub(super) fn project(
                 }
             }
         } else if let Some(slot) = state.confirmation {
+            let price = if panel
+                .slot(slot)
+                .is_some_and(|slot| slot.free_reroll_at <= now)
+            {
+                "Free list reroll available.".into()
+            } else if let Some(level) = owner
+                .play
+                .as_ref()
+                .and_then(|play| play.link.spellbook_actor_level())
+            {
+                format!(
+                    "Paid reroll: {} gold at level {level}.",
+                    u64::from(level) * 200
+                )
+            } else {
+                "The server may charge gold; the gold price is not provided.".into()
+            };
             label(
                 &mut commands,
                 &skin,
                 root,
                 &format!(
-                    "Reroll the creature list in slot {slot}? The server may charge gold; the gold price is not provided. Rerolling replaces the current selection and bonus."
+                    "Reroll the creature list in slot {slot}? {price} Rerolling replaces the current selection and bonus."
                 ),
             );
             button(
@@ -292,10 +323,7 @@ pub(super) fn project(
                     );
                 }
                 if slot.state == 2 {
-                    let bonus = ["None", "Damage", "Defense", "Experience", "Loot"]
-                        .get(usize::from(slot.bonus))
-                        .copied()
-                        .unwrap_or("Unknown");
+                    let bonus = bonus_name(slot.bonus);
                     label(
                         &mut commands,
                         &skin,
@@ -313,7 +341,7 @@ pub(super) fn project(
                 if slot.state == 1 {
                     for (index, creature) in slot.creatures.iter().enumerate() {
                         if let Ok(index) = u8::try_from(index + 1) {
-                            button(
+                            let candidate = button(
                                 &mut commands,
                                 &skin,
                                 root,
@@ -322,6 +350,7 @@ pub(super) fn project(
                                 Kind::Select(id, index),
                                 &format!("Select {}", creature_label(creature)),
                             );
+                            portraits::attach(&mut commands, candidate, creature);
                         }
                     }
                 }
@@ -348,6 +377,16 @@ pub(super) fn project(
                         ))
                         .id();
                     commands.entity(root).add_child(field);
+                    let results = commands
+                        .spawn((
+                            catalogue::Results::new(field),
+                            Node {
+                                flex_direction: FlexDirection::Column,
+                                ..default()
+                            },
+                        ))
+                        .id();
+                    commands.entity(root).add_child(results);
                     let choose = button(
                         &mut commands,
                         &skin,
