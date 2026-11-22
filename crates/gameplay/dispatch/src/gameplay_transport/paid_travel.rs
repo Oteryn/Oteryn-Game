@@ -5,6 +5,8 @@ use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFa
 use crate::durability::npc_travel::{PaidTravelRequest, TravelRefusal};
 use crate::map::view::MapFacts;
 
+#[path = "paid_travel/ghostship.rs"]
+mod ghostship;
 #[path = "paid_travel/quest_confirmation.rs"]
 mod quest_confirmation;
 
@@ -16,6 +18,7 @@ pub(super) struct Prompt {
     opened: u64,
     route: TravelRoute,
     fare: u64,
+    ghostship_warning_acknowledged: bool,
 }
 
 fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalkOutcome {
@@ -135,12 +138,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(mut prompts) => prompts.remove(&session),
             Err(_) => return ordinary,
         };
+        if text == "no"
+            && previous.as_ref().is_some_and(|prompt| {
+                PaidTravelRequest::is_haunted_darashia(&prompt.route)
+                    && prompt.matches_confirmation(intent.npc_actor, &context, fence, now)
+            })
+        {
+            return npc_command::NpcConversations::bank_reply(intent, ghostship::DECLINE.into());
+        }
         let prompt = if text == "yes" {
-            let Some(prompt) = previous else {
+            let Some(mut prompt) = previous else {
                 return ordinary;
             };
             if !prompt.matches_confirmation(intent.npc_actor, &context, fence, now) {
                 return refusal(intent, TravelRefusal::StaleQuote);
+            }
+            if PaidTravelRequest::is_haunted_darashia(&prompt.route)
+                && !prompt.ghostship_warning_acknowledged
+            {
+                prompt.ghostship_warning_acknowledged = true;
+                if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
+                    prompts.insert(session, prompt);
+                }
+                return npc_command::NpcConversations::bank_reply(
+                    intent,
+                    ghostship::WARNING.into(),
+                );
             }
             prompt
         } else {
@@ -177,10 +200,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                 }
             };
-            let line = format!(
-                "Do you seek a passage to {} for {fare} gold?",
-                route.keyword
-            );
+            let destination = if PaidTravelRequest::is_haunted_darashia(&route) {
+                "Darashia"
+            } else {
+                &route.keyword
+            };
+            let line = format!("Do you seek a passage to {destination} for {fare} gold?");
             if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
                 prompts.insert(
                     session,
@@ -191,6 +216,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         opened: now,
                         route,
                         fare,
+                        ghostship_warning_acknowledged: false,
                     },
                 );
             }
@@ -321,7 +347,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command.game_session_id,
             intent,
         )?;
-        let destination = &prompt.route.route.destination;
+        let derive = |slot: u8| {
+            super::super::npc_trade_command::derived(
+                format!("oteryn:npc-travel:v1:{slot}").as_bytes(),
+                command.game_session_id,
+                command.command_id,
+            )
+        };
+        let occurrence = TravelOccurrence::from_bytes(derive(0)).ok()?;
+        let authored = &prompt.route.route.destination;
+        let mut destination = crate::durability::character_last_position::LastPositionCell {
+            x: authored.x,
+            y: authored.y,
+            floor: authored.floor,
+        };
+        if PaidTravelRequest::is_haunted_darashia(&prompt.route) {
+            // Fixture entropy is reproducible; live entropy is private to the server.
+            #[cfg(test)]
+            let seed = runtime.content_pin().server_artifact_digest();
+            #[cfg(not(test))]
+            let seed = super::SecureIdentifiers::random()?;
+            if ghostship::diverts_to_ghostship(seed, occurrence)? {
+                destination = PaidTravelRequest::GHOSTSHIP_DESTINATION;
+            }
+        }
         let cell = crate::foundation::MovementLocalPosition {
             x: destination.x,
             y: destination.y,
@@ -367,15 +416,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .unwrap_or(&backpack),
         )
         .ok()?;
-        let derive = |slot: u8| {
-            super::super::npc_trade_command::derived(
-                format!("oteryn:npc-travel:v1:{slot}").as_bytes(),
-                command.game_session_id,
-                command.command_id,
-            )
-        };
-        let occurrence = TravelOccurrence::from_bytes(derive(0)).ok()?;
-        let destination = &prompt.route.route.destination;
         Some(PaidTravelRequest {
             command: crate::foundation::CommandRef::new(
                 command.game_session_id,
@@ -384,11 +424,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             arrival: PendingArrival {
                 occurrence,
                 world_id: self.world_id,
-                destination: crate::durability::character_last_position::LastPositionCell {
-                    x: destination.x,
-                    y: destination.y,
-                    floor: destination.floor,
-                },
+                destination,
             },
             route: prompt.route.clone(),
             fee: FeeBurnRequest {

@@ -52,6 +52,26 @@ pub struct PaidTravelRequest {
     pub fee: FeeBurnRequest,
 }
 
+impl PaidTravelRequest {
+    // Crystal 201189f8, data-global/npc/captain_fearless.lua:85–98.
+    pub const GHOSTSHIP_DESTINATION: LastPositionCell = LastPositionCell {
+        x: 33324,
+        y: 32173,
+        floor: 6,
+    };
+
+    pub fn is_haunted_darashia(route: &TravelRoute) -> bool {
+        route.service == "oteryn:service.travel.captain_fearless" && route.route.key == "darashia"
+    }
+
+    fn matches_destination(&self) -> bool {
+        let destination = &self.route.route.destination;
+        let arrival = self.arrival.destination;
+        (arrival.x, arrival.y, arrival.floor) == (destination.x, destination.y, destination.floor)
+            || (Self::is_haunted_darashia(&self.route) && arrival == Self::GHOSTSHIP_DESTINATION)
+    }
+}
+
 async fn quote(
     tx: &mut Type2Transaction<'_>,
     fence: CurrentCharacterGameplayFence,
@@ -218,11 +238,10 @@ impl DurabilityRoot {
             let arrival = request.arrival;
             let route = &request.route;
             let key = format!("{}/{}", route.service, route.route.key);
-            let destination = &route.route.destination;
             if request.command.game_session_id()!=fence.game_session_id
                 || arrival.world_id!=fence.runtime_scope.world_id()
                 || route.return_origin.as_ref().is_some_and(|requirement| !requirement.is_valid())
-                || (arrival.destination.x,arrival.destination.y,arrival.destination.floor)!=(destination.x,destination.y,destination.floor)
+                || !request.matches_destination()
                 || request.fee.cause != (crate::durability::item_fee_burn::FeeBurnCause::NpcTravel { service: route.service.clone(), occurrence: arrival.occurrence.as_bytes() })
             {return Ok(Err(CharacterProgressionError::InvalidInput));}
             let mut hash = Sha256::new();
@@ -267,6 +286,7 @@ impl DurabilityRoot {
                     hash.update(text.as_bytes());
                 }
             }
+            // Bind the exact selected arrival, including the Ghostship diversion, on replay.
             hash.update(arrival.destination.x.to_be_bytes());
             hash.update(arrival.destination.y.to_be_bytes());
             hash.update(arrival.destination.floor.to_be_bytes());

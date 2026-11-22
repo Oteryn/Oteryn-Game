@@ -290,12 +290,12 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 234);
+        assert_eq!(corrections.len(), 235);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 234);
+        assert_eq!(keys.len(), 235);
         let dalbrect = corrections
             .iter()
             .find(|row| row.key == "oteryn:service.travel.dalbrect/isle_of_kings")
