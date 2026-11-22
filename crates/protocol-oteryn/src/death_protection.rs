@@ -68,7 +68,7 @@ impl DeathProtectionReply {
         Some(value)
     }
 }
-pub const CAPABILITY_DEATH_REPORT_V1: u32 = 584;
+pub const CAPABILITY_DEATH_AND_BLESSINGS_V1: u32 = 584;
 pub const COMMAND_TYPE_DEATH_REPORT_QUERY: u32 = 6331;
 const PENALTY_BYTES: usize = 9;
 pub const MAX_DEATH_REPORT_REPLY_BYTES: usize = MAX_DEATH_PROTECTION_REPLY_BYTES + PENALTY_BYTES;
@@ -130,6 +130,28 @@ impl DeathReportReply {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn death_report_preserves_committed_penalty_and_rejects_invalid_type()
+    -> Result<(), &'static str> {
+        let report = DeathReportReply(Some(DeathReport {
+            protection: DeathProtection {
+                occurrence: [7; 16],
+                consumed: vec![],
+            },
+            death_type: DeathType::Pvp,
+            experience_lost: 1234,
+        }));
+        let mut bytes = report.clone().encode().ok_or("report")?;
+        assert_eq!(DeathReportReply::decode(&bytes), Some(report));
+        assert_eq!(DeathReportReply::decode(&[0]), Some(DeathReportReply(None)));
+        for end in 0..bytes.len() {
+            assert!(DeathReportReply::decode(&bytes[..end]).is_none());
+        }
+        bytes[18] = 3;
+        assert!(DeathReportReply::decode(&bytes).is_none());
+        Ok(())
+    }
+
     #[test]
     fn death_protection_codec_retains_empty_consumption_and_rejects_malformed()
     -> Result<(), &'static str> {

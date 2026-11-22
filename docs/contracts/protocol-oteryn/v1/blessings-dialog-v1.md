@@ -10,7 +10,8 @@ Experience protection uses the accepted death rule: 8% per regular blessing plus
 
 ## Holdings and Store copies
 
-Command 6330 requires the existing 503 and 199 selections and an empty request.
+Command 6330 requires capability 584, the existing 503 and 199 selections,
+and an empty request.
 It uses the same self-only session fence as the other Character reads. The
 6330 reply is `keys` in the format above, followed by `held:u8, store_copies:u8`
 for each key in the same order, at most 1049 bytes. Keys come from the admitted

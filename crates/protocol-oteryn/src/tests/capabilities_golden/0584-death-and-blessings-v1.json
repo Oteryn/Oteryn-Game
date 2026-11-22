@@ -1,12 +1,14 @@
 {
   "id": 584,
-  "name": "DEATH_REPORT_V1",
-  "constant": "death_protection::CAPABILITY_DEATH_REPORT_V1",
+  "name": "DEATH_AND_BLESSINGS_V1",
+  "constant": "death_protection::CAPABILITY_DEATH_AND_BLESSINGS_V1",
   "requires": [
-    382
+    382,
+    503
   ],
   "acceptance_requires": true,
   "commands": [
+    6330,
     6331
   ],
   "domains": [],

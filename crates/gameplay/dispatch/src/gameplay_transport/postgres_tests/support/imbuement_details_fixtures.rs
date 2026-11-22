@@ -118,9 +118,10 @@ pub(super) async fn exercise(
     ).await?;
     assert_eq!(status, CommandStatus::Accepted);
     let funds = wire::AffordabilityReply::decode(&bytes).map_err(debug)?;
-    assert_eq!(funds.spendable_gold, 100);
-    let quote = funds.details.quotes.iter().find(|row| (row.family,row.tier) == (1,1)).ok_or("basic quote")?;
-    assert!(!funds.can_afford(quote));
+    for (tier, expected) in [(1, true), (2, false)] {
+        let row = funds.details.quotes.iter().position(|row| (row.family, row.tier) == (1, tier)).ok_or("strike quote")?;
+        assert_eq!(funds.affordable[row], expected);
+    }
     let (_, status, bytes) = exchange_raw(
         owner, sword_ref, admitted, 2, wire::COMMAND_TYPE_IMBUEMENT_PROTECTION, |item| {
             encode_imbuement_request(&ImbuementRequest {

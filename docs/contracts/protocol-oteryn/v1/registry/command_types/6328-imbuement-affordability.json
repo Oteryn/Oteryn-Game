@@ -6,5 +6,5 @@
   "payload_schema": "docs/contracts/protocol-oteryn/v1/imbuement-details-v1.md#request",
   "result_schema": "docs/contracts/protocol-oteryn/v1/imbuement-details-v1.md#affordability",
   "max_payload_bytes": 11,
-  "max_result_payload_bytes": 32776
+  "max_result_payload_bytes": 32847
 }

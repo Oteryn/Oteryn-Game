@@ -110,7 +110,7 @@ fn death_projection_scenario() -> TestResult {
         admitted.item_fence = Some(current.item_fence());
         admitted.continuity.connection_generation = current.connection_generation.get();
         admitted.first_entry = FirstEntryOutcome::Positioned;
-        let offers = [OfferedCapability { id: 382, requires: &[] }, OfferedCapability { id: 584, requires: &[382] }];
+        let offers = [OfferedCapability { id: 382, requires: &[] }, OfferedCapability { id: 199, requires: &[] }, OfferedCapability { id: 503, requires: &[199] }, OfferedCapability { id: 584, requires: &[382, 503] }];
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[382]).ok_or("death capability")?;
         let (status, bytes) = exchange(&owner, &mut admitted, 1, 664, &[]).await?;
@@ -131,7 +131,7 @@ fn death_projection_scenario() -> TestResult {
         assert_eq!(exchange(&owner, &mut admitted, 2, 6331, &[]).await?.0,
             oteryn_protocol_oteryn::CommandStatus::Rejected);
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offers, &[382, 584]).ok_or("report capability")?;
+            SelectedCapabilities::select(&offers, &[199, 382, 503, 584]).ok_or("report capability")?;
         let (status, bytes) = exchange(&owner, &mut admitted, 3, 6331, &[]).await?;
         assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
         let report = DeathReportReply::decode(&bytes).and_then(|reply| reply.0).ok_or("death report")?;

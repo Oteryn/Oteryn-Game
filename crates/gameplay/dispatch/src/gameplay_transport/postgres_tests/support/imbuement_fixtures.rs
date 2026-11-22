@@ -217,6 +217,8 @@ pub(super) fn scenario(shrine: bool, elapsed: bool, details: bool, catalogue: bo
                 ],
             )
             .await?;
+        } else if details {
+            super::item_look_fixtures::seed_main_backpack(&harness, &[(SWORD, 1), (CRYSTAL, 1)]).await?;
         } else if shrine {
             super::item_look_fixtures::seed_main_backpack(
                 &harness,

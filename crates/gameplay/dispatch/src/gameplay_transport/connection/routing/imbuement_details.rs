@@ -36,3 +36,64 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         transport::imbuement::ImbuementReply::Unavailable => None,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::foundation::{ChannelId, GameSessionId, WorldId};
+    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+    use crate::gameplay_transport::{
+        AdmissionRefusal, FirstEntryOutcome, FreshAdmissionAttempt, SessionContinuity,
+    };
+    use oteryn_protocol_oteryn::item_view::ItemHandle;
+
+    struct Owner;
+    impl FreshAdmissionAuthority for Owner {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+    }
+
+    #[tokio::test]
+    async fn imbuement_protection_route_refuses_the_purchase() -> Result<(), String> {
+        let id = [1, 0x90, 0, 0, 0, 9, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 9];
+        let mut admitted = AdmittedSession {
+            game_session_id: GameSessionId::decode(&id).map_err(|e| format!("{e:?}"))?,
+            world_id: WorldId::decode(&id).map_err(|e| format!("{e:?}"))?,
+            channel_id: ChannelId::decode(&id).map_err(|e| format!("{e:?}"))?,
+            runtime_actor: None,
+            first_entry: FirstEntryOutcome::Positioned,
+            controller: None,
+            continuity: SessionContinuity::FRESH,
+            item_fence: None,
+        };
+        let payload = imbuement::encode_imbuement_request(&imbuement::ImbuementRequest {
+            item: ItemHandle::new(9).ok_or("item handle")?,
+            action: imbuement::ImbuementAction::Apply { slot: 0, imbuement: 0 },
+        }).map_err(|e| format!("{e:?}"))?;
+        let command = ClientCommandView {
+            command_id: 1,
+            command_type: wire::COMMAND_TYPE_IMBUEMENT_PROTECTION,
+            payload: &payload,
+        };
+        assert!(matches!(route(&Owner, &admitted, command, &None).await,
+            Some(Dispatch::Reply(CommandStatus::Rejected, bytes)) if bytes.is_empty()));
+        let offered = [
+            OfferedCapability { id: 4, requires: &[] },
+            OfferedCapability { id: 68, requires: &[4] },
+            OfferedCapability { id: 447, requires: &[68] },
+            OfferedCapability { id: 582, requires: &[447] },
+        ];
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(&offered, &[4, 68, 447, 582]).ok_or("imbuement selection")?;
+        assert!(matches!(route(&Owner, &admitted, command, &None).await,
+            Some(Dispatch::Reply(CommandStatus::Rejected, bytes)) if bytes == b"Sorry, not possible."));
+        let malformed = ClientCommandView { payload: &[], ..command };
+        assert!(matches!(route(&Owner, &admitted, malformed, &None).await,
+            Some(Dispatch::Reply(CommandStatus::Rejected, bytes)) if bytes.is_empty()));
+        Ok(())
+    }
+}

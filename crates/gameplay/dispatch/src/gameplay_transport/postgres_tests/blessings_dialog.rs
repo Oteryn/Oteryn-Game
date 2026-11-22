@@ -90,6 +90,8 @@ fn scenario() -> TestResult {
                 id: 503,
                 requires: &[199],
             },
+            OfferedCapability { id: 382, requires: &[] },
+            OfferedCapability { id: 584, requires: &[382, 503] },
         ];
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[199, 503]).ok_or("select blessings")?;
@@ -165,7 +167,13 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_store_blessing_copies (character_id, blessing_key, copies)
                      VALUES (encode($1,'hex')::uuid, 'oteryn:blessing.twist_of_fate', 2)")
             .bind(id(41).as_slice()).execute(&h.pool).await?;
-        let (status, bytes) = exchange(&owner, &mut admitted, 7, COMMAND_TYPE_BLESSINGS_HOLDINGS, &[]).await?;
+        assert_eq!(
+            exchange(&owner, &mut admitted, 7, COMMAND_TYPE_BLESSINGS_HOLDINGS, &[]).await?.0,
+            CommandStatus::Rejected,
+        );
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(&offers, &[199, 382, 503, 584]).ok_or("select holdings")?;
+        let (status, bytes) = exchange(&owner, &mut admitted, 8, COMMAND_TYPE_BLESSINGS_HOLDINGS, &[]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         let holdings = decode_holdings(&bytes).ok_or("holdings codec")?;
         assert_eq!(holdings.len(), 8);

@@ -1,13 +1,13 @@
 //! C20c: current-session read of the latest death's immutable protection consumption.
 use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
 use oteryn_protocol_oteryn::death_protection::{
-    CAPABILITY_DEATH_PROTECTION_V1, CAPABILITY_DEATH_REPORT_V1, DeathProtection, DeathProtectionReply,
+    CAPABILITY_DEATH_PROTECTION_V1, CAPABILITY_DEATH_AND_BLESSINGS_V1, DeathProtection, DeathProtectionReply,
     DeathReport, DeathReportReply, DeathType,
 };
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     base.iter()
         .copied()
-        .filter(|entry| available || !matches!(entry.id, CAPABILITY_DEATH_PROTECTION_V1 | CAPABILITY_DEATH_REPORT_V1))
+        .filter(|entry| available || !matches!(entry.id, CAPABILITY_DEATH_PROTECTION_V1 | CAPABILITY_DEATH_AND_BLESSINGS_V1))
         .collect()
 }
 macro_rules! authority_methods {
@@ -31,6 +31,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .continuity
             .selected_capabilities
             .contains(CAPABILITY_DEATH_PROTECTION_V1)
+            || (report && !admitted.continuity.selected_capabilities.contains(CAPABILITY_DEATH_AND_BLESSINGS_V1))
         {
             return None;
         }

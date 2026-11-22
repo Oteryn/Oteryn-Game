@@ -94,6 +94,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if !payload.is_empty()
                     || !admitted.continuity.selected_capabilities
                         .contains(wire::blessings_dialog::CAPABILITY_BLESSINGS_DIALOG_V1)
+                    || !admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::death_protection::CAPABILITY_DEATH_AND_BLESSINGS_V1)
                 {
                     return Err(());
                 }

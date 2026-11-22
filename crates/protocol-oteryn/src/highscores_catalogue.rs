@@ -169,3 +169,35 @@ pub fn decode_query(bytes: &[u8]) -> Result<(HighscoresQuery, Option<WorldType>)
     };
     Ok((highscores::decode_highscores_query(rest)?, kind))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn battleye_catalogue_preserves_published_and_unknown_status() -> Result<(), Error> {
+        let entry = |tag, battleye| -> Result<BattlEyeEntry, Error> {
+            let world =
+                WorldId::decode(&[1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag])
+                    .map_err(|_| Error::Malformed)?;
+            Ok(BattlEyeEntry {
+                entry: Entry {
+                    world,
+                    world_type: WorldType::Open,
+                },
+                battleye,
+            })
+        };
+        let entries = [
+            entry(1, BattlEyeStatus::Unknown)?,
+            entry(2, BattlEyeStatus::ProtectedSinceLaunch)?,
+        ];
+        let mut encoded = encode_battleye_catalogue(&entries)?;
+        assert_eq!(decode_battleye_catalogue(&encoded)?, entries);
+        assert!(decode_catalogue(&encoded).is_err());
+        assert!(encode_battleye_catalogue(&[entries[1], entries[0]]).is_err());
+        encoded[19] = 4;
+        assert!(decode_battleye_catalogue(&encoded).is_err());
+        Ok(())
+    }
+}

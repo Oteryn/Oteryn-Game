@@ -185,3 +185,36 @@ impl Snapshot {
         Some(value)
     }
 }
+
+#[cfg(test)]
+mod holdings_tests {
+    use super::*;
+
+    #[test]
+    fn blessing_holdings_codec_keeps_store_copies_separate() -> Result<(), &'static str> {
+        let rows = [
+            Holding {
+                key: "oteryn:blessing.spiritual_shielding".into(),
+                held: true,
+                store_copies: 0,
+            },
+            Holding {
+                key: "oteryn:blessing.twist_of_fate".into(),
+                held: false,
+                store_copies: 2,
+            },
+        ];
+        let mut bytes = encode_holdings(&rows).ok_or("holdings encoding")?;
+        assert_eq!(
+            decode_holdings(&bytes)
+                .ok_or("holdings decoding")?
+                .as_slice(),
+            &rows
+        );
+        let flags = bytes.len() - 4;
+        bytes[flags] = 2;
+        assert!(decode_holdings(&bytes).is_none());
+        assert!(encode_holdings(&[rows[1].clone(), rows[0].clone()]).is_none());
+        Ok(())
+    }
+}

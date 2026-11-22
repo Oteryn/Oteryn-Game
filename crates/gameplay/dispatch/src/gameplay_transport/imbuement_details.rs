@@ -88,7 +88,7 @@ pub(super) async fn query<A: super::connection::FreshAdmissionAuthority>(
                 let Some(spendable_gold) = authority.imbuement_funds(*admitted).await else {
                     return Outcome::Rejected;
                 };
-                wire::AffordabilityReply { spendable_gold, details: reply }.encode()
+                wire::AffordabilityReply::from_funds(reply, spendable_gold).encode()
             } else {
                 wire::encode_reply(&reply)
             };

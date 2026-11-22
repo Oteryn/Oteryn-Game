@@ -35,11 +35,13 @@ recheck all requirements and perform the fenced durable mutation.
 
 Capability 582 requires 447. Both commands below also require selected 68.
 Command 6328 uses the same item query as 731. The response prefixes the
-complete 731 reply with `spendable_gold:u64le` (at most 32776 bytes total).
+complete 731 reply with `count:u8` and one 0/1 affordability byte per quote
+in that reply’s order. The maximum is 32847 bytes. The count must match the
+number of quotes.
 The server observes live direct-backpack coin stacks and, when the Type 2 fee
 activation and payer eligibility allow it, the payer's bank balance in the
-current World under the item session fence. A quote with a recipe is affordable
-when this amount is at least its gold price. The result concerns funds only.
+current World under the item session fence. The server sets a quote’s affordability byte to 1 when the recipe exists
+and the observed funds cover its gold price. The result concerns funds only.
 Premium, materials, shrine reach, coin change capacity and concurrent spending
 are checked independently on application. Command 731 remains byte-identical.
 

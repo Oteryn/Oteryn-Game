@@ -26,7 +26,7 @@ key; the client never infers its consumption from current holdings.
 
 ## Death report
 
-Capability 584 requires 382. Command 6331 uses the same empty request, current
+Capability 584 requires 382 and 503. Command 6331 uses the same empty request, current
 session fence, and latest receipt. The 664 response remains byte-identical.
 A report with no death is still `00`. For a committed death, append
 `death_type:u8, experience_lost:u64le` to the complete 664 reply. The maximum is

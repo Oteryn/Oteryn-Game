@@ -36,31 +36,75 @@ pub const CAPABILITY_IMBUEMENT_AFFORDABILITY_V1: u32 = 582;
 pub const COMMAND_TYPE_IMBUEMENT_PROTECTION: u32 = 6327;
 pub const COMMAND_TYPE_IMBUEMENT_AFFORDABILITY: u32 = 6328;
 pub const IMBUEMENT_PROTECTION_REFUSAL: &str = "Sorry, not possible.";
-pub const MAX_AFFORDABILITY_REPLY_BYTES: usize = MAX_REPLY_BYTES + 8;
+pub const MAX_AFFORDABILITY_REPLY_BYTES: usize = MAX_REPLY_BYTES + MAX_QUOTES + 1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AffordabilityReply {
-    pub spendable_gold: u64,
     pub details: Reply,
+    /// A gold-affordability result for each quote, in the same order as the quotes.
+    pub affordable: Vec<bool>,
 }
 
 impl AffordabilityReply {
-    pub fn can_afford(&self, quote: &Quote) -> bool {
-        quote.recipe_available && self.spendable_gold >= u64::from(quote.gold)
+    pub fn from_funds(details: Reply, spendable_gold: u64) -> Self {
+        let affordable = details
+            .quotes
+            .iter()
+            .map(|quote| quote.recipe_available && spendable_gold >= u64::from(quote.gold))
+            .collect();
+        Self {
+            details,
+            affordable,
+        }
+    }
+
+    fn valid(&self) -> bool {
+        self.details.quotes.len() == self.affordable.len()
+            && self
+                .affordable
+                .iter()
+                .zip(&self.details.quotes)
+                .all(|(&affordable, quote)| !affordable || quote.recipe_available)
     }
 
     pub fn encode(&self) -> Result<Vec<u8>, Error> {
-        let mut out = self.spendable_gold.to_le_bytes().to_vec();
-        out.extend(encode_reply(&self.details)?);
+        let details = encode_reply(&self.details)?;
+        if !self.valid() {
+            return Err(Error::Malformed);
+        }
+        let mut out = vec![u8::try_from(self.affordable.len()).map_err(|_| Error::LimitExceeded)?];
+        out.extend(
+            self.affordable
+                .iter()
+                .map(|&can_afford| u8::from(can_afford)),
+        );
+        out.extend(details);
         Ok(out)
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self, Error> {
-        let (funds, details) = bytes.split_at_checked(8).ok_or(Error::Malformed)?;
-        Ok(Self {
-            spendable_gold: u64::from_le_bytes(funds.try_into().map_err(|_| Error::Malformed)?),
+        let (&count, tail) = bytes.split_first().ok_or(Error::Malformed)?;
+        if usize::from(count) > MAX_QUOTES {
+            return Err(Error::LimitExceeded);
+        }
+        let (flags, details) = tail
+            .split_at_checked(usize::from(count))
+            .ok_or(Error::Malformed)?;
+        let reply = Self {
             details: decode_reply(details)?,
-        })
+            affordable: flags
+                .iter()
+                .map(|&flag| match flag {
+                    0 => Ok(false),
+                    1 => Ok(true),
+                    _ => Err(Error::Malformed),
+                })
+                .collect::<Result<Vec<_>, Error>>()?,
+        };
+        if !reply.valid() {
+            return Err(Error::Malformed);
+        }
+        Ok(reply)
     }
 }
 
