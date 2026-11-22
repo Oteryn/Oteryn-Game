@@ -7268,7 +7268,7 @@
               ]
             }
           ],
-          "reason": "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+          "reason": "qc_chests::qc_skull_of_ratha_three_source_chests_use_replay_and_refusal",
           "status": "dispatch_pg_qualified"
         },
         {
@@ -7296,7 +7296,7 @@
               ]
             }
           ],
-          "reason": "quest_catalogue_chests_qchk3_explorer_society_use_replay_and_refusal",
+          "reason": "qc_chests::qc_skull_of_ratha_three_source_chests_use_replay_and_refusal",
           "status": "dispatch_pg_qualified"
         }
       ],
@@ -10679,7 +10679,7 @@
               ]
             }
           ],
-          "reason": "quest_catalogue_chests_qchk7_unlinked_use_replay_and_refusal",
+          "reason": "qc_chests::qc_skull_of_ratha_three_source_chests_use_replay_and_refusal",
           "status": "dispatch_pg_qualified"
         },
         {

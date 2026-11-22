@@ -6,6 +6,7 @@ import unittest
 
 import charge_native
 import container_native
+import global_corrections
 import reward_claim_authoring as plain
 
 
@@ -315,7 +316,7 @@ class ContainerNativeTests(unittest.TestCase):
     def test_all_twelve_text_leaves_keep_the_established_lf_normalization(self):
         evidence, _ = container_native.source()
         texts = {r['unique_id']: r for r in evidence['text_entries'] if r['unique_id'] != 6195}
-        count = trimmed = 0
+        count = trimmed = corrected = 0
         for d in self.rows:
             ids = [u['unique_id'] for p in d['placements'] for u in p['source_binding']['legacy_unique_ids']
                    if u['server'] == 'crystalserver']
@@ -325,16 +326,17 @@ class ContainerNativeTests(unittest.TestCase):
             self.assertIsNotNone(recipe)
             row = recipe['placements'][0]
             body = texts[ids[0]]['text']
-            self.assertEqual(row['root_text'], body.strip('\n'))
+            self.assertEqual(row['root_text'], global_corrections.source_text(ids[0], body.strip('\n')))
+            corrected += ids[0] in global_corrections.TEXTS
             self.assertEqual(row['contents'], [])
             self.assertIsNone(row['capacity'])
             self.assertEqual(row['root']['key'], f"oteryn:item.tibia.i{texts[ids[0]]['item_id']}")
             count += 1
-            trimmed += body != row['root_text']
+            trimmed += body != body.strip('\n')
             changed = copy.deepcopy(d)
             changed['placements'][0]['reward']['written_text']['text_ref']['sha256'] = '0' * 64
             self.assertIsNone(container_native.derive(changed, self.items, plain.stack_problem))
-        self.assertEqual((count, trimmed), (12, 5))
+        self.assertEqual((count, trimmed, corrected), (12, 5, 3))
 
     def test_crystal_key3002_uses_the_exact_existing_leaf_key_owner(self):
         d = next(d for d in self.rows if d['identity']['key'].endswith('quest.key.id3002'))

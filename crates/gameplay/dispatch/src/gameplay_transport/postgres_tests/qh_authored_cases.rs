@@ -71,7 +71,7 @@ fn qh_top_of_the_city_npc_chain_and_cellar_crate_postgres() -> TestResult {
     }
     let started = std::time::Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run("qh-top-of-the-city", || {
-        // The scenario starts one tile west of this position, beside the cellar crate.
+        // The story starts at Iriana; the trigger below identifies the cellar crate.
         quest_world_callbacks_fixtures::scenario(
             TOP_OF_THE_CITY,
             Position {

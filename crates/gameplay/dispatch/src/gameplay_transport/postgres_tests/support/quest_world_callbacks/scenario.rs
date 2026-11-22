@@ -79,7 +79,9 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
+    let city_story = name == super::super::qh_authored_cases_fixtures::TOP_OF_THE_CITY;
     let native_crop = pinned_qc_world
+        || city_story
         || m03_use
         || qd_world
         || engenc_asura
@@ -130,6 +132,8 @@ fn scenario_case(
         }
     } else if super::super::qc_lizard_sanctuary_fixtures::matches_world(name) {
         super::super::qc_lizard_sanctuary_fixtures::START
+    } else if city_story {
+        super::super::qh_authored_cases_fixtures::city_start()
     } else if super::super::qh_authored_cases_fixtures::is_dig(name) {
         super::super::qh_authored_cases_fixtures::dig_start()
     } else if qd_world {
@@ -299,7 +303,7 @@ fn scenario_case(
         || name.starts_with("questpc7-eligibility-")
         || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
-        || name == "questpc7-friends";
+        || name.starts_with("questpc7-friends");
     let classic_npc = shared_rewards
         || name.starts_with("engoutfit-")
         || qengine_reward
@@ -1490,6 +1494,7 @@ fn scenario_case(
         } else {
             activated.frame_binding().digest()
         };
+        let entry_floor = if city_story { start.floor } else { trigger.floor };
         let bundle_room = Some(
             activated
                 .qualified_room()
@@ -1500,7 +1505,7 @@ fn scenario_case(
                     crate::content::NativeEntryStart {
                         x: i32::from(start.x),
                         y: i32::from(start.y),
-                        floor: -i16::from(trigger.floor),
+                        floor: -i16::from(entry_floor),
                     },
                 )
                 .ok_or("qualified native Bundle room")?,
@@ -1515,7 +1520,7 @@ fn scenario_case(
             (
                 i32::from(start.x),
                 i32::from(start.y),
-                -i16::from(trigger.floor),
+                -i16::from(entry_floor),
             ),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -2693,6 +2698,10 @@ fn scenario_case(
         } else if name.starts_with("questpc7-eligibility-") {
             super::super::questpc7_eligibility_fixtures::exercise(&mut owner, &mut admitted, &h, name)
                 .await?;
+        } else if name == super::super::questpc7_friends_fixtures::LEGACY_CASE {
+            super::super::questpc7_friends_fixtures::exercise_legacy(&mut owner, &mut admitted, &h).await?;
+        } else if let Some(case) = name.strip_prefix("questpc7-friends-draconian-") {
+            super::super::qc_npc_programmes_fixtures::exercise(&mut owner, &mut admitted, &h, case).await?;
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
