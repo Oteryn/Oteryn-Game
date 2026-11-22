@@ -34,7 +34,6 @@ pub(super) async fn provision_fixture(
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     original::provision_at_level(client, clients, index, expected_level).await
 }
-pub(super) use original::provision_profile;
 
 pub(super) async fn provision(
     mut client: oteryn_dev_client::DevClientSession,
@@ -708,6 +707,13 @@ mod e2ef1 {
         Ok(())
     }
 
+    fn stair_landing(
+        actual: Option<TilePos>,
+        without_teleport: impl FnOnce() -> Option<TilePos>,
+    ) -> Option<TilePos> {
+        actual.filter(|at| without_teleport() == Some(*at))
+    }
+
     async fn m03(
         client: &mut DevClientSession,
         world: &BundleWorld,
@@ -755,12 +761,23 @@ mod e2ef1 {
                     let at = tile(client.world_spatial().actor_position)?;
                     let ObjectKind::Teleport(expected) = object.kind else { return Err("missing authored teleport".into()) };
                     let direction = teleport_entry(world, at, object).ok_or("no automatic teleport entry edge")?;
-                    walk(client, world, &[direction]).await?;
+                    walk_with_landings(client, &[direction], |origin, step| {
+                        (origin == at && step == direction).then_some(expected)
+                    }).await?;
                     checks.pass("teleport", (object.at, expected));
                 } else {
-                    let path = route(world, from, |at| at.floor != from.floor && outside(at)).ok_or("no reachable outside-PZ stair transition")?;
-                    walk(client, world, &path).await?;
-                    if tile(client.world_spatial().actor_position)?.floor == from.floor { return Err("stairs did not change floor".into()); }
+                    let landing = |at, direction| {
+                        stair_landing(destination(world, at, direction), || {
+                            destination_with_teleports(world, at, direction, false)
+                        })
+                    };
+                    let goal = |at: TilePos| at.floor != from.floor && outside(at);
+                    let path = route_with_landings(from, goal, |_| true, landing)
+                        .ok_or("no reachable outside-PZ stair transition")?;
+                    walk_with_landings(client, &path, landing).await?;
+                    if !goal(tile(client.world_spatial().actor_position)?) {
+                        return Err("stairs did not reach another floor outside protection".into());
+                    }
                     checks.pass("stairs", client.world_spatial());
                 }
                 let changed = std::time::Instant::now();
@@ -1459,6 +1476,19 @@ mod e2ef1 {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn qualification_review_m03_stairs_exclude_teleport_landing() {
+            let upstairs = TilePos {
+                floor: TOWN.floor + 1,
+                ..TOWN
+            };
+            assert_eq!(stair_landing(Some(upstairs), || Some(TOWN)), None);
+            assert_eq!(
+                stair_landing(Some(upstairs), || Some(upstairs)),
+                Some(upstairs)
+            );
+        }
+
         #[test]
         fn qualification_e2ef1_floor_exhaust_uses_a_served_starter_spell() -> TestResult {
             let spell = native_spell_book()?
