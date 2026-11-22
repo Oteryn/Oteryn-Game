@@ -229,6 +229,13 @@ def _requested_inputs(root, extra_keys=()):
                 if tool.get('replacement'):
                     authored_keys.add(tool['replacement'])
                     keys.add(tool['replacement'])
+    classic_pickups = root / 'content/quests/world-callbacks/cursed-crystal.json'
+    if classic_pickups.is_file():
+        keys.update(
+            reward['item']
+            for callback in json.loads(classic_pickups.read_bytes())['callbacks']
+            if (reward := callback.get('effects', {}).get('item_reward'))
+        )
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.

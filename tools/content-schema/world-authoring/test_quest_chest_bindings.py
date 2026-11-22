@@ -13,6 +13,34 @@ import world_region_codec as codec
 
 
 class QuestChestBindings(unittest.TestCase):
+    def test_classic_quest_boxes_have_exact_shipped_selectors(self):
+        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
+        for z, rx, ry, expected in (
+            (9, 129, 125, {(33038, 32171): (2472, 6049),
+                           (33039, 32171): (2472, 6050),
+                           (33040, 32171): (2472, 6051)}),
+            (5, 126, 124, {(32467, 31970): (2469, 6257)}),
+        ):
+            path = chests.ROOT / "content/world/placements" / codec.region_name(z, rx, ry)
+            raw = path.read_bytes()
+            _, _, _, sectors = codec.parse_region(raw)
+            selectors = {}
+            for local, offset, length in sectors:
+                payload = codec.zstandard.ZstdDecompressor().decompress(
+                    raw[offset : offset + length], max_output_size=codec.MAX_SECTOR_BYTES
+                )
+                for x, y, _, _, _, items in codec.decode_sector(
+                    payload, rx * 8 + local % 8, ry * 8 + local // 8
+                ):
+                    if (x, y) not in expected:
+                        continue
+                    for palette, depth, attrs in items:
+                        appearance = index["palette"][palette]["source_item_id"]
+                        if depth == 0 and appearance == expected[(x, y)][0]:
+                            self.assertNotIn((x, y), selectors)
+                            selectors[(x, y)] = (appearance, (attrs or {}).get("unique"))
+            self.assertEqual(selectors, expected)
+
     def test_current_committed_corpus_captures_exact_elvenbane_startup_uids(self):
         from pathlib import Path
 

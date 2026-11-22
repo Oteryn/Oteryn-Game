@@ -361,7 +361,8 @@ def build():
     # The offer is conversation-only and deliberately excluded from the durable callback list.
     offer=callbacks.pop()
     add('outfox-helmet','tibia_tales','budrik',['mission','quest'],
-        [storage(prefix+'u8_1/to_outfox_afox_quest',1,2)],take=[(139,1)],give=(875,1))
+        [storage(prefix+'u8_1/to_outfox_afox_quest',1,2),
+         storage(prefix+'u8_1/to_outfox_afox_quest/questline',-1,2,1)],take=[(139,1)],give=(875,1))
     add('sam-backpack','sam_s_old_backpack_quest','sam',['yes'],
         [storage(prefix+'u7_5/sams_old_backpack/sams_old_backpack_npc',-1,1,0)],take=[(3244,1)],topic=1)
     # Offers bind confirmation to this NPC and the common conversation topic.
