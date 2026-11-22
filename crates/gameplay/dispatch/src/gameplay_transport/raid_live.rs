@@ -247,6 +247,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Vec::new()
             }
             CommittedRaidAction::Complete { cleanup } => {
+                if let Some(lair) = selected.and_then(|selected| selected.pale_count_lair) {
+                    self.evacuate_pale_count_lair(lair, step.identity).await?;
+                }
                 let mut runtime = self.runtime.lock().await;
                 if runtime.binding().scope_generation() != step.identity.generation {
                     return Err(());
@@ -384,7 +387,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(RaidWrite::CompareFailed) | Err(_) => return Err(()),
             }
         }
-        if progress.boss_end_open(identity.firing_id)
+        // The lair remains open for its announced window even if the boss dies.
+        if selected.pale_count_lair.is_none()
+            && progress.boss_end_open(identity.firing_id)
             && let Some(bosses) = dead_bosses(selected, &statuses)
             && let Some(step) = self
                 .root
@@ -491,6 +496,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<bool, ()> {
         self.apply_raid_step(step, Some(selected), seed, now_ms, progress)
             .await?;
+        if step.identity.ordinal == 0
+            && matches!(step.action, CommittedRaidAction::Announcement { .. })
+            && let Some(lair) = selected.pale_count_lair
+        {
+            self.project_pale_count_access(lair, step.identity, now_ms)
+                .await?;
+        }
         let terminal = progress.acknowledge_step(step);
         if matches!(
             step.action,
@@ -547,6 +559,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
+            if let Some(lair) = catalogue.get(key).and_then(|raid| raid.pale_count_lair) {
+                self.evacuate_pale_count_lair(lair, step.identity).await?;
+            }
             self.apply_raid_step(&step, None, seed, now_ms, progress)
                 .await?;
             self.compact_settled_raid(step.identity, None).await?;
@@ -581,6 +596,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             generation,
             ordinal: 0,
         };
+        if let Some(lair) = selected.pale_count_lair {
+            self.project_pale_count_access(lair, identity, now_ms)
+                .await?;
+        }
         if key.as_str() == "raid:edron.feroxa" {
             self.apply_feroxa_map_clock(firing, now_ms).await?;
             self.apply_feroxa_spectators(firing, now_ms, &mut progress.feroxa_spectators)

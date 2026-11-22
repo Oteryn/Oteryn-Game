@@ -98,7 +98,7 @@ pub fn personal_event_profile(quest: &str) -> Option<PersonalEventProfile> {
             line: 53,
         },
         "oteryn:quest.authored.bank_robbery_mini_world_change" => unavailable(1881),
-        // Wyda's separate BloodHerbQuest dialogue is not this empty event mission.
+        // Only the independently bound Wyda exchange may use this event occurrence.
         "oteryn:quest.bored_mini_world_change" => unavailable(1882),
         "oteryn:quest.authored.chakoya_iceberg_mini_world_change" => unavailable(2263),
         // Tinder Box actions_reward.lua:11-16 is a separate Item cooldown.
@@ -159,12 +159,26 @@ pub fn counter_helper_quest(quest: &str) -> Option<&'static str> {
     }
 }
 
+/// Only Wyda's explicit weighted turn-in is admitted under the Bored event key.
+pub fn bored_witch_exchange(callback: &RewardCallback) -> bool {
+    callback.quest == "oteryn:quest.bored_mini_world_change"
+        && callback.npc == "oteryn:npc.wyda"
+        && callback
+            .weighted_exchange
+            .as_ref()
+            .and_then(|exchange| exchange.world_change.as_deref())
+            == Some("bored")
+}
+
 /// Do not advertise absent donor missions through the native NPC adapter.
 pub fn personal_event_offered(callback: &RewardCallback) -> bool {
-    !matches!(
-        personal_event_profile(&callback.quest),
-        Some(
-            PersonalEventProfile::Unavailable { .. } | PersonalEventProfile::SharedWorldOnly { .. }
-        )
-    ) && crate::quest::shared_world_progress::accepted_task(&callback.key).is_none()
+    (bored_witch_exchange(callback)
+        || !matches!(
+            personal_event_profile(&callback.quest),
+            Some(
+                PersonalEventProfile::Unavailable { .. }
+                    | PersonalEventProfile::SharedWorldOnly { .. }
+            )
+        ))
+        && crate::quest::shared_world_progress::accepted_task(&callback.key).is_none()
 }

@@ -1208,22 +1208,40 @@ fn drop_cell(
     Ok(ground_cell(to.x, to.y, to.floor))
 }
 
-/// Finite source-script relocation may span a small authored room. Both cells
-/// must exist on the same floor; ordinary item drops still use drop_cell.
+/// Reach proven by the source mechanic. Ordinary item drops use player reach.
+#[derive(Clone, Copy)]
+pub(super) enum SourceItemOrigin {
+    SameFloor(TilePos),
+    RopeBelow(TilePos),
+}
+
+impl SourceItemOrigin {
+    fn position(self) -> TilePos {
+        match self {
+            Self::SameFloor(from) | Self::RopeBelow(from) => from,
+        }
+    }
+}
+
 fn source_drop_cell(
     base: &WorldBase,
-    from: (i32, i32, i16),
+    origin: SourceItemOrigin,
     to: WorldTilePosition,
 ) -> Result<Vec<u8>, LoopMoveResult> {
-    if from.2 != to.floor || from.0.abs_diff(to.x) > 32 || from.1.abs_diff(to.y) > 32 {
+    let from = origin.position();
+    let (dx, dy) = (
+        i32::from(from.x).abs_diff(to.x),
+        i32::from(from.y).abs_diff(to.y),
+    );
+    let floor = i16::from(from.floor);
+    let in_reach = match origin {
+        SourceItemOrigin::SameFloor(_) => floor == to.floor && dx <= 32 && dy <= 32,
+        SourceItemOrigin::RopeBelow(_) => floor + 1 == to.floor && dx <= 1 && dy <= 1,
+    };
+    if !in_reach {
         return Err(LoopMoveResult::TooFar);
     }
-    let source = (
-        u16::try_from(from.0),
-        u16::try_from(from.1),
-        i8::try_from(from.2),
-    );
-    if !matches!(source, (Ok(x), Ok(y), Ok(floor)) if base.tile(x,y,floor).is_some()) {
+    if base.tile(from.x, from.y, from.floor).is_none() {
         return Err(LoopMoveResult::Refused(LoopMoveRefusal::Blocked));
     }
     // Validate the actual destination; no fictitious player/source position is used.
@@ -1241,10 +1259,6 @@ fn source_drop_cell(
 /// A qualified source script uses the existing item-loop receipt/custody writer.
 /// Its caller holds the lane and proves the authored source/destination pair;
 /// voluntary moves retain their ordinary one-cell reach check.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "one fenced source script item relocation"
-)]
 pub(super) async fn relocate_source_item(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     permit: &crate::durability::spell_owner_commit::SpellLanePermit,
@@ -1254,6 +1268,28 @@ pub(super) async fn relocate_source_item(
     from: TilePos,
     to: TilePos,
 ) -> LoopMoveResult {
+    relocate_scripted_item(
+        admission,
+        permit,
+        actor,
+        command,
+        item,
+        SourceItemOrigin::SameFloor(from),
+        to,
+    )
+    .await
+}
+
+pub(super) async fn relocate_scripted_item(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    actor: ExactActorRef,
+    command: UseCommand,
+    item: ItemKey,
+    origin: SourceItemOrigin,
+    to: TilePos,
+) -> LoopMoveResult {
+    let from = origin.position();
     let destination = oteryn_protocol_oteryn::item_view::WorldTilePosition {
         x: i32::from(to.x),
         y: i32::from(to.y),
@@ -1271,7 +1307,7 @@ pub(super) async fn relocate_source_item(
                 slot: None,
             },
             permit,
-            Some(from),
+            Some(origin),
         )
         .await;
     }
@@ -1302,12 +1338,7 @@ pub(super) async fn relocate_source_item(
         let Some(map) = admission.bundle_map() else {
             return LoopMoveResult::Refused(LoopMoveRefusal::NotSupported);
         };
-        let Some(ground) = source_drop_cell(
-            map.overlay.base(),
-            (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
-            destination,
-        )
-        .ok() else {
+        let Some(ground) = source_drop_cell(map.overlay.base(), origin, destination).ok() else {
             return LoopMoveResult::Refused(LoopMoveRefusal::Blocked);
         };
         (

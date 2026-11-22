@@ -16,7 +16,8 @@ pub use catalogue::{
     CatalogueAmount, CatalogueAnnouncement, CatalogueAnnouncementKind, CatalogueArea, CatalogueEnd,
     CatalogueEntry, CatalogueKind, CataloguePosition, CatalogueRaid, CatalogueRegion,
     CatalogueSchedule, CatalogueSpawnMode, CatalogueVariant, CatalogueWave, CatalogueWindow,
-    CatalogueWorldChange, RaidCatalogue, SelectedRaid,
+    CatalogueWorldChange, PALE_COUNT_EXIT_DELAY_MS, PALE_COUNT_OPEN_DELAY_MS, PALE_COUNT_RAID,
+    PaleCountLair, RaidCatalogue, SelectedRaid,
 };
 pub use definition::{Announcement, AnnouncementKind, RaidDefinition, RaidPolicy, Wave, WaveEntry};
 pub use lifecycle::{LegacyRaidGate, RaidCalendarWindow, RaidEndDecision, RaidEndPolicy};

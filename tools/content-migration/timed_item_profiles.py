@@ -17,8 +17,22 @@ from native_profile_composition import encode_native_profile
 # (:7392-7457); each active form lasts 1800 s with stopduration on the base.
 SKILL_RINGS = {3050: 3087, 3091: 3094, 3092: 3095, 3093: 3096}
 
-IDS = {3051, 3053, 3081, 3088, 3090, 3097, 3099, 3549, 6529, 6530} | set(SKILL_RINGS) | set(SKILL_RINGS.values())
-SKILL_RING_KEYS = {f'oteryn:item.tibia.i{i}' for i in set(SKILL_RINGS) | set(SKILL_RINGS.values())}
+# Crystal 201189f8 data/items/items.xml:6917-6926, 6948-6957, 7326-7338,
+# 7365-7380 and 7468-7504. The canonical timed packet already carries the
+# reciprocal forms and budgets. Only the worn forms grant these effects.
+EFFECT_RINGS = {3049: 3086, 3052: 3089, 3098: 3100}
+RING_BASES = {**SKILL_RINGS, **EFFECT_RINGS}
+RING_ACTIVE_TO_BASE = {active: base for base, active in RING_BASES.items()}
+SKILL_RING_IDS = SKILL_RINGS.keys() | set(SKILL_RINGS.values())
+ACTIVE_EFFECTS = {
+    3086: [('INVISIBILITY', 'BOOLEAN', True)],
+    3089: [('HEALTH_GAIN', 'SIGNED_POINTS', 2), ('MANA_GAIN', 'SIGNED_POINTS', 8),
+           ('HEALTH_TICKS', 'MILLISECONDS', 6000), ('MANA_TICKS', 'MILLISECONDS', 6000)],
+    3100: [('HEALTH_GAIN', 'SIGNED_POINTS', 6), ('MANA_GAIN', 'SIGNED_POINTS', 24),
+           ('HEALTH_TICKS', 'MILLISECONDS', 6000), ('MANA_TICKS', 'MILLISECONDS', 6000)],
+}
+
+IDS = {3051, 3053, 3081, 3088, 3090, 3097, 3099, 3549, 6529, 6530} | RING_BASES.keys() | RING_ACTIVE_TO_BASE.keys()
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
@@ -39,6 +53,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if binding['disposition'] != 'EXACT':
             raise ValueError('TIMED_PROFILE_BINDING')
         semantics = copy.deepcopy(source['semantics'])
+        number = int(key.removeprefix('oteryn:item.tibia.i'))
         # TIMEDITEMS2-1: the inactive time ring has no speed ability. The active
         # form carries the admitted +30 modifier and inherits the base wearability.
         # Canary items.xml: 3053 -> 3090, speed=30, duration=600, deequip=3053.
@@ -52,15 +67,21 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         # 3099, suppressdrunk=1, duration=3600, stopduration on the base, deequip=3097,
         # decayTo=0. TibiaWiki (Global) agrees: one hour, any vocation. The active
         # form carries the definition's SUPPRESS_DRUNK and inherits base wearability.
-        # I05: a skill ring's base carries no skill in Crystal (only transformequipto and
-        # stopduration); the active form keeps its definition skill and inherits base wearability.
-        if key in {f'oteryn:item.tibia.i{i}' for i in SKILL_RINGS}:
+        if number in RING_BASES:
             semantics['skill_modifiers'] = {'state': 'UNKNOWN'}
-        for base_id, active_id in SKILL_RINGS.items():
-            if key == f'oteryn:item.tibia.i{active_id}':
-                base = definitions[f'oteryn:item.tibia.i{base_id}']['semantics']
-                for group in ('equipment', 'stack', 'physical'):
-                    semantics[group] = copy.deepcopy(base[group])
+        if number in RING_ACTIVE_TO_BASE:
+            base = definitions[f'oteryn:item.tibia.i{RING_ACTIVE_TO_BASE[number]}']['semantics']
+            for group in ('equipment', 'stack', 'physical'):
+                semantics[group] = copy.deepcopy(base[group])
+        if number in ACTIVE_EFFECTS:
+            semantics['skill_modifiers'] = {'state': 'KNOWN', 'value': {
+                'modifiers': {'state': 'KNOWN', 'value': [{
+                    'kind': kind,
+                    'parameter': {'state': 'KNOWN', 'value': {'kind': unit, 'value': value}},
+                    'evaluation_phase': {'state': 'UNKNOWN'},
+                    'priority': {'state': 'UNKNOWN'},
+                    'target_domain': {'state': 'UNKNOWN'},
+                } for kind, unit, value in ACTIVE_EFFECTS[number]]}}}
         if key == 'oteryn:item.tibia.i3099':
             base = definitions['oteryn:item.tibia.i3097']['semantics']
             for group in ('equipment', 'stack', 'physical'):
@@ -92,7 +113,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 if key not in ('oteryn:item.tibia.i3051', 'oteryn:item.tibia.i3088'):
                     pattern['vocations'] = {'state': 'KNOWN', 'value': []}
                 if key in ('oteryn:item.tibia.i3053', 'oteryn:item.tibia.i3090',
-                           'oteryn:item.tibia.i3097', 'oteryn:item.tibia.i3099') or key in SKILL_RING_KEYS:
+                           'oteryn:item.tibia.i3097', 'oteryn:item.tibia.i3099') or number in SKILL_RING_IDS:
                     pattern['vocations']['value'] = ['DRUID', 'KNIGHT', 'MONK', 'PALADIN', 'SORCERER']
                 pattern['level'] = {'state': 'KNOWN', 'value': 0}
         document['records'].append({

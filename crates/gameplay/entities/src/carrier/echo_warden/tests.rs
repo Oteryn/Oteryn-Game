@@ -538,6 +538,7 @@ fn natural_minion_and_forge_keep_source_order_rounding_and_fill_health_once() ->
                     "oteryn:creature.rat".into(),
                     101,
                     false,
+                    None,
                 )],
                 5_000,
             )])

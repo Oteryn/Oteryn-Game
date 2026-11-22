@@ -22,6 +22,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         optional_pvp: Option<bool>,
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
+        stations: Option<&annihilator::StationAdmission>,
     ) -> UseDisposition {
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
@@ -236,6 +237,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if close && callback.lever.is_some() && !callback.reversible {
             return UseDisposition::NothingToUse;
+        }
+        if annihilator::owns(callback)
+            && !stations.is_some_and(|admission| admission.still_current(runtime, callback))
+        {
+            return UseDisposition::Rejected;
         }
         if oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(callback)
             && !self.personal_trial_ready(runtime, callback, key)

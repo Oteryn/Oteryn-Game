@@ -48,6 +48,7 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
                         direction: Direction::South,
                         respawn_ms: 60_000,
                         boss_policy: None,
+                        weight: None,
                     }],
                 }],
             });

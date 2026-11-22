@@ -422,20 +422,24 @@ maximum and at the maximum plus one.
 
 **Source.** The family is `Spawn.Source` under `content/world/spawns/` (index plus shards, frame
 `global-target-2026-09-27`): per record `declaration.identity.key`, `centre` and `points`
-(`cell`, `creature`, `direction`, `respawn_ms`), positions in the project frame (legacy `z`).
+(`cell`, `creature`, `direction`, `respawn_ms`, optional `owner`), positions in the project frame
+(legacy `z`). A point's `owner` is `World` by default. The `Encounter` owner reserves activation
+for the encounter runtime. Ownership is a compiler input and is omitted from the bundle.
 `tools/world-bundle-compiler/convert_spawns.py` writes it from the pinned Canary
 `otservbr-monster.xml` (rev `47dfd51f`, 51,896 sources, 83,286 points): the creature key is
 `oteryn:creature.<name as lowercase, non-alphanumerics to "_">`, the direction defaults to north,
 and `respawn_ms` is the spawn time times 1,000. The compiler also reads the Creature definitions
 (`content/creatures/definitions`) for each point's creature.
 
-**Realization.** The compiler writes a point when its creature is an admitted definition and its
-cell can admit it; every other point is left out and listed with its reason in the `parity` and
-`compile` output (`spawns.dropped`, `spawns.dropped_by_reason`). In this order:
+**Realization.** The compiler writes a world point when its creature is admitted, its scheduling
+is valid and its cell can admit it. Held points appear in the `parity` and `compile` output
+(`spawns.dropped`, `spawns.dropped_by_reason`). The compiler checks each point in this order.
 
-1. `UnboundCreature`: no admitted creature definition has the key.
-2. `Boss`: a `bosstiary` block or `reward_boss`; BOSS-RAID-0's, never realized by a spawn.
-3. `EncounterBound`: the definition has a non-empty `profile.encounters` (Encounter-bound, E3).
+1. `EncounterBound`: the point has `owner: "Encounter"`. Creature profile encounter references
+   describe roles in those encounters and do not affect world placement admission.
+2. `UnboundCreature`: no admitted creature definition has the key.
+3. Boss scheduling (§15): a `bosstiary` block or `reward_boss` requires a `boss_policy`.
+   Invalid combinations fail compilation.
 4. The cell, from compile-time facts: `OutsideWorld`, `NoTile`, `UnclassifiedTerrain` (a ground
    record not classified yet; `compile` stops on it before), `NoGround` (no Terrain-routed ground
    on the tile), `NotWalkable`, `ProtectionZone` (tile flag bit 0, OTBM `PROTECTIONZONE`),
@@ -615,10 +619,10 @@ with denominator at most `i64::MAX`. Unknown tags and invalid ranges fail closed
 not have an ordinary respawn delay. Old readers reject the zero delay rather than realizing a
 boss as an ordinary creature; the bundle identity requires runtime compatibility 3.
 
-In `Spawn.Source` authoring each activated boss point has exactly one `boss_policy`, encoded
+Each activated world boss point has exactly one `boss_policy`, encoded
 as `{"respawn":{"min_s":... ,"max_s":...}}` or
 `{"at_reset":{"chance":{"numerator":...,"denominator":...}}}`. `respawn_ms` is omitted
-for a boss. A policy on an ordinary or encounter-bound creature is invalid. Legacy boss points
+for a boss. A boss policy is valid for world-owned boss points. Legacy boss points
 without policy are retained as held evidence outside active spawn shards; an active boss point
 without policy fails compilation.
 Scheduling provenance lives on the source declaration, outside the runtime payload.
@@ -636,6 +640,26 @@ default with `CHOSEN_OTERYN_APPROXIMATION` provenance.
 `spawned_bosses_for_epoch` is a read-only Game projection of committed spawn
 claims, including bosses subsequently killed. Occupancy may delay realization of
 a committed claim. It adds no wire payload or Platform authority.
+
+### Weighted ordinary spawn points
+
+An ordinary `Spawn.Source` point can declare a positive u32 `weight`. Admitted
+ordinary points at the same position within that source form one spawn cell when
+any of them has a weight. An omitted weight in that cell defaults to 1. The first
+admitted ordinary entry at the position supplies the cell's order, and the last
+supplies its respawn delay. Source ordering and unweighted points retain their
+existing interpretation.
+
+A weighted point writes zero in the delay field, tag byte 3, then its positive
+ordinary `respawn_ms` and weight as canonical varints. This escape preserves the
+ordinary and boss encodings. A reader predating tag 3 rejects a weighted payload.
+The spawn frame counts encoded entries, while the Channel counts the shared cell
+once. Boss policies do not take weights.
+
+The Channel selects one eligible creature for each weighted cell at activation
+and on each successful respawn. The selection is derived from scope identity,
+source and cell ordinal, and the cell's admission ordinal. Retries reuse that
+ordinal. The existing ephemeral scope reset starts the sequence again.
 
 ## 16. Format v6 (C20d-W23)
 

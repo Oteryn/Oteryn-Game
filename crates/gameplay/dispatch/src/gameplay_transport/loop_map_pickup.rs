@@ -15,7 +15,7 @@ pub(super) async fn move_map_item(
     command: UseCommand,
     request: LoopMove,
     permit: &SpellLanePermit,
-    door_origin: Option<TilePos>,
+    source_origin: Option<SourceItemOrigin>,
 ) -> LoopMoveResult {
     let ground_cache = &admission.states.loop_ground;
     let refused = LoopMoveResult::Refused;
@@ -60,13 +60,9 @@ pub(super) async fn move_map_item(
         LoopTarget::MainBackpack => LoopDestination::MainBackpack,
         LoopTarget::Container(ItemKey::Instance(id)) => LoopDestination::Container(id),
         LoopTarget::Ground(to) => {
-            let reach = door_origin.map_or((at.at.x, at.at.y, at.at.floor), |from| {
-                (i32::from(from.x), i32::from(from.y), i16::from(from.floor))
-            });
-            let cell = if door_origin.is_some() {
-                source_drop_cell(at.map.overlay.base(), reach, to)
-            } else {
-                drop_cell(at.map.overlay.base(), reach, to)
+            let cell = match source_origin {
+                Some(origin) => source_drop_cell(at.map.overlay.base(), origin, to),
+                None => drop_cell(at.map.overlay.base(), (at.at.x, at.at.y, at.at.floor), to),
             };
             let spatial_position = match cell {
                 Ok(cell) => cell,
@@ -90,7 +86,7 @@ pub(super) async fn move_map_item(
     let Some((pos, ordinal)) = view::placement_of(placement_key) else {
         return stale;
     };
-    if door_origin.is_some_and(|origin| origin != pos) {
+    if source_origin.is_some_and(|origin| origin.position() != pos) {
         return stale;
     }
     let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
@@ -257,7 +253,10 @@ pub(super) async fn move_map_item(
     };
     // A qualified source consequence reaches from its proven scripted origin,
     // including authored scene cells and a step-out followed by teleport.
-    if !pickup::within_reach(door_origin.unwrap_or(player), pos) {
+    if !pickup::within_reach(
+        source_origin.map_or(player, SourceItemOrigin::position),
+        pos,
+    ) {
         return LoopMoveResult::TooFar;
     }
     match admission

@@ -11,7 +11,9 @@ use oteryn_world_bundle_compiler::bundle::{
 use oteryn_world_bundle_compiler::compile::{
     Input, KeyResolver, Resolution, SpawnReason, compile, equivalence, realize_spawns,
 };
-use oteryn_world_bundle_compiler::project::{CreatureFacts, Families, SpawnPoint, SpawnSource};
+use oteryn_world_bundle_compiler::project::{
+    CreatureFacts, Families, SpawnOwner, SpawnPoint, SpawnSource,
+};
 use oteryn_world_bundle_compiler::sector::{self, Attrs, Item, Tile};
 use oteryn_world_bundle_compiler::spawn::{self, Direction, Period};
 
@@ -114,11 +116,10 @@ fn regions() -> Result<Vec<Vec<u8>>, Box<dyn StdError>> {
     Ok(vec![region(7, &tiles)?])
 }
 
-fn creature(period: &str, boss: bool, encounter_bound: bool) -> CreatureFacts {
+fn creature(period: &str, boss: bool) -> CreatureFacts {
     CreatureFacts {
         period: period.into(),
         boss,
-        encounter_bound,
     }
 }
 
@@ -129,6 +130,8 @@ fn point(creature: &str, x: u16) -> SpawnPoint {
         direction: Direction::South,
         respawn_ms: 60_000,
         boss_policy: None,
+        weight: None,
+        owner: SpawnOwner::World,
     }
 }
 
@@ -136,10 +139,10 @@ fn families() -> Families {
     let mut families = Families::default();
     families.teleports.insert((5, 1, 7), (300, 40, 6));
     for (name, facts) in [
-        ("rat", creature("All", false, false)),
-        ("bat", creature("Night", false, false)),
-        ("dragonlord", creature("All", true, false)),
-        ("guard", creature("All", false, true)),
+        ("rat", creature("All", false)),
+        ("bat", creature("Night", false)),
+        ("dragonlord", creature("All", true)),
+        ("guard", creature("All", false)),
     ] {
         families
             .creatures
@@ -159,9 +162,13 @@ fn families() -> Families {
                 SpawnPoint {
                     respawn_ms: 0,
                     boss_policy: Some(spawn::BossPolicy::Respawn { min_s: 1, max_s: 2 }),
+                    weight: None,
                     ..point("dragonlord", 8)
                 },
-                point("guard", 9),
+                SpawnPoint {
+                    owner: SpawnOwner::Encounter,
+                    ..point("guard", 9)
+                },
                 point("ghost", 10),
                 point("bat", 11),
                 point("rat", 12),
@@ -196,7 +203,7 @@ fn input<'a>(regions: &'a [Vec<u8>], palette: &'a [String], families: &'a Famili
 }
 
 #[test]
-fn points_are_admitted_dropped_or_routed_by_their_cell_and_creature() -> TestResult {
+fn points_are_admitted_dropped_or_routed_by_their_owner_cell_and_creature() -> TestResult {
     let (regions, palette, families) = (regions()?, palette(), families());
     let (table, report) = realize_spawns(&input(&regions, &palette, &families), &Resolver)?;
     let dropped: Vec<_> = report
@@ -319,6 +326,7 @@ fn table(sources: usize, points: usize) -> spawn::Table {
                         direction: Direction::North,
                         respawn_ms: spawn::MIN_RESPAWN_MS,
                         boss_policy: None,
+                        weight: None,
                     })
                     .collect(),
             })
@@ -403,6 +411,108 @@ fn shard(points: usize, respawn_ms: u32) -> Vec<u8> {
     .into_bytes()
 }
 
+const COBRA_SCOUT: &str = "oteryn:creature.cobra_scout";
+
+fn cobra_scout_families() -> Result<Families, Error> {
+    let mut families = Families::default();
+    families.add_creatures(
+        serde_json::json!({
+            "family": "Creature",
+            "records": [{
+                "definition": {"identity": {"key": COBRA_SCOUT}},
+                "authoring": {"profile": {
+                    "details": {
+                        "spawn_eligibility": {"period": "All"},
+                        "system_eligibility": {"reward_boss": false}
+                    },
+                    "encounters": [{
+                        "family": "Encounter",
+                        "key": "oteryn:encounter.cobra_bastion",
+                        "revision": "definition-r1"
+                    }]
+                }}
+            }]
+        })
+        .to_string()
+        .as_bytes(),
+    )?;
+    Ok(families)
+}
+
+#[test]
+fn ordinary_world_spawn_compiles_for_a_creature_used_by_an_encounter() -> TestResult {
+    let mut families = cobra_scout_families()?;
+    let mut spawns: serde_json::Value = serde_json::from_slice(&shard(1, 60_000))?;
+    spawns["records"][0]["declaration"]["points"][0]["creature"] = COBRA_SCOUT.into();
+    families.add_spawns(&serde_json::to_vec(&spawns)?)?;
+
+    let (regions, palette) = (regions()?, palette());
+    let compiled = compile(&input(&regions, &palette, &families), &Resolver)?;
+    let bundle = bundle::read(&compiled.bytes)?;
+    assert!(
+        compiled.spawns.dropped.is_empty(),
+        "{:?}",
+        compiled.spawns.dropped
+    );
+    assert_eq!(bundle.spawns.point_count(), 1);
+    let point = &bundle.spawns.sources[0].points[0];
+    assert_eq!(
+        bundle.spawns.creatures[point.creature as usize].key,
+        COBRA_SCOUT
+    );
+    assert_eq!((point.x, point.y, point.respawn_ms), (1, 1, 60_000));
+    Ok(())
+}
+
+#[test]
+fn encounter_owned_point_stays_out_of_the_world_bundle() -> TestResult {
+    let mut families = cobra_scout_families()?;
+    let mut spawns: serde_json::Value = serde_json::from_slice(&shard(2, 60_000))?;
+    let points = &mut spawns["records"][0]["declaration"]["points"];
+    points[0]["creature"] = COBRA_SCOUT.into();
+    points[1]["creature"] = COBRA_SCOUT.into();
+    points[1]["cell"]["x"] = 8.into();
+    points[1]["owner"] = "Encounter".into();
+    families.add_spawns(&serde_json::to_vec(&spawns)?)?;
+
+    let (regions, palette) = (regions()?, palette());
+    let compiled = compile(&input(&regions, &palette, &families), &Resolver)?;
+    let bundle = bundle::read(&compiled.bytes)?;
+    assert_eq!(bundle.spawns.point_count(), 1);
+    assert_eq!(bundle.spawns.sources[0].points[0].x, 1);
+    assert_eq!(compiled.spawns.dropped.len(), 1);
+    let dropped = &compiled.spawns.dropped[0];
+    assert_eq!(dropped.cell, (8, 1, 7));
+    assert_eq!(dropped.reason, SpawnReason::EncounterBound);
+    Ok(())
+}
+
+#[test]
+fn excluded_points_do_not_make_world_spawns_weighted() -> TestResult {
+    let mut families = cobra_scout_families()?;
+    let rat = "oteryn:creature.rat";
+    families
+        .creatures
+        .insert(rat.into(), creature("All", false));
+    let mut spawns: serde_json::Value = serde_json::from_slice(&shard(4, 60_000))?;
+    let points = &mut spawns["records"][0]["declaration"]["points"];
+    points[0]["creature"] = COBRA_SCOUT.into();
+    points[2]["owner"] = "Encounter".into();
+    points[2]["weight"] = 5.into();
+    points[3]["creature"] = "oteryn:creature.unbound".into();
+    points[3]["weight"] = 7.into();
+    families.add_spawns(&serde_json::to_vec(&spawns)?)?;
+
+    let (regions, palette) = (regions()?, palette());
+    let compiled = compile(&input(&regions, &palette, &families), &Resolver)?;
+    let bundle = bundle::read(&compiled.bytes)?;
+    let admitted = &bundle.spawns.sources[0].points;
+    assert_eq!(admitted.len(), 2);
+    assert!(admitted.iter().all(|point| point.weight.is_none()));
+    assert_eq!(compiled.spawns.dropped.len(), 2);
+    Ok(())
+}
+
 #[test]
 fn the_source_shard_checks_its_bounds_before_it_holds_anything() {
     let add = |points, ms| Families::default().add_spawns(&shard(points, ms));
@@ -453,7 +563,7 @@ fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestRes
         families.add_spawns(&serde_json::to_vec(&value)?)?;
         families
             .creatures
-            .insert("oteryn:creature.rat".into(), creature("All", false, false));
+            .insert("oteryn:creature.rat".into(), creature("All", false));
         let (regions, palette) = (regions()?, palette());
         assert!(
             realize_spawns(&input(&regions, &palette, &families), &Resolver).is_err(),
@@ -461,7 +571,7 @@ fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestRes
         );
         families
             .creatures
-            .insert("oteryn:creature.rat".into(), creature("All", true, false));
+            .insert("oteryn:creature.rat".into(), creature("All", true));
         let (table, report) = realize_spawns(&input(&regions, &palette, &families), &Resolver)?;
         assert_eq!(report.realized_points, 1);
         let bytes = spawn::encode(&table);
@@ -469,13 +579,11 @@ fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestRes
         let mut malformed = table.clone();
         malformed.sources[0].points[0].respawn_ms = 1000;
         assert!(spawn::validate(&malformed, &world()).is_err());
-        families
-            .creatures
-            .insert("oteryn:creature.rat".into(), creature("All", true, true));
-        assert!(
-            realize_spawns(&input(&regions, &palette, &families), &Resolver).is_err(),
-            "an explicit policy cannot admit an encounter-bound boss"
-        );
+        families.spawns[0].points[0].owner = SpawnOwner::Encounter;
+        let (table, report) = realize_spawns(&input(&regions, &palette, &families), &Resolver)?;
+        assert_eq!(table.point_count(), 0);
+        assert_eq!(report.dropped.len(), 1);
+        assert_eq!(report.dropped[0].reason, SpawnReason::EncounterBound);
     }
     Ok(())
 }

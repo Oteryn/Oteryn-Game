@@ -96,6 +96,16 @@ pub struct SpawnPoint {
     pub direction: Direction,
     pub respawn_ms: u32,
     pub boss_policy: Option<spawn::BossPolicy>,
+    pub weight: Option<std::num::NonZeroU32>,
+    pub owner: SpawnOwner,
+}
+
+/// Which runtime owns this placement. Ordinary `Spawn.Source` points default to the World.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+pub enum SpawnOwner {
+    #[default]
+    World,
+    Encounter,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -110,10 +120,8 @@ pub struct SpawnSource {
 pub struct CreatureFacts {
     /// `spawn_eligibility.period`, as authored.
     pub period: String,
-    /// A `bosstiary` block or `reward_boss`: BOSS-RAID-0's, never realized by a spawn.
+    /// A `bosstiary` block or `reward_boss`: a world point requires a boss scheduling policy.
     pub boss: bool,
-    /// Bound to an Encounter: never realized by a spawn (E3).
-    pub encounter_bound: bool,
 }
 
 fn format(what: impl Into<String>) -> Error {
@@ -298,6 +306,10 @@ struct PointRecord {
     respawn_ms: u32,
     #[serde(default)]
     boss_policy: Option<spawn::BossPolicy>,
+    #[serde(default)]
+    weight: Option<std::num::NonZeroU32>,
+    #[serde(default)]
+    owner: SpawnOwner,
 }
 
 #[derive(Deserialize)]
@@ -370,8 +382,8 @@ impl Families {
                 }
                 if let Some(policy) = point.boss_policy {
                     policy.validate()?;
-                    if point.respawn_ms != 0 {
-                        return Err(format("boss spawn uses ordinary respawn_ms"));
+                    if point.respawn_ms != 0 || point.weight.is_some() {
+                        return Err(format("boss spawn uses ordinary respawn_ms or weight"));
                     }
                 } else if !(spawn::MIN_RESPAWN_MS..=spawn::MAX_RESPAWN_MS)
                     .contains(&point.respawn_ms)
@@ -385,6 +397,8 @@ impl Families {
                     direction,
                     respawn_ms: point.respawn_ms,
                     boss_policy: point.boss_policy,
+                    weight: point.weight,
+                    owner: point.owner,
                 });
             }
             self.spawns.push(SpawnSource {
@@ -418,10 +432,6 @@ impl Families {
                         .pointer("/authoring/profile/details/system_eligibility/reward_boss")
                         .and_then(Value::as_bool)
                         .ok_or_else(|| format(format!("{key} has no reward_boss flag")))?,
-                encounter_bound: record
-                    .pointer("/authoring/profile/encounters")
-                    .and_then(Value::as_array)
-                    .is_some_and(|list| !list.is_empty()),
             };
             if self.creatures.insert(key.to_owned(), facts).is_some() {
                 return Err(format(format!("Creature key {key} given twice")));

@@ -1,4 +1,6 @@
 use super::*;
+use sha2::{Digest, Sha256};
+use std::{collections::BTreeMap, num::NonZeroU32};
 
 mod world_projection;
 pub use world_projection::WorldSpawnProjection;
@@ -18,10 +20,9 @@ pub struct SpawnDefinition {
     pub(super) placement_cells: Vec<LocalPosition>,
     /// `1..=CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX`, and exactly `placement_cells.len()`.
     population: usize,
-    /// SPAWN-1b (Codex P1 on #1981): what each point spawns, by point ordinal (same order and
-    /// length as `placement_cells`). An authored source may mix creatures and respawn delays
-    /// across its points, so these are per point, and the source stays one runtime source.
+    /// The base profile and timing for each placement cell, in the same order as the cells.
     points: Vec<SpawnPointDefinition>,
+    weighted_cells: BTreeMap<usize, WeightedSpawn>,
     /// D115: 5,000,000 (5 s).
     occupancy_retry_interval_micros: u64,
     /// Only the full-pin Content XML qualifier can select source warning phases.
@@ -49,6 +50,53 @@ struct SpawnPointDefinition {
     /// point because a source may mix blockable and non-blockable creatures (Codex P2 on
     /// #2002). The uniform fixture source is not blockable; only a test definition sets it.
     blockable: bool,
+}
+
+/// Crystal spawn_monster.cpp:429-490,558-587 (201189f8): one block at a
+/// source position, with a relative-weight draw over the ordinary creatures.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct WeightedSpawn {
+    total: u64,
+    choices: Vec<(u64, SpawnPointDefinition)>,
+}
+
+impl WeightedSpawn {
+    fn push(&mut self, weight: u32, profile: SpawnPointDefinition) {
+        // The source entry limit bounds the sum to 64 * u32::MAX.
+        self.total += u64::from(weight);
+        self.choices.push((self.total, profile));
+    }
+
+    fn select(
+        &self,
+        scope: RuntimeScopeRefV1,
+        source: SpawnSourceId,
+        cell: usize,
+        draw_ordinal: u64,
+    ) -> &SpawnPointDefinition {
+        let mut hash = Sha256::new();
+        hash.update(b"oteryn.spawn.weighted.v1\0");
+        hash.update(scope.world_id().as_bytes());
+        match scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                hash.update([0]);
+                hash.update(channel_id.as_bytes());
+            }
+            RuntimeScopeRefV1::Instance { instance_id, .. } => {
+                hash.update([1]);
+                hash.update(instance_id);
+            }
+        }
+        hash.update(source.0.to_be_bytes());
+        hash.update((cell as u64).to_be_bytes());
+        hash.update(draw_ordinal.to_be_bytes());
+        let digest: [u8; 32] = hash.finalize().into();
+        let (words, _) = digest.as_chunks::<8>();
+        let draw = u64::from_be_bytes(words[0]);
+        let ticket = ((u128::from(draw) * u128::from(self.total)) >> 64) as u64;
+        let index = self.choices.partition_point(|(end, _)| *end <= ticket);
+        &self.choices[index].1
+    }
 }
 
 /// SPAWN-1b: one point of a source being built: its placement cell and what it spawns.
@@ -121,6 +169,7 @@ impl SpawnDefinition {
             placement_cells,
             population,
             points: definitions,
+            weighted_cells: BTreeMap::new(),
             occupancy_retry_interval_micros,
             xml_source: None,
         })
@@ -152,27 +201,82 @@ impl SpawnDefinition {
         if points.len() > CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX {
             return Err(CarrierError::InvalidSpawnDefinition);
         }
-        let points = points
-            .into_iter()
-            .map(
-                |(cell, respawn_delay_ms, creature, initial_health, blockable)| {
-                    Ok((
-                        cell,
-                        SpawnPointDefinition {
-                            base_creature: creature.clone(),
-                            enabled: true,
-                            world_change: None,
-                            cyclopedia_improved: false,
-                            respawn_delay_micros: activation_micros(respawn_delay_ms)?,
-                            creature_target_identity: creature,
-                            creature_initial_health: activation_health(initial_health)?,
-                            blockable,
-                        },
-                    ))
-                },
-            )
-            .collect::<Result<Vec<_>, CarrierError>>()?;
-        Self::with_points(points, activation_micros(occupancy_retry_interval_ms)?)
+        let mut weighted_positions: BTreeMap<_, Option<usize>> = points
+            .iter()
+            .filter(|(_, _, _, _, _, weight)| weight.is_some())
+            .map(|(cell, ..)| (*cell, None))
+            .collect();
+        let mut weighted_cells = BTreeMap::<usize, WeightedSpawn>::new();
+        let mut ordinary = Vec::with_capacity(points.len());
+        for (cell, respawn_delay_ms, creature, initial_health, blockable, weight) in points {
+            let initial_health = activation_health(initial_health)?;
+            if initial_health <= 0 {
+                return Err(CarrierError::InvalidSpawnDefinition);
+            }
+            let profile = SpawnPointDefinition {
+                base_creature: creature.clone(),
+                enabled: true,
+                world_change: None,
+                cyclopedia_improved: false,
+                respawn_delay_micros: activation_micros(respawn_delay_ms)?,
+                creature_target_identity: creature,
+                creature_initial_health: initial_health,
+                blockable,
+            };
+            if let Some(slot) = weighted_positions.get_mut(&cell) {
+                let index = *slot.get_or_insert_with(|| {
+                    ordinary.push((cell, profile.clone()));
+                    ordinary.len() - 1
+                });
+                // Crystal stores the last admitted entry's interval on the block.
+                ordinary[index].1.respawn_delay_micros = profile.respawn_delay_micros;
+                let choices = weighted_cells
+                    .entry(index)
+                    .or_insert_with(|| WeightedSpawn {
+                        total: 0,
+                        choices: Vec::new(),
+                    });
+                if choices.choices.iter().any(|(_, existing)| {
+                    existing.creature_target_identity == profile.creature_target_identity
+                }) {
+                    return Err(CarrierError::InvalidSpawnDefinition);
+                }
+                choices.push(weight.map_or(1, NonZeroU32::get), profile);
+            } else {
+                ordinary.push((cell, profile));
+            }
+        }
+        weighted_cells.retain(|_, spawn| spawn.choices.len() > 1);
+        let mut definition =
+            Self::with_points(ordinary, activation_micros(occupancy_retry_interval_ms)?)?;
+        definition.weighted_cells = weighted_cells;
+        Ok(definition)
+    }
+
+    fn spawn_profile(
+        &self,
+        scope: RuntimeScopeRefV1,
+        source: SpawnSourceId,
+        cell: usize,
+        draw_ordinal: u64,
+    ) -> Result<&SpawnPointDefinition, CarrierError> {
+        let ordinary = self.point(cell)?;
+        Ok(match self.weighted_cells.get(&cell) {
+            Some(weighted) if ordinary.world_change.is_none() => {
+                weighted.select(scope, source, cell, draw_ordinal)
+            }
+            _ => ordinary,
+        })
+    }
+
+    fn next_draw(&self, cell: usize, ordinal: u64) -> Result<u64, CarrierError> {
+        if self.weighted_cells.contains_key(&cell) {
+            ordinal
+                .checked_add(1)
+                .ok_or(CarrierError::CapacityArithmeticOverflow)
+        } else {
+            Ok(ordinal)
+        }
     }
 
     /// Every point of this source blockable or not.
@@ -191,14 +295,21 @@ impl SpawnDefinition {
             .ok_or(CarrierError::UnknownSpawnCell)
     }
 
-    /// The respawn timing of point `ordinal`.
+    /// The respawn timing of a fixed-creature point.
     pub(super) fn timing(&self, ordinal: usize) -> Result<spawn::PointTiming, CarrierError> {
-        let point = self.point(ordinal)?;
+        self.timing_for_profile(ordinal, self.point(ordinal)?)
+    }
+
+    fn timing_for_profile(
+        &self,
+        ordinal: usize,
+        profile: &SpawnPointDefinition,
+    ) -> Result<spawn::PointTiming, CarrierError> {
         Ok(spawn::PointTiming {
-            respawn_delay_micros: point.respawn_delay_micros
-                / if point.cyclopedia_improved { 2 } else { 1 },
+            respawn_delay_micros: self.point(ordinal)?.respawn_delay_micros
+                / if profile.cyclopedia_improved { 2 } else { 1 },
             occupancy_retry_interval_micros: self.occupancy_retry_interval_micros,
-            blockable: point.blockable,
+            blockable: profile.blockable,
         })
     }
 }
@@ -246,8 +357,9 @@ pub type ActivationSpawnFacts = (Vec<(i32, i32, i16)>, u64, u64, String, u64);
 /// SPAWN-1b (Codex P1 on #1981): one activated spawn point as the carrier reads it: its
 /// placement cell, respawn delay (ms), creature key, authored initial health and its creature
 /// profile's `blocked_by_nearby_players` (CREATURE-AI-0 §6.3; Codex P2 on #2002), which is per
-/// point because one source may mix blockable and non-blockable creatures.
-pub type ActivationSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
+/// point because one source may mix blockable and non-blockable creatures. The optional
+/// positive weight marks a position shared by alternatives within this source.
+pub type ActivationSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool, Option<NonZeroU32>);
 
 /// SPAWN-1b (Codex P1 on #1981): one activated spawn source whose points may differ in
 /// creature, respawn delay and initial health: its points in authored (point-ordinal) order and
@@ -276,11 +388,14 @@ pub(super) struct SpawnCellState {
     /// Bumped each time an occurrence chain ends `Skipped` and a fresh one starts (§4.3
     /// "terminal disposition"): keeps every occurrence identity for this cell unique.
     pub(super) successor: u32,
+    /// Admission ordinal for this owner. Warning, occupancy and admission retries
+    /// reuse the same next ordinal until the replacement is admitted.
+    pub(super) draw_ordinal: u64,
 }
 
 /// One realized spawn source and its per-cell state, for this carrier's ownership
-/// generation (§4.3: `EphemeralScopeReset` -- a restart/scope-move realizes it again; nothing
-/// here is durable).
+/// generation (§4.3: `EphemeralScopeReset`). Spawn draw ordinals survive retries in
+/// this owner. Re-activation after a restart or scope move starts at ordinal zero.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct SpawnRealization {
     pub(super) source: SpawnSourceId,
@@ -783,13 +898,20 @@ impl ChannelRuntimeV1 {
     ) -> Result<(), CarrierError> {
         self.owner_fence()?;
         for source in &mut self.carrier.spawns {
-            for (cell, point) in source
+            for (index, (cell, point)) in source
                 .definition
                 .placement_cells
                 .iter()
                 .zip(&mut source.definition.points)
+                .enumerate()
             {
                 point.cyclopedia_improved = improved(*cell, &point.creature_target_identity);
+                if let Some(weighted) = source.definition.weighted_cells.get_mut(&index) {
+                    for (_, choice) in &mut weighted.choices {
+                        choice.cyclopedia_improved =
+                            improved(*cell, &choice.creature_target_identity);
+                    }
+                }
             }
         }
         Ok(())
@@ -798,12 +920,26 @@ impl ChannelRuntimeV1 {
         &self,
         point: spawn::SpawnPoint,
     ) -> Result<spawn::PointTiming, CarrierError> {
-        let definition = &self.spawn_realization(point)?.definition;
-        let ordinal = usize::from(point.ordinal);
-        let mut timing = definition.timing(ordinal)?;
-        if self.daily_boost.as_ref().is_some_and(|choice| {
-            choice.creature == definition.points[ordinal].creature_target_identity
-        }) {
+        let realization = self.spawn_realization(point)?;
+        let definition = &realization.definition;
+        let cell = usize::from(point.ordinal);
+        let state = realization
+            .cells
+            .get(cell)
+            .ok_or(CarrierError::UnknownSpawnCell)?;
+        let draw = definition.next_draw(cell, state.draw_ordinal)?;
+        let profile = definition.spawn_profile(
+            self.binding().runtime_scope(),
+            realization.source,
+            cell,
+            draw,
+        )?;
+        let mut timing = definition.timing_for_profile(cell, profile)?;
+        if self
+            .daily_boost
+            .as_ref()
+            .is_some_and(|choice| choice.creature == profile.creature_target_identity)
+        {
             // Canary spawn_monster.cpp:26,381-389 @47dfd51f: boost rate 2,
             // with the same one-second minimum after applying rates.
             timing.respawn_delay_micros = (timing.respawn_delay_micros / 2).max(1_000_000);
@@ -972,7 +1108,8 @@ impl ChannelActorCarrier {
         self.spawns
             .try_reserve(1)
             .map_err(|_| CarrierError::AllocationFailed)?;
-        for (cell, point) in definition.placement_cells.iter().zip(&definition.points) {
+        for (index, cell) in definition.placement_cells.iter().enumerate() {
+            let point = definition.spawn_profile(self.runtime_scope, source, index, 0)?;
             let actor = self.admit_creature(
                 continuity,
                 ActorState(0),
@@ -984,6 +1121,7 @@ impl ChannelActorCarrier {
                 live: Some(ExactActorRef(actor)),
                 attempt: 0,
                 successor: 0,
+                draw_ordinal: 0,
             });
         }
         self.spawns.insert(
@@ -1051,7 +1189,10 @@ impl ChannelActorCarrier {
             .placement_cells
             .get(ordinal)
             .ok_or(CarrierError::PlanConflict)?;
-        let spawned = realization.definition.point(ordinal)?;
+        let spawned =
+            realization
+                .definition
+                .spawn_profile(self.runtime_scope, source, ordinal, 0)?;
         let health = spawned.creature_initial_health;
         let identity = spawned.creature_target_identity.clone();
         let actor = self.admit_creature(continuity, ActorState(0), &identity, health)?;
@@ -1060,6 +1201,7 @@ impl ChannelActorCarrier {
             live: Some(ExactActorRef(actor)),
             attempt: 0,
             successor: 0,
+            draw_ordinal: 0,
         });
         self.initialize_position(continuity, actor, position_context, cell)?;
         Ok(())
@@ -1273,12 +1415,18 @@ impl ChannelActorCarrier {
             .placement_cells
             .get(cell_index)
             .ok_or(CarrierError::UnknownSpawnCell)?;
-        let dead_actor = realization
+        let state = realization
             .cells
             .get(cell_index)
-            .ok_or(CarrierError::UnknownSpawnCell)?
-            .live;
-        let point = realization.definition.point(cell_index)?;
+            .ok_or(CarrierError::UnknownSpawnCell)?;
+        let dead_actor = state.live;
+        let draw = realization
+            .definition
+            .next_draw(cell_index, state.draw_ordinal)?;
+        let point =
+            realization
+                .definition
+                .spawn_profile(self.runtime_scope, source, cell_index, draw)?;
         let initial_health = point.creature_initial_health;
         if initial_health <= 0 {
             return Err(CarrierError::InvalidCreatureHealth);
@@ -1308,6 +1456,7 @@ impl ChannelActorCarrier {
         let state = &mut self.spawns[spawn_index].cells[cell_index];
         state.live = Some(ExactActorRef(actor));
         state.attempt = 0;
+        state.draw_ordinal = draw;
         Ok(ExactActorRef(actor))
     }
 }

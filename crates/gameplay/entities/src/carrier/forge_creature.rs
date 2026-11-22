@@ -317,6 +317,7 @@ mod tests {
                     "oteryn:creature.rat".to_owned(),
                     100,
                     false,
+                    None,
                 )
             })
             .collect();

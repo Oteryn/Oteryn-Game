@@ -135,6 +135,7 @@ pub(in super::super) fn dependencies_with_capacity(
                 direction: Direction::West,
                 respawn_ms: 60_000,
                 boss_policy: None,
+                weight: None,
             }],
         }],
     };

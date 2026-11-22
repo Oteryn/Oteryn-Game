@@ -707,7 +707,7 @@ pub(crate) mod tests {
             ][..]
         };
         let count = points.len();
-        for (position, delay, creature, health, _) in points {
+        for (position, delay, creature, health, ..) in points {
             assert!((33330..=33350).contains(&position.0));
             assert!((31670..=31690).contains(&position.1));
             assert_eq!(position.2, 7);

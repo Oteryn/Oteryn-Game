@@ -245,7 +245,8 @@ pub async fn drain_due_items_in_transaction(
             .map_err(|_| SpellItemError::Rejected("Item timer batch bound"))?;
     let floor =
         super::item_loop_move::floor_transform::drain_due(tx, authority, limit - changed).await?;
-    Ok(changed + floor)
+    let torches = super::torch_lifecycle::drain_due(tx, authority, limit - changed - floor).await?;
+    Ok(changed + floor + torches)
 }
 
 /// Every stage is frozen by the complete original source Item policy in the
