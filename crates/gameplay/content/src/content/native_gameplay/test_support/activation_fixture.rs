@@ -72,6 +72,32 @@ pub fn activated_with_loot_tables(
     activated_with_custom_loot_tables(world, source_world, None)
 }
 
+/// Keep the source rat's combat, XP, Bestiary and Loot facts while omitting its corpse.
+pub fn activated_corpse_free_rat_fixture(
+    world: oteryn_protocol_oteryn::WorldId,
+    source_world: &[u8],
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
+    let mut supplied = manifest_input();
+    let mut creatures: CreatureProfilesDocument =
+        serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
+    let rat = creatures
+        .records
+        .iter_mut()
+        .find(|record| record.profile.target.key == "oteryn:creature.rat")
+        .expect("source rat");
+    let ProjectV2AuthoringProfileData::Creature(profile) = &mut rat.profile.data else {
+        panic!("rat Creature profile");
+    };
+    profile.details.as_mut().expect("rat details").corpse_item = None;
+    refresh_fixture_attack_roots(rat);
+    supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
+    supplied.source_world = Some(pinned(source_world));
+    activate(world, &supplied)
+}
+
 /// Explicit native reward fixture, compiled and pinned before runtime creation.
 /// Reclassify the already admitted rat only in this test input; retain its source HP, XP, corpse,
 /// loot probabilities, quantities and all Item definitions without modification.
