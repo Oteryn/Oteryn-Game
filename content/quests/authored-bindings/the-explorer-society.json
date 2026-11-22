@@ -290,7 +290,8 @@
               "failure_message": "Sorry, not possible.",
               "success_message": null,
               "sources": [
-                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua (14029) and https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_explorer_society/actions_findings.lua"
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:3395-3399",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_findings.lua:1-9"
               ],
               "effects": {
                 "item_reward": {
@@ -597,7 +598,7 @@
               "failure_message": "Sorry, not possible.",
               "success_message": null,
               "sources": [
-                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_explorer_society/actions_icicle.lua"
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_icicle.lua:1-13"
               ],
               "effects": {
                 "item_reward": {
@@ -1096,7 +1097,7 @@
               "failure_message": "Sorry, not possible.",
               "success_message": null,
               "sources": [
-                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_explorer_society/actions_botanist.lua"
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_botanist.lua:1-31"
               ]
             }
           }
@@ -1343,7 +1344,8 @@
               "failure_message": "Sorry, not possible.",
               "success_message": null,
               "sources": [
-                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item.lua (40041) and https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_explorer_society/actions_findings.lua"
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4721-4726",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_findings.lua:52-59"
               ],
               "effects": {
                 "item_reward": {
@@ -1596,7 +1598,8 @@
               "failure_message": "Sorry, not possible.",
               "success_message": null,
               "sources": [
-                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua (14032) and https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_explorer_society/actions_findings.lua"
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:3410-3414",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_explorer_society/actions_findings.lua:24-30"
               ],
               "effects": {
                 "item_reward": {
