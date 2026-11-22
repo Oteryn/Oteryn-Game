@@ -4,7 +4,7 @@
 
 use super::bundle_npcs::NpcBoot;
 use super::event;
-use crate::foundation::{ChannelRuntimeV1, MovementFacing, NpcPlacement, WorldId};
+use crate::foundation::{ChannelRuntimeV1, MovementFacing, NpcPlacement, NpcPlacements, WorldId};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_world_change::daily::DailyWorldChanges;
 use sha2::{Digest, Sha256};
@@ -89,10 +89,16 @@ fn shared_npcs(
     .map(|(_, key, at)| (key, at))
 }
 
-/// The active reset projection has its own contact cells for these bundle NPCs.
-pub(super) fn owns_npc(changes: &DailyWorldChanges, key: &str) -> bool {
-    changes.reset_epoch != 0
-        && (key == MAERYN || shared_npcs(changes).any(|(daily, _)| daily == key))
+/// Keep Maeryn's published downstairs contact until the first committed reset.
+pub(super) fn retain_bundle_npc(changes: &DailyWorldChanges, npc: &mut NpcPlacements) -> bool {
+    if changes.reset_epoch != 0 {
+        return npc.key != MAERYN && !shared_npcs(changes).any(|(daily, _)| daily == npc.key);
+    }
+    if npc.key == MAERYN && !npc.placements.is_empty() {
+        npc.placements.retain(|placement| placement.floor == -7);
+        return !npc.placements.is_empty();
+    }
+    true
 }
 
 /// Places the day's NPCs the loaded catalogue admits; one that cannot stand is logged.
@@ -350,25 +356,51 @@ pub(crate) mod tests {
     fn maeryn_moves_upstairs_only_during_the_grimvale_full_moon() {
         let mut admitted = boot(&[MAERYN]);
         if let NpcBoot::Place { table, .. } = &mut admitted {
-            table.npcs.push(crate::foundation::NpcPlacements {
+            table.npcs.push(NpcPlacements {
                 key: MAERYN.into(),
-                placements: vec![NpcPlacement {
-                    x: 33330,
-                    y: 31686,
-                    floor: -7,
-                    direction: MovementFacing::North,
-                }],
+                placements: vec![
+                    NpcPlacement {
+                        x: 33330,
+                        y: 31686,
+                        floor: -7,
+                        direction: MovementFacing::North,
+                    },
+                    NpcPlacement {
+                        x: 33332,
+                        y: 31686,
+                        floor: -6,
+                        direction: MovementFacing::North,
+                    },
+                ],
             });
         }
-        for (day, expected) in [(12, (33331, 31686, 7)), (13, (33332, 31686, 6))] {
+        for (changes, static_count, expected) in [
+            (
+                super::super::channel_boot::bootstrap_world_changes(),
+                1,
+                (33330, 31686, 7),
+            ),
+            (
+                DailyWorldChanges::roll(41, 1, 12, |_| u64::MAX),
+                0,
+                (33331, 31686, 7),
+            ),
+            (
+                DailyWorldChanges::roll(41, 1, 13, |_| u64::MAX),
+                0,
+                (33332, 31686, 6),
+            ),
+        ] {
             let mut runtime = channel_runtime();
-            let changes = DailyWorldChanges::roll(41, 1, day, |_| u64::MAX);
             assert_eq!(
                 super::super::bundle_npcs::place(&mut runtime, Some(&admitted), Some(&changes))
                     .expect("static bundle placement"),
-                0
+                static_count
             );
-            assert_eq!(apply(&mut runtime, Some(&admitted), &changes, None), 1);
+            assert_eq!(
+                apply(&mut runtime, Some(&admitted), &changes, None),
+                1 - static_count
+            );
             assert_eq!(npc_keys(&runtime), ["oteryn:npc.maeryn"]);
             let position = &runtime.visible_entities().npcs[0].position;
             assert_eq!((position.x, position.y, position.floor), expected);

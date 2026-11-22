@@ -541,9 +541,9 @@ pub(super) fn place(
         }) => {
             let mut table = table.clone();
             if let Some(daily) = daily {
-                table.npcs.retain(|npc| {
+                table.npcs.retain_mut(|npc| {
                     !admitted.contains(&npc.key)
-                        || !super::daily_world_changes::owns_npc(daily, &npc.key)
+                        || super::daily_world_changes::retain_bundle_npc(daily, npc)
                 });
             }
             let unix_ms = std::time::SystemTime::now()

@@ -442,7 +442,7 @@ pub(super) async fn prepare_channel(
 }
 
 // Epoch zero has no committed day. Never manufacture a local activation roll here.
-fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldChanges {
+pub(super) fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldChanges {
     oteryn_gameplay_world_change::daily::DailyWorldChanges {
         reset_epoch: 0,
         fury_gates: None,

@@ -426,7 +426,7 @@ const CONTACTS: &[Contact] = &[
     (
         "oteryn:npc.jack_fate_goroma",
         32161,
-        32558,
+        32559,
         6,
         Direction::North,
     ),
@@ -636,5 +636,82 @@ fn regional_npc_contacts_are_admitted_at_their_qualified_cells() -> Result<(), B
         refused.is_empty(),
         "regional contacts refused: {refused:#?}"
     );
+    Ok(())
+}
+
+#[test]
+fn regional_contacts_leave_native_passage_arrivals_enterable() -> Result<(), Box<dyn Error>> {
+    use oteryn_world_bundle_compiler::project::TravelRoute;
+
+    #[derive(serde::Deserialize)]
+    struct Overlay {
+        key: String,
+        x: u16,
+        y: u16,
+        floor: u8,
+    }
+
+    const PASSAGES: [&str; 2] = [
+        "oteryn:service.travel.jack_fate/goroma",
+        "oteryn:service.travel.dalbrect/isle_of_kings",
+    ];
+    let routes: Vec<Overlay> = serde_json::from_str(include_str!(
+        "../../../crates/gameplay/content/src/content/npc_catalogue/travel_routes.json"
+    ))?;
+    let routes: Vec<_> = routes
+        .into_iter()
+        .filter(|row| PASSAGES.contains(&row.key.as_str()))
+        .collect();
+    assert_eq!(routes.len(), PASSAGES.len());
+    let regions: Vec<_> = routes
+        .iter()
+        .map(|row| (row.x / 256, row.y / 256))
+        .collect();
+    let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
+    let mut project = project_regions(root, &regions)?;
+    for row in routes {
+        let (service, route) = row.key.rsplit_once('/').ok_or("native passage key")?;
+        project.families.routes.push(TravelRoute {
+            service: service.into(),
+            route: route.into(),
+            destination: (row.x, row.y, row.floor),
+        });
+    }
+    let (resolver, palette) = registry(root, &project)?;
+    let input = Input {
+        regions: &project.regions,
+        palette: &palette,
+        identity: Identity::default(),
+        world: world_extent(root)?,
+        build_class: BuildClass::NonProduction,
+        draft_areas: Vec::new(),
+        families: &project.families,
+    };
+    let (spawns, _) = realize_spawns(&input, &resolver)?;
+    let (table, report) = realize_npcs(&input, &resolver, &spawns)?;
+    let blocked: Vec<_> = report
+        .routes_held
+        .iter()
+        .filter(|hold| PASSAGES.contains(&format!("{}/{}", hold.service, hold.route).as_str()))
+        .collect();
+    assert!(
+        blocked.is_empty(),
+        "native passage arrivals held: {blocked:?}"
+    );
+    for (key, x, y) in [
+        ("oteryn:npc.jack_fate_goroma", 32161, 32559),
+        ("oteryn:npc.captain_jack", 32190, 31958),
+    ] {
+        assert!(
+            table.npcs.iter().any(|npc| {
+                npc.key == key
+                    && npc
+                        .placements
+                        .iter()
+                        .any(|p| (p.x, p.y, p.floor) == (x, y, -6))
+            }),
+            "{key} must still be available on the dock"
+        );
+    }
     Ok(())
 }

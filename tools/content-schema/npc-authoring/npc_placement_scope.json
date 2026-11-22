@@ -1094,6 +1094,19 @@
       },
       "reason": "Nearest clear ground at the source contact in the retained Oteryn map."
     },
+    "oteryn:npc.jack_fate_goroma": {
+      "source": {
+        "x": 32161,
+        "y": 32558,
+        "z": 6
+      },
+      "target": {
+        "x": 32161,
+        "y": 32559,
+        "z": 6
+      },
+      "reason": "Use the adjacent dock tile to keep Jack Fate's Goroma arrival clear."
+    },
     "oteryn:npc.john": {
       "source": {
         "x": 32138,

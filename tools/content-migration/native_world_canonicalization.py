@@ -1,13 +1,14 @@
 """Complete an explicit World package with the native writer."""
+
 from __future__ import annotations
 
 import argparse
 import json
 import os
-from pathlib import Path
 import stat
 import subprocess
 import tempfile
+from pathlib import Path
 
 from prebuilt import executable as prebuilt_executable
 
@@ -24,15 +25,17 @@ DOCUMENTS = (
     "provenance/sources.json",
     "worlds/world.json",
 )
-OWNED_DOCUMENTS = frozenset({
-    "content.lock.json",
-    "definitions/declarations.json",
-    "definitions/reference.json",
-    "manifest.json",
-    "project.json",
-    "provenance/imports.json",
-    "provenance/sources.json",
-})
+OWNED_DOCUMENTS = frozenset(
+    {
+        "content.lock.json",
+        "definitions/declarations.json",
+        "definitions/reference.json",
+        "manifest.json",
+        "project.json",
+        "provenance/imports.json",
+        "provenance/sources.json",
+    }
+)
 
 
 def read_documents(root: Path, *, exact: bool = False) -> dict[str, bytes]:
@@ -42,9 +45,13 @@ def read_documents(root: Path, *, exact: bool = False) -> dict[str, bytes]:
         entries = list(root.rglob("*"))
         if any(path.is_symlink() for path in entries):
             raise ValueError("native output contains a symlink")
-        files = {path.relative_to(root).as_posix() for path in entries if path.is_file()}
+        files = {
+            path.relative_to(root).as_posix() for path in entries if path.is_file()
+        }
         if files != set(DOCUMENTS):
-            raise ValueError("native output must contain exactly the eleven managed documents")
+            raise ValueError(
+                "native output must contain exactly the eleven managed documents"
+            )
     result = {}
     for locator in DOCUMENTS:
         path = root
@@ -62,26 +69,44 @@ def complete_world_project(
     repo_root: Path,
     input_root: Path,
     *,
-    include_buddel: bool = False,
+    include_npc_successors: bool = False,
     canonicalizer_manifest: Path | None = None,
+    materializer: Path | None = None,
 ) -> dict[str, int | str]:
     from buddel_travel import install_buddel
     from questpc7_thaian_authoring import _install_documents
     from regenerate_content import source_cohort_extent
+    from regional_npc_dialogue import install as install_dialogue
+    from regional_npc_prices import install as install_prices
 
     repo_root = repo_root.resolve(strict=True)
     input_root = input_root.absolute()
-    if canonicalizer_manifest is None:
+    if canonicalizer_manifest is None and materializer is None:
         manifest = os.environ.get("OTERYN_WORLD_CANONICALIZER_MANIFEST")
         if manifest is not None:
             canonicalizer_manifest = Path(manifest)
-    if canonicalizer_manifest is None:
-        command = ["cargo", "run", "--locked", "-p", "oteryn-gameplay-content",
-                   "--bin", "oteryn-world-project-canonicalize", "--"]
+    input_option = "--input-root"
+    if materializer is not None:
+        # The predecessor example can use its own native writer without a nested Cargo build.
+        command = [str(materializer)]
+        input_option = "--canonicalize-root"
+    elif canonicalizer_manifest is None:
+        command = [
+            "cargo",
+            "run",
+            "--locked",
+            "-p",
+            "oteryn-gameplay-content",
+            "--bin",
+            "oteryn-world-project-canonicalize",
+            "--",
+        ]
     else:
         # An explicitly supplied artifact must qualify; never hide a stale or
         # corrupted producer behind a new, unreported fallback build.
-        command = [str(prebuilt_executable("canonicalizer", canonicalizer_manifest, repo_root))]
+        command = [
+            str(prebuilt_executable("canonicalizer", canonicalizer_manifest, repo_root))
+        ]
     original = read_documents(input_root)
     # Stage this caller's package, never substitute the repository's generated World.
     # A failed admission or writer must leave the caller's package untouched.
@@ -93,20 +118,31 @@ def complete_world_project(
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
         _install_documents(repo_root, staging_root)
-        if include_buddel:
+        if include_npc_successors:
             install_buddel(repo_root, staging_root)
+            install_prices(repo_root, staging_root)
+            install_dialogue(repo_root, staging_root)
         authored_extent = source_cohort_extent(staging_root)
         # Native capture enforces the existing bounded source limits before serialization.
-        subprocess.run([
-            *command,
-            "--input-root", str(staging_root), "--output-root", str(output_root),
-        ], cwd=repo_root, check=True)
+        subprocess.run(
+            [
+                *command,
+                "--output-root",
+                str(output_root),
+                input_option,
+                str(staging_root),
+            ],
+            cwd=repo_root,
+            check=True,
+        )
         canonical = read_documents(output_root, exact=True)
         if source_cohort_extent(output_root) != authored_extent:
             raise ValueError("native rewrite changed the authored source cohort")
         for locator in set(DOCUMENTS) - OWNED_DOCUMENTS:
             if canonical[locator] != original[locator]:
-                raise ValueError(f"native rewrite changed an unowned document: {locator}")
+                raise ValueError(
+                    f"native rewrite changed an unowned document: {locator}"
+                )
         if read_documents(input_root) != original:
             raise ValueError("World input changed while completing the native package")
 
@@ -118,7 +154,9 @@ def complete_world_project(
                 if canonical[locator] == original[locator]:
                     continue
                 destination = input_root / locator
-                with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as staged:
+                with tempfile.NamedTemporaryFile(
+                    dir=destination.parent, delete=False
+                ) as staged:
                     staged_path = Path(staged.name)
                     replacements.append((staged_path, destination))
                     staged.write(canonical[locator])
@@ -135,14 +173,27 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--input-root", type=Path, required=True)
-    parser.add_argument("--canonicalizer-manifest", type=Path,
-                        help="same-head manifest from content-migration/prebuilt.py build")
+    writer = parser.add_mutually_exclusive_group()
+    writer.add_argument("--materializer", type=Path)
+    writer.add_argument(
+        "--canonicalizer-manifest",
+        type=Path,
+        help="same-head manifest from content-migration/prebuilt.py build",
+    )
     args = parser.parse_args()
     extent = complete_world_project(
-        args.repo_root, args.input_root, include_buddel=True,
+        args.repo_root,
+        args.input_root,
+        include_npc_successors=True,
         canonicalizer_manifest=args.canonicalizer_manifest,
+        materializer=args.materializer,
     )
-    print(json.dumps({"canonical_documents": len(DOCUMENTS), "source_cohort": extent}, sort_keys=True))
+    print(
+        json.dumps(
+            {"canonical_documents": len(DOCUMENTS), "source_cohort": extent},
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":
