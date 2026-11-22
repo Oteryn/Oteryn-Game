@@ -14,6 +14,7 @@
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
 //!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
+mod coal_basin;
 mod dreamer_ring;
 pub(super) mod elemental_arrival;
 mod floor_assembly;
@@ -776,14 +777,16 @@ pub(super) async fn committed_loop_move(
         return None;
     }
     if replay == LoopMoveReplay::Moved
-        && admission.bundle_map().is_some_and(|map| {
-            map.facts
-                .base_text(oteryn_gameplay_items::map_pickup::PARCHMENT_SEAL_PLACEMENT)
-                .is_some()
-        })
+        && matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        )
+        && admission.bundle_map().is_some()
     {
         let _permit = admission.spell_lane_permit().await?;
-        if !parchment::publish(admission, fence, command).await {
+        if !parchment::publish(admission, fence, command).await
+            || !coal_basin::publish(admission, fence, command, false).await
+        {
             return None;
         }
     }
@@ -887,7 +890,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
     };
-    let (native, pins, index, mailbox, ring_target, seed_target, assembly_target) = {
+    let (native, pins, index, mailbox, ring_target, seed_target, assembly_target, basin_target) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
@@ -903,6 +906,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
         let mut ring_target = None;
         let mut seed_target = None;
         let mut assembly_target = None;
+        let mut basin_target = None;
         let pins =
             super::bundle_map_position(&mut runtime, admission.movement_cells(), actor).map(|at| {
                 // MAIL: a move onto a tile holding a mailbox posts into it.
@@ -913,6 +917,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
                         i8::try_from(to.floor),
                     )
                 {
+                    basin_target = coal_basin::target(at.map, &runtime, *to, admission.reset_epoch);
                     mailbox = super::mail::mailbox_at(at.map, index, TilePos { x, y, floor });
                     ring_target =
                         dreamer_ring::target(at.map, *to, content_digest, admission.reset_epoch);
@@ -936,6 +941,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
             ring_target,
             seed_target,
             assembly_target,
+            basin_target,
         )
     };
     let Some(native) = native else {
@@ -1041,8 +1047,28 @@ pub(super) async fn move_loop_item_with_house_capacity(
         )
         .await;
     let mut ring_opened = false;
-    let ring_result = match (elemental_result.is_none(), ring_target.as_ref()) {
-        (true, Some(prepared)) => {
+    let mut basin_offered = false;
+    let offering_result = match (
+        elemental_result.is_none(),
+        basin_target.as_ref(),
+        ring_target.as_ref(),
+    ) {
+        (true, Some(target), _) => {
+            admission
+                .root
+                .commit_item_loop_coal_basin(
+                    &permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    command_ref,
+                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                    loop_request.clone(),
+                    target.clone(),
+                )
+                .await
+        }
+        (true, None, Some(prepared)) => {
             admission
                 .root
                 .commit_item_loop_dreamer_ring(
@@ -1061,9 +1087,10 @@ pub(super) async fn move_loop_item_with_house_capacity(
     };
     let seed_result = match elemental_result {
         Some(result) => result.map(Some),
-        None => match ring_result {
+        None => match offering_result {
             Ok(Some(Ok((receipt, opened)))) => {
-                ring_opened = opened;
+                ring_opened = opened && basin_target.is_none();
+                basin_offered = opened && basin_target.is_some();
                 Ok(Some(Ok(receipt)))
             }
             Ok(Some(Err(refusal))) => Ok(Some(Err(refusal))),
@@ -1188,6 +1215,20 @@ pub(super) async fn move_loop_item_with_house_capacity(
     let parchment_removed = matches!(committed, Ok(Ok(_))) && pickup == Some((33063, 31624, -15));
     if touches_ground && !matches!(committed, Ok(Err(_))) {
         admission.states.loop_ground.invalidate();
+    }
+    if let Some(target) = basin_target
+        && let Ok(Ok(receipt)) = &committed
+        && !coal_basin::finish_drop(
+            admission,
+            fence,
+            command_ref,
+            &target,
+            receipt,
+            basin_offered,
+        )
+        .await
+    {
+        return LoopMoveResult::Unknown;
     }
     if parchment_removed && !parchment::publish(admission, fence, command_ref).await {
         return LoopMoveResult::Unknown;

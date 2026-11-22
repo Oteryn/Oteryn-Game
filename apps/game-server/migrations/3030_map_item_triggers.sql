@@ -96,3 +96,55 @@ REVOKE ALL ON game_parchment_removals FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_parchment_mint_cycle(),game_parchment_removal() FROM PUBLIC;
 GRANT SELECT ON game_parchment_removals TO oteryn_game_runtime;
 GRANT SELECT ON game_parchment_removals TO oteryn_game_control;
+
+-- Both AddItem offerings retire a newly dropped item in the physical move
+-- transaction. Keep the existing retirement and audit proof for both sources.
+ALTER TABLE game_dreamer_ring_offerings
+    ALTER COLUMN trees_before DROP NOT NULL,
+    ADD COLUMN basin_uid INTEGER,
+    ADD COLUMN basin_recipient JSONB,
+    ADD CHECK (
+        (basin_uid IS NULL AND basin_recipient IS NULL AND trees_before IS NOT NULL)
+        OR (basin_uid IS NOT NULL AND basin_uid BETWEEN 9033 AND 9040 AND trees_before IS NULL
+            AND (basin_recipient IS NULL OR
+                (jsonb_typeof(basin_recipient)='object' AND octet_length(basin_recipient::text)<=512)))
+    );
+
+DO $migration$
+DECLARE body TEXT; old TEXT; replacement TEXT;
+BEGIN
+    body := pg_get_functiondef('game_dreamer_ring_admit()'::regprocedure);
+    old := $old$AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family='Item'
+    AND i.definition_production_key='oteryn:item.tibia.i6299'$old$;
+    replacement := $new$AND i.lifecycle=1 AND i.definition_family='Item'
+    AND ((NEW.basin_uid IS NULL AND i.quantity=1 AND i.definition_production_key='oteryn:item.tibia.i6299')
+         OR (NEW.basin_uid IS NOT NULL AND i.quantity BETWEEN 1 AND 100 AND i.definition_production_key='oteryn:item.tibia.i3042'
+             AND g.spatial_position = CASE NEW.basin_uid
+                WHEN 9033 THEN int4send(33098)||int4send(32816)||int2send(-13::smallint)
+                WHEN 9034 THEN int4send(33293)||int4send(32741)||int2send(-13::smallint)
+                WHEN 9035 THEN int4send(33073)||int4send(32589)||int2send(-13::smallint)
+                WHEN 9036 THEN int4send(33240)||int4send(32855)||int2send(-13::smallint)
+                WHEN 9037 THEN int4send(33276)||int4send(32552)||int2send(-14::smallint)
+                WHEN 9038 THEN int4send(33233)||int4send(32692)||int2send(-13::smallint)
+                WHEN 9039 THEN int4send(33135)||int4send(32682)||int2send(-12::smallint)
+                WHEN 9040 THEN int4send(33161)||int4send(32831)||int2send(-10::smallint)
+             END))$new$;
+    IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN
+        RAISE EXCEPTION 'missing AddItem offering input guard';
+    END IF;
+    body := replace(body,old,replacement);
+    old := 'AND l.to_kind=3 AND l.quantity_after=1';
+    IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN
+        RAISE EXCEPTION 'missing AddItem move quantity guard';
+    END IF;
+    body := replace(body,old,'AND l.to_kind=3 AND l.quantity_after=i.quantity');
+    old := 'AND i.last_transaction_id=r.transaction_id AND i.state_revision=l.state_revision_before+1)';
+    IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN
+        RAISE EXCEPTION 'missing AddItem move lineage guard';
+    END IF;
+    body := replace(body,old,$new$AND
+        ((i.last_transaction_id=r.transaction_id AND i.state_revision=l.state_revision_before+1)
+         OR (NEW.basin_uid IS NOT NULL AND l.from_kind=0 AND i.minted_transaction_id=r.transaction_id
+             AND i.last_transaction_id IS NULL AND i.state_revision=1)))$new$);
+    EXECUTE body;
+END $migration$;
