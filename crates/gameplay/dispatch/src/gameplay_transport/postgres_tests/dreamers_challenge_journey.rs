@@ -15,7 +15,7 @@ use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
 use oteryn_gameplay_quests::quest::{
-    dreamer_fire_bug, dreamer_puzzles,
+    dreamer_fire_bug,
     loader::load_embedded_quest_state,
     world_callbacks::{Offering, Position},
 };
@@ -41,18 +41,37 @@ const NPC: &str = "oteryn:npc.the_dream_master";
 const START: Position = pos(32861, 32240, 9);
 const NAME: &str = "dreamers_challenge_full_journey";
 
+// Crystal actions_walls.lua and actions_tic_tac_teleport.lua on the committed cells.
+const WALL_CONTROLS: [(u16, u16); 4] = [
+    (32763, 32291),
+    (32761, 32291),
+    (32763, 32289),
+    (32761, 32289),
+];
+const TOKENS: [(u16, u16, u16); 9] = [
+    (32845, 32264, 3548),
+    (32843, 32266, 3548),
+    (32843, 32268, 3548),
+    (32845, 32268, 3548),
+    (32844, 32267, 3548),
+    (32840, 32269, 3548),
+    (32841, 32269, 3547),
+    (32840, 32268, 3547),
+    (32842, 32267, 3547),
+];
+
 const fn pos(x: u16, y: u16, z: i8) -> Position {
     Position { x, y, floor: -z }
 }
 
 #[test]
 fn dreamers_challenge_full_journey() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     let started = Instant::now();
-    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, || {
-        run(async |admin| {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, move || {
+        run(async move |_| {
             let harness = Harness::create_with_admission_seed(admin, NAME, true, false).await?;
             let result = exercise(&harness).await;
             harness.cleanup().await?;
@@ -331,7 +350,7 @@ impl Journey<'_, '_, '_> {
         self.arrived(pos(32749, 32289, 14)).await?;
         self.walk(pos(32764, 32305, 14), 0).await?;
         self.arrived(pos(32762, 32289, 14)).await?;
-        for (x, y) in dreamer_puzzles::WALL_CONTROLS {
+        for (x, y) in WALL_CONTROLS {
             self.use_item(pos(x, y, 14), 2772, None).await?;
             self.check("wall lever").await?;
         }
@@ -344,12 +363,22 @@ impl Journey<'_, '_, '_> {
             .await?;
         self.update(2821, 1);
         self.check("Book of the Lost Heroes").await?;
+        let book: String = sqlx::query_scalar(
+            "SELECT t.text FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id) \
+             JOIN game_item_container_entries e USING(item_instance_id) \
+             WHERE e.character_id=encode($1,'hex')::uuid AND i.definition_production_key=$2 LIMIT 1",
+        )
+        .bind(id(41).as_slice())
+        .bind(item_key(2821))
+        .fetch_one(&self.h.pool)
+        .await?;
+        assert_eq!(book, "Askuro\nMantar\nIldoni\nMaxmof\nXemodo\nOxanti");
         self.use_item(pos(32838, 32263, 14), 2772, Some(2272))
             .await?;
         self.update(3547, 8);
         self.update(3548, 12);
         self.check("token switch").await?;
-        for (x, y, item) in dreamer_puzzles::TOKENS {
+        for (x, y, item) in TOKENS {
             self.drop_item(pos(x, y, 14), item, 1).await?;
             self.update(item, -1);
             self.check("tic-tac-toe token placed through MOVE").await?;
@@ -379,6 +408,27 @@ impl Journey<'_, '_, '_> {
             .await?;
         self.update(2853, 1);
         self.check("Dream Realm wine bag").await?;
+        let bag: Vec<(String, i32)> = sqlx::query_as(
+            "SELECT i.definition_production_key,coalesce(f.fluid_subtype,0)::integer \
+             FROM game_item_nested_entries n JOIN game_item_instances i USING(item_instance_id) \
+             LEFT JOIN game_item_fluid_states f USING(item_instance_id) \
+             JOIN game_item_instances root ON root.item_instance_id=n.parent_item_instance_id \
+             JOIN game_item_container_entries e ON e.item_instance_id=root.item_instance_id \
+             WHERE e.character_id=encode($1,'hex')::uuid AND root.definition_production_key=$2 \
+             ORDER BY i.definition_production_key LIMIT 4",
+        )
+        .bind(id(41).as_slice())
+        .bind(item_key(2853))
+        .fetch_all(&self.h.pool)
+        .await?;
+        assert_eq!(
+            bag,
+            [
+                (item_key(2874), 2),
+                (item_key(3602), 0),
+                (item_key(6498), 0)
+            ]
+        );
         self.walk(pos(32760, 32330, 14), 0).await?;
         self.arrived(pos(32844, 32238, 14)).await?;
         self.walk(pos(32840, 32226, 14), 0).await?;

@@ -11,12 +11,6 @@
       },
       "tracks": [
         {
-          "key": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/advancement",
-          "initial": 0,
-          "minimum": 0,
-          "maximum": 1
-        },
-        {
           "key": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/board-switch",
           "initial": 0,
           "minimum": 0,
@@ -339,10 +333,7 @@
                   "appearance": 2772
                 }
               },
-              "lever": [
-                2772,
-                2773
-              ],
+              "lever": null,
               "reversible": false,
               "passages": [],
               "teleport": null,
@@ -375,7 +366,10 @@
               "sources": [
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua:13-62"
               ],
-              "requires_world_admission": true
+              "requires_world_admission": true,
+              "effects": {
+                "transform": 2773
+              }
             }
           }
         },
@@ -703,58 +697,6 @@
           }
         },
         {
-          "key": "advancement",
-          "completes": false,
-          "trigger": {
-            "kind": "npc_dialogue",
-            "callback": {
-              "key": "oteryn:quest-reward/dreamers-challenge/advancement",
-              "quest": "oteryn:quest.dreamer_s_challenge_quest",
-              "npc": "oteryn:npc.the_dream_master",
-              "keywords": [
-                "advancement",
-                "demonic essence"
-              ],
-              "topic": 0,
-              "next_topic": 3,
-              "storage": [
-                {
-                  "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s6",
-                  "minimum": 1,
-                  "maximum": 1,
-                  "set": 1,
-                  "preserve": true
-                },
-                {
-                  "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s7",
-                  "minimum": 0,
-                  "maximum": 0,
-                  "set": 0,
-                  "preserve": true
-                },
-                {
-                  "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/advancement",
-                  "minimum": 0,
-                  "maximum": 0,
-                  "set": 1
-                }
-              ],
-              "take": [],
-              "give": null,
-              "outfit": null,
-              "achievement": null,
-              "reply": [
-                "Did you bring 100 demonic essences for your Document of the Follower?"
-              ],
-              "sources": [
-                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_dream_master.lua:61-105",
-                "https://tibia.fandom.com/wiki/Dreamer%27s_Challenge_Quest/Spoiler"
-              ],
-              "requires_premium": true
-            }
-          }
-        },
-        {
           "key": "report",
           "completes": true,
           "trigger": {
@@ -771,13 +713,6 @@
               "storage": [
                 {
                   "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s6",
-                  "minimum": 1,
-                  "maximum": 1,
-                  "set": 1,
-                  "preserve": true
-                },
-                {
-                  "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/advancement",
                   "minimum": 1,
                   "maximum": 1,
                   "set": 1,

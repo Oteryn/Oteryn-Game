@@ -6,7 +6,6 @@ use super::{
 };
 mod admission;
 mod conditional_cells;
-mod dreamer_puzzles;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
@@ -14,6 +13,7 @@ mod court_warlock;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod dreamer_carrot;
+mod dreamer_puzzles;
 mod effects;
 mod encounter;
 pub(super) use encounter::room_contains;
