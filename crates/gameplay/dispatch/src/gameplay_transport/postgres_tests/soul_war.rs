@@ -175,7 +175,8 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
                 key: "oteryn:quest-callback/soul-war-final-reward".into(),
                 quest: "oteryn:quest/soul-war".into(),
                 trigger: Trigger::Use,
-                selector: Selector { target_definition: None,
+                selector: Selector {
+                    target_definition: None,
                     ordinal: None,
                     native: None,
                     position: Some(trigger),

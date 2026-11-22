@@ -85,7 +85,7 @@ pub(super) fn encode(
                 RefusalDetail::of_step(outcome.disposition),
             ),
         ),
-        Dispatch::Use(outcome) => {
+        Dispatch::Use(outcome) | Dispatch::UseWithoutWalk(outcome) => {
             let (disposition, gate_message_id) = negotiated_use_disposition(
                 UseCapabilities {
                     item_use: session

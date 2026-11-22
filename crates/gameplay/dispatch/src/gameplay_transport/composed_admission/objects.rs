@@ -58,7 +58,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .states
                 .world_gate
                 .lock()
-                .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
+                .is_ok_and(|mut gate| gate.admit_use_with(actor, self.clock_origin.elapsed()))
             {
                 return Some(UseOutcome {
                     disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Exhausted,

@@ -25,7 +25,9 @@ type TestResult<T = ()> = fixture::TestResult<T>;
 use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_world::map;
-use oteryn_gameplay_world::map::boot::BundleWorld;
+use oteryn_gameplay_world::map::boot::{BundleCollisionIndexExt, BundleWorld};
+use oteryn_gameplay_world::map::view::MapFacts;
+use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 const CREATURE: &str = "oteryn:creature.koshei_the_deathless";
 const QUEST: &str = "oteryn:quest.koshei_the_deathless_quest";
@@ -106,7 +108,25 @@ async fn runtime_login(h: &fixture::Harness) -> TestResult<(String, String)> {
     ))
 }
 
+async fn assert_corpse_migration_reruns(h: &fixture::Harness) -> TestResult {
+    const MIGRATION: &str = include_str!("../../../migrations/2977_koshei_corpse_chain.sql");
+    sqlx::raw_sql(MIGRATION).execute(&h.pool).await?;
+    let mut partial = h.pool.begin().await?;
+    sqlx::raw_sql(
+        "CREATE OR REPLACE FUNCTION game_source_corpse_durations_v1(p_key TEXT) RETURNS BIGINT[]
+         LANGUAGE sql IMMUTABLE STRICT AS 'SELECT NULL::BIGINT[]'",
+    )
+    .execute(&mut *partial)
+    .await?;
+    let result = sqlx::raw_sql(MIGRATION).execute(&mut *partial).await;
+    assert!(matches!(result, Err(sqlx::Error::Database(ref e))
+        if e.message() == "Koshei corpse root already has a source owner"));
+    partial.rollback().await?;
+    Ok(())
+}
+
 async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) -> TestResult {
+    assert_corpse_migration_reruns(h).await?;
     super::engnpc2_live_transport::fresh(h).await?;
     let scope = fixture::fence(1)?.runtime_scope;
     let world = scope.world_id();
@@ -334,15 +354,19 @@ async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) 
         use_with_map_item: Some(MapUseTarget::Item(std::num::NonZeroU64::MIN)),
     })
     .map_err(debug)?;
-    let reward_door = oteryn_world_bundle::bundle::placement_key(-12, 33269, 32446, 1)
-        .ok_or("Koshei reward door source placement")?;
+    exercise_catacomb(&mut owner, &mut admitted, &scene).await?;
+    let reward_door = map::overlay::TilePos {
+        x: 33269,
+        y: 32446,
+        floor: -12,
+    };
     assert_eq!(
-        scene
-            .facts()
-            .doors()
-            .toggle(reward_door, 0, false, 40, false),
-        Some(map::door::DoorUse::Locked)
+        world_use(&mut owner, &mut admitted, &scene, reward_door, 1, false)
+            .await?
+            .0,
+        UseDisposition::Locked
     );
+    place(&owner, admitted, at).await?;
     let no_target = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::MIN),
         use_with: None,
@@ -404,6 +428,53 @@ async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) 
         ]
     );
     refuse(&mut owner, &mut admitted, h, &payload, gold, Some(corpse)).await?;
+    let (next, exhausted, _, _) = wire(
+        &owner,
+        admitted,
+        admitted.continuity.next_command_id,
+        &payload,
+        Some(amulet),
+        Some(corpse),
+        false,
+    )
+    .await?;
+    admitted = next;
+    assert_eq!(exhausted, UseDisposition::Exhausted);
+    place(
+        &owner,
+        admitted,
+        MovementLocalPosition {
+            y: CORPSE.y - 2,
+            ..CORPSE
+        },
+    )
+    .await?;
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let (next, too_far, _, _) = wire(
+        &owner,
+        admitted,
+        admitted.continuity.next_command_id,
+        &payload,
+        Some(amulet),
+        Some(corpse),
+        false,
+    )
+    .await?;
+    admitted = next;
+    assert_eq!(too_far, UseDisposition::TooFar);
+    assert_eq!(
+        runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        MovementLocalPosition {
+            y: CORPSE.y - 2,
+            ..CORPSE
+        }
+    );
+    place(&owner, admitted, at).await?;
     let until_first_decay: i64 = sqlx::query_scalar(
         "SELECT greatest(0, $1::bigint - floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint)",
     )
@@ -414,6 +485,7 @@ async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) 
         until_first_decay.try_into()?,
     ))
     .await;
+    refuse(&mut owner, &mut admitted, h, &payload, amulet, Some(corpse)).await?;
     runtime_root.maintain_ready_once().await?;
     composed_test_owner::drain_source_item_deadlines(&owner).await;
     let aged: String = sqlx::query_scalar(
@@ -453,16 +525,8 @@ async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) 
     let before = ground_snapshot(h).await?;
     owner.clock_origin -= std::time::Duration::from_secs(2);
     let command = admitted.continuity.next_command_id;
-    let (next, result, actual, feedback) = wire(
-        &owner,
-        admitted,
-        command,
-        &payload,
-        Some(amulet),
-        Some(corpse),
-        true,
-    )
-    .await?;
+    let (next, result, actual, feedback) =
+        hand_in_while_peer_uses(&owner, admitted, h, command, &payload, amulet, corpse).await?;
     admitted = next;
     assert_eq!(result, UseDisposition::Committed);
     assert_eq!(feedback, source::callback()?.success_message);
@@ -473,22 +537,21 @@ async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) 
         .map_err(debug)?;
     assert_eq!(copy.tracks().get(source::TRACK), Some(&1));
     assert!(copy.meets_door_storage(41351));
-    assert_eq!(
-        scene
-            .facts()
-            .doors()
-            .toggle(reward_door, 0, false, 40, copy.meets_door_storage(41351)),
-        Some(map::door::DoorUse::Toggled {
-            revision: 1,
-            open: true
-        })
-    );
     assert_eq!(copy.tracks().get(FRAGMENT), Some(&1));
     assert_eq!(copy.tracks().get(FRAGMENTS), Some(&1));
     assert_eq!(copy.tracks().get(AMULET_PROGRESS), Some(&2));
     assert_eq!(copy.tracks().get(AMULET_STARTED), Some(&amulet_started));
-    let (_, replay, _, _) = wire(&owner, admitted, command, &actual, None, None, false).await?;
+    let (next, replay, _, _) = wire(&owner, admitted, command, &actual, None, None, false).await?;
+    admitted = next;
     assert_eq!(replay, UseDisposition::Committed);
+    assert_eq!(
+        world_use(&mut owner, &mut admitted, &scene, reward_door, 1, false)
+            .await?
+            .0,
+        UseDisposition::Committed
+    );
+    assert!(scene.enterable(reward_door));
+    place(&owner, admitted, at).await?;
     assert_eq!(snapshot(h).await?, (1, 0, 1, 1));
     let after = ground_snapshot(h).await?;
     assert_eq!(before, after);
@@ -503,6 +566,88 @@ async fn exercise(h: &fixture::Harness, runtime_url: &str, runtime_login: &str) 
                 && *effect == 14)
             .count(),
         1
+    );
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let (next, opened, _, _) = wire(
+        &owner,
+        admitted,
+        admitted.continuity.next_command_id,
+        &no_target,
+        None,
+        Some(corpse),
+        false,
+    )
+    .await?;
+    assert_eq!(opened, UseDisposition::Committed);
+    admitted = next;
+    let successor = {
+        let runtime = runtime.lock().await;
+        let successor = runtime
+            .positioned_melee_census()
+            .map_err(debug)?
+            .into_iter()
+            .find_map(|(actor, pos, session)| {
+                (session.is_none() && pos.position() == CORPSE).then_some(actor)
+            })
+            .ok_or("Koshei must respawn immediately on direct corpse USE")?;
+        assert_ne!(successor, respawned);
+        assert_eq!(
+            runtime.live_creature_health(successor),
+            Some(u64::try_from(
+                runtime
+                    .companion_policy(CREATURE)
+                    .map_err(debug)?
+                    .maximum_health
+            )?)
+        );
+        successor
+    };
+    composed_test_owner::defeat_spawned_creature(&owner, &admitted, successor, 902, CREATURE)
+        .await?;
+    // Advance the database-owned schedule anchors so the real decay owner can
+    // process all four stages without a ten-minute wall-clock wait.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "UPDATE game_item_mint_receipts SET materialized_at=materialized_at-630000
+         WHERE loot_table_production_key='oteryn:item.tibia.i7535' AND loot_purpose_key='CORPSE_MATERIALIZATION'"
+    ).execute(&mut *tx).await?;
+    sqlx::query(
+        "UPDATE game_spell_field_temporal_schedules s SET expires_at_unix_ms=expires_at_unix_ms-630000
+         FROM game_item_mint_receipts m WHERE m.item_instance_id=s.item_instance_id
+         AND m.loot_table_production_key='oteryn:item.tibia.i7535'"
+    ).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let terminal = async {
+        loop {
+            runtime_root.maintain_ready_once().await?;
+            composed_test_owner::drain_source_item_deadlines(&owner).await;
+            let count: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_instances WHERE lifecycle=1
+                 AND definition_production_key='oteryn:item.tibia.i7540'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            if count == 3 {
+                return Ok::<_, Box<dyn std::error::Error>>(());
+            }
+        }
+    };
+    tokio::time::timeout(std::time::Duration::from_secs(10), terminal).await??;
+    for _ in 0..2 {
+        composed_test_owner::drain_corpse_deadlines(&owner).await;
+    }
+    let remaining: (i64, i64) = sqlx::query_as(
+        "SELECT count(*) FILTER (WHERE i.lifecycle=1),count(*) FILTER (WHERE i.lifecycle=2)
+         FROM game_item_mint_receipts m JOIN game_item_instances i USING(item_instance_id)
+         WHERE m.loot_table_production_key='oteryn:item.tibia.i7535' AND m.loot_purpose_key='CORPSE_MATERIALIZATION'"
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(
+        remaining,
+        (1, 2),
+        "superseded terminal remains release Ground custody"
     );
     Ok(())
 }
@@ -671,153 +816,269 @@ fn shipped_encounter(
     ))
 }
 
-#[test]
-fn koshei_catacomb_source_route_connects_surface_to_encounter() -> TestResult {
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(|| -> Result<(), String> {
-            let world = fixture::fence(1).map_err(|error| error.to_string())?.runtime_scope.world_id();
-            let channel = crate::foundation::ChannelId::decode(&id(43)).map_err(|error| format!("{error:?}"))?;
-            let (controller, _) = oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
-            let native = controller.active().and_then(|active| active.native_gameplay()).ok_or("native gameplay")?;
-            let (scene, _) = shipped_encounter(native, world, channel).map_err(|error| error.to_string())?;
-            assert_catacomb_route(&scene).map_err(|error| error.to_string())
-        })?
-        .join()
-        .map_err(|_| "Koshei map thread failed")?
-        .map_err(Into::into)
+async fn place(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    destination: MovementLocalPosition,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("player")?;
+    let oteryn_gameplay_content::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
+        index,
+    ) = owner.movement_cells.index()
+    else {
+        return Err("native bundle".into());
+    };
+    let closed = map::floor::BundleDoors(index.map().facts.doors());
+    let mut runtime = owner.runtime.lock().await;
+    let expected = runtime.read_actor_position(actor).map_err(debug)?;
+    let proof = map::floor::prepare_quest_callback_teleport(
+        &runtime,
+        &owner.movement_cells,
+        actor,
+        admitted.game_session_id,
+        expected,
+        destination,
+        false,
+        &closed,
+    )
+    .map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
+    Ok(())
 }
 
-fn assert_catacomb_route(scene: &BundleWorld) -> TestResult {
-    use map::door::DoorUse;
-    use map::facts::{QuestCallbackProjection, QuestTimedPassage};
-    use map::floor::{Ground, palette_mask, resolve_landing};
-    use map::view::MapFacts;
-    use oteryn_gameplay_world::movement::CardinalStep;
-    use oteryn_world_bundle::bundle::{Family, placement_key};
-    use std::collections::{BTreeSet, VecDeque};
+async fn world_use(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    scene: &BundleWorld,
+    pos: map::overlay::TilePos,
+    ordinal: u8,
+    feedback: bool,
+) -> TestResult<(UseDisposition, Option<String>)> {
+    let key = oteryn_world_bundle::bundle::placement_key(pos.floor, pos.x, pos.y, ordinal)
+        .ok_or("world placement")?;
+    let near = [
+        (-1, 0),
+        (1, 0),
+        (0, -1),
+        (0, 1),
+        (-1, -1),
+        (1, -1),
+        (-1, 1),
+        (1, 1),
+    ]
+    .into_iter()
+    .filter_map(|(dx, dy)| {
+        Some(map::overlay::TilePos {
+            x: pos.x.checked_add_signed(dx)?,
+            y: pos.y.checked_add_signed(dy)?,
+            floor: pos.floor,
+        })
+    })
+    .find(|near| scene.base().tile(near.x, near.y, near.floor).is_some() && scene.enterable(*near))
+    .ok_or("walkable cell in reach")?;
+    place(
+        owner,
+        *admitted,
+        MovementLocalPosition {
+            x: i32::from(near.x),
+            y: i32::from(near.y),
+            floor: -i16::from(near.floor),
+        },
+    )
+    .await?;
+    let mut placement = scene.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::WorldObject(oteryn_protocol_oteryn::world_object::WorldObjectTarget {
+            placement,
+            expected_revision: scene.facts().object_revision(key),
+        }),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let (next, outcome, _, feedback) = wire(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        &payload,
+        None,
+        None,
+        feedback,
+    )
+    .await?;
+    *admitted = next;
+    Ok((outcome, feedback))
+}
 
-    let gates = scene.facts().doors();
-    let ordinary = placement_key(-8, 33276, 32451, 1).ok_or("catacomb door")?;
-    let expertise = placement_key(-12, 33271, 32418, 1).ok_or("Koshei level gate")?;
-    assert_eq!(
-        gates.toggle(expertise, 0, false, 39, false),
-        Some(DoorUse::Locked)
-    );
-    for key in [ordinary, expertise] {
+async fn exercise_catacomb(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    scene: &BundleWorld,
+) -> TestResult {
+    use map::overlay::TilePos;
+    let ordinary = TilePos {
+        x: 33276,
+        y: 32451,
+        floor: -8,
+    };
+    let expertise = TilePos {
+        x: 33271,
+        y: 32418,
+        floor: -12,
+    };
+    let actor = admitted.runtime_actor.ok_or("player")?;
+    let mut facts = match oteryn_gameplay_dispatch::gameplay_transport::load_character_cast_facts(
+        owner.root,
+        owner.character,
+        admitted.item_fence.ok_or("item fence")?.character_id,
+    )
+    .await
+    {
+        oteryn_gameplay_dispatch::gameplay_transport::CastFactsLoad::Ready { facts, .. }
+        | oteryn_gameplay_dispatch::gameplay_transport::CastFactsLoad::NoVocation {
+            facts, ..
+        } => facts,
+        _ => return Err("character level facts".into()),
+    };
+    for (level, expected) in [
+        (39, UseDisposition::Locked),
+        (40, UseDisposition::Committed),
+    ] {
+        facts.level = level;
+        {
+            let runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            *states = Default::default();
+            states
+                .initialize(
+                    &runtime,
+                    actor,
+                    admitted.game_session_id,
+                    facts,
+                    (0, 0),
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+                )
+                .ok_or("fixture cast facts")?;
+        }
         assert_eq!(
-            gates.toggle(key, 0, false, 40, false),
-            Some(DoorUse::Toggled {
-                revision: 1,
-                open: true
-            })
+            world_use(owner, admitted, scene, expertise, 1, false)
+                .await?
+                .0,
+            expected
         );
     }
-
-    let coffin = map::overlay::TilePos {
+    assert!(scene.enterable(expertise));
+    assert_eq!(
+        world_use(owner, admitted, scene, ordinary, 1, false)
+            .await?
+            .0,
+        UseDisposition::Committed
+    );
+    assert!(scene.enterable(ordinary));
+    let sundial = TilePos {
+        x: 33281,
+        y: 32447,
+        floor: -8,
+    };
+    let coffin = TilePos {
         x: 33273,
         y: 32458,
         floor: -8,
     };
-    let coffin_key =
-        placement_key(coffin.floor, coffin.x, coffin.y, 1).ok_or("coffin placement")?;
-    let facts = scene.facts();
-    let base_item = |at: map::overlay::TilePos, ordinal: u8| {
-        let tile = scene.base().tile(at.x, at.y, at.floor)?;
-        let (&id, _) = tile
-            .ids()
-            .iter()
-            .zip(tile.depths())
-            .filter(|(_, depth)| **depth == 0)
-            .nth(usize::from(ordinal))?;
-        Some((id, facts.base_entry(at, ordinal, id)?))
-    };
-    let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
-    let sundial = callbacks
-        .iter()
-        .find(|callback| callback.key == "oteryn:quest-callback/koshei-sundial")
-        .ok_or("registered sundial")?;
-    for callback in callbacks.iter().filter(|callback| {
-        callback
-            .key
-            .starts_with("oteryn:quest-callback/koshei-statue-")
-            || callback.key == "oteryn:quest-callback/koshei-sundial"
-    }) {
-        let binding = callback
-            .selector
-            .native
-            .as_ref()
-            .ok_or("catacomb selector")?;
-        let at = map::overlay::TilePos {
-            x: binding.position.x,
-            y: binding.position.y,
-            floor: binding.position.floor,
-        };
-        let key = placement_key(at.floor, at.x, at.y, binding.ordinal).ok_or("catacomb object")?;
-        let (id, current) = base_item(at, binding.ordinal).ok_or("catacomb base object")?;
-        assert!(facts.quest_callback_native_object(key, id, binding.appearance));
-        if let Some([_, appearance]) = callback.lever {
-            let required = sundial
-                .world_requirements
-                .iter()
-                .find(|requirement| requirement.position == binding.position)
-                .ok_or("sundial statue requirement")?;
-            if current.appearance_id != required.appearance {
-                let mut turned = current;
-                turned.appearance_id = appearance;
-                assert!(facts.apply_quest_callback(key, 0, turned, &[], &[], false, None));
-            }
-            assert_eq!(
-                base_item(at, binding.ordinal).map(|(_, entry)| entry.appearance_id),
-                Some(required.appearance)
-            );
-        } else {
-            assert!(!scene.enterable(coffin));
-            let (_, closed) = base_item(coffin, 1).ok_or("closed coffin")?;
-            let opened = facts
-                .quest_callback_replacement(coffin_key, 167)
-                .ok_or("open coffin Item")?;
-            assert_eq!((closed.appearance_id, opened.appearance_id), (162, 167));
-            let due = u64::from(
-                callback
-                    .effects
-                    .passages_reset_after_ms
-                    .ok_or("coffin timer")?,
-            ) * 1_000;
-            let projection = QuestCallbackProjection::TimedPassages {
-                due,
-                entries: vec![QuestTimedPassage {
-                    key: coffin_key,
-                    expected_revision: 0,
-                    before: closed,
-                    after: Some(opened),
-                    passable: true,
-                }],
-                source_reset: None,
-            };
-            assert!(facts.apply_quest_callback(
-                key,
-                0,
-                current,
-                &[],
-                &[],
-                false,
-                Some(&projection)
-            ));
-            assert_eq!(facts.expire_movement_items(due - 1), 0);
-        }
+    assert!(!scene.enterable(coffin));
+    assert_eq!(
+        world_use(owner, admitted, scene, sundial, 1, true).await?,
+        (UseDisposition::Rejected, Some("Nothing happens".into()))
+    );
+    for (x, y) in [(33276, 32444), (33278, 32450), (33284, 32450)] {
+        assert_eq!(
+            world_use(
+                owner,
+                admitted,
+                scene,
+                TilePos { x, y, floor: -8 },
+                1,
+                false
+            )
+            .await?
+            .0,
+            UseDisposition::Committed
+        );
     }
+    assert_eq!(
+        world_use(owner, admitted, scene, sundial, 1, true).await?,
+        (UseDisposition::Committed, Some("CLICK".into()))
+    );
     assert!(scene.enterable(coffin));
-    let mut floors = scene.floors().clone();
-    let mask = palette_mask(Family::Item, "oteryn:item.tibia.i167");
-    assert_ne!(mask, 0);
-    floors.add(coffin, mask);
+    assert_eq!(
+        world_use(owner, admitted, scene, sundial, 1, true).await?,
+        (UseDisposition::Rejected, Some("Nothing happens".into()))
+    );
+    place(
+        owner,
+        *admitted,
+        MovementLocalPosition {
+            x: 33273,
+            y: 32457,
+            floor: 8,
+        },
+    )
+    .await?;
+    step(owner, admitted, StepDirection::South).await?;
+    let at = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(admitted.runtime_actor.ok_or("player")?)
+        .map_err(debug)?
+        .position();
+    assert_eq!(
+        at.floor, 9,
+        "the opened coffin must project its floor-change mask"
+    );
+    assert!(catacomb_path(scene, (33281, 32444, 7), (33273, 32457, 8)));
+    assert!(catacomb_path(
+        scene,
+        (at.x, at.y, i32::from(at.floor)),
+        (CORPSE.x, CORPSE.y, i32::from(CORPSE.floor))
+    ));
+    assert_eq!(
+        world_use(owner, admitted, scene, expertise, 1, false)
+            .await?
+            .0,
+        UseDisposition::Committed
+    );
+    assert!(!scene.enterable(expertise));
+    let due = scene
+        .facts()
+        .next_movement_decay_time()
+        .ok_or("coffin deadline")?;
+    assert_eq!(scene.facts().expire_movement_items(due - 1), 0);
+    assert_eq!(scene.facts().expire_movement_items(due), 1);
+    assert!(!scene.enterable(coffin));
+    assert_eq!(
+        world_use(owner, admitted, scene, ordinary, 1, false)
+            .await?
+            .0,
+        UseDisposition::Committed
+    );
+    assert!(!scene.enterable(ordinary));
+    Ok(())
+}
+
+fn catacomb_path(scene: &BundleWorld, start: (i32, i32, i32), goal: (i32, i32, i32)) -> bool {
+    use map::floor::{Ground, resolve_landing};
+    use oteryn_gameplay_world::movement::CardinalStep;
+    use std::collections::{BTreeSet, VecDeque};
     let ground = |(x, y, z)| {
         let (Ok(x), Ok(y), Ok(z)) = (u16::try_from(x), u16::try_from(y), i8::try_from(z)) else {
             return Ground::Absent;
         };
         let at = map::overlay::TilePos { x, y, floor: -z };
-        if scene.base().tile(at.x, at.y, at.floor).is_none() {
+        if scene.base().tile(x, y, -z).is_none() {
             Ground::Absent
         } else if scene.enterable(at) {
             Ground::Walkable
@@ -825,13 +1086,11 @@ fn assert_catacomb_route(scene: &BundleWorld) -> TestResult {
             Ground::Blocked
         }
     };
-    let surface = (33281, 32444, 7);
-    let boss = (CORPSE.x, CORPSE.y, i32::from(CORPSE.floor));
-    let mut visited = BTreeSet::from([surface]);
-    let mut pending = VecDeque::from([surface]);
+    let mut visited = BTreeSet::from([start]);
+    let mut pending = VecDeque::from([start]);
     while let Some(cell) = pending.pop_front() {
-        if cell == boss {
-            break;
+        if cell == goal {
+            return true;
         }
         for direction in [
             CardinalStep::North,
@@ -839,29 +1098,132 @@ fn assert_catacomb_route(scene: &BundleWorld) -> TestResult {
             CardinalStep::South,
             CardinalStep::West,
         ] {
-            if let Ok(next) = resolve_landing(&floors, ground, |_| true, cell, direction)
+            if let Ok(next) = resolve_landing(scene.floors(), ground, |_| true, cell, direction)
                 && visited.insert(next)
             {
                 pending.push_back(next);
             }
         }
     }
-    assert!(
-        visited.contains(&boss),
-        "the opened catacomb route must reach Koshei from the mainland"
+    false
+}
+
+async fn step(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    direction: StepDirection,
+) -> TestResult {
+    owner.clock_origin -= std::time::Duration::from_secs(2);
+    let payload = oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction);
+    let (next, reply, _, _) = framed(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        1,
+        &payload,
+        (None, None),
+        false,
+    )
+    .await?;
+    assert_eq!(
+        oteryn_protocol_oteryn::world_spatial::decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Moved
     );
-    assert_eq!(facts.expire_movement_items(120_000_000), 1);
-    assert!(!scene.enterable(coffin));
-    for key in [ordinary, expertise] {
-        assert_eq!(
-            gates.toggle(key, 1, false, 40, false),
-            Some(DoorUse::Toggled {
-                revision: 2,
-                open: false
-            })
-        );
-    }
+    *admitted = next;
     Ok(())
+}
+
+async fn hand_in_while_peer_uses(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    h: &fixture::Harness,
+    command: u64,
+    payload: &[u8],
+    amulet: std::num::NonZeroU32,
+    corpse: std::num::NonZeroU32,
+) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>, Option<String>)> {
+    let peer_session = GameSessionId::decode(&id(62)).map_err(debug)?;
+    let peer = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(peer_session).map_err(debug)?;
+        let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_first_entry_position(peer)
+            .map_err(debug)?;
+        peer
+    };
+    place(
+        owner,
+        AdmittedSession {
+            runtime_actor: Some(peer),
+            game_session_id: peer_session,
+            ..admitted
+        },
+        MovementLocalPosition {
+            y: CORPSE.y - 2,
+            ..CORPSE
+        },
+    )
+    .await?;
+    let mut barrier = h.pool.begin().await?;
+    let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *barrier)
+        .await?;
+    sqlx::query(
+        "SELECT item_instance_id FROM game_item_instances
+         WHERE definition_production_key='oteryn:item.tibia.i7535' AND lifecycle=1 FOR UPDATE",
+    )
+    .execute(&mut *barrier)
+    .await?;
+    let hand_in = wire(
+        owner,
+        admitted,
+        command,
+        payload,
+        Some(amulet),
+        Some(corpse),
+        true,
+    );
+    let peer_use = async {
+        let result = tokio::time::timeout(std::time::Duration::from_secs(3), async {
+            loop {
+                let blocked: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM pg_stat_activity
+                     WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)))",
+                )
+                .bind(pid)
+                .fetch_one(&h.pool)
+                .await?;
+                if blocked {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+            assert_eq!(
+                owner
+                    .player_trade_item_available(
+                        peer,
+                        composed_test_owner::UseCommand {
+                            game_session_id: peer_session,
+                            command_id: 1,
+                            item_fence: None,
+                        },
+                        None,
+                    )
+                    .await,
+                Some(true),
+                "the peer must pass the actual USE reservation read while PostgreSQL waits"
+            );
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })
+        .await;
+        barrier.rollback().await?;
+        result??;
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (hand_in, peer_use) = tokio::join!(hand_in, peer_use);
+    peer_use?;
+    hand_in
 }
 
 async fn ground_snapshot(h: &fixture::Harness) -> TestResult<serde_json::Value> {
@@ -904,6 +1266,34 @@ async fn wire(
     target: Option<std::num::NonZeroU32>,
     feedback_expected: bool,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>, Option<String>)> {
+    let (next, result, actual, feedback) = framed(
+        owner,
+        admitted,
+        command,
+        2,
+        payload,
+        (source, target),
+        feedback_expected,
+    )
+    .await?;
+    Ok((
+        next,
+        oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
+        actual,
+        feedback,
+    ))
+}
+
+async fn framed(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command: u64,
+    command_type: u32,
+    payload: &[u8],
+    handles: (Option<std::num::NonZeroU32>, Option<std::num::NonZeroU32>),
+    feedback_expected: bool,
+) -> TestResult<(AdmittedSession, Vec<u8>, Vec<u8>, Option<String>)> {
+    let (source, target) = handles;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_side = async move {
         let (mut source_handle, mut target_handle) = (None, None);
@@ -940,6 +1330,10 @@ async fn wire(
                         target_handle =
                             map.tiles
                                 .iter()
+                                .filter(|tile| {
+                                    (tile.position.x, tile.position.y, tile.position.floor)
+                                        == (CORPSE.x, CORPSE.y, CORPSE.floor)
+                                })
                                 .flat_map(|tile| &tile.items)
                                 .find_map(|item| match (item.definition, item.origin) {
                                     (
@@ -966,9 +1360,12 @@ async fn wire(
                 intent.target = UseTarget::Item(source_handle.ok_or("current source handle")?);
             }
             if target.is_some() {
-                intent.use_with_map_item = Some(MapUseTarget::Item(
-                    target_handle.ok_or("current Ground handle")?,
-                ));
+                let handle = target_handle.ok_or("current Ground handle")?;
+                if intent.use_with_map_item.is_some() {
+                    intent.use_with_map_item = Some(MapUseTarget::Item(handle));
+                } else {
+                    intent.target = UseTarget::Item(handle);
+                }
             }
             encode_item_use_intent(&intent).map_err(debug)?
         } else {
@@ -978,7 +1375,7 @@ async fn wire(
             admitted.continuity.connection_generation,
             &oteryn_protocol_oteryn::ClientCommandValue {
                 command_id: command,
-                command_type: 2,
+                command_type,
                 payload: &actual,
             },
         )?;
@@ -993,12 +1390,7 @@ async fn wire(
                 let envelope_result =
                     oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                 if envelope_result.command_id == command {
-                    result = Some(
-                        oteryn_protocol_oteryn::world_object::decode_use_result(
-                            envelope_result.payload,
-                        )
-                        .map_err(debug)?,
-                    );
+                    result = Some(envelope_result.payload.to_vec());
                 }
             }
             if feedback_expected
@@ -1014,8 +1406,14 @@ async fn wire(
                     feedback = Some(text);
                 }
             }
-            if let Some(result) = result
-                && (!feedback_expected || feedback.is_some() || result != UseDisposition::Committed)
+            let refused_hand_in = feedback_expected
+                && source.is_some()
+                && result.as_deref().is_some_and(|bytes| {
+                    oteryn_protocol_oteryn::world_object::decode_use_result(bytes)
+                        .is_ok_and(|result| result != UseDisposition::Committed)
+                });
+            if (!feedback_expected || feedback.is_some() || refused_hand_in)
+                && let Some(result) = result
             {
                 client.shutdown().await?;
                 return Ok::<_, Box<dyn std::error::Error>>((result, actual, feedback));

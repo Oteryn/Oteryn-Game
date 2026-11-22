@@ -471,9 +471,6 @@ pub(super) async fn consume(
     if !context_is_current(tx, permit, fence, context).await? {
         return Ok(false);
     }
-    if !definition_target::require(tx, fence, callback, context).await? {
-        return Ok(false);
-    }
     if !completed_quests::require(tx, fence, &callback.required_completed_quests).await? {
         return Ok(false);
     }
@@ -740,6 +737,9 @@ async fn consume_inputs(
             return Ok(false);
         }
         lock_location(tx, &input).await?;
+        if !definition_target::require(tx, permit, fence, callback, context).await? {
+            return Ok(false);
+        }
         if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
             // Crystal actions_sacrifice.lua:15-18: stage one needs a real
             // carried tear but consumes none. All other stages use the same

@@ -842,7 +842,24 @@ mod selector_gates;
 
 /// Validate callback data with the same closed rules used by the World registry.
 pub fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
-    parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string()).map(|_| ())
+    let callbacks = parse(&serde_json::json!({"schema":1,"callbacks":callbacks}).to_string())?;
+    validate_definition_targets(&callbacks)
+}
+
+fn validate_definition_targets(callbacks: &[Callback]) -> Result<(), String> {
+    let mut pairs = BTreeSet::new();
+    for callback in callbacks {
+        if let (Some(target), Some(tool)) = (
+            &callback.selector.target_definition,
+            &callback.item_on_target,
+        ) && std::iter::once(&tool.item)
+            .chain(&tool.alternatives)
+            .any(|source| !pairs.insert((target, source)))
+        {
+            return Err("duplicate definition-target callback tool".into());
+        }
+    }
+    Ok(())
 }
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
@@ -850,6 +867,7 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         return Err("callback runtime registry bounds".into());
     }
     let mut keys = BTreeSet::new();
+    validate_definition_targets(callbacks)?;
     let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
         if callback
@@ -865,6 +883,9 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         }
         if !keys.insert(&callback.key) {
             return Err("duplicate callback across registries".into());
+        }
+        if callback.selector.target_definition.is_some() {
+            continue;
         }
         let selector = serde_json::to_vec(&(
             callback.trigger,
@@ -969,10 +990,11 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                     || callback.reversible
                     || callback.opening_only
                     || callback.activation.is_some()
-                    || callback.item_on_target.as_ref().is_some_and(|tool| tool.target_remove || tool.target_replacement.is_some())
+                    || callback.item_on_target.as_ref().is_some_and(|tool| tool.target_remove || tool.target_replacement.is_some() || !tool.ingredients.is_empty())
                     || !callback.passages.is_empty()
                     || callback.teleport.is_some()
                     || !callback.offerings.is_empty()
+                    || !callback.world_requirements.is_empty()
                     || { let mut effects = callback.effects.clone(); effects.target_magic = None; !effects.is_empty() }
                     || callback.native_rule.is_some()
                     || selector.position.is_some()

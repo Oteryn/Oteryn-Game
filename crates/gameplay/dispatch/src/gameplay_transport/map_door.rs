@@ -42,6 +42,7 @@ const WHEEL_EX_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_
 #[derive(Debug, Default)]
 pub struct WorldActionGate {
     started: Vec<(ExactActorRef, std::time::Duration)>,
+    use_with_started: Vec<(ExactActorRef, std::time::Duration)>,
     /// One shared ExAction clock for a session's fresh Wheel and Atelier mutations.
     /// Kept separate from the existing 200 ms world-action and jewelry clocks.
     wheel_mutations: Vec<(crate::foundation::GameSessionId, std::time::Duration)>,
@@ -118,6 +119,24 @@ impl WorldActionGate {
     /// elapsed wall time (FND-03 defines no fixed quantum).
     pub fn begin_turn(&mut self) {
         self.admitted = 0;
+    }
+
+    /// Admits a fresh World USE-WITH using its one-second actor clock and the shared turn cap.
+    pub(super) fn admit_use_with(
+        &mut self,
+        actor: ExactActorRef,
+        now: std::time::Duration,
+    ) -> bool {
+        self.use_with_started
+            .retain(|(_, at)| now.saturating_sub(*at) < std::time::Duration::from_secs(1));
+        if self.use_with_started.iter().any(|(who, _)| *who == actor)
+            || self.admitted >= WORLD_ACTIONS_PER_TURN
+        {
+            return false;
+        }
+        self.admitted += 1;
+        self.use_with_started.push((actor, now));
+        true
     }
 
     /// Admits one `USE` of `actor` at owner-clock time `now`, or refuses it.

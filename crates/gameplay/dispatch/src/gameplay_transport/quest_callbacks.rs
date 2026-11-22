@@ -104,6 +104,7 @@ pub(super) struct PendingCallbacks {
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
+    ground_use_cleanup: std::sync::Mutex<Vec<definition_target::GroundUseTurn>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,
@@ -468,6 +469,16 @@ pub(super) fn step_command(
     CommandId::new(u64::from_be_bytes(id).max(1))
         .ok()
         .map(|id| CommandRef::new(session, id))
+}
+
+impl PendingCallbacks {
+    pub(super) fn finish_cancelled_ground_uses(&self, runtime: &mut ChannelRuntimeV1) {
+        if let Ok(mut pending) = self.ground_use_cleanup.lock() {
+            for turn in pending.drain(..) {
+                turn.release(runtime);
+            }
+        }
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -1206,7 +1217,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .states
                 .world_gate
                 .lock()
-                .is_ok_and(|mut g| g.admit(actor, self.clock_origin.elapsed()))
+                .is_ok_and(|mut g| if selected_tool.is_some() {
+                    g.admit_use_with(actor, self.clock_origin.elapsed())
+                } else {
+                    g.admit(actor, self.clock_origin.elapsed())
+                })
             {
                 return UseDisposition::Exhausted;
             }

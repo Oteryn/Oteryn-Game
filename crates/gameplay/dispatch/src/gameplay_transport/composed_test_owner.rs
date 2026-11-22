@@ -288,3 +288,8 @@ pub async fn defeat_spawned_creature(
 pub async fn drain_source_item_deadlines(owner: &ComposedFreshAdmission<'_, '_, '_>) {
     owner.drain_source_item_deadlines().await;
 }
+
+/// Run the Channel's ordinary corpse-retirement unit against its current scope.
+pub async fn drain_corpse_deadlines(owner: &ComposedFreshAdmission<'_, '_, '_>) {
+    owner.drain_corpse_deadlines().await;
+}

@@ -206,6 +206,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::NothingToUse;
             }
+            if !callback.requires_durable_commit()
+                && callback.trigger == Trigger::Use
+                && let Some(message) = &callback.failure_message
+            {
+                self.states.chat.push_quest_feedback(session, message);
+            }
             return UseDisposition::Rejected;
         }
         if close && callback.lever.is_some() && !callback.reversible {
