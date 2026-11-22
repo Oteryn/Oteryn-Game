@@ -1154,7 +1154,20 @@ def build():
             'rewards':rewards}]})
     greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
-    generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
+    shops = questl2_ready.djinn.shops(inputs, PIN)
+    service = 'oteryn:service.trade.black_bert'
+    trade = json.loads((ROOT / 'content/services/trade/trade-00000-00323.json').read_bytes())
+    retained = next(row['declaration']['offers'] for row in trade['records']
+                    if row['declaration']['identity']['key'] == service)
+    requirement = {'quest': 'oteryn:quest.the_thieves_guild_quest',
+                   'track': 'oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline',
+                   'initial': 0, 'minimum': 9, 'maximum': 9}
+    shops.append({'npc': 'oteryn:npc.black_bert', 'service': service,
+                  'offers': [row | {'requirements': [requirement]} for row in retained],
+                  'sources': ['crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dorian.lua:211-219',
+                              'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/black_bert.lua:23-150']})
+    generated['content/quests/shared-quest-shops.json'] = encoded({
+        'schema': 1, 'shops': shops})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))
     access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')
     worlds=[]

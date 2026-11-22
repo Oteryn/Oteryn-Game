@@ -209,6 +209,51 @@ mod tests {
     use super::*;
 
     #[test]
+    fn black_bert_retained_stock_requires_the_completed_guild_track()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let model = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?
+        .service_model_for_project()?;
+        let npc_key = "oteryn:npc.black_bert";
+        let (_, npc) = model
+            .npcs()
+            .iter()
+            .find(|(reference, _)| reference.key == npc_key)
+            .ok_or("Black Bert")?;
+        let service = npc
+            .services
+            .iter()
+            .find(|key| key.key == "oteryn:service.trade.black_bert")
+            .and_then(|key| model.services().get(key))
+            .ok_or("Black Bert's shop")?;
+        assert_eq!(service.offers.len(), 127);
+        for offer in &service.offers {
+            let guard = required(
+                shops()?,
+                npc_key,
+                &offer.item,
+                offer.direction,
+                offer.unit_price,
+                offer.count.unwrap_or(1),
+            )?
+            .ok_or("unguarded Black Bert offer")?;
+            assert!(!eligible(guard, |_| None));
+            assert!(!eligible(guard, |_| Some(8)));
+            assert!(eligible(guard, |requirement| {
+                assert_eq!(
+                    requirement.track,
+                    "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/questline"
+                );
+                Some(9)
+            }));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn alesar_catalogue_matches_crystal_after_efreet_mission03()
     -> Result<(), Box<dyn std::error::Error>> {
         use ProjectV2ServiceOfferDirection::{BuyFromPlayer, SellToPlayer};

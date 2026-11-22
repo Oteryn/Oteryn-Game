@@ -19,6 +19,9 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                     callback.key.as_str(),
                     "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
+                        | "oteryn:quest-callback/thieves-guild-cathedral-note"
+                        | "oteryn:quest-callback/thieves-guild-fish-room-key"
+                        | "oteryn:quest-callback/thieves-guild-sarina-vase"
                 ))
             || matches!(
                 callback.native_rule,
@@ -53,6 +56,20 @@ pub(crate) fn matches_source(
 mod tests {
     use super::*;
     use oteryn_gameplay_quests::quest::{native_rules::NativeRule, world_callbacks};
+
+    #[test]
+    fn thieves_guild_tools_use_the_selected_carried_instance() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        for name in ["cathedral-note", "fish-room-key", "sarina-vase"] {
+            let key = format!("oteryn:quest-callback/thieves-guild-{name}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or(key)?;
+            assert!(accepts(callback));
+        }
+        Ok(())
+    }
 
     #[test]
     fn registered_ice_paint_callbacks_reach_the_carried_tool_owner() -> Result<(), String> {

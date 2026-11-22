@@ -8,6 +8,8 @@ Run --apply [--check]; convert_world_base also applies the same overlay.
 import argparse
 import hashlib
 import json
+import re
+import tarfile
 from pathlib import Path
 
 import world_region_codec as codec
@@ -436,6 +438,25 @@ def selections(root=ROOT):
             "claims": ["oteryn:reward-claim.kv.panpipe"],
         }
         sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
+    # Crystal 201189f item.lua:313,4555-4560 marks the fixed goldfish
+    # immovable and assigns UID9266. The held goldfish uses the same Item key,
+    # so retain this source placement attribute when enabling inventory custody.
+    archive = "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
+    with tarfile.open(root / archive) as corpus:
+        manifest = json.load(corpus.extractfile("corpus-manifest.json"))
+        witness = next(row for row in manifest["files"]
+                       if row["path"] == "data-global/startup/tables/item.lua"
+                       and row["sha256"] == ITEM_SHA256)
+        raw = corpus.extractfile(witness.get("blob_path", witness.get("cache_path"))).read()
+    if hashlib.sha256(raw).hexdigest() != ITEM_SHA256 or not re.search(
+        rb"\[9266\] = \{\s*itemId = 7936,\s*itemPos = \{ x = 32359, y = 32791, z = 6 \}",
+        raw,
+    ):
+        raise ValueError("FISHNAPPING_FIXED_GOLDFISH_SOURCE_DRIFT")
+    fish = (32359, 32791, 6)
+    if fish in bindings:
+        raise ValueError("FISHNAPPING_FIXED_GOLDFISH_SOURCE_CONFLICT")
+    bindings[fish] = {"position": list(fish), "appearance": 7936, "unique": 9266}
     return {"unique": bindings, "action": doors}, sources
 
 
