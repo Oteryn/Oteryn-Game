@@ -18,12 +18,7 @@ impl DeviceLogin {
             {
                 self.journal.stage(&session.device_credential)?;
             }
-            crate::atomic_file::replace(
-                &path, b"revoke
-", true,
-            )
-            .map_err(|_| storage_error())?;
-            self.sync_intent_directory()?;
+            crate::atomic_file::publish_durable(&path, b"revoke\n").map_err(|_| storage_error())?;
         }
         self.forget_requested.store(true, Ordering::Release);
         Ok(())

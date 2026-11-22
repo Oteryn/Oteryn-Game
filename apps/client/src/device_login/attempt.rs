@@ -2,7 +2,7 @@ use super::*;
 use oteryn_platform_client::native_login::{AccessToken, NativeTicket, OwnerCharacter};
 use serde::{Deserialize, Serialize};
 
-const RECOVERY_REVOCATION_TIMEOUT: Duration = Duration::from_secs(2);
+pub(super) const RECOVERY_REVOCATION_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

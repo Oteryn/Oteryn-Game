@@ -5,6 +5,47 @@ use std::{
 };
 
 pub(crate) fn replace(path: &Path, bytes: &[u8], sync: bool) -> io::Result<()> {
+    let temporary = staged_file(path, bytes, sync)?;
+    temporary.persist(path).map_err(|error| error.error)?;
+    Ok(())
+}
+
+pub(crate) fn publish_durable(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let temporary = staged_file(path, bytes, true)?;
+    // keep clears FILE_ATTRIBUTE_TEMPORARY on Windows before promotion.
+    let (_file, source) = temporary.keep().map_err(|error| error.error)?;
+    if let Err(error) = durable_rename(&source, path) {
+        let _ = std::fs::remove_file(source);
+        return Err(error);
+    }
+    Ok(())
+}
+
+pub(crate) fn durable_rename(source: &Path, destination: &Path) -> io::Result<()> {
+    #[cfg(test)]
+    if let Some(path) = FAIL_DURABLE_RENAME.take() {
+        if path == destination {
+            return Err(io::ErrorKind::PermissionDenied.into());
+        }
+        FAIL_DURABLE_RENAME.set(Some(path));
+    }
+    #[cfg(windows)]
+    return crate::win_mutex::rename_write_through(source, destination);
+    #[cfg(not(windows))]
+    std::fs::rename(source, destination)?;
+    #[cfg(unix)]
+    File::open(
+        destination
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or(Path::new(".")),
+    )?
+    .sync_all()?;
+    #[cfg(not(windows))]
+    Ok(())
+}
+
+fn staged_file(path: &Path, bytes: &[u8], sync: bool) -> io::Result<tempfile::NamedTempFile> {
     let directory = path
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
@@ -15,8 +56,7 @@ pub(crate) fn replace(path: &Path, bytes: &[u8], sync: bool) -> io::Result<()> {
     if sync {
         temporary.as_file().sync_all()?;
     }
-    temporary.persist(path).map_err(|error| error.error)?;
-    Ok(())
+    Ok(temporary)
 }
 
 // Lock a separate inode, since publishing the data file replaces its inode.
@@ -151,4 +191,14 @@ fn review_3376_held_profile_lock_has_a_deadline() -> Result<(), Box<dyn std::err
     worker.join().map_err(|_| "lock thread panicked")?;
     assert!(matches!(observed, Ok(Some(io::ErrorKind::WouldBlock))));
     Ok(())
+}
+
+#[cfg(test)]
+pub(crate) fn fail_durable_rename_to(path: &Path) {
+    FAIL_DURABLE_RENAME.set(Some(path.to_owned()));
+}
+
+#[cfg(test)]
+thread_local! {
+    static FAIL_DURABLE_RENAME: std::cell::Cell<Option<std::path::PathBuf>> = const { std::cell::Cell::new(None) };
 }

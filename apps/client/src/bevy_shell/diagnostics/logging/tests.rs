@@ -277,8 +277,9 @@ fn third_party_targets_stay_at_warn_unless_named() -> TestResult {
 #[test]
 fn a_full_log_writer_queue_does_not_block_the_formatter() -> TestResult {
     let (sender, receiver) = mpsc::sync_channel(1);
+    let sender = Arc::new(sender);
     let sink = Sink {
-        file: Some(sender),
+        file: Some(Arc::downgrade(&sender)),
         synchronous_file: None,
         stderr: false,
         ring: false,
@@ -295,4 +296,47 @@ fn a_full_log_writer_queue_does_not_block_the_formatter() -> TestResult {
     assert_eq!(receiver.try_recv()?.1, "first");
     assert!(receiver.try_recv().is_err());
     Ok(())
+}
+
+#[cfg(unix)]
+#[test]
+fn app_shutdown_drains_the_file_layer() -> TestResult {
+    use std::{
+        io::Read,
+        sync::atomic::{AtomicBool, Ordering},
+        time::Duration,
+    };
+    let fixture = tempfile::tempdir()?;
+    let directory = fixture.path().join(crate::crash_report::LOG_DIRECTORY);
+    fs::create_dir(&directory)?;
+    let fifo = directory.join(format!("client-{}.log", Utc::at(SystemTime::now()).date()));
+    assert!(
+        std::process::Command::new("mkfifo")
+            .arg(&fifo)
+            .status()?
+            .success()
+    );
+    let mut app = App::new();
+    let hooks = plugin(Some(fixture.path().to_owned()), "info");
+    let layer = (hooks.custom_layer)(&mut app).ok_or("missing layer")?;
+    let subscriber = Registry::default().with(layer);
+    tracing::subscriber::with_default(subscriber, || -> TestResult {
+        tracing::info!("queued shutdown record");
+        let released = Arc::new(AtomicBool::new(false));
+        let reader_started = released.clone();
+        let (send, received) = mpsc::channel();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(200));
+            reader_started.store(true, Ordering::Release);
+            let mut record = String::new();
+            let result = fs::File::open(fifo).and_then(|mut f| f.read_to_string(&mut record));
+            let _ = send.send(result.map(|_| record));
+        });
+        drop(app);
+        let waited = released.load(Ordering::Acquire);
+        let record = received.recv_timeout(Duration::from_secs(3))??;
+        assert!(record.contains("queued shutdown record"));
+        assert!(waited, "app returned while the log file was still blocked");
+        Ok(())
+    })
 }

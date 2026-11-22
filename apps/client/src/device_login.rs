@@ -120,6 +120,7 @@ impl DeviceLogin {
             folder: self.folder.clone(),
             journal: self.journal.clone(),
         };
+        let deadline = tokio::time::Instant::now() + attempt::RECOVERY_REVOCATION_TIMEOUT;
         if forget {
             if !pending && attempt.state.vault_clear_failed {
                 if attempt.revoke_before_vault_clear(client).await.is_err() {
@@ -132,18 +133,29 @@ impl DeviceLogin {
             {
                 return Ok(None);
             }
-        } else if !options.stay_logged_in || attempt.state.remembered != remembered {
-            if self.folder.is_some() && attempt.state.remembered {
-                attempt.revoke_before_vault_clear(client).await?;
-            } else {
-                attempt.sign_out(client).await;
-            }
         } else {
-            let _ = attempt.revoke_pending(client).await;
+            let drain = async {
+                if !options.stay_logged_in || attempt.state.remembered != remembered {
+                    if self.folder.is_some() && attempt.state.remembered {
+                        attempt.revoke_before_vault_clear(client).await?;
+                    } else {
+                        attempt.sign_out(client).await;
+                    }
+                } else {
+                    let _ = attempt.revoke_pending(client).await;
+                }
+                Ok::<(), NativeLoginError>(())
+            };
+            if let Ok(result) = tokio::time::timeout_at(deadline, drain).await {
+                result?;
+            } else if self.folder.is_some() && attempt.state.remembered && (!options.stay_logged_in || attempt.state.remembered != remembered) {
+                return Ok(None);
+            }
         }
         if cancel.is_cancelled() {
             drop(attempt);
-            return self.cancel_begin(client).await;
+            let _ = tokio::time::timeout_at(deadline, self.cancel_begin(client)).await;
+            return Err(storage_error());
         }
         Ok(self.enabled.then_some(attempt))
     }
