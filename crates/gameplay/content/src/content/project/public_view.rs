@@ -407,10 +407,12 @@ mod tests {
                 let first = public_content_view(&project)?;
                 let second = public_content_view(&project)?;
                 assert_eq!(serde_json::to_vec(&first)?, serde_json::to_vec(&second)?);
-                // Source display-name provenance is candidate metadata, with export
+                // Display-name and Crystal source provenance are candidate metadata, with export
                 // capabilities still explicitly unsupported below.
                 assert!(first.field_inventory.contains(
                     "declaration.Npc.fields[].field_path=\"oteryn:source.npc.display_name\""));
+                assert!(first.field_inventory.contains(
+                    "declaration.Npc.fields[].field_path=\"oteryn:source.npc.crystal_source\""));
                 let expected: BTreeMap<String, String> = serde_json::from_str(include_str!(
                     "../../../../../../tools/game-platform-catalog/fixtures/public-view-fields.json"
                 ))?;

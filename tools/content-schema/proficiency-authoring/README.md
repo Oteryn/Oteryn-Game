@@ -143,7 +143,7 @@ source-ordered perks, 666 admitted weapon bindings and the complete accepted pro
 (including all three threshold tables, source/revision, kill-credit and points data).
 It retains definition revisions and source provenance and converts decimals to exact ratios.
 Unresolved revisions, duplicate definitions/weapons, malformed perk shapes and ruleset drift
-refuse the complete import. Ink Sword (no admitted Item identity yet) stays unbound.
+refuse the complete import. Ink Sword has a Standard threshold binding and no evidenced shaping pool.
 
 Export the actual server import as JSON:
 
