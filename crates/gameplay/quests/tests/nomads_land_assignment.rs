@@ -1,4 +1,4 @@
-//! The published NPC callback must grant both source storages in one transition.
+//! Published Nomads Land rules exercised through the quest loader.
 use oteryn_gameplay_quests::quest::{loader::load_embedded_quest_state, reward_callbacks};
 use std::collections::BTreeMap;
 
@@ -167,6 +167,14 @@ fn nomads_keeps_existing_tibia_tales_and_window_progress_writable() -> Result<()
             ],
         ),
         (
+            "oteryn:quest.tibia_tales",
+            [
+                0x26, 0xda, 0x6d, 0x39, 0x75, 0x4a, 0xc8, 0x53, 0xaf, 0x2a, 0x65, 0x43, 0x68, 0x56,
+                0xb5, 0xb6, 0xf8, 0xb8, 0x60, 0xdb, 0xdd, 0x5a, 0x5d, 0xb4, 0x55, 0x3b, 0x16, 0xfe,
+                0x20, 0x09, 0xce, 0x4e,
+            ],
+        ),
+        (
             "oteryn:quest.authored.nomads_land_quest",
             [
                 0x84, 0x77, 0x0d, 0x71, 0x75, 0x73, 0xd6, 0xe6, 0xd4, 0x8d, 0xc8, 0x36, 0xdd, 0x6b,
@@ -180,6 +188,40 @@ fn nomads_keeps_existing_tibia_tales_and_window_progress_writable() -> Result<()
         assert_eq!(
             legacy_defaults(catalogue, quest, &before),
             Some(&BTreeMap::new())
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn nomads_cabinet_accepts_completed_arito_without_reissuing_rewards() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::QuestRefusal;
+
+    const TASK: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task";
+    const CLAIMED: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_cabinet";
+    const CALLBACK: &str = "oteryn:quest-callback/nomads-land-sacred-casket-cabinet";
+    let loaded =
+        load_embedded_quest_state("nomads-cabinet").map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let transition = catalogue.transition(CALLBACK).ok_or("cabinet transition")?;
+    for (task, claimed) in [(0, 0), (1, 0), (2, 1), (3, 1)] {
+        let tracks = BTreeMap::from([(TASK.to_owned(), task), (CLAIMED.to_owned(), claimed)]);
+        assert_eq!(
+            catalogue.evaluate(transition, &tracks, 0),
+            Err(QuestRefusal::StageMismatch)
+        );
+    }
+    for task in [2, 3] {
+        let tracks = BTreeMap::from([(TASK.to_owned(), task), (CLAIMED.to_owned(), 0)]);
+        let writes = catalogue
+            .evaluate(transition, &tracks, 0)
+            .map_err(|error| format!("cabinet refused Arito's stage {task}: {error:?}"))?;
+        assert_eq!(
+            writes
+                .into_iter()
+                .map(|write| (write.track, write.after))
+                .collect::<BTreeMap<_, _>>(),
+            BTreeMap::from([(TASK.to_owned(), task), (CLAIMED.to_owned(), 1)])
         );
     }
     Ok(())

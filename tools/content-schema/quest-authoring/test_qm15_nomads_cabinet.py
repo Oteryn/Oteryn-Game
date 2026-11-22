@@ -20,12 +20,13 @@ class NomadsCabinet(unittest.TestCase):
         row = source.document()["callbacks"][0]
         self.assertEqual(row["storage"], [
             {"track": source.CLAIMED, "minimum": 0, "maximum": 0, "set": 1},
-            {"track": source.ARITO, "minimum": 2, "maximum": 2, "set": 2, "preserve": True},
+            {"track": source.ARITO, "minimum": 2, "maximum": 3, "set": 2, "preserve": True},
         ])
         self.assertEqual(row["offerings"], [])
         self.assertTrue(row["requires_world_admission"])
         self.assertTrue(row["admission"]["premium"])
         self.assertTrue(any("#L803-L822" in ref for ref in row["sources"]))
+        self.assertIn(source.ARITO_COMPLETION_REF, row["sources"])
 
     def test_literal_body_retains_both_source_paragraphs_within_native_bounds(self):
         self.assertTrue(source.TEXT.startswith("We are not far from revealing"))
