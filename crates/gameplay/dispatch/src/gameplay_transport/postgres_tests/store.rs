@@ -68,6 +68,9 @@ enum Case {
     Malformed,
     Restored,
     CrystalCharges,
+    CrystalCapacity,
+    OldQuote,
+    ReceiptRecovery,
 }
 
 #[test]
@@ -77,6 +80,36 @@ fn store_crystal_charged_offers_dispatch_and_mint_once() -> TestResult {
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("store-crystal-charges", || {
         scenario_with_answer(Case::CrystalCharges)
+    })
+}
+
+#[test]
+fn store_crystal_keg_checks_capacity_before_platform_debit() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-crystal-capacity", || {
+        scenario_with_answer(Case::CrystalCapacity)
+    })
+}
+
+#[test]
+fn store_retained_sword_completes_after_catalogue_update() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-old-quote", || {
+        scenario_with_answer(Case::OldQuote)
+    })
+}
+
+#[test]
+fn store_receipt_is_republished_without_repeating_the_purchase() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-receipt-recovery", || {
+        scenario_with_answer(Case::ReceiptRecovery)
     })
 }
 
@@ -215,6 +248,65 @@ fn scenario_with_answer(case: Case) -> TestResult {
             &[wire::CAPABILITY_STORE_V1],
         )
         .ok_or("selection")?;
+
+        if matches!(case, Case::ReceiptRecovery) {
+            ledger.lock().expect("ledger").fail_receipt = true;
+            let result = purchase(&owner, &mut admitted, purchase_request(80, "store:exercise-wraps", 25)?).await?;
+            assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
+            let pending = owner.root.list_unacknowledged_store_receipts(1).await.map_err(debug)?;
+            assert_eq!(pending.len(), 1);
+            ledger.lock().expect("ledger").fail_receipt = false;
+            let mut restarted_client = StoreClient::new(
+                Box::new(FakePlatform(ledger.clone())),
+                "oteryn-game/store-consumer".into(),
+            );
+            crate::gameplay_transport::store::receipt_outbox::publish_pending(
+                owner.root, &mut restarted_client,
+            ).await;
+            assert_eq!(ledger.lock().expect("ledger").receipts, 1);
+            assert!(owner.root.list_unacknowledged_store_receipts(1).await.map_err(debug)?.is_empty());
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        if matches!(case, Case::OldQuote) {
+            let request = retained_sword(&owner, admitted).await?;
+            assert_eq!(swords(&harness).await?, 0);
+            let command = |request: &wire::StorePurchaseRequest| -> TestResult<_> {
+                Ok((wire::COMMAND_TYPE_STORE_PURCHASE, wire::encode_purchase_request(request).map_err(debug)?))
+            };
+            let mut fresh = request.clone();
+            fresh.purchase_request_id = id(82);
+            let fresh_result = purchase(&owner, &mut admitted, command(&fresh)?).await?;
+            assert_eq!(fresh_result.code, wire::StorePurchaseCode::StaleQuote);
+            for _ in 0..2 {
+                let result = purchase(&owner, &mut admitted, command(&request)?).await?;
+                assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
+            }
+            assert_eq!(ledger.lock().expect("ledger").debits, [25]);
+            assert_eq!(swords(&harness).await?, 1);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        if matches!(case, Case::CrystalCapacity) {
+            super::item_look_fixtures::seed_main_backpack(
+                &harness,
+                &[("oteryn:item.tibia.i25905", 1), ("oteryn:item.tibia.i25910", 1)],
+            ).await?;
+            ledger.lock().expect("ledger").balance = 2_000;
+            let result = purchase(&owner, &mut admitted, purchase_request(80, "store:great-health-keg", 103)?).await?;
+            assert_eq!(result.code, wire::StorePurchaseCode::OfferUnavailable);
+            assert!(ledger.lock().expect("ledger").debits.is_empty());
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
 
         if matches!(case, Case::CrystalCharges) {
             verify_crystal_charge_purchases(&harness, &owner, &mut admitted, &ledger).await?;
@@ -402,6 +494,59 @@ fn scenario_with_answer(case: Case) -> TestResult {
         drop(authority);
         drop(seal);
         harness.cleanup().await
+    })
+}
+
+async fn retained_sword(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult<wire::StorePurchaseRequest> {
+    use crate::durability::store::{PurchaseRequest, PurchaseRequestState};
+    use crate::native_admission_source::store::{PurchaseResult, PurchaseStoreOffer};
+    use oteryn_gameplay_economy::store as rules;
+
+    let account = admitted.controller.ok_or("controller")?.account_id;
+    let character = admitted.item_fence.ok_or("fence")?.character_id;
+    let mut snapshot: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../../../rulesets/economy/store/predecessors/catalogue.json"
+    ))?;
+    snapshot.sort_all_objects();
+    let revision = super::store_fixtures::sha256(&serde_json::to_vec(&snapshot)?);
+    let purchase_request_id = id(81);
+    let binding = rules::PurchaseStoreOffer {
+        purchase_request_id: rules::PurchaseRequestId::from_bytes(purchase_request_id).map_err(debug)?,
+        account_id: crate::domain::AccountId::from_bytes(account).map_err(debug)?,
+        character_id: character,
+        offer_key: SWORD.into(),
+        catalog_revision: revision.clone(),
+        price: 25,
+        currency: rules::CurrencyKind::TibiaCoin,
+    };
+    let state = owner.root.record_purchase_request(PurchaseRequest {
+        purchase_request_id,
+        account_id: account,
+        character_id: *character.as_bytes(),
+        binding: binding.binding_digest().to_vec(),
+    }).await.map_err(debug)?;
+    assert_eq!(state, PurchaseRequestState::Sent);
+    let answer = owner.store.as_ref().ok_or("Platform")?.lock().await.purchase(&PurchaseStoreOffer {
+        purchase_request_id: uuid(&purchase_request_id),
+        account_id: uuid(&account),
+        character_id: uuid(character.as_bytes()),
+        world_id: uuid(admitted.world_id.as_bytes()),
+        offer_key: SWORD.into(),
+        catalog_revision: revision.clone(),
+        currency: "COINS".into(),
+        unit_price: "25".into(),
+        quantity: 1,
+    }, "ITEM").await.map_err(debug)?;
+    assert!(matches!(answer, PurchaseResult::Accepted { .. }));
+    Ok(wire::StorePurchaseRequest {
+        purchase_request_id,
+        offer_key: SWORD.into(),
+        catalog_revision: revision,
+        price: 25,
+        currency: "TIBIA_COIN".into(),
     })
 }
 

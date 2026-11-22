@@ -170,6 +170,31 @@ impl DurabilityRoot {
                             return Err(StoreDurabilityError::AuthorityRejected);
                         }
                         super::purchase::record_request(&mut tx, &request).await?;
+                        // Serialize competing coin reservations, including across worlds.
+                        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:store-cosmetic:'||encode($1,'hex')||':'||$2,0))")
+                            .bind(request.account_id.as_slice()).bind(&offer).execute(&mut *tx).await?;
+                        let prior: Option<sqlx::types::Uuid> = sqlx::query_scalar(
+                            "SELECT purchase_id FROM game_character_store_cosmetics \
+                             WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND offer_key=$3",
+                        )
+                            .bind(request.character_id.as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&offer).fetch_optional(&mut *tx).await?;
+                        if let Some(prior) = prior {
+                            // A debit under a reservation created before deployment must
+                            // still finish, even if the account has another legacy grant.
+                            return Ok(prior.as_bytes() == &request.purchase_request_id);
+                        }
+                        let unavailable: bool = sqlx::query_scalar(
+                            "SELECT EXISTS(SELECT 1 FROM store_delivery_receipts \
+                                WHERE account_id=encode($1,'hex')::uuid AND entitlement_key='store-cosmetic:'||$2 \
+                                  AND entitlement_key LIKE 'store-cosmetic:%') \
+                             OR EXISTS(SELECT 1 FROM game_character_store_cosmetics c \
+                                JOIN store_purchase_requests p ON p.purchase_request_id=c.purchase_id \
+                                WHERE c.offer_key=$2 AND c.operation_id IS NULL AND p.account_id=encode($1,'hex')::uuid)",
+                        )
+                            .bind(request.account_id.as_slice()).bind(&offer).fetch_one(&mut *tx).await?;
+                        if unavailable {
+                            return Ok(false);
+                        }
                         reserve(&mut tx, &fence, &request, &offer).await
                     }
                     .await;

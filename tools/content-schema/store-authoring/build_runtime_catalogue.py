@@ -105,7 +105,9 @@ def with_crystal_charged(catalogue: dict, items: dict[str, tuple[str, int]]) -> 
                 "source_line": row["source_line"],
             }
         )
-    source["crystal_charged_items"] = extract["source"] | {"offer_keys": sorted(crystal_keys)}
+    source["crystal_charged_items"] = extract["source"] | {
+        "offer_keys": sorted(crystal_keys)
+    }
     offers.sort(key=lambda row: row["key"])
     return catalogue | {"source": source, "offers": offers}
 
@@ -126,7 +128,8 @@ def admitted_items() -> dict[str, tuple[str, int]]:
         ):
             item = record["production_definition"]
             items[item["production_key"]] = (
-                item["revision_ref"], charges["value"]["count"]["value"]
+                item["revision_ref"],
+                charges["value"]["count"]["value"],
             )
     return items
 

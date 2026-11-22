@@ -5,7 +5,7 @@ use super::storage::StoreDurabilityError;
 use sqlx::Row;
 
 impl DurabilityRoot {
-    /// Read at most 256 pending receipts in decision-time/operation order.
+    /// Read at most 256 pending receipts, giving untried deliveries priority.
     pub async fn list_unacknowledged_store_receipts(
         &self,
         limit: u16,
@@ -21,7 +21,7 @@ impl DurabilityRoot {
                         "SELECT r.receipt FROM store_receipt_outbox o \
                          JOIN store_delivery_receipts r USING(operation_id) \
                          WHERE o.acknowledged_at IS NULL \
-                         ORDER BY r.decided_at,r.operation_id LIMIT $1",
+                         ORDER BY o.publish_attempts,r.decided_at,r.operation_id LIMIT $1",
                     )
                     .bind(i64::from(limit))
                     .fetch_all(&mut *tx)
@@ -44,6 +44,15 @@ impl DurabilityRoot {
         &self,
         id: [u8; 16],
     ) -> Result<bool, StoreDurabilityError> {
+        self.record_store_receipt_attempt(id, true).await
+    }
+
+    /// Keep a failed publication pending and let other receipts get their turn.
+    pub async fn record_store_receipt_attempt(
+        &self,
+        id: [u8; 16],
+        acknowledged: bool,
+    ) -> Result<bool, StoreDurabilityError> {
         if !uuid_v7(&id) {
             return Err(StoreValidationError::InvalidUuid.into());
         }
@@ -53,10 +62,11 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let changed = sqlx::query(
                         "UPDATE store_receipt_outbox SET publish_attempts=publish_attempts+1, \
-                         acknowledged_at=statement_timestamp() \
+                         acknowledged_at=CASE WHEN $2 THEN statement_timestamp() END \
                          WHERE operation_id=encode($1,'hex')::uuid AND acknowledged_at IS NULL",
                     )
                     .bind(id.as_slice())
+                    .bind(acknowledged)
                     .execute(&mut *tx)
                     .await?
                     .rows_affected()

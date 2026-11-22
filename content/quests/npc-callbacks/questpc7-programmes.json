@@ -2063,9 +2063,9 @@
       "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
       "npc": "oteryn:npc.wayland_smythers",
       "keywords": [
-        "basic"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 101,
       "next_topic": 0,
       "storage": [
         {
@@ -2111,11 +2111,18 @@
       "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
       "npc": "oteryn:npc.wayland_smythers",
       "keywords": [
-        "halo"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 103,
       "next_topic": 0,
-      "storage": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
       "requirements": {
         "min_level": 1000,
         "premium": true,
@@ -2151,18 +2158,32 @@
           "outfit": "oteryn:outfit.illuminated_warrior",
           "addons": 2
         }
-      ]
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.illuminated_warrior",
+          "addons": 1
+        }
+      ],
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/questpc7-illuminated-insignia",
       "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
       "npc": "oteryn:npc.wayland_smythers",
       "keywords": [
-        "insignia"
+        "yes"
       ],
-      "topic": 0,
+      "topic": 102,
       "next_topic": 0,
-      "storage": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
       "requirements": {
         "min_level": 1000,
         "premium": true,

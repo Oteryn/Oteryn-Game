@@ -6,6 +6,35 @@ use super::storage::{PurchaseRequestState, StoreDurabilityError};
 use sqlx::Row;
 
 impl DurabilityRoot {
+    /// Read a terminal reply for the same immutable binding without creating a journal row.
+    pub async fn read_store_purchase_answer(
+        &self,
+        request: PurchaseRequest,
+    ) -> Result<Option<Vec<u8>>, StoreDurabilityError> {
+        request.validate()?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let answer = sqlx::query_scalar(
+                        "SELECT answer FROM store_purchase_requests WHERE state=2 \
+                         AND purchase_request_id=encode($1,'hex')::uuid \
+                         AND account_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid \
+                         AND binding_digest=$4",
+                    )
+                    .bind(request.purchase_request_id.as_slice())
+                    .bind(request.account_id.as_slice())
+                    .bind(request.character_id.as_slice())
+                    .bind(request.binding_digest().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(answer))
+                })
+            })
+            .await?
+    }
+
     /// Read-only restore gate. Existence permits only the normal retry path, which still
     /// checks the immutable binding before reconciliation; this never creates a request.
     pub async fn has_store_purchase_request(

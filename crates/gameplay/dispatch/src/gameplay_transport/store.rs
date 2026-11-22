@@ -28,6 +28,9 @@ mod catalogue;
 mod browse;
 #[path = "store/prey_retry.rs"]
 mod prey_retry;
+#[path = "store/receipt_outbox.rs"]
+pub(super) mod receipt_outbox;
+pub use receipt_outbox::run_store_receipt_outbox;
 #[path = "store/hireling.rs"]
 mod hireling;
 use catalogue::{RuntimeCatalogue, currency_text};
@@ -108,6 +111,11 @@ static HIRELING_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(||
 });
 
 static COSMETIC_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(|| RuntimeCatalogue::from_json(crate::content::store_cosmetics::DOCUMENT));
+
+static PREDECESSOR_CATALOGUES: LazyLock<[Option<RuntimeCatalogue>; 2]> = LazyLock::new(|| [
+    RuntimeCatalogue::from_json(include_bytes!("../../../../../rulesets/economy/store/predecessors/catalogue.json")),
+    RuntimeCatalogue::from_json(include_bytes!("../../../../../rulesets/economy/store/predecessors/cosmetics.json")),
+]);
 
 fn catalogue_for_key(key: &str)->Option<&'static RuntimeCatalogue> {
     if crate::content::store_cosmetics::offer(key).is_some() {COSMETIC_CATALOGUE.as_ref()} else if key.starts_with("store:hireling:") {HIRELING_CATALOGUE.as_ref()} else {CATALOGUE.as_ref()}
@@ -407,6 +415,21 @@ async fn purchase_retained_or_new(
     {
         return Some(result);
     }
+    let retained = if catalogue.rules.revision() != request.catalog_revision {
+        if !owner.root.has_store_purchase_request(
+            request.purchase_request_id, account, *fence.character_id.as_bytes(),
+        ).await.ok()? {
+            return Some(refusal(wire::StorePurchaseCode::StaleQuote));
+        }
+        PREDECESSOR_CATALOGUES.iter().flatten().find(|old| {
+            old.rules.revision() == request.catalog_revision && old.rules.offer(&request.offer_key).is_some()
+        })
+    } else {
+        Some(catalogue)
+    };
+    let Some(catalogue) = retained else {
+        return Some(refusal(wire::StorePurchaseCode::StaleQuote));
+    };
     let cosmetic = crate::content::store_cosmetics::offer(&request.offer_key);
     if let Some(offer) = cosmetic {
         let native = owner.active_generation?.native_gameplay()?.cosmetics()?;
@@ -451,6 +474,23 @@ async fn purchase_retained_or_new(
         character_id,
         binding: hireling::request_binding(binding.binding_digest(),hireling_action.as_ref())?,
     };
+    if let rules::DeliveryKind::Item { item_key, .. } = &catalogue.rules.offer(&binding.offer_key)?.delivery
+        && !owner.root.has_store_purchase_request(request.purchase_request_id, account, character_id).await.ok()?
+    {
+        let current = gameplay_fence(owner, admitted).await?;
+        let native = owner.active_generation?.native_gameplay()?;
+        let weights = super::item_ref_admission::NativeInboxItemWeights(native, owner.premium_coordinator);
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: item_key.clone(),
+            revision_ref: catalogue.item_revision(&binding.offer_key)?.into(),
+        };
+        if !owner.root.store_item_fits_before_debit(
+            owner.character, owner.holder, current, account, *admitted.channel_id.as_bytes(), definition, &weights,
+        ).await.ok()? {
+            return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
+        }
+    }
     let prey_expansion = matches!(
         &catalogue.rules.offer(&binding.offer_key)?.delivery,
         rules::DeliveryKind::Unlock { unlock_key } if unlock_key == catalogue::PREY_EXPANSION_UNLOCK

@@ -12,7 +12,8 @@ fn coutfit_wayland_loads_verified_scrap_exchanges() -> TestResult {
             .iter()
             .find(|row| row.npc == "oteryn:npc.wayland_smythers" && row.key.ends_with(keyword))
             .ok_or(keyword)?;
-        assert_eq!(exchange.keywords, [keyword]);
+        assert_eq!(exchange.keywords, ["yes"]);
+        assert_eq!(exchange.topic, 101 + u16::from(addon));
         assert!(catalogue.transition(&exchange.key).is_some());
         assert_eq!(exchange.take.len(), 1);
         assert_eq!(exchange.take[0].item, "oteryn:item.tibia.i54640");

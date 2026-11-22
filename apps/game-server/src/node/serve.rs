@@ -4067,10 +4067,25 @@ async fn boot_and_serve(
         // enforcement-owner exit authoritative while this auxiliary worker is idle.
         std::future::pending::<()>().await;
     };
-    first(first(serving, enforcement_owner), catalogue)
-        .await
-        .flatten()
-        .unwrap_or(Err(BootError::Serve))
+    let receipts = crate::gameplay_transport::run_store_receipt_outbox(
+        root,
+        crate::native_admission_source::store::StoreClient::new(
+            Box::new(
+                crate::native_admission_source::store::MtlsStoreTransport::new(
+                    material.store.clone(),
+                ),
+            ),
+            material.store.source_authority().to_owned(),
+        ),
+    );
+    first(
+        first(first(serving, enforcement_owner), catalogue),
+        Box::pin(receipts),
+    )
+    .await
+    .flatten()
+    .flatten()
+    .unwrap_or(Err(BootError::Serve))
 }
 
 #[cfg(test)]

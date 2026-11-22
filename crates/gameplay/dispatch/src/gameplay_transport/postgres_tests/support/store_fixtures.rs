@@ -35,6 +35,7 @@ pub(super) struct Ledger {
     pub(super) debits: Vec<u64>,
     pub(super) intents: BTreeMap<String, serde_json::Value>,
     pub(super) receipts: usize,
+    pub(super) fail_receipt: bool,
     pub(super) malformed: bool,
     pub(super) answers: BTreeMap<String, (String, serde_json::Value)>,
 }
@@ -93,6 +94,9 @@ impl StoreTransport for FakePlatform {
             Operation::PublishStoreDeliveryReceiptV1 => {
                 assert_eq!(request["binding_digest"], sha256(&platform_bytes(&ledger.intents[request["operation_id"].as_str().expect("operation")])));
                 assert_eq!(request["result_code"], "STORE_OK");
+                if ledger.fail_receipt {
+                    return Box::pin(async { Err(TransportFailure::Unavailable) });
+                }
                 ledger.receipts += 1;
                 serde_json::json!({"contract_version":1,"result":"accepted"})
             }

@@ -27,8 +27,18 @@ pub(super) async fn read(
             })
             .map(|fact| (fact.unlock_key, fact.content_revision))
             .collect();
-    let store: Vec<String> = sqlx::query_scalar("SELECT offer_key FROM game_character_store_cosmetics WHERE character_id=encode($1,'hex')::uuid AND world_id=(SELECT world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) AND offer_key=ANY($2::text[]) AND operation_id IS NOT NULL ORDER BY offer_key LIMIT 32")
-        .bind(character.as_bytes().as_slice()).bind(grant_keys).fetch_all(connection).await?;
+    // Token grants are local. A committed Platform delivery proves account ownership, even
+    // if the buyer has since changed worlds or been retired. The grant list bounds the union.
+    let store: Vec<String> = sqlx::query_scalar("SELECT offer_key FROM game_character_store_cosmetics \
+        WHERE character_id=encode($1,'hex')::uuid \
+          AND world_id=(SELECT world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) \
+          AND offer_key=ANY($2::text[]) AND operation_id IS NOT NULL \
+        UNION \
+        SELECT requested.offer_key FROM unnest($2::text[]) AS requested(offer_key) \
+        JOIN store_delivery_receipts r ON r.entitlement_key='store-cosmetic:'||requested.offer_key \
+        WHERE r.account_id=encode($3,'hex')::uuid AND r.entitlement_key LIKE 'store-cosmetic:%' \
+        ORDER BY offer_key")
+        .bind(character.as_bytes().as_slice()).bind(grant_keys).bind(account.as_bytes().as_slice()).fetch_all(connection).await?;
     facts.extend(store.into_iter().map(|key| (key, crate::content::store_cosmetics::PROVENANCE.into())));
     Ok(facts)
 }

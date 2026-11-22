@@ -18,7 +18,7 @@ fn cosmetic_tokens_real_dispatch_debits_character_and_unlocks_once() -> TestResu
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-tokens", || scenario(true))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-tokens", || scenario(true, false))
 }
 
 #[test]
@@ -26,10 +26,20 @@ fn cosmetic_tokens_real_dispatch_coin_payment_grants_and_replays() -> TestResult
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-coins", || scenario(false))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-coins", || scenario(false, false))
 }
 
-fn scenario(tokens: bool) -> TestResult {
+#[test]
+fn cosmetic_tokens_replay_answer_from_previous_catalogue() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cosmetic-tokens-old-quote", || {
+        scenario(true, true)
+    })
+}
+
+fn scenario(tokens: bool, previous_revision: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_appearance(admin, "cosmetic_tokens").await?;
         prepare_current_session(&harness).await?;
@@ -227,6 +237,34 @@ fn scenario(tokens: bool) -> TestResult {
             wire::cosmetic_tokens::decode_balance(&before[0].1).map_err(debug)?,
             earned
         );
+        if previous_revision {
+            let mut previous = request.clone();
+            let mut snapshot: serde_json::Value = serde_json::from_slice(include_bytes!(
+                "../../../../../../rulesets/economy/store/predecessors/cosmetics.json"
+            ))?;
+            snapshot.sort_all_objects();
+            previous.catalog_revision = super::store_fixtures::sha256(&serde_json::to_vec(&snapshot)?);
+            let fence = crate::gameplay_transport::character_gameplay_fence::current(
+                &owner, admitted.game_session_id, false,
+            ).await.ok_or("current")?;
+            let mut binding = wire::encode_purchase_request(&previous).map_err(debug)?;
+            binding.extend(admitted.world_id.as_bytes());
+            let committed = owner.root.purchase_store_cosmetic_tokens(
+                owner.character, owner.holder, fence,
+                crate::durability::store::PurchaseRequest {
+                    purchase_request_id: previous.purchase_request_id,
+                    account_id, character_id: *fence.character_id.as_bytes(), binding,
+                },
+                previous.offer_key.clone(), previous.catalog_revision.clone(),
+            ).await.map_err(debug)?;
+            assert_eq!(committed.code, wire::StorePurchaseCode::Accepted);
+            let replay = serve(&owner, &mut admitted, &[command(&previous)?]).await?;
+            assert_eq!(wire::decode_purchase_result(&replay[0].1).map_err(debug)?, committed);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let result = serve(&owner, &mut admitted, &[command(&request)?]).await?;
         let purchase = wire::decode_purchase_result(&result[0].1).map_err(debug)?;
         assert_eq!(purchase.code, wire::StorePurchaseCode::Accepted);
@@ -528,6 +566,7 @@ const OUTFITS: &[(&str, u64, [u32; 2], u8)] = &[
     ("arena_champion", 870, [884, 885], 2),
     ("evoker", 840, [725, 724], 2),
     ("grove_keeper", 870, [908, 909], 2),
+    ("lion_of_war", 1750, [1206, 1207], 2),
     ("lupine_warden", 840, [899, 900], 2),
     ("pharaoh", 750, [955, 956], 2),
     ("philosopher", 750, [873, 874], 2),
