@@ -71,7 +71,6 @@ impl AudioOutput {
         })
     }
 
-
     /// Confirmed local UI tones share the bounded voices and stop with the session.
     pub(crate) fn play_ui(&mut self, settings: AudioSettings, cues: Vec<UiSound>) {
         let gain = settings.channel_gain(PresentationSource::Global, SoundChannel::Ui) * 0.15;
@@ -97,6 +96,23 @@ impl AudioOutput {
                 scale: 0.15,
             });
         }
+    }
+
+    pub(crate) fn start_title(&mut self) -> Result<(), String> {
+        if let Some(bytes) = self.catalog.read_title()? {
+            let source = Decoder::try_from(Cursor::new(bytes)).map_err(|e| e.to_string())?;
+            let sink = Sink::connect_new(self.stream.mixer());
+            sink.set_volume(0.0);
+            sink.append(source);
+            self.voices.push(Voice {
+                source: PresentationSource::Global,
+                channel: SoundChannel::Music,
+                class: None,
+                sink,
+                scale: 1.0,
+            });
+        }
+        Ok(())
     }
 
     pub fn stop(&mut self) {
