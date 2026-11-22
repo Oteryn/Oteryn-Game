@@ -140,6 +140,8 @@ pub(super) struct ConnectionInputs {
     pub(super) channel_character: String,
     pub(super) channel_current: Option<[u8; 16]>,
     pub(super) channel_rows: Vec<oteryn_client_ui::channel_switch::ChannelRow>,
+    /// Shared across handoffs. Acquire before the mailbox when retiring Store requests.
+    pub(super) browser_delivery: Arc<Mutex<()>>,
     pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
     pub(super) probe_platform: Option<String>,
 }

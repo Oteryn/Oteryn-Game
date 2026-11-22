@@ -496,7 +496,7 @@ fn device_gateway_401_reauthorizes_same_selection_once() -> TestResult {
 }
 
 #[test]
-fn second_gateway_401_after_device_recovery_returns_retry_login() -> TestResult {
+fn second_gateway_401_after_device_recovery_preserves_authentication_required() -> TestResult {
     device_ticket_falls_back(TicketFailure::GatewayRefused { twice: true })
 }
 
@@ -569,7 +569,7 @@ fn device_ticket_falls_back(case: TicketFailure) -> TestResult {
             assert!(requests[1].starts_with("POST /api/v1/game-auth/device-sessions/tickets "));
             if matches!(case, TicketFailure::GatewayRefused { twice: true }) {
                 use oteryn_platform_client::{gameplay_entry::GameplayEntryError, native_login::PublicClass};
-                assert!(matches!(result, Err(GameplayEntryError::Rejected(PublicClass::RetryLogin))), "{result:?}");
+                assert!(matches!(result, Err(GameplayEntryError::Rejected(PublicClass::AuthenticationRequired))), "{result:?}");
             } else {
                 assert!(matches!(result, Ok((ref id, Some(ref channel)))
                     if id == &character && channel == channel_node::CHANNEL_B), "{result:?}");
@@ -592,3 +592,4 @@ fn device_ticket_falls_back(case: TicketFailure) -> TestResult {
         })
     })
 }
+mod expiry;

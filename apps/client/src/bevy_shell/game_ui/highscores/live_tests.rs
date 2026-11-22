@@ -178,6 +178,12 @@ fn scenario() -> Result {
             channel_id: None,
         }
     ));
+    while !picker.is_finished() {
+        if Instant::now() >= deadline {
+            return Err("highscores picker did not reply".into());
+        }
+        std::thread::yield_now();
+    }
     picker.join().map_err(|_| "picker panicked")?;
     owner.play = Some(crate::bevy_shell::owner::ActivePlay {
         view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])

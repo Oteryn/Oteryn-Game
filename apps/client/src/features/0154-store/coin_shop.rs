@@ -4,6 +4,11 @@ use crate::play::{PlayLink, mailbox::lock};
 use oteryn_foundation::CancellationToken;
 use std::sync::Arc;
 
+#[cfg(test)]
+thread_local! {
+    static BEFORE_STORE_BROWSER: std::cell::Cell<Option<Box<dyn FnOnce() + Send>>> = const { std::cell::Cell::new(None) };
+}
+
 impl PlayLink {
     #[cfg(bevy_shell)]
     pub(crate) fn coin_checkout_available(&self) -> bool {
@@ -14,7 +19,7 @@ impl PlayLink {
             .is_some_and(|shop| shop.can_start())
     }
 
-    #[cfg(bevy_shell)]
+    #[cfg(any(test, bevy_shell))]
     pub(crate) fn open_coin_checkout(&self) -> bool {
         let mailbox = lock(&self.mailbox);
         !mailbox.scope_pending
@@ -36,17 +41,32 @@ impl PlayLink {
         let weak = Arc::downgrade(&self.mailbox);
         let commands = self.commands.downgrade();
         let browser_mailbox = weak.clone();
+        let delivery = lock(&self.mailbox).connection.browser_delivery.clone();
+        #[cfg(test)]
+        let before_browser = std::sync::Mutex::new(BEFORE_STORE_BROWSER.take());
         let browser_gate: BrowserGate = Arc::new(move |browser, url, cancel| {
             let Some(shared) = browser_mailbox.upgrade() else {
                 return false;
             };
-            // Under the cancellation owner's lock, commit or reject delivery.
-            // The configured callback may call back into play and runs unlocked.
             let deliver = {
                 let mailbox = lock(&shared);
-                !mailbox.scope_pending && !mailbox.player_typing_shutdown && !cancel.is_cancelled()
+                !mailbox.scope_pending && !mailbox.player_typing_shutdown
             };
-            deliver && browser(url)
+            #[cfg(test)]
+            if let Some(pause) = before_browser
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .take()
+            {
+                pause();
+            }
+            if !deliver {
+                return false;
+            }
+            let _delivery = delivery
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            !cancel.is_cancelled() && browser(url)
         });
         let after = Arc::new(move |cancel: &CancellationToken| {
             #[cfg(test)]
@@ -153,6 +173,64 @@ fn store_browser_callback_can_lock_the_play_mailbox() -> Result<(), Box<dyn std:
         assert!(
             result.recv_timeout(Duration::from_secs(5))?,
             "the Store called the browser opener while holding the play mailbox"
+        );
+        Ok(())
+    })
+}
+
+#[cfg(test)]
+#[test]
+fn session_end_wins_before_store_browser_delivery() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::account_services::test_server::{CHARACTER, MockPlatform, test_thread};
+    use crate::play::play_channel;
+    use std::{
+        sync::{
+            atomic::{AtomicUsize, Ordering},
+            mpsc,
+        },
+        time::Duration,
+    };
+
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let mut config = crate::NativeLoginConfig::from_env(|name| match name {
+            "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" => Some(mock.base.clone()),
+            "OTERYN_OAUTH_CLIENT_ID" => Some("native-client".into()),
+            _ => None,
+        })?
+        .ok_or("checkout config")?;
+        let calls = Arc::new(AtomicUsize::new(0));
+        let opened = calls.clone();
+        config.open_browser = Arc::new(move |_| {
+            opened.fetch_add(1, Ordering::SeqCst);
+            false
+        });
+        let (paused, ready) = mpsc::channel();
+        let (release, resume) = mpsc::channel();
+        BEFORE_STORE_BROWSER.set(Some(Box::new(move || {
+            assert!(paused.send(()).is_ok());
+            assert!(resume.recv_timeout(Duration::from_secs(5)).is_ok());
+        })));
+        let (link, _commands, outbox) = play_channel();
+        link.configure_coin_shop(Some(config), CHARACTER);
+        let launcher = lock(&link.mailbox)
+            .connection
+            .coin_shop
+            .clone()
+            .ok_or("launcher")?;
+        assert!(link.open_coin_checkout());
+        ready.recv_timeout(Duration::from_secs(5))?;
+        outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
+        release.send(())?;
+        let deadline = std::time::Instant::now() + Duration::from_secs(5);
+        while Arc::strong_count(&launcher) > 2 && std::time::Instant::now() < deadline {
+            std::thread::yield_now();
+        }
+        assert_eq!(Arc::strong_count(&launcher), 2);
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            0,
+            "cancelled Store checkout opened a browser"
         );
         Ok(())
     })

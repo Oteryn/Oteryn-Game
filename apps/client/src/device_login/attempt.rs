@@ -1,6 +1,9 @@
 use super::*;
 use oteryn_platform_client::native_login::{AccessToken, NativeTicket, OwnerCharacter};
 use serde::{Deserialize, Serialize};
+
+const RECOVERY_REVOCATION_TIMEOUT: Duration = Duration::from_secs(2);
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct LastCharacter {
@@ -88,11 +91,12 @@ impl DeviceAttempt {
         cancel: CancellationToken,
     ) -> Result<NativeTicket, NativeLoginError> {
         let previous = self.take()?;
-        if now().is_ok_and(|when| when >= previous.idle_expires_at) {
-            self.sign_out(client).await;
-            return Err(NativeLoginError::TicketSpent);
-        }
-        match client.device_ticket(&previous, cancel).await {
+        let result = if now().is_ok_and(|when| when >= previous.idle_expires_at) {
+            Err(NativeLoginError::TicketSpent)
+        } else {
+            client.device_ticket(&previous, cancel.clone()).await
+        };
+        match result {
             Ok((session, ticket)) => {
                 self.state
                     .pending
@@ -101,8 +105,15 @@ impl DeviceAttempt {
                 Ok(ticket)
             }
             Err(error) => {
-                self.sign_out(client).await;
-                Err(error)
+                // Discard local session state even when the player has already cancelled.
+                self.forget_session();
+                let _ = self.journal.observe_process_credential(None);
+                let _ = self.clear_vault();
+                tokio::select! {
+                    biased;
+                    () = cancel.cancelled() => Err(oteryn_platform_client::PlatformClientError::Cancelled.into()),
+                    _ = tokio::time::timeout(RECOVERY_REVOCATION_TIMEOUT, self.revoke_pending(client)) => Err(error),
+                }
             }
         }
     }
@@ -114,15 +125,19 @@ impl DeviceAttempt {
         &mut self,
         client: &NativeLoginClient,
     ) -> Result<(), NativeLoginError> {
+        self.forget_session();
+        self.journal.observe_process_credential(None)?;
+        let local = self.clear_vault();
+        let remote = self.revoke_pending(client).await;
+        local.and(remote)
+    }
+
+    fn forget_session(&mut self) {
         if let Some(session) = self.state.session.take() {
             self.remember_revocation(session.device_credential);
         }
         self.state.key = None;
         self.state.remembered = false;
-        self.journal.observe_process_credential(None)?;
-        let local = self.clear_vault();
-        let remote = self.revoke_pending(client).await;
-        local.and(remote)
     }
 
     pub(super) async fn revoke_before_vault_clear(
