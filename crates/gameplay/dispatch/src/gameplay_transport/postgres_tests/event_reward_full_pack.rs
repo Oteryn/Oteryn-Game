@@ -186,6 +186,7 @@ fn scenario(admin: String, quantity: i64) -> TestResult {
         let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), 1, source);
         let expected =
             reward_bag_conversion(native, &definition, draw).ok_or("Blue Present reward")?;
+        assert_eq!(expected.recipe, "oteryn:reward-bag.event_6570");
         let [(reward, amount)] = expected.outputs.as_slice() else {
             return Err("Blue Present must select one reward".into());
         };
@@ -210,19 +211,28 @@ fn scenario(admin: String, quantity: i64) -> TestResult {
         };
         // Fail after the source debit, when the transaction inserts the reward's custody.
         sqlx::raw_sql(
-            "CREATE FUNCTION refuse_test_present_drop() RETURNS trigger LANGUAGE plpgsql AS $$
-                 BEGIN RAISE EXCEPTION 'injected Blue Present Ground insert failure'; END $$;
+            "CREATE SEQUENCE test_present_drop_reached;
+             GRANT USAGE ON SEQUENCE test_present_drop_reached TO oteryn_game_runtime;
+             CREATE FUNCTION refuse_test_present_drop() RETURNS trigger LANGUAGE plpgsql AS $$
+                 BEGIN
+                     PERFORM nextval('test_present_drop_reached');
+                     RAISE EXCEPTION 'injected Blue Present Ground insert failure';
+                 END $$;
              CREATE TRIGGER refuse_test_present_drop AFTER INSERT ON game_item_ground_locations
                  FOR EACH ROW EXECUTE FUNCTION refuse_test_present_drop();",
         )
         .execute(&harness.pool)
         .await?;
-        assert!(matches!(
-            owner
-                .use_reward_bag(deps.actor, command, ItemKey::Instance(source))
-                .await,
-            Some(None)
-        ));
+        let failed = owner
+            .use_reward_bag(deps.actor, command, ItemKey::Instance(source))
+            .await;
+        assert!(matches!(failed, Some(None)), "{failed:?}");
+        assert!(
+            sqlx::query_scalar::<_, bool>("SELECT is_called FROM test_present_drop_reached")
+                .fetch_one(&harness.pool)
+                .await?,
+            "the injected failure must occur at the Ground insert"
+        );
         let rolled_back: (i64, i64, i64, i64) = sqlx::query_as(
             "SELECT i.quantity,
              (SELECT count(*) FROM game_item_craft_records),

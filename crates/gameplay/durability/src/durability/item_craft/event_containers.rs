@@ -1,6 +1,13 @@
 //! Read the existing craft receipt before a W19 USE handle is resolved again.
 use super::*;
 
+pub enum EventContainerReplaySource {
+    Wire([u8; 16]),
+    InstanceTagged,
+}
+
+pub const REWARD_BAG_INSTANCE_INTENT_TAG: &[u8] = b"oteryn:reward-bag-use:v1";
+
 impl DurabilityRoot {
     /// A historical source remains addressable after its item and view handle retire.
     /// The normal craft probe still compares the original wire intent and owns replay.
@@ -9,7 +16,7 @@ impl DurabilityRoot {
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         fence: CurrentCharacterItemFence,
         command: CommandRef,
-    ) -> Result<Option<[u8; 16]>, DurabilityError> {
+    ) -> Result<Option<EventContainerReplaySource>, DurabilityError> {
         if command.game_session_id() != fence.game_session_id {
             return Ok(None);
         }
@@ -19,17 +26,28 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             super::super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
-            let source: Option<Vec<u8>> = sqlx::query_scalar(
-                "SELECT uuid_send(source_item_instance_id) FROM game_item_craft_records \
+            let source: Option<(Vec<u8>, bool)> = sqlx::query_as(
+                "SELECT uuid_send(source_item_instance_id), \
+                        intent = $5::bytea || uuid_send(source_item_instance_id) \
+                 FROM game_item_craft_records \
                  WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric \
-                   AND character_id=encode($3,'hex')::uuid AND recipe LIKE 'oteryn:event-container.%'",
+                   AND character_id=encode($3,'hex')::uuid \
+                   AND (recipe LIKE 'oteryn:event-container.%' OR recipe=$4)",
             )
             .bind(command.game_session_id().as_bytes().as_slice())
             .bind(command.command_id().get().to_string())
             .bind(fence.character_id.as_bytes().as_slice())
+            .bind(BLUE_PRESENT_RECIPE)
+            .bind(REWARD_BAG_INSTANCE_INTENT_TAG)
             .fetch_optional(&mut **tx).await?;
             tx.commit(deadline).await?;
-            source.map(|value| value.try_into().map_err(|_| DurabilityError::InvalidStoredState)).transpose()
+            match source {
+                Some((_, true)) => Ok(Some(EventContainerReplaySource::InstanceTagged)),
+                Some((value, false)) => Ok(Some(EventContainerReplaySource::Wire(
+                    value.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
+                ))),
+                None => Ok(None),
+            }
         })).await
     }
 }
@@ -58,7 +76,7 @@ pub(super) async fn nested_source(
 }
 
 pub const BLUE_PRESENT: &str = "oteryn:item.tibia.i6570";
-pub(super) const BLUE_PRESENT_RECIPE: &str = "oteryn:event-container.6570";
+pub(super) const BLUE_PRESENT_RECIPE: &str = "oteryn:reward-bag.event_6570";
 
 pub(super) struct DropAdmission<'a> {
     pub(super) target: &'a LoopGround,

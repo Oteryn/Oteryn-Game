@@ -3,7 +3,7 @@
 CREATE FUNCTION game_blue_present_ground_matches(
  r game_item_craft_records, o JSONB, g game_item_ground_locations
 ) RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
- SELECT r.recipe='oteryn:event-container.6570'
+ SELECT r.recipe='oteryn:reward-bag.event_6570'
   AND r.created_xact_id=pg_current_xact_id()
   AND g.item_instance_id=(o->>'item')::uuid
   AND g.stack_ordinal=(o->>'ordinal')::bigint
@@ -22,7 +22,7 @@ BEGIN
  IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing craft output admission'; END IF;
  arm:=$arm$
   IF o ? 'ground' AND (
-      NEW.recipe<>'oteryn:event-container.6570' OR NOT NEW.consume_source
+      NEW.recipe<>'oteryn:reward-bag.event_6570' OR NOT NEW.consume_source
       OR NEW.ingredient_item_instance_id IS NOT NULL
       OR i.definition_production_key<>'oteryn:item.tibia.i6570'
       OR jsonb_array_length(NEW.outputs)<>1

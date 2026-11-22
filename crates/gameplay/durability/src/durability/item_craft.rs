@@ -31,7 +31,7 @@ pub(crate) mod marriage;
 mod skinning;
 pub mod soulpit;
 pub use enchanting::EnchantingCraft;
-pub use event_containers::BLUE_PRESENT;
+pub use event_containers::{BLUE_PRESENT, EventContainerReplaySource, REWARD_BAG_INSTANCE_INTENT_TAG};
 pub use harvest::{MapHarvestOperand, MapHarvestRequest, MapHarvestResult};
 pub use skinning::{SkinningOutcome, SkinningRequest};
 
