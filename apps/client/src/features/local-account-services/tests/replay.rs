@@ -170,6 +170,7 @@ fn bazaar_pending_status_and_conflicting_terminal_receipt_are_fenced() -> TestRe
             )
             .await;
             assert!(view.pending());
+            mock.authority.lock().map_err(|_| "lock")?.pending_first = false;
             controller::execute(
                 &mut view,
                 Action::Status,

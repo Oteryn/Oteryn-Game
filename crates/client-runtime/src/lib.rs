@@ -151,6 +151,10 @@ impl ClientRuntime {
     }
 
     pub fn shutdown(mut self, timeout: Duration) {
+        self.stop(timeout);
+    }
+
+    pub fn stop(&mut self, timeout: Duration) {
         self.cancellation.cancel();
         if let Some(runtime) = self.runtime.take() {
             runtime.shutdown_timeout(timeout);

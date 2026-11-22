@@ -11,11 +11,17 @@ pub(super) struct PendingIntent {
     worker: std::thread::JoinHandle<Result<(), String>>,
     action: ForgetAction,
     scope: Scope,
-    config: crate::NativeLoginConfig,
+    config: Option<crate::NativeLoginConfig>,
 }
 
 impl HostOwner {
     pub fn cancel_login(&mut self) {
+        if self.phase == Phase::Closed {
+            return;
+        }
+        if let Some(entry) = &mut self.entry {
+            entry.cancel_browser_delivery();
+        }
         if self.entry.as_ref().is_some_and(Reentry::can_cancel_entry) {
             self.queue_forget(ForgetAction::CancelLogin);
         } else {
@@ -63,31 +69,33 @@ impl HostOwner {
         if self.forget_intent.is_some() {
             return;
         }
-        let Some(config) = self
+        let config = self
             .entry
             .as_ref()
             .and_then(Reentry::config_for_forget)
-            .cloned()
-        else {
-            match self.settings.disable_remember_device() {
-                Ok(()) => self.apply_forget(action),
-                Err(error) => self.forget_failed(action, error),
-            }
+            .cloned();
+        if config.is_none() && self.preferences_path.is_none() {
+            self.settings.finish_device_opt_out();
+            self.apply_forget(action);
             return;
-        };
+        }
+        let record_opt_out = self.settings.record_device_opt_out();
         let worker_config = config.clone();
         let picker = matches!(action, ForgetAction::CancelPicker(_));
         match std::thread::Builder::new()
             .name("device-forget".into())
             .spawn(move || {
-                if picker {
-                    worker_config.record_picker_opt_out()
-                } else {
-                    worker_config
-                        .device_sessions
-                        .block_remembered()
-                        .map_err(|error| error.to_string())
+                if let Some(config) = worker_config {
+                    if picker {
+                        config.record_picker_opt_out()?;
+                    } else {
+                        config
+                            .device_sessions
+                            .block_remembered()
+                            .map_err(|error| error.to_string())?;
+                    }
                 }
+                record_opt_out()
             }) {
             Ok(worker) => {
                 self.selection.pause_responses(true);
@@ -124,22 +132,26 @@ impl HostOwner {
                 .join()
                 .unwrap_or_else(|_| Err("Device writer stopped".into()));
             self.selection.pause_responses(false);
-            if let Err(error) = result.and_then(|()| self.settings.disable_remember_device()) {
+            if let Err(error) = result {
                 self.forget_failed(intent.action, error);
             } else {
+                self.settings.finish_device_opt_out();
+                let Some(forgotten) = intent.config else {
+                    if self.scope == intent.scope {
+                        self.apply_forget(intent.action);
+                    }
+                    return;
+                };
                 let current = self
                     .entry
                     .as_ref()
                     .and_then(Reentry::config_for_forget)
                     .is_some_and(|config| {
-                        std::sync::Arc::ptr_eq(
-                            &config.device_sessions,
-                            &intent.config.device_sessions,
-                        )
+                        std::sync::Arc::ptr_eq(&config.device_sessions, &forgotten.device_sessions)
                     });
                 if let Some(entry) = &mut self.entry {
                     entry.set_session_options(self.settings.preferences.miscellaneous);
-                    self.device_sign_out = Some(entry.finish_recorded_forget(intent.config));
+                    self.device_sign_out = Some(entry.finish_recorded_forget(forgotten));
                 }
                 if current && self.scope == intent.scope {
                     self.apply_forget(intent.action);
@@ -409,7 +421,8 @@ fn cancel_reserves_picker_request_until_worker_finishes() -> Result<(), Box<dyn 
     use oteryn_platform_client::native_login::{CharacterAvailability, OwnerCharacter};
     let folder = tempfile::tempdir()?;
     let mut owner = HostOwner::new(None)?;
-    let config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
+    let mut config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
+    config.preference_path = Some(folder.path().join("preferences.json"));
     assert!(owner.entry.as_mut().ok_or("entry")?.configure(config));
     let callback = owner.selector.clone();
     let selector = std::thread::spawn(move || {
@@ -453,5 +466,49 @@ fn cancel_reserves_picker_request_until_worker_finishes() -> Result<(), Box<dyn 
         SelectionAction::Cancel
     );
     assert!(owner.play.is_none());
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn close_and_cancel_fence_login_links_before_forget_finishes()
+-> Result<(), Box<dyn std::error::Error>> {
+    for close in [false, true] {
+        let folder = tempfile::tempdir()?;
+        let config = Reentry::device_test_config(folder.path().into(), "https://localhost:1")?;
+        let mut owner = HostOwner::new(None)?;
+        let entry = owner.entry.as_mut().ok_or("entry")?;
+        assert!(entry.configure(config));
+        entry.arm_cancel_fixture();
+        let (epoch, _) = entry
+            .start_web_link(crate::web_links::WebLink::CookiePolicy)
+            .ok_or("link")?;
+        if close {
+            owner.queue_forget(ForgetAction::CancelPicker(1));
+            let intent = owner.forget_intent.take().ok_or("forget intent")?;
+            let (release, wait) = std::sync::mpsc::channel();
+            owner.forget_intent = Some(PendingIntent {
+                worker: std::thread::spawn(move || {
+                    wait.recv_timeout(std::time::Duration::from_secs(5))
+                        .map_err(|error| error.to_string())?;
+                    intent.worker.join().map_err(|_| "forget worker panicked")?
+                }),
+                ..intent
+            });
+            owner.close();
+            owner.cancel_login();
+            let (after_close, _) = owner
+                .entry
+                .as_ref()
+                .ok_or("closing entry")?
+                .start_web_link(crate::web_links::WebLink::CookiePolicy)
+                .ok_or("link")?;
+            assert!(after_close.is_cancelled());
+            release.send(())?;
+        } else {
+            owner.cancel_login();
+        }
+        assert!(epoch.is_cancelled());
+    }
     Ok(())
 }

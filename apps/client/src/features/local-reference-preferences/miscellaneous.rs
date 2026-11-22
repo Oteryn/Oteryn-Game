@@ -73,7 +73,6 @@ impl MiscellaneousPreferences {
     }
     pub fn save(&self, path: &std::path::Path) -> std::io::Result<()> {
         let _lock = crate::atomic_file::lock(path)?;
-        Self::replay_opt_out(path)?;
         self.publish(path)
     }
 
@@ -82,7 +81,6 @@ impl MiscellaneousPreferences {
         before: Self,
         path: &std::path::Path,
     ) -> std::io::Result<()> {
-        Self::replay_opt_out(path)?;
         let mut active = Self::read_for_edit(path)?;
         let Self {
             character_sort_column,
@@ -140,12 +138,8 @@ impl MiscellaneousPreferences {
     // The caller holds the publication lock. Keep the intent until the merged
     // sidecar is durable, so an interrupted replay can safely run again.
     fn replay_opt_out(path: &Path) -> io::Result<()> {
-        let pending = path.with_added_extension("opt-out");
-        if pending.try_exists()? {
-            let mut options = Self::read_for_edit(path)?;
-            options.remember_device = false;
-            options.publish(path)?;
-            std::fs::remove_file(pending)?;
+        if path.with_added_extension("opt-out").try_exists()? {
+            Self::read_for_edit(path)?.publish(path)?;
         }
         Ok(())
     }
@@ -162,7 +156,18 @@ impl MiscellaneousPreferences {
     }
 
     fn publish(&self, path: &std::path::Path) -> std::io::Result<()> {
-        crate::atomic_file::publish_durable(path, &serde_json::to_vec(self)?)
+        // Under the sidecar lock a pending opt-out wins every merge and survives a failed write.
+        let marker = path.with_added_extension("opt-out");
+        let pending = marker.try_exists()?;
+        let mut merged = *self;
+        if pending {
+            merged.remember_device = false;
+        }
+        crate::atomic_file::publish_durable(path, &serde_json::to_vec(&merged)?)?;
+        if pending {
+            std::fs::remove_file(marker)?;
+        }
+        Ok(())
     }
 }
 impl super::SettingsState {
