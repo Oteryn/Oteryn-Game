@@ -2,7 +2,7 @@
   "capture_artifact": {
     "encoding": "gzip",
     "path": "npc.json.gz",
-    "sha256": "80f5d7ed2053bd40cdc4c62cc190610bbec1640310eea4c8e1f6c8631ef1a69b"
+    "sha256": "db02897ace4f31b910c146638bcf5f6cade28b110069a4eaff24f70e15b8de59"
   },
   "corpus_manifest_sha256": "9823fd5e25796d5cfcd88a586530a60c0d7a9ca8a4f1130df25afbc2fb21b693",
   "donor_pins": {
