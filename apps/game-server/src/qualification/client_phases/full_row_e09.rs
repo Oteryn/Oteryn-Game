@@ -217,8 +217,25 @@ pub(super) async fn depot_search(
             format!("step=inbox-search observed={reply:?} need=accepted-depot-search").into(),
         );
     }
-    depot_search::decode_reply(&reply.payload)
-        .map_err(|e| format!("step=inbox-search observed=decode-{e:?} need=valid-reply").into())
+    let decoded = depot_search::decode_reply(&reply.payload)
+        .map_err(|e| format!("step=inbox-search observed=decode-{e:?} need=valid-reply"))?;
+    search_readback(decoded, client_id)
+}
+
+fn search_readback(reply: depot_search::Reply, client_id: u32) -> TestResult<depot_search::Reply> {
+    let valid = reply.retrieved == 0
+        && match (reply.outcome, reply.results.as_slice()) {
+            (depot_search::Outcome::Found, [row]) => row.client_id == client_id,
+            (depot_search::Outcome::NotFound, []) => true,
+            _ => false,
+        };
+    if !valid {
+        return Err(format!(
+            "step=inbox-search observed={reply:?} need=found-or-not-found-for-{client_id}"
+        )
+        .into());
+    }
+    Ok(reply)
 }
 
 pub(super) fn inbox(reply: &depot_search::Reply) -> u32 {
@@ -602,6 +619,22 @@ mod tests {
         row.pass(ACTIONS[0], "duplicate");
         assert!(row.invalid);
     }
+    #[test]
+    fn rejected_inbox_search_cannot_supply_a_zero_baseline() {
+        let reply = depot_search::Reply {
+            outcome: depot_search::Outcome::Rejected,
+            retrieved: 0,
+            results: vec![],
+        };
+        assert!(search_readback(reply, 3506).is_err());
+        let empty = depot_search::Reply {
+            outcome: depot_search::Outcome::NotFound,
+            retrieved: 0,
+            results: vec![],
+        };
+        assert!(search_readback(empty, 3506).is_ok_and(|reply| inbox(&reply) == 0));
+    }
+
     #[test]
     fn preexisting_inbox_mail_cannot_prove_delivery() {
         assert!(!one_delivery(4, 4));

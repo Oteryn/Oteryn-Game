@@ -672,10 +672,14 @@ async fn coins(
         let item = client.inventory().and_then(|inventory| {
             inventory.entries.iter().find(|item| {
                 item.item_definition_ref == source
-                    && if *step == "crystal-down" { item.count.get() >= quantity } else { item.count.get() == quantity }
+                    && match *step {
+                        "platinum-down" => item.count.get() < 100,
+                        "crystal-down" => item.count.get() >= quantity,
+                        _ => item.count.get() == quantity,
+                    }
             })
         }).copied().ok_or_else(|| format!(
-            "{step}: need earned backpack stack definition={source} count={quantity}; observed={before:?}; source:crates/gameplay/economy/src/coin_exchange.rs:132"
+            "{step}: need an eligible earned backpack stack definition={source}; observed={before:?}; source:crates/gameplay/economy/src/coin_exchange.rs:132"
         ))?;
         let expected = exchange_counts(before, plan)
             .ok_or("coin use denomination delta exceeds observed backpack counts")?;
@@ -1439,7 +1443,17 @@ async fn party(
             if !death.shared || death.awards.len() != 2 || first.is_none() || second.is_none() {
                 return Err(format!("shared-xp-split: exact kill settled with shared={} awards={:?}; need positive awards for both eligible members; source:crates/gameplay/durability/src/durability/party_kill_xp.rs:1", death.shared, death.awards).into());
             }
-            row.pass("shared-xp-split", "exact-rat-death-receipt-two-positive-awards");
+            let occurrence = death.reward_occurrence.ok_or("shared-xp-split: principal reward occurrence absent")?;
+            let mut database = sqlx::PgConnection::connect(clients.url).await?;
+            let raw: Vec<i64> = sqlx::query_scalar(
+                "SELECT m.raw_share FROM game_party_kill_xp_members p
+                 JOIN game_party_kill_xp_members m USING (death_key)
+                 WHERE p.reward_occurrence_id=encode($1,'hex')::uuid LIMIT 3",
+            ).bind(occurrence.as_slice()).fetch_all(&mut database).await?;
+            if !matches!(raw.as_slice(), [a, b] if *a > 0 && a == b) {
+                return Err(format!("shared-xp-split: unequal or missing raw shares before per-player modifiers: {raw:?}").into());
+            }
+            row.pass("shared-xp-split", "exact-rat-death-receipt-two-equal-positive-raw-shares");
             Ok(())
         }.await;
         send(client, Some(PartyIntent::Leave)).await?;
