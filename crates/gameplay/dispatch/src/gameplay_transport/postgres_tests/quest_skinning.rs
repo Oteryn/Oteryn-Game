@@ -217,11 +217,11 @@ fn scenario(transform: bool) -> TestResult {
         super::item_look_fixtures::seed_main_backpack(&h, &[(KNIFE, 1)]).await?;
         owner.admit_quest_session(&admitted).await;
 
-        let map = owner.bundle_map().ok_or("map")?;
+        let map_digest = owner.bundle_map().ok_or("map")?.overlay.base().digest();
         let target = |pos: Position| -> TestResult<_> {
             let key = oteryn_world_bundle::bundle::placement_key(pos.floor, pos.x, pos.y, 1)
                 .ok_or("placement")?;
-            let mut placement = map.overlay.base().digest().to_vec();
+            let mut placement = map_digest.to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
             Ok((
                 key,
@@ -269,7 +269,14 @@ fn scenario(transform: bool) -> TestResult {
                 .fetch_one(&h.pool)
                 .await?;
         assert_eq!(transforms, 0);
-        assert_eq!(map.facts.object_revision(first_key), 0);
+        assert_eq!(
+            owner
+                .bundle_map()
+                .ok_or("map")?
+                .facts
+                .object_revision(first_key),
+            0
+        );
 
         owner.clock_origin -= std::time::Duration::from_secs(2);
         assert_eq!(
@@ -286,13 +293,27 @@ fn scenario(transform: bool) -> TestResult {
              JOIN game_character_quest_receipts q ON q.cause_id=r.game_session_id AND q.cause_ordinal=r.command_id"
         ).fetch_optional(&h.pool).await?;
         assert_eq!(replacement, transform.then_some((4012, true)));
-        assert_eq!(map.facts.object_revision(first_key), u64::from(transform));
+        assert_eq!(
+            owner
+                .bundle_map()
+                .ok_or("map")?
+                .facts
+                .object_revision(first_key),
+            u64::from(transform)
+        );
         owner.clock_origin -= std::time::Duration::from_secs(2);
         assert_eq!(
             send(&owner, &mut admitted, 4, second_use).await?,
             UseDisposition::Committed
         );
-        assert_eq!(map.facts.object_revision(second_key), 0);
+        assert_eq!(
+            owner
+                .bundle_map()
+                .ok_or("map")?
+                .facts
+                .object_revision(second_key),
+            0
+        );
         let stage: i64 =
             sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE track_key=$1")
                 .bind(TRACK)
