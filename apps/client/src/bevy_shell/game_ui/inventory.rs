@@ -88,6 +88,21 @@ impl Slot {
             }
         }
     }
+    fn parent_container(
+        &self,
+        panel: &oteryn_client_ui::container_tree::ContainerPanel,
+    ) -> Option<oteryn_session::ItemHandle> {
+        let Location::Container { view, handle } = self.location else {
+            return None;
+        };
+        panel
+            .views
+            .as_ref()?
+            .views
+            .iter()
+            .find(|entry| entry.view_id == view && entry.container_handle == handle)?
+            .parent_handle
+    }
     fn current_item(&self, owner: &HostOwner) -> Option<ItemEntry> {
         let current = self.current(owner)??;
         let old = self.item?;
@@ -140,6 +155,8 @@ struct InventoryUi {
 #[derive(Component, Clone, Copy)]
 enum Control {
     Open(Slot),
+    OpenSeparate(Slot),
+    MoveUp(Slot, oteryn_session::ItemHandle),
     Context(Slot, oteryn_client_ui::world_interaction::menu::Action),
     /// Edit the text of a writable item (letter, book, label) in the writing window.
     Write(Slot),

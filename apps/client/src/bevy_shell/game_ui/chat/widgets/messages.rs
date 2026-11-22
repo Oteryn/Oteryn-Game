@@ -94,6 +94,9 @@ impl RenderedRow {
 #[derive(Clone, Copy)]
 pub(super) enum MessageAction {
     Copy,
+    CopyName,
+    Clear,
+    SelectAll,
     Private,
     Ignore,
     Report,
@@ -107,6 +110,9 @@ pub(super) enum MessageAction {
 pub(super) struct MessageControl {
     message: MessageRow,
     action: MessageAction,
+    tab: ConsoleTab,
+    channel: Option<oteryn_client_ui::chat::ChannelTab>,
+    scope: u64,
 }
 
 pub(super) fn message_menu(
@@ -133,6 +139,9 @@ pub(super) fn message_menu(
     if let Some(old) = state.menu.take() {
         commands.entity(old).despawn();
     }
+    let Some((scope, tab, channel)) = state.source.clone() else {
+        return;
+    };
     let position = event.pointer.location().position;
     let name = message.row.target();
     let mut actions = Vec::new();
@@ -141,13 +150,16 @@ pub(super) fn message_menu(
             (Some(MessageAction::Private), format!("Message to {name}")),
             (Some(MessageAction::Ignore), format!("Ignore {name}")),
             (Some(MessageAction::Report), format!("Report {name}")),
+            (Some(MessageAction::CopyName), "Copy Name".into()),
             (None, String::new()),
         ]);
     }
     actions.extend([
         (Some(MessageAction::Copy), "Copy Message".to_string()),
+        (Some(MessageAction::SelectAll), "Select All".into()),
         (None, String::new()),
         (Some(MessageAction::Lists), "Communication Lists".into()),
+        (Some(MessageAction::Clear), "Clear Messages".into()),
         (Some(MessageAction::Save), "Save Messages".into()),
     ]);
     actions.push(
@@ -194,6 +206,9 @@ pub(super) fn message_menu(
             .entity(*entity)
             .insert(MessageControl {
                 message: message.clone(),
+                scope,
+                tab,
+                channel: channel.clone(),
                 action,
             })
             .observe(message_action);
@@ -215,6 +230,11 @@ pub(super) fn message_dismiss(
 pub(super) fn message_action(
     event: On<bevy::ui_widgets::Activate>,
     controls: Query<&MessageControl>,
+    (mut focus, transcripts, skins): (
+        ResMut<InputFocus>,
+        Query<Entity, With<TranscriptRoot>>,
+        Res<Skins>,
+    ),
     owner: NonSend<HostOwner>,
     guard: ModalGuard,
     mut commands: Commands,
@@ -230,10 +250,54 @@ pub(super) fn message_action(
     if control.message.generation != owner.generation() {
         return;
     }
+    let panel = play.link.chat_panel();
+    if control.scope != panel.scope
+        || control.tab != panel.console.tab
+        || control.channel != panel.console.current
+    {
+        if let Some(menu) = state.menu.take() {
+            commands.entity(menu).despawn();
+        }
+        return;
+    }
     let name = control.message.row.target();
     match control.action {
         MessageAction::Copy => {
             commands.trigger(super::CopyText(control.message.row.text.clone()));
+        }
+        MessageAction::Clear => {
+            play.link
+                .chat_clear_transcript(control.scope, control.tab, control.channel.as_ref())
+        }
+        MessageAction::SelectAll => {
+            if let Ok(parent) = transcripts.single() {
+                let text: String = state.rows.iter().map(|row| row.text.as_str()).collect();
+                let row = RenderedRow {
+                    text,
+                    line: None,
+                    recipient: None,
+                    font_px: control.message.row.font_px,
+                };
+                commands.entity(parent).despawn_children();
+                let entity = message_row(&mut commands, &skins, owner.generation(), &row);
+                let mut input = EditableText::new(&row.text);
+                input.queue_edit(bevy::text::TextEdit::SelectAll);
+                commands.entity(entity).insert((input, ChildOf(parent)));
+                state.row_entities = vec![entity];
+                state.selection = Some(entity);
+                focus.set(entity, bevy::input_focus::FocusCause::Navigated);
+            }
+        }
+        MessageAction::CopyName => {
+            let speaker = match &control.message.row.line {
+                Some(oteryn_session::ChatLine::Private { speaker_name, .. }) => {
+                    Some(speaker_name.as_str())
+                }
+                _ => name,
+            };
+            if let Some(speaker) = speaker {
+                commands.trigger(super::CopyText(speaker.to_owned()));
+            }
         }
         MessageAction::Private => {
             if let Some(name) = name {

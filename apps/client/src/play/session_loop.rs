@@ -510,7 +510,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Ok(PlayCommand::Vip(request)) => match send_vip(&mut session, &request).await {
+            Ok(PlayCommand::Vip(request)) => match send_vip(&mut session, &outbox, &request).await {
                 Ok(response) => {
                     outbox.vip_result(&response);
                     publish(&mut session, &outbox, &mut held);

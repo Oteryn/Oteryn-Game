@@ -81,6 +81,8 @@ impl ComposerMode {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Console {
+    cleared: Vec<clear::Cutoff>,
+    npc_serial: u64,
     pub display: super::ConsoleDisplay,
     pub metadata: super::Metadata,
     pub presentation: super::Presentation,
@@ -123,6 +125,8 @@ pub struct Console {
 impl Default for Console {
     fn default() -> Self {
         Self {
+            cleared: Vec::new(),
+            npc_serial: 0,
             display: Default::default(),
             metadata: Default::default(),
             presentation: Default::default(),
@@ -152,6 +156,9 @@ impl Default for Console {
     }
 }
 impl Console {
+    pub(super) fn reset_transcript_cutoffs(&mut self) {
+        self.cleared.clear();
+    }
     pub fn select(&mut self, tab: ConsoleTab) {
         self.tab_filters[self.tab as usize] = self.show_messages;
         self.tab = tab;
@@ -178,6 +185,8 @@ impl Console {
         let closed = self.current.take()?;
         let at = self.channels.iter().position(|tab| *tab == closed)?;
         self.channels.remove(at);
+        self.cleared
+            .retain(|cut| cut.channel.as_ref() != Some(&closed));
         match at.checked_sub(1) {
             Some(left) => self.current = self.channels.get(left).cloned(),
             None => self.select(self.tab),
@@ -191,6 +200,8 @@ impl Console {
             self.close_current();
         } else {
             self.channels.retain(|tab| tab != channel);
+            self.cleared
+                .retain(|cut| cut.channel.as_ref() != Some(channel));
             self.close_mirror_of(channel);
         }
     }
@@ -301,6 +312,13 @@ impl Console {
     /// last reply, a new conversation replaces it.
     pub fn sync_npc(&mut self, lines: &[String]) {
         if !lines.is_empty() {
+            let overlap = (0..=self.npc_lines.len().min(lines.len()))
+                .rev()
+                .find(|n| self.npc_lines[self.npc_lines.len() - n..] == lines[..*n])
+                .unwrap_or(0);
+            self.npc_serial = self
+                .npc_serial
+                .saturating_add((lines.len() - overlap) as u64);
             self.npc_lines = lines.to_vec();
         }
     }
@@ -364,6 +382,12 @@ pub enum CommunicationList {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CommunicationLists {
+    pub ignore_suspended: bool,
+    pub whitelist_suspended: bool,
+    pub block_private: bool,
+    pub block_yells: bool,
+    pub allow_vips: bool,
+    pub vip_names: std::collections::BTreeSet<String>,
     pub ignored: std::collections::BTreeSet<String>,
     pub whitelist: std::collections::BTreeSet<String>,
     pub blacklist: std::collections::BTreeSet<String>,
@@ -390,16 +414,33 @@ impl CommunicationLists {
         }
         true
     }
+    fn exempt(&self, name: &str) -> bool {
+        (!self.whitelist_suspended && self.whitelist.contains(name))
+            || (self.allow_vips && self.vip_names.contains(name))
+    }
     pub fn allows(&self, name: &str) -> bool {
         let name = name.trim().to_lowercase();
-        self.whitelist.contains(&name)
-            || (!self.ignored.contains(&name) && !self.blacklist.contains(&name))
+        self.exempt(&name)
+            || ((self.ignore_suspended || !self.ignored.contains(&name))
+                && !self.blacklist.contains(&name))
+    }
+    pub(super) fn allows_private(&self, speaker: &str) -> bool {
+        if self.block_private {
+            self.exempt(&speaker.trim().to_lowercase())
+        } else {
+            self.allows(speaker)
+        }
     }
     pub fn visible(&self, line: &oteryn_client_runtime::chat::ChatLine) -> bool {
         use oteryn_client_runtime::chat::ChatLine;
         match line {
+            ChatLine::Local {
+                mode: oteryn_client_runtime::chat::ChatSpeechMode::Yell,
+                speaker_name,
+                ..
+            } if self.block_yells => self.exempt(&speaker_name.trim().to_lowercase()),
+            ChatLine::Private { speaker_name, .. } => self.allows_private(speaker_name),
             ChatLine::Local { speaker_name, .. }
-            | ChatLine::Private { speaker_name, .. }
             | ChatLine::Room { speaker_name, .. }
             | ChatLine::Party { speaker_name, .. } => self.allows(speaker_name),
             ChatLine::Guild(line) => self.allows(&line.speaker_name),
@@ -408,3 +449,6 @@ impl CommunicationLists {
         }
     }
 }
+
+#[path = "state/clear.rs"]
+mod clear;

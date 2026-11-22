@@ -149,6 +149,8 @@ pub struct ReferencePreferences {
     pub arc_opacity: u8,
     #[serde(default)]
     pub chat_context_hotkeys: bool,
+    #[serde(default)]
+    pub chat_drag_locked: bool,
     /// The chat mode the character last chose; `None` keeps the console default.
     #[serde(default)]
     pub chat_mode: Option<ChatMode>,
@@ -160,6 +162,18 @@ pub struct ReferencePreferences {
     pub compact_status: bool,
     #[serde(default = "enabled")]
     pub status_panel_visible: bool,
+    #[serde(default = "enabled")]
+    pub status_bar_visible: bool,
+    #[serde(default = "enabled")]
+    pub top_menu_visible: bool,
+    #[serde(default)]
+    pub status_bar_bottom: bool,
+    #[serde(default)]
+    pub status_bar_style: u8,
+    #[serde(default = "enabled")]
+    pub status_bar_experience: bool,
+    #[serde(default)]
+    pub status_bar_skills: [bool; 8],
     #[serde(default)]
     pub skill_order: Vec<u8>,
     #[serde(default)]
@@ -316,11 +330,18 @@ impl Default for ReferencePreferences {
             hud_npc_names: None,
             arc_opacity: 100,
             chat_context_hotkeys: false,
+            chat_drag_locked: false,
             chat_mode: None,
             manual_hotkey_profile: false,
             console_font_px: 14,
             compact_status: false,
             status_panel_visible: true,
+            status_bar_visible: true,
+            top_menu_visible: true,
+            status_bar_bottom: false,
+            status_bar_style: 0,
+            status_bar_experience: true,
+            status_bar_skills: [false; 8],
             skill_order: Vec::new(),
             condition_order: Vec::new(),
             special_condition_order: Vec::new(),

@@ -53,6 +53,7 @@ struct Notice {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ConsoleNotices {
+    serial: u64,
     entries: VecDeque<Notice>,
 }
 impl ConsoleNotices {
@@ -60,11 +61,21 @@ impl ConsoleNotices {
         if self.entries.len() == 100 {
             self.entries.pop_front();
         }
+        self.serial = self.serial.saturating_add(1);
         self.entries.push_back(Notice {
             class,
             text: text.chars().take(1024).collect(),
             received,
         });
+    }
+    pub(super) fn serial(&self) -> u64 {
+        self.serial
+    }
+    pub(super) fn retain_after(&mut self, serial: u64) {
+        let remove = self.entries.len().saturating_sub(
+            usize::try_from(self.serial.saturating_sub(serial)).unwrap_or(usize::MAX),
+        );
+        self.entries.drain(..remove);
     }
     pub fn text(&self, filters: ConsoleFilters, display: ConsoleDisplay) -> String {
         self.scoped_text(

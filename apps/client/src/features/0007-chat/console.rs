@@ -7,6 +7,22 @@ use oteryn_client_ui::chat::{ChannelEntry, CommunicationList, ComposerMode, Cons
 use std::path::Path;
 
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn chat_clear_transcript(
+        &self,
+        scope: u64,
+        tab: ConsoleTab,
+        channel: Option<&oteryn_client_ui::chat::ChannelTab>,
+    ) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.chat;
+        if panel.scope == scope
+            && panel.console.tab == tab
+            && panel.console.current.as_ref() == channel
+        {
+            panel.clear_current_transcript();
+        }
+    }
     /// PreviousChannel / NextChannel: cycle the console tabs.
     pub fn chat_channel_cycle(&self, forward: bool) {
         lock(&self.mailbox).chat.console.cycle(forward);
