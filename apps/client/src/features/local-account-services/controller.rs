@@ -221,9 +221,10 @@ async fn submit(
         return Ok(());
     };
     let result = client.bazaar_command(token, request, cancel).await;
-    // A retry's 403 does not bound the earlier POST. Keep its identity even after status 404.
+    // Only a refusal of the initial POST can rule out its effect.
     view.post_refusal_status = match &result {
-        Err(NativeLoginError::Platform(HttpStatus(status @ (403 | 409)))) => Some(*status),
+        Err(NativeLoginError::Platform(HttpStatus(409))) if !retry => Some(409),
+        Err(NativeLoginError::Platform(HttpStatus(403))) => Some(403),
         _ => None,
     };
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
@@ -265,6 +266,7 @@ pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
     } else {
         view.unresolved.remove(&receipt.request_id);
     }
+    view.prior.reconcile(&receipt.request_id);
     view.feedback = match receipt.state {
         OperationState::Pending => {
             tr!("Awaiting the authoritative receipt. Check status or retry with the same identity.")

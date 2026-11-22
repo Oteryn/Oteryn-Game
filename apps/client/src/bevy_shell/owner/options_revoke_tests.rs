@@ -7,15 +7,8 @@ fn turning_remember_device_off_forgets_the_device_and_logs_the_character_out() -
     use std::sync::Arc;
     let temp = tempfile::tempdir()?;
     let mut host = HostOwner::new(Some(temp.path().join("preferences.json")))?;
-    let config = crate::NativeLoginConfig::from_env(|name| {
-        Some(match name {
-            "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" => "https://localhost:1".into(),
-            "OTERYN_OAUTH_CLIENT_ID" => "019a5f4a-1000-7000-8000-000000000001".into(),
-            "OTERYN_DEV_ROOT" => "/tmp/reentry-unused-root".into(),
-            _ => String::new(),
-        })
-    })?
-    .ok_or("native login config")?;
+    let config =
+        super::Reentry::device_test_config(temp.path().join("device"), "https://localhost:1")?;
     let device = Arc::clone(&config.device_sessions);
     // Holding the device session keeps a scheduled revocation task (and its owner) alive.
     let runtime = tokio::runtime::Builder::new_current_thread()
@@ -34,6 +27,7 @@ fn turning_remember_device_off_forgets_the_device_and_logs_the_character_out() -
     host.open_graphics();
     host.edit_preferences(|preferences| preferences.miscellaneous.remember_device = false);
     host.apply(true);
+    host.finish_forget_intent();
     assert!(!host.settings.preferences.miscellaneous.remember_device);
     assert_eq!(
         Arc::strong_count(&device),

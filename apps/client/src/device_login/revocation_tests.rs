@@ -54,6 +54,7 @@ fn failed_vault_delete_still_revokes_and_never_reuses_the_session() -> TestResul
                 forget_requested: Default::default(),
                 journal: super::test_server::journal(None),
                 vault,
+                commerce: Default::default(),
                 state: Default::default(),
                 folder: None,
             };
@@ -97,6 +98,7 @@ fn sign_out_retries_every_pending_family() -> TestResult {
                 forget_requested: Default::default(),
                 journal: super::test_server::journal(None),
                 vault: vault.clone(),
+                commerce: Default::default(),
                 state: Default::default(),
                 folder: None,
             };
@@ -137,6 +139,7 @@ fn credential_fifo_is_rejected_within_the_lock_deadline() -> TestResult {
         forget_requested: Default::default(),
         journal: super::test_server::journal(Some(folder.path().into())),
         vault: Arc::new(Vault::default()),
+        commerce: Default::default(),
         state: Default::default(),
         folder: Some(folder.path().into()),
     };
@@ -166,6 +169,7 @@ fn queued_revocation_survives_shutdown_before_the_worker_runs() -> TestResult {
         forget_requested: Default::default(),
         journal: super::test_server::journal(Some(folder.path().into())),
         vault: vault.clone(),
+        commerce: Default::default(),
         state: Default::default(),
         folder: Some(folder.path().into()),
     };
@@ -245,6 +249,7 @@ fn rejected_platform_revocation_is_retried_after_restart() -> TestResult {
         forget_requested: Default::default(),
         journal: super::test_server::journal(Some(folder.path().into())),
         vault: vault.clone(),
+        commerce: Default::default(),
         state: Default::default(),
         folder: Some(folder.path().into()),
     };
@@ -295,6 +300,7 @@ fn review_3376_exit_after_active_vault_clear_replays_without_token_in_marker() -
         forget_requested: Default::default(),
         journal: super::test_server::journal(Some(folder.path().into())),
         vault: vault.clone(),
+        commerce: Default::default(),
         state: Default::default(),
         folder: Some(folder.path().into()),
     };
@@ -359,4 +365,52 @@ fn review_3376_exit_after_active_vault_clear_replays_without_token_in_marker() -
             assert!(!folder.path().join("revoke.pending").exists());
             server.finish().await
         })
+}
+
+#[test]
+fn c2a_cancel_during_begin_preserves_family_for_retry() -> TestResult {
+    tokio::runtime::Runtime::new()?.block_on(async {
+        let folder = tempfile::tempdir()?;
+        let vault = Arc::new(Vault::default());
+        vault::Vault::write(vault.as_ref(), &enrollment_response()?)
+            .map_err(std::io::Error::other)?;
+        let login = || DeviceLogin {
+            commerce: Default::default(),
+            enabled: true,
+            forget_requested: Default::default(),
+            journal: test_server::journal(Some(folder.path().into())),
+            vault: vault.clone(),
+            state: Default::default(),
+            folder: Some(folder.path().into()),
+        };
+        let cancelled = CancellationToken::new();
+        let failed = Server::start(vec![(500, Vec::new())]).await?;
+        let options = MiscellaneousPreferences {
+            stay_logged_in: true,
+            remember_device: true,
+            ..Default::default()
+        };
+        {
+            let first = login();
+            let held = first.state.lock().await;
+            let attempt = first.begin(&failed.client, options, cancelled.clone());
+            tokio::pin!(attempt);
+            tokio::select! {
+                biased;
+                _ = &mut attempt => return Err("begin bypassed the credential guard".into()),
+                () = tokio::task::yield_now() => cancelled.cancel(),
+            }
+            drop(held);
+            assert!(attempt.await.is_err());
+        }
+        failed.finish().await?;
+        let replay = Server::start(vec![(200, fixture("revoke-response.json")?)]).await?;
+        drop(
+            login()
+                .begin(&replay.client, options, CancellationToken::new())
+                .await?,
+        );
+        assert_eq!(replay.requests.lock().map_err(|_| "requests")?.len(), 1);
+        replay.finish().await
+    })
 }

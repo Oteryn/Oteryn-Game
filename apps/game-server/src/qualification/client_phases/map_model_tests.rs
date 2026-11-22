@@ -156,6 +156,42 @@ fn map_journey_bundle_wall_detour_rope_and_unknown_ladder_facts() -> TestResult 
             }
         },
     )?;
+    use oteryn_protocol_oteryn::world_spatial_entities as spatial;
+    let start = at(0, 0, -8);
+    let goal = |tile| tile == at(1, 1, -8);
+    let blocked = std::collections::BTreeSet::new();
+    assert_eq!(
+        full_e2ef7::forge_next_step(&world, start, goal, &[], &blocked),
+        Some(StepDirection::East)
+    );
+    let creature = spatial::WorldSpatialEntity {
+        motion: None,
+        display_name: None,
+        kind: spatial::EntityKind::Creature,
+        entity: spatial::EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        },
+        position: ActorPosition {
+            x: 1,
+            y: 0,
+            floor: 8,
+        },
+        detail: spatial::EntityDetail::Actor {
+            direction: StepDirection::West,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    assert_eq!(
+        full_e2ef7::forge_next_step(&world, start, goal, &[creature], &blocked),
+        Some(StepDirection::South)
+    );
+    // A landing the server just refused is also unavailable before the entity arrives.
+    assert_eq!(
+        full_e2ef7::forge_next_step(&world, start, goal, &[], &[at(1, 0, -8)].into()),
+        Some(StepDirection::South)
+    );
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let model = MapModel::load(&world, &bytes, &root)?;
     let from = at(0, 1, -8);
