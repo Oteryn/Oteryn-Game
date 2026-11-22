@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7.",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro and both Wayland Smythers placements at their admitted Summer source-map cells (dialogue presence only); MONKQUEST3: Ambassador Manop and Enpa-Deia Pema pilgrimage at the existing reviewed Crystal candidate cells; QENGINE2-L1: Cael, Cranky Lizard Crone, Palimuth and Yalahari outfit hand-ins at the existing Global source candidate cells; alternate example-map cells are excluded by explicit selection; QENGINE2-L1-02: Dedoras, Muriel, The First Dragon and Broken Servant Sentry source-bound outfit stories at existing Global candidate cells QENGINE2-L1-03: Avar Tar and Ezebeth source outfit reward conversations at admitted captured placements. QENGINE2-L1-04A: Irmana paid Nobleman addon source conversations at admitted captured placement. QENGINE2-L1-04B: source Percybald Royal Costume donation at admitted captured placement. QENGINE2-L1-04C: captured Raymond Striker,Duncan,Morgan,Ariella Pirate outfit progression. QENGINE2-L1-05: source Oriental gender-specific hand-ins at captured placements. QENGINE2-L1-05B: Hjaern Norseman and Formorgar outfit source hand-ins at captured placement. M38: the stationary A Swan contact for Threatened Dreams at its agreeing captured source cell33185,31732,7; ordinary compiler admission already accepts this exact cell. M01c: Pilgrimage of Ashes and Stampede collector contacts and six ordered blessers at retained candidate cells or the explicit adjacent Oteryn choices documented in placement_adjustments; no daily world-state change. M38: Maris (Mistrock) native Beregar contact at the agreeing captured source cell32640,31437,7; existing native hidden-path policy is preserved. M38: Zarifan at captured source33040,32484,11, preserving its native2000ms/radius2 walking profile; no stationary collision exception. M31: King Tibianus for the personal Kingsday greeting at the agreeing captured source cell32311,32172,6. M31: Chip at retained BR reference32418,31702,7 as an explicit source-informed contact, and Queen Eloise at the agreeing captured donor cell32314,31754,7, for personal Lumberjack dialogue.; retains questpc8 scoped placement overrides. questpc8 Wrath opening: source-agreeing Zalamon placement33354,31410,8; no crate-disguise bypass. questpc8 Wrath selected imperial hunt: captured Zlak33082,31220,7; source candidate unchanged. questpc8 Wrath source Sleeping Dragon: pinned Crystal NPC XML33242,31213,z10 overrides older Wiki hypothesis; engine default north facing. NODEBOOT-SAM: Sam Thais equipment trade at the agreeing Canary/Crystal promotion-candidate cell 32361,32198,z7 for node-boot NPC and player trade. QB-1: Hunter (Legola), Mage and Summoner (Angelina, Lynda, Myra, Zoltan) and Wizard (Lugri, The Queen of the Banshees) outfit hand-ins at their single agreeing promotion-candidate cells. QB-2: Cave Explorer (Gnommander, a source-backed solid contact), Revenant (Flickering Soul), Hand of the Inquisition (Grof, Kulag, Miles, Tim and Walter the Guard) at their single agreeing promotion-candidate cells. QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon hand-ins at their agreeing promotion-candidate cells; Hanna's alternate example-map cell is excluded by explicit selection. QB Barbarian Outfits: Bron and Ajax near Northport at their single agreeing promotion-candidate cells (Bron as a source-backed block_solid_contact: no adjacent clear single-item ground). QCX13: Frodo and Mordecai at their retained promotion-candidate cells for the existing seller offers. QH-TOP-OF-THE-CITY: Iriana at her agreeing Canary/Crystal candidate cell; Jimmy at the TibiaWiki and Polish TibiaWiki cell 32857,31383,6, on the passage stub the qh_jimmy_stub world overlay restores (owner evidence 2026-11-17). QC-SINATUKI: Sinatuki (Nibelor, Sinatuki Quest) at the agreeing Canary/Crystal promotion-candidate cell 32425,31085,z7. CWTRAV2: Crystal travel origins at their pinned Global map cells.",
   "npcs": [
     "oteryn:npc.a_seagull",
     "oteryn:npc.a_sleeping_dragon",
@@ -29,14 +29,17 @@
     "oteryn:npc.bron",
     "oteryn:npc.buddel",
     "oteryn:npc.cael",
+    "oteryn:npc.captain_seahorse",
     "oteryn:npc.captain_waverider",
     "oteryn:npc.captain_waverider_island",
     "oteryn:npc.carlos",
+    "oteryn:npc.carlson",
     "oteryn:npc.charles",
     "oteryn:npc.chip",
     "oteryn:npc.cipfried",
     "oteryn:npc.cledwyn",
     "oteryn:npc.cornelia",
+    "oteryn:npc.cornell",
     "oteryn:npc.cranky_lizard_crone",
     "oteryn:npc.dallheim",
     "oteryn:npc.dedoras",
@@ -56,38 +59,50 @@
     "oteryn:npc.gail",
     "oteryn:npc.gamon",
     "oteryn:npc.gelidrazah_s_thirst",
+    "oteryn:npc.gewen",
     "oteryn:npc.gnommander",
     "oteryn:npc.grizzly_adams",
     "oteryn:npc.grof_the_guard",
     "oteryn:npc.guide_jonathan",
     "oteryn:npc.guide_tiko",
+    "oteryn:npc.gurbasch",
     "oteryn:npc.habdel",
     "oteryn:npc.hanna",
     "oteryn:npc.henricus",
     "oteryn:npc.hjaern",
     "oteryn:npc.humphrey",
     "oteryn:npc.hyacinth",
+    "oteryn:npc.imbul",
     "oteryn:npc.iriana",
     "oteryn:npc.irmana",
     "oteryn:npc.ishina",
     "oteryn:npc.isimov",
     "oteryn:npc.ivalisse",
+    "oteryn:npc.iyad",
+    "oteryn:npc.jack_fate",
     "oteryn:npc.jack_springer",
     "oteryn:npc.jimmy",
     "oteryn:npc.jorge",
+    "oteryn:npc.junkar_mines",
+    "oteryn:npc.junkar_robsons",
+    "oteryn:npc.junkar_thais",
     "oteryn:npc.kasmir",
     "oteryn:npc.kawill",
+    "oteryn:npc.kendra_thais",
     "oteryn:npc.kepar",
     "oteryn:npc.king_tibianus",
     "oteryn:npc.kulag_the_guard",
     "oteryn:npc.lai",
     "oteryn:npc.legola",
     "oteryn:npc.lily",
+    "oteryn:npc.lorek",
     "oteryn:npc.lubo",
     "oteryn:npc.lugri",
     "oteryn:npc.lynda",
     "oteryn:npc.maealil",
     "oteryn:npc.marina",
+    "oteryn:npc.maris",
+    "oteryn:npc.maris_fenrock",
     "oteryn:npc.maris_mistrock",
     "oteryn:npc.mayor_pocaro",
     "oteryn:npc.miles_the_guard",
@@ -202,6 +217,9 @@
   "block_solid_contacts": [
     "oteryn:npc.bron",
     "oteryn:npc.gnommander",
+    "oteryn:npc.imbul",
+    "oteryn:npc.iyad",
+    "oteryn:npc.lorek",
     "oteryn:npc.zarifan"
   ],
   "native_contacts": [
@@ -483,6 +501,299 @@
         "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
         "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
       }
+    },
+    "oteryn:npc.captain_seahorse": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 604. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 33175,
+            "y": 31763,
+            "z": 6
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.carlson": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 1505. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32022,
+            "y": 31692,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.cornell": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 1502, 1526. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 33304,
+            "y": 31720,
+            "z": 7
+          },
+          "direction": "NORTH"
+        },
+        {
+          "position": {
+            "x": 33342,
+            "y": 31691,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.gewen": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 13. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32588,
+            "y": 31942,
+            "z": 0
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.gurbasch": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 3294. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 33311,
+            "y": 31988,
+            "z": 15
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.imbul": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 2284. The XML omits facing, so use the engine default north. The existing source-contact policy admits the actor on this native object stack (item 1762) while preserving collision.",
+      "placements": [
+        {
+          "position": {
+            "x": 32558,
+            "y": 32781,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.iyad": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 157. The XML omits facing, so use the engine default north. The existing source-contact policy admits the actor on this native object stack (item 5571) while preserving collision.",
+      "placements": [
+        {
+          "position": {
+            "x": 32251,
+            "y": 31097,
+            "z": 4
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.jack_fate": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 1073. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32286,
+            "y": 32891,
+            "z": 6
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.junkar_mines": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 2853. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32556,
+            "y": 32069,
+            "z": 10
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.junkar_robsons": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 3198. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32525,
+            "y": 32038,
+            "z": 14
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.junkar_thais": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 3108. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32368,
+            "y": 32181,
+            "z": 13
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.kendra_thais": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 2000. The XML omits facing, so use the engine default north. Crystal places this contact in the static world XML and registers Nostalgia unconditionally in kendra_thais.lua:70. Tibia first offered the ferry on January 7 during the January 2017 anniversary and later brought it back for annual anniversaries.",
+      "placements": [
+        {
+          "position": {
+            "x": 32261,
+            "y": 32262,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.lorek": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 2281. The XML omits facing, so use the engine default north. The existing source-contact policy admits the actor on this native object stack (item 1762) while preserving collision.",
+      "placements": [
+        {
+          "position": {
+            "x": 32679,
+            "y": 32775,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.maris": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 529. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32648,
+            "y": 31292,
+            "z": 6
+          },
+          "direction": "NORTH"
+        }
+      ]
+    },
+    "oteryn:npc.maris_fenrock": {
+      "source": {
+        "origin": "crystal",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/world/world-npc.xml",
+        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
+      },
+      "basis": "Crystal Global NPC XML lines 1307. The XML omits facing, so use the engine default north.",
+      "placements": [
+        {
+          "position": {
+            "x": 32564,
+            "y": 31313,
+            "z": 7
+          },
+          "direction": "NORTH"
+        }
+      ]
     }
   }
 }
