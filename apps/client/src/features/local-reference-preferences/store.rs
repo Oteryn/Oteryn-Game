@@ -131,14 +131,15 @@ impl PreferenceStore {
 
     pub fn backup_path(&self) -> PathBuf {
         let pending = self.path.with_added_extension("pending-backup");
-        let ready = self.path.with_added_extension("ready-backup");
         if pending.is_file() {
-            pending
-        } else if ready.is_file() {
-            ready
-        } else {
-            self.path.with_extension("backup.json")
+            return pending;
         }
+        Self::ordered_snapshots(&self.path)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(_, path)| path)
+            .find(|path| Self::read_transfer(path).is_ok())
+            .unwrap_or_else(|| self.path.with_extension("backup.json"))
     }
 
     pub fn defaults(path: PathBuf) -> Self {

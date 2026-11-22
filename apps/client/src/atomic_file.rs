@@ -11,7 +11,19 @@ pub(crate) fn replace(path: &Path, bytes: &[u8], sync: bool) -> io::Result<()> {
 }
 
 pub(crate) fn publish_durable(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    publish_durable_at(path, bytes, None)
+}
+
+pub(crate) fn publish_durable_at(
+    path: &Path,
+    bytes: &[u8],
+    modified: Option<std::time::SystemTime>,
+) -> io::Result<()> {
     let temporary = staged_file(path, bytes, true)?;
+    if let Some(modified) = modified {
+        temporary.as_file().set_modified(modified)?;
+        temporary.as_file().sync_all()?;
+    }
     // keep clears FILE_ATTRIBUTE_TEMPORARY on Windows before promotion.
     let (_file, source) = temporary.keep().map_err(|error| error.error)?;
     if let Err(error) = durable_rename(&source, path) {
