@@ -16,7 +16,6 @@ use std::time::Duration;
 const STEALTH_BASE: &str = "oteryn:item.tibia.i3049";
 const STEALTH_ACTIVE: &str = "oteryn:item.tibia.i3086";
 const FULL_DURATION_MS: i64 = 600_000;
-const RING: ItemKey = ItemKey::Instance([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
 #[derive(Clone, Copy)]
 enum End {
