@@ -1,16 +1,192 @@
-//! SUMMER: the committed Mayor placement and catalogue through production NPC dispatch.
+//! SUMMER: activated creature profiles and the Mayor through production dispatch.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::content::channel_content_pin::ChannelContentPin;
 use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
+use crate::creature_damage_spell::SpellSource;
 use crate::foundation::{
     MovementFacing, MovementLocalPosition, NpcPlacement, NpcPlacementTable, NpcPlacements,
 };
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::npc_talk::NpcTalkBook;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::sync::Arc;
 use std::time::Duration;
+
+#[test]
+fn summer_mimar_haffar_targeted_mana_drain_commits_through_native_ai() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("summer-mimar-haffar", move || {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(Box::pin(mimar_haffar_mana_drain(admin)))
+    })
+}
+
+async fn mimar_haffar_mana_drain(admin: String) -> TestResult {
+    const CREATURE: &str = "oteryn:creature.mimar_haffar";
+    const SOURCE_INDEX: usize = 6;
+    const STARTING_MANA: u32 = 2_000;
+    const THINK_MS: u64 = crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS;
+    const MAX_THINKS: u64 = 192;
+
+    let harness =
+        Harness::create_with_admission_seed(admin, "summer_mimar_haffar", false, false).await?;
+    prepare_current_session(&harness).await?;
+    let seal = harness.recovery.seal_current().map_err(debug)?;
+    let authority = harness
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+    let (controller, pin) =
+        crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
+    let active = controller.active().ok_or("active generation")?;
+    let native = active.native_gameplay().ok_or("native gameplay")?;
+    let record = native
+        .creature_profiles()
+        .records
+        .iter()
+        .find(|record| record.profile.target.key == CREATURE)
+        .ok_or("Mimar Haffar profile")?;
+    let crate::content::ProjectV2AuthoringProfileData::Behavior(behavior) = &record
+        .behavior
+        .as_ref()
+        .ok_or("Mimar Haffar behavior")?
+        .data
+    else {
+        return Err("Mimar Haffar behavior kind".into());
+    };
+    // Crystal 201189f8, bosses/mimar_haffar.lua:101.
+    let entry = behavior
+        .attacks
+        .get(SOURCE_INDEX)
+        .ok_or("mana drain entry")?;
+    assert_eq!((entry.interval_ms, entry.chance_ppm), (2_500, 120_000));
+    let definitions = record.attack_definitions.as_ref().ok_or("attack closure")?;
+    let source = SpellSource::from_native(
+        &record.profile.target,
+        SOURCE_INDEX,
+        &definitions.records,
+        &definitions.profiles,
+        native.source_digest(),
+    )
+    .map_err(debug)?;
+    assert_eq!(source.element(), Some("mana_drain"));
+    assert!(source.needs_target && source.area.is_none());
+    assert_eq!(
+        (source.range_tiles(), source.minimum, source.maximum),
+        (7, 400, 800)
+    );
+
+    let room = pin.qualified_room().clone();
+    let channel_pin = ChannelContentPin::from_activation(
+        world,
+        pin.activation_sequence(),
+        active.identity().server_artifact_digest(),
+        active.identity().client_artifact_digest(),
+        pin.frame_binding().digest(),
+        room.map_revision_digest(),
+        (2, 11, -7),
+    );
+    let mut deps = Dependencies::with_content(
+        channel_pin,
+        room,
+        crate::spell::cast::v1_spell_book().map_err(debug)?,
+    )?;
+    deps.combat_room = Some(deps.room.clone());
+    let session = deps.admitted.game_session_id;
+    let boss = {
+        let mut runtime = deps.runtime.lock().await;
+        native
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        runtime
+            .initialize_first_entry_position(deps.actor)
+            .map_err(debug)?;
+        let pin = runtime.content_pin().clone();
+        runtime
+            .realize_native_qualification_spawn(
+                pin,
+                CREATURE,
+                MovementLocalPosition {
+                    x: 2,
+                    y: 12,
+                    floor: -7,
+                },
+            )
+            .map_err(debug)?
+            .actor
+    };
+    let mut owner = deps.owner(&harness, &authority);
+    owner.active_generation = Some(active);
+    owner.movement_cells = deps.room.movement_cells().into();
+    owner.clock_origin -= Duration::from_secs(12);
+    let first_think = owner.owner_now();
+    {
+        let runtime = deps.runtime.lock().await;
+        let mut states = owner.states.spell_states.try_lock().map_err(debug)?;
+        let player = states
+            .initialize(
+                &runtime,
+                deps.actor,
+                session,
+                crate::spell::cast::CharacterCastFacts {
+                    // Leave room for the other source attacks during the chance rolls.
+                    max_health: 1_000_000,
+                    max_mana: STARTING_MANA,
+                    ..crate::gameplay_transport::actor_spell::tests::FACTS
+                },
+                (0, 0),
+                first_think,
+            )
+            .ok_or("current player state")?;
+        assert_eq!(player.vitals().mana, STARTING_MANA);
+    }
+
+    // Keep the activated schedule and chance rolls. Each pass advances one
+    // native think interval and reads back the same session's committed vitals.
+    for tick in 0..MAX_THINKS {
+        let now = SemanticTimeMicros::from_micros(first_think.get() + tick * THINK_MS * 1_000);
+        owner.drain_monster_melee_at(now).await;
+        let runtime = deps.runtime.lock().await;
+        let states = owner.states.spell_states.try_lock().map_err(debug)?;
+        let player = states
+            .get(&runtime, deps.actor, session)
+            .ok_or("current player after think")?;
+        let vitals = player.vitals();
+        assert!(vitals.health > 0, "the source target must survive");
+        if vitals.mana != STARTING_MANA {
+            let ai = states
+                .monster_melee
+                .creature_ai
+                .state(boss)
+                .ok_or("native boss AI state")?;
+            assert_eq!(ai.target(), Some(deps.actor));
+            assert!((tick + 1) * THINK_MS >= entry.interval_ms);
+            let drained = STARTING_MANA
+                .checked_sub(vitals.mana)
+                .ok_or("the attack must drain mana")?;
+            assert!(
+                (400..=800).contains(&drained),
+                "committed mana loss was {drained}"
+            );
+            eprintln!(
+                "Mimar Haffar drained {drained} mana through native AI ({} -> {})",
+                STARTING_MANA, vitals.mana,
+            );
+            return Ok(());
+        }
+    }
+    Err("Mimar Haffar did not commit a targeted mana drain within 192 native thinks".into())
+}
 
 #[test]
 fn summer_population_all_six_radiant_rewards_admit_native_corpses() -> TestResult {

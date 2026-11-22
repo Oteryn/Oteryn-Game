@@ -94,6 +94,28 @@ pub fn activated_reward_boss_corpse_capacity_fixture(
     ContentActivationController,
     crate::content::NativeEntryContentPin,
 ) {
+    reward_boss_fixture(world, source_world, capacity, false)
+}
+
+/// A classified rat with a single guaranteed bag and a guaranteed gold child.
+pub fn activated_nested_reward_boss_fixture(
+    world: oteryn_protocol_oteryn::WorldId,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
+    reward_boss_fixture(world, None, None, true)
+}
+
+fn reward_boss_fixture(
+    world: oteryn_protocol_oteryn::WorldId,
+    source_world: Option<&[u8]>,
+    capacity: Option<u32>,
+    nested_reward: bool,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
     let mut supplied = manifest_input();
     let mut creatures: CreatureProfilesDocument =
         serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
@@ -129,6 +151,31 @@ pub fn activated_reward_boss_corpse_capacity_fixture(
             .find(|facts| facts["item"]["key"] == corpse.key)
             .expect("rat corpse facts");
         facts["container_capacity"] = serde_json::json!(capacity);
+        supplied.loot_tables = Some(pinned(&serde_json::to_vec(&loot).unwrap()));
+    }
+    if nested_reward {
+        let mut loot: serde_json::Value =
+            serde_json::from_slice(&supplied.loot_tables.as_ref().expect("loot tables").bytes)
+                .unwrap();
+        let table = loot["tables"]
+            .as_array_mut()
+            .expect("loot tables")
+            .iter_mut()
+            .find(|table| table["identity"]["key"] == "oteryn:loot.creature.rat")
+            .expect("rat loot table");
+        table["algorithm"] = serde_json::json!("NestedGroups");
+        table["entries"] = serde_json::json!([{
+            "item": {"family": "Item", "key": "oteryn:item.tibia.i2863", "revision": "definition-r1"},
+            "min_count": 1,
+            "max_count": 1,
+            "probability_ppm": 1_000_000,
+            "children": [{
+                "item": {"family": "Item", "key": "oteryn:item.tibia.i3031", "revision": "definition-r1"},
+                "min_count": 1,
+                "max_count": 1,
+                "probability_ppm": 1_000_000
+            }]
+        }]);
         supplied.loot_tables = Some(pinned(&serde_json::to_vec(&loot).unwrap()));
     }
     refresh_fixture_attack_roots(rat);
