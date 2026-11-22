@@ -210,7 +210,7 @@ fn finish_configuration(
             ConfigKind::Copy => {
                 let text = if tool == Tool::Hunting {
                     oteryn_client_ui::analyser::session_text(&panel)
-                } else if tool == Tool::Party && panel.party_import.is_none() {
+                } else if tool == Tool::Party {
                     party_log().unwrap_or_else(|| play.link.analyser_text_for(tool))
                 } else {
                     play.link.analyser_text_for(tool)
@@ -226,7 +226,7 @@ fn finish_configuration(
                 play.link.analyser_feedback(status);
             }
             ConfigKind::Handoff => {
-                if let Some(log) = party_log()
+                if let Some(log) = play.link.analyser_split_party()
                     && let Some((_, mut text)) = fields
                         .iter_mut()
                         .find(|(field, _)| field.1 == Tool::Party && field.0 == 3)
@@ -237,7 +237,6 @@ fn finish_configuration(
                     replacement.max_characters = text.max_characters;
                     *text = replacement;
                 }
-                play.link.analyser_split_party();
             }
             ConfigKind::CopySplit => {
                 if let Some(text) = oteryn_client_ui::analyser::party::instructions(&panel) {

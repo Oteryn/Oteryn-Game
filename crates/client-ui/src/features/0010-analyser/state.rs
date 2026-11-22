@@ -16,6 +16,7 @@ pub struct Panel {
     pub open_tools: Vec<Tool>,
     pub recent: [measurements::Recent; 3],
     pub reset_at: [u64; 14],
+    pub party_split_error: Option<&'static str>,
     pub party_import: Option<super::party_import::Summary>,
     pub boss_drops: std::collections::VecDeque<super::bosses::Drop>,
     pub boss_drops_truncated: bool,

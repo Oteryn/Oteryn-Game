@@ -19,14 +19,15 @@ struct Reply {
     result: io::Result<[u64; 2]>,
 }
 struct Worker {
-    requests: mpsc::Sender<Request>,
+    requests: Option<mpsc::Sender<Request>>,
+    thread: Option<std::thread::JoinHandle<()>>,
     replies: Mutex<mpsc::Receiver<Reply>>,
 }
 impl Worker {
     fn start() -> io::Result<Self> {
         let (requests, work) = mpsc::channel::<Request>();
         let (finished, replies) = mpsc::channel();
-        std::thread::Builder::new()
+        let thread = std::thread::Builder::new()
             .name("analyser-highs".into())
             .spawn(move || {
                 for request in work {
@@ -44,11 +45,21 @@ impl Worker {
                 }
             })?;
         Ok(Self {
-            requests,
+            requests: Some(requests),
+            thread: Some(thread),
             replies: Mutex::new(replies),
         })
     }
 }
+impl Drop for Worker {
+    fn drop(&mut self) {
+        self.requests.take();
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
+}
+
 fn update(path: &Path, mut values: [u64; 2], reset: bool) -> io::Result<[u64; 2]> {
     let directory = path
         .parent()
@@ -60,7 +71,20 @@ fn update(path: &Path, mut values: [u64; 2], reset: bool) -> io::Result<[u64; 2]
         .create(true)
         .truncate(false)
         .open(path.with_extension("lock"))?;
-    fs2::FileExt::lock_exclusive(&lock)?;
+    // Another client using this character can briefly own the same profile lock.
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    loop {
+        match fs2::FileExt::try_lock_exclusive(&lock) {
+            Ok(()) => break,
+            Err(error)
+                if error.kind() == io::ErrorKind::WouldBlock
+                    && std::time::Instant::now() < deadline =>
+            {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            Err(error) => return Err(error),
+        }
+    }
     let previous: [u64; 2] = match std::fs::File::open(path) {
         Ok(file) => serde_json::from_reader(file.take(256))?,
         Err(error) if error.kind() == io::ErrorKind::NotFound => [0; 2],
@@ -113,15 +137,17 @@ pub(super) fn sync(owner: NonSend<HostOwner>, mut saved: Local<Saved>) {
         }
         saved.submitted = Some((generation, revision, values));
         if !saved.worker.as_ref().is_some_and(|w| {
-            w.requests
-                .send(Request {
-                    path,
-                    generation,
-                    revision,
-                    values,
-                    reset,
-                })
-                .is_ok()
+            w.requests.as_ref().is_some_and(|requests| {
+                requests
+                    .send(Request {
+                        path,
+                        generation,
+                        revision,
+                        values,
+                        reset,
+                    })
+                    .is_ok()
+            })
         }) {
             play.link
                 .analyser_feedback("Could not start analyser profile writer");

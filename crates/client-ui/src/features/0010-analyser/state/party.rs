@@ -13,6 +13,9 @@ pub struct Adjustment {
 pub type Adjustments = BTreeMap<String, Adjustment>;
 /// Advisory edits belong to the displayed session, never to server measurements.
 pub fn edit(panel: &mut Panel, name: &str, cost: Option<&str>, excluded: Option<bool>) -> bool {
+    if panel.party_split_error.is_some() {
+        return false;
+    }
     let name = name.trim();
     let (rows, adjustments) = if let Some(imported) = &mut panel.party_import {
         (&imported.rows, &mut imported.adjustments)
@@ -187,18 +190,42 @@ pub fn split_adjusted(rows: &[Member], adjustments: &Adjustments) -> Option<Vec<
     Some(out)
 }
 pub fn hunt_log(panel: &Panel, leader: Option<&str>) -> Option<String> {
-    use std::fmt::Write;
+    if panel.party_split_error.is_some() {
+        return None;
+    }
+    if let Some(summary) = &panel.party_import {
+        return render_hunt_log(&summary.rows, summary.leader.as_deref());
+    }
+    live_hunt_log(panel, leader)
+}
+
+pub fn handoff(panel: &mut Panel, leader: Option<String>) -> Option<String> {
+    let text = live_hunt_log(panel, leader.as_deref())?;
+    panel.party_import = Some(super::party_import::Summary {
+        rows: panel.party.clone(),
+        adjustments: panel.party_adjustments.clone(),
+        leader,
+    });
+    panel.party_split_error = None;
+    panel.feedback = None;
+    Some(text)
+}
+
+fn live_hunt_log(panel: &Panel, leader: Option<&str>) -> Option<String> {
     if panel.party_pending || panel.party_feedback.is_some() || split(&panel.party).is_none() {
         return None;
     }
+    render_hunt_log(&panel.party, leader)
+}
+
+fn render_hunt_log(rows: &[Member], leader: Option<&str>) -> Option<String> {
+    use std::fmt::Write;
     let mut text = String::from("Session data: Party Hunt (current member intervals)\n");
-    let loot: u128 = panel
-        .party
+    let loot: u128 = rows
         .iter()
         .map(|member| u128::from(member.loot_value))
         .sum();
-    let cost: u128 = panel
-        .party
+    let cost: u128 = rows
         .iter()
         .map(|member| u128::from(member.supply_cost))
         .sum();
@@ -208,7 +235,7 @@ pub fn hunt_log(panel: &Panel, leader: Option<&str>) -> Option<String> {
         loot as i128 - cost as i128
     )
     .ok()?;
-    for member in &panel.party {
+    for member in rows {
         let marker = if leader.is_some_and(|name| member.name.eq_ignore_ascii_case(name)) {
             " (Leader)"
         } else {
@@ -230,6 +257,9 @@ pub fn hunt_log(panel: &Panel, leader: Option<&str>) -> Option<String> {
 }
 
 pub fn instructions(panel: &Panel) -> Option<String> {
+    if panel.party_split_error.is_some() {
+        return None;
+    }
     use std::fmt::Write;
     let (rows, adjustments) = if let Some(imported) = &panel.party_import {
         (&imported.rows, &imported.adjustments)
@@ -262,6 +292,9 @@ pub fn instructions(panel: &Panel) -> Option<String> {
     Some(text)
 }
 pub fn text(panel: &Panel) -> String {
+    if let Some(error) = panel.party_split_error {
+        return error.to_owned();
+    }
     use std::fmt::Write;
     if let Some(imported) = &panel.party_import {
         let mut text = imported.text();

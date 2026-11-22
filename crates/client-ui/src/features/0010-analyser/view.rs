@@ -105,9 +105,10 @@ pub(super) fn loot_text(panel: &Panel, seconds: u64) -> String {
         panel,
         seconds,
         report_elapsed(panel, seconds, super::Tool::Loot),
+        false,
     )
 }
-fn loot_text_at(panel: &Panel, seconds: u64, elapsed: u64) -> String {
+fn loot_text_at(panel: &Panel, seconds: u64, elapsed: u64, consolidated: bool) -> String {
     use super::state::per_hour;
     use std::fmt::Write;
     let unpriced = panel
@@ -127,14 +128,14 @@ fn loot_text_at(panel: &Panel, seconds: u64, elapsed: u64) -> String {
         panel.loot_value(),
         per_hour(panel.loot_value(), elapsed),
         panel.omitted_items,
-        if panel.display.visible(Section::LootGraph) {
+        if consolidated || panel.display.visible(Section::LootGraph) {
             interval_chart(&panel.loot_values(seconds), seconds, elapsed)
         } else {
             String::new()
         },
         unpriced = unpriced
     );
-    if panel.display.visible(Section::LootGauge) {
+    if !consolidated && panel.display.visible(Section::LootGauge) {
         let _ = writeln!(
             text,
             "{}",
@@ -189,9 +190,10 @@ pub(super) fn supply_text(panel: &Panel, seconds: u64) -> String {
         panel,
         seconds,
         report_elapsed(panel, seconds, super::Tool::Supply),
+        false,
     )
 }
-fn supply_text_at(panel: &Panel, seconds: u64, elapsed: u64) -> String {
+fn supply_text_at(panel: &Panel, seconds: u64, elapsed: u64, consolidated: bool) -> String {
     use super::state::per_hour;
     use std::fmt::Write;
     let unpriced = panel
@@ -205,14 +207,14 @@ fn supply_text_at(panel: &Panel, seconds: u64, elapsed: u64) -> String {
         panel.supply_cost(),
         per_hour(panel.supply_cost(), elapsed),
         panel.omitted_supplies,
-        if panel.display.visible(Section::SupplyGraph) {
+        if consolidated || panel.display.visible(Section::SupplyGraph) {
             interval_chart(&panel.supply_values(seconds), seconds, elapsed)
         } else {
             String::new()
         },
         unpriced = unpriced
     );
-    if panel.display.visible(Section::SupplyGauge) {
+    if !consolidated && panel.display.visible(Section::SupplyGauge) {
         let _ = writeln!(
             text,
             "{}",
@@ -341,14 +343,15 @@ pub(super) fn impact_text(panel: &Panel, seconds: u64) -> String {
             panel.recent[1].rate(seconds, 10),
         ]
     };
-    let mut text = format!(
-        "Impact Analyser\r\nElapsed: {elapsed} seconds\r\nDPS: {} | HPS: {}\r\nDamage dealt: {} {}\r\nHealing given: {} {}",
+    let mut text = lfmt!(
+        "Impact Analyser\r\nElapsed: {seconds} seconds\r\nDPS: {} | HPS: {}\r\nDamage dealt: {} {}\r\nHealing given: {} {}",
         rates[0],
         rates[1],
         panel.damage,
         gauge(panel.damage, total),
         panel.healing,
-        gauge(panel.healing, total)
+        gauge(panel.healing, total),
+        seconds = elapsed
     );
     for (index, label, setting, gauge_section, graph_section, series, graph_label) in [
         (
@@ -358,7 +361,7 @@ pub(super) fn impact_text(panel: &Panel, seconds: u64) -> String {
             Section::DpsGauge,
             Section::DpsGraph,
             &panel.damage_chart,
-            "Damage per minute",
+            tr!("Damage per minute"),
         ),
         (
             1,
@@ -367,7 +370,7 @@ pub(super) fn impact_text(panel: &Panel, seconds: u64) -> String {
             Section::HpsGauge,
             Section::HpsGraph,
             &panel.healing_chart,
-            "Healing per minute",
+            tr!("Healing per minute"),
         ),
     ] {
         let _ = write!(
@@ -499,7 +502,7 @@ pub(super) fn clock_text(seconds: u64) -> String {
 pub fn session_text(panel: &Panel) -> String {
     session_text_at(panel, panel.clock.seconds())
 }
-pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
+pub fn session_text_at(panel: &Panel, seconds: u64) -> String {
     use std::fmt::Write;
     let chart_seconds = seconds;
     let seconds = report_elapsed(panel, seconds, super::Tool::Session);
@@ -534,8 +537,8 @@ pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
     let _ = write!(
         text,
         "\r\n\r\n{}\r\n\r\n{}\r\nSession gained XP per minute\r\n{}\r\nSession raw XP per minute\r\n{}",
-        loot_text_at(panel, chart_seconds, seconds),
-        supply_text_at(panel, chart_seconds, seconds),
+        loot_text_at(panel, chart_seconds, seconds, true),
+        supply_text_at(panel, chart_seconds, seconds, true),
         interval_chart(
             &panel.xp_chart.values(chart_seconds),
             chart_seconds,

@@ -376,6 +376,7 @@ fn confirmed_party_handoff_populates_log_and_copies_transfers() -> TestResult {
                     handle: 1,
                     name: "Alice".into(),
                     available: true,
+                    damage: 456,
                     loot_value: 150,
                     ..default()
                 },
@@ -400,11 +401,33 @@ fn confirmed_party_handoff_populates_log_and_copies_transfers() -> TestResult {
         .find(|(field, _)| field.0 == 3)
         .ok_or("log")?;
     assert_eq!(field.value().to_string(), copied);
+    assert!(copied.contains("Damage: 456"));
     click_caption(&mut app, "Copy settlement instructions")?;
     assert_eq!(
         app.world().resource::<Captured>().0.trim(),
         "Alice pays Bob: 100 gold"
     );
+    click_caption(&mut app, "Copy report")?;
+    assert!(
+        app.world()
+            .resource::<Captured>()
+            .0
+            .contains("Bob\n\tLoot: 0")
+    );
+    assert_eq!(app.world().resource::<Captured>().0, copied);
+    let (_, mut editor) = app
+        .world_mut()
+        .query::<(&ConfigField, &mut bevy::text::EditableText)>()
+        .iter_mut(app.world_mut())
+        .find(|(f, _)| f.0 == 3)
+        .ok_or("log")?;
+    *editor = bevy::text::EditableText::new("Session data: truncated");
+    click_caption(&mut app, "Calculate split")?;
+    app.update();
+    assert!(!report(&mut app)?.contains("Alice pays Bob"));
+    app.world_mut().resource_mut::<Captured>().0.clear();
+    click_caption(&mut app, "Copy settlement instructions")?;
+    assert!(app.world().resource::<Captured>().0.is_empty());
     Ok(())
 }
 
@@ -443,5 +466,73 @@ fn impact_high_survives_reopening_the_character_profile() -> TestResult {
         app.update();
     }
     assert!(report(&mut app)?.contains("All-time high HPS: 90"));
+    Ok(())
+}
+
+#[test]
+fn complete_fifty_member_hunt_log_fits_the_party_editor() -> TestResult {
+    use std::fmt::Write;
+    let (mut app, _) = app()?;
+    select(&mut app, Tool::Party)?;
+    let mut log = String::from("Session data: Party Hunt\n");
+    for index in 0..50 {
+        writeln!(
+            log,
+            "Member{index:02}{}\n Loot: 1,000,000,000\n Supplies: 1,000,000,000\n Balance: 0\n Damage: 1,000,000,000\n Healing: 1,000,000,000",
+            "a".repeat(55)
+        )?;
+    }
+    assert!(log.len() > 8192);
+    let (_, mut editor) = app
+        .world_mut()
+        .query::<(&ConfigField, &mut bevy::text::EditableText)>()
+        .iter_mut(app.world_mut())
+        .find(|(f, _)| f.0 == 3)
+        .ok_or("log")?;
+    assert!(
+        editor
+            .max_characters
+            .is_none_or(|limit| limit >= log.chars().count())
+    );
+    *editor = bevy::text::EditableText::new(log);
+    click_caption(&mut app, "Calculate split")?;
+    app.update();
+    assert!(report(&mut app)?.contains("Member49"));
+    Ok(())
+}
+
+#[test]
+fn xp_and_impact_keep_the_selected_report_language() -> TestResult {
+    use oteryn_client_ui::localization::{Language, with_language};
+    for (tool, title) in [
+        (Tool::Xp, "Análisis de XP"),
+        (Tool::Impact, "Análisis de impacto"),
+    ] {
+        let (mut app, _) = app()?;
+        select(&mut app, tool)?;
+        with_language(Language::Es, || app.update());
+        assert!(report(&mut app)?.contains(title));
+    }
+    Ok(())
+}
+
+#[test]
+fn loot_visibility_does_not_change_the_consolidated_hunt() -> TestResult {
+    let (mut app, _) = app()?;
+    select(&mut app, Tool::Loot)?;
+    click_caption(&mut app, "Loot rate graph")?;
+    app.update();
+    assert!(!report(&mut app)?.contains("Per minute"));
+    select(&mut app, Tool::Hunting)?;
+    let text = report(&mut app)?;
+    let loot = text
+        .split("Loot Analyser")
+        .nth(1)
+        .ok_or("loot")?
+        .split("Supply Analyser")
+        .next()
+        .ok_or("supply")?;
+    assert!(loot.contains("Per minute"));
+    assert!(!loot.contains("Loot/h target:"));
     Ok(())
 }

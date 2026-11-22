@@ -141,10 +141,9 @@ pub fn text(panel: &Panel, seconds: u64) -> String {
         visible_drops = true;
         let _ = write!(
             text,
-            "+{}s · #{} × {} · {}\r\n",
-            drop.seconds,
-            drop.item,
-            drop.count,
+            "{} · {}\r\n",
+            lfmt!("+{}s · #{} × {}\r\n", drop.seconds, drop.item, drop.count)
+                .trim_end_matches("\r\n"),
             drop.race.map_or_else(
                 || tr!("Creature (race unavailable)").to_owned(),
                 |race| panel

@@ -102,9 +102,11 @@ pub fn text_at(
         u64::try_from(now.saturating_duration_since(at).as_millis()).unwrap_or(u64::MAX)
     });
     let cooldowns = if let Some(snapshot) = bosses.snapshot.as_ref().filter(|_| bosses.selected) {
-        let mut text = String::from("Boss cooldown tracker\r\n");
+        let mut text = String::from(tr!("Boss cooldown tracker — Ctrl+Alt+Shift+J\r\n"));
         let rows = rows(panel, bosses);
-        if rows.is_empty() {
+        if snapshot.cooldowns.is_empty() {
+            text.push_str(tr!("No cooldown records on this page\r\n"));
+        } else if rows.is_empty() {
             text.push_str("No matching cooldown records on this page\r\n");
         }
         for (key, deadline) in rows {

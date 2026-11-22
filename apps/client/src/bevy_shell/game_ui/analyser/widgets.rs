@@ -144,7 +144,7 @@ pub(super) fn build(
                     bevy::text::EditableText {
                         allow_newlines: index == 3,
                         max_characters: Some(match index {
-                            3 => 8192,
+                            3 => oteryn_client_ui::analyser::party_import::MAX_HUNT_LOG_BYTES + 1,
                             4 | 8 => 128,
                             7 => 4096,
                             _ => 20,

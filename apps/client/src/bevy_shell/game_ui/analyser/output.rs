@@ -38,9 +38,16 @@ impl ExportTask {
         if self.0.is_some() {
             return false;
         }
+        let seconds = panel.clock.seconds();
+        let end = SystemTime::now();
+        let language = oteryn_client_ui::localization::current();
         self.0 = Some((
             generation,
-            bevy_tasks::IoTaskPool::get().spawn(async move { save(&panel, &path, json) }),
+            bevy_tasks::IoTaskPool::get().spawn(async move {
+                oteryn_client_ui::localization::with_language(language, || {
+                    save(&panel, &path, json, seconds, end)
+                })
+            }),
         ));
         true
     }
@@ -63,9 +70,9 @@ pub(super) fn finish(mut job: ResMut<ExportTask>, owner: NonSend<HostOwner>) {
     }
     job.0 = None;
 }
-fn save(panel: &Panel, path: &Path, json: bool) -> io::Result<()> {
+fn save(panel: &Panel, path: &Path, json: bool, seconds: u64, end: SystemTime) -> io::Result<()> {
     let content = if json {
-        let elapsed = panel.clock.seconds().saturating_sub(
+        let elapsed = seconds.saturating_sub(
             panel.reset_at[Tool::ALL
                 .iter()
                 .position(|tool| *tool == Tool::Hunting)
@@ -77,7 +84,7 @@ fn save(panel: &Panel, path: &Path, json: bool) -> io::Result<()> {
                 .unwrap_or(0)
                 .min(u128::from(u64::MAX)) as u64
         };
-        let end = SystemTime::now()
+        let end = end
             .duration_since(UNIX_EPOCH)
             .map_err(io::Error::other)?
             .as_secs();
@@ -99,7 +106,7 @@ fn save(panel: &Panel, path: &Path, json: bool) -> io::Result<()> {
             "XPGain":panel.gained_xp,"XPGainHour":hourly(panel.gained_xp)
         }))?
     } else {
-        oteryn_client_ui::analyser::session_text(panel)
+        oteryn_client_ui::analyser::session_text_at(panel, seconds)
     };
     let directory = path
         .parent()

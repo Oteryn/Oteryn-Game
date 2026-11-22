@@ -17,7 +17,7 @@ pub mod tracking;
 mod view;
 pub use input::{open_key, select_tool, set_item_price, set_xp_goal};
 pub use state::{Panel, Tool};
-pub use view::{panel_text, session_text};
+pub use view::{panel_text, session_text, session_text_at};
 #[cfg(test)]
 #[path = "tests/measurements.rs"]
 mod measurement_tests;

@@ -2,6 +2,7 @@
 use oteryn_client_runtime::analyser::party::{self as wire, Member};
 use std::{collections::BTreeSet, fmt::Write};
 pub const MAX_BYTES: usize = 8192;
+pub const MAX_HUNT_LOG_BYTES: usize = 32 * 1024;
 const HEADER: &str = "OTERYN-PARTY-SUMMARY\t1";
 // Version 2 preserves advisory edits alongside the original measured values; version 1 remains readable.
 const ADJUSTED_HEADER: &str = "OTERYN-PARTY-SUMMARY\t2";
@@ -9,6 +10,7 @@ const ADJUSTED_COLUMNS: &str = "Name\tLoot\tSupplies\tExtraCost\tExcluded";
 const COLUMNS: &str = "Name\tLoot\tSupplies";
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Summary {
+    pub(super) leader: Option<String>,
     pub(super) rows: Vec<Member>,
     pub(super) adjustments: super::party::Adjustments,
 }
@@ -82,13 +84,17 @@ impl Summary {
             return Err(tr!("Party summary has no members"));
         }
         wire::encode_reply(&rows).map_err(|_| tr!("Invalid member name or values"))?;
-        Ok(Self { rows, adjustments })
+        Ok(Self {
+            rows,
+            adjustments,
+            leader: None,
+        })
     }
     /// Parse the multiline party analyser clipboard format.
     pub fn from_hunt_log(text: &str) -> Result<Self, &'static str> {
         const INVALID: &str = "Invalid party hunt log";
-        if text.len() > MAX_BYTES {
-            return Err("Party hunt log exceeds 8 KiB");
+        if text.len() > MAX_HUNT_LOG_BYTES {
+            return Err("Party hunt log exceeds 32 KiB");
         }
         let mut lines = text
             .lines()
@@ -110,7 +116,13 @@ impl Summary {
         }
         let mut rows = Vec::new();
         let mut names = BTreeSet::new();
+        let mut leader = None;
         while let Some(name) = lines.next() {
+            if let Some(name) = name.strip_suffix(" (Leader)")
+                && leader.replace(name.to_owned()).is_some()
+            {
+                return Err(INVALID);
+            }
             let name = name.strip_suffix(" (Leader)").unwrap_or(name);
             if rows.len() == wire::MAX_MEMBERS
                 || name.is_empty()
@@ -166,6 +178,7 @@ impl Summary {
         wire::encode_reply(&rows).map_err(|_| INVALID)?;
         Ok(Self {
             rows,
+            leader,
             adjustments: Default::default(),
         })
     }

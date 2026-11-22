@@ -19,23 +19,27 @@ pub(crate) fn xp_text(panel: &Panel, seconds: u64) -> String {
             )
         },
     );
-    let mut text = format!("XP Analyser\r\nElapsed: {elapsed} seconds");
+    let mut text = lfmt!(
+        "XP Analyser\r\nElapsed: {seconds} seconds",
+        seconds = elapsed
+    );
     let show_raw = panel.display.visible(Section::RawXp);
-    if show_raw {
-        text.push_str(&format!(
-            "\r\nExperience: {} raw / {} gained",
-            panel.raw_xp, panel.gained_xp
-        ));
+    text.push_str("\r\n");
+    text.push_str(&if show_raw {
+        lfmt!(
+            "Experience: {} raw / {} gained",
+            panel.raw_xp,
+            panel.gained_xp
+        )
     } else {
-        text.push_str(&format!("\r\nExperience: {} gained", panel.gained_xp));
-    }
+        lfmt!("Experience: {} gained", panel.gained_xp)
+    });
     let hourly = per_hour(panel.gained_xp, elapsed);
-    text.push_str(&format!("\r\nXP/h: {hourly}"));
+    text.push_str("\r\n");
+    text.push_str(&lfmt!("XP/h: {}", hourly));
     if show_raw {
-        text.push_str(&format!(
-            "\r\nRaw XP/h: {}",
-            per_hour(panel.raw_xp, elapsed)
-        ));
+        text.push_str("\r\n");
+        text.push_str(&lfmt!("Raw XP/h: {}", per_hour(panel.raw_xp, elapsed)));
     }
     text.push_str(&format!("\r\n{goal}\r\n{eta}"));
     if panel.display.visible(Section::XpGauge) {
@@ -46,12 +50,14 @@ pub(crate) fn xp_text(panel: &Panel, seconds: u64) -> String {
     }
     if panel.display.visible(Section::XpGraph) {
         text.push_str(&format!(
-            "\r\nGained XP\r\n{}",
+            "\r\n{}\r\n{}",
+            tr!("Gained XP"),
             interval_chart(&panel.xp_chart.values(seconds), seconds, elapsed)
         ));
         if show_raw {
             text.push_str(&format!(
-                "\r\nRaw XP\r\n{}",
+                "\r\n{}\r\n{}",
+                tr!("Raw XP"),
                 interval_chart(&panel.raw_xp_chart.values(seconds), seconds, elapsed)
             ));
         }

@@ -135,6 +135,7 @@ pub fn reset(panel: &mut Panel) {
         // Party counters use server connection intervals, independent of this local reset.
         party: std::mem::take(&mut panel.party),
         party_adjustments: std::mem::take(&mut panel.party_adjustments),
+        party_split_error: panel.party_split_error,
         party_import: panel.party_import.take(),
         party_pending: panel.party_pending,
         party_feedback: panel.party_feedback,
@@ -325,6 +326,7 @@ pub fn reset_tool(panel: &mut Panel) {
             panel.boss_drops_truncated = false;
         }
         Tool::Party => {
+            panel.party_split_error = None;
             panel.party_import = None;
             panel.party_feedback =
                 Some("Party measurements are server-owned; refresh to read the current interval");
