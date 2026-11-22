@@ -65,6 +65,7 @@ fn scenario_case(
     let tomb_native = name.starts_with("l6-tomb-native-");
     let carried_step = name.starts_with("l6-tomb-carried-") || tomb_native;
     let mead = name == "l6/waterskin-of-mead";
+    let outlaw_treasure = name == "outlaw-camp-treasure";
     let spirit = name == "qengine-rewards-questpc4-spirit";
     let native_tower = name.starts_with("qengine-rewards-questpc4-native-tower-");
     let native_switch = name.starts_with("l6-tomb-switch-native-");
@@ -104,6 +105,7 @@ fn scenario_case(
         || m01b_explore
         || small_ruby
         || mead
+        || outlaw_treasure
         || spirit
         || tomb_native
         || native_tower
@@ -116,7 +118,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if outlaw_treasure {
+        super::super::outlaw_camp_treasure_fixtures::START
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -338,6 +342,7 @@ fn scenario_case(
                 | "catalogue-npc-scoped"
                 | "questpc2-rotten-source-items"
                 | "classic-quests-npc"
+                | "explorer-society-enrollment"
                 | "questpc2-hero-pipes"
                 | "questpc2-oldrak-npc"
                 | "questpc2-henricus-start"
@@ -1255,6 +1260,10 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native Dreamer policies")?,
             )?
+        } else if outlaw_treasure {
+            super::super::outlaw_camp_treasure_fixtures::world(
+                generation.native_gameplay().ok_or("native Outlaw Camp policies")?,
+            )?
         } else if mead {
             super::super::l6_mead_fixtures::world(
                 generation.native_gameplay().ok_or("native Mead policies")?,
@@ -2106,6 +2115,8 @@ fn scenario_case(
         } else if name == "questpc2-rotten-source-items" {
             super::super::questpc2_rotten_source_items_fixtures::exercise(&mut owner, &mut admitted, &h)
                 .await?;
+        } else if outlaw_treasure {
+            Box::pin(super::super::outlaw_camp_treasure_fixtures::exercise(&owner, admitted, &h)).await?;
         } else if mead {
             Box::pin(super::super::l6_mead_fixtures::exercise(
                 &mut owner,
@@ -3166,6 +3177,13 @@ fn scenario_case(
         } else if name == "questpc2-oldrak-npc" {
             super::super::questpc2_oldrak_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if name == "explorer-society-enrollment" {
+            Box::pin(super::super::classic_quests_fixtures::exercise_explorer_enrollment(
+                &mut owner,
+                &admitted,
+                &authority,
+            ))
+            .await?;
         } else if classic_npc {
             Box::pin(super::super::classic_quests_fixtures::exercise(
                 &mut owner,

@@ -5,7 +5,8 @@ import json
 from native_profile_composition import encode_native_profile
 
 PATH = 'tools/content-schema/native-gameplay/key-door-item-profiles.json'
-IDS = {1628, 1631, 1646, 1647, 1648, 1649, 2967, 2968, 5097, 5102, 5103, 6248, 6264, 6265}
+IDS = {1628, 1631, 1646, 1647, 1648, 1649, 2967, 2968, 5097, 5102, 5103,
+       5106, 6248, 6251, 6264, 6265, 7711, 7714}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):

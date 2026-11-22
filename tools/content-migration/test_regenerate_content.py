@@ -450,14 +450,17 @@ def test_source_cohort_includes_installed_successors() -> None:
         pass
 
     def measure():
-        assert installed == [rc.ROOT], "measure only the complete installed World"
+        assert installed == [("thaian", rc.ROOT), ("buddel", rc.ROOT, rc.WORLD)]
         raise Measured
 
     with patch.object(sys, "argv", ["regenerate_content.py"]), \
             patch.object(rc, "run"), \
             patch.object(rc, "refresh_quest_callback_proof"), \
             patch.object(rc, "materialize_world"), \
-            patch("questpc7_thaian_authoring.install", side_effect=installed.append), \
+            patch("questpc7_thaian_authoring.install",
+                  side_effect=lambda root: installed.append(("thaian", root))), \
+            patch("buddel_travel.install_buddel",
+                  side_effect=lambda root, world: installed.append(("buddel", root, world))), \
             patch.object(rc, "canonicalize_world"), \
             patch.object(rc, "refresh_source_cohort_extent", side_effect=measure):
         try:
@@ -797,6 +800,9 @@ def test_rotten_death_witness_refusal_stops_every_later_consumer() -> None:
 
 def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> None:
     commands = downstream_quest_commands()
+    quest_tree = ("python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
+                  "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json")
+    quest_props = ("python3", "tools/content-schema/quest-authoring/qengine_rewards.py")
     native = ("python3", "tools/content-migration/register_spell_families.py")
     variant = ("python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py")
     check = ("python3", "fixture/final_check.py", "--check")
@@ -815,6 +821,8 @@ def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> Non
     authored = [("python3", tool, "content") for tool in rc.AUTHORING_TOOLS]
     last_authored = max(i for i, command in enumerate(events) if command in authored)
     assert last_authored < events.index(commands[0]) < events.index(commands[1]) < events.index(native)
+    final_props = max(i for i, command in enumerate(events) if command == quest_props)
+    assert events.index(quest_tree) < final_props < events.index(native)
     final_inputs = max(events.index(native), events.index(("world-metadata",)), events.index(variant))
     indices = [events.index(command) for command in commands[2:]]
     assert indices == sorted(indices) and final_inputs < indices[0]

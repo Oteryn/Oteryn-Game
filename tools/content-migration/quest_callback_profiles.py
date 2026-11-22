@@ -38,6 +38,35 @@ QUESTPC4_REWARD_QUESTS = {
 
 CHEST_PROFILES = 'tools/content-schema/native-gameplay/quest-chest-item-profiles.json'
 CHEST_IDS = {1777, 2436, 2438, 2473, 2474}
+EXPLORER_QUEST = 'oteryn:quest.the_explorer_society_quest'
+OUTLAW_TREASURE = 'oteryn:quest-callback/outlaw-camp-treasure'
+# Crystal 201189f data/items/items.xml: filled kits and samples weigh more
+# than the empty vessels. The canonical catalogue inherited the empty weights.
+EXPLORER_SAMPLE_WEIGHTS = {f'oteryn:item.tibia.i{number}': weights for number, weights in (
+    (4864, (700, 800)), (4865, (700, 800)), (4866, (700, 800)),
+    (4868, (1800, 2000)), (4869, (1800, 2000)), (4870, (1800, 2000)),
+)}
+EXPLORER_TRACING_SHEETS = {'oteryn:item.tibia.i4842', 'oteryn:item.tibia.i4843'}
+# Orc powder already uses the world-change Item owner, later in native composition.
+EXPLORER_WORLD_CHANGE_ITEMS = {'oteryn:item.tibia.i13974'}
+
+
+def callback_items(callback):
+    effects = callback.get('effects') or {}
+    give = (callback.get('give') or callback.get('item_reward')
+            or effects.get('item_reward'))
+    if give:
+        yield give['item']
+        for field in ('contents', 'backpack_outputs', 'additional'):
+            yield from (child['item'] for child in give.get(field, []))
+    for field in ('take', 'present', 'offerings'):
+        yield from (item['item'] for item in callback.get(field, []))
+    yield from (item['item'] for item in effects.get('carried_inputs', []))
+    tool = callback.get('item_on_target')
+    if tool:
+        yield tool['item']
+        if tool.get('replacement'):
+            yield tool['replacement']
 
 
 def admit_map_carriers(root, document):
@@ -200,6 +229,17 @@ def _requested_inputs(root, extra_keys=()):
             for offering in callback['offerings']}
     authored_keys = set()
     authored_callbacks = []
+    explorer_npc = root / 'content/quests/npc-callbacks/explorer-society.json'
+    quest_content = [callback for callback in callbacks['callbacks']
+                     if callback['quest'] == EXPLORER_QUEST or callback['key'] == OUTLAW_TREASURE]
+    if explorer_npc.is_file():
+        quest_content.extend(json.loads(explorer_npc.read_bytes())['callbacks'])
+    quest_content_items = {key for callback in quest_content for key in callback_items(callback)}
+    quest_content_items.difference_update(EXPLORER_WORLD_CHANGE_ITEMS)
+    keys.update(quest_content_items)
+    # The icicle already has physical admission and source duration. Its terminal
+    # inventory decay is separate from this custody projection.
+    authored_keys.update(quest_content_items - {'oteryn:item.tibia.i4837'})
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
     for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
@@ -208,27 +248,9 @@ def _requested_inputs(root, extra_keys=()):
             continue
         for callback in json.loads(path.read_bytes())['callbacks']:
             authored_callbacks.append(callback)
-            reward = callback.get('give') or callback.get('effects', {}).get('item_reward')
-            if reward:
-                authored_keys.add(reward['item'])
-                authored_keys.update(child['item'] for field in ('contents', 'backpack_outputs')
-                                     for child in reward.get(field, []))
-                keys.add(reward['item'])
-                keys.update(child['item'] for field in ('contents', 'backpack_outputs')
-                            for child in reward.get(field, []))
-            carried = callback.get('effects', {}).get('carried_inputs', [])
-            authored_keys.update(item['item'] for item in carried)
-            keys.update(item['item'] for item in carried)
-            for field in ('take', 'present', 'offerings'):
-                keys.update(item['item'] for item in callback.get(field, []))
-                authored_keys.update(item['item'] for item in callback.get(field, []))
-            tool = callback.get('item_on_target')
-            if tool:
-                authored_keys.add(tool['item'])
-                keys.add(tool['item'])
-                if tool.get('replacement'):
-                    authored_keys.add(tool['replacement'])
-                    keys.add(tool['replacement'])
+            items = set(callback_items(callback))
+            authored_keys.update(items)
+            keys.update(items)
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
@@ -355,6 +377,17 @@ def canonical_source_inputs(root):
     return raw, source_items
 
 
+def explorer_sample_definition(definition):
+    key = definition['identity']['key']
+    accepted, donor = EXPLORER_SAMPLE_WEIGHTS[key]
+    source = copy.deepcopy(definition)
+    weight = source['semantics']['physical']['value']['weight']
+    if weight != {'state': 'KNOWN', 'value': accepted}:
+        raise ValueError('EXPLORER_SAMPLE_WEIGHT_DRIFT:' + key)
+    weight['value'] = donor
+    return source
+
+
 def canonical_native_profile(root, definition, matches, source_items):
     """Construct one ordinary profile from the caller's authenticated source inputs."""
     identity = definition['identity']
@@ -448,7 +481,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
     import quests_2_emperor_item_profiles
     source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
     import authored_quest_item_custody
-    missing_authored = [definitions[key] for key in sorted(authored_keys - present.keys())
+    tracing_ground_only = {key for key in authored_keys & EXPLORER_TRACING_SHEETS & present.keys()
+                           if not present[key]['admission']['materializable']}
+    require_custody = (authored_keys - present.keys()) | tracing_ground_only
+    missing_authored = [definitions[key] for key in sorted(require_custody)
                         if key in definitions]
     custody_inputs = (authored_quest_item_custody.qualification_inputs(root, missing_authored, raw)
                       if missing_authored else None)
@@ -497,10 +533,24 @@ def admit(root, generated, profile_path, manifest_path, order, canonical, extra_
                 continue
         if key in authored_keys and not definition['materializable'] and definition['stack_class'] == 'Unknown':
             import authored_quest_item_custody
-            if key in present:
+            if key in EXPLORER_SAMPLE_WEIGHTS:
+                definition = explorer_sample_definition(definition)
+            if key in present and key not in tracing_ground_only:
                 authored_quest_item_custody.reuse_existing(definition, present[key], bindings)
                 continue
             profile = authored_quest_item_custody.qualify(root, definition, raw, _inputs=custody_inputs)
+            if key in present:
+                previous = present[key]
+                # The earlier writable Item owner has already checked the exact
+                # Crystal text policy. Retain it with the upgraded physical custody.
+                profile['semantics']['readable_writeable'] = copy.deepcopy(
+                    previous['semantics']['readable_writeable'])
+                if (previous['admission']['materializable']
+                        or previous['admission']['legal_destinations'] != ['Ground']
+                        or previous['production_definition'] != profile['production_definition']
+                        or previous['production_binding'] != profile['production_binding']):
+                    raise ValueError('EXPLORER_TRACING_SHEET_ADMISSION_DRIFT:' + key)
+                document['records'].remove(previous)
             document['records'].append(profile)
             continue
         matches = [binding for binding in bindings if binding['target'] == identity]
