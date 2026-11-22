@@ -360,6 +360,15 @@ fn scenario(case: Case) -> TestResult {
                     &owner, next, command_id, None, reference(water).ok_or("empty pot")?, 1, false,
                 ).await?;
                 assert_eq!(result, Some(ItemMoveOutcome::Moved));
+                let redropped: (Vec<u8>, i64) = sqlx::query_as(
+                    "SELECT spatial_position,stack_ordinal FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid",
+                )
+                .bind(minted.item_instance_id.as_slice())
+                .fetch_one(&harness.pool)
+                .await?;
+                assert_eq!(Some(redropped.0), ground.pickup_cell(&minted.item_instance_id));
+                let observed_ordinal = ground.ground_ordinal(&minted.item_instance_id).ok_or("observed pot ordinal")?;
+                assert!(u64::try_from(redropped.1)? > observed_ordinal);
                 admitted = next;
                 command_id += 1;
             }

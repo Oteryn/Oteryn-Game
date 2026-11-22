@@ -84,9 +84,9 @@ BEGIN
           AND g.runtime_scope_ownership_generation=m.scope_generation
           AND g.stack_ordinal>0 AND g.spatial_position=seed.spatial_position
           AND g.map_revision=NEW.map_revision AND g.content_revision=seed.content_revision
+          AND g.native_room_placement_context=seed.native_room_placement_context
           AND m.content_digest=NEW.pot_content_digest
-          AND ((g.native_room_placement_context=seed.native_room_placement_context
-                AND game_item_loop_drop_ref(g.corpse_ref))
+          AND (game_item_loop_drop_ref(g.corpse_ref)
                OR game_item_loop_map_mint_source(i.item_instance_id)
                OR game_item_action_ground_source(i.item_instance_id))
           AND NEW.pot_first_stage=coalesce((SELECT max(p.source_stage) FROM game_spell_field_temporal_schedules p
