@@ -362,9 +362,34 @@ async fn use_pick(
     let reference = index
         .definition_ref("Item", "oteryn:item.tibia.i3456", "definition-r1")
         .ok_or("pick")?;
+    let shovel = index
+        .definition_ref("Item", "oteryn:item.tibia.i3457", "definition-r1")
+        .ok_or("shovel")?;
+    let shaft = target(owner, SHAFT, 0)?;
+    let before = at(owner, admitted).await?;
+    let wrong_tool = encode_item_use_intent(&UseIntent {
+        target: UseTarget::ItemByDefinition(shovel),
+        use_with_map_item: Some(MapUseTarget::Object(shaft.clone())),
+        use_with: None,
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    next_tick(owner)?;
+    let (next, outcome, _) = super::item_craft_fixtures::exchange(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        &wrong_tool,
+        None,
+    )
+    .await?;
+    *admitted = next;
+    assert_eq!(outcome, UseDisposition::NothingToUse, "wrong Folda tool");
+    assert_eq!(at(owner, admitted).await?, before);
+
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(NonZeroU64::MIN),
-        use_with_map_item: Some(MapUseTarget::Object(target(owner, SHAFT, 0)?)),
+        use_with_map_item: Some(MapUseTarget::Object(shaft)),
         use_with: None,
         use_with_position: None,
     })

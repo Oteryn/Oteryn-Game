@@ -17,7 +17,8 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                 .is_some_and(|tool| tool.selected_instance)
                 && matches!(
                     callback.key.as_str(),
-                    "oteryn:quest-callback/an-interest-in-botany/s2"
+                    "oteryn:quest-callback/alawars-vault-folda-shaft"
+                        | "oteryn:quest-callback/an-interest-in-botany/s2"
                         | "oteryn:quest-callback/an-interest-in-botany/s3"
                         | "oteryn:quest-callback/an-interest-in-botany/s3-web"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
