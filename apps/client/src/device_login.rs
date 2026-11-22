@@ -134,13 +134,13 @@ impl DeviceLogin {
                 return Ok(None);
             }
         } else {
+            let sign_out = !options.stay_logged_in || attempt.state.remembered != remembered;
+            let revoke_first = sign_out && self.folder.is_some() && attempt.state.remembered;
             let drain = async {
-                if !options.stay_logged_in || attempt.state.remembered != remembered {
-                    if self.folder.is_some() && attempt.state.remembered {
-                        attempt.revoke_before_vault_clear(client).await?;
-                    } else {
-                        attempt.sign_out(client).await;
-                    }
+                if revoke_first {
+                    attempt.revoke_before_vault_clear(client).await?;
+                } else if sign_out {
+                    attempt.sign_out(client).await;
                 } else {
                     let _ = attempt.revoke_pending(client).await;
                 }
@@ -148,7 +148,7 @@ impl DeviceLogin {
             };
             if let Ok(result) = tokio::time::timeout_at(deadline, drain).await {
                 result?;
-            } else if self.folder.is_some() && attempt.state.remembered && (!options.stay_logged_in || attempt.state.remembered != remembered) {
+            } else if revoke_first {
                 return Ok(None);
             }
         }

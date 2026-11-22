@@ -132,18 +132,17 @@ impl PreferenceStore {
             let backup = Self::transfer_bytes(&pending)?;
             match Self::transfer_bytes(path) {
                 // Active was never replaced. Keep the previously committed backup.
-                Ok(active) if active == backup => std::fs::remove_file(pending)?,
+                Ok(active) if active == backup => {
+                    std::fs::remove_file(pending)?;
+                    sync_parent(path)?;
+                }
                 Err(error) if error.kind() != io::ErrorKind::NotFound => return Err(error),
                 _ => crate::atomic_file::durable_rename(&pending, &ready)?,
             }
-            sync_parent(path)?;
         }
-        if ready.try_exists()? {
-            if crate::atomic_file::durable_rename(&ready, &path.with_extension("backup.json")).is_err() {
-                return Ok(true);
-            }
-        }
-        Ok(false)
+        Ok(ready.try_exists()?
+            && crate::atomic_file::durable_rename(&ready, &path.with_extension("backup.json"))
+                .is_err())
     }
 }
 
