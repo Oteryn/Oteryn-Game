@@ -54,8 +54,11 @@ pub fn pump_coal(callback: &world_callbacks::Callback) -> Option<u32> {
             pump,
             (32558, 32007, -9, 12666) | (32560, 32014, -9, 12667) | (32567, 32024, -9, 12666)
         )
+        && selector.ordinal == 1
+        && callback.passages.is_empty()
         && input.item == COAL
         && input.selected_instance
+        && !input.on_step
         && !input.reusable
         && input.replacement.is_none()
         && input.alternatives.is_empty()
@@ -67,4 +70,17 @@ pub(super) fn awash_transition(transition: &QuestTransition) -> bool {
     transition.quest == AWASH
         && transition.key.starts_with("oteryn:quest-callback/")
         && transition.experience.is_none()
+}
+
+pub(super) fn is_stateless_contribution(stage: &super::authored_bindings::Stage) -> bool {
+    use super::authored_bindings::Trigger;
+    !stage.completes
+        && match &stage.trigger {
+            Trigger::NpcDialogue {
+                callback,
+                alternatives,
+            } => alternatives.is_empty() && ship_coal(callback).is_some(),
+            Trigger::MapUse { callback } => pump_coal(callback).is_some(),
+            _ => false,
+        }
 }

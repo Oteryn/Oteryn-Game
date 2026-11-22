@@ -34,7 +34,7 @@ async fn steamship_saves(h: &fixture::Harness) -> fixture::TestResult {
     let recovery = authority.record_for(&h.root).map_err(fixture::debug)?;
 
     for epoch in 1..=10_i64 {
-        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2031-06-13T12:00:00Z','2031-06')")
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2031-06-13T12:00:00Z'::timestamptz + $2 * interval '1 day','2031-06')")
             .bind(world.as_bytes().as_slice()).bind(epoch).bind([1u8; 32].as_slice())
             .execute(&h.pool).await?;
     }

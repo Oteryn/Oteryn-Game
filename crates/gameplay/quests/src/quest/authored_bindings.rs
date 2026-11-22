@@ -163,7 +163,11 @@ impl Bindings {
             if !super::valid_quest_key(&quest.quest)
                 || !quest.quest.starts_with("oteryn:quest.")
                 || !quests.insert(&quest.quest)
-                || quest.tracks.is_empty()
+                || (quest.tracks.is_empty()
+                    && !quest
+                        .stages
+                        .iter()
+                        .all(super::world_contributions::is_stateless_contribution))
                 || quest.tracks.len() > 128
                 || quest.stages.is_empty()
                 || quest.stages.len() > 128
