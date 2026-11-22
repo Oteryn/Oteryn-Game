@@ -8,11 +8,13 @@ use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::WorldId;
+use oteryn_gameplay_encounter_rules::raid::RaidCatalogue;
 use oteryn_gameplay_world_change::scheduled::announcement_for_epoch;
 use oteryn_protocol_oteryn::world_event::{
     WorldEventState, decode_world_event_state, encode_world_event_state,
 };
 use sqlx::{Postgres, Row, Transaction};
+use std::sync::OnceLock;
 
 #[path = "world_event/occurrence.rs"]
 mod occurrence;
@@ -63,6 +65,17 @@ fn announcement(base: String, seasonal: &[String]) -> String {
         parts.push(format!("{name} is active."));
     }
     parts.join(" ")
+}
+
+fn flower_month_raid_admitted() -> bool {
+    static ADMITTED: OnceLock<bool> = OnceLock::new();
+    *ADMITTED.get_or_init(|| {
+        RaidCatalogue::embedded().is_ok_and(|catalogue| {
+            catalogue
+                .active()
+                .any(|raid| raid.key == "oteryn:raid.raid.dryad_invasion")
+        })
+    })
 }
 
 /// Called exclusively inside reset finalization, including unknown-commit replay.
@@ -362,11 +375,15 @@ impl DurabilityRoot {
                 return Ok(Err(CharacterProgressionError::AuthorityRejected));
             };
             if state.reset_epoch != 0 {
-                occurrence::load(&mut tx, world, state.reset_epoch).await?;
+                let bound = occurrence::load(&mut tx, world, state.reset_epoch).await?;
                 let decisions: Vec<(String, bool)> = sqlx::query_as("SELECT change_key,active FROM game_world_change_states WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND change_key IN ('fury_gates','grimvale','their_masters_voice') ORDER BY change_key LIMIT 3")
                     .bind(world.as_bytes().as_slice()).bind(state.reset_epoch.to_string()).fetch_all(&mut *tx).await?;
                 if decisions.len() != 3 { return Err(DurabilityError::InvalidStoredState); }
                 let mut names = Vec::new();
+                // Crystal starts the admitted dryad cycle in June (flower_month.lua:49-65).
+                if bound.native.flower_month && flower_month_raid_admitted() {
+                    names.push("Flower Month");
+                }
                 for (key, active) in decisions {
                     if active {
                         names.push(match key.as_str() {
