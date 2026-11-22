@@ -26,9 +26,12 @@ use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationVa
 use std::num::NonZeroU32;
 
 const ITEM_ID: u32 = 50_271;
+const SELLER: &str = "oteryn:npc.enpa_deia_pema";
 const SPELL_WORDS: &str = "exori nia";
 const SPELL_NAME: &str = "greater tiger clash";
 const SAMPLES: usize = 3;
+const COMMAND_BUDGET: Duration = Duration::from_secs(8);
+const BASELINE_BUDGET: Duration = Duration::from_secs(75);
 const STEPS: [&str; 6] = [
     "baseline-cast",
     "acquire-50271",
@@ -61,6 +64,7 @@ impl Row {
     }
 
     fn finish(mut self, result: TestResult) {
+        let result: TestResult = result.and(Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into()));
         if let Err(error) = result {
             self.failure = Some((self.current(), error.to_string()));
         }
@@ -68,11 +72,16 @@ impl Row {
         let detail = match &self.failure {
             _ if complete => String::new(),
             Some((step, observed)) => {
-                let not_run: Vec<_> = STEPS.iter().skip(self.passed.len() + 1).copied().collect();
+                let not_run = STEPS.get(self.passed.len() + 1..).unwrap_or_default();
                 evidence(&format!("C12_CHECK {step} FAIL observed={observed}"));
+                evidence(&gap(step, observed, not_run));
                 format!(" evidence=step:{step};observed:{};not-run:{}", token(observed), not_run.join(","))
             }
-            None => " evidence=journey-ended-without-every-step".to_owned(),
+            None => {
+                let step = self.current();
+                evidence(&gap(step, "journey ended without required check", &STEPS[self.passed.len() + 1..]));
+                " evidence=journey-ended-without-every-step".to_owned()
+            }
         };
         evidence(&format!(
             "e2e_all scenario=C12.full status={} seconds={:.3}{detail}",
@@ -80,6 +89,10 @@ impl Row {
             self.started.elapsed().as_secs_f64()
         ));
     }
+}
+
+fn gap(step: &str, observed: &str, remaining: &[&str]) -> String {
+    format!("C12_GAP step={step} observed={observed} not-run={}", remaining.join(","))
 }
 
 fn token(value: &str) -> String {
@@ -106,22 +119,18 @@ fn read_json(relative: &str) -> TestResult<serde_json::Value> {
     Ok(serde_json::from_slice(&std::fs::read(root().join(relative))?)?)
 }
 
-fn spell() -> TestResult<NonZeroU32> {
-    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-        &root().join("content/spells.manifest.json"),
-    )?;
-    let catalog = crate::spell::executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)?;
-    let selections = crate::spell::executable_catalog::compile_source_selection(
-        &input.source_selection.bytes,
-        &input.source_selection.sha256,
-        &catalog,
-    )?;
-    let book = catalog.into_spell_book_with_selections(&selections)?;
-    let key = &book.spoken(SPELL_WORDS).ok_or("Greater Tiger Clash absent from the served spell book")?.spell.key;
-    (1..=book.source_len())
-        .filter_map(|index| u32::try_from(index).ok().and_then(NonZeroU32::new))
-        .find(|index| book.indexed(*index).is_some_and(|candidate| &candidate.key == key))
-        .ok_or_else(|| "Greater Tiger Clash has no served index".into())
+fn spell(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
+    let catalog = client.session_mut().spell_catalog()?.ok_or("served spell catalogue absent")?;
+    let entry = catalog.entries.iter()
+        .find(|entry| entry.words == SPELL_WORDS && entry.rune_item.is_none())
+        .ok_or("need=platform-created-premium-monk-or-exalted-monk;spell=exori-nia;cast-min-level=18;item-50271-min-level=20;observed=absent-from-served-spell-catalogue")?;
+    if !entry.available {
+        return Err(format!(
+            "need=premium-monk-or-exalted-monk;spell={SPELL_WORDS};cast-min-level={};item-50271-min-level=20;learned={}",
+            entry.level, entry.learned
+        ).into());
+    }
+    NonZeroU32::new(entry.cast_index).ok_or_else(|| "Greater Tiger Clash has zero served index".into())
 }
 
 /// The base-damage augment (hundredths of a percent) that content binds to this spell on the item.
@@ -141,9 +150,13 @@ fn content_augment() -> TestResult<u64> {
         .ok_or_else(|| format!("content binds no base_damage augment of {SPELL_NAME} to {key}").into())
 }
 
-/// Creature key to (health, armor-free) content health, for spawn selection.
-fn creature_health() -> TestResult<std::collections::BTreeMap<String, u64>> {
-    let mut health = std::collections::BTreeMap::new();
+struct CreatureProfile {
+    health: u64,
+    display_name: String,
+}
+
+fn creature_profiles() -> TestResult<std::collections::BTreeMap<String, CreatureProfile>> {
+    let mut profiles = std::collections::BTreeMap::new();
     for entry in std::fs::read_dir(root().join("content/creatures/definitions"))? {
         let path = entry?.path();
         let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
@@ -152,15 +165,17 @@ fn creature_health() -> TestResult<std::collections::BTreeMap<String, u64>> {
         }
         let document: serde_json::Value = serde_json::from_slice(&std::fs::read(&path)?)?;
         for record in document["records"].as_array().into_iter().flatten() {
-            if let (Some(key), Some(value)) = (
+            let profile = &record["authoring"]["profile"];
+            if let (Some(key), Some(health), Some(name)) = (
                 record["definition"]["identity"]["key"].as_str(),
-                record["authoring"]["profile"]["health"].as_u64(),
+                profile["health"].as_u64(),
+                profile["details"]["display_name"].as_str(),
             ) {
-                health.insert(key.to_owned(), value);
+                profiles.insert(key.to_owned(), CreatureProfile { health, display_name: name.to_owned() });
             }
         }
     }
-    Ok(health)
+    Ok(profiles)
 }
 
 fn item_ref() -> TestResult<NonZeroU32> {
@@ -211,10 +226,11 @@ fn own_entity(client: &DevClientSession) -> TestResult<oteryn_dev_client::Entity
         .ok_or_else(|| "own-entity-missing".into())
 }
 
-fn adjacent_creature(client: &DevClientSession) -> Option<oteryn_dev_client::EntityRef> {
+fn adjacent_creature(client: &DevClientSession, display_name: &str) -> Option<oteryn_dev_client::EntityRef> {
     let at = client.world_spatial().actor_position;
     client.world_entities()?.iter().find(|entry| {
         entry.kind == EntityKind::Creature
+            && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == display_name))
             && entry.position.floor == at.floor
             && entry.position.x.abs_diff(at.x).max(entry.position.y.abs_diff(at.y)) <= 1
     }).map(|entry| entry.entity)
@@ -224,7 +240,7 @@ fn adjacent_creature(client: &DevClientSession) -> Option<oteryn_dev_client::Ent
 /// healthiest reachable one; the measurement gate below still refuses any possibly capped sample.
 fn pick_creature(
     spawns: &oteryn_world_bundle::spawn::Table,
-    health: &std::collections::BTreeMap<String, u64>,
+    health: impl Fn(&str) -> Option<u64>,
     search: impl FnOnce(&dyn Fn(TilePos) -> bool),
     combat_tile: impl Fn(TilePos) -> bool,
 ) -> TestResult<(String, u64)> {
@@ -235,7 +251,7 @@ fn pick_creature(
     for source in &spawns.sources {
         for point in &source.points {
             let index = point.creature as usize;
-            let Some(hp) = spawns.creatures.get(index).and_then(|creature| health.get(&creature.key)).copied() else {
+            let Some(hp) = spawns.creatures.get(index).and_then(|creature| health(&creature.key)) else {
                 continue;
             };
             // Prefer the lowest health >= 3,000, else the highest fallback.
@@ -293,7 +309,7 @@ fn c12_selects_spell_target_in_one_reachability_search() -> TestResult {
     let mut traversals = 0;
     let selected = pick_creature(
         &spawns,
-        &health.into_iter().map(|(key, hp)| (key.into(), hp)).collect(),
+        |key| health.iter().find_map(|(candidate, hp)| (*candidate == key).then_some(*hp)),
         |goal| {
             traversals += 1;
             let _ = find_route(from, goal, |at, step| {
@@ -311,22 +327,25 @@ struct Hunt<'a> {
     world: &'a BundleWorld,
     spawns: &'a oteryn_world_bundle::spawn::Table,
     creature: String,
-    health: u64,
+    profile: &'a CreatureProfile,
 }
 
 impl Hunt<'_> {
     async fn target(&self, client: &mut DevClientSession) -> TestResult<oteryn_dev_client::EntityRef> {
         for _ in 0..4 {
-            if adjacent_creature(client).is_none() {
+            if adjacent_creature(client, &self.profile.display_name).is_none() {
                 travel_to_spawn(client, self.world, self.spawns, &self.creature).await?;
             }
             let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-            while adjacent_creature(client).is_none() && tokio::time::Instant::now() < deadline {
+            while adjacent_creature(client, &self.profile.display_name).is_none() && tokio::time::Instant::now() < deadline {
                 client.service_liveness(Duration::from_millis(100)).await?;
                 client.take_events();
             }
-            if let Some(entity) = adjacent_creature(client) {
-                let reply = client.session_mut().attack_target(Some(&entity)).await?;
+            if let Some(entity) = adjacent_creature(client, &self.profile.display_name) {
+                let sequence = client.last_server_sequence();
+                let reply = verdict::indexed_timeout(COMMAND_BUDGET, client.session_mut().attack_target(Some(&entity)))
+                    .await
+                    .map_err(|_| format!("ATTACK deadline=8s last-frame={sequence}"))??;
                 if reply.disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
                     return Ok(entity);
                 }
@@ -345,7 +364,10 @@ impl Hunt<'_> {
             let own = own_entity(client)?;
             let before = *client.actor_vitals().ok_or("pre-cast vitals absent")?;
             client.take_events();
-            let outcome = client.cast_spell(spell, SpellTarget::AttackTarget, true).await?;
+            let sequence = client.last_server_sequence();
+            let outcome = verdict::indexed_timeout(COMMAND_BUDGET, client.cast_spell(spell, SpellTarget::AttackTarget, true))
+                .await
+                .map_err(|_| format!("CAST deadline=8s last-frame={sequence}"))??;
             if outcome.disposition == SpellCastDisposition::CoolingDown && tokio::time::Instant::now() < deadline {
                 client.service_liveness(Duration::from_millis(250)).await?;
                 continue;
@@ -363,8 +385,10 @@ impl Hunt<'_> {
             if damage == 0 {
                 return Err(format!("CAST reply={outcome:?} produced no attributed spell damage frame; mana={}->{}", before.mana, after.mana).into());
             }
-            if damage.saturating_mul(2) >= self.health {
-                return Err(format!("damage={damage} may be capped by {} health={}; needed=creature-with-spell-proof-health", self.creature, self.health).into());
+            if damage.saturating_mul(2) >= self.profile.health
+                || client.world_entities().is_none_or(|entities| entities.get(&victim).is_none())
+            {
+                return Err(format!("damage={damage} may be capped by {} health={}; needed=creature-with-spell-proof-health", self.creature, self.profile.health).into());
             }
             return Ok(damage);
         }
@@ -430,6 +454,9 @@ async fn acquire(
     definition: NonZeroU32,
 ) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop;
+    if !metadata.npcs.npcs.iter().any(|entry| entry.key == SELLER) {
+        return Err(format!("need=50271-seller-in-served-world;seller={SELLER};placement=33603,31468,7;region=131,122").into());
+    }
     let trades = read_json("content/services/trade/trade-00000-00323.json")?;
     let key = format!("oteryn:item.tibia.i{ITEM_ID}");
     let mut offers: Vec<(String, u64)> = Vec::new();
@@ -548,32 +575,56 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
+fn weapon(client: &DevClientSession) -> TestResult<Option<NonZeroU32>> {
+    Ok(client.inventory().ok_or("weapon control inventory absent")?.equipment.iter()
+        .find(|entry| entry.slot == items::EquipmentSlot::RightHand)
+        .map(|entry| entry.item.item_definition_ref))
+}
+
+fn require_fixed_weapon(before: Option<NonZeroU32>, after: Option<NonZeroU32>) -> TestResult {
+    if before != after {
+        return Err(format!(
+            "need=augment-off-control-with-identical-weapon-inputs;weapon={before:?}->{after:?};item={ITEM_ID}"
+        ).into());
+    }
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let definition = item_ref()?;
-    let spell = spell()?;
+    let mut client = connect_world(clients, 0xc2).await?;
+    let spell_index = spell(&mut client)?;
     let augment = content_augment()?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let mut client = connect_world(clients, 0xc2).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (creature, health) = pick_creature(
+    let profiles = creature_profiles()?;
+    let (creature, _) = pick_creature(
         &metadata.spawns,
-        &creature_health()?,
+        |key| profiles.get(key).map(|profile| profile.health),
         |goal| { let _ = route(world, from, goal); },
         |at| world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone()),
     )?;
-    let hunt = Hunt { world, spawns: &metadata.spawns, creature, health };
+    let profile = profiles.get(&creature).ok_or("selected creature profile absent")?;
+    let hunt = Hunt { world, spawns: &metadata.spawns, creature, profile };
 
-    let baseline = samples(&hunt, &mut client, spell).await?;
+    let baseline_weapon = weapon(&client)?;
+    if baseline_weapon == Some(definition) {
+        return Err("need=augment-off-baseline;item-50271-already-equipped".into());
+    }
+    let baseline = verdict::indexed_timeout(BASELINE_BUDGET, samples(&hunt, &mut client, spell_index))
+        .await
+        .map_err(|_| format!("baseline sampling deadline=75s last-frame={}", client.last_server_sequence()))??;
     row.pass("baseline-cast", (&baseline, mean(&baseline)));
 
     let acquired = acquire(&mut client, world, &metadata, definition).await?;
     row.pass("acquire-50271", acquired);
 
     equip_right(&mut client, definition).await?;
-    let augmented = samples(&hunt, &mut client, spell).await?;
+    require_fixed_weapon(baseline_weapon, weapon(&client)?)?;
+    let augmented = samples(&hunt, &mut client, spell_index).await?;
     if !equipped_right(&client, definition) || mean(&augmented) <= mean(&baseline) {
         return Err(format!(
             "no augment effect: baseline={baseline:?} (mean {:.1}) augmented={augmented:?} (mean {:.1}) content-augment={augment}/10000",
@@ -596,7 +647,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     wait_inventory(&mut client, "unequip", |c| !equipped_right(c, definition) && carried_count(c, definition) > 0).await?;
     row.pass("unequip", client.last_server_sequence());
 
-    let carried = samples(&hunt, &mut client, spell).await?;
+    require_fixed_weapon(baseline_weapon, weapon(&client)?)?;
+    let carried = samples(&hunt, &mut client, spell_index).await?;
     if mean(&carried) >= mean(&augmented) {
         return Err(format!("carried item kept the augment: augmented={augmented:?} carried={carried:?}").into());
     }
@@ -610,18 +662,36 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == old_session || !equipped_right(&fresh, definition) {
         return Err("fresh admission lost the right-hand item".into());
     }
-    let replay = samples(&hunt, &mut fresh, spell).await?;
+    let fresh_spell_index = spell(&mut fresh)?;
+    require_fixed_weapon(baseline_weapon, weapon(&fresh)?)?;
+    let replay = samples(&hunt, &mut fresh, fresh_spell_index).await?;
     let pooled: Vec<u64> = augmented.iter().chain(&replay).copied().collect();
-    if mean(&pooled) <= mean(&baseline) {
-        return Err(format!("augment not reconstructed: baseline={baseline:?} pooled-augmented={pooled:?}").into());
+    if mean(&replay) <= mean(&baseline) || mean(&pooled) <= mean(&baseline) {
+        return Err(format!("augment not reconstructed: baseline={baseline:?} fresh={replay:?} pooled-augmented={pooled:?}").into());
     }
+    logout(&mut fresh).await?;
     row.pass("fresh-admission", (&replay, mean(&pooled) / mean(&baseline)));
-    logout(&mut fresh).await
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn c12_refuses_to_compare_different_weapon_inputs() {
+        let baseline = NonZeroU32::new(1);
+        assert!(require_fixed_weapon(baseline, baseline).is_ok());
+        assert!(require_fixed_weapon(baseline, NonZeroU32::new(2)).is_err());
+        assert!(require_fixed_weapon(baseline, None).is_err());
+    }
+
+    #[test]
+    fn c12_gap_names_the_stalled_command_and_unrun_steps() {
+        let line = gap("baseline-cast", "CAST deadline", &STEPS[1..]);
+        assert!(line.starts_with("C12_GAP step=baseline-cast observed=CAST deadline"));
+        assert!(line.contains("not-run=acquire-50271,augmented-cast,unequip,unequipped-cast,fresh-admission"));
+    }
 
     #[test]
     fn pass_requires_every_step_in_order() {
