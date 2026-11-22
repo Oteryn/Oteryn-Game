@@ -22,7 +22,7 @@ async fn receipts(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
 
-async fn mint(
+pub(super) async fn mint(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     item: u32,
@@ -52,6 +52,86 @@ async fn mint(
     .await
 }
 
+pub(super) fn select_npc_capabilities(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("capabilities")?;
+    assert!(admitted.continuity.selected_capabilities.contains(3));
+    assert!(admitted.continuity.selected_capabilities.contains(6));
+    assert!(admitted.continuity.selected_capabilities.contains(25));
+    Ok(())
+}
+
+pub(super) fn run(name: &'static str) -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
+        super::quest_world_callbacks_fixtures::scenario(
+            name,
+            Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
+            false,
+        )
+    });
+    eprintln!(
+        "QUESTPC7_FRIENDS POSTGRES_CASE_COMPLETED {name} duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+pub(super) const LEGACY_CASE: &str = "questpc7-friends-legacy";
+
+pub(super) async fn exercise_legacy(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    const QUEST: &str = "oteryn:quest.friends_and_traders";
+    const MAIN_HASH: &str = "0a665893aa6b602883c71bfee786a71e86b2b9d3fdbffedf0ce619f17156d223";
+    super::qc_pinned_world::seed_saved_progress(h, owner, admitted, QUEST, MAIN_HASH, TRACK, 14)
+        .await?;
+    select_npc_capabilities(owner, admitted)?;
+    let [quentin] =
+        super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.quentin"]).await?;
+    super::classic_quests_fixtures::talk(owner, admitted, quentin, 5000, "hi").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, quentin, 5001, "complete friendships")
+        .await?;
+    let state: (i64, bool) = sqlx::query_as(
+        "SELECT t.value, s.completed_character_revision IS NOT NULL
+         FROM game_character_quest_tracks t
+         JOIN game_character_quest_states s USING(character_id,quest_key)
+         WHERE t.character_id=encode($1,'hex')::uuid AND t.track_key=$2",
+    )
+    .bind(id(41).as_slice())
+    .bind(TRACK)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(state, (15, true));
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -78,24 +158,7 @@ pub(super) async fn exercise(
     );
     eprintln!("QUESTPC7_FRIENDS MIGRATION_1286_SOURCE_MATCHED");
 
-    let mut selected = admitted
-        .continuity
-        .selected_capabilities
-        .as_slice()
-        .to_vec();
-    selected.extend([3, 6, 25]);
-    selected.sort_unstable();
-    selected.dedup();
-    let offered = crate::gameplay_transport::appearance_change::offer::offered(
-        owner.offered_capabilities(),
-        owner.appearance_available(),
-    );
-    admitted.continuity.selected_capabilities =
-        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
-            .ok_or("capabilities")?;
-    assert!(admitted.continuity.selected_capabilities.contains(3));
-    assert!(admitted.continuity.selected_capabilities.contains(6));
-    assert!(admitted.continuity.selected_capabilities.contains(25));
+    select_npc_capabilities(owner, admitted)?;
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let actors = super::classic_quests_fixtures::install(
         owner,
