@@ -294,6 +294,15 @@ async fn open_trade(client: &mut DevClientSession, actor: EntityRef) -> TestResu
     Ok(())
 }
 
+fn outside_rashid_range(at: TilePos, anchor: TilePos) -> bool {
+    at.floor == anchor.floor
+        && u32::from(at.x.abs_diff(anchor.x).max(at.y.abs_diff(anchor.y))) > npc::TALK_RANGE_TILES + 3
+}
+
+fn range_refused(status: CommandStatus, disposition: npc::NpcIntentDisposition) -> bool {
+    status == CommandStatus::Rejected && disposition == npc::NpcIntentDisposition::NotInRange
+}
+
 async fn refusal(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -301,14 +310,7 @@ async fn refusal(
     npc_position: TilePos,
 ) -> TestResult {
     let origin = tile(client.world_spatial().actor_position)?;
-    let path = route(world, origin, |at| {
-        at.floor == npc_position.floor
-            && at
-                .x
-                .abs_diff(npc_position.x)
-                .max(at.y.abs_diff(npc_position.y))
-                > 4
-    })
+    let path = route(world, origin, |at| outside_rashid_range(at, npc_position))
     .ok_or("step=leave-range observed=no-route need=walkable-tile-beyond-NPC-range")?;
     walk(client, world, &path).await?;
     client.take_events();
@@ -327,8 +329,8 @@ async fn refusal(
         .await?;
     let disposition = npc::decode_npc_intent_result(&reply.payload)
         .map_err(|error| format!("refusal reply: {error:?}"))?;
-    if reply.status != CommandStatus::Rejected || disposition == npc::NpcIntentDisposition::Ok {
-        return Err(format!("step=out-of-range-refusal observed=status:{:?},reply:{disposition:?} need=Rejected/non-Ok", reply.status).into());
+    if !range_refused(reply.status, disposition) {
+        return Err(format!("step=out-of-range-refusal observed=status:{:?},reply:{disposition:?} need=Rejected/NotInRange", reply.status).into());
     }
     client.service_liveness(Duration::from_millis(250)).await?;
     let trade_window = client
@@ -344,7 +346,7 @@ async fn refusal(
         });
     if let Some(delta) = trade_window {
         return Err(format!(
-            "step=out-of-range-refusal observed=status:{:?},reply:{disposition:?},new-trade-window:{:?} need=Rejected/non-Ok-without-new-trade-window",
+            "step=out-of-range-refusal observed=status:{:?},reply:{disposition:?},new-trade-window:{:?} need=Rejected/NotInRange-without-new-trade-window",
             reply.status, delta.value
         )
         .into());
@@ -508,6 +510,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn review_rashid_refusal_covers_the_whole_wander_area() {
+        let anchor = TilePos { x: 100, y: 100, floor: -7 };
+        assert!(!outside_rashid_range(TilePos { x: 107, ..anchor }, anchor));
+        assert!(outside_rashid_range(TilePos { x: 108, ..anchor }, anchor));
+        assert!(range_refused(CommandStatus::Rejected, npc::NpcIntentDisposition::NotInRange));
+        assert!(!range_refused(CommandStatus::Rejected, npc::NpcIntentDisposition::RateLimited));
+    }
 
     #[test]
     fn rashid_can_wander_three_tiles_on_the_scheduled_floor() {

@@ -9,7 +9,7 @@
 //!    owns reset; no player reset command exists.
 //! 4. Service the native connection through the reset-owner polling interval; when a planned
 //!    reset is in its five-minute window, expect a domain-40 delta whose revisions advance by
-//!    one, whose epoch is nonzero and stays constant through minutes 5 to 1.
+//!    one, whose epoch stays constant from the first observed minute through minute 1.
 //! 5. Expect the planned reset to close the admitted session. A player must not be able to
 //!    suppress, move or trigger that reset; a still-live session after the observed countdown
 //!    is the refusal/lifecycle failure.
@@ -61,16 +61,16 @@ fn countdowns(
     })
 }
 
+fn proves_reset(ending_epoch: u64, admitted_epoch: u64) -> bool {
+    admitted_epoch > ending_epoch
+}
+
 fn follows(previous: Option<ServerSaveCountdown>, notice: ServerSaveCountdown) -> bool {
-    notice.ending_epoch != 0
-        && notice.minutes_remaining != 0
-        && previous.map_or_else(
-            || notice.minutes_remaining == SERVER_SAVE_COUNTDOWN_MAX_MINUTES,
-            |before| {
+    (1..=SERVER_SAVE_COUNTDOWN_MAX_MINUTES).contains(&notice.minutes_remaining)
+        && previous.is_none_or(|before| {
                 notice.ending_epoch == before.ending_epoch
                     && before.minutes_remaining.checked_sub(1) == Some(notice.minutes_remaining)
-            },
-        )
+        })
 }
 
 fn closed_transport(error: &DevClientError) -> bool {
@@ -141,10 +141,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         "W05a_CHECK step=player-reset-boundary observed=local-ownership-refusal wire_submission=false command-and-sequence=unchanged countdown-and-position=unchanged",
     );
 
-    let noticed = tokio::time::Instant::now();
-    client.service_liveness(Duration::from_secs(7)).await?;
+    let first_notice_deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    verdict::Harness::global().bounded_wait(first_notice_deadline, "first-reset-countdown");
     let mut notices = countdowns(client.take_events());
-    if let Some(delta) = notices.next() {
+    let first_notice = loop {
+        if let Some(delta) = notices.next() {
+            break Some(delta);
+        }
+        let remaining = first_notice_deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            break None;
+        }
+        client.service_liveness(remaining.min(Duration::from_millis(250))).await?;
+        notices = countdowns(client.take_events());
+    };
+    if let Some(delta) = first_notice {
+        let noticed = tokio::time::Instant::now();
         if delta.base_revision.checked_add(1) != Some(delta.new_revision)
             || !follows(None, delta.value)
         {
@@ -152,8 +164,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         }
         evidence(&format!("W05a_CHECK step=countdown delta={delta:?}"));
         // The notice says the reset lands within its minute: `minutes_remaining` minutes at most
-        // and more than one minute fewer at least. Only a close inside that window is the reset;
-        // an earlier disconnect is some other failure.
+        // and more than one minute fewer at least. Require a close in that window
+        // and corroborate the reset with the epoch after fresh admission.
         let minutes = u64::from(delta.value.minutes_remaining);
         let earliest =
             Duration::from_secs((minutes - 1) * 60).saturating_sub(Duration::from_secs(5));
@@ -205,16 +217,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Outcome> {
         {
             return Err(format!("step=post-reset-admission observed=session-{:?}-position-{:?} expected-new-session-position-{saved:?}", client.join_snapshot().game_session_id, client.world_spatial().actor_position).into());
         }
+        let admitted_epoch = super::full_row_w13::query(&mut client, 6).await?.reset_epoch;
+        if !proves_reset(prior.ending_epoch, admitted_epoch) {
+            return Err(format!("step=post-reset-epoch observed={admitted_epoch} need=epoch-after-{}", prior.ending_epoch).into());
+        }
+        evidence(&format!("W05a_CHECK step=post-reset-epoch observed={admitted_epoch}"));
         evidence("W05a_CHECK step=post-reset-admission durable-position=retained");
         let cleanup = client.session_mut().logout().await?;
         if cleanup.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("step=post-reset-logout observed={cleanup:?}").into());
         }
+
         return Ok(Outcome::ResetObserved);
     }
 
     relog_and_check(&mut client, clients, saved).await?;
-    evidence("W05a_GAP step=countdown observed=no-domain-40-delta-after-owner-poll need=Control-published-planned-reset source=crates/gameplay/dispatch/src/gameplay_transport/server_save_countdown.rs:90");
+    evidence("W05a_GAP step=countdown observed=no-domain-40-delta-within-70s need=admission-near-planned-reset-window source=crates/gameplay/dispatch/src/gameplay_transport/server_save_countdown.rs:90");
     Ok(Outcome::ResetNotScheduled)
 }
 
@@ -272,6 +290,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn review_close_and_readmission_on_same_epoch_does_not_prove_reset() {
+        assert!(!proves_reset(7, 7));
+        assert!(!proves_reset(7, 6));
+        assert!(proves_reset(7, 8));
+    }
+
+    #[test]
     fn initial_read_retains_each_countdown_in_sequence() {
         let frame = |base_revision, minutes_remaining| SessionEvent::ServerSaveCountdown(AppliedDelta {
             server_sequence: base_revision + 10,
@@ -286,13 +311,15 @@ mod tests {
     }
 
     #[test]
-    fn countdown_requires_every_minute_of_the_same_epoch() {
+    fn review_countdown_requires_every_remaining_minute_of_the_same_epoch() {
         let notice = |ending_epoch, minutes_remaining| ServerSaveCountdown {
             ending_epoch,
             minutes_remaining,
         };
         assert!(follows(None, notice(7, 5)));
-        assert!(!follows(None, notice(7, 4)));
+        assert!(follows(None, notice(7, 4)));
+        assert!(follows(None, notice(7, 1)));
+        assert!(!follows(None, notice(7, 6)));
         assert!(follows(Some(notice(7, 5)), notice(7, 4)));
         assert!(!follows(Some(notice(7, 5)), notice(7, 3)));
         assert!(!follows(Some(notice(7, 5)), notice(8, 4)));
