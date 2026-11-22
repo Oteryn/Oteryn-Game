@@ -11,6 +11,10 @@ Crystal 201189f data/libs/tables/doors.lua:4,9,265,273 supplies the identities.
 The Vampire Shield level70 placements are startup/tables/door_level.lua:152-158.
 The classic quest captures add locked5106 and locked6251 from door_key.lua,
 and Drefia's 9565/9566 level pair from door_level.lua:131-149.
+Outlaw Camp key 3304 uses locked6251 from Crystal doors.lua:34;
+closed6252 and open6253 are already supplied by the plain door provider.
+Dwacatra and its key route retain locked5106, locked7711 and locked7714;
+their closed and open counterparts are already supplied.
 The existing pinned importer supplies physics and classifications without overrides.
 """
 import argparse
@@ -22,7 +26,7 @@ from build_tool_item_profiles import build as source_profiles
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/key-door-item-profiles.json'
 IDS = {1628, 1631, 1646, 1647, 1648, 1649, 2967, 2968, 5097, 5102, 5103,
-       5106, 6248, 6251, 6264, 6265, 9565, 9566}
+       5106, 6248, 6251, 6264, 6265, 7711, 7714, 9565, 9566}
 
 
 def build(directory):

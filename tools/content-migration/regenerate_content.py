@@ -867,6 +867,8 @@ def main() -> int:
     # branch-owned chest transitions in the resulting Claim bodies.
     run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
          "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
+    # Authored map props and callback source witnesses pin the final Quest shards.
+    run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"])
     # These standalone compilers consume the final Quest and placement inputs;

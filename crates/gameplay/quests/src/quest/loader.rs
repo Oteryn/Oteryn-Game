@@ -624,6 +624,266 @@ mod tests {
     }
 
     #[test]
+    fn quest_parity_outlaw_camp_treasure_loads_as_one_terminal_container_reward()
+    -> Result<(), String> {
+        use crate::quest::world_callbacks::{self, Position, Trigger};
+
+        let key = "oteryn:quest-callback/outlaw-camp-treasure";
+        let lowered =
+            load_embedded_quest_state("outlaw-camp").map_err(|error| format!("{error:?}"))?;
+        let transition = lowered
+            .catalogue()
+            .transition(key)
+            .ok_or("missing treasure transition")?;
+        assert!(transition.completes);
+        assert_eq!(transition.quest, "oteryn:quest.the_outlaw_camp_quest");
+        let callbacks = world_callbacks::load_for(lowered.catalogue())?;
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.key == key)
+            .ok_or("missing treasure callback")?;
+        assert_eq!(callback.trigger, Trigger::Use);
+        assert_eq!(
+            callback.selector.position,
+            Some(Position {
+                x: 32620,
+                y: 32198,
+                floor: -10
+            })
+        );
+        assert_eq!(callback.selector.appearance, Some(2472));
+        assert_eq!(callback.selector.unique, Some(14091));
+        let reward = callback.item_reward().as_ref().ok_or("missing bag")?;
+        assert_eq!(
+            (reward.item.as_str(), reward.count),
+            ("oteryn:item.tibia.i2853", 1)
+        );
+        assert_eq!(
+            reward
+                .contents
+                .iter()
+                .map(|item| (item.item.as_str(), item.count))
+                .collect::<Vec<_>>(),
+            [
+                ("oteryn:item.tibia.i3295", 1),
+                ("oteryn:item.tibia.i3039", 1)
+            ],
+        );
+        assert_eq!(
+            callback.storage[0].track,
+            "oteryn:quest-progress/quest/u6_4/outlaw_camp_quest"
+        );
+        assert_eq!(
+            (
+                callback.storage[0].minimum,
+                callback.storage[0].maximum,
+                callback.storage[0].set
+            ),
+            (0, 0, 1)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn quest_parity_explorer_society_loads_ordered_enrollment_and_powder_report()
+    -> Result<(), String> {
+        use crate::quest::{reward_callbacks, world_callbacks};
+
+        let lowered =
+            load_embedded_quest_state("explorer-society").map_err(|error| format!("{error:?}"))?;
+        let catalogue = lowered.catalogue();
+        let callbacks = reward_callbacks::offered_for(catalogue)?;
+        let world = world_callbacks::load_for(catalogue)?;
+        let line = "oteryn:quest-progress/quest/u7_6/explorer_society/quest_line";
+        for (name, minimum, maximum, after) in [
+            ("angus/enroll", 0, 0, 1),
+            ("mortimer/enroll", 0, 0, 1),
+            ("uzgod/brooch-errand", 1, 1, 2),
+            ("uzgod/pickaxe", 3, 3, 4),
+            ("angus/pickaxe-report", 1, 4, 5),
+            ("mortimer/pickaxe-report", 1, 4, 5),
+            ("angus/orc-powder-report", 33, 33, 35),
+            ("mortimer/orc-powder-report", 33, 33, 35),
+        ] {
+            let key = format!("oteryn:quest-reward/explorer-society/{name}");
+            let row = callbacks
+                .iter()
+                .find(|row| row.key == key)
+                .ok_or_else(|| key.clone())?;
+            let gate = row
+                .storage
+                .iter()
+                .find(|gate| gate.track == line)
+                .ok_or("missing quest-line guard")?;
+            assert_eq!(
+                (gate.minimum, gate.maximum, gate.set),
+                (minimum, maximum, after),
+                "{name}"
+            );
+            assert!(catalogue.transition(&key).is_some(), "{name}");
+        }
+        for (name, uid, reward, before, after) in [
+            ("family-brooch", 14029, 4834, 2, 3),
+            ("bonelord-parchment", 14030, 173, 30, 31),
+            ("orc-powder", 14031, 13974, 33, 34),
+            ("elven-poetry", 14032, 4844, 36, 37),
+            ("memory-stone", 14033, 4841, 39, 40),
+            ("spectral-dress", 14034, 4836, 48, 49),
+            ("lizard-urn", 40041, 4847, 27, 28),
+            ("frozen-dragon", 40042, 7314, 57, 58),
+        ] {
+            let key = format!("oteryn:quest-callback/explorer-society-{name}");
+            let row = world
+                .iter()
+                .find(|row| row.key == key)
+                .ok_or_else(|| key.clone())?;
+            assert_eq!(row.selector.unique, Some(uid), "{name}");
+            assert!(row.selector.native.is_some(), "{name}");
+            assert_eq!(
+                row.item_reward().as_ref().ok_or("missing pickup")?.item,
+                format!("oteryn:item.tibia.i{reward}")
+            );
+            let gate = row.storage.first().ok_or("missing mission guard")?;
+            assert_eq!(
+                (gate.minimum, gate.maximum, gate.set),
+                (before, before, after),
+                "{name}"
+            );
+            assert!(catalogue.transition(&key).is_some(), "{name}");
+        }
+        let final_report = "oteryn:quest-reward/explorer-society/lurik/ice-music-report";
+        let row = callbacks
+            .iter()
+            .find(|row| row.key == final_report)
+            .ok_or("missing final Explorer Society report")?;
+        assert_eq!(row.take.len(), 1);
+        assert_eq!(
+            (row.take[0].item.as_str(), row.take[0].count),
+            ("oteryn:item.tibia.i7315", 1)
+        );
+        assert!(
+            catalogue
+                .transition(final_report)
+                .is_some_and(|transition| transition.completes)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn quest_parity_explorer_tools_and_portals_bind_exact_assets() -> Result<(), String> {
+        use crate::quest::world_callbacks::{self, Position, Trigger};
+
+        let callbacks = world_callbacks::load()?;
+        for (name, target, tool, replacement) in [
+            ("ice-delivery-1", 4994, 4872, None),
+            ("ice-delivery-2", 4994, 4872, None),
+            ("jungle-bells", 3874, 4867, Some(4868)),
+            ("witches-cauldron", 3885, 4867, Some(4869)),
+            ("giant-jungle-rose", 3878, 4867, Some(4870)),
+            ("rune-tracing", 2199, 4842, Some(4843)),
+            ("ice-music", 6966, 7242, Some(7315)),
+        ] {
+            let key = format!("oteryn:quest-callback/explorer-society-{name}");
+            let row = callbacks
+                .iter()
+                .find(|row| row.key == key)
+                .ok_or_else(|| key.clone())?;
+            let input = row.item_on_target.as_ref().ok_or("missing selected tool")?;
+            assert_eq!(row.trigger, Trigger::Use);
+            assert_eq!(
+                row.selector
+                    .native
+                    .as_ref()
+                    .ok_or("missing target")?
+                    .appearance,
+                target
+            );
+            assert_eq!(input.item, format!("oteryn:item.tibia.i{tool}"));
+            assert_eq!(
+                input.replacement,
+                replacement.map(|id| format!("oteryn:item.tibia.i{id}"))
+            );
+            assert!(input.selected_instance && row.requires_world_admission);
+            if tool == 4872 {
+                assert!(input.reusable);
+                assert_eq!(
+                    row.item_reward().as_ref().ok_or("missing ice")?.item,
+                    "oteryn:item.tibia.i4837"
+                );
+            }
+        }
+        for (uid, landing) in [
+            (25018, (32498, 31622)),
+            (25019, (32665, 32735)),
+            (25020, (32320, 31137)),
+            (25021, (32359, 32807)),
+        ] {
+            let row = callbacks
+                .iter()
+                .find(|row| row.trigger == Trigger::StepIn && row.selector.unique == Some(uid))
+                .ok_or("missing astral portal")?;
+            assert_eq!(
+                row.teleport,
+                Some(Position {
+                    x: landing.0,
+                    y: landing.1,
+                    floor: -6
+                })
+            );
+            assert!(row.return_on_failure);
+            let fee = row.item_on_target.as_ref().ok_or("missing pearl cost")?;
+            assert_eq!(
+                (fee.item.as_str(), fee.count),
+                ("oteryn:item.tibia.i5021", 1)
+            );
+            assert!(fee.on_step && !fee.reusable);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn quest_parity_outlaw_oven_reopens_and_restores_the_source_tiles() -> Result<(), String> {
+        use crate::quest::world_callbacks::{self, Position};
+
+        let callbacks = world_callbacks::load()?;
+        let callback = callbacks
+            .iter()
+            .find(|row| row.key == "oteryn:quest-callback/outlaw-camp-oven")
+            .ok_or("missing oven callback")?;
+        assert_eq!(callback.selector.unique, Some(30031));
+        assert_eq!(callback.lever, Some([2772, 2773]));
+        assert!(callback.reversible);
+        let scene = callback
+            .effects
+            .scene
+            .as_ref()
+            .ok_or("missing oven movement")?;
+        let origin = Position {
+            x: 32623,
+            y: 32188,
+            floor: -9,
+        };
+        let destination = Position { y: 32189, ..origin };
+        assert_eq!(
+            (scene.open[0].position, scene.open[0].remove),
+            (origin, Some(2535))
+        );
+        assert_eq!(
+            (scene.open[1].position, scene.open[1].create),
+            (destination, Some(2535))
+        );
+        assert_eq!(
+            (scene.close[0].position, scene.close[0].remove),
+            (destination, Some(2535))
+        );
+        assert_eq!(
+            (scene.close[1].position, scene.close[1].create),
+            (origin, Some(2535))
+        );
+        Ok(())
+    }
+
+    #[test]
     fn owner_scope_excludes_dawnport_from_runtime_state_and_callbacks() -> Result<(), String> {
         let loaded =
             load_embedded_quest_state("owner-scope").map_err(|error| format!("{error:?}"))?;

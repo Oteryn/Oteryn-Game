@@ -75,6 +75,27 @@ class QuestCallbackProfiles(unittest.TestCase):
                        lambda r: r['production_definition']['production_key'],
                        lambda v: json.dumps(v, sort_keys=True).encode())
 
+    def test_explorer_custody_and_outlaw_bag_are_admitted_together(self):
+        npc = self.root / 'content/quests/npc-callbacks'
+        npc.mkdir()
+        (npc / 'explorer-society.json').write_bytes(
+            (ROOT / 'content/quests/npc-callbacks/explorer-society.json').read_bytes())
+        self.admit()
+        for number in (3295, 4834, 4842, 4843, 4863, 4864, 4868, 7242, 7315, 9605):
+            with self.subTest(item=number):
+                row = self.generated_record(f'oteryn:item.tibia.i{number}')
+                self.assertTrue(row['admission']['materializable'])
+                self.assertIn('CharacterInventory', row['admission']['legal_destinations'])
+        for number, weight in ((4864, 800), (4868, 2000)):
+            row = self.generated_record(f'oteryn:item.tibia.i{number}')
+            self.assertEqual(row['semantics']['physical']['value']['weight'],
+                             {'state': 'KNOWN', 'value': weight})
+        for key in profiles.EXPLORER_TRACING_SHEETS:
+            earlier = next(row for row in self.predecessor['records']
+                           if row['production_definition']['production_key'] == key)
+            self.assertEqual(self.generated_record(key)['semantics']['readable_writeable'],
+                             earlier['semantics']['readable_writeable'])
+
     def test_goblin_snowballs_preserve_the_established_seasonal_profile(self):
         key = 'oteryn:item.tibia.i2992'
         document = json.loads(self.generated[PROFILE])
