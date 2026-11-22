@@ -1,6 +1,6 @@
 //! Flask-on-dispenser is an ordinary USE_WITH, composed with the item action owner.
 use super::*;
-use crate::durability::consume_transform::ConsumeTransformRequest;
+use crate::durability::consume_transform::{ConsumeTransformRequest, DispenserActionContext};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn use_dispenser(
@@ -225,53 +225,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(outcome(UseDisposition::Rejected));
             }
-            if let Some(target) = ground_source {
-                let Some(room) = self.rooms().gate_ground_item_action() else {
-                    return Ok(outcome(UseDisposition::NotPossible));
-                };
-                Some(
-                    crate::durability::consume_transform::GroundActionContext::from_native_owner(
-                        room,
-                        &runtime,
-                        actor,
-                        command.game_session_id,
-                        target,
-                    )
-                    .map_err(|_| ())?,
-                )
-            } else {
-                None
+            let room = self.rooms().gate_ground_item_action();
+            if ground_source.is_some() && room.is_none() {
+                return Ok(outcome(UseDisposition::NotPossible));
             }
+            let map_revision = self
+                .bundle_map()
+                .map(|map| crate::map::overlay::map_revision(map.overlay.base()));
+            DispenserActionContext::from_native_owner(
+                room,
+                &runtime,
+                actor,
+                command.game_session_id,
+                ground_source,
+                map_revision.as_deref(),
+            )
+            .map_err(|_| ())?
         };
         request.source = flask;
         request.target = Some(dispenser);
-        let receipt = if let Some(context) = &ground_context {
-            self.root
-                .consume_dispenser_on_ground(
-                    &permit,
-                    self.character,
-                    self.holder,
-                    fence,
-                    request,
-                    native,
-                    &weights,
-                    context,
-                )
-                .await
-        } else {
-            self.root
-                .consume_transform_detailed(
-                    &permit,
-                    self.character,
-                    self.holder,
-                    fence,
-                    request,
-                    native,
-                    &weights,
-                    false,
-                )
-                .await
-        };
+        let receipt = self
+            .root
+            .consume_dispenser(
+                &permit,
+                self.character,
+                self.holder,
+                fence,
+                request,
+                native,
+                &weights,
+                &ground_context,
+            )
+            .await;
         receipt
             .map(|receipt| {
                 receipt.and_then(|receipt| {

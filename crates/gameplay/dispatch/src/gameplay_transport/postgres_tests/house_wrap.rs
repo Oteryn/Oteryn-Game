@@ -58,8 +58,10 @@ fn house_wrap_dispatch_postgres_roundtrip_replay_and_refusal() -> TestResult {
 }
 
 #[test]
-fn srx1_house_cask_charge_checkpoint_exhaustion_and_replay_postgres()->TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}
+fn house_dispenser_overflow_places_potions_at_players_feet_and_replays_charge_debit() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     std::thread::Builder::new().stack_size(256<<20).spawn(||{
         run(async |admin|{
             let started=std::time::Instant::now();
@@ -590,9 +592,34 @@ async fn house_cask(owner:&ComposedFreshAdmission<'_, '_, '_>,h:&Harness,mut adm
     let first=owner.use_dispenser_action(actor,command(6),intent.clone(),Some(ItemKey::Instance(id(71))),Some(ItemKey::Instance(id(80)))).await.map_err(|_|"House first use unknown")?.ok_or("House dispenser production route")?;
     assert_eq!(first.disposition,UseDisposition::Committed);
     assert_eq!(sqlx::query_scalar::<_,i32>("SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(80).as_slice()).fetch_one(&h.pool).await?,1);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx).await?;
+    let backpack = id(70);
+    sqlx::query("WITH bag AS (
+          SELECT b.* FROM game_item_container_slots b WHERE b.item_instance_id=encode($1,'hex')::uuid
+        ), added AS (
+          INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+          SELECT game_character_uuid_v7(),bag.world_id,'Item','oteryn:item.tibia.i3031','definition-r1',1,1,game_character_uuid_v7()
+          FROM bag,generate_series(1,20-(SELECT count(*) FROM game_item_container_entries e WHERE e.parent_item_instance_id=bag.item_instance_id))
+          RETURNING item_instance_id
+        )
+        INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id)
+        SELECT bag.character_id,bag.world_id,bag.item_instance_id,added.item_instance_id,100+row_number() OVER (ORDER BY added.item_instance_id),game_character_uuid_v7()
+        FROM bag,added")
+        .bind(backpack.as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
+        .bind(backpack.as_slice()).fetch_one(&h.pool).await?,20);
     let actor=admitted.runtime_actor.ok_or("House actor")?;
     let last=owner.use_dispenser_action(actor,command(7),intent.clone(),Some(ItemKey::Instance(id(72))),Some(ItemKey::Instance(id(80)))).await.map_err(|_|"House last use unknown")?.ok_or("House exhaustion route")?;
     assert_eq!(last.disposition,UseDisposition::Committed);
+    let placement: (i64, String, Vec<u8>, Vec<u8>) = sqlx::query_as("SELECT i.quantity,h.house_key,h.spatial_position,uuid_send(p.reclaim_subject_character_id)
+        FROM game_item_instances i JOIN game_item_house_interior_locations h USING(item_instance_id)
+        JOIN game_item_house_reclaim_provenance p USING(item_instance_id)
+        WHERE i.definition_production_key='oteryn:item.tibia.i236' AND i.lifecycle=1")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(placement, (1, HOUSE.into(), position, id(41).to_vec()));
     let item:(i64,i16)=sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(80).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(item,(0,2));
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT (SELECT count(*) FROM game_item_house_interior_locations WHERE item_instance_id=encode($1,'hex')::uuid)+(SELECT count(*) FROM game_item_house_reclaim_provenance WHERE item_instance_id=encode($1,'hex')::uuid)").bind(id(80).as_slice()).fetch_one(&h.pool).await?,0);
