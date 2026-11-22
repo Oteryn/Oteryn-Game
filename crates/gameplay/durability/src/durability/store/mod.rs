@@ -13,8 +13,9 @@ mod prey_expansion;
 mod prey_purchase;
 mod purchase;
 mod purchase_history;
+pub(super) mod reward_access;
 pub(super) mod service_blessings;
-mod services;
+pub(super) mod services;
 mod storage;
 pub use codec::{
     DeliveryIdentity, DeliveryPlan, DeliveryReceipt, PurchaseRequest, StoreValidationError,

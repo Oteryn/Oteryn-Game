@@ -35,8 +35,15 @@ pub struct DailyRewardView {
     pub lane_day: u8,
     pub streak: u32,
     pub jokers: u8,
+    pub instant_access: bool,
     pub receipt: Option<super::daily_reward::DailyRewardReceipt>,
     pub settled: Option<super::daily_reward::DailyRewardReceipt>,
+}
+
+#[derive(Clone, Copy)]
+pub enum DailyRewardAccess {
+    Shrine,
+    StoreToken,
 }
 
 impl DurabilityRoot {
@@ -100,7 +107,10 @@ impl DurabilityRoot {
             } else { oteryn_gameplay_progression::daily_reward::cycle_day(state.lane_day) };
             let history=super::daily_reward::history::load(&mut tx,fence.character_id.as_bytes(),fence.runtime_scope.world_id().as_bytes(),epoch).await?;
             let streak = effective_streak(state, epoch, jokers)?;
-            Ok(Ok(DailyRewardView { epoch, lane_day, streak, jokers, receipt, settled, history }))
+            let instant_access = super::store::reward_access::available(
+                &mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes(),
+            ).await? > 0;
+            Ok(Ok(DailyRewardView { epoch, lane_day, streak, jokers, receipt, settled, history, instant_access }))
         })).await?
     }
 
@@ -112,6 +122,18 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: DailyRewardClaimRequest,
         plan: DailyRewardDeliveryPlan,
+        gate: &G,
+    ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
+        self.commit_daily_reward_claim_from(authority, node, fence, request, (plan, DailyRewardAccess::Shrine), gate).await
+    }
+
+    pub async fn commit_daily_reward_claim_from<G: DailyRewardPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: DailyRewardClaimRequest,
+        (plan, access): (DailyRewardDeliveryPlan, DailyRewardAccess),
         gate: &G,
     ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
         use DailyRewardClaimError as Error;
@@ -160,7 +182,7 @@ impl DurabilityRoot {
                     if !current(&mut tx, &node, fence, request.command).await? {
                         return Ok(Err(Error::AuthorityRejected));
                     }
-                    let outcome = apply(&mut tx, fence, request, *gate).await;
+                    let outcome = apply(&mut tx, fence, request, *gate, access).await;
                     if outcome.is_ok() {
                         tx.commit(deadline).await?;
                     }
@@ -201,6 +223,7 @@ async fn apply<G: DailyRewardPremiumGate>(
     fence: CurrentCharacterItemFence,
     request: DailyRewardClaimRequest,
     gate: &G,
+    access: DailyRewardAccess,
 ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
     let world = fence.runtime_scope.world_id();
     // A competing claim must not retain the mint performed before this callback.
@@ -232,6 +255,11 @@ async fn apply<G: DailyRewardPremiumGate>(
     sqlx::query("INSERT INTO public.game_daily_reward_commands VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid)")
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .bind(request.transaction_id.as_slice()).execute(&mut ***tx).await?;
+    if matches!(access, DailyRewardAccess::StoreToken)
+        && !super::store::reward_access::consume(tx, fence.character_id.as_bytes(), world.as_bytes(), &request.transaction_id).await?
+    {
+        return Err(DailyRewardClaimError::InvalidRequest);
+    }
     super::daily_reward_effects::grant(tx, fence, request, receipt.lane_day, premium).await?;
     Ok(outcome)
 }

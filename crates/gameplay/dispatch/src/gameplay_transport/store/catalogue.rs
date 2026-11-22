@@ -27,7 +27,7 @@ struct Offer {
     currency: String,
     item: Option<Item>,
     hireling: Option<HirelingOffer>,
-    service: Option<StoreService>,
+    service: Option<serde_json::Value>,
     #[serde(default)]
     unlock_key: Option<String>,
     #[serde(default)]
@@ -101,7 +101,12 @@ impl RuntimeCatalogue {
             if offer.currency != currency_text(rules::CurrencyKind::TibiaCoin) {
                 return None;
             }
-            let (kind, delivery, eligibility) = if let Some(service) = offer.service {
+            let (kind, delivery, eligibility) = if let Some(effect) = offer.service {
+                // Services ship independently. Unrecognized effects stay unavailable
+                // while unrelated offers keep their full-document price revision.
+                let Ok(service) = serde_json::from_value::<StoreService>(effect) else {
+                    continue;
+                };
                 if offer.item.is_some()
                     || offer.unlock_key.is_some()
                     || offer.hireling.is_some()

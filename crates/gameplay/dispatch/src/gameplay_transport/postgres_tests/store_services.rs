@@ -45,8 +45,7 @@ fn store_blessing_bundle_grants_every_blessing_and_refuses_while_any_is_at_cap()
 }
 
 #[test]
-fn store_service_effect_failure_rolls_back_receipt_and_retries_without_another_debit() -> TestResult
-{
+fn store_service_effect_failure_rolls_back_and_replays_after_catalogue_change() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -56,11 +55,35 @@ fn store_service_effect_failure_rolls_back_receipt_and_retries_without_another_d
     })
 }
 
+#[test]
+fn store_weekly_expansion_commits_the_task_board_and_refuses_a_second_purchase() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-weekly-expansion", || {
+        scenario(Scenario::Weekly)
+    })
+}
+
+#[test]
+fn store_reward_access_is_spent_once_by_a_daily_claim_away_from_the_shrine() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-reward-access", || {
+        scenario(Scenario::RewardAccess)
+    })
+}
+
 enum Scenario {
     Wildcards,
     XpBoost,
     Blessings,
     Rollback,
+    Weekly,
+    RewardAccess,
 }
 
 fn scenario(scenario: Scenario) -> TestResult {
@@ -74,7 +97,40 @@ fn scenario(scenario: Scenario) -> TestResult {
             .await
             .map_err(debug)?;
         let deps = Dependencies::new()?;
+        let content = matches!(scenario, Scenario::Weekly | Scenario::RewardAccess).then(|| {
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                deps.admitted.world_id,
+                None,
+            )
+        });
         let mut owner = deps.owner(&h, &authority);
+        if let Some((controller, _)) = &content {
+            owner.active_generation = Some(controller.active().ok_or("active generation")?);
+        }
+        if let Some((_, pin)) = content
+            .as_ref()
+            .filter(|_| matches!(scenario, Scenario::Weekly))
+        {
+            let base =
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?;
+            owner.quest_catalogue = Some(Arc::new(
+                oteryn_gameplay_quests::quest::task_board::extend(base.catalogue())
+                    .map_err(debug)?,
+            ));
+            let world = deps.admitted.world_id;
+            let channel = deps.admitted.channel_id;
+            sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+                .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&h.pool).await?;
+            sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,NULL,$4,$5,$6)")
+                .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(pin.activation_sequence().to_string())
+                .bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice())
+                .execute(&h.pool).await?;
+            sqlx::query("SELECT game_world_reset_initialize(encode($1,'hex')::uuid,$2,$3,$2,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_06',1)")
+                .bind(world.as_bytes().as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind("taskboard-test-map")
+                .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice())
+                .execute(&h.pool).await?;
+        }
         deps.initialize(&owner).await;
         owner
             .runtime
@@ -124,6 +180,14 @@ fn scenario(scenario: Scenario) -> TestResult {
                 rollback(&h, &owner, admitted).await?;
                 vec![25]
             }
+            Scenario::Weekly => {
+                weekly_expansion(&h, &owner, admitted).await?;
+                vec![450]
+            }
+            Scenario::RewardAccess => {
+                reward_access(&h, &owner, admitted).await?;
+                vec![100]
+            }
         };
         assert_eq!(ledger.lock().map_err(|_| "ledger poisoned")?.debits, debits);
         drop(owner);
@@ -133,6 +197,8 @@ fn scenario(scenario: Scenario) -> TestResult {
     })
 }
 
+const ACCESS: &str = "store:instant-reward-access";
+const WEEKLY: &str = "store:permanent-weekly-task-expansion";
 const ALL_BLESSINGS: &str = "store:all-blessings-5";
 const XP_TIER_ONE: &str = "store:xp-boost-1";
 const XP_TIER_TWO: &str = "store:xp-boost-2";
@@ -157,6 +223,14 @@ fn catalogue() -> TestResult<RuntimeCatalogue> {
             "key":ALL_BLESSINGS, "category":"consumables.blessings", "title":"All Regular Blessings",
             "price":650, "currency":"TIBIA_COIN", "source_line":127,
             "service":{"kind":"blessings","count":5}
+        }, {
+            "key":WEEKLY, "category":"extras.useful-things", "title":"Permanent Weekly Task Expansion",
+            "price":450, "currency":"TIBIA_COIN", "source_line":6570,
+            "service":{"kind":"weekly_task_expansion"}
+        }, {
+            "key":ACCESS, "category":"extras.useful-things", "title":"Instant Reward Access",
+            "price":100, "currency":"TIBIA_COIN", "source_line":6546,
+            "service":{"kind":"instant_reward_access"}
         }]
     }))?)
     .ok_or_else(|| "admit Crystal Store service offers".into())
@@ -309,12 +383,92 @@ async fn rollback(
     sqlx::query("DROP TRIGGER reject_store_credit ON game_account_prey_wildcard_entries")
         .execute(&h.pool)
         .await?;
-    let replay = buy(owner, admitted, &catalogue, 2, 60, (PACK, 25)).await?;
+    let retained = wire::StorePurchaseRequest {
+        purchase_request_id: id(60),
+        offer_key: PACK.into(),
+        catalog_revision: catalogue.rules.revision().into(),
+        price: 25,
+        currency: "TIBIA_COIN".into(),
+    };
+    let payload = wire::encode_purchase_request(&retained).map_err(debug)?;
+    let (status, bytes) = execute_with_catalogue(owner, admitted, 2, &payload, |_| None).await;
+    assert_eq!(status, CommandStatus::Accepted);
+    let replay = wire::decode_purchase_result(&bytes).map_err(debug)?;
     assert_eq!(replay.code, wire::StorePurchaseCode::Accepted);
     let settled: (i16,i64,i64) = sqlx::query_as(
         "SELECT balance,(SELECT count(*) FROM store_delivery_receipts),(SELECT count(*) FROM store_receipt_outbox)
          FROM game_account_prey_wildcards",
     ).fetch_one(&h.pool).await?;
     assert_eq!(settled, (5, 1, 1));
+    Ok(())
+}
+
+async fn weekly_expansion(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let catalogue = catalogue()?;
+    let purchase = buy(owner, admitted, &catalogue, 1, 60, (WEEKLY, 450)).await?;
+    assert_eq!(purchase.code, wire::StorePurchaseCode::Accepted);
+    assert_eq!(
+        buy(owner, admitted, &catalogue, 2, 60, (WEEKLY, 450)).await?,
+        purchase
+    );
+    assert_eq!(
+        buy(owner, admitted, &catalogue, 3, 61, (WEEKLY, 450))
+            .await?
+            .code,
+        wire::StorePurchaseCode::OfferUnavailable
+    );
+    let settled: (bool,i64,i64) = sqlx::query_as(
+        "SELECT (body->>'expansion')::boolean,(SELECT count(*) FROM game_task_board_expansion_deliveries),
+                (SELECT count(*) FROM store_receipt_outbox) FROM game_character_task_boards",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(settled, (true, 1, 1));
+    Ok(())
+}
+
+async fn reward_access(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use oteryn_protocol_oteryn::daily_reward as daily;
+    let catalogue = catalogue()?;
+    sqlx::query(
+        "INSERT INTO game_world_reset_history(world_id,reset_epoch,reset_day,reset_at_unix_ms,committed_at_unix_ms)
+         SELECT world_id,1,1,118800000,118800000 FROM game_character_roots",
+    ).execute(&h.pool).await?;
+    let purchase = buy(owner, admitted, &catalogue, 1, 60, (ACCESS, 100)).await?;
+    assert_eq!(purchase.code, wire::StorePurchaseCode::Accepted);
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let command = crate::gameplay_transport::connection::UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: 2,
+        item_fence: admitted.item_fence,
+    };
+    let first = owner
+        .daily_command(actor, command, Some(daily::DailyRewardClaim))
+        .await
+        .ok_or("claim result")?;
+    assert!(first.starts_with(&[8, 1, 18, 16]));
+    let replay = owner
+        .daily_command(actor, command, Some(daily::DailyRewardClaim))
+        .await
+        .ok_or("claim replay")?;
+    assert_eq!(
+        replay,
+        daily::DailyRewardResult {
+            disposition: 2,
+            transaction_id: None
+        }
+        .encode()
+        .map_err(debug)?,
+    );
+    let uses: i64 = sqlx::query_scalar("SELECT count(*) FROM game_store_reward_access_uses")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(uses, 1);
     Ok(())
 }

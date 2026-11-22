@@ -48,13 +48,17 @@ impl StorePreyPack {
 pub enum StoreService {
     PreyWildcards { count: StorePreyPack },
     XpBoost { tier: i16 },
+    WeeklyTaskExpansion,
+    InstantRewardAccess,
     Blessings { blessing_id: Option<u8>, count: i16 },
 }
 
 impl StoreService {
     pub fn matches_price(self, price: u64) -> bool {
         match self {
-            Self::PreyWildcards { .. } => price > 0,
+            Self::PreyWildcards { .. } | Self::WeeklyTaskExpansion | Self::InstantRewardAccess => {
+                price > 0
+            }
             Self::Blessings { blessing_id, count } => {
                 price > 0
                     && matches!(count, 1 | 5)
@@ -78,6 +82,8 @@ impl StoreService {
             Self::PreyWildcards { .. } => "PREY_WILDCARDS",
             Self::XpBoost { .. } => "XP_BOOST",
             Self::Blessings { .. } => "BLESSINGS",
+            Self::WeeklyTaskExpansion => "WEEKLY_TASK_EXPANSION",
+            Self::InstantRewardAccess => "INSTANT_REWARD_ACCESS",
         }
     }
 
@@ -86,6 +92,7 @@ impl StoreService {
             Self::PreyWildcards { count } => count.quantity(),
             Self::XpBoost { tier } => tier,
             Self::Blessings { count, .. } => count,
+            Self::WeeklyTaskExpansion | Self::InstantRewardAccess => 1,
         }
     }
     fn blessing_keys(self) -> Result<&'static [&'static str], sqlx::Error> {
@@ -104,6 +111,7 @@ impl StoreService {
     }
 }
 
+#[derive(Clone)]
 pub struct StoreServiceDelivery {
     pub identity: DeliveryIdentity,
     pub request: PurchaseRequest,
@@ -112,6 +120,62 @@ pub struct StoreServiceDelivery {
 }
 
 impl DurabilityRoot {
+    /// Only a pre-existing reservation can restore an older service quote.
+    /// The caller's price and offer fields are proven by the original binding digest.
+    pub async fn read_retained_store_service(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: PurchaseRequest,
+    ) -> Result<Option<StoreService>, StoreDurabilityError> {
+        request.validate()?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| StoreDurabilityError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if &request.character_id != fence.character_id.as_bytes()
+                        || !assert_store_fence(&mut tx, &fence, &node, None).await?
+                        || !account_matches(&mut tx, &fence, &request.account_id).await?
+                    {
+                        return Ok(Err(StoreDurabilityError::AuthorityRejected));
+                    }
+                    let row: Option<(String, i16, Vec<String>)> = sqlx::query_as(
+                        "SELECT p.kind,p.amount,p.blessing_keys FROM game_store_service_purchases p
+                 JOIN store_purchase_requests r ON r.purchase_request_id=p.purchase_id
+                 WHERE p.purchase_id=encode($1,'hex')::uuid AND p.account_id=encode($2,'hex')::uuid
+                   AND p.character_id=encode($3,'hex')::uuid AND p.world_id=encode($4,'hex')::uuid
+                   AND r.binding_digest=$5",
+                    )
+                    .bind(request.purchase_request_id.as_slice())
+                    .bind(request.account_id.as_slice())
+                    .bind(request.character_id.as_slice())
+                    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                    .bind(request.binding_digest().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    let service = match row {
+                        None => None,
+                        Some((kind, amount, keys)) => {
+                            let Some(service) = retained_service(&kind, amount, &keys) else {
+                                return Ok(Err(StoreDurabilityError::ConflictingBinding));
+                            };
+                            Some(service)
+                        }
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(service))
+                })
+            })
+            .await?
+    }
+
     pub async fn read_store_xp_tier(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -242,66 +306,146 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         delivery: StoreServiceDelivery,
     ) -> Result<DeliveryReceipt, StoreDurabilityError> {
-        let StoreServiceDelivery {
-            identity,
-            request,
-            operation_id,
-            service,
-        } = delivery;
-        identity.validate()?;
-        request.validate()?;
-        if !uuid_v7(&operation_id)
-            || identity.character_id != request.character_id
-            || identity.account_id != request.account_id
-            || &identity.world_id != fence.runtime_scope.world_id().as_bytes()
-        {
-            return Err(StoreDurabilityError::ConflictingOperation);
-        }
+        delivery.validate(&fence)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| StoreDurabilityError::AuthorityRejected)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            if let Err(error) = lock_scope(&mut tx, &fence, &node, &request).await {
-                return Ok(Err(error));
-            }
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:store-delivery:'||encode($1,'hex'),0))")
-                .bind(operation_id.as_slice()).execute(&mut *tx).await?;
-            let state = match settlement_state(&mut tx, &request, &identity, operation_id, service).await? {
-                Some(state) => state,
-                None => return Ok(Err(StoreDurabilityError::ConflictingBinding)),
-            };
-            match lookup_delivery(&mut tx, operation_id, &identity, None).await? {
-                Ok(Some(receipt)) if state => {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if let Err(error) = lock_scope(&mut tx, &fence, &node, &delivery.request).await
+                    {
+                        return Ok(Err(error));
+                    }
+                    let receipt = match settle_service(&mut tx, &recovery, &delivery, false).await?
+                    {
+                        Ok(receipt) => receipt,
+                        Err(error) => return Ok(Err(error)),
+                    };
                     commit_semantic_transaction(tx, deadline).await?;
-                    return Ok(Ok(receipt));
-                }
-                Ok(None) if !state => {}
-                _ => return Ok(Err(StoreDurabilityError::ConflictingOperation)),
-            }
-            let receipt = match write_service_receipt(&mut tx, &recovery, operation_id, &identity).await {
-                Ok(receipt) => receipt,
-                Err(error) => return Ok(Err(error)),
+                    Ok(Ok(receipt))
+                })
+            })
+            .await?
+    }
+}
+
+impl StoreServiceDelivery {
+    pub(in crate::durability) fn validate(
+        &self,
+        fence: &CurrentCharacterGameplayFence,
+    ) -> Result<(), StoreDurabilityError> {
+        self.identity.validate()?;
+        self.request.validate()?;
+        if !uuid_v7(&self.operation_id)
+            || self.identity.character_id != self.request.character_id
+            || &self.identity.character_id != fence.character_id.as_bytes()
+            || self.identity.account_id != self.request.account_id
+            || &self.identity.world_id != fence.runtime_scope.world_id().as_bytes()
+        {
+            return Err(StoreDurabilityError::ConflictingOperation);
+        }
+        Ok(())
+    }
+
+    pub(in crate::durability) fn task_board_reference(&self) -> String {
+        format!("store-service:{}", uuid_string(&self.operation_id))
+    }
+}
+
+pub(in crate::durability) async fn settle_service(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    delivery: &StoreServiceDelivery,
+    task_board_committed: bool,
+) -> Result<Result<DeliveryReceipt, StoreDurabilityError>, super::super::DurabilityError> {
+    let StoreServiceDelivery {
+        identity,
+        request,
+        operation_id,
+        service,
+    } = delivery;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:store-delivery:'||encode($1,'hex'),0))")
+        .bind(operation_id.as_slice()).execute(&mut **tx).await?;
+    let state = match settlement_state(tx, request, identity, *operation_id, *service).await? {
+        Some(state) => state,
+        None => return Ok(Err(StoreDurabilityError::ConflictingBinding)),
+    };
+    match lookup_delivery(tx, *operation_id, identity, None).await? {
+        Ok(Some(receipt)) if state => return Ok(Ok(receipt)),
+        Ok(None) if !state => {}
+        _ => return Ok(Err(StoreDurabilityError::ConflictingOperation)),
+    }
+    if matches!(service, StoreService::WeeklyTaskExpansion) && !task_board_committed {
+        return Ok(Err(StoreDurabilityError::ConflictingOperation));
+    }
+    let receipt = match write_service_receipt(tx, recovery, *operation_id, identity).await {
+        Ok(receipt) => receipt,
+        Err(error) => return Ok(Err(error)),
+    };
+    sqlx::query(
+        "UPDATE game_store_service_purchases SET operation_id=encode($2,'hex')::uuid
+                 WHERE purchase_id=encode($1,'hex')::uuid",
+    )
+    .bind(request.purchase_request_id.as_slice())
+    .bind(operation_id.as_slice())
+    .execute(&mut **tx)
+    .await?;
+    match service {
+        StoreService::PreyWildcards { count } => {
+            credit(tx, identity, *operation_id, count.quantity()).await?
+        }
+        StoreService::XpBoost { .. } => {
+            super::super::store_hunting_xp::grant(tx, identity, *operation_id).await?
+        }
+        StoreService::Blessings { count, .. } => {
+            super::service_blessings::grant(
+                tx,
+                identity,
+                *operation_id,
+                service.blessing_keys()?,
+                *count,
+            )
+            .await?
+        }
+        StoreService::WeeklyTaskExpansion | StoreService::InstantRewardAccess => {}
+    }
+    Ok(Ok(receipt))
+}
+
+fn retained_service(kind: &str, amount: i16, keys: &[String]) -> Option<StoreService> {
+    match kind {
+        "PREY_WILDCARDS" if keys.is_empty() => Some(StoreService::PreyWildcards {
+            count: amount.try_into().ok()?,
+        }),
+        "XP_BOOST" if keys.is_empty() && (1..=5).contains(&amount) => {
+            Some(StoreService::XpBoost { tier: amount })
+        }
+        "BLESSINGS" if matches!(amount, 1 | 5) => {
+            let blessing_id = if super::service_blessings::keys(None).is_some_and(|all| keys == all)
+            {
+                None
+            } else {
+                Some((1..=8).find(|id| {
+                    super::service_blessings::keys(Some(*id)).is_some_and(|known| keys == known)
+                })?)
             };
-            sqlx::query("UPDATE game_store_service_purchases SET operation_id=encode($2,'hex')::uuid
-                         WHERE purchase_id=encode($1,'hex')::uuid")
-                .bind(request.purchase_request_id.as_slice()).bind(operation_id.as_slice())
-                .execute(&mut *tx).await?;
-            match service {
-                StoreService::PreyWildcards { count } => credit(&mut tx, &identity, operation_id, count.quantity()).await?,
-                StoreService::XpBoost { .. } => super::super::store_hunting_xp::grant(
-                    &mut tx, &identity, operation_id
-                ).await?,
-                StoreService::Blessings { count, .. } => super::service_blessings::grant(
-                    &mut tx, &identity, operation_id, service.blessing_keys()?, count
-                ).await?,
-            }
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(receipt))
-        })).await?
+            Some(StoreService::Blessings {
+                blessing_id,
+                count: amount,
+            })
+        }
+        "WEEKLY_TASK_EXPANSION" if keys.is_empty() && amount == 1 => {
+            Some(StoreService::WeeklyTaskExpansion)
+        }
+        "INSTANT_REWARD_ACCESS" if keys.is_empty() && amount == 1 => {
+            Some(StoreService::InstantRewardAccess)
+        }
+        _ => None,
     }
 }
 
@@ -380,6 +524,27 @@ async fn reserve(
             if !super::service_blessings::can_reserve(tx, &request.character_id, keys, count)
                 .await?
             {
+                return Ok(false);
+            }
+            None
+        }
+        StoreService::WeeklyTaskExpansion => {
+            let available: bool = sqlx::query_scalar(
+                "SELECT game_task_board_period(encode($2,'hex')::uuid) IS NOT NULL
+                   AND NOT EXISTS (SELECT 1 FROM game_task_board_expansion_deliveries
+                                   WHERE character_id=encode($1,'hex')::uuid)",
+            )
+            .bind(request.character_id.as_slice())
+            .bind(world.as_slice())
+            .fetch_one(&mut **tx)
+            .await?;
+            if !available {
+                return Ok(false);
+            }
+            None
+        }
+        StoreService::InstantRewardAccess => {
+            if super::reward_access::available(tx, &request.character_id, world).await? >= 90 {
                 return Ok(false);
             }
             None

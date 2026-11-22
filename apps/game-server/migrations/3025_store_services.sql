@@ -12,7 +12,8 @@ CREATE TABLE game_store_service_purchases (
     CHECK ((kind='PREY_WILDCARDS' AND amount IN (5,20) AND reset_epoch IS NULL AND cardinality(blessing_keys)=0)
         OR (kind='XP_BOOST' AND amount BETWEEN 1 AND 5 AND reset_epoch IS NOT NULL AND cardinality(blessing_keys)=0)
         OR (kind='BLESSINGS' AND amount IN (1,5) AND reset_epoch IS NULL
-            AND cardinality(blessing_keys) IN (1,8) AND array_position(blessing_keys,NULL) IS NULL)),
+            AND cardinality(blessing_keys) IN (1,8) AND array_position(blessing_keys,NULL) IS NULL)
+        OR (kind IN ('WEEKLY_TASK_EXPANSION','INSTANT_REWARD_ACCESS') AND amount=1 AND reset_epoch IS NULL AND cardinality(blessing_keys)=0)),
     operation_id UUID UNIQUE REFERENCES store_delivery_receipts(operation_id)
 );
 CREATE INDEX game_store_service_purchases_account_world
@@ -22,6 +23,15 @@ CREATE UNIQUE INDEX game_store_blessing_purchase_pending
     ON game_store_service_purchases(character_id) WHERE operation_id IS NULL AND kind='BLESSINGS';
 CREATE UNIQUE INDEX game_store_prey_purchase_pending
     ON game_store_service_purchases(account_id,world_id) WHERE operation_id IS NULL AND kind='PREY_WILDCARDS';
+CREATE UNIQUE INDEX game_store_reward_access_pending
+    ON game_store_service_purchases(character_id) WHERE operation_id IS NULL AND kind='INSTANT_REWARD_ACCESS';
+CREATE INDEX game_store_reward_access_character
+    ON game_store_service_purchases(character_id,world_id,purchase_id)
+    WHERE operation_id IS NOT NULL AND kind='INSTANT_REWARD_ACCESS';
+CREATE UNIQUE INDEX game_store_task_expansion_once
+    ON game_store_service_purchases(character_id) WHERE kind='WEEKLY_TASK_EXPANSION';
+CREATE INDEX game_task_board_expansion_deliveries_character
+    ON game_task_board_expansion_deliveries(character_id);
 CREATE UNIQUE INDEX game_store_xp_purchase_pending
     ON game_store_service_purchases(character_id) WHERE operation_id IS NULL AND kind='XP_BOOST';
 CREATE UNIQUE INDEX game_store_xp_purchase_tier
@@ -227,6 +237,11 @@ BEGIN
         SELECT 1 FROM public.game_account_prey_wildcard_entries e
         WHERE e.claim_id=NEW.operation_id AND e.account_id=NEW.account_id AND e.world_id=NEW.world_id
           AND e.kind='STORE' AND e.credited=NEW.amount AND e.xmin=pg_current_xact_id()::xid
+    )) OR (NEW.kind='WEEKLY_TASK_EXPANSION' AND NOT EXISTS (
+        SELECT 1 FROM public.game_task_board_expansion_deliveries d
+        WHERE d.delivery_reference='store-service:'||NEW.operation_id::text
+          AND d.character_id=NEW.character_id AND d.world_id=NEW.world_id
+          AND d.created_xact_id=pg_current_xact_id()
     )) OR (NEW.kind='BLESSINGS' AND EXISTS (
         SELECT 1 FROM unnest(NEW.blessing_keys) k(key) WHERE NOT EXISTS (
             SELECT 1 FROM public.game_character_blessings b
@@ -273,4 +288,56 @@ CREATE TRIGGER game_store_service_purchase_transition
     EXECUTE FUNCTION game_store_service_purchase_transition();
 CREATE TRIGGER game_store_service_purchase_no_truncate
     BEFORE TRUNCATE ON game_store_service_purchases FOR EACH STATEMENT
+    EXECUTE FUNCTION game_daily_reward_immutable();
+
+CREATE FUNCTION game_store_weekly_reservation_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM public.game_store_service_purchases p
+        WHERE p.character_id=NEW.character_id AND p.kind='WEEKLY_TASK_EXPANSION'
+          AND p.operation_id IS NULL) THEN
+        RAISE EXCEPTION 'Task Board expansion reserved by a pending Store purchase' USING ERRCODE='23514';
+    END IF;
+    IF NEW.delivery_reference LIKE 'store-service:%' AND NOT EXISTS (
+        SELECT 1 FROM public.game_store_service_purchases p
+        WHERE p.character_id=NEW.character_id AND p.world_id=NEW.world_id
+          AND p.kind='WEEKLY_TASK_EXPANSION' AND p.xmin=pg_current_xact_id()::xid
+          AND NEW.delivery_reference='store-service:'||p.operation_id::text
+    ) THEN
+        RAISE EXCEPTION 'Task Board expansion needs its Store settlement' USING ERRCODE='23514';
+    END IF;
+    RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION game_store_weekly_reservation_guard() FROM PUBLIC;
+CREATE CONSTRAINT TRIGGER game_store_weekly_reservation_guard
+    AFTER INSERT ON game_task_board_expansion_deliveries DEFERRABLE INITIALLY DEFERRED
+    FOR EACH ROW EXECUTE FUNCTION game_store_weekly_reservation_guard();
+
+CREATE TABLE game_store_reward_access_uses (
+    purchase_id UUID PRIMARY KEY REFERENCES game_store_service_purchases(purchase_id),
+    claim_id UUID NOT NULL UNIQUE REFERENCES game_character_daily_reward_claims(transaction_id)
+);
+REVOKE ALL ON game_store_reward_access_uses FROM PUBLIC;
+GRANT SELECT, INSERT ON game_store_reward_access_uses TO oteryn_game_runtime;
+GRANT SELECT ON game_store_reward_access_uses TO oteryn_game_control;
+
+CREATE FUNCTION game_store_reward_access_use_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM public.game_store_service_purchases p
+        JOIN public.game_character_daily_reward_claims c ON c.transaction_id=NEW.claim_id
+        WHERE p.purchase_id=NEW.purchase_id AND p.operation_id IS NOT NULL AND p.kind='INSTANT_REWARD_ACCESS'
+          AND p.character_id=c.character_id AND p.world_id=c.world_id AND c.xmin=pg_current_xact_id()::xid
+    ) THEN
+        RAISE EXCEPTION 'Instant Reward Access needs its same-transaction daily claim' USING ERRCODE='23514';
+    END IF;
+    RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION game_store_reward_access_use_guard() FROM PUBLIC;
+CREATE CONSTRAINT TRIGGER game_store_reward_access_use_guard
+    AFTER INSERT ON game_store_reward_access_uses DEFERRABLE INITIALLY DEFERRED
+    FOR EACH ROW EXECUTE FUNCTION game_store_reward_access_use_guard();
+CREATE TRIGGER game_store_reward_access_use_immutable
+    BEFORE UPDATE OR DELETE OR TRUNCATE ON game_store_reward_access_uses FOR EACH STATEMENT
     EXECUTE FUNCTION game_daily_reward_immutable();

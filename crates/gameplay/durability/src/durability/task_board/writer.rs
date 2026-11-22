@@ -41,7 +41,7 @@ impl DurabilityRoot {
         request: TaskBoardCommand,
         catalogue: Arc<TaskBoardCatalogue>,
         permit: Option<&SpellLanePermit>,
-        expansion_delivery: Option<String>,
+        expansion_delivery: Option<expansion::ExpansionDelivery>,
     ) -> Result<TaskBoardCommit, Error> {
         if (request.action == TaskBoardAction::GrantExpansion) != expansion_delivery.is_some() {
             return Err(Error::AuthorityRejected);
@@ -105,7 +105,7 @@ impl DurabilityRoot {
                 return Ok(Err(Error::RespawnPending));
             }
             if let Some(delivery) = &expansion_delivery {
-                match expansion::replay(&mut tx, fence, delivery).await {
+                match expansion::replay(&mut tx, fence, &delivery.reference).await {
                     Ok(Some(previous)) => { tx.commit(deadline).await?; return Ok(Ok(previous)); }
                     Ok(None) => {}
                     Err(error) => return Ok(Err(error)),
@@ -199,9 +199,14 @@ impl DurabilityRoot {
             }
             let outcome = TaskBoardCommit { view, refusal: None, transition, replayed: false };
             if let Some(delivery) = &expansion_delivery {
-                expansion::record(&mut tx, fence, &request, delivery).await?;
+                expansion::record(&mut tx, fence, &request, &delivery.reference).await?;
             }
             state::record(&mut tx, fence, &request, &binding, &outcome, Some(&effects)).await?;
+            if let Some(store) = expansion_delivery.as_ref().and_then(|delivery| delivery.store.as_ref())
+                && super::super::store::services::settle_service(&mut tx, &recovery, store, true).await?.is_err()
+            {
+                return Ok(Err(Error::ConflictingOccurrence));
+            }
             tx.commit(deadline).await?;
             Ok(Ok(outcome))
         })).await?

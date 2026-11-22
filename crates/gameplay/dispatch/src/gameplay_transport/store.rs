@@ -158,7 +158,18 @@ pub(super) async fn execute_with_catalogue<'a>(
     let Ok((request, customization)) = wire::decode_purchase_request_with_hireling(payload) else {
         return REJECTED;
     };
-    let Some(catalogue) = find(&request.offer_key) else {
+    let catalogue = find(&request.offer_key);
+    if customization.is_none()
+        && catalogue.is_none_or(|catalogue| {
+            catalogue.rules.revision() != request.catalog_revision
+                || catalogue.rules.offer(&request.offer_key).is_none()
+        })
+        && let Some(result) = services::resume_old_quote(owner, admitted, &request, command_id).await
+    {
+        return wire::encode_purchase_result(&result)
+            .map_or(REJECTED, |bytes| (CommandStatus::Accepted, bytes));
+    }
+    let Some(catalogue) = catalogue else {
         return REJECTED;
     };
     let Some(result) = purchase(owner, admitted, catalogue, command_id, request, customization).await
@@ -451,10 +462,9 @@ async fn purchase_retained_or_new(
     {
         return Some(refusal(wire::StorePurchaseCode::StaleQuote));
     }
-    let platform_currency = match platform_currency(quote.currency) {
-        Ok(currency) => currency,
-        Err(code) => return Some(refusal(code)),
-    };
+    if let Err(code) = platform_currency(quote.currency) {
+        return Some(refusal(code));
+    }
     let id = rules::PurchaseRequestId::from_bytes(request.purchase_request_id).ok()?;
     let character_id = *fence.character_id.as_bytes();
     let binding = rules::PurchaseStoreOffer::from_quote(
@@ -515,37 +525,11 @@ async fn purchase_retained_or_new(
             let answer = if reserved {
                 // Every admitted runtime offer uses Platform ITEM grants, including
                 // native permanent unlocks and Hireling service effects.
-                purchase_answer(platform.lock().await.purchase(&PurchaseStoreOffer {
-                    purchase_request_id: uuid_text(&request.purchase_request_id),
-                    account_id: uuid_text(&account),
-                    character_id: uuid_text(&character_id),
-                    offer_key: binding.offer_key.clone(),
-                    catalog_revision: binding.catalog_revision.clone(),
-                    unit_price: binding.price.to_string(),
-                    world_id: uuid_text(admitted.world_id.as_bytes()),
-                    quantity: 1,
-                    currency: platform_currency.into(),
-                }, "ITEM").await)?
+                platform_purchase(&platform, admitted, &binding).await?
             } else {
                 PurchaseResult::OfferUnavailable
             };
-            let history = match &answer {
-                PurchaseResult::Accepted { order_id, .. } => {
-                    uuid_bytes(order_id).map(|order_id| StorePurchaseHistoryEntry {
-                        order_id,
-                        offer_key: binding.offer_key.clone(),
-                        catalog_revision: binding.catalog_revision.clone(),
-                        price: binding.price,
-                        currency: currency_text(binding.currency).into(),
-                    })
-                }
-                _ => None,
-            };
-            let bytes = serde_json::to_vec(&RetainedAnswer::of(&answer)).ok()?;
-            owner.root
-                .record_store_answer_with_history(journal.clone(), bytes, history)
-                .await
-                .ok()?
+            retain_answer(owner, &binding, journal.clone(), answer).await?
         }
     };
     let answer: RetainedAnswer = serde_json::from_slice(&saved).ok()?;
@@ -564,7 +548,7 @@ async fn purchase_retained_or_new(
     }
     if let Some(service) = service {
         let (order_id, operation_id) = prey_retry::delivery_ids(&answer)?;
-        services::deliver(owner, &platform, admitted, &binding, journal, service, (order_id, operation_id)).await?;
+        services::deliver(owner, &platform, admitted, &binding, journal, service, ((order_id, operation_id), command_id)).await?;
         return Some(wire::StorePurchaseResult {
             code,
             order_id: Some(order_id),
@@ -586,6 +570,47 @@ async fn purchase_retained_or_new(
         order_id: Some(uuid_bytes(answer.order_id.as_deref()?)?),
         operation_id: Some(uuid_bytes(answer.operation_ids.first()?)?),
     })
+}
+
+async fn platform_purchase(
+    platform: &StorePlatform,
+    admitted: AdmittedSession,
+    binding: &rules::PurchaseStoreOffer,
+) -> Option<PurchaseResult> {
+    let currency = platform_currency(binding.currency).ok()?;
+    purchase_answer(platform.lock().await.purchase(&PurchaseStoreOffer {
+        purchase_request_id: uuid_text(binding.purchase_request_id.as_bytes()),
+        account_id: uuid_text(binding.account_id.as_bytes()),
+        character_id: uuid_text(binding.character_id.as_bytes()),
+        offer_key: binding.offer_key.clone(),
+        catalog_revision: binding.catalog_revision.clone(),
+        unit_price: binding.price.to_string(),
+        world_id: uuid_text(admitted.world_id.as_bytes()),
+        quantity: 1,
+        currency: currency.into(),
+    }, "ITEM").await)
+}
+
+async fn retain_answer(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    binding: &rules::PurchaseStoreOffer,
+    journal: PurchaseRequest,
+    answer: PurchaseResult,
+) -> Option<Vec<u8>> {
+    let history = match &answer {
+        PurchaseResult::Accepted { order_id, .. } => {
+            uuid_bytes(order_id).map(|order_id| StorePurchaseHistoryEntry {
+                order_id,
+                offer_key: binding.offer_key.clone(),
+                catalog_revision: binding.catalog_revision.clone(),
+                price: binding.price,
+                currency: currency_text(binding.currency).into(),
+            })
+        }
+        _ => None,
+    };
+    let bytes = serde_json::to_vec(&RetainedAnswer::of(&answer)).ok()?;
+    owner.root.record_store_answer_with_history(journal, bytes, history).await.ok()
 }
 
 /// Read the Platform delivery intent of one operation of this purchase and mint its item into
