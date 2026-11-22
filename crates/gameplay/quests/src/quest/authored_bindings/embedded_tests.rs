@@ -556,7 +556,8 @@ mod main_native_contract {
         for stage in arena.stages {
             track(&stage.track, &arena.quest, stage.goal)?;
         }
-        assert_eq!(additions.len(), 66);
+        // Package C adds three Skull of Ratha claim markers and one Legion Helmet marker.
+        assert_eq!(additions.len(), 70);
 
         let baseline = crate::quest::loader::lower_embedded_quest_state("native-admission-fixture")
             .map_err(|error| format!("{error:?}"))?;
@@ -571,7 +572,7 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        assert_eq!(before.tracks.len(), 2133 + 7);
+        assert_eq!(before.tracks.len(), 2135 + 7);
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"

@@ -1627,6 +1627,40 @@ fn is_qb_outfit_extension(callback: &RewardCallback) -> bool {
         })
 }
 
+/// Preserve published definition hashes and absent-track values for changed quests.
+pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
+    // Main at 492ca0e6ba, before Package C.
+    type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
+    const PREVIOUS: &[DefinitionPin] = &[(
+        "oteryn:quest.treasure_hunt_quest",
+        [
+            0xf5, 0x96, 0x11, 0x56, 0xeb, 0xf0, 0x43, 0x9a, 0x52, 0x2a, 0x95, 0xe0, 0x77, 0x22,
+            0x87, 0x88, 0x67, 0xa3, 0x26, 0x3e, 0x14, 0x0c, 0x11, 0x35, 0x81, 0xdb, 0x8f, 0xa7,
+            0x31, 0x10, 0x9f, 0x22,
+        ],
+        &[
+            ("oteryn:quest-progress/m09/treasure/ingots", -1),
+            ("oteryn:quest-progress/m09/treasure/telescope", -1),
+        ],
+    )];
+    for &(quest, hash, defaults) in PREVIOUS {
+        if active
+            .definition_hash(quest)
+            .is_some_and(|current| current != hash)
+        {
+            active.predecessors.entry(quest.into()).or_default().push(
+                super::NpcDefinitionPredecessor {
+                    hash,
+                    defaults: defaults
+                        .iter()
+                        .map(|&(track, value)| (track.into(), value))
+                        .collect(),
+                },
+            );
+        }
+    }
+}
+
 /// Recover the complete reward definition captured before Citizen NPC activation.
 /// The current loader still installs NPC prerequisites before active rewards.
 pub(super) fn retain_outfit_reward_predecessor(

@@ -45,13 +45,26 @@ def outputs():
                           'unique': None, 'action': None, 'appearance': 2478},
             'lever': None, 'reversible': False, 'passages': [], 'teleport': None,
             'storage': [{'track': 'oteryn:quest-progress/m09/treasure/'+label,
-                          'minimum': -1, 'maximum': 0, 'set': 1}],
+                          'minimum': -1, 'maximum': 0,
+                          'set': 2 if label == 'telescope' else 1}],
             'offerings': [], 'item_on_target': None, 'return_on_failure': False,
             'failure_message': None, 'success_message': 'You found the hidden treasure.',
             'sources': ['https://www.tibiawiki.com.br/index.php?title=Treasure_Hunt_Quest&oldid=431833#Recompensa',
                      'docs/reference/content-prep/qmech-m09/reward-sources.md'],
             'effects': {'item_reward': {'item': f'oteryn:item.tibia.i{item}',
-                                          'count': count, 'contents': []}}})
+                                          'count': count, 'contents': []}},
+            # Lane qc: the treasure-room telescope chest closes the quest log.
+            **({'completes': True} if label == 'telescope' else {})})
+    # A character who received the telescope under the original claim can
+    # record completion at the same chest without minting a second telescope.
+    telescope = chests[0]
+    recovery = {
+        **telescope,
+        'key': 'oteryn:quest-callback/m09-treasure-telescope-legacy',
+        'storage': [{**telescope['storage'][0], 'minimum': 1, 'maximum': 1}],
+        'effects': {},
+    }
+    chests.append(recovery)
     return {
         'content/quests/npc-callbacks/m09-rookie.json':
             {'schema': 1, 'callbacks': [callback]},

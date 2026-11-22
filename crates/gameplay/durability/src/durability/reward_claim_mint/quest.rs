@@ -794,7 +794,7 @@ async fn mint_with_source(
             return Ok(None);
         }
     }
-    let backpack:Option<String>=sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF s,i").bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let backpack:Option<String>=sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF i").bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(backpack) = backpack else {
         return Ok(None);
     };

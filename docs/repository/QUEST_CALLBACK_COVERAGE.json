@@ -421,13 +421,13 @@
               "sources": [
                 {
                   "citation": "canary:data-otservbr-global/startup/tables/chest.lua:153",
-                  "reward_matches_current_source": true,
+                  "reward_matches_current_source": false,
                   "server": "canary",
                   "unique_id": 5008
                 },
                 {
                   "citation": "crystal:data-global/startup/tables/chest.lua:435",
-                  "reward_matches_current_source": true,
+                  "reward_matches_current_source": false,
                   "server": "crystalserver",
                   "unique_id": 5008
                 }
@@ -1408,7 +1408,7 @@
                 },
                 {
                   "citation": "crystal:data-global/startup/tables/chest.lua:1482",
-                  "reward_matches_current_source": true,
+                  "reward_matches_current_source": false,
                   "server": "crystalserver",
                   "unique_id": 6117
                 }
@@ -5713,13 +5713,13 @@
               "sources": [
                 {
                   "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1470",
-                  "reward_matches_current_source": true,
+                  "reward_matches_current_source": false,
                   "server": "canary",
                   "unique_id": 6151
                 },
                 {
                   "citation": "crystal:data-global/startup/tables/chest.lua:1755",
-                  "reward_matches_current_source": true,
+                  "reward_matches_current_source": false,
                   "server": "crystalserver",
                   "unique_id": 6151
                 }
