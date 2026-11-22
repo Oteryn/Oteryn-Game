@@ -37,7 +37,6 @@ pub(crate) struct Authority {
     pub effects: u32,
     pub fail_after_commit: bool,
     pub bazaar_post_failure: Option<u16>,
-    pub held_bazaar_status: Option<String>,
     pub hold_coin_response: Option<(
         tokio::sync::oneshot::Sender<()>,
         tokio::sync::oneshot::Receiver<()>,
@@ -47,6 +46,9 @@ pub(crate) struct Authority {
     pub pending_first: bool,
     pub paginate: bool,
     pub fail_pages: bool,
+    pub status_failure: Option<u16>,
+    pub held_bazaar_status: Option<String>,
+    pub status_barrier: Option<Arc<tokio::sync::Barrier>>,
     pub offline: bool,
     pub lease_active: bool,
     pub in_guild: bool,
@@ -273,6 +275,9 @@ impl Authority {
         if method == "GET"
             && let Some(id) = target.strip_prefix("/api/v1/native-account/bazaar/commands/")
         {
+            if let Some(status) = self.status_failure {
+                return (status, String::new());
+            }
             if let Some((_, receipt)) = self.commands.get_mut(id) {
                 if receipt.state == OperationState::Pending && !self.pending_first {
                     receipt.state = OperationState::Committed;
@@ -289,6 +294,6 @@ impl Authority {
     }
 }
 mod http;
-pub(crate) use http::test_thread;
 
 type TestResultWith<T> = Result<T, Box<dyn std::error::Error>>;
+pub(crate) use http::test_thread;

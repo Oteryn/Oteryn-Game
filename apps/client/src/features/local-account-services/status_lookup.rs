@@ -5,12 +5,12 @@ use std::{
     time::Duration,
 };
 
-pub(crate) const TIMEOUT: Duration = Duration::from_secs(15);
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static TEST_TIMEOUT: Duration;
+}
 
-pub(crate) async fn collect<F: Future>(
-    lookups: impl Iterator<Item = F>,
-    timeout: Duration,
-) -> Vec<Option<F::Output>> {
+pub(crate) async fn collect<F: Future>(lookups: impl Iterator<Item = F>) -> Vec<Option<F::Output>> {
     let mut pending: Vec<_> = lookups
         .enumerate()
         .map(|(index, future)| (index, Box::pin(future)))
@@ -30,6 +30,9 @@ pub(crate) async fn collect<F: Future>(
             Poll::Pending
         }
     });
+    let timeout = Duration::from_secs(15);
+    #[cfg(test)]
+    let timeout = TEST_TIMEOUT.try_with(|timeout| *timeout).unwrap_or(timeout);
     let _ = tokio::time::timeout(timeout, batch).await;
     results
 }

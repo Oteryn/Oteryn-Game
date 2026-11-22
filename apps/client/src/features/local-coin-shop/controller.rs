@@ -77,8 +77,8 @@ async fn apply(
                     .pending
                     .as_ref()
                     .map(|p| &p.request_id)
+                    .or_else(|| view.history.unverified.keys().next())
                     .or_else(|| view.order.as_ref().map(|o| &o.request_id))
-                    .or_else(|| view.uncertain.0.first())
                 {
                     Some(id) => id.clone(),
                     None => return Ok(()),
@@ -90,13 +90,20 @@ async fn apply(
                         .into();
                 return Ok(());
             }
+            if view
+                .order
+                .as_ref()
+                .is_some_and(|order| order.request_id == id)
+            {
+                view.checkout_unverified = true;
+            }
             match client.coin_order_status(token, &id, cancel.clone()).await {
                 Ok(order) => accept(view, order)?,
                 // The initial create itself was refused. A missing ID can confirm there
                 // was no order only while this grant has never observed a row for it.
                 Err(NativeLoginError::Platform(HttpStatus(404)))
                     if view.post_refusal_status == Some(409)
-                        && !view.uncertain.0.contains(&id)
+                        && !view.history.unverified.contains_key(&id)
                         && view.order.as_ref().is_none_or(|o| o.request_id != id) =>
                 {
                     view.prior.reconcile(&id);
@@ -109,7 +116,11 @@ async fn apply(
                         view.post_refusal_status = None;
                     }
                     if known_open_order(view, &id) {
-                        view.uncertain.0.insert(id);
+                        view.history
+                            .unverified
+                            .insert(id, crate::account_services::history::Evidence::Pending);
+                    } else if matches!(error, NativeLoginError::Platform(HttpStatus(404))) {
+                        view.history.missing(&id);
                     }
                     return Err(error);
                 }
@@ -192,25 +203,24 @@ async fn refresh(
         .coin_catalogue(token, view.character_id.as_deref(), cancel.clone())
         .await?;
     let listed = std::mem::take(&mut catalogue.recent_orders);
+    if view.order.as_ref().is_some_and(|selected| {
+        listed
+            .iter()
+            .any(|row| row.request_id == selected.request_id)
+    }) {
+        view.checkout_unverified = true;
+    }
     let lookups = listed
         .iter()
         .map(|row| client.coin_order_status(token, &row.request_id, cancel.clone()));
-    let results = crate::account_services::status_lookup::collect(
-        lookups,
-        crate::account_services::status_lookup::TIMEOUT,
-    )
-    .await;
+    let results = crate::account_services::status_lookup::collect(lookups).await;
     for (row, result) in listed.into_iter().zip(results) {
-        match result {
-            Some(Ok(order)) => catalogue.recent_orders.push(order),
-            Some(Err(NativeLoginError::Platform(HttpStatus(403 | 404))))
-                if !known_open_order(view, &row.request_id) =>
-            {
-                // A denial cannot associate a previously unseen order with this grant.
-            }
-            _ => {
-                view.uncertain.0.insert(row.request_id);
-            }
+        let pending = view
+            .pending
+            .as_ref()
+            .is_some_and(|request| request.request_id == row.request_id);
+        if let Some(order) = view.history.lookup_result(row.request_id, pending, result) {
+            catalogue.recent_orders.push(order);
         }
     }
     if let Some(request_id) = view
@@ -241,8 +251,8 @@ async fn refresh(
         accept(view, order.clone())?;
     }
     for order in &catalogue.recent_orders {
-        if order.state.completed() {
-            view.uncertain.0.remove(&order.request_id);
+        if !view.history.record(order) {
+            return Err(PlatformClientError::InvalidPayload.into());
         }
     }
     let balance = client.coin_balance(token, cancel).await?;
@@ -276,11 +286,7 @@ fn known_open_order(view: &View, id: &str) -> bool {
     view.pending
         .as_ref()
         .is_some_and(|request| request.request_id == id)
-        || view
-            .order
-            .iter()
-            .chain(view.catalogue.iter().flat_map(|c| &c.recent_orders))
-            .any(|o| o.request_id == id && !o.state.completed())
+        || view.history.known_open(id)
 }
 fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
     if let Some(request) = &view.pending {
@@ -297,18 +303,7 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
             return Err(PlatformClientError::InvalidPayload.into());
         }
     }
-    if let Some(old) = &view.order
-        && old.request_id == order.request_id
-        && (old.order_id != order.order_id
-            || old.package_id != order.package_id
-            || old.quote_id != order.quote_id
-            || old.character_id != order.character_id
-            || old.coins != order.coins
-            || old.price != order.price
-            || order.revision < old.revision
-            || (order.revision == old.revision && old != &order)
-            || !order.state.can_follow(old.state))
-    {
+    if !view.history.record(&order) {
         return Err(PlatformClientError::InvalidPayload.into());
     }
     if view
@@ -319,9 +314,6 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
         view.pending = None;
         view.confirmed = None;
         view.post_refusal_status = None;
-    }
-    if order.state.completed() {
-        view.uncertain.0.remove(&order.request_id);
     }
     view.prior.reconcile(&order.request_id);
     view.quote_until.remove(&order.quote_id);

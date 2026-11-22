@@ -34,7 +34,7 @@ pub struct View {
     pending: Option<CoinOrderRequest>,
     post_refusal_status: Option<u16>,
     checkout_unverified: bool,
-    uncertain: crate::account_services::Unverified,
+    history: crate::account_services::HistoryStatus<CoinOrder>,
     confirmed: Option<CoinPackage>,
     quote_until: BTreeMap<String, Instant>,
 }
@@ -59,7 +59,7 @@ impl View {
         }
     }
     pub fn pending(&self) -> bool {
-        self.pending.is_some() || !self.uncertain.0.is_empty()
+        self.pending.is_some() || !self.history.unverified.is_empty()
     }
     pub fn can_retry(&self) -> bool {
         self.pending.is_some() && self.post_refusal_status.is_none()

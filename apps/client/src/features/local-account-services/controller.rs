@@ -34,10 +34,7 @@ pub(super) async fn execute(
             .bazaar_page(token, view.selected_view, None, cancel.clone())
             .await
         {
-            Ok(page) => {
-                view.install_page(page, client, token, cancel, status_lookup::TIMEOUT)
-                    .await
-            }
+            Ok(page) => view.install_page(page, client, token, cancel).await,
             Err(_) => view.feedback.push_str(tr!(
                 " Balance refresh unavailable; the receipt is retained."
             )),
@@ -63,8 +60,7 @@ async fn apply(
                 .bazaar_page(token, kind, None, cancel.clone())
                 .await?;
             view.feedback = tr!("Server account data refreshed.").into();
-            view.install_page(page, client, token, cancel, status_lookup::TIMEOUT)
-                .await;
+            view.install_page(page, client, token, cancel).await;
             view.selected_view = kind;
             if view.post_refusal_status == Some(403) {
                 view.post_refusal_status = None;
@@ -77,8 +73,7 @@ async fn apply(
                 let page = client
                     .bazaar_page(token, view.selected_view, Some(cursor), cancel.clone())
                     .await?;
-                view.install_page(page, client, token, cancel, status_lookup::TIMEOUT)
-                    .await;
+                view.install_page(page, client, token, cancel).await;
             }
             return Ok(());
         }
@@ -175,13 +170,13 @@ async fn apply(
         Action::Status => {
             if let Some(id) = view
                 .pending_id()
-                .or_else(|| view.unverified.0.first().map(String::as_str))
+                .or_else(|| view.history.unverified.keys().next().map(String::as_str))
             {
                 match client.bazaar_status(token, id, cancel).await {
                     Ok(receipt) => accept(view, receipt),
                     Err(NativeLoginError::Platform(HttpStatus(404)))
                         if view.post_refusal_status == Some(409)
-                            && !view.unverified.0.contains(id)
+                            && !view.history.unverified.contains_key(id)
                             && !view.unresolved.contains(id) =>
                     {
                         view.prior.reconcile(id);
@@ -191,6 +186,8 @@ async fn apply(
                         view.feedback = tr!("The server refused the request").into();
                     }
                     Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
+                        let missing = id.to_owned();
+                        view.history.missing(&missing);
                         view.post_refusal_status = None;
                         return Err(error);
                     }
@@ -258,16 +255,19 @@ async fn submit(
     accept(view, result?);
     Ok(())
 }
-pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
-    view.unverified.0.remove(&receipt.request_id);
-    if view.receipt.as_ref().is_some_and(|old| {
-        old.request_id == receipt.request_id
-            && old.state != OperationState::Pending
-            && old != &receipt
-    }) {
+pub(super) fn verify(view: &mut View, receipt: &OperationReceipt) -> bool {
+    if !view.history.record(receipt) {
         view.feedback =
             tr!("Conflicting terminal receipt; keep the original receipt and contact support.")
                 .into();
+        return false;
+    }
+    view.history.unverified.remove(&receipt.request_id);
+    true
+}
+
+pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
+    if !verify(view, &receipt) {
         return;
     }
     if view
