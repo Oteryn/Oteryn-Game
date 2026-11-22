@@ -228,18 +228,31 @@ def admit(root, items, order):
     sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
     import build_source_item_profiles as native
     import lower_equip_abilities_packet as lowering
+    from grizzly_shop_profiles import accepted_first, known_conflict
 
     rows = source_rows(root)
     bindings = native.binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())
-    existing = {row['production_definition']['production_key'] for row in items['records']}
+    existing = {row['production_definition']['production_key']: row for row in items['records']}
     complete_boss_yield_pairs(root, items)
     for item_id, row in rows.items():
         if item_id in HELD | {23474, 23477}:
             continue
-        if item_key(item_id) in existing:
-            raise ValueError(f'equipment source identity collision {item_id}')
         record = profile(native, lowering, row, bindings)
         if 'transformequipto' in row['xml']:
             complete_paired_base(record, item_id, rows)
+        if (prior := existing.get(item_key(item_id))) is not None:
+            # Both audit slices include the spike shield. Keep the first slice's
+            # shield exclusion group and complete the other facts from slice two.
+            if item_id != 17810 or any(prior[field] != record[field] for field in
+                                      ('production_binding', 'production_definition', 'admission')):
+                raise ValueError(f'equipment source identity collision {item_id}')
+            pattern = prior['semantics']['equipment']['value']['patterns']['value'][0]
+            selected = record['semantics']['equipment']['value']['patterns']['value'][0]
+            selected['mutually_exclusive_groups'] = pattern['mutually_exclusive_groups']
+            if known_conflict(prior['semantics'], record['semantics']):
+                raise ValueError(f'equipment source semantics collision {item_id}')
+            prior['semantics'] = accepted_first(prior['semantics'], record['semantics'])
+            prior['attributes'] = record['attributes'] | prior['attributes']
+            continue
         items['records'].append(record)
     items['records'].sort(key=order)

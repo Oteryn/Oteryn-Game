@@ -12,13 +12,18 @@ from pathlib import Path
 import quest_batch3_item_profiles as crystal
 import ranged_item_profiles as ranged
 from build_activity_source_world import source_top_orders
+from grizzly_shop_profiles import accepted_first
 from item_spell_augments import parse_item_spell_augments
 from lower_elemental_magic_modifier_packet import native_order
+from nrwicked_profiles import REWARD_IDS
+from protected_loot_yields import ARBAZILOTH_HARD_ITEMS
 
 ROOT = crystal.ROOT
 PACKET = 'tools/content-schema/native-gameplay/crystal-equipment-slice-4.json'
 SCHEMA = 'OTERYN_CRYSTAL_EQUIPMENT_SLICE_4/v1'
 BASE = '3e09916423181c795c829eca5e5414dde3f29a3e'
+ARBAZILOTH_BASE = 'b878e74655af20a0883cc91169e344f9724e2fc7'
+ARBAZILOTH_KEYS = ARBAZILOTH_HARD_ITEMS | {f'oteryn:item.tibia.i{i}' for i in REWARD_IDS}
 BANK_SHA = '17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1'
 EXISTING = {43877, 43878, 43879, 43880, 50254, 50255}
 DONOR_TEST_ITEMS = {28464, 28465, 28466, 28478, 28479}
@@ -40,6 +45,18 @@ GLOBAL_FALLBACK = {
 
 def item_key(identifier):
     return f'oteryn:item.tibia.i{identifier}'
+
+
+def complete_arbaziloth_policy(prior, source):
+    """Fill donor facts without replacing the qualified Arbaziloth equipment."""
+    key = source['production_definition']['production_key']
+    if any(prior[field] != source[field] for field in
+           ('production_binding', 'production_definition', 'admission')):
+        raise ValueError(f'Crystal equipment Arbaziloth custody conflict: {key}')
+    return {**prior,
+            'semantics': accepted_first(prior['semantics'], source['semantics']),
+            'authoring': source['authoring'] | prior['authoring'],
+            'attributes': source['attributes'] | prior['attributes']}
 
 
 def audit_slice(root, xml, appearances):
@@ -159,6 +176,11 @@ def capture(root, directory):
     if held_ranged:
         raise ValueError(f'Unexpected unsupported Crystal ranged profiles: {held_ranged}')
 
+    prior_profiles = json.loads(subprocess.check_output(
+        ['git', 'show', f'{ARBAZILOTH_BASE}:content/items/definitions/spell-native-profiles.json'],
+        cwd=root))
+    arbaziloth = {key: row for row in prior_profiles['records']
+                 if (key := row['production_definition']['production_key']) in ARBAZILOTH_KEYS}
     known, unknown, na = source.K, source.U, source.NA
     order = native_order(root)
     rows = []
@@ -242,8 +264,10 @@ def capture(root, directory):
             if profile['kind'] == 'WAND' and 'DRUID' in vocation:
                 profile['kind'] = 'ROD'
             record['authoring']['ranged'] = profile
+        if (key := item_key(identifier)) in ARBAZILOTH_KEYS:
+            record = complete_arbaziloth_policy(arbaziloth[key], record)
         rows.append(record)
-    return {'schema': SCHEMA, 'base': BASE, 'source_revision': crystal.REVISION,
+    return {'schema': SCHEMA, 'base': BASE, 'arbaziloth_base': ARBAZILOTH_BASE, 'source_revision': crystal.REVISION,
             'source_files': SOURCE_FILES, 'source_lines': {str(i): lines[i] for i in ids},
             'global_fallback': {'source': GLOBAL, 'fields': GLOBAL_FALLBACK},
             'existing': sorted(EXISTING), 'held': sorted(HELD),
@@ -255,6 +279,7 @@ def apply(root, document, order):
     records = packet['records']
     if (packet['schema'] != SCHEMA or packet['source_revision'] != crystal.REVISION
             or packet['source_files'] != SOURCE_FILES or packet['base'] != BASE
+            or packet['arbaziloth_base'] != ARBAZILOTH_BASE
             or packet['existing'] != sorted(EXISTING) or packet['held'] != sorted(HELD)
             or packet['held_ranged'] != sorted(AREA_ARROWS)):
         raise ValueError('Crystal equipment receipt pin mismatch')
@@ -266,6 +291,14 @@ def apply(root, document, order):
     for identifier, record in zip(ids, records, strict=True):
         key = item_key(identifier)
         prior = by_key.get(key)
+        if key in ARBAZILOTH_KEYS:
+            if prior is None:
+                raise ValueError(f'Missing prior Arbaziloth equipment: {identifier}')
+            composed = complete_arbaziloth_policy(prior, record)
+            if composed != record:
+                raise ValueError(f'Crystal equipment Arbaziloth policy drift: {identifier}')
+            prior.update(composed)
+            continue
         if prior is None and identifier not in EXISTING:
             document['records'].append(record)
             continue
