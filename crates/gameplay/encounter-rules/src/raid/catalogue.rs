@@ -572,6 +572,21 @@ mod tests {
     }
 
     #[test]
+    fn gorga_source_spawn_is_admitted_by_the_raid_loader() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let catalogue = RaidCatalogue::embedded()?;
+        let raid = catalogue
+            .get(&ProductionKey::new("raid:porthope.gorga")?)
+            .ok_or("Gorga raid")?;
+        let selected = raid.select([1; 32], [1; 16])?;
+        let entries = &selected.definition.waves[0].entries;
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].creature.as_str(), "oteryn:creature.gorga");
+        assert_eq!(entries[0].count, 1);
+        Ok(())
+    }
+
+    #[test]
     fn gorga_raid_selects_the_exact_crystal_single_spawn() -> Result<(), Box<dyn std::error::Error>>
     {
         let catalogue = RaidCatalogue::embedded()?;

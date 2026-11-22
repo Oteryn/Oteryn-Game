@@ -407,7 +407,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "cyclopedia-creatures-crystal-201189f-r1"
     );
     // Both Crystal admissions preserve the historical cohort.
-    assert_eq!(project.imports().len(), 39);
+    assert_eq!(project.imports().len(), 40);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -422,6 +422,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 && b.batch_id != "item-client-market-mint-2dfa943b"
                 && b.batch_id != "seasonal-cake-creature-crystal-201189f-r1"
                 && b.batch_id != "questpc7-thaian-wiki-chosen-r1"
+                && b.batch_id != "creature-parity-crystal-201189f-r1"
                 && b.batch_id != "crystal-spawn-delta-creatures-201189f8-r1"
         })
         .collect();
@@ -1642,6 +1643,20 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "crystalserver-creature-1530:201189f871d23597b82caf88fd611454a2ddefb8"
     );
     assert_eq!(cake_source.sha256, world_project_sha256(cake_bytes));
+    let parity_bytes =
+        include_bytes!("../../../imports/crystalserver/creature-parity-201189f.json");
+    let parity: serde_json::Value =
+        serde_json::from_slice(parity_bytes).expect("Crystal parity source receipt");
+    let parity_bindings: Vec<ProjectV2SourceIdentityBinding> = parity["definitions"]
+        .as_array()
+        .expect("Crystal parity definitions")
+        .iter()
+        .map(|row| serde_json::from_value(row["binding"].clone()).expect("Crystal bound Creature"))
+        .collect();
+    let parity_source = source_for("creature-parity-crystal-201189f-r1");
+    assert_eq!(parity_source.key, "oteryn:source.crystalserver");
+    assert_eq!(parity_source.sha256, world_project_sha256(parity_bytes));
+    let mut parity_seen = 0;
     let crystal_spawn_source = source_for(&crystal.batch_id);
     assert_eq!(crystal_spawn_source.key, "oteryn:source.crystalserver");
     assert_eq!(crystal_spawn_source.revision, crystal.source_revision);
@@ -1754,6 +1769,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 ProjectV2SourceIdentityDisposition::Exact
             );
             thaian_wiki_bindings += 1;
+            continue;
+        }
+        if binding.source_key == parity_source.key
+            && binding.source_revision == parity_source.revision
+        {
+            assert!(parity_bindings.contains(binding));
+            assert!(creature_files.insert(&binding.external_id));
+            parity_seen += 1;
             continue;
         }
         if cake_bindings.contains(binding) {
@@ -1931,6 +1954,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(crystal_encounter_count, 4);
     assert_eq!(extra_item_count, 22);
     assert_eq!(crystal_creatures, 196);
+    assert_eq!(parity_seen, parity_bindings.len());
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
     assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));

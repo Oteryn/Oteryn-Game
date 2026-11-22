@@ -2262,6 +2262,79 @@ mod tests {
     };
     use serde_json::Value;
     #[test]
+    fn crystal_creature_admissions_activate_exact_source_health()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = test_source(1)?.world_id;
+        let supplied = NativeGameplayInput::from_manifest(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json"),
+        )?;
+        let (controller, _) = test_support::try_activate_input(world, &supplied)
+            .map_err(|error| format!("{error:?}"))?;
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("active NativeGameplay")?;
+        let packet: Value = serde_json::from_slice(include_bytes!(
+            "../../../../../imports/crystalserver/creature-parity-201189f.json"
+        ))?;
+        let mut missing = Vec::new();
+        for row in packet["definitions"]
+            .as_array()
+            .ok_or("Crystal Creature definitions")?
+        {
+            let identity: ProjectV2DefinitionRef = serde_json::from_value(row["identity"].clone())?;
+            let source = row["profiles"]
+                .as_array()
+                .ok_or("source profiles")?
+                .iter()
+                .find(|profile| profile["target"] == row["identity"])
+                .ok_or("exact source Creature profile")?;
+            let loaded = native
+                .creature_profiles()
+                .records
+                .iter()
+                .find(|record| record.profile.target == identity);
+            let Some(loaded) = loaded else {
+                missing.push(identity.key);
+                continue;
+            };
+            let ProjectV2AuthoringProfileData::Creature(profile) = &loaded.profile.data else {
+                return Err("native Creature profile".into());
+            };
+            assert_eq!(
+                profile.health,
+                source["data"]["profile"]["health"].as_u64(),
+                "{}",
+                identity.key
+            );
+        }
+        assert!(
+            missing.is_empty(),
+            "missing Creature definitions: {missing:?}"
+        );
+        let items: std::collections::HashMap<_, _> = native
+            .item_profiles()
+            .map(|record| (record.production_definition.production_key.as_str(), record))
+            .collect();
+        for row in packet["item_admissions"]
+            .as_array()
+            .ok_or("Crystal Item admissions")?
+        {
+            let source: ItemProfileRecord = serde_json::from_value(row["record"].clone())?;
+            let key = source.production_definition.production_key.as_str();
+            let admitted = items.get(key).ok_or_else(|| format!("missing {key}"))?;
+            assert_eq!(admitted.admission, source.admission, "{key}");
+            if source.admission.legal_destinations == [NativeItemDestination::Ground] {
+                assert_eq!(
+                    admitted.semantics.temporal, source.semantics.temporal,
+                    "{key}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn m25_complete_canonical_item_policies_qualify_before_boss_admission()
     -> Result<(), ContentError> {
         let world = test_source(1)?.world_id;
@@ -5201,7 +5274,7 @@ mod source_item_closure_tests {
                 }
             }
         }
-        assert_eq!((create, remove), (64, 20));
+        assert_eq!((create, remove), (64, 21));
         Ok(())
     }
     #[test]

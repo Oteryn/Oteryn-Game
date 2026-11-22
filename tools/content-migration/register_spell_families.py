@@ -644,6 +644,13 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # policies; only qualified rotation/USE and top-order facts are enriched.
     import first_dragon_item_profiles
     first_dragon_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import crystal_creature_parity
+    parity, _ = crystal_creature_parity.read_packet(root)
+    qengine_reward_item_profiles.admit_records(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST,
+        provider_order, spell_import.canonical_bytes,
+        [row['record'] for row in parity['item_admissions']],
+    )
     import house_decoration_actions
     house_decoration_actions.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Shop/chest admission adds ranged Items after the earlier owner overlays.
@@ -694,6 +701,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     imbuement_item_profiles.complete_boots(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
+    crystal_creature_parity.apply_native(root, generated)
     import crystal_spawn_creatures
     crystal_spawn_creatures.admit(root, generated)
     import cyclopedia_creatures

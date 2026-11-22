@@ -99,6 +99,19 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
         1,
         "one separately qualified Thaian source batch"
     );
+    let parity: Vec<_> = batches
+        .iter()
+        .filter(|batch| batch.batch_id == "creature-parity-crystal-201189f-r1")
+        .collect();
+    assert_eq!(parity.len(), 1, "one Crystal creature parity source batch");
+    assert_eq!(
+        parity[0].source_artifact_sha256,
+        world_project_sha256(include_bytes!(
+            "../../../../imports/crystalserver/creature-parity-201189f.json"
+        ))
+    );
+    assert!(parity[0].candidates.is_empty());
+    assert!(parity[0].reimport_states.is_empty());
     let crystal = batches
         .iter()
         .filter(|batch| batch.batch_id == "crystal-spawn-delta-creatures-201189f8-r1")
@@ -120,7 +133,7 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
         ))
     );
     assert_eq!(
-        batches.len() - cake.len() - thaian.len() - crystal.len() - cyclopedia.len(),
+        batches.len() - cake.len() - thaian.len() - crystal.len() - cyclopedia.len() - parity.len(),
         34,
         "all historical source batches retained"
     );
