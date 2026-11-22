@@ -2,8 +2,8 @@
 //!
 //! These retain the accepted names, chances, weights and reference provenance while native
 //! layers/value-source multiplicity/spawn/NPC/raid/announcement bindings remain unavailable.
-//! Validation below checks those source facts only. It cannot admit a bundle or activate a
-//! change. There is no runtime/default preset, RNG draw, geometry or World/Channel authority.
+//! Validation checks those source facts only. The native daily owner provides the physical
+//! bindings and consumes the Fury Gates activation chance.
 
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
@@ -124,6 +124,23 @@ impl WorldChangeSelection<'_> {
             Err(WorldChangeBindingsUnavailable)
         }
     }
+}
+
+/// The authored entrance chance for the already bound Fury Gates daily layers.
+pub fn fury_gate_activation_permille() -> Option<u16> {
+    const SOURCE: &str = include_str!(
+        "../../../../content/encounters/world-changes/fury_gates/selection-source.json"
+    );
+    static CHANCE: std::sync::LazyLock<Option<u16>> = std::sync::LazyLock::new(|| {
+        let candidate: WorldChangeCandidate = serde_json::from_str(SOURCE).ok()?;
+        validate_candidates(std::slice::from_ref(&candidate)).ok()?;
+        let Trigger::AtReset { chance_permille } = candidate.trigger else {
+            return None;
+        };
+        (candidate.key == "fury_gates" && candidate.kind == ChangeKind::WorldChange)
+            .then_some(chance_permille)
+    });
+    *CHANCE
 }
 
 /// Compile only the owned selection-source. No W1 schema or gameplay bindings are emitted.

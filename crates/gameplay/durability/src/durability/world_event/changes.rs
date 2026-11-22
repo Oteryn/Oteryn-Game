@@ -4,6 +4,7 @@
 use super::*;
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use oteryn_gameplay_world_change::{
+    content::fury_gate_activation_permille,
     daily::{DailyCandidates, DailyWorldChanges},
     owner::{CATALOGUE_JSON, ContributionKind, add_contribution},
 };
@@ -140,6 +141,8 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
         stampede_permille: stampede.ok_or(DurabilityError::InvalidStoredState)?,
         // Held content never enters a production daily draw.
         fire_earth_permille: fire_earth.unwrap_or(0),
+        fury_gate_permille: fury_gate_activation_permille()
+            .ok_or(DurabilityError::InvalidStoredState)?,
     })
 }
 

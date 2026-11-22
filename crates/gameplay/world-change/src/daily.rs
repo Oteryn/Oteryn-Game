@@ -153,6 +153,7 @@ pub struct DailyCandidates {
     pub trader_percent: u8,
     pub stampede_permille: u16,
     pub fire_earth_permille: u16,
+    pub fury_gate_permille: u16,
 }
 
 /// An admitted static layer identity, reconstructed from its owned persisted name.
@@ -212,6 +213,7 @@ impl DailyWorldChanges {
                 trader_percent: ORIENTAL_TRADER_PERCENT,
                 stampede_permille: 125,
                 fire_earth_permille: 199,
+                fury_gate_permille: crate::content::fury_gate_activation_permille().unwrap_or(0),
             },
             draw,
         )
@@ -247,9 +249,9 @@ impl DailyWorldChanges {
             (u128::from(draw(stampede)) * 1000) >> 64 < u128::from(candidates.stampede_permille);
         let fire_from_the_earth =
             (u128::from(draw(fire)) * 1000) >> 64 < u128::from(candidates.fire_earth_permille);
-        // EVENTS-WORLD-1 W10/W15 intentionally replaces donor unconditional availability.
-        let fury_active = (u128::from(draw(fury)) * 1000) >> 64 < 343;
-        let fury_exit = FURY_LAYERS[choice(draw(fury_town), 10) as usize];
+        let fury_active =
+            (u128::from(draw(fury)) * 1000) >> 64 < u128::from(candidates.fury_gate_permille);
+        let fury_exit = FURY_LAYERS[choice(draw(fury_town), FURY_LAYERS.len() as u64) as usize];
         let fury_gates = fury_active.then_some(fury_exit);
         let nightmare_isles = NIGHTMARE_LAYERS[choice(draw(nightmare), 3) as usize];
         Self {
@@ -281,7 +283,7 @@ impl DailyWorldChanges {
             .collect()
     }
 
-    /// Return choice stays available when the entrance is inactive (W10's343permille).
+    /// Return choice stays available when the entrance is inactive.
     pub fn exit_layers(&self) -> [&'static str; 1] {
         [self.fury_exit]
     }
