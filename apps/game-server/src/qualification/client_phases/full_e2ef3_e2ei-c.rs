@@ -39,13 +39,8 @@ fn nearby(a: TilePos, b: TilePos) -> bool {
     a.floor == b.floor && a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)) <= 1
 }
 
-async fn travel(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    goal: impl Fn(TilePos) -> bool,
-) -> TestResult {
-    let from = tile(client.world_spatial().actor_position)?;
-    let occupied: Vec<_> = client
+fn occupied_tiles(client: &DevClientSession) -> BTreeSet<TilePos> {
+    client
         .world_entities()
         .into_iter()
         .flat_map(|entities| entities.others())
@@ -56,9 +51,38 @@ async fn travel(
             )
         })
         .filter_map(|entity| tile(entity.position).ok())
-        .collect();
+        .collect()
+}
+
+fn hunt_landing_available(at: TilePos, occupied: &BTreeSet<TilePos>) -> bool {
+    route_available(at) && at != WOLF_TILE && !occupied.contains(&at)
+}
+
+fn spawn_route(
+    client: &DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+    approaches: &BTreeSet<TilePos>,
+) -> Result<Vec<StepDirection>, usize> {
+    let occupied = occupied_tiles(client);
+    find_route(
+        from,
+        |at| approaches.contains(&at) && hunt_landing_available(at, &occupied),
+        |at, step| {
+            destination(world, at, step).filter(|next| hunt_landing_available(*next, &occupied))
+        },
+    )
+}
+
+async fn travel(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    goal: impl Fn(TilePos) -> bool,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let occupied = occupied_tiles(client);
     let path = route_avoiding(world, from, goal, |at| {
-        route_available(at) && at != WOLF_TILE && !occupied.contains(&at)
+        hunt_landing_available(at, &occupied)
     })
     .ok_or_else(|| {
         format!("no served route from {from:?} avoiding occupied cells and {WOLF_TILE:?}")
@@ -185,15 +209,7 @@ impl Hunt<'_> {
             return Err(format!("no compiled non-protection approach to {sources:?}").into());
         }
         let from = tile(client.world_spatial().actor_position)?;
-        let path = find_route(
-            from,
-            |at| approaches.contains(&at),
-            |at, step| {
-                destination(self.world, at, step)
-                    .filter(|next| route_available(*next) && *next != WOLF_TILE)
-            },
-        )
-        .map_err(|visited| {
+        let path = spawn_route(client, self.world, from, &approaches).map_err(|visited| {
             format!("no served route to {sources:?} from {from:?} after {visited} cells")
         })?;
         for step in path {
@@ -244,14 +260,7 @@ impl Hunt<'_> {
                         || cell.x.abs_diff(here.x).max(cell.y.abs_diff(here.y)) > 8
                 });
                 if !approaches.is_empty()
-                    && let Ok(path) = find_route(
-                        here,
-                        |at| approaches.contains(&at),
-                        |at, step| {
-                            destination(self.world, at, step)
-                                .filter(|next| route_available(*next) && *next != WOLF_TILE)
-                        },
-                    )
+                    && let Ok(path) = spawn_route(client, self.world, here, &approaches)
                 {
                     for step in path {
                         if Instant::now() >= deadline {
@@ -1235,4 +1244,16 @@ fn vendor_placement_allows_two_tiles_of_wander_on_same_floor() {
         },
         at
     ));
+}
+
+#[test]
+fn hunt_landing_rejects_a_visible_occupant() {
+    let adjacent = TilePos {
+        x: TOWN.x + 1,
+        ..TOWN
+    };
+    let occupied = BTreeSet::from([adjacent]);
+    assert!(!hunt_landing_available(adjacent, &occupied));
+    assert!(hunt_landing_available(TOWN, &occupied));
+    assert!(!hunt_landing_available(WOLF_TILE, &BTreeSet::new()));
 }
