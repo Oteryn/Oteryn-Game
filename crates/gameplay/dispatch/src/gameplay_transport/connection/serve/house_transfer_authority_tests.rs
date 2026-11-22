@@ -372,3 +372,143 @@ fn counted_move_checks_trade_reservation_before_reaching_writer() -> Result<(), 
         Ok(())
     })
 }
+
+#[derive(Default)]
+struct PendingPodiumAuthority {
+    commands: crate::gameplay_transport::session_ingress::SessionCommands,
+    query_ready: tokio::sync::Notify,
+    periodic_ready: tokio::sync::Notify,
+    periodic_continue: tokio::sync::Notify,
+    fail_periodic_write: bool,
+}
+
+impl FreshAdmissionAuthority for PendingPodiumAuthority {
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    fn session_commands(
+        &self,
+    ) -> Option<&crate::gameplay_transport::session_ingress::SessionCommands> {
+        Some(&self.commands)
+    }
+
+    async fn house_scope_ack(&self, _: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        Ok(Some((1, vec![1])))
+    }
+
+    async fn actor_step_deadline(&self, _: ExactActorRef) -> Option<Instant> {
+        Some(Instant::now() + Duration::from_secs(30))
+    }
+
+    async fn house_podium_approach(&self, _: AdmittedSession, _: [u8; 16]) -> Approach {
+        self.query_ready.notify_one();
+        Approach::Walk(vec![StepDirection::East])
+    }
+
+    async fn observe_house_vitals(
+        &self,
+        _: ExactActorRef,
+        _: AdmittedSession,
+    ) -> Option<(u64, ActorVitals)> {
+        if !self.fail_periodic_write {
+            return None;
+        }
+        self.periodic_ready.notify_one();
+        self.periodic_continue.notified().await;
+        Some((
+            2,
+            ActorVitals {
+                health: 184,
+                max_health: 185,
+                mana: 90,
+                max_mana: 90,
+                soul: 100,
+                harmony: 2,
+                serene: true,
+            },
+        ))
+    }
+}
+
+#[test]
+fn house_podium_reservation_allows_reconnect_after_read_or_periodic_write_failure()
+-> Result<(), String> {
+    run_command_test(|| async {
+        tokio::time::pause();
+        for fail_periodic_write in [false, true] {
+            let owner = PendingPodiumAuthority {
+                fail_periodic_write,
+                ..Default::default()
+            };
+            let (mut admitted, _) = command_fixture(&[49, 150, 508])?;
+            admitted.continuity.vitals_revision = 1;
+            assert!(
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .domain_selected(STATE_DOMAIN_ACTOR_VITALS)
+            );
+            let (mut server, mut client) = tokio::io::duplex(1 << 16);
+            let query = oteryn_protocol_oteryn::encode_client_command(
+                admitted.continuity.connection_generation,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id: 1,
+                    command_type: COMMAND_QUERY,
+                    payload: &[1; 16],
+                },
+            )
+            .map_err(|e| format!("{e:?}"))?;
+            write_frame(&mut client, &query)
+                .await
+                .map_err(|e| e.to_string())?;
+            let client = async {
+                owner.query_ready.notified().await;
+                if fail_periodic_write {
+                    owner.periodic_ready.notified().await;
+                }
+                drop(client);
+                owner.periodic_continue.notify_one();
+            };
+            let mut messages = None;
+            let mut integrity = integrity::Integrity::default();
+            let (result, ()) = tokio::time::timeout(Duration::from_secs(4), async {
+                tokio::join!(
+                    serve(
+                        &mut server,
+                        admitted,
+                        &owner,
+                        &owner,
+                        &mut messages,
+                        IDLE_LIVENESS,
+                        &mut integrity,
+                        false,
+                    ),
+                    client
+                )
+            })
+            .await
+            .map_err(|e| e.to_string())?;
+            let Err(end) = result else {
+                return Err("expected House connection loss".into());
+            };
+            let ConnectionEnd::AdmittedThenDisconnected(mut ended) = *end else {
+                return Err("unexpected House connection end".into());
+            };
+            assert_eq!(ended.continuity.next_command_id, 2);
+            assert!(owner.commands.resumable(&ended));
+            ended.continuity.connection_generation += 1;
+            assert!(
+                crate::gameplay_transport::session_ingress::SessionCommandStream::open(
+                    Some(&owner.commands),
+                    &ended,
+                )
+                .is_some()
+            );
+        }
+        Ok(())
+    })
+}

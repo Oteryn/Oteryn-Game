@@ -86,6 +86,8 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
     integrity: &mut integrity::Integrity,
     require_session_binding: bool,
 ) -> Result<AdmittedSession, Box<ConnectionEnd>> {
+    let mut pending_podium = None::<PodiumWalk>;
+    let mut command_stream = None;
     let run = async {
         let (_, projection) = authority
             .house_scope_ack(admitted)
@@ -151,14 +153,14 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     .ok_or(ServeEnd::Disconnected)?,
             );
         }
-        let mut commands = crate::gameplay_transport::session_ingress::SessionCommandStream::open(
+        let commands = crate::gameplay_transport::session_ingress::SessionCommandStream::open(
             authority.session_commands(),
             &admitted,
         )
         .ok_or(ServeEnd::Disconnected)?;
         let generation = admitted.continuity.connection_generation;
         let mut queue = house_hireling::step::Queue::default();
-        let mut podium = None::<PodiumWalk>;
+        let commands = command_stream.insert(commands);
         let mut liveness = Liveness::new(policy);
         let mut cadence = tokio::time::interval_at(
             tokio::time::Instant::now() + policy.interval,
@@ -192,21 +194,8 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 })
                 .await
                 {
-                    Some(event) => event,
+                    Some(event) => event?,
                     None => continue,
-                }
-            };
-            let event = match event {
-                Ok(event) => event,
-                Err(end) => {
-                    if let Some(walk) = podium.take() {
-                        // The pending query never reached its owner, so its reservation
-                        // can retain a cancellation even if the client socket is gone.
-                        let _ = walk
-                            .finish(stream, &mut admitted, &mut commands, refused())
-                            .await;
-                    }
-                    return Err(end);
                 }
             };
             // Refresh before ingress/probes, not immediately after a reply: stash and
@@ -251,18 +240,18 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     continue;
                 }
                 house_hireling::step::Event::PodiumWalk => {
-                    let mut walk = podium.take().ok_or(ServeEnd::Disconnected)?;
+                    let walk = pending_podium.as_mut().ok_or(ServeEnd::Disconnected)?;
                     match walk
                         .advance(stream, authority, &mut services, &mut admitted)
                         .await?
                     {
                         PodiumTurn::Wait(due) => {
                             queue.set_podium_due(Some(due));
-                            podium = Some(walk);
                         }
                         PodiumTurn::Finish(dispatch) => {
                             integrity.observe(&dispatch);
-                            walk.finish(stream, &mut admitted, &mut commands, dispatch)
+                            let walk = pending_podium.take().ok_or(ServeEnd::Disconnected)?;
+                            walk.finish(stream, &mut admitted, commands, dispatch)
                                 .await?;
                         }
                     }
@@ -298,13 +287,13 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             // Ingress permits one outstanding command. As with Channel item
             // walks, a new action (including a manual STEP) first cancels the
             // reserved automatic action. Retransmissions stay attached to it.
-            if let Some(walk) = podium.take() {
+            if let Some(walk) = pending_podium.take() {
                 if walk.command_id.checked_add(1) == Some(command.command_id) {
                     queue.set_podium_due(None);
-                    walk.finish(stream, &mut admitted, &mut commands, refused())
+                    walk.finish(stream, &mut admitted, commands, refused())
                         .await?;
                 } else {
-                    podium = Some(walk);
+                    pending_podium = Some(walk);
                 }
             }
             let limited = if buffered_original {
@@ -427,7 +416,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                             .await
                             .ok_or(ServeEnd::Disconnected)?,
                         Approach::Walk(steps) => {
-                            podium = Some(PodiumWalk {
+                            pending_podium = Some(PodiumWalk {
                                 command_id: command.command_id,
                                 item,
                                 steps: steps.into(),
@@ -546,6 +535,11 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         }
     }
     .await;
+    // All exits share the same retained outcome, even after a periodic
+    // write failure or a failed step projection with the walk still pending.
+    if let (Some(walk), Some(commands)) = (pending_podium, command_stream.as_mut()) {
+        let _ = walk.retain_result(&mut admitted, commands, refused());
+    }
     run.map_err(|end| Box::new(end.finish(admitted)))
 }
 
@@ -645,6 +639,18 @@ impl PodiumWalk {
         commands: &mut crate::gameplay_transport::session_ingress::SessionCommandStream,
         dispatch: Dispatch,
     ) -> Result<(), ServeEnd> {
+        let frame = self.retain_result(admitted, commands, dispatch)?;
+        write_frame(stream, &frame)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)
+    }
+
+    fn retain_result(
+        self,
+        admitted: &mut AdmittedSession,
+        commands: &mut crate::gameplay_transport::session_ingress::SessionCommandStream,
+        dispatch: Dispatch,
+    ) -> Result<Vec<u8>, ServeEnd> {
         let (status, payload) =
             house_hireling::result(admitted.continuity.selected_capabilities, &dispatch)?;
         let sequence = admitted
@@ -665,8 +671,6 @@ impl PodiumWalk {
             .ok_or(ServeEnd::Disconnected)?;
         admitted.continuity.server_sequence = sequence;
         admitted.continuity.next_command_id = commands.next_command_id();
-        write_frame(stream, &frame)
-            .await
-            .map_err(|_| ServeEnd::Disconnected)
+        Ok(frame)
     }
 }
