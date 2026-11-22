@@ -118,21 +118,31 @@ mod tests {
     }
 
     #[tokio::test(start_paused = true)]
-    async fn busy_discovery_retries_immediately_if_holder_returned_before_wait() {
+    async fn busy_discovery_retries_immediately_if_holder_returned_during_ready_check() {
         let start = Instant::now();
         let returned = Notify::new();
+        let ready = Cell::new(false);
         let wake = SoulpitWake::DiscoveryBusy {
             room_due: None,
             refused_at: 0,
         };
-        tokio::time::advance(Duration::from_millis(4)).await;
-        returned.notify_waiters();
-        let returned_at = Instant::now();
 
-        wait_for_wake(wake, 1_000_000, 4_000, || true, || returned.notified()).await;
+        wait_for_wake(
+            wake,
+            1_000_000,
+            0,
+            || {
+                let was_ready = ready.replace(true);
+                if !was_ready {
+                    returned.notify_waiters();
+                }
+                was_ready
+            },
+            || returned.notified(),
+        )
+        .await;
 
-        assert_eq!(Instant::now(), returned_at);
-        assert_eq!(start.elapsed(), Duration::from_millis(4));
+        assert_eq!(Instant::now(), start, "holder return must skip the backoff");
     }
 
     #[test]
