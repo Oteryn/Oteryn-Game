@@ -890,13 +890,15 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             let fence = if item_moves.is_empty() && item_retirements.is_empty() {
                 None
             } else {
-                let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-                    return;
-                };
-                Some(fence.item_fence())
+                match self.current_quest_fence(session).await {
+                    Ok(Some(fence)) => Some(fence.item_fence()),
+                    _ if item_moves.is_empty() => None,
+                    _ => return,
+                }
             };
-            if !item_retirements.is_empty() {
-                let Some(fence) = fence else { return };
+            if let Some(fence) = fence
+                && !item_retirements.is_empty()
+            {
                 let retirements = item_retirements
                     .into_iter()
                     .map(|item| match item {
@@ -919,12 +921,22 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let result = self
                     .root
-                    .retire_door_ground(permit, self.character, self.holder, fence, request)
+                    .retire_door_ground(permit, self.character, self.holder, fence, request.clone())
                     .await;
-                self.states.loop_ground.invalidate();
-                if result.is_err() {
-                    return;
+                if matches!(
+                    result,
+                    Err(crate::durability::DurabilityError::CommitOutcomeUnknown
+                        | crate::durability::DurabilityError::RootUnavailable)
+                ) {
+                    // The same receipt or tombstone resolves a lost commit reply.
+                    let _ = self
+                        .root
+                        .retire_door_ground(permit, self.character, self.holder, fence, request)
+                        .await;
                 }
+                // A storage refusal retains existing custody. Still seal the
+                // protected doorway, subject to the normal live census below.
+                self.states.loop_ground.invalidate();
             }
             for (item, to) in item_moves {
                 let mut hasher = Sha256::new()

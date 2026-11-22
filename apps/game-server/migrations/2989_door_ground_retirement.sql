@@ -49,7 +49,8 @@ CREATE TRIGGER game_door_ground_receipt_admit
 -- receipt for this root and source is terminal, including after a lost reply.
 CREATE FUNCTION game_retire_door_ground(
     p_item UUID, p_session UUID, p_world UUID, p_channel UUID, p_instance UUID,
-    p_generation NUMERIC, p_position BYTEA, p_map_revision TEXT, p_content_revision TEXT
+    p_generation NUMERIC, p_position BYTEA, p_map_revision TEXT, p_content_revision TEXT,
+    p_native_position BYTEA, p_native_map_revision TEXT
 ) RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
     prior game_door_ground_retirements%ROWTYPE;
@@ -72,8 +73,9 @@ BEGIN
             AND (prior.location_before->>'world_id')::uuid=p_world
             AND (prior.location_before->>'channel_id')::uuid IS NOT DISTINCT FROM p_channel
             AND (prior.location_before->>'instance_id')::uuid IS NOT DISTINCT FROM p_instance
-            AND (prior.location_before->>'spatial_position')::bytea=p_position
-            AND prior.location_before->>'map_revision'=p_map_revision
+            AND ((prior.location_before->>'spatial_position')::bytea,
+                 prior.location_before->>'map_revision')
+                IN ((p_position,p_map_revision),(p_native_position,p_native_map_revision))
             AND prior.location_before->>'content_revision'=p_content_revision;
     END IF;
     SELECT g.* INTO ground FROM game_item_ground_locations g
@@ -82,13 +84,18 @@ BEGIN
        AND g.channel_id IS NOT DISTINCT FROM p_channel
        AND g.instance_id IS NOT DISTINCT FROM p_instance
        AND g.runtime_scope_ownership_generation<=p_generation
-       AND g.spatial_position=p_position AND g.map_revision=p_map_revision
+       AND (g.spatial_position,g.map_revision)
+           IN ((p_position,p_map_revision),(p_native_position,p_native_map_revision))
        AND g.content_revision=p_content_revision AND i.lifecycle=1
-       AND NOT EXISTS (SELECT 1 FROM game_item_mint_receipts m
-                        WHERE m.item_instance_id=p_item
-                          AND m.loot_purpose_key='CORPSE_MATERIALIZATION')
      FOR UPDATE OF i;
     IF NOT FOUND THEN RETURN FALSE; END IF;
+    -- A corpse moved by the loop can appear in the ordinary Ground view.
+    -- Recheck its durable provenance independently of the projection.
+    IF game_item_plain_corpse_source(p_item)
+       OR EXISTS (SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=p_item
+                   AND m.loot_purpose_key='CORPSE_MATERIALIZATION') THEN
+        RETURN TRUE;
+    END IF;
     WITH RECURSIVE members(id) AS (
         SELECT p_item
         UNION
@@ -165,12 +172,12 @@ BEGIN
   END IF;
   EXECUTE overlay(body placing E'BEGIN\n'||arm FROM at_begin FOR 5);
  END LOOP;
- EXECUTE format('ALTER FUNCTION game_retire_door_ground(UUID,UUID,UUID,UUID,UUID,NUMERIC,BYTEA,TEXT,TEXT) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+ EXECUTE format('ALTER FUNCTION game_retire_door_ground(UUID,UUID,UUID,UUID,UUID,NUMERIC,BYTEA,TEXT,TEXT,BYTEA,TEXT) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $migration$;
 
 REVOKE ALL ON game_door_ground_retirements, game_door_authored_retirements FROM PUBLIC;
 GRANT SELECT, INSERT, UPDATE ON game_door_ground_retirements, game_door_authored_retirements TO oteryn_game_runtime;
 GRANT SELECT ON game_door_ground_retirements, game_door_authored_retirements TO oteryn_game_control;
 REVOKE ALL ON FUNCTION game_door_ground_receipt_admit() FROM PUBLIC;
-REVOKE ALL ON FUNCTION game_retire_door_ground(UUID,UUID,UUID,UUID,UUID,NUMERIC,BYTEA,TEXT,TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION game_retire_door_ground(UUID,UUID,UUID,UUID,UUID,NUMERIC,BYTEA,TEXT,TEXT) TO oteryn_game_runtime;
+REVOKE ALL ON FUNCTION game_retire_door_ground(UUID,UUID,UUID,UUID,UUID,NUMERIC,BYTEA,TEXT,TEXT,BYTEA,TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_retire_door_ground(UUID,UUID,UUID,UUID,UUID,NUMERIC,BYTEA,TEXT,TEXT,BYTEA,TEXT) TO oteryn_game_runtime;

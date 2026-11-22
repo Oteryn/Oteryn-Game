@@ -16,6 +16,7 @@ pub enum DoorGroundItem {
 
 /// The movement owner has already qualified the vacant protected doorway,
 /// its exact bundle and the movable, non-corpse sources on that tile.
+#[derive(Clone)]
 pub struct DoorGroundRetirement {
     pub door_key: u64,
     pub bundle_digest: [u8; 32],
@@ -80,8 +81,11 @@ impl DurabilityRoot {
                 let mut position = Vec::with_capacity(10);
                 position.extend_from_slice(&i32::from(door.x).to_be_bytes());
                 position.extend_from_slice(&i32::from(door.y).to_be_bytes());
+                let mut native_position = position.clone();
                 position.extend_from_slice(&i16::from(door.floor).to_be_bytes());
+                native_position.extend_from_slice(&(-i16::from(door.floor)).to_be_bytes());
                 let map_revision = map_revision_of(&request.bundle_digest);
+                let native_map_revision = map_revision_of(&Sha256::digest(map_revision.as_bytes()));
                 let content_revision = map_revision_of(&request.content_digest);
                 let channel = scope.channel_id().map(|id| *id.as_bytes());
                 let instance = scope.instance_id();
@@ -91,7 +95,7 @@ impl DurabilityRoot {
                             let retired: bool = sqlx::query_scalar(
                                 "SELECT game_retire_door_ground(encode($1,'hex')::uuid,encode($2,'hex')::uuid,
                                  encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,
-                                 $6::text::numeric,$7,$8,$9)",
+                                 $6::text::numeric,$7,$8,$9,$10,$11)",
                             )
                             .bind(item.as_slice())
                             .bind(fence.game_session_id.as_bytes().as_slice())
@@ -102,6 +106,8 @@ impl DurabilityRoot {
                             .bind(&position)
                             .bind(&map_revision)
                             .bind(&content_revision)
+                            .bind(&native_position)
+                            .bind(&native_map_revision)
                             .fetch_one(&mut *tx).await?;
                             if !retired {
                                 return Err(DurabilityError::CommitRejected);

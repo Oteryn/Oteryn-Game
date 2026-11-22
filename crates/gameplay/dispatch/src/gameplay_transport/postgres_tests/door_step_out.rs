@@ -302,6 +302,31 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
             after.is_empty(),
             "the stranded coin must leave Ground custody"
         );
+        let authored = crate::map::view::placement_key(DOORWAY, 2).ok_or("authored coin key")?;
+        {
+            use crate::durability::item_decay_retire::{DoorGroundItem, DoorGroundRetirement};
+            let permit = owner.spell_lane_permit().await.ok_or("Ground owner lane")?;
+            // Replay the same cleanup as if its first commit reply had been lost.
+            owner
+                .root
+                .retire_door_ground(
+                    &permit,
+                    &authority,
+                    owner.holder,
+                    fence,
+                    DoorGroundRetirement {
+                        door_key: door,
+                        bundle_digest: map.base().digest(),
+                        content_digest: native.source_digest(),
+                        reset_epoch: 0,
+                        items: vec![
+                            DoorGroundItem::Instance(item),
+                            DoorGroundItem::Authored(authored),
+                        ],
+                    },
+                )
+                .await?;
+        }
         let retired: (i16, i64, i64) = sqlx::query_as(
             "SELECT i.lifecycle, i.quantity, (SELECT count(*) FROM game_door_ground_retirements r
              WHERE r.item_instance_id=i.item_instance_id AND r.transaction_id=i.last_transaction_id)
@@ -311,7 +336,6 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
         .fetch_one(&harness.pool)
         .await?;
         assert_eq!(retired, (2, 0, 1));
-        let authored = crate::map::view::placement_key(DOORWAY, 2).ok_or("authored coin key")?;
         assert_eq!(
             owner
                 .root
