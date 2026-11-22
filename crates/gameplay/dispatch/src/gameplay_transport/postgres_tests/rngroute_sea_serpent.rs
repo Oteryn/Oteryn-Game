@@ -8,12 +8,23 @@ use crate::content::native_gameplay::test_support::activated_with_loot_tables;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::foundation::{ChannelContentPin, CommandId, CommandRef, WorldId};
-use oteryn_gameplay_quests::quest::{loader, sea_serpent as hunt};
+use oteryn_gameplay_quests::quest::loader;
 use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
 };
 use std::sync::Arc;
+
+// Pin the source expectations here so this regression test also compiles on the base.
+const KEY: &str = "oteryn:quest-callback/sea-serpent-telescope";
+const DRAW: &str = "oteryn:quest-progress/native/the_hunt_for_the_sea_serpent/telescope_draw";
+const TRACKS: [&str; 5] = [
+    "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
+    "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/bait",
+    "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/success_switch",
+    "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/direction",
+    "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/access",
+];
 
 #[test]
 fn rngroute_sea_serpent_telescope_use_replays_the_receipted_roll_and_state() -> TestResult {
@@ -125,7 +136,7 @@ async fn exercise(h: &Harness) -> TestResult {
         .ok_or("live fence")?;
     admitted.item_fence = Some(fence.item_fence());
     assert!(owner.ensure_source_map_initialized().await);
-    let ready = hunt::TRACKS[..4]
+    let ready = TRACKS[..4]
         .iter()
         .zip([1, 1, 1, 0])
         .map(|(key, value)| ((*key).to_owned(), value))
@@ -190,7 +201,7 @@ async fn exercise(h: &Harness) -> TestResult {
             owner.holder,
             fence,
             QuestTransitionRequest {
-                transition_key: hunt::KEY.into(),
+                transition_key: KEY.into(),
                 cause: QuestCause::Use(CommandRef::new(
                     session,
                     CommandId::new(command).map_err(debug)?,
@@ -215,7 +226,7 @@ async fn exercise(h: &Harness) -> TestResult {
             .map(|change| change.after)
             .ok_or("receipt track")
     };
-    let roll = after(hunt::DRAW)?;
+    let roll = after(DRAW)?;
     assert!((1..=240).contains(&roll));
     let appearance = 1 + (roll - 1) % 10;
     let detail = (roll - 1) / 10;
@@ -228,10 +239,10 @@ async fn exercise(h: &Harness) -> TestResult {
     };
     assert_eq!(
         [
-            after(hunt::TRACKS[0])?,
-            after(hunt::TRACKS[1])?,
-            after(hunt::TRACKS[3])?,
-            after(hunt::TRACKS[4])?
+            after(TRACKS[0])?,
+            after(TRACKS[1])?,
+            after(TRACKS[3])?,
+            after(TRACKS[4])?
         ],
         [line, bait, direction, access],
     );
@@ -250,7 +261,7 @@ async fn exercise(h: &Harness) -> TestResult {
     let count: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
     )
-    .bind(hunt::KEY)
+    .bind(KEY)
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(count, 1);

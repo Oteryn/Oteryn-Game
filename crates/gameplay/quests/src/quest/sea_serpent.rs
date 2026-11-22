@@ -1,6 +1,6 @@
 //! The baited lookout telescope from Crystal actions_bait.lua, lines 20–83.
-use super::QuestRefusal;
 use super::world_callbacks::{Callback, NativeSelector, Position};
+use super::{NpcDefinitionPredecessor, QuestRefusal, QuestStateCatalogue};
 
 pub const KEY: &str = "oteryn:quest-callback/sea-serpent-telescope";
 // The imported Captain Haba and crane storage belongs to the Tibia Tales group.
@@ -50,6 +50,41 @@ pub fn callback() -> Result<Callback, String> {
         "native_rule":{"kind":"sea_serpent_telescope"},
         "return_on_failure":false,"failure_message":null,"sources":[format!("{SOURCE}20-83")]
     }]}).to_string())?.pop().ok_or_else(|| "missing telescope callback".into())
+}
+
+/// Keep in-progress Tibia Tales receipts usable across the additive telescope rule.
+pub(super) fn retain_predecessor(catalogue: &mut QuestStateCatalogue) -> Result<(), String> {
+    let previous = QuestStateCatalogue::new(
+        catalogue.content_revision.clone(),
+        catalogue
+            .tracks
+            .values()
+            .filter(|track| track.quest == QUEST && track.key != DRAW)
+            .cloned()
+            .collect(),
+        catalogue
+            .transitions
+            .values()
+            .filter(|transition| transition.quest == QUEST && transition.key != KEY)
+            .cloned()
+            .collect(),
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let hash = previous
+        .definition_hash(QUEST)
+        .ok_or("Tibia Tales predecessor missing")?;
+    let defaults = previous
+        .declared_tracks()
+        .map(|track| (track.key.clone(), track.initial))
+        .collect();
+    let predecessors = catalogue.predecessors.entry(QUEST.into()).or_default();
+    if !predecessors
+        .iter()
+        .any(|predecessor| predecessor.hash == hash)
+    {
+        predecessors.push(NpcDefinitionPredecessor { hash, defaults });
+    }
+    Ok(())
 }
 
 fn appearance_faces(switch: i64) -> u8 {
@@ -123,37 +158,37 @@ pub(super) fn apply(mut state: [i64; 6], roll: Option<u8>) -> Result<[i64; 6], Q
 pub(super) fn message(changes: &[super::QuestTrackChange]) -> Option<&'static str> {
     let before = |key| changes.iter().find(|c| c.track == key).map(|c| c.before);
     if before(TRACKS[1])? < 1 {
-        return Some("You should set a new bait first.");
+        return Some("Set fresh bait before looking for the serpent.");
     }
     if before(TRACKS[3])? > 0 {
-        return Some("Oops! You lost it.");
+        return Some("You've lost the serpent's trail.");
     }
     let roll = u8::try_from(changes.iter().find(|c| c.track == TRACKS[5])?.after).ok()?;
     let sighting = Sighting::from_roll(roll, before(TRACKS[2])?)?;
     Some(match sighting.appearance {
-        1..=4 => "You see water as far as the eye can reach. No sea serpent in sight.",
-        9 => "It's getting away! You should tell the captain to gain speed!",
-        10 => "There are multiple shadows under the surface. This has to be the right location.",
+        1..=4 => "Only open water. The serpent is out of sight.",
+        9 => "The serpent is pulling away. Ask the captain to speed up.",
+        10 => "Several shadows are gathering below. You've found the hunting grounds.",
         _ => [
             [
-                "You see dot under the surface straight ahead of you.",
-                "You see dot under the surface. It is to the starboard side.",
-                "You see dot under the surface. It is on the larboard side.",
+                "A faint speck moves below the surface off the bow.",
+                "A faint speck moves below the surface to starboard.",
+                "A faint speck moves below the surface to port.",
             ],
             [
-                "You see a dot under the surface straight ahead of you.",
-                "You see a dot under the surface. It is to the starboard side.",
-                "You see a dot under the surface. It is on the larboard side.",
+                "A distinct dot moves below the surface off the bow.",
+                "A distinct dot moves below the surface to starboard.",
+                "A distinct dot moves below the surface to port.",
             ],
             [
-                "You see a shadow under the surface straight ahead of you.",
-                "You see a shadow under the surface. It is to the starboard side.",
-                "You see a shadow under the surface. It is on the larboard side.",
+                "A shadow moves below the surface off the bow.",
+                "A shadow moves below the surface to starboard.",
+                "A shadow moves below the surface to port.",
             ],
             [
-                "You see a huge shadow under the surface straight ahead of you.",
-                "You see a huge shadow under the surface. It is to the starboard side.",
-                "You see a huge shadow under the surface. It is on the larboard side.",
+                "An enormous shadow moves below the surface off the bow.",
+                "An enormous shadow moves below the surface to starboard.",
+                "An enormous shadow moves below the surface to port.",
             ],
         ][sighting.phase][sighting.direction],
     })

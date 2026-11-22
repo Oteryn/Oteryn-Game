@@ -201,19 +201,7 @@ async fn exercise(h: &Harness, route: Route) -> TestResult {
     talk(&owner, &deps, npc, 2, route.keyword).await?;
     let result = talk(&owner, &deps, npc, route.confirmation, "yes").await?;
     assert!(result.inventory_changed);
-    let (roll, selected, arrived): (i16, Vec<i32>, bool) = sqlx::query_as(
-        "SELECT random_draw, random_destination, arrived_at IS NOT NULL FROM game_newhaven_travel_receipts",
-    ).fetch_one(&h.pool).await?;
-    assert_eq!(
-        roll, 1,
-        "the fixture ordinal must select the alternate destination"
-    );
     let destination = route.alternate;
-    assert_eq!(
-        selected,
-        [destination.0, destination.1, i32::from(destination.2)]
-    );
-    assert!(arrived);
     let position = deps
         .runtime
         .lock()
@@ -222,6 +210,18 @@ async fn exercise(h: &Harness, route: Route) -> TestResult {
         .map_err(debug)?
         .position();
     assert_eq!((position.x, position.y, position.floor), destination);
+    let (roll, selected, arrived): (i16, Vec<i32>, bool) = sqlx::query_as(
+        "SELECT random_draw, random_destination, arrived_at IS NOT NULL FROM game_newhaven_travel_receipts",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(
+        roll, 1,
+        "the fixture ordinal must select the alternate destination"
+    );
+    assert_eq!(
+        selected,
+        [destination.0, destination.1, i32::from(destination.2)]
+    );
+    assert!(arrived);
     Ok(())
 }
 
