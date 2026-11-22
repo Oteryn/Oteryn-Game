@@ -8,6 +8,50 @@
   "startup": "data-global/startup/others/functions.lua:97-115",
   "bindings": [
     {
+      "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare",
+      "position": [
+        32546,
+        31522,
+        11
+      ],
+      "appearance": 1983,
+      "unique": 6283,
+      "source_line": 2709
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_gold_ingot",
+      "position": [
+        32601,
+        31386,
+        14
+      ],
+      "appearance": 4024,
+      "unique": 6279,
+      "source_line": 2681
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_rusted_armor",
+      "position": [
+        32650,
+        31467,
+        15
+      ],
+      "appearance": 4024,
+      "unique": 6281,
+      "source_line": 2695
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_small_topazes",
+      "position": [
+        32588,
+        31406,
+        14
+      ],
+      "appearance": 4240,
+      "unique": 6280,
+      "source_line": 2688
+    },
+    {
       "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
       "position": [
         32582,
@@ -17,6 +61,17 @@
       "appearance": 2472,
       "unique": 6284,
       "source_line": 2717
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.prison_cell_key",
+      "position": [
+        32754,
+        31462,
+        15
+      ],
+      "appearance": 2472,
+      "unique": 6282,
+      "source_line": 2702
     }
   ],
   "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
