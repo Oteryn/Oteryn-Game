@@ -214,14 +214,15 @@ async fn drive_spawn_window(runtime: &tokio::sync::Mutex<ChannelRuntimeV1>, now:
 }
 
 #[test]
-fn bundle_night_spawn_waits_for_night_and_honors_underground_override() {
+fn bundle_spawn_starts_full_and_respawn_checks_period_before_warnings() {
     use crate::map::boot::table_activation_spawns_with_eligibility;
     use oteryn_gameplay_content::content::{ProjectV2SpawnEligibility, ProjectV2SpawnPeriod};
     use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
 
     const DAY: u64 = 12 * 60;
-    const NIGHT: u64 = 20 * 60;
-    const NEXT_DAY: u64 = 24 * 60;
+    const NIGHT: u64 = 24 * 60 + 5 * 60 + 59;
+    const SUNRISE: u64 = NIGHT + 1;
+    const SUNSET_END: u64 = 18 * 60;
     const DELAY_MS: u32 = 60_000;
     const DELAY: u64 = DELAY_MS as u64 * 1_000;
     const WARNING: u64 = 4_200_000;
@@ -269,24 +270,19 @@ fn bundle_night_spawn_waits_for_night_and_honors_underground_override() {
             let mut channel = runtime();
             assert_eq!(channel.begin_activation_spawn_sources(sources), Ok(2));
             let progress = channel
-                .realize_activation_spawn_window_at_world_time(0, Some(true))
-                .expect("daytime activation");
+                .realize_activation_spawn_window(0)
+                .expect("startup activation");
             assert_eq!(progress.remaining, 0);
-            assert_eq!(progress.realized, usize::from(ignore_period_underground));
+            assert_eq!(progress.realized, 2, "Crystal initially fills both points");
             let points = channel.spawn_point_creatures();
             let surface = points[0].0;
-            assert!(
-                points[0].2.is_none(),
-                "surface point stays empty in daylight"
-            );
-            assert_eq!(points[1].2.is_some(), ignore_period_underground);
-            if let Some(actor) = points[1].2 {
-                assert!(channel.kill_creature_for_test(actor));
+            for (_, _, actor) in points {
+                assert!(channel.kill_creature_for_test(actor.expect("startup creature")));
             }
 
             let channel = tokio::sync::Mutex::new(channel);
             drive_spawn_window(&channel, 0, DAY).await;
-            drive_spawn_window(&channel, DELAY, DAY).await;
+            drive_spawn_window(&channel, DELAY, SUNSET_END).await;
             {
                 let owner = channel.lock().await;
                 let pending = owner
@@ -295,10 +291,10 @@ fn bundle_night_spawn_waits_for_night_and_honors_underground_override() {
                 assert_eq!(
                     pending.due_micros,
                     2 * DELAY,
-                    "daylight restarts the full delay"
+                    "18:00 is still daytime for Crystal respawns and restarts the full delay"
                 );
             }
-            drive_spawn_window(&channel, DELAY + WARNING, DAY).await;
+            drive_spawn_window(&channel, DELAY + WARNING, SUNSET_END).await;
             assert_eq!(
                 channel.lock().await.spawn_point_creatures()[1].2.is_some(),
                 ignore_period_underground,
@@ -316,33 +312,16 @@ fn bundle_night_spawn_waits_for_night_and_honors_underground_override() {
                     .due_micros,
                 warning_due
             );
-            drive_spawn_window(&channel, warning_due, NEXT_DAY + DAY).await;
-            {
-                let owner = channel.lock().await;
-                assert!(
-                    owner.spawn_point_creatures()[0].2.is_none(),
-                    "admission rechecks the phase"
-                );
-                assert_eq!(
-                    owner
-                        .pending_respawn(surface)
-                        .expect("deferred admission")
-                        .due_micros,
-                    warning_due + DELAY
-                );
-            }
-
-            drive_spawn_window(&channel, warning_due + DELAY, NEXT_DAY + NIGHT).await;
-            drive_spawn_window(&channel, warning_due + DELAY + WARNING, NEXT_DAY + NIGHT).await;
+            drive_spawn_window(&channel, warning_due, SUNRISE).await;
+            let owner = channel.lock().await;
             assert!(
-                channel
-                    .lock()
-                    .await
+                owner
                     .spawn_point_creatures()
                     .iter()
                     .all(|point| point.2.is_some()),
-                "both points admit once an eligible night window completes"
+                "a warning sequence that started at night finishes even after sunrise"
             );
+            assert!(owner.pending_respawn(surface).is_none());
         }
     });
 }

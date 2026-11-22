@@ -54,8 +54,9 @@ pub fn effective_level(
     Some(level)
 }
 
-/// Both exact actors must be in the qualified source zone of this runtime, and the
-/// creature's source policy and master must permit Hazard.
+/// Both exact actors must be in the qualified source zone of this runtime.
+/// The general Crystal Hazard callback flags monsters in the zone, including the
+/// masterless Primal creatures whose special callback does not set those flags.
 pub fn effects_for_monster(
     runtime: &ChannelRuntimeV1,
     player: ExactActorRef,
@@ -66,12 +67,8 @@ pub fn effects_for_monster(
         return None;
     }
     let creature = runtime.companion_snapshot_including_dead(monster).ok()?;
-    // Crystal 201189f hazard_primal.lua:84-94 checks the monster's source name.
-    if creature.state.master.is_some()
-        || ["Primal Menace", "Fungosaurus", "Primal Pack Beast"]
-            .into_iter()
-            .any(|name| creature.state.policy.display_name.contains(name))
-    {
+    // Crystal 201189f hazard.lua:174–195 and hazard_primal.lua:13,84–96.
+    if creature.state.master.is_some() {
         return None;
     }
     provisional_effects(effective_level(runtime, player, session)?).ok()

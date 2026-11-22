@@ -2,14 +2,14 @@ use super::fixture::{Harness, debug, fence};
 use super::kill_reward_e2e_fixtures::scenario_thread::run_async;
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::MovementLocalPosition;
-use crate::gameplay_transport::hazard;
+use oteryn_gameplay_combat::{creature_auto_attack::AttackFacts, hazard::incoming_damage};
 use oteryn_gameplay_content::content::bosses::primal_closure::{
     FUNGOSAURUS_KEY, PRIMAL_MENACE_KEY,
 };
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[test]
-fn hazard_zone_fungosaurus_has_no_hazard_combat_scaling() -> TestResult {
+fn gnomprona_masterless_primal_creatures_apply_incoming_hazard_damage() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -63,11 +63,11 @@ fn hazard_zone_fungosaurus_has_no_hazard_combat_scaling() -> TestResult {
                 .install_companion_policies(&mut runtime)
                 .map_err(debug)?;
 
-            for (key, eligible) in [
-                ("oteryn:creature.gore_horn", true),
-                (FUNGOSAURUS_KEY, false),
-                (PRIMAL_MENACE_KEY, false),
-                ("oteryn:creature.gore_horn_primal", false),
+            for key in [
+                "oteryn:creature.gore_horn",
+                FUNGOSAURUS_KEY,
+                PRIMAL_MENACE_KEY,
+                "oteryn:creature.gore_horn_primal",
             ] {
                 position.x += 1;
                 let policy = runtime.companion_policy(key).map_err(debug)?;
@@ -77,8 +77,25 @@ fn hazard_zone_fungosaurus_has_no_hazard_combat_scaling() -> TestResult {
                 runtime
                     .install_creature_policy(monster, key)
                     .map_err(debug)?;
-                let effects = hazard::effects(&runtime, player, session, monster);
-                assert_eq!(effects.is_some(), eligible, "Hazard eligibility for {key}");
+                let hit = AttackFacts {
+                    issuer: monster,
+                    target: player,
+                    session,
+                    revision: 1,
+                    visible: true,
+                    issuer_pz: false,
+                    target_pz: false,
+                    issuer_protected: false,
+                    target_protected: false,
+                    defense: 0,
+                    armor: 0,
+                    player_level: 1,
+                    reference_level_party_lowest: None,
+                };
+                let scaled = incoming_damage(&runtime, &hit, 100, 999_999, 0, false)
+                    .map_err(debug)?;
+                assert!(!scaled.critical);
+                assert!(scaled.amount > 100, "Hazard damage boost for {key}");
             }
         }
         drop(owner);

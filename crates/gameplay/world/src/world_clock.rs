@@ -190,11 +190,11 @@ pub fn is_day(minute: u32) -> bool {
     (SUNRISE_START..SUNSET_START + 30).contains(&(minute % TIBIAN_MINUTES_PER_DAY))
 }
 
-/// The day/night predicate at a sampled UTC instant on the served World clock.
-pub fn is_day_at_utc(now: Option<u64>) -> Option<bool> {
+/// Crystal game.cpp:9144–9151 includes 18:00 in daytime for monster respawns.
+pub fn is_spawn_day_at_utc(now: Option<u64>) -> Option<bool> {
     WorldClockSource::new(DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS)
         .tibian_minute(now?)
-        .map(is_day)
+        .map(|minute| is_day(minute) || minute == SUNSET_START + 30)
 }
 
 /// §11.5: the `world_time {from_minute, to_minute}` predicate on a Tibian minute; the range is

@@ -575,13 +575,13 @@ impl ChannelRuntimeV1 {
         Ok(total_points)
     }
     /// Realizes the next owner window of `activation`'s plan: each point in canonical order
-    /// admits its creature (a source is recorded at its point 0, so a source may span two
-    /// windows). The window's creatures are then bound to their Creature policies. Returns the
+    /// admits its creature regardless of its respawn period (Crystal spawn_monster.cpp:328–339).
+    /// A source is recorded at its point 0, so a source may span two
+    /// windows. The window's creatures are then bound to their Creature policies. Returns the
     /// creatures realized; on a refusal the caller undoes the activation.
     pub(super) fn realize_activation_window(
         &mut self,
         activation: &mut SpawnActivation,
-        is_day: Option<bool>,
     ) -> Result<usize, CarrierError> {
         let context = self.pinned_position_context();
         self.carrier.validate_current_continuity(&self.continuity)?;
@@ -591,7 +591,6 @@ impl ChannelRuntimeV1 {
         };
         let points = std::mem::take(window);
         debug_assert!(points.len() <= spawn::REALIZATIONS_PER_WINDOW_MAX);
-        let mut realized = 0;
         for point in &points {
             let definition = if point.ordinal == 0 {
                 activation
@@ -601,16 +600,11 @@ impl ChannelRuntimeV1 {
             } else {
                 None
             };
-            if self
-                .carrier
-                .admit_spawn_point(&self.continuity, *point, definition, context, is_day)?
-                .is_some()
-            {
-                realized += 1;
-            }
+            self.carrier
+                .admit_spawn_point(&self.continuity, *point, definition, context)?;
         }
         activation.next_window += 1;
-        activation.realized_points += realized;
+        activation.realized_points += points.len();
         activation.remaining_points -= points.len();
         for point in &points {
             if let Ok(state) = self
@@ -621,7 +615,7 @@ impl ChannelRuntimeV1 {
                 self.bind_spawned_creature_policy(actor);
             }
         }
-        Ok(realized)
+        Ok(points.len())
     }
     /// Binds a realized creature to its active Creature policy when the table names its
     /// definition and agrees on its health. Content that names no policy leaves it unbound.
@@ -1088,8 +1082,7 @@ impl ChannelActorCarrier {
         point: spawn::SpawnPoint,
         definition: Option<SpawnDefinition>,
         position_context: PreProductionPositionContext,
-        is_day: Option<bool>,
-    ) -> Result<Option<ExactActorRef>, CarrierError> {
+    ) -> Result<(), CarrierError> {
         let source = SpawnSourceId(point.source);
         if point.ordinal == 0 {
             let definition = definition.ok_or(CarrierError::PlanConflict)?;
@@ -1133,24 +1126,17 @@ impl ChannelActorCarrier {
             .get(ordinal)
             .ok_or(CarrierError::PlanConflict)?;
         let spawned = realization.definition.point(ordinal)?;
-        let live = if realization.definition.period_allows(ordinal, is_day)? {
-            let health = spawned.creature_initial_health;
-            let identity = spawned.creature_target_identity.clone();
-            let actor = self.admit_creature(continuity, ActorState(0), &identity, health)?;
-            Some(ExactActorRef(actor))
-        } else {
-            None
-        };
+        let health = spawned.creature_initial_health;
+        let identity = spawned.creature_target_identity.clone();
+        let actor = self.admit_creature(continuity, ActorState(0), &identity, health)?;
         // Reserved exactly at point 0: the push never reallocates.
         self.spawns[index].cells.push(SpawnCellState {
-            live,
+            live: Some(ExactActorRef(actor)),
             attempt: 0,
             successor: 0,
         });
-        if let Some(actor) = live {
-            self.initialize_position(continuity, actor.0, position_context, cell)?;
-        }
-        Ok(live)
+        self.initialize_position(continuity, actor, position_context, cell)?;
+        Ok(())
     }
     /// True when some other *live* actor (player or creature, `health > 0`) currently occupies
     /// `cell` under `position_context` (§4.3: "if the cell is occupied when the timer is

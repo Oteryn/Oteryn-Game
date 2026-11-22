@@ -3533,7 +3533,7 @@ async fn realize_activation_paced(
     signalled: &CancellationToken,
 ) -> Result<Option<(usize, u64)>, BootError> {
     let refuse = || BootError::Readiness("creature spawn realization");
-    let mut remaining = runtime
+    runtime
         .begin_activation_spawn_sources(sources)
         .map_err(|_| refuse())?;
     let origin = tokio::time::Instant::now();
@@ -3541,14 +3541,10 @@ async fn realize_activation_paced(
     loop {
         let now = u64::try_from(origin.elapsed().as_micros()).unwrap_or(u64::MAX);
         let progress = runtime
-            .realize_activation_spawn_window_at_world_time(
-                now,
-                crate::world_clock::is_day_at_utc(crate::world_clock::now_utc_ms()),
-            )
+            .realize_activation_spawn_window(now)
             .map_err(|_| refuse())?;
-        if progress.remaining < remaining {
+        if progress.realized > 0 {
             windows += 1;
-            remaining = progress.remaining;
         }
         if progress.remaining == 0 {
             return Ok(Some((progress.realized_total, windows)));

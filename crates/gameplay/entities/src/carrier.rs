@@ -1500,14 +1500,6 @@ impl ChannelRuntimeV1 {
         &mut self,
         now_micros: u64,
     ) -> Result<SpawnActivationProgress, CarrierError> {
-        self.realize_activation_spawn_window_at_world_time(now_micros, None)
-    }
-
-    pub fn realize_activation_spawn_window_at_world_time(
-        &mut self,
-        now_micros: u64,
-        is_day: Option<bool>,
-    ) -> Result<SpawnActivationProgress, CarrierError> {
         self.owner_fence()?;
         let mut activation = self
             .spawn_activation
@@ -1519,7 +1511,7 @@ impl ChannelRuntimeV1 {
             self.spawn_activation = Some(activation);
             return Ok(progress);
         }
-        match self.realize_activation_window(&mut activation, is_day) {
+        match self.realize_activation_window(&mut activation) {
             Ok(realized) => {
                 activation.last_window = Some(window);
                 let progress = activation.progress(realized);
@@ -1644,10 +1636,13 @@ impl ChannelRuntimeV1 {
             let timing = self.spawn_timing(point)?;
             let cell = self.spawn_cell(point)?;
             let outcome = match pending.step {
-                // Crystal spawn_monster.cpp:363–366 restarts the full delay on a mismatch.
-                _ if !self.spawn_period_allows(point, is_day)? => self
-                    .spawn_schedule
-                    .reschedule_skipped(point, timing, now_micros),
+                // Crystal spawn_monster.cpp:363–386 checks the period before staging.
+                RespawnStep::Due | RespawnStep::Retry
+                    if !self.spawn_period_allows(point, is_day)? =>
+                {
+                    self.spawn_schedule
+                        .reschedule_skipped(point, timing, now_micros)
+                }
                 RespawnStep::Due
                 | RespawnStep::Retry
                 | RespawnStep::XmlWarningSecond

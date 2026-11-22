@@ -73,7 +73,7 @@ fn drive_owner_spawns_at_world_time(
     runtime
         .drive_spawn_respawns_at_world_time(
             now,
-            world_clock::is_day_at_utc(world_utc_ms),
+            world_clock::is_spawn_day_at_utc(world_utc_ms),
             |observer, cell| {
                 use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
                 match (
