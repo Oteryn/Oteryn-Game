@@ -7,6 +7,8 @@ pub(super) struct Widgets {
     pub overlay: Entity,
     pub report: Entity,
     pub text: String,
+    pub boss_rows: Option<Entity>,
+    pub boss_keys: Vec<String>,
     pub needs_cooldowns: bool,
     pub tracker_filter: Option<Entity>,
 }
@@ -81,12 +83,24 @@ pub(super) fn build(
         .id();
     commands.entity(scroll).add_child(report);
     commands.entity(panel).add_child(scroll);
+    let boss_rows = (tool == Tool::Bosses).then(|| {
+        let rows = commands
+            .spawn(Node {
+                flex_direction: FlexDirection::Column,
+                ..default()
+            })
+            .id();
+        commands.entity(scroll).add_child(rows);
+        rows
+    });
     let goal = matches!(tool, Tool::Xp | Tool::Hunting | Tool::Session);
     let prices = matches!(
         tool,
         Tool::Loot | Tool::Supply | Tool::Hunting | Tool::Session | Tool::Party
     );
-    if goal || prices {
+    let rates = Rate::CONTROLS.iter().filter(|(owner, _, _)| *owner == tool);
+    let has_rate = rates.clone().next().is_some();
+    if goal || prices || has_rate || matches!(tool, Tool::Input | Tool::Bosses) {
         let inputs = commands
             .spawn(Node {
                 flex_wrap: FlexWrap::Wrap,
@@ -98,8 +112,20 @@ pub(super) fn build(
             (0, "XP still needed"),
             (1, "Item number"),
             (2, "Unit price"),
+            (3, "Paste party hunt log"),
+            (4, "Member name"),
+            (5, "Extra supply cost"),
+            (6, "Rate target"),
+            (7, "New report file path"),
+            (8, "Boss name"),
         ] {
-            if (index == 0 && !goal) || (index != 0 && !prices) {
+            if (index == 0 && !goal)
+                || ((1..=2).contains(&index) && !prices)
+                || ((3..=5).contains(&index) && tool != Tool::Party)
+                || (index == 6 && !has_rate)
+                || (index == 7 && tool != Tool::Hunting)
+                || (index == 8 && tool != Tool::Bosses)
+            {
                 continue;
             }
             let group = commands
@@ -116,7 +142,13 @@ pub(super) fn build(
                     ConfigField(index, tool),
                     bevy::ui_widgets::TextInput,
                     bevy::text::EditableText {
-                        max_characters: Some(20),
+                        allow_newlines: index == 3,
+                        max_characters: Some(match index {
+                            3 => oteryn_client_ui::analyser::party_import::MAX_HUNT_LOG_BYTES + 1,
+                            4 | 8 => 128,
+                            7 => 4096,
+                            _ => 20,
+                        }),
                         ..default()
                     },
                     bevy::text::TextCursorStyle::default(),
@@ -125,7 +157,7 @@ pub(super) fn build(
                     bevy::input_focus::tab_navigation::TabIndex(0),
                     Node {
                         width: px(160.),
-                        height: px(24.),
+                        height: px(if index == 3 { 64. } else { 24. }),
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.05, 0.05, 0.05)),
@@ -137,20 +169,61 @@ pub(super) fn build(
         commands.entity(panel).add_child(inputs);
         let actions = commands
             .spawn(Node {
+                flex_wrap: FlexWrap::Wrap,
                 column_gap: px(6.),
                 ..default()
             })
             .id();
-        for (kind, label) in [
+        let mut controls = vec![
             (ConfigKind::Goal, "Set XP goal"),
             (ConfigKind::Loot, "Set loot value"),
             (ConfigKind::Supply, "Set supply cost"),
-        ] {
-            if (matches!(kind, ConfigKind::Goal) && !goal)
-                || (!matches!(kind, ConfigKind::Goal) && !prices)
-            {
-                continue;
-            }
+            (ConfigKind::Split, "Calculate split"),
+            (ConfigKind::Cost, "Apply extra cost"),
+            (ConfigKind::Include(false), "Exclude member"),
+            (ConfigKind::Include(true), "Include member"),
+        ];
+        controls.retain(|(kind, _)| match kind {
+            ConfigKind::Goal => goal,
+            ConfigKind::Loot | ConfigKind::Supply => prices,
+            _ => tool == Tool::Party,
+        });
+        if matches!(tool, Tool::Hunting | Tool::Input | Tool::Party) {
+            controls.push((ConfigKind::Copy, "Copy report"));
+        }
+        if tool == Tool::Hunting {
+            controls.extend([
+                (ConfigKind::Save(false), "Save hunt report"),
+                (ConfigKind::Save(true), "Export hunt JSON"),
+            ]);
+        }
+        if tool == Tool::Party {
+            controls.extend([
+                (ConfigKind::Handoff, "Send to Loot Splitter"),
+                (ConfigKind::CopySplit, "Copy settlement instructions"),
+            ]);
+        }
+        if tool == Tool::Bosses {
+            controls.extend([
+                (ConfigKind::BossSearch, "Search bosses"),
+                (ConfigKind::BossOrder(true), "Sort by name"),
+                (ConfigKind::BossOrder(false), "Sort by cooldown"),
+            ]);
+        }
+        controls.extend(rates.map(|(_, rate, label)| (ConfigKind::Target(*rate), *label)));
+        controls.extend(
+            Section::CONTROLS
+                .iter()
+                .filter(|(owner, _, _)| *owner == tool)
+                .map(|(_, section, label)| (ConfigKind::Toggle(*section), *label)),
+        );
+        if matches!(tool, Tool::Impact | Tool::Input) {
+            controls.push((ConfigKind::Mode, "Switch current/session rate"));
+        }
+        if tool == Tool::Impact {
+            controls.push((ConfigKind::ResetHigh, "Reset all-time high"));
+        }
+        for (kind, label) in controls {
             let button = commands
                 .spawn((
                     source::button(skins.buttons.clone(), 130.),
@@ -205,7 +278,12 @@ pub(super) fn build(
         commands.entity(button).add_child(caption);
         commands.entity(buttons).add_child(button);
     }
-    for (reset, label) in [(true, "Reset session"), (false, "Close")] {
+    let reset_label = if tool == Tool::Hunting {
+        "Start new session"
+    } else {
+        "Reset session"
+    };
+    for (reset, label) in [(true, reset_label), (false, "Close")] {
         let button = commands
             .spawn((
                 source::button(skins.buttons.clone(), 110.),
@@ -228,6 +306,8 @@ pub(super) fn build(
         overlay,
         report,
         text: String::new(),
+        boss_keys: Vec::new(),
+        boss_rows,
         needs_cooldowns: tool == Tool::Bosses,
         tracker_filter,
     }

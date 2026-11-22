@@ -179,6 +179,9 @@ enum ToolAction {
     },
     /// Tibia Global's "Use Manual Sort Mode" checkbox of the sort menu; `checked` is the mode
     /// the control shows.
+    NestedSort {
+        checked: bool,
+    },
     ManualSort {
         checked: bool,
     },
@@ -221,7 +224,7 @@ fn tool_button(
     if !enabled {
         commands.entity(entity).insert(InteractionDisabled);
     }
-    if let ToolAction::ManualSort { checked } = action {
+    if let ToolAction::ManualSort { checked } | ToolAction::NestedSort { checked } = action {
         let indicator = commands
             .spawn(source::checkbox_indicator(if checked {
                 skin.checked.clone()
@@ -334,7 +337,7 @@ fn tool_activate(
                 descending,
                 confirmed,
             },
-            ToolSnapshot::Sort(_, containers, _),
+            ToolSnapshot::Sort(panel, containers, _),
         ) => {
             if !containers.views.as_ref().is_some_and(|views| {
                 views.views.iter().any(|entry| {
@@ -345,7 +348,7 @@ fn tool_activate(
             }) {
                 return;
             }
-            let recursive = owner.settings.preferences.gameplay.sort_recursive;
+            let recursive = panel.fields[3] == "1";
             if recursive && owner.settings.preferences.gameplay.warn_recursive_sort && !confirmed {
                 state.pending_sort = state.seen.clone().map(|seen| {
                     (
@@ -377,6 +380,10 @@ fn tool_activate(
             }
             play.link
                 .container_sort_request(oteryn_client_ui::container_sort::Intent::Sort);
+        }
+        (ToolAction::NestedSort { checked }, ToolSnapshot::Sort(_, _, mode)) if !mode.active() => {
+            play.link
+                .container_sort_edit(3, u8::from(!checked).to_string());
         }
         // The same per-session mode as the ToggleManualSortMode hotkey (Shift+S).
         (ToolAction::ManualSort { .. }, ToolSnapshot::Sort(_, _, mode)) if mode.selected => {

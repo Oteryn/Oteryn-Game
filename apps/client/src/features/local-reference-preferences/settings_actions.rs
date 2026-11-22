@@ -421,6 +421,13 @@ impl SettingsState {
             self.feedback = error.to_string();
             return;
         }
+        for (record, current) in preferences
+            .impact_records
+            .iter_mut()
+            .zip(self.preferences.impact_records)
+        {
+            *record = (*record).max(current);
+        }
         preferences.reconcile_controls(Some(&self.preferences));
         let result = self.persist_preferences(&preferences);
         // A disk error must not disable local controls for this process.

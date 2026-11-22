@@ -148,9 +148,13 @@ pub(super) struct ConnectionInputs {
 pub(super) struct Mailbox {
     pub(super) connection: ConnectionInputs,
     #[cfg(bevy_shell)]
+    pub(super) screen_loot: super::feature_local_text_messages::view::LootMessage,
+    #[cfg(bevy_shell)]
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     #[cfg(bevy_shell)]
     pub(super) look_receipt: u64,
+    pub(super) boss_capture: super::screenshot::BossCapture,
+    pub(super) capture_observations: super::screenshot::CaptureObservations,
     #[cfg(bevy_shell)]
     pub(super) window_notices:
         std::collections::VecDeque<super::feature_local_text_messages::view::WindowNotice>,
@@ -337,6 +341,7 @@ pub(super) struct Mailbox {
     pub(super) player_typing_shutdown: bool,
     // CL26s3
     pub(super) daily_reward: oteryn_client_ui::daily_reward::DailyRewardPanel,
+    pub(super) reward_reset: Option<(u64, std::time::Instant)>,
     pub(super) daily_reward_shutdown: bool,
     // CL26s4
     pub(super) boss_rewards: oteryn_client_ui::boss_rewards::BossRewardsPanel,

@@ -282,6 +282,7 @@ pub(super) fn container(
     parent: Entity,
     view: &oteryn_session::container_tree::ContainerView,
     snapshot: &Snapshot,
+    scene: &crate::scene::Scene,
 ) {
     let title = if let Some(page) = view.browse {
         format!("Browse Field ({}/{})", view.entries.len(), page.total)
@@ -384,7 +385,17 @@ pub(super) fn container(
         snapshot.generation,
         view,
         snapshot.windows.get(&view.view_id),
+        snapshot.manual_sort,
     );
+    let mut entries = view.entries.clone();
+    if !snapshot.manual_sort
+        && snapshot
+            .windows
+            .get(&view.view_id)
+            .is_some_and(|window| window.containers_first)
+    {
+        entries.sort_by_key(|item| scene.container_flag(item.appearance_id) != Some(true));
+    }
     grid(
         commands,
         skins,
@@ -394,7 +405,7 @@ pub(super) fn container(
             view: view.view_id,
             handle: view.container_handle,
         },
-        &view.entries,
+        &entries,
         usize::from(view.capacity),
         Some(ItemMoveDestination::Container(view.container_handle, None)),
         snapshot.selection,

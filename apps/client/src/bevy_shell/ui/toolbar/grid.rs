@@ -146,6 +146,7 @@ fn short(label: &str) -> String {
 pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, region: Entity) {
     let widget = commands
         .spawn((
+            MenuBody,
             Name::new("Control buttons"),
             Node {
                 width: percent(100.),
@@ -242,7 +243,98 @@ pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, regio
         commands.entity(right).add_child(entity);
     }
     commands.entity(widget).add_children(&[left, right]);
-    commands.entity(region).add_child(widget);
+    let controls = commands
+        .spawn(Node {
+            flex_direction: FlexDirection::Row,
+            ..default()
+        })
+        .id();
+    for (name, action) in [
+        ("Toggle top menu", MenuAction::Toggle),
+        ("Zoom in", MenuAction::Zoom(50)),
+        ("Zoom out", MenuAction::Zoom(-50)),
+    ] {
+        let button = commands
+            .spawn((
+                Name::new(name),
+                action,
+                oteryn_client_ui_bevy::button(
+                    skins.buttons.clone(),
+                    if matches!(action, MenuAction::Toggle) {
+                        84.
+                    } else {
+                        30.
+                    },
+                ),
+            ))
+            .observe(menu_action)
+            .id();
+        let label = match action {
+            MenuAction::Toggle => "Menu",
+            MenuAction::Zoom(50) => "+",
+            MenuAction::Zoom(_) => "−",
+        };
+        let text = commands
+            .spawn(oteryn_client_ui_bevy::button_caption(
+                label,
+                skins.font.clone(),
+            ))
+            .id();
+        commands.entity(button).add_child(text);
+        commands.entity(controls).add_child(button);
+    }
+    commands.entity(region).add_children(&[controls, widget]);
+}
+#[derive(Component)]
+struct MenuBody;
+#[derive(Clone, Copy, Component)]
+pub(in crate::bevy_shell) enum MenuAction {
+    Toggle,
+    Zoom(i16),
+}
+
+fn menu_action(
+    event: On<Activate>,
+    controls: Query<(&MenuAction, &Node)>,
+    bodies: Query<Entity, With<MenuBody>>,
+    mut commands: Commands,
+    mut owner: NonSendMut<HostOwner>,
+    guard: crate::bevy_shell::game_ui::modal::ModalGuard,
+) {
+    let Ok((action, node)) = controls.get(event.entity) else {
+        return;
+    };
+    if owner.play.is_none()
+        || owner.modal_active()
+        || node.display == Display::None
+        || !guard.allows(event.entity)
+    {
+        return;
+    }
+    match action {
+        MenuAction::Toggle => {
+            for entity in &bodies {
+                commands
+                    .entity(entity)
+                    .entry::<Node>()
+                    .and_modify(|mut body| {
+                        body.display = if body.display == Display::None {
+                            Display::Flex
+                        } else {
+                            Display::None
+                        };
+                    });
+            }
+        }
+        MenuAction::Zoom(delta) => {
+            let mut prefs = owner.settings.preferences.clone();
+            prefs.interface_scale = prefs
+                .interface_scale
+                .saturating_add_signed(*delta)
+                .clamp(80, 200);
+            owner.settings.apply(prefs);
+        }
+    }
 }
 fn fixed(
     commands: &mut Commands,
@@ -364,13 +456,26 @@ pub(in crate::bevy_shell) fn project(
     mut owner: NonSendMut<HostOwner>,
     mut widgets: ResMut<SidebarWidgets>,
     grids: Query<(Entity, &Children), With<ControlGrid>>,
-    mut buttons: Query<(&ControlButton, &mut Node)>,
+    mut buttons: Query<(&ControlButton, &mut Node), Without<MenuAction>>,
+    (touches, mut saw_touch): (Option<Res<Touches>>, Local<bool>),
+    mut menu: Query<(&MenuAction, &mut Node), Without<ControlButton>>,
 ) {
     let owner = &mut *owner;
     if let Some(play) = &owner.play {
         let toggles = owner.settings.take_skills_toggles(&play.link);
         for _ in 0..toggles {
             toggle_skills(owner, &mut widgets);
+        }
+    }
+    *saw_touch |= cfg!(any(target_os = "android", target_os = "ios"))
+        || touches.is_some_and(|touches| touches.iter().next().is_some());
+    for (action, mut node) in &mut menu {
+        if matches!(action, MenuAction::Zoom(_)) {
+            node.display = if *saw_touch {
+                Display::Flex
+            } else {
+                Display::None
+            };
         }
     }
     let enabled = enabled(owner);
@@ -441,3 +546,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "menu_tests.rs"]
+mod menu_tests;

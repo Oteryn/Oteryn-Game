@@ -81,17 +81,19 @@ fn parity_a_container_sort_controls_dispatch_both_directions()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::bevy_shell::owner::{ActivePlay, Phase};
     use oteryn_client_runtime::container_tree::{ContainerView, ContainerViews};
-    for (descending, recursive, warn) in [
-        (false, false, true),
-        (true, false, true),
-        (true, true, false),
-        (false, true, true),
-        (true, true, true),
+    for (descending, seed, recursive, warn, change_after_prompt) in [
+        (false, false, false, true, false),
+        (true, false, false, true, false),
+        (true, true, true, false, false),
+        (false, true, true, true, false),
+        (true, true, true, true, true),
+        (true, false, true, true, false),
+        (false, true, false, true, false),
     ] {
         let mut owner = HostOwner::new(None)?;
         let (link, mut requests, outbox) = crate::play::play_channel();
         link.use_shared_frontend();
-        owner.settings.preferences.gameplay.sort_recursive = recursive;
+        owner.settings.preferences.gameplay.sort_recursive = seed;
         owner.settings.preferences.gameplay.warn_recursive_sort = warn;
         outbox.bevy_sort_fixture();
         crate::play::PlayLink::bevy_items_fixture(
@@ -124,6 +126,27 @@ fn parity_a_container_sort_controls_dispatch_both_directions()
             .add_systems(Startup, crate::bevy_shell::ui::setup);
         install_container_tools(&mut app);
         app.update();
+        let panel = app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .container_sort_panel();
+        assert_eq!(panel.fields[3], u8::from(seed).to_string());
+        if seed != recursive {
+            let nested = app
+                .world_mut()
+                .query::<(&Text, &ChildOf)>()
+                .iter(app.world())
+                .find_map(|(text, parent)| {
+                    (text.0 == "Sort Nested Containers").then_some(parent.parent())
+                })
+                .ok_or("nested sort control")?;
+            app.world_mut().trigger(Activate { entity: nested });
+            app.update();
+        }
         let direction = if descending {
             "descending"
         } else {
@@ -151,17 +174,18 @@ fn parity_a_container_sort_controls_dispatch_both_directions()
                     (label.0 == "Confirm recursive sort").then_some(parent.parent())
                 })
                 .ok_or("recursive sort confirmation")?;
-            if descending {
-                app.world_mut()
-                    .non_send_mut::<HostOwner>()
-                    .settings
-                    .preferences
-                    .gameplay
-                    .sort_recursive = false;
+            if change_after_prompt {
+                app.world()
+                    .non_send::<HostOwner>()
+                    .play
+                    .as_ref()
+                    .ok_or("play")?
+                    .link
+                    .container_sort_edit(3, "0".into());
             }
             app.world_mut()
                 .trigger(bevy::ui_widgets::Activate { entity: confirm });
-            if descending {
+            if change_after_prompt {
                 assert!(
                     requests.try_recv().is_err(),
                     "consent belongs to the displayed sort"
@@ -257,12 +281,31 @@ fn use_manual_sort_mode_checkbox_in_the_sort_menu_toggles_the_session_mode()
         };
         assert!(selected, "without 510 there is no checkbox");
         assert!(!checked(&mut app, row)?);
+        let live = app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?;
+        live.link.container_sort_edit(3, "1".into());
+        app.update();
         for expected in [true, false] {
             let row = checkbox(&mut app).ok_or("checkbox")?;
             app.world_mut()
                 .trigger(bevy::ui_widgets::Activate { entity: row });
             app.update();
             assert_eq!(active(&app), expected);
+            assert_eq!(
+                app.world()
+                    .non_send::<HostOwner>()
+                    .play
+                    .as_ref()
+                    .ok_or("play")?
+                    .link
+                    .container_sort_panel()
+                    .fields[3],
+                "0"
+            );
             let row = checkbox(&mut app).ok_or("checkbox after toggle")?;
             assert_eq!(checked(&mut app, row)?, expected);
         }

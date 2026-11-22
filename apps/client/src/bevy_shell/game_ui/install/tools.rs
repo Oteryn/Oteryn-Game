@@ -9,10 +9,14 @@ pub(super) fn project_tools(
 ) {
     if let Some(request) = owner.take_container_tool_request()
         && request.generation == owner.generation()
-        && owner.play.is_some()
+        && let Some(play) = &owner.play
     {
         if let Some(root) = state.root.take() {
             commands.entity(root).despawn();
+        }
+        if request.tool == ContainerTool::Sort {
+            play.link
+                .seed_container_sort_recursive(owner.settings.preferences.gameplay.sort_recursive);
         }
         state.pending_sort = None;
         state.request = Some(request);
@@ -259,7 +263,14 @@ pub(super) fn project_tools(
                 }
             }
         }
-        ToolSnapshot::Sort(_, containers, mode) => {
+        ToolSnapshot::Sort(panel, containers, mode) => {
+            button(
+                "Sort Nested Containers",
+                ToolAction::NestedSort {
+                    checked: panel.fields[3] == "1",
+                },
+                ready && !mode.active(),
+            );
             if mode.selected {
                 button(
                     "Use Manual Sort Mode",

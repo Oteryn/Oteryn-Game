@@ -81,7 +81,7 @@ fn otc_textmsg_setup_mounts_wrapping_noninteractive_areas_in_world() -> TestResu
         assert_eq!(*pickable, Pickable::IGNORE);
         count += 1;
     }
-    assert_eq!(count, 4);
+    assert_eq!(count, 6);
     Ok(())
 }
 
@@ -370,6 +370,216 @@ fn otc_textmsg_bevy_areas_clear_on_session_end() -> TestResult {
 }
 
 #[test]
+fn incoming_private_message_projects_over_world() -> TestResult {
+    let mut host = HostOwner::new(None)?;
+    let (link, _, outbox) = play_channel();
+    host.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.insert_non_send(host)
+        .init_resource::<Time<Real>>()
+        .init_resource::<ScreenMessages>()
+        .add_systems(Update, project);
+    for area in Area::ALL {
+        app.world_mut()
+            .spawn((ScreenArea(area), Text::default(), TextColor::default()));
+    }
+    app.update();
+    let line = oteryn_session::ChatLine::Private {
+        speaker_name: "Ann".into(),
+        text: "Here".into(),
+    };
+    outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: line.clone(),
+    })]);
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        Default::default(),
+        vec![line],
+    );
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query::<(&ScreenArea, &Text)>()
+            .iter(app.world())
+            .filter_map(|(area, text)| (text.0 == "Ann: Here").then_some(area.0))
+            .collect::<Vec<_>>(),
+        [Area::Private]
+    );
+    outbox.push(vec![SessionEvent::ChatSnapshot(AppliedDelta {
+        server_sequence: 2,
+        base_revision: 1,
+        new_revision: 2,
+        value: oteryn_session::ChatLog::default(),
+    })]);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .all(|t| t.0.is_empty()),
+        "a recovery snapshot must not replay the previous private message"
+    );
+    Ok(())
+}
+
+#[test]
+fn confirmed_loot_paints_each_item_at_its_own_value() -> TestResult {
+    use oteryn_session::analyser_transport::{AnalyserFact, AnalyserItemCount};
+    let mut host = HostOwner::new(None)?;
+    let (link, mut commands, outbox) = play_channel();
+    host.play = Some(crate::bevy_shell::owner::ActivePlay {
+        link,
+        view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+    });
+    let mut app = App::new();
+    app.insert_non_send(host)
+        .init_resource::<Time<Real>>()
+        .init_resource::<ScreenMessages>()
+        .add_systems(Update, (project, loot::project).chain());
+    for area in Area::ALL {
+        app.world_mut()
+            .spawn((ScreenArea(area), Text::default(), TextColor::default()));
+    }
+    app.update();
+    let item = std::num::NonZeroU32::MIN;
+    outbox.bevy_hud_fixture(&[], None);
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: vec![AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: vec![AnalyserItemCount {
+                item_type: item,
+                count: std::num::NonZeroU16::MIN,
+            }],
+            gold: 10000,
+        }],
+    })]);
+    app.update();
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("item query".into());
+    };
+    assert_eq!(command.kind, 734);
+    outbox.bevy_analyser_catalogue_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 2,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: oteryn_session::analyser_catalogue::encode_reply(&[
+            oteryn_session::analyser_catalogue::ItemInfo {
+                item_type: 1,
+                name: "Crystal coin".into(),
+                coin_worth: 10000,
+            },
+        ])?,
+    });
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<(&TextSpan, &TextColor)>()
+            .iter(app.world())
+            .any(|(span, color)| span.0.contains("Crystal coin")
+                && color.0 == Color::srgb_u8(159, 157, 253))
+    );
+    assert_eq!(
+        app.world_mut()
+            .query::<&TextSpan>()
+            .iter(app.world())
+            .count(),
+        1,
+        "the currency total already includes the coin shown on the corpse"
+    );
+    // These are separate wire fragments of one committed loot batch.
+    use oteryn_protocol_oteryn::market_details as market;
+    let value = 125_000;
+    let stats = market::Statistics {
+        definition: 2,
+        as_of_us: 2_592_000_000_000,
+        trades: 1,
+        units: 1,
+        minimum: Some(value),
+        maximum: Some(value),
+        average: Some(value),
+        sell: market::PriceSummary {
+            trades: 1,
+            units: 1,
+            minimum: Some(value),
+            maximum: Some(value),
+            average: Some(value),
+        },
+        ..Default::default()
+    };
+    outbox.bevy_market_initialize(true);
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .market_query(market::Query::Statistics { definition: 2 })
+    );
+    let crate::combat_input::PlayCommand::Feature(query) = commands.try_recv()? else {
+        return Err("market query".into());
+    };
+    outbox.bevy_market_reply(
+        &query,
+        &oteryn_session::GatedCommandResult {
+            command_id: 2,
+            server_sequence: 3,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: market::encode_reply(&market::Reply::Statistics(stats))
+                .map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 4,
+        base_revision: 1,
+        new_revision: 2,
+        value: [
+            std::num::NonZeroU32::MIN,
+            std::num::NonZeroU32::new(2).ok_or("item definition")?,
+        ]
+        .into_iter()
+        .map(|id| AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: vec![AnalyserItemCount {
+                item_type: id,
+                count: std::num::NonZeroU16::MIN,
+            }],
+            gold: 0,
+        })
+        .collect(),
+    })]);
+    app.update();
+    let mut spans = app.world_mut().query::<(&TextSpan, &TextColor)>();
+    assert_eq!(spans.iter(app.world()).count(), 2);
+    assert!(
+        spans
+            .iter(app.world())
+            .any(|(_, color)| color.0 == Color::srgb_u8(170, 85, 255)),
+        "confirmed market value colours the non-currency item"
+    );
+    for (enabled, count) in [(false, 0), (true, 2)] {
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .game_window
+            .messages = enabled;
+        app.update();
+        assert_eq!(spans.iter(app.world()).count(), count);
+    }
+    Ok(())
+}
+
+#[test]
 fn general_message_switch_only_hides_game_window_text() -> TestResult {
     let mut owner = HostOwner::new(None)?;
     let (link, _commands, outbox) = play_channel();
@@ -425,7 +635,11 @@ fn private_message_receipt_reaches_game_window_only_when_enabled() -> TestResult
         .add_systems(Update, project);
     let text = app
         .world_mut()
-        .spawn((ScreenArea(Area::Top), Text::default(), TextColor::default()))
+        .spawn((
+            ScreenArea(Area::Private),
+            Text::default(),
+            TextColor::default(),
+        ))
         .id();
     for (seq, enabled, ignored) in [(1, true, true), (2, true, false), (3, false, false)] {
         let mut host = app.world_mut().non_send_mut::<HostOwner>();
@@ -437,15 +651,21 @@ fn private_message_receipt_reaches_game_window_only_when_enabled() -> TestResult
         ));
         saved["private_messages"] = enabled.into();
         host.settings.preferences.game_window = serde_json::from_value(saved)?;
+        let line = oteryn_session::ChatLine::Private {
+            speaker_name: "Bryn".into(),
+            text: "Hello".into(),
+        };
         outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
             server_sequence: seq,
             base_revision: seq - 1,
             new_revision: seq,
-            value: oteryn_session::ChatLine::Private {
-                speaker_name: "Bryn".into(),
-                text: "Hello".into(),
-            },
+            value: line.clone(),
         })]);
+        crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+            &outbox,
+            Default::default(),
+            vec![line],
+        );
         // A second receipt for a different screen area arrives before Bevy's next frame.
         let play = host.play.as_ref().ok_or("play")?;
         let (_, action) = play
