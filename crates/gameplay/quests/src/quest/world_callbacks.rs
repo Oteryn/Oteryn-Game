@@ -673,6 +673,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         &serde_json::json!({"schema":1,"callbacks":[court_warlock::callback()?]}).to_string(),
     )?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/nomads-land.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
     ))?);
     callbacks.extend(parse(

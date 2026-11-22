@@ -667,6 +667,7 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/qm48-mammoth.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-clocks.json"),
             include_str!("../../../../../content/quests/world-callbacks/qready1-crafts.json"),
+            include_str!("../../../../../content/quests/world-callbacks/nomads-land.json"),
             include_str!(
                 "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
             ),

@@ -95,6 +95,7 @@
     "oteryn:npc.miraia",
     "oteryn:npc.mordecai",
     "oteryn:npc.morgan",
+    "oteryn:npc.muhad",
     "oteryn:npc.muriel",
     "oteryn:npc.myra",
     "oteryn:npc.norf",
@@ -209,6 +210,19 @@
     "oteryn:npc.minzy"
   ],
   "placement_adjustments": {
+    "oteryn:npc.muhad": {
+      "source": {
+        "x": 33278,
+        "y": 32526,
+        "z": 9
+      },
+      "target": {
+        "x": 33277,
+        "y": 32526,
+        "z": 9
+      },
+      "reason": "The retained contact cell holds a throne. Place Muhad on its adjacent clear ground in the same chamber."
+    },
     "oteryn:npc.edala": {
       "source": {
         "x": 32697,
