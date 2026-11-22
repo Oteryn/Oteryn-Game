@@ -222,6 +222,7 @@ fn journey(web_already_burned: bool) -> TestResult {
             assert_eq!(speak(&mut reconnected, &mut admitted, npc, "yes").await?, NpcIntentDisposition::Rejected);
             checkpoint(&h, Some(5), 0, 1, 1000).await?;
             assert_eq!(finish_receipts(&h).await?, 1);
+            assert_eq!(quest_xp(&h).await?, (1, 3000), "reconnect preserves the single XP reward");
             assert_eq!(log(&reconnected, &mut admitted).await?, initial_log, "the completed quest stays hidden");
             Ok(())
         }.await;
@@ -407,6 +408,20 @@ async fn exercise(
             "the real web changed on the map"
         );
         checkpoint(h, Some(3), 1, 0, 0).await?;
+
+        let burned = target(owner, WEB, 4)?.expected_revision;
+        owner.clock_origin -= Duration::from_secs(61);
+        let map = owner.bundle_map().ok_or("Botany map")?;
+        map.facts.expire_movement_items(owner.owner_now().get());
+        let regrown = target(owner, WEB, 4)?.expected_revision;
+        assert!(regrown > burned, "the web's timer restored the source");
+        assert_eq!(
+            use_object(owner, admitted, WEB, 4, Some(FIRE_BUG)).await?,
+            UseDisposition::Committed,
+            "a fresh Fire Bug USE burns the regrown web at stage 3"
+        );
+        assert!(target(owner, WEB, 4)?.expected_revision > regrown);
+        checkpoint(h, Some(3), 1, 0, 0).await?;
     }
 
     arrive(
@@ -434,17 +449,20 @@ async fn exercise(
     }
     let command = admitted.continuity.next_command_id;
     let confirmation = speech(npc, "yes")?;
+    assert_eq!(quest_xp(h).await?, (0, 0));
     let reward = wire(owner, admitted, command, 7, confirmation.clone()).await?;
     assert_eq!(
         decode_npc_intent_result(&reward).map_err(debug)?,
         NpcIntentDisposition::Ok
     );
     checkpoint(h, Some(5), 0, 1, 1000).await?;
+    assert_eq!(quest_xp(h).await?, (1, 3000), "Rabaz awards 3,000 XP");
     assert_eq!(
         wire(owner, admitted, command, 7, confirmation).await?,
         reward
     );
     checkpoint(h, Some(5), 0, 1, 1000).await?;
+    assert_eq!(quest_xp(h).await?, (1, 3000), "replay cannot award more XP");
     assert_eq!(
         finish_receipts(h).await?,
         1,
@@ -616,6 +634,20 @@ async fn checkpoint(
 async fn finish_receipts(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(FINISH)
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+async fn quest_xp(h: &Harness) -> TestResult<(i64, i64)> {
+    // This isolated journey earns XP only from Rabaz. The same reward is
+    // represented by its obligation until the progression owner settles it.
+    Ok(sqlx::query_as(
+        "SELECT count(*), COALESCE(sum(amount), 0)::bigint FROM (\
+             SELECT amount FROM game_character_quest_xp_obligations WHERE transition_key=$1 \
+             UNION ALL SELECT experience_awarded FROM game_character_xp_receipts\
+         ) AS reward",
     )
     .bind(FINISH)
     .fetch_one(&h.pool)
