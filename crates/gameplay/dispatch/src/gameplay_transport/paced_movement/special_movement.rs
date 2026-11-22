@@ -840,6 +840,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             if map.facts.doors().contains(*key) || !movable(facts) {
                 continue;
             }
+            // The retirement path must preserve authored objects bound to this placement.
+            if destination.is_none() && facts.bound {
+                continue;
+            }
             let Some((_, ordinal)) = crate::map::view::placement_of(*key) else {
                 return;
             };

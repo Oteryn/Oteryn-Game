@@ -120,7 +120,10 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
         .ok_or("doorway")?;
     doorway.items.get_mut(1).ok_or("quest door")?.attrs.action = Some(10089);
     if south_blocked {
+        let mut bound_coin = authored_coin.clone();
+        bound_coin.attrs.description = Some("Bound doorway marker".into());
         doorway.items.push(authored_coin);
+        doorway.items.push(bound_coin);
     }
     tiles.push(south);
     let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
@@ -348,7 +351,7 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
                 )
                 .await?,
             [authored],
-            "a cold Ground projection must also hide the authored coin"
+            "a cold Ground projection must hide the ordinary authored coin and keep the bound coin"
         );
         assert_eq!(moves, (0, 0));
     } else {
