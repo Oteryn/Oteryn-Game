@@ -2341,7 +2341,7 @@ mod tests {
         for (key, expected) in [
             (
                 "oteryn:quest.outfit_and_addon_quests",
-                "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8",
+                "de0d90685da65e806d7d1c86a6c067a62479af04f6e79f29b8d042d43237e7db",
             ),
             // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
@@ -2387,9 +2387,9 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 207 existing and 31 QB routes. The final two terms are
-        // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12);
+        // Shared covers 207 existing and 31 QB routes. Rottin Wood contributes 13,
+        // the Forgemaster contributes 12, and the chosen quest routes add 18.
+        assert_eq!(load()?.len(), 238 + 59 + 125 + 1 + 1 + 13 + 12 + 18);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -3157,7 +3157,7 @@ mod lane_counter_tests {
     fn occurrence_mint_is_explicit_portable_and_part_of_the_value_hash() -> Result<(), String> {
         let mut callback = load()?
             .into_iter()
-            .find(|c| c.key.ends_with("/venore-daily/accept"))
+            .find(|c| c.key.ends_with("/venore-daily/maintenance/accept"))
             .ok_or("accept")?;
         let legacy = value_plan(&callback)?;
         let encoded = serde_json::to_value(&callback).map_err(|e| e.to_string())?;
@@ -3369,7 +3369,7 @@ mod outfit_reward_predecessor_tests {
         );
         assert_eq!(
             hex(&full_hash),
-            "bd44ba2f572315de58bc53958ee1bf398a7039ae5badf3e796017965d051f6c8"
+            "de0d90685da65e806d7d1c86a6c067a62479af04f6e79f29b8d042d43237e7db"
         );
         assert_eq!((declared.1.len(), full_defaults.len()), (51, 52));
         assert!(

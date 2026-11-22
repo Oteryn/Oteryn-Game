@@ -18,6 +18,7 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 #[derive(Clone, Copy)]
 pub(super) enum Route {
     Voodoo,
+    VoodooSouthFirst,
     Mastermind,
     Kormarak,
 }
@@ -25,7 +26,7 @@ pub(super) enum Route {
 impl Route {
     pub(super) fn slug(self) -> &'static str {
         match self {
-            Self::Voodoo => "voodoo",
+            Self::Voodoo | Self::VoodooSouthFirst => "voodoo",
             Self::Mastermind => "mastermind",
             Self::Kormarak => "kormarak",
         }
@@ -33,13 +34,14 @@ impl Route {
     pub(super) fn name(self) -> &'static str {
         match self {
             Self::Voodoo => "authored-voodoo",
+            Self::VoodooSouthFirst => "authored-voodoo-south-first",
             Self::Mastermind => "authored-mastermind",
             Self::Kormarak => "authored-kormarak",
         }
     }
     pub(super) fn anchor(self) -> Position {
         match self {
-            Self::Voodoo => Position {
+            Self::Voodoo | Self::VoodooSouthFirst => Position {
                 x: 32743,
                 y: 31950,
                 floor: -9,
@@ -58,7 +60,7 @@ impl Route {
     }
     fn quest(self) -> &'static str {
         match self {
-            Self::Voodoo => "oteryn:quest.authored.voodoo_doll_quest",
+            Self::Voodoo | Self::VoodooSouthFirst => "oteryn:quest.authored.voodoo_doll_quest",
             Self::Mastermind => "oteryn:quest.authored.mastermind_potion_quest",
             Self::Kormarak => "oteryn:quest.authored.kingdom_of_kormarak_quest",
         }
@@ -66,9 +68,14 @@ impl Route {
 }
 
 pub(super) fn route(name: &str) -> Option<Route> {
-    [Route::Voodoo, Route::Mastermind, Route::Kormarak]
-        .into_iter()
-        .find(|route| route.name() == name)
+    [
+        Route::Voodoo,
+        Route::VoodooSouthFirst,
+        Route::Mastermind,
+        Route::Kormarak,
+    ]
+    .into_iter()
+    .find(|route| route.name() == name)
 }
 
 pub(super) async fn exercise(
@@ -84,7 +91,7 @@ pub(super) async fn exercise(
         Route::Kormarak => {
             return super::questpc8_kormarak_fixtures::exercise(owner, admitted, h).await;
         }
-        Route::Voodoo => {}
+        Route::Voodoo | Route::VoodooSouthFirst => {}
     }
     let native = owner
         .active_generation
@@ -96,40 +103,68 @@ pub(super) async fn exercise(
     step(owner, admitted, 1, StepDirection::East).await?;
     let mut command = 2;
     assert_eq!(progress(h, route, "stage").await?, 1);
-    walk(owner, admitted, &mut command, 32755, 31954).await?;
-    let north = TilePos {
-        x: 32757,
-        y: 31953,
-        floor: -9,
-    };
-    walk(owner, admitted, &mut command, 32756, 31953).await?;
-    assert_eq!(
-        claim(owner, admitted, &mut command, north, 1).await?,
-        UseDisposition::Rejected
-    );
-    walk(owner, admitted, &mut command, 32755, 31954).await?;
-    hunt(owner, admitted, "oteryn:creature.witch", 3, command).await?;
-    assert_eq!(progress(h, route, "kills").await?, 3);
-    walk(owner, admitted, &mut command, 32756, 31953).await?;
-    assert_eq!(
-        claim(owner, admitted, &mut command, north, 1).await?,
-        UseDisposition::Committed
-    );
-    assert_eq!(progress(h, route, "stage").await?, 2);
-    assert_eq!(quantity(h, "oteryn:item.tibia.i3209").await?, 1);
-    assert_eq!(
-        claim(owner, admitted, &mut command, north, 1).await?,
-        UseDisposition::Rejected
-    );
-    walk(owner, admitted, &mut command, 32756, 31957).await?;
-    let south = TilePos {
-        x: 32757,
-        y: 31957,
-        floor: -9,
-    };
-    finish(owner, admitted, h, &mut command, south, 1).await?;
-    assert_eq!(quantity(h, "oteryn:item.tibia.i3209").await?, 1);
-    assert_eq!(quantity(h, "oteryn:item.tibia.i3046").await?, 1);
+        let north = TilePos {
+            x: 32757,
+            y: 31953,
+            floor: -9,
+        };
+        let south = TilePos {
+            x: 32757,
+            y: 31957,
+            floor: -9,
+        };
+        let (first, second, first_item, first_stage) = if matches!(route, Route::Voodoo) {
+            walk(owner, admitted, &mut command, 32755, 31954).await?;
+            walk(owner, admitted, &mut command, 32756, 31953).await?;
+        assert_eq!(
+            claim(owner, admitted, &mut command, north, 1).await?,
+            UseDisposition::Rejected
+        );
+        walk(owner, admitted, &mut command, 32755, 31954).await?;
+        hunt(owner, admitted, "oteryn:creature.witch", 3, command).await?;
+            assert_eq!(progress(h, route, "kills").await?, 3);
+            (north, south, "oteryn:item.tibia.i3209", 2)
+        } else {
+            assert_eq!(progress(h, route, "kills").await?, 0);
+            (south, north, "oteryn:item.tibia.i3046", 3)
+        };
+        walk(
+            owner,
+            admitted,
+            &mut command,
+            i32::from(first.x) - 1,
+            i32::from(first.y),
+        )
+        .await?;
+        assert_eq!(
+            claim(owner, admitted, &mut command, first, 1).await?,
+            UseDisposition::Committed
+        );
+        assert_eq!(progress(h, route, "stage").await?, first_stage);
+        assert_eq!(quantity(h, first_item).await?, 1);
+        assert_eq!(
+            claim(owner, admitted, &mut command, first, 1).await?,
+            UseDisposition::Rejected
+        );
+        let completed: bool = sqlx::query_scalar(
+            "SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2",
+        )
+        .bind(id(41).as_slice())
+        .bind(route.quest())
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(!completed, "one box does not finish the quest");
+        walk(
+            owner,
+            admitted,
+            &mut command,
+            i32::from(second.x) - 1,
+            i32::from(second.y),
+        )
+        .await?;
+        finish(owner, admitted, h, &mut command, second, 1).await?;
+        assert_eq!(quantity(h, "oteryn:item.tibia.i3209").await?, 1);
+        assert_eq!(quantity(h, "oteryn:item.tibia.i3046").await?, 1);
     assert_eq!(progress(h, route, "stage").await?, 4);
     let complete:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2").bind(id(41).as_slice()).bind(route.quest()).fetch_one(&h.pool).await?;
     assert!(complete);
@@ -315,7 +350,7 @@ pub(super) fn world(route: Route) -> TestResult<crate::map::boot::BundleWorld> {
         return super::questpc8_native_slice::world(native, patches, &[], start);
     }
     let (min_x, max_x, min_y, max_y, objects): (u16, u16, u16, u16, FixtureObjects) = match route {
-        Route::Voodoo => (
+        Route::Voodoo | Route::VoodooSouthFirst => (
             32741,
             32759,
             31948,

@@ -79,7 +79,9 @@ fn scenario_case(
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let pinned_qc_world = name.starts_with("m09-treasure-")
         || super::super::qc_lizard_sanctuary_fixtures::matches_world(name);
+    let hunter_hymn = name == "hunter-hymn-piano";
     let native_crop = pinned_qc_world
+        || hunter_hymn
         || m03_use
         || qd_world
         || engenc_asura
@@ -116,7 +118,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if name == "qengine-rewards-smith-story" {
+    let start = if hunter_hymn {
+        Position { x: trigger.x + 1, ..trigger }
+    } else if name == "qengine-rewards-smith-story" {
         Position {
             x: 32775,
             y: 32254,
@@ -357,7 +361,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if name == "authored-voodoo-south-first" {
+        callback("authored-voodoo")?
+    } else if m03_use {
         super::super::qengine_m03_use_fixtures::callback()?
     } else if qd_world {
         super::super::qd_world_fixtures::callback(name)?
@@ -655,7 +661,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals_fixtures::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if hunter_hymn {
+        super::super::quest_hunter_hymn_fixtures::world()?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals_fixtures::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
@@ -3078,6 +3086,8 @@ fn scenario_case(
                 &authority,
             )
             .await?;
+        } else if hunter_hymn {
+            super::super::quest_hunter_hymn_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-colours-opening" {
             super::super::questpc8_colours_opening_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-wrath-opening" {

@@ -198,10 +198,7 @@
       "failure_message": null,
       "sources": [
         "oteryn-authored:chosen-recipe:voodoo:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
-        "https://tibia.fandom.com/index.php?curid=5235&oldid=749496",
-        "https://www.tibiawiki.com.br/index.php?curid=4566&oldid=416110",
-        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:416-430"
       ],
       "key": "oteryn:quest-callback/authored-voodoo",
       "trigger": "step_in",
@@ -231,7 +228,7 @@
         }
       ],
       "premium_required": false,
-      "success_message": "Three witches guard the two boxes by the eastern wall. Search the northern box first."
+      "success_message": "The witches guard two boxes along the eastern wall."
     },
     {
       "quest": "oteryn:quest.authored.voodoo_doll_quest",
@@ -244,10 +241,7 @@
       "failure_message": null,
       "sources": [
         "oteryn-authored:chosen-recipe:voodoo:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
-        "https://tibia.fandom.com/index.php?curid=5235&oldid=749496",
-        "https://www.tibiawiki.com.br/index.php?curid=4566&oldid=416110",
-        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:416-430"
       ],
       "key": "oteryn:quest-callback/authored-voodoo-north",
       "trigger": "use",
@@ -265,16 +259,9 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/chosen/voodoo/stage",
-          "minimum": 1,
+          "minimum": -1,
           "maximum": 1,
           "set": 2
-        },
-        {
-          "track": "oteryn:quest-progress/chosen/voodoo/kills",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 3,
-          "preserve": true
         }
       ],
       "premium_required": false,
@@ -297,12 +284,96 @@
       "failure_message": null,
       "sources": [
         "oteryn-authored:chosen-recipe:voodoo:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
-        "https://tibia.fandom.com/index.php?curid=5235&oldid=749496",
-        "https://www.tibiawiki.com.br/index.php?curid=4566&oldid=416110",
-        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:416-430"
+      ],
+      "key": "oteryn:quest-callback/authored-voodoo-north-finish",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32757,
+          "y": 31953,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": false,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3209",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "completes": true
+    },
+    {
+      "quest": "oteryn:quest.authored.voodoo_doll_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:voodoo:authored-r1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:416-430"
       ],
       "key": "oteryn:quest-callback/authored-voodoo-south",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32757,
+          "y": 31957,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/stage",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 3
+        }
+      ],
+      "premium_required": false,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3046",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.voodoo_doll_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:voodoo:authored-r1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:416-430"
+      ],
+      "key": "oteryn:quest-callback/authored-voodoo-south-finish",
       "trigger": "use",
       "selector": {
         "position": {
@@ -3012,10 +3083,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+        "oteryn-authored:venore-daily-independent",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
       ],
       "key": "oteryn:quest-callback/authored-venore-machine-1",
       "trigger": "use",
@@ -3032,10 +3101,17 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
           "minimum": 1,
           "maximum": 1,
-          "set": 2
+          "set": 1,
+          "preserve": true
         }
       ],
       "premium_required": false,
@@ -3044,10 +3120,12 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "success_message": "You oil this construction machine.",
-      "use_range": 2
+      "use_range": 2,
+      "requires_world_admission": true
     },
     {
       "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
@@ -3059,10 +3137,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+        "oteryn-authored:venore-daily-independent",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
       ],
       "key": "oteryn:quest-callback/authored-venore-machine-2",
       "trigger": "use",
@@ -3079,10 +3155,17 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-2",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
         }
       ],
       "premium_required": false,
@@ -3091,10 +3174,12 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "success_message": "You oil this construction machine.",
-      "use_range": 2
+      "use_range": 2,
+      "requires_world_admission": true
     },
     {
       "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
@@ -3106,10 +3191,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+        "oteryn-authored:venore-daily-independent",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
       ],
       "key": "oteryn:quest-callback/authored-venore-machine-3",
       "trigger": "use",
@@ -3126,10 +3209,17 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 4
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
         }
       ],
       "premium_required": false,
@@ -3138,10 +3228,12 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "success_message": "You oil this construction machine.",
-      "use_range": 2
+      "use_range": 2,
+      "requires_world_admission": true
     },
     {
       "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
@@ -3153,10 +3245,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+        "oteryn-authored:venore-daily-independent",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
       ],
       "key": "oteryn:quest-callback/authored-venore-machine-4",
       "trigger": "use",
@@ -3173,10 +3263,17 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 4,
-          "maximum": 4,
-          "set": 5
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-4",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
         }
       ],
       "premium_required": false,
@@ -3185,10 +3282,12 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "success_message": "You oil this construction machine.",
-      "use_range": 2
+      "use_range": 2,
+      "requires_world_admission": true
     },
     {
       "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
@@ -3200,10 +3299,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+        "oteryn-authored:venore-daily-independent",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
       ],
       "key": "oteryn:quest-callback/authored-venore-machine-5",
       "trigger": "use",
@@ -3220,10 +3317,17 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 5,
-          "maximum": 5,
-          "set": 6
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-5",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
         }
       ],
       "premium_required": false,
@@ -3232,10 +3336,12 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "success_message": "You oil this construction machine.",
-      "use_range": 2
+      "use_range": 2,
+      "requires_world_admission": true
     },
     {
       "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
@@ -3247,10 +3353,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+        "oteryn-authored:venore-daily-independent",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
       ],
       "key": "oteryn:quest-callback/authored-venore-machine-6",
       "trigger": "use",
@@ -3267,10 +3371,17 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 6,
-          "maximum": 6,
-          "set": 7
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-6",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
         }
       ],
       "premium_required": false,
@@ -3279,10 +3390,12 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "success_message": "You oil this construction machine.",
-      "use_range": 2
+      "use_range": 2,
+      "requires_world_admission": true
     },
     {
       "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
@@ -3294,10 +3407,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+        "oteryn-authored:venore-daily-independent",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
       ],
       "key": "oteryn:quest-callback/authored-venore-machine-7",
       "trigger": "use",
@@ -3314,10 +3425,17 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 7,
-          "maximum": 7,
-          "set": 8
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-7",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
         }
       ],
       "premium_required": false,
@@ -3326,10 +3444,12 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "success_message": "You oil this construction machine.",
-      "use_range": 2
+      "use_range": 2,
+      "requires_world_admission": true
     },
     {
       "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
@@ -3341,10 +3461,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+        "oteryn-authored:venore-daily-independent",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
       ],
       "key": "oteryn:quest-callback/authored-venore-machine-8",
       "trigger": "use",
@@ -3361,10 +3479,17 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 8,
-          "maximum": 8,
-          "set": 9
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-8",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
         }
       ],
       "premium_required": false,
@@ -3373,10 +3498,12 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "success_message": "You oil this construction machine.",
-      "use_range": 2
+      "use_range": 2,
+      "requires_world_admission": true
     },
     {
       "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
@@ -3388,10 +3515,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+        "oteryn-authored:venore-daily-independent",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
       ],
       "key": "oteryn:quest-callback/authored-venore-machine-9",
       "trigger": "use",
@@ -3408,10 +3533,17 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 9,
-          "maximum": 9,
-          "set": 10
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-9",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
         }
       ],
       "premium_required": false,
@@ -3420,10 +3552,60 @@
         "count": 1,
         "replacement": null,
         "target_replacement": null,
-        "reusable": true
+        "reusable": true,
+        "selected_instance": true
       },
       "success_message": "You oil this construction machine.",
-      "use_range": 2
+      "use_range": 2,
+      "requires_world_admission": true
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "key": "oteryn:quest-callback/authored-venore-sabotage-entry",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33029,
+          "y": 32141,
+          "floor": -7
+        },
+        "appearance": 17667,
+        "ordinal": 0,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 4,
+          "read_only": true
+        }
+      ],
+      "teleport": {
+        "x": 33029,
+        "y": 32141,
+        "floor": -8
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You have no sabotage work left here.",
+      "sources": [
+        "oteryn-authored:venore-daily-independent",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
     },
     {
       "key": "oteryn:quest-callback/authored-winterlight-gather",
@@ -4421,6 +4603,976 @@
         "reusable": true
       },
       "success_message": "You have dispelled imperial influence 4 of 4."
+    },
+    {
+      "key": "oteryn:quest-callback/authored-hunter-hymn-piano",
+      "quest": "oteryn:quest.hunter_outfits_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32406,
+          "y": 32794,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 6123,
+        "ordinal": 1
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32402,
+        "y": 32794,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunter-outfits/verse-1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/hunter-outfits/verse-2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/hunter-outfits/verse-3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/hunter-outfits/verse-4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "You have not learned all the verses of the hymn.",
+      "sources": [
+        "oteryn-authored:source-script-counterpart:crystal-33216",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_all_hymn_piano_teleport.lua:1-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-fill-vial",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32611,
+          "y": 31618,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 101,
+        "ordinal": 0
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/watering/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Root-free water at the north shore behind the tree on the retained Hellgate map."
+      ],
+      "requires_world_admission": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/watering/filled-at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i18991",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i18992",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "success_message": "The water stirs as it fills the vial."
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-refill-vial",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32611,
+          "y": 31618,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 101,
+        "ordinal": 0
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/watering/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Root-free water at the north shore behind the tree on the retained Hellgate map."
+      ],
+      "requires_world_admission": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/watering/filled-at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 900
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i18992",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i18992",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "success_message": "The water stirs as it fills the vial."
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-01",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32567,
+          "y": 31609,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3906,
+        "ordinal": 4
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-01",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-02",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32558,
+          "y": 31611,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3907,
+        "ordinal": 3
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-02",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-03",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32559,
+          "y": 31611,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3906,
+        "ordinal": 3
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-03",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-04",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32569,
+          "y": 31612,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3906,
+        "ordinal": 2
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-04",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-05",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32562,
+          "y": 31613,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3907,
+        "ordinal": 4
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-05",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-06",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32570,
+          "y": 31613,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3907,
+        "ordinal": 2
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-06",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-07",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32562,
+          "y": 31615,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3906,
+        "ordinal": 4
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-07",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-08",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32562,
+          "y": 31626,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3906,
+        "ordinal": 3
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-08",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-09",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32562,
+          "y": 31627,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3907,
+        "ordinal": 3
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-09",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-10",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32571,
+          "y": 31629,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3906,
+        "ordinal": 4
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-10",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-11",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32573,
+          "y": 31630,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3907,
+        "ordinal": 4
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-11",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-repenters-mushroom-12",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32574,
+          "y": 31630,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3906,
+        "ordinal": 3
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-12",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 5,
+          "add": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:repenters-hellgate-tasks",
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999",
+        "Retained source mushrooms inside the Bonelord and Gazer crystal mine."
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "success_message": "The mushroom has been sterilised.",
+      "activation": {
+        "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+        "minimum": 0,
+        "maximum": 4
+      }
     }
   ]
 }
