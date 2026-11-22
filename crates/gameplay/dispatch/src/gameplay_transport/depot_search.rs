@@ -2,15 +2,10 @@
 //! depot and Inbox items through the item-loop batch owner.
 use super::item_ref_admission::NativeItemWeights;
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
-use crate::durability::character_stash::StashRequest;
+use crate::durability::depot_search::DepotSearchCommand;
 use crate::durability::item_loop_move::DepotSearchRetrieval;
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::depot_search::{Outcome, Reply, Request, SearchResult, TierCount};
-use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
-
-fn retrieval_amount(available: u32, all: bool) -> Option<u32> {
-    (available > 0).then_some(if all { available } else { 1 })
-}
 
 macro_rules! authority_methods {
     () => {
@@ -103,100 +98,40 @@ pub(super) async fn execute(
         let Some(native) = owner.active_generation.and_then(|g| g.native_gameplay()) else {
             return rejected();
         };
-        // Supply-stash value remains owned by `stash_conversion`: depot search only
-        // resolves the server-issued row and selects one unit or the complete balance.
-        // This is intentionally one balance/revision, so the operation keeps the
-        // stash owner's immutable replay receipt and all-or-nothing capacity checks.
-        let key = format!("oteryn:item.tibia.i{client_id}");
-        let row = match owner
+        let retrieval = owner
             .root
-            .read_stash_definition(owner.character, fence.character_id, &key)
-            .await
-        {
-            Ok(Some(row)) => row,
-            // Without a stash balance, retrieval moves the depot and Inbox items, nested
-            // entries included, as one batch of conserved item-loop moves.
-            Ok(None) => {
-                let retrieval = owner
-                    .root
-                    .commit_depot_search_retrieval(
-                        &_permit,
-                        owner.character,
-                        owner.holder,
-                        fence,
-                        CommandRef::new(admitted.game_session_id, command_id),
-                        &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
-                        client_id,
-                        all,
-                    )
-                    .await;
-                return match retrieval {
-                    Ok(Ok(DepotSearchRetrieval::Retrieved(0))) => Reply {
-                        outcome: Outcome::NoRoom,
-                        retrieved: 0,
-                        results: Vec::new(),
-                    },
-                    Ok(Ok(DepotSearchRetrieval::Retrieved(retrieved))) => Reply {
-                        outcome: Outcome::Retrieved,
-                        retrieved,
-                        results: Vec::new(),
-                    },
-                    Ok(Ok(DepotSearchRetrieval::NotFound)) => Reply {
-                        outcome: Outcome::NotFound,
-                        retrieved: 0,
-                        results: Vec::new(),
-                    },
-                    _ => rejected(),
-                };
-            }
-            Err(_) => return rejected(),
-        };
-        let Some(amount) = retrieval_amount(row.quantity, all) else {
-            return rejected();
-        };
-        let receipt = owner
-            .root
-            .stash_conversion(
+            .commit_depot_search_with_stash(
                 &_permit,
                 owner.character,
                 owner.holder,
                 fence,
-                StashRequest {
+                DepotSearchCommand {
                     command: CommandRef::new(admitted.game_session_id, command_id),
-                    intent: StashIntent {
-                        action: StashAction::Withdraw {
-                            row: row.handle,
-                            amount,
-                        },
-                        page: 0,
-                    },
-                    source: None,
-                    row_open: true,
-                    access_refusal: None,
+                    client_id,
+                    all,
                 },
-                native,
-                &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
-                false,
+                (
+                    native,
+                    &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
+                ),
             )
             .await;
-        return match receipt {
-            Ok(Some(receipt)) if receipt.outcome == StashOutcome::Committed => Reply {
-                outcome: Outcome::Retrieved,
-                retrieved: amount,
+        return match retrieval {
+            Ok(Ok(DepotSearchRetrieval::Retrieved(0))) => Reply {
+                outcome: Outcome::NoRoom,
+                retrieved: 0,
                 results: Vec::new(),
             },
-            Ok(Some(receipt))
-                if matches!(
-                    receipt.outcome,
-                    StashOutcome::NoRoom | StashOutcome::NoBackpack | StashOutcome::Overweight
-                ) =>
-            {
-                Reply {
-                    outcome: Outcome::NoRoom,
-                    retrieved: 0,
-                    results: Vec::new(),
-                }
-            }
+            Ok(Ok(DepotSearchRetrieval::Retrieved(retrieved))) => Reply {
+                outcome: Outcome::Retrieved,
+                retrieved,
+                results: Vec::new(),
+            },
+            Ok(Ok(DepotSearchRetrieval::NotFound)) => Reply {
+                outcome: Outcome::NotFound,
+                retrieved: 0,
+                results: Vec::new(),
+            },
             _ => rejected(),
         };
     }
@@ -268,17 +203,5 @@ pub(super) async fn execute(
             }
         }
         Err(_) => rejected(),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::retrieval_amount;
-
-    #[test]
-    fn retrieval_selects_one_or_the_complete_balance() {
-        assert_eq!(retrieval_amount(62, false), Some(1));
-        assert_eq!(retrieval_amount(62, true), Some(62));
-        assert_eq!(retrieval_amount(0, true), None);
     }
 }

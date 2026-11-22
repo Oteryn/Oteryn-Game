@@ -174,8 +174,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run_with_context(&mut context,move |holder,deadline,context|Box::pin(async move {
             let mut tx=super::db::begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&record).await?;
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:stash:' || encode($1,'hex') || ':' || $2,0))")
-                .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).execute(&mut *tx).await?;
+            lock_stash_command(&mut tx, request.command).await?;
             let previous=sqlx::query("SELECT uuid_send(r.transaction_id) AS transaction,uuid_send(r.character_id) AS character,r.intent,r.outcome,CASE WHEN r.action=2 THEN COALESCE(e.amount,0) ELSE 0 END AS stowed FROM game_character_stash_operations r LEFT JOIN game_character_stash_entries e ON e.transaction_id=r.transaction_id WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).fetch_optional(&mut *tx).await?;
             if let Some(previous)=previous {
@@ -200,27 +199,82 @@ impl DurabilityRoot {
                 scope_of(&fence).map_err(|_|DurabilityError::InvalidStoredState)?.1
             };
             let house_key=if hireling.is_some() {Some(super::house_hireling::audit::read_key(&mut tx,&fence).await?)}else{None};
-            if context.1.loop_content_digest()!=context.0.source_digest() {return Err(DurabilityError::Unavailable);}
-            let planned=plan(&mut tx,fence,&request,context.0,context.1).await?;
-            let (transaction,event,occurred):(String,String,i64)=sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
-            let outcome=match &planned {Ok(_)=>StashOutcome::Committed,Err(outcome)=>*outcome};
-            let action=if matches!(request.intent.action,StashAction::Stow(_)) {2_i16}else{3};
-            let stowed_quantity=if action==2 {planned.as_ref().map(|p|p.amount).unwrap_or(0)}else{0};
-            let envelope=match &planned {Ok(plan)=>Some(audit::encode(fence,channel,&request,plan,&transaction,&event,occurred,house_key.as_deref())?),Err(_)=>None};
-            let world=fence.runtime_scope.world_id();
-            sqlx::query("INSERT INTO game_character_stash_operations(transaction_id,game_session_id,command_id,character_id,world_id,intent,action,outcome,event_id,occurred_at,envelope_sha256,house_key,house_scope_ownership_generation) VALUES($1::uuid,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8,$9::uuid,$10,sha256($11),$12,$13::text::numeric)")
-                .bind(&transaction).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&intent).bind(action).bind(outcome as i16).bind(envelope.as_ref().map(|_|event.as_str())).bind(occurred).bind(envelope.as_deref())
-                .bind(house_key.as_deref()).bind(house_key.as_ref().map(|_|fence.scope_ownership_generation.get().to_string())).execute(&mut *tx).await?;
-            if let Ok(plan)=planned {
-                apply(&mut tx,fence,&plan,action,&transaction).await?;
-                let envelope=envelope.ok_or(DurabilityError::InvalidStoredState)?;
-                sqlx::query("INSERT INTO game_character_stash_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,world_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,9,1,'ECONOMY_LEDGER_RETENTION_V1',encode($3,'hex')::uuid,$4,$4+2592000000,$5,sha256($5),1)")
-                    .bind(&event).bind(&transaction).bind(world.as_bytes().as_slice()).bind(occurred).bind(&envelope).execute(&mut *tx).await?;
-            }
+            let receipt = commit_conversion(&mut tx, fence, &request, &intent, channel, house_key.as_deref(), (context.0, context.1)).await?;
             super::db::commit_semantic_transaction(tx,deadline).await?;
-            Ok(Some(StashReceipt {transaction:uuid_text(&transaction)?,outcome,stowed_quantity}))
+            Ok(Some(receipt))
         })).await
     }
+}
+
+pub(super) async fn lock_stash_command(
+    tx: &mut Transaction<'_, Postgres>,
+    command: CommandRef,
+) -> Result<(), sqlx::Error> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:stash:' || encode($1,'hex') || ':' || $2,0))")
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
+}
+
+/// Apply one already-fenced conversion, leaving the transaction open for the caller's receipt.
+pub(super) async fn commit_conversion<C: ItemLoopContent>(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: CurrentCharacterItemFence,
+    request: &StashRequest,
+    intent: &[u8],
+    channel: crate::foundation::ChannelId,
+    house_key: Option<&str>,
+    (native, content): (&NativeGameplayState, &C),
+) -> Result<StashReceipt, DurabilityError> {
+    if content.loop_content_digest() != native.source_digest() {
+        return Err(DurabilityError::Unavailable);
+    }
+    let planned = plan(tx, fence, request, native, content).await?;
+    let (transaction,event,occurred):(String,String,i64)=sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut **tx).await?;
+    let outcome = match &planned {
+        Ok(_) => StashOutcome::Committed,
+        Err(outcome) => *outcome,
+    };
+    let action = if matches!(request.intent.action, StashAction::Stow(_)) {
+        2_i16
+    } else {
+        3
+    };
+    let stowed_quantity = if action == 2 {
+        planned.as_ref().map(|p| p.amount).unwrap_or(0)
+    } else {
+        0
+    };
+    let envelope = match &planned {
+        Ok(plan) => Some(audit::encode(
+            fence,
+            channel,
+            request,
+            plan,
+            &transaction,
+            &event,
+            occurred,
+            house_key,
+        )?),
+        Err(_) => None,
+    };
+    let world = fence.runtime_scope.world_id();
+    sqlx::query("INSERT INTO game_character_stash_operations(transaction_id,game_session_id,command_id,character_id,world_id,intent,action,outcome,event_id,occurred_at,envelope_sha256,house_key,house_scope_ownership_generation) VALUES($1::uuid,encode($2,'hex')::uuid,$3::text::numeric,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8,$9::uuid,$10,sha256($11),$12,$13::text::numeric)")
+        .bind(&transaction).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(intent).bind(action).bind(outcome as i16).bind(envelope.as_ref().map(|_|event.as_str())).bind(occurred).bind(envelope.as_deref())
+        .bind(house_key).bind(house_key.map(|_|fence.scope_ownership_generation.get().to_string())).execute(&mut **tx).await?;
+    if let Ok(plan) = planned {
+        apply(tx, fence, &plan, action, &transaction).await?;
+        let envelope = envelope.ok_or(DurabilityError::InvalidStoredState)?;
+        sqlx::query("INSERT INTO game_character_stash_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,world_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,9,1,'ECONOMY_LEDGER_RETENTION_V1',encode($3,'hex')::uuid,$4,$4+2592000000,$5,sha256($5),1)")
+            .bind(&event).bind(&transaction).bind(world.as_bytes().as_slice()).bind(occurred).bind(&envelope).execute(&mut **tx).await?;
+    }
+    Ok(StashReceipt {
+        transaction: uuid_text(&transaction)?,
+        outcome,
+        stowed_quantity,
+    })
 }
 
 fn outcome_from_code(code: i16) -> Result<StashOutcome, DurabilityError> {
