@@ -35,6 +35,8 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                         | "oteryn:quest-callback/explorer-society/cut-ice"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                         | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
+                        | "oteryn:quest-callback/authored-threatened-dreams/book-table-1"
+                        | "oteryn:quest-callback/authored-threatened-dreams/book-table-2"
                         | "oteryn:quest-callback/to-blind-the-enemy/mirror"
                 ))
             || rottin_walls::accepts(callback)

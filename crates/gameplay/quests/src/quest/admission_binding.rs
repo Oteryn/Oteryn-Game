@@ -100,6 +100,10 @@ fn registry() -> Result<&'static Registry, String> {
                 false,
                 false,
             )?;
+            // The poacher-book binding and the existing animal dialogue share a track.
+            for transition in super::threatened_dreams::animal_transitions()? {
+                add(transition, false, false)?;
+            }
             add(super::arena_completion::transition()?, false, true)?;
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;

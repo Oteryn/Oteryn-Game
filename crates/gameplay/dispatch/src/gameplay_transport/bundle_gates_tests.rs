@@ -1175,6 +1175,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         2,
     ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
+    // The poacher chapter uses its compact Bundle map without qualification.
+    (
+        "gameplay_transport/postgres_tests/threatened_dreams_journey.rs",
+        1,
+    ),
     (
         "gameplay_transport/postgres_tests/support/vertical_move_fixtures.rs",
         2,

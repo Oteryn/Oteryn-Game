@@ -708,6 +708,8 @@ def expected_files(root, include_registration=False):
     records, _ = apply_soul_war_followup(root, records)
     reconcile_alawar_key_claim(root, records, claims)
     reconcile_paradox_key(root, records, claims)
+    from quest_threatened_dreams_followup import apply as apply_threatened_dreams
+    apply_threatened_dreams(records)
     from quest_item_keys import catalogue, enrich, item_definitions, validate_references
     items = item_definitions(root)
     recipes = [row['definition'].get('recipe') or
@@ -825,6 +827,7 @@ def expected_files(root, include_registration=False):
             'tools/content-schema/quest-authoring/soul_war_reconstruction.schema.json',
             'tools/content-schema/quest-authoring/soul_war_reconstruction.py',
             'tools/content-schema/quest-authoring/quest_soul_war_followup.py',
+            'tools/content-schema/quest-authoring/quest_threatened_dreams_followup.py',
             'tools/content-schema/quest-authoring/samples/soul-war-reconstruction/reconstruction.json',
             'tools/content-schema/quest-authoring/samples/soul-war-reconstruction/recipe-followup.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/capture.json',
