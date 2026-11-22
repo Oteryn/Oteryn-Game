@@ -164,12 +164,54 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
     entries.push(super::super::monk_shrines::journal());
     entries.retain(|entry| entry.key != super::super::kill_objectives::QUEST);
     entries.push(super::super::kill_objectives::journal());
+    if let Some(journal) = blind_the_enemy_journal(lowered) {
+        entries.retain(|entry| entry.key != journal.key);
+        entries.push(journal);
+    }
     super::super::world_change_journals::append_journals(&mut entries)?;
     let catalogue = QuestLogCatalogue::new(lowered.catalogue(), entries)
         .map_err(|e| format!("journal catalogue: {e:?}"))?;
     Ok(LoadedQuestLog {
         content: QuestLogContent::new(catalogue, Vec::new()),
         exclusions,
+    })
+}
+
+fn blind_the_enemy_journal(lowered: &LoweredQuestState) -> Option<QuestLogQuest> {
+    use super::{JournalText, QuestJournal};
+    let key = "oteryn:quest.to_blind_the_enemy_quest";
+    let mission = "oteryn:quest-progress/to-blind-the-enemy/mission";
+    lowered.catalogue().track(mission)?;
+    Some(QuestLogQuest {
+        key: key.into(),
+        title: "To Blind the Enemy Quest".into(),
+        kind: QuestLogKind::Storyline,
+        shown_in_quest_log: true,
+        start: Some((mission.into(), 1)),
+        hide_when_completed: false,
+        missions: vec![QuestLogMission {
+            name: "To Blind the Enemy".into(),
+            track: mission.into(),
+            start_value: 1,
+            end_value: 4,
+            journal: QuestJournal::PerStage(
+                [
+                    (
+                        1,
+                        "Take Eroth's mirror to the top of Elvenbane's central tower.",
+                    ),
+                    (2, "Use the mirror on the scrying ball."),
+                    (
+                        3,
+                        "Recover the four tower treasures and report back to Eroth.",
+                    ),
+                    (4, "You blinded the enemy and received Eroth's reward."),
+                ]
+                .into_iter()
+                .map(|(value, text)| (value, JournalText::Text(text.into())))
+                .collect(),
+            ),
+        }],
     })
 }
 

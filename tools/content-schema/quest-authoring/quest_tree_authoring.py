@@ -28,6 +28,9 @@ REVISION = 'quest-r1'
 SHARD_SIZE = 100
 QUEST_KEY = re.compile(r'^oteryn:quest\.[a-z0-9_.-]+$')
 CANONICAL_CLAIM_KEY = re.compile(r'^oteryn:reward-claim\.[a-z0-9_.-]+$')
+BLIND_ENEMY = 'oteryn:quest.to_blind_the_enemy_quest'
+BLIND_ENEMY_BAGS = (('bp1', 6255), ('bp2', 6256))
+BLIND_ENEMY_CLAIM_SOURCE = 'canary:reward-claim/quest/u8_1/to_blind_the_enemy/'
 
 
 def compact(value):
@@ -105,6 +108,42 @@ def claim_catalogue(root):
 
 def source_identity(ref):
     return ref['key'], ref['revision']
+
+
+def reconcile_elvenbane_backpacks(records, claims):
+    """The native chest owner already lowers these two exact source variants."""
+    canonical_prefix = 'oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.'
+    resolved = set()
+    for suffix, uid in BLIND_ENEMY_BAGS:
+        key = canonical_prefix + suffix
+        claim = next((row for row in claims if row['identity']['key'] == key), None)
+        if claim is None or claim['provenance']['pilot_key'] != BLIND_ENEMY_CLAIM_SOURCE + suffix:
+            raise ValueError(f'{key}: missing retained source identity')
+        native = claim.get('native_contents', {})
+        if (claim.get('definition_profile') != 'authored_variant_v1'
+                or claim.get('native_admission') != 'WAITING_IMPLEMENTATION'
+                or claim['readiness'] != 'waiting_implementation'
+                or claim['data_holds']
+                or claim['source_variant']['source_data']['status'] != 'COMPLETE'
+                or native.get('schema') != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'
+                or native.get('revision') != '201189f871d23597b82caf88fd611454a2ddefb8'
+                or native.get('source_sha256') != 'b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757'
+                or len(native.get('placements', [])) != 1 or len(claim['placements']) != 1):
+            raise ValueError(f'{key}: native container evidence changed')
+        recipe, = native['placements']
+        placement, = claim['placements']
+        if (recipe['unique_id'] != uid
+                or {'server': 'crystalserver', 'unique_id': uid} not in placement['source_binding']['legacy_unique_ids']
+                or recipe['root'] != placement['reward']['container']
+                or recipe['contents'] != placement['reward']['items']):
+            raise ValueError(f'{key}: native container selector or contents changed')
+        resolved.add(BLIND_ENEMY_CLAIM_SOURCE + suffix)
+    quest = next(row['definition'] for row in records
+                 if row['definition']['identity']['key'] == BLIND_ENEMY)
+    # Run after the frozen SOURCE recipe receipt has seen its original holds.
+    quest['missing_data'] = [row for row in quest['missing_data']
+                             if not (row['code'] == 'claim_native_lowering_missing'
+                                     and row.get('source_key') in resolved)]
 
 
 def build_records(quests, claims, readiness_reports=None, gates=None, gate_checks=None, source_data=None):
@@ -236,12 +275,21 @@ def source_projection(root, records):
     """Validate and remove only the compiled native annotation from the SOURCE view.
 
     Frozen SOURCE receipts still compare every original field byte for byte. Native
-    references are compiler output, checked exactly against the callback input, and
-    cannot change Source facts, readiness, holds, or the selected data-only recipe.
+    annotations and reconciliations are compiler output. The SOURCE view retains
+    the original holds and the selected data-only recipe.
     """
     result = copy.deepcopy(records)
     for row in result:
         definition = row['definition']
+        if definition['identity']['key'] == BLIND_ENEMY:
+            original = [{'code': 'claim_native_lowering_missing',
+                         'source_key': BLIND_ENEMY_CLAIM_SOURCE + suffix}
+                        for suffix, _ in BLIND_ENEMY_BAGS]
+            unresolved = [hold for hold in original if hold in definition['missing_data']]
+            if not unresolved:
+                definition['missing_data'].extend(original)
+            elif unresolved != original:
+                raise ValueError('Elvenbane backpack evidence must reconcile both source holds')
         if definition['identity']['key'] != 'oteryn:quest.the_way_of_the_monk_quest':
             continue
         original = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],
@@ -401,6 +449,7 @@ def expected_files(root, include_registration=False):
                                 'target_items' not in original.get(stage['key'], {}))
     resolution = enrich([*recipes, {'stages': extra_stages}], index)
     validate_references(records, items)
+    reconcile_elvenbane_backpacks(records, claims)
     files, shards = {'content/quests/item-key-resolution.json': compact(resolution)}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
