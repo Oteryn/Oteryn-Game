@@ -573,3 +573,5 @@ fn c2a_sign_out_disarms_contended_login_save() -> TestResult {
     assert!(!owner.login.save_pending());
     Ok(())
 }
+
+mod resubmit;

@@ -24,7 +24,7 @@ impl LoginState {
     }
 
     pub(in crate::bevy_shell) fn start_save(&mut self) {
-        if self.saving.is_some() || !self.form.can_submit() {
+        if self.save_pending() || !self.form.can_submit() {
             return;
         }
         let Some(path) = self.path.clone() else {
@@ -39,10 +39,15 @@ impl LoginState {
         }
         let edited = visible.clone();
         let before = self.baseline.clone();
+        let previous = self.saving.take();
         let task = bevy_tasks::IoTaskPool::get_or_init(|| {
             bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
         })
         .spawn(async move {
+            // A cancelled submission may still own or be waiting for the file lock.
+            if let Some(previous) = previous {
+                let _ = previous.task.await;
+            }
             let lock = crate::atomic_file::lock(&path).map_err(|_| LoginSettings::save_error())?;
             edited.save_edits(&path, &before, lock)
         });

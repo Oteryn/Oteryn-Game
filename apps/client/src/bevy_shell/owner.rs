@@ -321,7 +321,9 @@ impl HostOwner {
         self.login
             .form
             .refresh_gate_message(std::time::Instant::now());
-        if let Some(result) = self.entry.as_mut().and_then(Reentry::poll) {
+        if self.forget_intent.is_none()
+            && let Some(result) = self.entry.as_mut().and_then(Reentry::poll)
+        {
             let bulletin = self.entry.as_mut().and_then(Reentry::take_bulletin);
             self.finish_admission(result, bulletin);
             if self.phase == Phase::Closed {
