@@ -1,5 +1,5 @@
 //! W19E: real use/use-with routes, seeded rust and lottery outcomes, custody and replay.
-use super::rust_lottery_fixtures::{exchange};
+use super::rust_lottery_fixtures::exchange;
 
 use super::fixture::{Harness, debug, id, run};
 
@@ -35,22 +35,122 @@ fn w19e_lottery_lose_wire_receipts() -> TestResult {
 
 #[test]
 fn srx1_demonic_blood_wire_transform_and_replay_postgres() -> TestResult {
-    run_scenario("oteryn:item.tibia.i6558",false,true)?;
-    run_scenario("oteryn:item.tibia.i6558",false,false)
+    run_scenario("oteryn:item.tibia.i6558", false, true)?;
+    run_scenario("oteryn:item.tibia.i6558", false, false)
+}
+
+// Crystal 201189f8 rust_remover.lua:45–65. In descending threshold order, each
+// entry is the last eligible result at its own threshold.
+const SHIELD_AND_HELMET_ROLLS: &[(&str, &[(u64, u32)])] = &[
+    (
+        "oteryn:item.tibia.i8902",
+        &[
+            (3137, 3410),
+            (2887, 3432),
+            (929, 7460),
+            (23, 3419),
+            (10, 3434),
+        ],
+    ),
+    (
+        "oteryn:item.tibia.i8907",
+        &[
+            (2200, 3354),
+            (1870, 3376),
+            (1490, 3353),
+            (1010, 3351),
+            (190, 3385),
+            (10, 3391),
+        ],
+    ),
+    (
+        "oteryn:item.tibia.i8908",
+        &[
+            (3156, 3353),
+            (2976, 3351),
+            (963, 3385),
+            (210, 3391),
+            (7, 3392),
+        ],
+    ),
+];
+
+#[derive(Clone, Copy)]
+struct RustRoll {
+    chance: u64,
+    result: Option<(u64, u32)>,
+}
+
+impl RustRoll {
+    fn matches(self, chance: u64, selection: u64) -> bool {
+        chance + 1 == self.chance
+            && self
+                .result
+                .is_none_or(|(rank, _)| selection % (rank + 1) == rank)
+    }
+}
+
+#[test]
+fn w19e_rust_shield_and_helmets_wire_commit_exact_source_rolls() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    for &(key, outcomes) in SHIELD_AND_HELMET_ROLLS {
+        for (rank, &(chance, output)) in (0_u64..).zip(outcomes) {
+            run_seeded_scenario(
+                key,
+                true,
+                true,
+                Some(RustRoll {
+                    chance,
+                    result: Some((rank, output)),
+                }),
+            )?;
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn w19e_rust_shield_and_helmets_wire_break_and_replay_once() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    for &(key, outcomes) in SHIELD_AND_HELMET_ROLLS {
+        run_seeded_scenario(
+            key,
+            true,
+            false,
+            Some(RustRoll {
+                chance: outcomes[0].0 + 1,
+                result: None,
+            }),
+        )?;
+    }
+    Ok(())
 }
 
 fn run_scenario(key: &'static str, rust: bool, success: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
+    run_seeded_scenario(key, rust, success, None)
+}
+
+fn run_seeded_scenario(
+    key: &'static str,
+    rust: bool,
+    success: bool,
+    roll: Option<RustRoll>,
+) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(key, rust, success).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(key, rust, success, roll).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "rust lottery e2e panic")??;
     Ok(())
 }
-fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
+fn scenario(key: &str, rust: bool, success: bool, roll: Option<RustRoll>) -> TestResult {
     run(async |admin| {
         let started = std::time::Instant::now();
         let harness =
@@ -166,7 +266,7 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
         let tool_key = "oteryn:item.tibia.i9016";
-        let tool_quantity = if success { 2 } else { 1 };
+        let tool_quantity = if success || roll.is_some() { 2 } else { 1 };
         let entries = if rust {
             vec![(tool_key, tool_quantity), (key, 1)]
         } else {
@@ -189,11 +289,16 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         let tool = typed(tool_key).ok_or("tool definition")?;
         let seeded_source = if rust { id(72) } else { id(71) };
         let command_id = 1;
+        let session = *fence.game_session_id.as_bytes();
+        let rust_draws = |source| {
+            Some((
+                reward_bag_bounded_draw(session, command_id, source, 1, 10_000)?,
+                reward_bag_bounded_draw(session, command_id, source, 2, 420)?,
+            ))
+        };
         let plan = |source| {
-            let session = *fence.game_session_id.as_bytes();
             if rust {
-                let chance = reward_bag_bounded_draw(session, command_id, source, 1, 10_000)?;
-                let selection = reward_bag_bounded_draw(session, command_id, source, 2, 420)?;
+                let (chance, selection) = rust_draws(source)?;
                 rust_conversion(native, &tool, &used, selection * 10_000 + chance)
             } else {
                 lottery_conversion(
@@ -205,20 +310,55 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         };
         // A fresh wire session starts at CommandId 1. Seed the input identity instead of
         // inventing a command high-water mark without retained ingress history.
-        let source = (1_u32..100_000)
+        let source = (1_u32..if roll.is_some() { 1_000_000 } else { 100_000 })
             .map(|nonce| {
                 let mut source = seeded_source;
                 source[12..].copy_from_slice(&nonce.to_be_bytes());
                 source
             })
-            .find(|source| plan(*source).is_some_and(|p| {
-                if key=="oteryn:item.tibia.i6558" {
-                    p.outputs.first().is_some_and(|(definition,_)| definition.production_key==
-                        if success {"oteryn:item.tibia.i236"} else {"oteryn:item.tibia.i237"})
-                } else {p.outputs.is_empty()!=success}
-            }))
+            .find(|source| {
+                if let Some(roll) = roll {
+                    return rust_draws(*source)
+                        .is_some_and(|(chance, selection)| roll.matches(chance, selection));
+                }
+                plan(*source).is_some_and(|p| {
+                    if key == "oteryn:item.tibia.i6558" {
+                        p.outputs.first().is_some_and(|(definition, _)| {
+                            definition.production_key
+                                == if success {
+                                    "oteryn:item.tibia.i236"
+                                } else {
+                                    "oteryn:item.tibia.i237"
+                                }
+                        })
+                    } else {
+                        p.outputs.is_empty() != success
+                    }
+                })
+            })
             .ok_or("seeded outcome")?;
-        let expected = plan(source).ok_or("plan")?;
+        let (expected_recipe, expected_outputs) = if let Some(roll) = roll {
+            let id = key
+                .strip_prefix("oteryn:item.tibia.i")
+                .ok_or("rusty source key")?;
+            (
+                format!("oteryn:rust-remover.i{id}.v1"),
+                roll.result
+                    .into_iter()
+                    .map(|(_, output)| (format!("oteryn:item.tibia.i{output}"), 1))
+                    .collect::<Vec<_>>(),
+            )
+        } else {
+            let expected = plan(source).ok_or("plan")?;
+            (
+                expected.recipe,
+                expected
+                    .outputs
+                    .into_iter()
+                    .map(|(definition, quantity)| (definition.production_key, quantity))
+                    .collect(),
+            )
+        };
         let mut tx = harness.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
@@ -249,7 +389,7 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         assert_eq!(
             result,
             UseDisposition::Committed,
-            "rust={rust} success={success}"
+            "{key} rust={rust} success={success} expected={expected_outputs:?}"
         );
         let retired: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(retired, (0, 2));
@@ -263,23 +403,27 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
             .iter()
             .map(|e| (e.item.definition.production_key.as_str(), e.item.quantity))
             .collect();
-        let mut expected_keys: Vec<_> = expected
-            .outputs
+        let mut expected_keys: Vec<_> = expected_outputs
             .iter()
-            .map(|(d, n)| (d.production_key.as_str(), *n))
+            .map(|(key, quantity)| (key.as_str(), *quantity))
             .collect();
-        if rust && success {
-            expected_keys.push((tool_key, 1));
+        if rust && tool_quantity > 1 {
+            expected_keys.push((tool_key, u32::try_from(tool_quantity - 1)?));
         }
         keys.sort_unstable();
         expected_keys.sort_unstable();
         assert_eq!(keys, expected_keys);
         let (recipe, outputs, before, hash_matches): (String, serde_json::Value, serde_json::Value, bool) = sqlx::query_as("SELECT r.recipe,r.outputs,r.before_secondary,a.envelope_sha256=sha256(a.envelope) AND a.envelope_sha256=r.envelope_sha256 FROM game_item_consume_transform_records r JOIN game_item_audit_outbox a USING(event_id)").fetch_one(&harness.pool).await?;
-        assert_eq!(recipe, expected.recipe);
+        assert_eq!(recipe, expected_recipe);
+        let outputs = outputs.as_array().ok_or("outputs")?;
         assert_eq!(
-            outputs.as_array().ok_or("outputs")?.len(),
-            usize::from(success || key=="oteryn:item.tibia.i6558")
+            outputs.len(),
+            usize::from(success || key == "oteryn:item.tibia.i6558")
         );
+        for (output, (key, quantity)) in outputs.iter().zip(&expected_outputs) {
+            assert_eq!(output["key"].as_str(), Some(key.as_str()));
+            assert_eq!(output["count"].as_u64(), Some(u64::from(*quantity)));
+        }
         assert!(hash_matches);
         let polished = rust && success;
         let achievement = super::achievement_granters::assert_progress(
@@ -337,6 +481,9 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         }
         .ok_or("replay")?;
         assert_eq!(replay.disposition, UseDisposition::Committed);
+        // Re-enter the real connection with the post-use inventory, then replay the wire command.
+        let (_, replayed, _) = exchange(&owner, end, command_id, &actual, None, None).await?;
+        assert_eq!(replayed, UseDisposition::Committed);
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
                 "SELECT count(*) FROM game_item_consume_transform_records"
@@ -348,9 +495,6 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         if rust {
             assert_eq!(sqlx::query_scalar::<_, i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?, tool_quantity - 1);
         }
-        // Re-enter the real connection with the post-use inventory, then replay the wire command.
-        let (_, replayed, _) = exchange(&owner, end, command_id, &actual, None, None).await?;
-        assert_eq!(replayed, UseDisposition::Committed);
         assert_eq!(
             achievement,
             super::achievement_granters::assert_progress(
@@ -362,16 +506,25 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
             )
             .await?
         );
-        if key=="oteryn:item.tibia.i6558" {
-            super::achievement_granters::assert_progress(&harness,"oteryn:achievement/demonic_barkeeper",1,false,
-                "oteryn:consume-transform").await?;
-            eprintln!("SRX1_PG demonic blood wire/transform/replay/achievement elapsed={:?}",started.elapsed());
+        if key == "oteryn:item.tibia.i6558" {
+            super::achievement_granters::assert_progress(
+                &harness,
+                "oteryn:achievement/demonic_barkeeper",
+                1,
+                false,
+                "oteryn:consume-transform",
+            )
+            .await?;
+            eprintln!(
+                "SRX1_PG demonic blood wire/transform/replay/achievement elapsed={:?}",
+                started.elapsed()
+            );
         }
         eprintln!("POSTGRES_CASE_COMPLETED P11 Polisher rust={rust} success={success} replay");
         let elapsed = started.elapsed();
         assert!(elapsed > std::time::Duration::ZERO);
         eprintln!(
-            "W19E_PG_EXECUTED rust={rust} success={success} command={command_id} elapsed={elapsed:?}"
+            "W19E_PG_EXECUTED rust={rust} success={success} command={command_id} elapsed={elapsed:?} item={key} outputs={expected_outputs:?}"
         );
         drop(owner);
         drop(authority);
