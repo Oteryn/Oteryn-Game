@@ -47,6 +47,7 @@ impl Callback {
         self.has_personal_state()
             || super::super::dreamer_fire_bug::shared_input(self)
             || super::super::dreamer_carrot::shared_input(self)
+            || super::super::world_contributions::pump_coal(self).is_some()
     }
 
     /// A command cannot manufacture a reward epoch without waiting on the SQL clock.

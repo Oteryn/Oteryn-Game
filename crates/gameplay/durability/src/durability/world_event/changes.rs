@@ -13,6 +13,7 @@ use oteryn_simulation_determinism::{
 use sha2::{Digest, Sha256};
 mod bindings;
 pub mod callbacks;
+pub(in crate::durability) mod contributions;
 pub mod counters;
 
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
@@ -212,6 +213,7 @@ pub(super) async fn record(
         return Err(DurabilityError::InvalidStoredState);
     }
     bindings::capture(tx, world, &selected).await?;
+    contributions::record_save(tx, world, epoch).await?;
     Ok(selected)
 }
 
@@ -222,10 +224,7 @@ pub async fn load(
     world: WorldId,
     epoch: u64,
 ) -> Result<Option<DailyWorldChanges>, DurabilityError> {
-    lock_admission_relations(tx).await?;
-    let current: Option<String> = sqlx::query_scalar("SELECT a.reset_epoch::text FROM game_world_reset_active a WHERE world_id=encode($1,'hex')::uuid AND NOT EXISTS(SELECT 1 FROM game_world_reset_jobs j WHERE j.world_id=a.world_id AND j.phase='RETIRING')")
-        .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-    if current.as_deref() != Some(epoch.to_string().as_str()) {
+    if contributions::current_epoch(tx, world).await? != Some(epoch) {
         return Ok(None);
     }
     record(tx, world, epoch).await.map(Some)

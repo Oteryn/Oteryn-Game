@@ -9,6 +9,7 @@ pub const CATALOGUE_JSON: &str =
 /// transaction; a tally alone never grants transport, rewards or activation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContributionKind {
+    AwashCoal,
     Coal,
     Medicine,
     Votes,
@@ -17,6 +18,7 @@ pub enum ContributionKind {
 impl ContributionKind {
     pub fn key(self) -> &'static str {
         match self {
+            Self::AwashCoal => "awash_coal",
             Self::Coal => "coal",
             Self::Medicine => "medicine",
             Self::Votes => "votes",

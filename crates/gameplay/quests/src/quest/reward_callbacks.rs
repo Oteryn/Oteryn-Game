@@ -444,6 +444,7 @@ impl RewardCallback {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
         temporal_payment::guarded(self)
+            || super::world_contributions::ship_coal(self).is_some()
             || (self.repeatable
                 && (!self.take.is_empty() || self.fee.is_some())
                 && (self.give.is_some() || self.experience.is_some()))
@@ -877,7 +878,8 @@ fn validate_document_with_capacity(
                 .any(|key| !slug(key, "oteryn:reward-claim.", b"._/:-", 128))
             || (c.repeatable
                 && (!((c.fee.is_some() && c.give.is_some())
-                    || (!c.take.is_empty() && (c.give.is_some() || c.experience.is_some())))
+                    || (!c.take.is_empty() && (c.give.is_some() || c.experience.is_some()))
+                    || super::world_contributions::ship_coal(c).is_some())
                     || c.outfit.is_some()
                     || !c.outfits.is_empty()
                     || c.achievement.is_some()
@@ -1086,7 +1088,9 @@ fn validate_document_with_capacity(
                 .is_some_and(|amount| !(1..=100_000_000).contains(&amount))
             || (c.repeatable
                 && ((c.take.is_empty() && c.fee.is_none())
-                    || (c.give.is_none() && c.experience.is_none())
+                    || (c.give.is_none()
+                        && c.experience.is_none()
+                        && super::world_contributions::ship_coal(c).is_none())
                     || c.cosmetic_targets().next().is_some()
                     || c.achievement.is_some()
                     || !c.achievement_progress.is_empty()))
@@ -1146,6 +1150,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && !(callback.repeatable && callback.is_paid_exchange() && !callback.storage.is_empty())
         && callback.carried_target.is_none()
         && !temporal_payment::guarded(callback)
+        && super::world_contributions::ship_coal(callback).is_none()
         && callback.self_target.is_none()
         && !callback
             .key

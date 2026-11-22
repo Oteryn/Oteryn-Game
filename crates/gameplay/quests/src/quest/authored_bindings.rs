@@ -220,7 +220,8 @@ impl Bindings {
                                 .state_ops
                                 .iter()
                                 .any(|op| !state_operations::valid(quest, op))
-                            || callback.storage.is_empty()
+                            || (callback.storage.is_empty()
+                                && super::world_contributions::ship_coal(callback).is_none())
                             || callback.storage.iter().any(|s| {
                                 s.increment
                                     || s.at_least
@@ -334,7 +335,8 @@ impl Bindings {
                         && !stage.is_native_encounter()
                         && !matches!(&stage.trigger,
                             Trigger::MapUse { callback } | Trigger::StepIn { callback }
-                            if callback.operation_count() > 0))
+                            if callback.operation_count() > 0
+                                || super::world_contributions::pump_coal(callback).is_some()))
                     || storage.iter().any(|s| {
                         !tracks.contains(&s.track)
                             || quest
