@@ -251,7 +251,8 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l10-brotherhood-officer"
         | "l10-nightmare-officer"
         | "l10-brotherhood-leader"
-        | "l10-nightmare-leader" => &["advancement"],
+        | "l10-nightmare-leader"
+        | "l10-nightmare-protector" => &["advancement"],
         "l10-golden-base" => &["outfit", "yes", "armor"],
         "l10-golden-boots" => &["outfit", "yes", "boots"],
         "l10-golden-helmet" => &["outfit", "yes", "helmet"],

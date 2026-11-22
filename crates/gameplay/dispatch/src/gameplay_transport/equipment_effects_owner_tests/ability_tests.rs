@@ -623,6 +623,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i6102",
             "oteryn:item.tibia.i6107",
             "oteryn:item.tibia.i6126",
+            "oteryn:item.tibia.i6390",
             "oteryn:item.tibia.i7253",
             "oteryn:item.tibia.i7289",
             "oteryn:item.tibia.i768",

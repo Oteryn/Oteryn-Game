@@ -1343,6 +1343,34 @@ const ROOK_CITIZEN_BEFORE_NORMA_RESTART: [u8; 32] = [
     0x3b, 0x94, 0x9b, 0x19, 0x08, 0x96, 0x3c, 0x93, 0x5a, 0x57, 0xfb, 0x99, 0x24, 0x4d, 0xef, 0x4a,
 ];
 
+// Active definitions on main at 3e0991642318 before the source reward changes.
+const SOURCE_REWARD_PREDECESSORS: [(&str, [u8; 32]); 3] = [
+    (
+        "oteryn:quest.friends_and_traders",
+        [
+            0x0a, 0x66, 0x58, 0x93, 0xaa, 0x6b, 0x60, 0x28, 0x83, 0xc7, 0x1b, 0xfe, 0xe7, 0x86,
+            0xa7, 0x1e, 0x86, 0xb2, 0xb9, 0xd3, 0xfd, 0xbf, 0xfe, 0xdf, 0x0c, 0xe6, 0x19, 0xf1,
+            0x71, 0x56, 0xd2, 0x23,
+        ],
+    ),
+    (
+        "oteryn:quest.nightmare_outfits_quest",
+        [
+            0x34, 0xb3, 0x42, 0x08, 0xae, 0xb0, 0x32, 0x1b, 0xb2, 0xa6, 0x0b, 0xb2, 0x0d, 0xe7,
+            0x52, 0x1a, 0x34, 0x85, 0x15, 0x3d, 0x03, 0x38, 0xc1, 0xe8, 0xb7, 0x12, 0x69, 0xc2,
+            0x2e, 0x83, 0x6d, 0x9d,
+        ],
+    ),
+    (
+        "oteryn:quest.oramond_quest",
+        [
+            0x8f, 0xfb, 0x41, 0x42, 0x09, 0xf6, 0x42, 0xf1, 0xfe, 0x04, 0x6e, 0x24, 0x47, 0x68,
+            0x45, 0x7c, 0x3d, 0x68, 0x22, 0x5e, 0x28, 0x9e, 0xb2, 0x07, 0x20, 0xed, 0xb3, 0x8c,
+            0x25, 0xc1, 0x9e, 0xd6,
+        ],
+    ),
+];
+
 pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
     // These changes preserve every track default.
@@ -1355,7 +1383,10 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
             "oteryn:quest.outfit_and_addon_quests",
             MAIN_OUTFIT_DEFINITION,
         ),
-    ] {
+    ]
+    .into_iter()
+    .chain(SOURCE_REWARD_PREDECESSORS)
+    {
         catalogue
             .predecessors
             .entry(quest.into())
@@ -2593,9 +2624,9 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared covers 203 existing, 31 QB, and 13 Sven and Dedoras routes. The final two terms are
+        // Shared covers 204 existing, 31 QB, and 13 Sven and Dedoras routes. The final two terms are
         // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 247 + 59 + 129 + 1 + 1 + 13 + 12);
+        assert_eq!(load()?.len(), 248 + 62 + 129 + 1 + 1 + 13 + 12);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2642,16 +2673,16 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 216);
+        assert_eq!(legacy.len(), 217);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))
             .collect();
-        assert_eq!(original.len(), 204);
+        assert_eq!(original.len(), 205);
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
-        assert_eq!(programmes.len(), 59);
+        assert_eq!(programmes.len(), 62);
         let published = published_markers::keys()?;
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));
@@ -2668,6 +2699,9 @@ mod tests {
                     Some("oteryn:quest.battle_mage_outfits_quest")
                 }
                 "oteryn:quest-reward/sven-mammoth-report" => Some("oteryn:quest.barbarian_test"),
+                "oteryn:quest-reward/l10-nightmare-protector" => {
+                    Some("oteryn:quest.nightmare_outfits_quest")
+                }
                 _ => None,
             };
             assert_eq!(callback.completes, completion_quest.is_some());
@@ -2828,6 +2862,22 @@ mod lane_tests {
             !loaded.catalogue().npc_legacy.is_empty(),
             "adding rewards must preserve the native NPC source binding owner"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn source_reward_predecessors_keep_saved_character_progress() -> Result<(), String> {
+        let state = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = state.catalogue();
+        for (quest, predecessor) in SOURCE_REWARD_PREDECESSORS {
+            assert_ne!(catalogue.definition_hash(quest), Some(predecessor));
+            assert_eq!(
+                super::super::npc_rules::legacy_defaults(catalogue, quest, &predecessor),
+                Some(&BTreeMap::new()),
+                "{quest} needs to accept progress persisted on the exact main base"
+            );
+        }
         Ok(())
     }
 
