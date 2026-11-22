@@ -10,8 +10,6 @@ use super::questpc8_authored_programmes_fixtures::step;
 
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 
-use crate::map::overlay::TilePos;
-
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 use oteryn_protocol_oteryn::world_spatial::StepDirection;

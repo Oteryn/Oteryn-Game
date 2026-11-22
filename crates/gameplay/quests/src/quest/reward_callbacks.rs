@@ -2454,7 +2454,7 @@ mod tests {
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared covers 207 existing and 31 QB routes. The final two terms are
         // Rottin Wood and the Forgemaster's access and claim routes.
-        assert_eq!(load()?.len(), 238 + 70 + 126 + 1 + 1 + 13 + 12);
+        assert_eq!(load()?.len(), 238 + 82 + 126 + 1 + 1 + 13 + 12);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;
@@ -2510,7 +2510,7 @@ mod tests {
         let programmes = parse(include_str!(
             "../../../../../content/quests/npc-callbacks/questpc7-programmes.json"
         ))?;
-        assert_eq!(programmes.len(), 70);
+        assert_eq!(programmes.len(), 82);
         let published = published_markers::keys()?;
         for callback in &programmes {
             assert!(callback.key.starts_with("oteryn:quest-reward/questpc7-"));

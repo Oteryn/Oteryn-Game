@@ -35,7 +35,10 @@ def append(root,callbacks,inputs,pin):
     callbacks.append(kit)
 
     wiki = 'https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277'
-    clocks = []
+    total = TRACK + 'reports'
+    maximum = 1_000_000_000_000
+    tracks = [dict(key=total, quest=QUEST, initial=0, min=0, max=maximum,
+                   writable=True, sources=[wiki])]
     for keyword, progress, target, pay, xp, tool in [
         ('advertisement', 'signs', 3, 1, 600, (17668, 3)),
         ('perfume', 'odours', 4, 2, 1000, (17670, 1)),
@@ -45,7 +48,7 @@ def append(root,callbacks,inputs,pin):
         ('kill', 'stalkers', 5, 1, 600, None),
     ]:
         clock = TRACK + progress + '/last-report'
-        clocks.append(dict(key=clock, quest=QUEST, initial=0, min=0,
+        tracks.append(dict(key=clock, quest=QUEST, initial=0, min=0,
                            max=9223372036854775807, writable=True, sources=[wiki]))
         start = row('accept-' + keyword, ['get ' + keyword],
                     [state('programme', -1, 0, 0), state(progress, -1, -1, 0)],
@@ -68,20 +71,27 @@ def append(root,callbacks,inputs,pin):
             start['give'] = dict(item=f'oteryn:item.tibia.i{tool[0]}', count=tool[1], contents=[])
             start['per_occurrence_mint'] = True
         callbacks.append(start)
-        report = row('report-' + keyword, ['report ' + keyword, keyword], [state(progress, target, target, -1)],
-                     'Rafzan pays you for the completed ' + keyword + ' task.')
-        if progress == 'signs':
-            report['keywords'].append('advertising')
-        report['sources'] = sources + [wiki]
-        report['state_ops'] = [dict(track=clock, **{
-            'from': {'kind':'any'},
-            'effect': {'kind':'set_now'},
-        })]
-        if progress == 'odours':
-            report['take'] = [dict(item='oteryn:item.tibia.i17675', count=1)]
-        report.update(give=dict(item='oteryn:item.tibia.i3035', count=pay, contents=[]),
-                      experience=xp,
-                      counter=dict(track=TRACK+'reports', maximum=1000000000000),
-                      achievement_progress=[dict(key='oteryn:achievement/task_manager', target=500)])
-        callbacks.append(report)
-    return clocks
+        # Recurring item grants use per-occurrence MINT. The single achievement
+        # award uses the ordinary one-shot reward on the exact 500th report.
+        for suffix, lower, upper in (('', 0, 498), ('-500th', 499, 499),
+                                     ('-after-500', 500, maximum - 1)):
+            report = row('report-' + keyword + suffix, ['report ' + keyword, keyword],
+                         [state(progress, target, target, -1)],
+                         'Rafzan pays you for the completed ' + keyword + ' task.')
+            if progress == 'signs':
+                report['keywords'].append('advertising')
+            report['sources'] = sources + [wiki]
+            report['state_ops'] = [
+                {'track': clock, 'from': {'kind': 'any'}, 'effect': {'kind': 'set_now'}},
+                {'track': total, 'from': {'kind': 'between', 'minimum': lower, 'maximum': upper},
+                 'effect': {'kind': 'add', 'value': 1}},
+            ]
+            if progress == 'odours':
+                report['take'] = [dict(item='oteryn:item.tibia.i17675', count=1)]
+            report.update(give=dict(item='oteryn:item.tibia.i3035', count=pay, contents=[]), experience=xp)
+            if lower == 499:
+                report['achievement'] = 'oteryn:achievement/task_manager'
+            else:
+                report['per_occurrence_mint'] = True
+            callbacks.append(report)
+    return tracks

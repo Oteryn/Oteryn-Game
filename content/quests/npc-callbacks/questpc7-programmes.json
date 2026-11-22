@@ -2,6 +2,17 @@
   "schema": 1,
   "tracks": [
     {
+      "key": "oteryn:quest-progress/questpc7/goblin/reports",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1000000000000,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/questpc7/goblin/signs/last-report",
       "quest": "oteryn:quest.goblin_merchant_quest",
       "initial": 0,
@@ -2213,19 +2224,143 @@
           "effect": {
             "kind": "set_now"
           }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 498
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
         }
       ],
       "experience": 600,
-      "counter": {
-        "track": "oteryn:quest-progress/questpc7/goblin/reports",
-        "maximum": 1000000000000
-      },
-      "achievement_progress": [
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-advertisement-500th",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report advertisement",
+        "advertisement",
+        "advertising"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
         {
-          "key": "oteryn:achievement/task_manager",
-          "target": 500
+          "track": "oteryn:quest-progress/questpc7/goblin/signs",
+          "minimum": 3,
+          "maximum": 3,
+          "set": -1
         }
-      ]
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/task_manager",
+      "reply": [
+        "Rafzan pays you for the completed advertisement task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/signs/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 499,
+            "maximum": 499
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 600
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-advertisement-after-500",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report advertisement",
+        "advertisement",
+        "advertising"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/signs",
+          "minimum": 3,
+          "maximum": 3,
+          "set": -1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Rafzan pays you for the completed advertisement task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/signs/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 500,
+            "maximum": 999999999999
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 600,
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/questpc7-goblin-report-busy",
@@ -2270,19 +2405,141 @@
           "effect": {
             "kind": "set_now"
           }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 498
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
         }
       ],
       "experience": 1200,
-      "counter": {
-        "track": "oteryn:quest-progress/questpc7/goblin/reports",
-        "maximum": 1000000000000
-      },
-      "achievement_progress": [
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-busy-500th",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report busy",
+        "busy"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
         {
-          "key": "oteryn:achievement/task_manager",
-          "target": 500
+          "track": "oteryn:quest-progress/questpc7/goblin/urine",
+          "minimum": 1,
+          "maximum": 1,
+          "set": -1
         }
-      ]
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 3,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/task_manager",
+      "reply": [
+        "Rafzan pays you for the completed busy task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/urine/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 499,
+            "maximum": 499
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 1200
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-busy-after-500",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report busy",
+        "busy"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/urine",
+          "minimum": 1,
+          "maximum": 1,
+          "set": -1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 3,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Rafzan pays you for the completed busy task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/urine/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 500,
+            "maximum": 999999999999
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 1200,
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/questpc7-goblin-report-destroy",
@@ -2327,19 +2584,141 @@
           "effect": {
             "kind": "set_now"
           }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 498
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
         }
       ],
       "experience": 1200,
-      "counter": {
-        "track": "oteryn:quest-progress/questpc7/goblin/reports",
-        "maximum": 1000000000000
-      },
-      "achievement_progress": [
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-destroy-500th",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report destroy",
+        "destroy"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
         {
-          "key": "oteryn:achievement/task_manager",
-          "target": 500
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 3,
+          "maximum": 3,
+          "set": -1
         }
-      ]
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 3,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/task_manager",
+      "reply": [
+        "Rafzan pays you for the completed destroy task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 499,
+            "maximum": 499
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 1200
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-destroy-after-500",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report destroy",
+        "destroy"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": 3,
+          "maximum": 3,
+          "set": -1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 3,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Rafzan pays you for the completed destroy task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 500,
+            "maximum": 999999999999
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 1200,
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/questpc7-goblin-report-guards",
@@ -2384,19 +2763,141 @@
           "effect": {
             "kind": "set_now"
           }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 498
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
         }
       ],
       "experience": 600,
-      "counter": {
-        "track": "oteryn:quest-progress/questpc7/goblin/reports",
-        "maximum": 1000000000000
-      },
-      "achievement_progress": [
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-guards-500th",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report guards",
+        "guards"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
         {
-          "key": "oteryn:achievement/task_manager",
-          "target": 500
+          "track": "oteryn:quest-progress/questpc7/goblin/captures",
+          "minimum": 3,
+          "maximum": 3,
+          "set": -1
         }
-      ]
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/task_manager",
+      "reply": [
+        "Rafzan pays you for the completed guards task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 499,
+            "maximum": 499
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 600
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-guards-after-500",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report guards",
+        "guards"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures",
+          "minimum": 3,
+          "maximum": 3,
+          "set": -1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Rafzan pays you for the completed guards task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 500,
+            "maximum": 999999999999
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 600,
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/questpc7-goblin-report-kill",
@@ -2441,19 +2942,141 @@
           "effect": {
             "kind": "set_now"
           }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 498
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
         }
       ],
       "experience": 600,
-      "counter": {
-        "track": "oteryn:quest-progress/questpc7/goblin/reports",
-        "maximum": 1000000000000
-      },
-      "achievement_progress": [
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-kill-500th",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report kill",
+        "kill"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
         {
-          "key": "oteryn:achievement/task_manager",
-          "target": 500
+          "track": "oteryn:quest-progress/questpc7/goblin/stalkers",
+          "minimum": 5,
+          "maximum": 5,
+          "set": -1
         }
-      ]
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/task_manager",
+      "reply": [
+        "Rafzan pays you for the completed kill task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/stalkers/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 499,
+            "maximum": 499
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 600
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-kill-after-500",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report kill",
+        "kill"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/stalkers",
+          "minimum": 5,
+          "maximum": 5,
+          "set": -1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Rafzan pays you for the completed kill task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/stalkers/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 500,
+            "maximum": 999999999999
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 600,
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/questpc7-goblin-report-perfume",
@@ -2503,19 +3126,151 @@
           "effect": {
             "kind": "set_now"
           }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 498
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
         }
       ],
       "experience": 1000,
-      "counter": {
-        "track": "oteryn:quest-progress/questpc7/goblin/reports",
-        "maximum": 1000000000000
-      },
-      "achievement_progress": [
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-perfume-500th",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report perfume",
+        "perfume"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
         {
-          "key": "oteryn:achievement/task_manager",
-          "target": 500
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": 4,
+          "maximum": 4,
+          "set": -1
         }
-      ]
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17675",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 2,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/task_manager",
+      "reply": [
+        "Rafzan pays you for the completed perfume task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 499,
+            "maximum": 499
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 1000
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-report-perfume-after-500",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "report perfume",
+        "perfume"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": 4,
+          "maximum": 4,
+          "set": -1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17675",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 2,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Rafzan pays you for the completed perfume task."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/reports",
+          "from": {
+            "kind": "between",
+            "minimum": 500,
+            "maximum": 999999999999
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "experience": 1000,
+      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/questpc7-golden-base",

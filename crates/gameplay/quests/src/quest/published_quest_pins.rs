@@ -169,7 +169,7 @@ mod tests {
                     hash(b"bc9a387b5eba43a87478e8016be9c36a86f4cf63a555ade6e4eefae403ca8ba8")
                 }
                 "oteryn:quest.goblin_merchant_quest" => {
-                    hash(b"85ca01905b9fc3f30194a52417b85978ed8d97431ee46205423af6e0b0786600")
+                    hash(b"29c02b41a74e92e5adcd94218e4cad52db38134f2de0fe7c0f9363b0ecfc9769")
                 }
                 "oteryn:quest.grave_danger_quest" => {
                     hash(b"c2ae319776b9920057272cdee4caa2827f2f66aeb6bdff3946ef7383224da5db")

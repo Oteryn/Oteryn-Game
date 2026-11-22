@@ -6,7 +6,7 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
     selected.append_golden(root, lane_callbacks, offers, inputs, pin)
     selected.append_friends(root, lane_callbacks, offers, inputs, pin)
     goblin=load_module('questpc7_goblin_programme','tools/content-schema/quest-authoring/questpc7_goblin_programme.py')
-    clocks = goblin.append(root,lane_callbacks,inputs,pin)
+    goblin_tracks = goblin.append(root,lane_callbacks,inputs,pin)
     selected.append_tokens(root, lane_callbacks, inputs, pin)
     selected.append_eligibility_starts(root, lane_callbacks, inputs, pin)
     programmes.append(root, lane_callbacks, inputs, pin)
@@ -62,7 +62,7 @@ def extend(root, callbacks, offers, inputs, pin, load_module):
         if row.get('outfit_reward') is not None:
             row.setdefault('effects',{})['outfit_reward']=row.pop('outfit_reward')
     objectives = encounters.objectives(root)+hydra_objectives+hero_objectives+ferumbras_objectives+grave_objectives+grimvale_objectives+heart_objectives+forgotten_objectives+stalker_objectives+smith_objectives
-    return formal_worlds, objectives, hoist_bindings, clocks
+    return formal_worlds, objectives, hoist_bindings, goblin_tracks
 
 def outputs(root, inputs, pin, load_module, lane):
     import json

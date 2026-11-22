@@ -256,14 +256,19 @@ pub(super) async fn exercise_signs(
         .bind(id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?;
     assert!(!finished, "three signs do not complete the six-job programme");
     let map = owner.bundle_map().ok_or("sign map")?;
+    let first = SIGN_SITES[0];
+    let target = |appearance| -> TestResult<_> {
+        let payload = super::questpc7_hoist_story_fixtures::target(owner, first, appearance)?;
+        Ok(oteryn_protocol_oteryn::world_object::decode_use_intent(&payload).map_err(debug)?)
+    };
+    let placed = target(17680)?;
+    assert_eq!(placed.expected_revision, 1);
     let due = map.facts.next_movement_decay_time().ok_or("shared sign reset")?;
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     assert!(map.facts.expire_movement_items(due) >= 1);
-    let first = SIGN_SITES[0];
-    let key = crate::map::view::placement_key(crate::map::overlay::TilePos {
-        x:first.x, y:first.y, floor:first.floor,
-    }, 1).ok_or("sign site")?;
-    assert_eq!(map.facts.object_revision(key), 2, "the shared site restores the cracked stone");
+    let restored = target(17679)?;
+    assert_eq!(restored.placement, placed.placement);
+    assert_eq!(restored.expected_revision, 2, "the shared site restores the cracked stone");
     Ok(())
 }
 
@@ -389,13 +394,15 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     }
     // Arrange the earned-count boundary while keeping this task's combat and
     // payment on their real producers.
-    sqlx::query("INSERT INTO game_character_achievement_progress(character_id,achievement_key,progress) VALUES(encode($1,'hex')::uuid,'oteryn:achievement/task_manager',499)")
-        .bind(id(41).as_slice()).execute(&h.pool).await?;
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, a, &[(format!("{ROOT}reports"), 499)], 79,
+    ).await?;
+    owner.refresh_quest_session(a.game_session_id, true).await;
     let report = conversation("report-kill", "kill")?;
     let (paid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &report, false).await?;
     assert_eq!(paid, NpcIntentDisposition::Ok);
     assert_eq!(quantity(h, 3035).await?, 1);
-    assert_eq!(value(owner,a,&format!("{ROOT}reports")).await?, 1);
+    assert_eq!(value(owner,a,&format!("{ROOT}reports")).await?, 500);
     let awards:i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/task_manager'")
         .fetch_one(&h.pool).await?;
     assert_eq!(awards, 1, "the five-hundredth report grants Task Manager");
@@ -415,13 +422,13 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     let (started, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &get, false).await?;
     assert_eq!(started, NpcIntentDisposition::Ok);
     assert_eq!(value(owner,a,&format!("{ROOT}stalkers")).await?, 0, "the task reopens after 20 hours");
-    assert_eq!(value(owner,a,&format!("{ROOT}reports")).await?, 1, "starting again cannot pay a report");
+    assert_eq!(value(owner,a,&format!("{ROOT}reports")).await?, 500, "starting again cannot pay a report");
     let guards = conversation("report-guards", "guards")?;
     let (paid, _, _) = super::qengine_rewards_fixtures::wire_reward(owner, a, rafzan, &guards, false).await?;
     assert_eq!(paid, NpcIntentDisposition::Ok);
     assert_eq!(quantity(h, 3035).await?, 2, "guards reports the finished task even with the original offer unvisited");
     assert_eq!(value(owner, a, &format!("{ROOT}captures")).await?, -1);
-    assert_eq!(value(owner, a, &format!("{ROOT}reports")).await?, 2);
+    assert_eq!(value(owner, a, &format!("{ROOT}reports")).await?, 501);
     Ok(())
 }
 
