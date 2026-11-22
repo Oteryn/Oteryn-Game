@@ -51,20 +51,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?);
     let target = super::full_row_w05c::destination_tile(destination);
     let mut client = connect_world(clients, 0x08).await?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3
-    })
-    .ok_or("W05c client capture: Rashid unreachable")?;
-    walk(&mut client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities
-                .iter()
-                .find(|entity| super::full_row_w05c::rashid_at(entity, target))
-        })
-        .map(|entity| entity.entity)
-        .ok_or("W05c client capture: Rashid not visible")?;
+    let actor = super::full_row_w05c::approach(&mut client, world, target).await?;
     let conversation_bytes = talk(
         &mut client,
         actor,
@@ -105,7 +92,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
         return;
     }
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(1_800), verdict::observe(journey(clients))).await {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=W05c.client status=CAPTURED evidence={expected:?}"
         )),

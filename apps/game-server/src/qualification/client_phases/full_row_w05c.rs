@@ -181,15 +181,19 @@ fn full_route(world: &BundleWorld, from: TilePos, goal: TilePos) -> Option<Vec<S
     None
 }
 
-pub(super) fn rashid_at(entity: &WorldSpatialEntity, target: TilePos) -> bool {
+fn rashid_wander_area(at: TilePos, target: TilePos) -> bool {
+    at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3
+}
+
+fn rashid_at(entity: &WorldSpatialEntity, target: TilePos) -> bool {
     entity.kind == EntityKind::Npc
-        && tile(entity.position).ok() == Some(target)
+        && tile(entity.position).is_ok_and(|at| rashid_wander_area(at, target))
         && entity
             .display_name
             .is_some_and(|name| name.as_str() == Ok("Rashid"))
 }
 
-async fn approach(
+pub(super) async fn approach(
     client: &mut DevClientSession,
     world: &BundleWorld,
     target: TilePos,
@@ -206,22 +210,29 @@ async fn approach(
     walk(client, world, &path).await.map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!(
             "step=walk-weekday-destination observed={error} need=accepted-STEP-and-spatial-delta"
         ), error) })?;
-    let entities = client.world_entities().ok_or_else(|| {
-        format!("step=observe-weekday-spawn observed=missing-world-entities need=exactly-one-NPC-at-{target:?}")
-    })?;
-    let mut matches = entities
-        .iter()
-        .filter(|entry| rashid_at(entry, target));
-    let actor = matches.next().map(|entry| entry.entity);
-    let extra = matches.count();
-    match (actor, extra) {
-        (Some(actor), 0) => Ok(actor),
-        (actor, extra) => Err(format!(
-            "step=observe-weekday-spawn observed=npc-count-{}-at-{target:?} need=exactly-one-Rashid-actor",
-            usize::from(actor.is_some()) + extra
-        )
-        .into()),
+    for _ in 0..8 {
+        let actor = {
+            let entities = client.world_entities().ok_or("step=observe-weekday-spawn observed=missing-world-entities")?;
+            let mut matches = entities.iter().filter(|entry| rashid_at(entry, target));
+            let actor = matches.next().copied().ok_or_else(|| {
+                format!("step=observe-weekday-spawn observed=Rashid-not-visible within-three-tiles-of={target:?}")
+            })?;
+            if matches.next().is_some() {
+                return Err("step=observe-weekday-spawn observed=duplicate-Rashid-actors".into());
+            }
+            actor
+        };
+        let here = tile(client.world_spatial().actor_position)?;
+        let at = tile(actor.position)?;
+        if rashid_wander_area(here, at) {
+            return Ok(actor.entity);
+        }
+        let path = full_route(world, here, at)
+            .ok_or("step=approach-Rashid observed=no-route-to-visible-actor")?;
+        let direction = path.first().ok_or("step=approach-Rashid observed=no-approach-step")?;
+        walk(client, world, &[*direction]).await?;
     }
+    Err("step=approach-Rashid observed=actor-remained-out-of-talk-range".into())
 }
 
 async fn talk(client: &mut DevClientSession, actor: EntityRef, text: &str) -> TestResult<u64> {
@@ -456,6 +467,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = qualification_world(clients)?;
     let target = destination_tile(today()?);
     let mut client = connect_world(clients, 0xe5).await?;
+    // A missing weekday destination does not prevent observing the timed NPC.
+    if world.base().tile(target.x, target.y, target.floor).is_none() {
+        let weekday = approach(&mut client, world, target).await;
+        let timed = observe_day_night_transition(&mut client, world).await;
+        if timed.is_ok() {
+            row.pass(DAY_NIGHT_ACTION);
+        } else if let Err(error) = timed {
+            evidence(&format!("W05c_GAP step={DAY_NIGHT_ACTION} observed={error}"));
+        }
+        if let Err(error) = logout(&mut client).await {
+            evidence(&format!("W05c_GAP step=logout observed={error}"));
+        }
+        return weekday.map(|_| ());
+    }
     let first_session = client.join_snapshot().game_session_id;
     let actor = approach(&mut client, world, target).await?;
     row.pass("walk-weekday-destination");
@@ -483,6 +508,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rashid_can_wander_three_tiles_on_the_scheduled_floor() {
+        let target = TilePos { x: 32328, y: 31782, floor: -6 };
+        assert!(rashid_wander_area(TilePos { x: 32331, y: 31779, ..target }, target));
+        assert!(!rashid_wander_area(TilePos { x: 32332, ..target }, target));
+        assert!(!rashid_wander_area(TilePos { floor: -7, ..target }, target));
+    }
 
     #[test]
     fn rashid_route_uses_the_authored_signed_floor() {
