@@ -1286,6 +1286,20 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         {
             return Err(invalid("W02 Sugar corpse identity collision"));
         }
+        // Crystal 201189f8 names Spirited Soil in Flickering Spirit Elemental's
+        // loot and retains its exact appearance. This identity was added after
+        // the historical Crystal binding table was captured.
+        let spirited_soil: super::project::ProjectV2SourceIdentityBinding =
+            serde_json::from_slice(include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/loot-slice-1-spirited-soil-binding.json"
+            ))
+            .map_err(|_| invalid("native gameplay Spirited Soil identity"))?;
+        if admitted
+            .insert(spirited_soil.external_id.clone(), spirited_soil)
+            .is_some()
+        {
+            return Err(invalid("native gameplay Spirited Soil binding conflict"));
+        }
         let cradle_profiles = qready1_cradle::profiles()?;
         for (id, record) in &cradle_profiles {
             if admitted
@@ -3799,11 +3813,14 @@ mod tests {
         );
         assert!(!rat.loot_table.entries.is_empty());
         assert!(rat.boss.is_none());
-        assert!(
-            native
-                .reward_table()
-                .row("oteryn:creature.ferumbras")
-                .is_err()
+        let ferumbras = native
+            .reward_table()
+            .row("oteryn:creature.ferumbras")
+            .unwrap();
+        assert_eq!(ferumbras.loot_table.entries.len(), 53);
+        assert_eq!(
+            ferumbras.loot_table_ref.as_ref().unwrap().production_key,
+            "oteryn:loot.creature.ferumbras"
         );
         let boss = native
             .reward_table()

@@ -104,8 +104,11 @@ def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
     # rather than a previous generation's on-disk Creature binding census.
     from cake_native_successor import loot_successor
     loot_path = REPOSITORY_PINS['loot_tables']
-    generated[loot_path] = loot_successor(root, json.loads(generated[spell_import.PROVIDER_DESTINATIONS['creature_profiles']]),
-                                        json.loads(generated[spell_import.PROVIDER_DESTINATIONS['item_profiles']]))
+    from starting_loadout_profiles import FRAGMENT
+    loot_items = current(spell_import.PROVIDER_DESTINATIONS['item_profiles'])
+    loot_items['records'].extend(current(FRAGMENT)['records'])
+    generated[loot_path] = loot_successor(
+        root, current(spell_import.PROVIDER_DESTINATIONS['creature_profiles']), loot_items)
     for key, path in REPOSITORY_PINS.items():
         manifest[key] = {
             "path": Path(os.path.relpath(path, "content")).as_posix(),
@@ -707,6 +710,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
     item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    import loot_slice_one
+    loot_slice_one.admit_native(root, generated, item_path, starting_loadout_profiles.FRAGMENT,
+                                provider_order, spell_import.canonical_bytes)
     items = json.loads(generated[item_path])
     energy = next(row for row in items["records"]
                   if row["production_definition"]["production_key"] == "oteryn:item.tibia.i2122")

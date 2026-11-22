@@ -667,6 +667,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             tables[definition['identity']['key']] = definition
     facts = item_facts(item_definitions)
     quest_yields = set()
+    slice_creatures = set()
     # Repository-authored Quest rules bind the complete canonical dataset.
     if (creature_definitions.resolve() == CREATURE_DEFINITIONS.resolve()
             and loot_definitions.resolve() == LOOT_DEFINITIONS.resolve()
@@ -680,12 +681,19 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         quest_yields = protected_loot_yields.ITEMS
         import quest_loot_profiles
         quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables)
+        import loot_slice_one
+        slice_creatures = loot_slice_one.creatures(ROOT)
+        loot_slice_one.project_tables(definitions, tables, facts)
     bindings, named, used = {}, {}, {}
     corpse_refs, yield_keys, corpse_tables = {}, set(), {}
     reward_boss_corpses = set()
     profile_path = item_definitions / 'spell-native-profiles.json'
     if native_item_profiles is None:
         _, native_profiles = read(profile_path) if profile_path.exists() else (b'', {'records': []})
+        starter_path = item_definitions / 'starting-loadout-profiles.json'
+        if slice_creatures and starter_path.exists():
+            _, starter_profiles = read(starter_path)
+            native_profiles['records'].extend(starter_profiles['records'])
     else:
         native_profiles = native_item_profiles
     native_by_key = {}
@@ -758,18 +766,27 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             native = native_loot_yield_facts(facts[key]['item'], profiles[0]) if len(profiles) == 1 else None
             if native is not None:
                 facts[key].update(native)
-    # Complete only these source-qualified corpse rows' existing loot closures.
-    # Ordinary yields retain the stronger Inventory + Ground + pickup admission;
-    # Ground-only corpse admission never authorizes a normal yield.
-    def admit_yields(entries):
+    # Complete the selected portable loot and source-qualified corpse closures.
+    # A loot yield requires carried and Ground custody plus pickup physics.
+    def admit_yields(entries, *, retain_native_stacks=False):
         for entry in entries:
             key = entry['item']['key']
             profiles = native_by_key.get(key, [])
-            if not facts[key]['materializable'] and len(profiles) == 1:
+            fact = facts[key]
+            if len(profiles) == 1 and (retain_native_stacks or not fact['materializable']):
                 native = native_loot_yield_facts(entry['item'], profiles[0])
                 if native is not None:
-                    facts[key].update(native)
-            admit_yields(entry.get('children', []))
+                    if not fact['materializable']:
+                        fact.update(native)
+                    elif retain_native_stacks and native['stackable']:
+                        # Static facts omit stackability for uncharged Items.
+                        fact.setdefault('stackable', True)
+            admit_yields(entry.get('children', []), retain_native_stacks=retain_native_stacks)
+    for creature in sorted(slice_creatures & bindings.keys()):
+        reference = bindings[creature]['loot']
+        if reference is None:
+            raise ValueError(f'Selected creature has no loot binding: {creature}')
+        admit_yields(used[reference['key']]['entries'], retain_native_stacks=True)
     for key, corpses in corpse_tables.items():
         if corpses & qualified_corpses:
             admit_yields(used[key]['entries'])
