@@ -266,6 +266,14 @@ impl HostOwner {
         }
     }
     pub fn poll(&mut self, viewport: [u32; 2]) {
+        self.poll_with_notices(viewport, &crate::atomic_file::MALFORMED_NOTICES);
+    }
+
+    fn poll_with_notices(
+        &mut self,
+        viewport: [u32; 2],
+        recovery: &crate::atomic_file::MalformedNotices,
+    ) {
         if self.phase == Phase::Closed {
             if self.entry.is_some() && !self.forget_worker_running() {
                 self.finish_close();
@@ -290,7 +298,7 @@ impl HostOwner {
                 self.login.form.feedback(error.clone());
             }
         }
-        let mut notices = crate::atomic_file::take_malformed_notices();
+        let mut notices = recovery.take();
         if !notices.is_empty() {
             if let Some(error) = completion.error {
                 notices.insert(0, error);

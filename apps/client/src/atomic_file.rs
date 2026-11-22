@@ -108,6 +108,13 @@ fn open_lock(path: &Path) -> io::Result<File> {
 
 /// Preserve the first malformed document while holding its publication lock.
 pub(crate) fn preserve_malformed(path: &Path) -> io::Result<()> {
+    preserve_malformed_with(path, |_message| {
+        #[cfg(any(test, bevy_shell))]
+        MALFORMED_NOTICES.push(_message);
+    })
+}
+
+pub(crate) fn preserve_malformed_with(path: &Path, notify: impl FnOnce(&str)) -> io::Result<()> {
     let backup = path.with_added_extension("malformed");
     match std::fs::symlink_metadata(&backup) {
         Ok(_) => return Ok(()),
@@ -130,10 +137,7 @@ pub(crate) fn preserve_malformed(path: &Path) -> io::Result<()> {
                 .to_string_lossy();
             let message =
                 format!("Recovered damaged {name}. The original was saved as {name}.malformed.");
-            #[cfg(any(test, bevy_shell))]
-            if let Ok(mut notices) = MALFORMED_NOTICES.lock() {
-                notices.push(message.clone());
-            }
+            notify(&message);
             eprintln!("{message}");
             Ok(())
         }
@@ -143,33 +147,47 @@ pub(crate) fn preserve_malformed(path: &Path) -> io::Result<()> {
 }
 
 #[cfg(any(test, bevy_shell))]
-static MALFORMED_NOTICES: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+pub(crate) static MALFORMED_NOTICES: MalformedNotices =
+    MalformedNotices(std::sync::Mutex::new(Vec::new()));
 
 #[cfg(any(test, bevy_shell))]
-pub(crate) fn take_malformed_notices() -> Vec<String> {
-    MALFORMED_NOTICES
-        .lock()
-        .map(|mut notices| std::mem::take(&mut *notices))
-        .unwrap_or_default()
+#[derive(Default)]
+pub(crate) struct MalformedNotices(std::sync::Mutex<Vec<String>>);
+
+#[cfg(any(test, bevy_shell))]
+impl MalformedNotices {
+    pub(crate) fn push(&self, message: &str) {
+        if let Ok(mut notices) = self.0.lock() {
+            notices.push(message.to_owned());
+        }
+    }
+
+    pub(crate) fn take(&self) -> Vec<String> {
+        self.0
+            .lock()
+            .map(|mut notices| std::mem::take(&mut *notices))
+            .unwrap_or_default()
+    }
 }
 
 #[cfg(test)]
 #[test]
 fn review_3376_malformed_backup_and_notice_are_created_once() -> io::Result<()> {
+    let queue = MalformedNotices::default();
     let root = tempfile::tempdir()?;
     let path = root.path().join("profile.json");
     let backup = path.with_added_extension("malformed");
     let _lock = lock(&path)?;
     std::fs::write(&path, b"first damaged file")?;
-    preserve_malformed(&path)?;
+    preserve_malformed_with(&path, |message| queue.push(message))?;
     assert_eq!(std::fs::read(&backup)?, b"first damaged file");
-    let notices = take_malformed_notices();
+    let notices = queue.take();
     assert_eq!(notices.len(), 1);
     assert!(notices[0].contains("profile.json.malformed"));
     std::fs::write(&path, b"second damaged file")?;
-    preserve_malformed(&path)?;
+    preserve_malformed_with(&path, |message| queue.push(message))?;
     assert_eq!(std::fs::read(&backup)?, b"first damaged file");
-    assert!(take_malformed_notices().is_empty());
+    assert!(queue.take().is_empty());
     Ok(())
 }
 
