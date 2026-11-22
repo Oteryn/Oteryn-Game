@@ -87,9 +87,9 @@ mod tests {
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
         // The door routes add three Svargrond roof callbacks.
-        assert_eq!(base.len(), 1_015);
+        assert_eq!(base.len(), 1_014);
         assert_eq!(bindings.world_callbacks().count(), 31);
-        assert_eq!(callbacks.len(), 1_046);
+        assert_eq!(callbacks.len(), 1_045);
         assert!(callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS);
         let expected: BTreeSet<_> = base
             .iter()

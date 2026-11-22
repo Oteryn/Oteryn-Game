@@ -538,9 +538,10 @@ pub(super) fn place(
             ..
         }) => {
             let mut table = table.clone();
-            table
-                .npcs
-                .retain(|npc| !conditional::seasonal_merchant(&npc.key));
+            table.npcs.retain(|npc| {
+                !conditional::seasonal_merchant(&npc.key)
+                    && !event_contacts::owns_presence(&npc.key)
+            });
             let unix_ms = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .ok()
@@ -769,8 +770,7 @@ pub(crate) mod tests {
         Ok(())
     }
 
-    #[test]
-    fn rottin_wood_boots_from_repository_npc_placement() -> Result<(), Box<dyn std::error::Error>> {
+    fn repository_npc_boot(x: u16, y: u16) -> Result<Option<NpcBoot>, Box<dyn std::error::Error>> {
         use crate::content::{
             NpcDataCatalogue, capture_world_project, npc_catalogue_preproduction_limits,
         };
@@ -778,8 +778,6 @@ pub(crate) mod tests {
         use std::ffi::OsStr;
 
         let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
-        let key = "oteryn:npc.rottin_wood";
-        let (x, y) = (32_652, 32_201);
         let project = source::project_regions(root, &[(x / 256, y / 256)])?;
         let (registry, palette) = source::registry(root, &project)?;
         let identity = serde_json::from_slice(&source::read(
@@ -802,12 +800,48 @@ pub(crate) mod tests {
         let snapshot = capture_world_project(&content, OsStr::new("world"), limits)?;
         let catalogue = NpcDataCatalogue::from_project(snapshot, limits.project)?;
         let frame = read(&compiled.bytes).map_err(|error| error.to_string())?;
-        let boot = prepare(
+        Ok(prepare(
             Some(frame),
             Some((&catalogue, &content.join("world"))),
             false,
         )
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| error.to_string())?)
+    }
+
+    #[test]
+    fn chip_is_absent_at_bundle_boot_when_lumberjack_is_inactive()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let chip = "oteryn:npc.chip";
+        let boot = repository_npc_boot(32418, 31702)?;
+        let Some(NpcBoot::Place { table, .. }) = boot.as_ref() else {
+            return Err("repository NPC bundle did not bind".into());
+        };
+        assert!(table.npcs.iter().any(|npc| {
+            npc.key == chip
+                && npc
+                    .placements
+                    .iter()
+                    .any(|p| (p.x, p.y, p.floor) == (32418, 31702, -7))
+        }));
+        let mut runtime = channel_runtime_with(128);
+        let mut contacts = event_contacts::EventContacts::admit(boot.as_ref(), |_| true);
+        assert!(
+            !contacts.is_empty(),
+            "Chip's event contact must be admitted"
+        );
+        place(&mut runtime, boot.as_ref()).map_err(|error| error.to_string())?;
+        contacts
+            .tick(&mut runtime)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(!timed_keys(&runtime).contains(&chip));
+        Ok(())
+    }
+
+    #[test]
+    fn rottin_wood_boots_from_repository_npc_placement() -> Result<(), Box<dyn std::error::Error>> {
+        let key = "oteryn:npc.rottin_wood";
+        let (x, y) = (32_652, 32_201);
+        let boot = repository_npc_boot(x, y)?;
         let mut runtime = channel_runtime_with(128);
         place(&mut runtime, boot.as_ref()).map_err(|error| error.to_string())?;
         let visible = runtime.visible_entities();

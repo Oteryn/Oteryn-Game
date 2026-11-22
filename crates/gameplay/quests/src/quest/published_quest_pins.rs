@@ -24,55 +24,75 @@ const fn hash(hex: &[u8; 64]) -> DefinitionHash {
 // edited. For these exact citation-only refreshes, keep the published save identity.
 const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
     (
+        "oteryn:quest.ferumbras_ascension_quest",
+        hash(b"0af32c0df483861158003518300f8766f35d117c8838aa44fe12e3f97ae1a705"),
+        hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        hash(b"538537f1b4c192bca0794d4d8b6f6e20a1957f8b8c3079bda770bd72aa1b9b31"),
+        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+    ),
+    (
         "oteryn:quest.formogar_mine_hoist",
-        hash(b"617bff2ce025747e4a7747fce2009d039c79c0416d2ba226ed735d0ea5d76ede"),
+        hash(b"3e2e5ec6ee0fe7796d1387faf441e8dcaf3620467e93fe7e0d2775e3177e0552"),
         hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
     ),
     (
         "oteryn:quest.giant_smithhammer_quest",
-        hash(b"8c6b244adca3ac947bee105824abdc268648729a62add19adc897cc47845b1f1"),
+        hash(b"d4eea61343703bae88dc80c62798886894c463e200e56c78a45ded3b7bd7338e"),
         hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
     ),
     (
         "oteryn:quest.goblin_merchant_quest",
-        hash(b"fe96732992ad3b207b75433d64569fffc0792eacc0eb6e2a16e80a636d5046ad"),
+        hash(b"3d8cf6a516500022a4830ebc2a304e6d73d24322267b634820c828f25d362f87"),
         hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
     ),
     (
         "oteryn:quest.grave_danger_quest",
-        hash(b"5c6e9bc04b7dc5881f879e073bf3165d452e599d3633b64416cf1f611ac9523d"),
+        hash(b"3c16ae76d0a5984f9112dc92bfa88bd90187f276478186d547c8b1a7a60acee5"),
         hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
     ),
     (
         "oteryn:quest.grimvale_quest",
-        hash(b"be926e9f2acf5908483637cc2f83c79dbeb7b3418c4051cb43a2ffa779233d65"),
+        hash(b"18d1b3cbf8791ee126c5a5506e645c05a7ab5e30c3bf8d1adee7c2e995d6e1e8"),
         hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
     ),
     (
         "oteryn:quest.heart_of_destruction_quest",
-        hash(b"5fd58496a9bbec4ab0feda817d182f73fc9b562cfeee6c48ccec84df16fe064d"),
+        hash(b"15bdfdba656ba4183afb32de71d85196d189651085bdfeced88187f14b9f95b5"),
         hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
     ),
     (
         "oteryn:quest.hero_of_rathleton_quest",
-        hash(b"45f1e1cfde073c475a485ef92d29e9b6177b6e3fa1de7df67e4e2652aa3c462c"),
+        hash(b"a933918380eb4c4bd93e06f3c53a43f68fe7257dbcf26608b1bc402f50cb599b"),
         hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
     ),
     (
         "oteryn:quest.hidden_threats_quest",
-        hash(b"5710efb6a47e898a65a81660b74ee74e469d1ea3e4ceb14b5e3a0b5029ed4215"),
+        hash(b"15ad7a816ba5b4117a2a648458a96889861c3e21508e65fe0965801dcb5a1e60"),
         hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
     ),
     (
         "oteryn:quest.hydra_egg_quest",
-        hash(b"bf21c8ce62fd697df94d9125c787278372f8869088542a1a718ec7ba814f7dad"),
+        hash(b"4a82936b0cd2def1d5f7f581c173f39ad778f0f83d926f165e0a8e23f7eef8a2"),
         hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
     ),
 ];
 
+const MAGIC_SWORD: &str = "oteryn:quest.authored.magic_sword_quest";
+// Captured by quest_definition_hashes from 2b639c659 before the passage removal.
+const MAGIC_SWORD_WITH_PASSAGE: DefinitionHash =
+    hash(b"be324e0177ccefdfb5275e84ebebcd7a420128b352aadb233b8a2508a6f72dcf");
+
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
+    (
+        MAGIC_SWORD,
+        hash(b"b4c39f0264af5ac1d290b16d312f3d836f016120b222155c52fecac8d9a3851a"),
+        &[MAGIC_SWORD_WITH_PASSAGE],
+    ),
     (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
@@ -146,6 +166,22 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
 mod tests {
     use super::*;
     use crate::quest::{loader, npc_rules};
+
+    #[test]
+    fn magic_sword_loader_retains_the_saved_passage_revision() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        assert_ne!(
+            catalogue.definition_hash(MAGIC_SWORD),
+            Some(MAGIC_SWORD_WITH_PASSAGE)
+        );
+        assert_eq!(
+            npc_rules::legacy_defaults(catalogue, MAGIC_SWORD, &MAGIC_SWORD_WITH_PASSAGE),
+            Some(&Default::default())
+        );
+        Ok(())
+    }
 
     #[test]
     fn package_keeps_main_grave_danger_pin() -> Result<(), String> {

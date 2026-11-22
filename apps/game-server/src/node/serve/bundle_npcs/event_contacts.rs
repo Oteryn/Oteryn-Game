@@ -29,6 +29,10 @@ const CONTACTS: [(&str, &str, TilePos); 2] = [
     ),
 ];
 
+pub(super) fn owns_presence(npc: &str) -> bool {
+    CONTACTS.iter().any(|(_, key, _)| *key == npc)
+}
+
 #[derive(Debug)]
 struct Contact {
     actor: ConditionalNpcActor,
