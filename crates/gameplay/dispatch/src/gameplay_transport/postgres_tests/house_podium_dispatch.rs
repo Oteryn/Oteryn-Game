@@ -46,6 +46,7 @@ enum Case {
     Malformed,
     Unavailable,
     NoPath,
+    DoorAcl,
 }
 
 #[test]
@@ -108,6 +109,15 @@ fn house_podium_dispatch_valid_query_without_path_rejects() -> TestResult {
     postgres_case("house_podium_no_path", Case::NoPath)
 }
 
+#[test]
+fn house_door_step_respects_guild_rank_acl_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    postgres_case("house_door_rank_step", Case::DoorAcl)
+}
+
 fn postgres_case(name: &'static str, case: Case) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -139,7 +149,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .await
         .map_err(debug)?;
     let base = Dependencies::new()?;
-    let walks = matches!(case, Case::Walk | Case::CancelWalk);
+    let walks = matches!(case, Case::Walk | Case::CancelWalk | Case::DoorAcl);
     let world = if walks {
         super::house_wrap_fixtures::walkable_house_bundle(
             base.admitted.world_id,
@@ -230,14 +240,23 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             )
             .map_err(debug)?;
     }
+    let house_owner = if matches!(case, Case::DoorAcl) {
+        seed_house_door_owner(h).await?;
+        id(91)
+    } else {
+        id(41)
+    };
     sqlx::query(include_str!(
         "../../../../../../apps/game-server/tests/support/owned_house_fixture.sql"
     ))
     .bind(id(42).as_slice())
     .bind(HOUSE)
-    .bind(id(41).as_slice())
+    .bind(house_owner.as_slice())
     .execute(&h.pool)
     .await?;
+    if matches!(case, Case::DoorAcl) {
+        seed_house_door_acl(h).await?;
+    }
     sqlx::query("INSERT INTO game_control_house_scope_grants SELECT session_user,encode($1,'hex')::uuid,$2,1")
         .bind(id(42).as_slice()).bind(HOUSE).execute(&h.pool).await?;
     h.root
@@ -319,6 +338,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     admitted.continuity.next_command_id = 1;
+
+    if matches!(case, Case::DoorAcl) {
+        return verify_house_door_steps(h, &owner, &mut admitted).await;
+    }
 
     let set = wire::SetRequest {
         item: id(71),
@@ -510,6 +533,79 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     .ok_or("unchanged projection result")?;
     assert_eq!(status, CommandStatus::Accepted);
     assert_eq!(wire::Projection::decode(&payload), Some(expected));
+    Ok(())
+}
+
+async fn seed_house_door_owner(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Door Owner' FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+        .bind(id(91).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn seed_house_door_acl(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,revision,created_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Door Guild',2,9999999999999,1,1)")
+        .bind(id(90).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,1,'Leader'),(encode($1,'hex')::uuid,2,'Member')")
+        .bind(id(90).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_house_acl_entries VALUES(encode($1,'hex')::uuid,$2,'guest',encode($3,'hex')::uuid)")
+        .bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).execute(&mut *tx).await?;
+    // Isolate movement from the already-covered command 56 writer. Seed the
+    // same resolved rank selector on the actual authored door of this House.
+    sqlx::query("INSERT INTO game_house_acl_guild_ranks(world_id,house_key,list_key,ownership_generation,acl_revision,previous_acl_revision,connection_generation,rules,last_session_id,last_command_id) SELECT encode($1,'hex')::uuid,$2,'door:32309:32804:-7',1,1,0,1,jsonb_build_array(jsonb_build_object('guild',guild_id,'rank',level,'identity',house_acl_identity)),encode($3,'hex')::uuid,1 FROM game_guild_ranks WHERE guild_id=encode($4,'hex')::uuid AND level=2")
+        .bind(id(42).as_slice()).bind(HOUSE).bind(id(92).as_slice()).bind(id(90).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn verify_house_door_steps(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("House actor")?;
+    for (direction, expected_x) in [
+        (StepDirection::East, 32310),
+        (StepDirection::West, 32310),
+        (StepDirection::West, 32309),
+    ] {
+        let command = admitted.continuity.next_command_id;
+        assert!(
+            exchange(
+                owner,
+                admitted,
+                command,
+                COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                &encode_step_intent(direction)
+            )
+            .await?
+            .is_some()
+        );
+        let state = owner
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, admitted.game_session_id)
+            .map_err(debug)?;
+        assert_eq!((state.position.x, state.position.y), (expected_x, 32804));
+        if direction == StepDirection::West && expected_x == 32310 {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1)")
+                .bind(id(41).as_slice()).bind(id(90).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
+    }
     Ok(())
 }
 

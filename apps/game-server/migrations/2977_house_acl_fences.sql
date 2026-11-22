@@ -27,3 +27,19 @@ END $$;
 DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_house_management_guild_acl_advance(UUID,NUMERIC,NUMERIC,JSONB) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
+
+-- Preserve the named-House role separately from exact door lists. A door
+-- selector does not grant entry to the House or access to its services.
+CREATE FUNCTION game_house_door_access(w UUID,h TEXT,actor UUID)
+RETURNS TABLE(all_doors BOOLEAN,lists TEXT[]) LANGUAGE sql SECURITY DEFINER AS $$
+ SELECT a.role IN('OWNER','SUBOWNER'),ARRAY(
+  SELECT list_key FROM game_house_acl_member_lists(w,h,actor)
+  WHERE list_key LIKE 'door:%' ORDER BY list_key
+ )
+ FROM game_house_access(w,h,actor) a WHERE NOT a.content_fenced
+$$;
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_house_door_access(UUID,TEXT,UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_house_door_access(UUID,TEXT,UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_house_door_access(UUID,TEXT,UUID) TO oteryn_game_runtime;

@@ -244,6 +244,10 @@ pub type Cell = (i32, i32, i32);
 /// per step.
 pub trait CellBlocker: Sync {
     fn blocks(&self, cell: LogicalCell) -> bool;
+    /// The exact named-House door is authorized and its other ground facts remain clear.
+    fn permits_house_door(&self, _cell: LogicalCell) -> bool {
+        false
+    }
     /// An exact, unambiguous conditional callback owns this native portal's landing.
     /// Default movement retains the bundle teleport. Rechecked with the sealed proof.
     fn suppresses_native_teleport(&self, _cell: LogicalCell) -> bool {
@@ -730,14 +734,17 @@ fn destination(
     // teleport destination.
     let ground = ground_of(cells);
     let ground = |cell: Cell| {
-        if closed.blocks(LogicalCell {
+        let at = LogicalCell {
             x: cell.0,
             y: cell.1,
             z: cell.2,
-        }) {
-            Ground::Blocked
-        } else {
-            ground(cell)
+        };
+        if closed.blocks(at) {
+            return Ground::Blocked;
+        }
+        match ground(cell) {
+            Ground::Blocked if closed.permits_house_door(at) => Ground::Walkable,
+            ground => ground,
         }
     };
     let ((x, y, z), starts_stairhop) = resolve_landing_with_teleports(

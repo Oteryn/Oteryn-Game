@@ -823,6 +823,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             crate::durability::house_transfer::HouseAdmissionRead {
                                 interior: read.interior,
                                 hirelings: read.hirelings,
+                                door_access: read.door_access,
                             },
                         );
                         false
