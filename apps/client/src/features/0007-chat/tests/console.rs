@@ -232,3 +232,25 @@ fn dragged_channel_mirror_tracks_live_history_and_closes_with_original() -> Resu
         .join()
         .map_err(|_| "mirror console test thread failed")?
 }
+
+#[cfg(windows)]
+#[test]
+fn channel_log_refuses_an_intermediate_directory_junction() -> Result<(), Error> {
+    let fixture = tempfile::tempdir()?;
+    std::fs::create_dir_all(fixture.path().join("target").join("nested"))?;
+    let status = std::process::Command::new("cmd.exe")
+        .current_dir(fixture.path())
+        .args(["/d", "/c", "mklink", "/J", "junction", "target"])
+        .status()?;
+    assert!(status.success());
+    let (link, _, _) = play_channel();
+    for append in [false, true] {
+        let result = link.chat_save_log(&fixture.path().join("junction/nested/chat.log"), append);
+        assert_eq!(
+            result.err().map(|error| error.kind()),
+            Some(std::io::ErrorKind::PermissionDenied)
+        );
+        assert!(!fixture.path().join("target/nested/chat.log").try_exists()?);
+    }
+    Ok(())
+}
