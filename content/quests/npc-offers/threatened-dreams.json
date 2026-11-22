@@ -5,6 +5,7 @@
       "npc": "oteryn:npc.ahmet",
       "keywords": ["book"],
       "topic": 0,
+      "any_topic": true,
       "next_topic": 5,
       "storage": [
         {

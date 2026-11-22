@@ -254,14 +254,19 @@ fn scenario(configured_admin: &str) -> TestResult {
             .await?;
             assert_eq!(quantity(&h, PLATINUM).await?, 50);
             talk(&mut owner, &admitted, ahmet, 2204, "hi").await?;
-            let offer = talk(&mut owner, &admitted, ahmet, 2205, "book").await?;
+            let thieves_offer = talk(&mut owner, &admitted, ahmet, 2205, "mission").await?;
+            assert!(
+                thieves_offer.iter().any(|line| line.contains("I was robbed")),
+                "{thieves_offer:?}"
+            );
+            let offer = talk(&mut owner, &admitted, ahmet, 2206, "book").await?;
             assert!(
                 offer.iter().any(|line| line.contains("5000 gold")),
                 "{offer:?}"
             );
             assert_eq!(quantity(&h, BOOK).await?, 1);
             assert_eq!(quantity(&h, PLATINUM).await?, 50);
-            talk(&mut owner, &admitted, ahmet, 2206, "yes").await?;
+            talk(&mut owner, &admitted, ahmet, 2207, "yes").await?;
             assert_eq!(
                 progress(&owner, &admitted, &authority, quest::ANIMALS).await?,
                 2
