@@ -316,3 +316,51 @@ fn a_written_placement_is_a_cell_the_booted_world_lets_a_creature_enter() -> Tes
     }
     Ok(())
 }
+
+#[test]
+fn crystal_npc_services_use_their_source_placement_cells() -> TestResult {
+    let root = root();
+    let mut families = repository_families()?;
+    for shard in shards(&root, "content/world/npc-placements")? {
+        families.add_npc_placements(&shard)?;
+    }
+    let admitted: BTreeSet<_> = admitted_npcs(&families).into_iter().collect();
+    for (npc, x, y, z) in [
+        ("a_strange_fellow", 32909, 32076, 9),
+        ("adrian", 31934, 31913, 7),
+        ("benjamin", 32349, 32219, 7),
+        ("captain_jack", 32190, 31957, 6),
+        ("chrystal", 33175, 31811, 7),
+        ("dove", 32918, 32075, 7),
+        ("ferryman_kamil", 32152, 32457, 7),
+        ("ferryman_kamil_meluna", 32088, 32468, 7),
+        ("flavius", 32566, 32489, 7),
+        ("harlow_vengoth", 32856, 31549, 7),
+        ("hawkhurst", 33356, 31982, 7),
+        ("hawkhurst_ingol", 33710, 32602, 6),
+        ("hugo", 32950, 32102, 5),
+        ("kendra", 33494, 31057, 7),
+        ("kevin", 32568, 32018, 6),
+        ("kroox", 32651, 31887, 9),
+        ("liane", 32333, 31786, 7),
+        ("lokur", 32647, 31904, 8),
+        ("markwin", 32416, 32145, 15),
+        ("ninos", 33904, 31498, 7),
+        ("talphion", 32564, 31895, 12),
+        ("tonar", 33181, 32883, 7),
+    ] {
+        let key = format!("oteryn:npc.{npc}");
+        assert!(admitted.contains(key.as_str()), "{key}");
+        let placement = families
+            .npc_placements
+            .iter()
+            .find(|placement| placement.npc == key && placement.cell == (x, y, z))
+            .ok_or_else(|| format!("missing source cell for {key}"))?;
+        assert_eq!(
+            families.npc_block_solid_contacts.contains(&placement.key),
+            npc == "ferryman_kamil_meluna",
+            "{key}"
+        );
+    }
+    Ok(())
+}

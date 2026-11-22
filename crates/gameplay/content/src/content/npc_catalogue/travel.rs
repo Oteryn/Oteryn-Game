@@ -67,6 +67,10 @@ struct Correction {
     world_change: Option<String>,
 }
 
+/// Source-qualified helpers that supersede older held route corrections.
+pub const CRYSTAL_HELPERS: &str =
+    include_str!("../../../../../../content/services/travel/crystal-helpers.json");
+
 /// Bind route corrections to the same revision as their production conversation book.
 pub fn revision_material() -> &'static str {
     include_str!("travel_routes.json")
@@ -78,8 +82,18 @@ pub fn resolve(
     services: &[ProjectV2DefinitionRef],
 ) -> Vec<TravelRoute> {
     static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
-    let corrections =
-        CORRECTIONS.get_or_init(|| serde_json::from_str(revision_material()).unwrap_or_default());
+    let corrections = CORRECTIONS.get_or_init(|| {
+        let Ok(mut historical) = serde_json::from_str::<Vec<Correction>>(revision_material())
+        else {
+            return Vec::new();
+        };
+        let Ok(helpers) = serde_json::from_str::<Vec<Correction>>(CRYSTAL_HELPERS) else {
+            return historical;
+        };
+        historical.retain(|row| !helpers.iter().any(|helper| helper.key == row.key));
+        historical.extend(helpers);
+        historical
+    });
     let native_service = format!(
         "oteryn:service.travel.{}",
         npc_key.trim_start_matches("oteryn:npc.")
