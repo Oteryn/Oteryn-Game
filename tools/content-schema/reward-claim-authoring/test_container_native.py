@@ -6,7 +6,7 @@ import unittest
 
 import charge_native
 import container_native
-import global_corrections
+from book_text_expectations import GLOBAL_BOOK_REFS
 import reward_claim_authoring as plain
 
 
@@ -326,8 +326,12 @@ class ContainerNativeTests(unittest.TestCase):
             self.assertIsNotNone(recipe)
             row = recipe['placements'][0]
             body = texts[ids[0]]['text']
-            self.assertEqual(row['root_text'], global_corrections.source_text(ids[0], body.strip('\n')))
-            corrected += ids[0] in global_corrections.TEXTS
+            if ids[0] in GLOBAL_BOOK_REFS:
+                self.assertEqual(hashlib.sha256(row['root_text'].encode()).hexdigest(),
+                                 GLOBAL_BOOK_REFS[ids[0]]['sha256'])
+                corrected += 1
+            else:
+                self.assertEqual(row['root_text'], body.strip('\n'))
             self.assertEqual(row['contents'], [])
             self.assertIsNone(row['capacity'])
             self.assertEqual(row['root']['key'], f"oteryn:item.tibia.i{texts[ids[0]]['item_id']}")

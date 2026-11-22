@@ -52,20 +52,64 @@ fn qa_written_reward_claims_bind_corrected_text_hashes() -> TestResult {
 }
 
 #[test]
-fn qa_ghostsilver_lantern_claim_mints_lit_item_once() -> TestResult {
+fn qa_corrected_books_persist_from_shipped_chests() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let results = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            [
+                (
+                    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chest_book",
+                    (32850, 32285, -14),
+                    "oteryn:item.tibia.i2821",
+                    "feb0cc940641e7a9e502fe1bfe7437958b826ee3938270d5f6217c010e751658",
+                ),
+                (
+                    "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible",
+                    (32828, 32340, -7),
+                    "oteryn:item.tibia.i2836",
+                    "c80460595bd34757c3d5065a1af387e1a5af38b8d8c54813d153add07bad182b",
+                ),
+            ]
+            .map(|(claim, position, book, digest)| {
+                super::qready1_reward_claims::claim_case_with_reward_check(
+                    claim,
+                    position,
+                    &[],
+                    2472,
+                    book,
+                    1,
+                    super::qready1_reward_claims::RewardCheck::Book(digest),
+                )
+                .map_err(|error| format!("{claim}: {error}"))
+            })
+        })?
+        .join()
+        .map_err(|_| "corrected book dispatch panicked")?;
+    for result in results {
+        result?;
+    }
+    Ok(())
+}
+
+#[test]
+fn qa_ghostsilver_lantern_claim_mints_once_and_use_toggles_both_ways() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
-            super::qready1_reward_claims::claim_case(
+            super::qready1_reward_claims::claim_case_with_reward_check(
                 "oteryn:reward-claim.kv.ghostsilver_lantern_quest",
                 (32825, 31664, -9),
                 &[],
                 23736,
                 "oteryn:item.tibia.i23738",
                 1,
+                super::qready1_reward_claims::RewardCheck::Lantern,
             )
             .map_err(|error| error.to_string())
         })?

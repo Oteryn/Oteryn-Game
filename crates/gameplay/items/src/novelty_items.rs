@@ -19,6 +19,7 @@ pub enum NoveltyKind {
     Dice,
     Firework,
     Transform,
+    CarriedTransform,
     EquippedEffect,
     ConsumeEffect,
     PlayerTargetEffect,
@@ -200,6 +201,7 @@ fn valid(rule: &NoveltyRule) -> bool {
                         .windows(2)
                         .all(|ids| ids[0].checked_add(1) == Some(ids[1]))
             }
+            NoveltyKind::CarriedTransform => positive(rule.output),
             NoveltyKind::Transform => {
                 positive(rule.output) && positive(rule.duration_ms) && positive(rule.decay_to)
             }
@@ -218,7 +220,42 @@ pub fn rule_for_key(key: &str) -> Option<&'static NoveltyRule> {
         .strip_prefix("oteryn:item.tibia.i")?
         .parse::<u32>()
         .ok()?;
-    rules()?.iter().find(|rule| rule.item_ids.contains(&id))
+    ghostsilver_lantern_rule(id)
+        .or_else(|| rules()?.iter().find(|rule| rule.item_ids.contains(&id)))
+}
+
+fn ghostsilver_lantern_rule(id: u32) -> Option<&'static NoveltyRule> {
+    // Crystal 201189f8, data-global/scripts/quests/forgotten_knowledge/actions_lantern.lua:1-4.
+    static RULES: OnceLock<[NoveltyRule; 2]> = OnceLock::new();
+    RULES
+        .get_or_init(|| {
+            [(23734, 23738), (23738, 23734)].map(|(source, output)| NoveltyRule {
+                item_ids: vec![source],
+                donor: "data-global/scripts/quests/forgotten_knowledge/actions_lantern.lua:1-4"
+                    .into(),
+                kind: NoveltyKind::CarriedTransform,
+                cues: Vec::new(),
+                effect_ids: Vec::new(),
+                cue_origin: None,
+                dice_speech_range: None,
+                ground_cues: Vec::new(),
+                ground_effect_ids: Vec::new(),
+                costumes: Vec::new(),
+                duration_ms: None,
+                output: Some(output),
+                decay_to: None,
+                damage: None,
+                speech: None,
+                success_percent: None,
+                success_text: None,
+                failure_text: None,
+                achievement: None,
+                achievement_progress: None,
+                secondary_achievement_progress: None,
+            })
+        })
+        .iter()
+        .find(|rule| rule.item_ids == [id])
 }
 
 pub fn is_novelty(key: &str) -> bool {
@@ -289,6 +326,7 @@ pub fn select(
             effects.dice_value = Some(u32::try_from(value).ok()?.checked_add(1)?);
             Some(rule.item_ids[usize::try_from(value).ok()?])
         }
+        NoveltyKind::CarriedTransform => rule.output,
         NoveltyKind::Transform => {
             effects.timed_output = Some(TimedOutput {
                 duration_ms: rule.duration_ms?,
@@ -440,7 +478,12 @@ pub fn is_ground_action(key: &str) -> bool {
     }
     crate::event_items::is_event_reward(key)
         || house_transform_for_key(key).is_some()
-        || rule_for_key(key).is_some_and(|rule| rule.kind != NoveltyKind::EquippedEffect)
+        || rule_for_key(key).is_some_and(|rule| {
+            !matches!(
+                rule.kind,
+                NoveltyKind::EquippedEffect | NoveltyKind::CarriedTransform
+            )
+        })
 }
 
 pub fn select_ground(
@@ -449,7 +492,10 @@ pub fn select_ground(
     ground: GroundEffect,
     mut draw: impl FnMut(u8, u64) -> Option<u64>,
 ) -> Option<NoveltySelection> {
-    if rule.kind == NoveltyKind::EquippedEffect {
+    if matches!(
+        rule.kind,
+        NoveltyKind::EquippedEffect | NoveltyKind::CarriedTransform
+    ) {
         return None;
     }
     let mut selected = select(rule, item_id, &mut draw)?;
