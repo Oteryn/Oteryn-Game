@@ -73,6 +73,8 @@ pub struct LootEntryDetails {
     pub charges: Option<u32>,
     /// Stackable charged items use the count as their stack quantity.
     pub stackable: bool,
+    /// Physical stack ceiling for source-qualified corpse yields.
+    pub corpse_stack_maximum: Option<std::num::NonZeroU32>,
     pub subtype: Option<u16>,
     pub unique: bool,
     /// A Global creature product (client market category "Creature Products").

@@ -390,28 +390,43 @@ fn roll_entries(
         if quantity == 0 {
             return Err(LootPlanError::InvalidQuantityRange);
         }
-        let purpose_key = entry.item.production_key.clone();
-        state.bytes = charge_plan_bytes(
-            state.bytes,
-            entry_footprint_bytes(&entry.item, &purpose_key),
-        )?;
-        if state.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
-            return Err(LootPlanError::TooManyPlanItems);
-        }
-        placement_ordinal += 1;
         let index = state.entries.len();
-        state.entries.push(LootPlanEntry {
-            item: entry.item.clone(),
-            quantity,
-            draw_ordinal,
-            purpose_key,
-            parent,
-            placement_ordinal,
-            subtype: entry.details.subtype,
-            charges: entry.details.charges,
-            unique: entry.details.unique,
-            stackable: entry.details.stackable,
-        });
+        let maximum = entry
+            .details
+            .corpse_stack_maximum
+            .map_or(quantity, std::num::NonZeroU32::get);
+        let mut remaining = quantity;
+        for stack in 0..quantity.div_ceil(maximum) {
+            // The first stack keeps the original cause. Extra stacks share the
+            // source roll but need their own deterministic mint causes.
+            let purpose_key = if stack == 0 {
+                entry.item.production_key.clone()
+            } else {
+                format!("{}.stack-{stack}", entry.item.production_key)
+            };
+            state.bytes = charge_plan_bytes(
+                state.bytes,
+                entry_footprint_bytes(&entry.item, &purpose_key),
+            )?;
+            if state.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
+                return Err(LootPlanError::TooManyPlanItems);
+            }
+            let count = remaining.min(maximum);
+            remaining -= count;
+            placement_ordinal += 1;
+            state.entries.push(LootPlanEntry {
+                item: entry.item.clone(),
+                quantity: count,
+                draw_ordinal,
+                purpose_key,
+                parent,
+                placement_ordinal,
+                subtype: entry.details.subtype,
+                charges: entry.details.charges,
+                unique: entry.details.unique,
+                stackable: entry.details.stackable,
+            });
+        }
         if entry.details.unique {
             state.unique.insert(entry.item.production_key.clone());
         }
@@ -748,6 +763,80 @@ mod tests {
                 })
                 .collect(),
         }
+    }
+
+    #[test]
+    fn clomp_corpse_gold_preserves_rolls_in_collectable_stacks()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::creature_reward::{
+            CreatureRewardTable, LootTablesSection, NoSettlementReason,
+        };
+        use oteryn_gameplay_domain::domain::currency::COIN_STACK_MAXIMUM;
+
+        let creatures = serde_json::from_slice(include_bytes!(
+            "../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let rewards = CreatureRewardTable::from_pin(&creatures, Some(&section));
+        let gold = oteryn_gameplay_domain::domain::currency::Coin::Gold.production_key();
+        let mut oversized = Vec::new();
+        for creature in ["oteryn:creature.animated_clomp", "oteryn:creature.clomp"] {
+            let reward = rewards.row(creature).map_err(NoSettlementReason::as_str)?;
+            let reference = reward.loot_table_ref.as_ref().ok_or("missing loot table")?;
+            let mut unsplit = reward.loot_table.clone();
+            let source = unsplit
+                .entries
+                .iter_mut()
+                .find(|entry| entry.item.production_key == gold)
+                .ok_or("missing gold roll")?;
+            let source_maximum = source.max_count;
+            source.details.corpse_stack_maximum = None;
+            let mut largest = 0;
+            for seed in 0..=u8::MAX {
+                let death = death_key(seed);
+                let expected = plan_creature_loot(death, reference, &unsplit)?;
+                let plan = plan_creature_loot(death, reference, &reward.loot_table)?;
+                let gold_stacks: Vec<_> = plan
+                    .entries
+                    .iter()
+                    .filter(|entry| entry.item.production_key == gold)
+                    .collect();
+                let total: u32 = gold_stacks.iter().map(|entry| entry.quantity).sum();
+                assert_eq!(
+                    total,
+                    expected
+                        .entries
+                        .iter()
+                        .filter(|entry| entry.item.production_key == gold)
+                        .map(|entry| entry.quantity)
+                        .sum::<u32>(),
+                    "{creature}, seed {seed}"
+                );
+                assert_eq!(
+                    plan,
+                    plan_creature_loot(death, reference, &reward.loot_table)?
+                );
+                assert!(gold_stacks.windows(2).all(|pair| {
+                    pair[0].draw_ordinal == pair[1].draw_ordinal
+                        && pair[0].purpose_key != pair[1].purpose_key
+                        && pair[0].placement_ordinal + 1 == pair[1].placement_ordinal
+                }));
+                largest = largest.max(total);
+                if let Some(entry) = gold_stacks
+                    .iter()
+                    .find(|entry| entry.quantity > COIN_STACK_MAXIMUM)
+                {
+                    oversized.push((creature, entry.quantity));
+                }
+            }
+            assert_eq!(largest, source_maximum, "{creature}");
+            assert!(largest > COIN_STACK_MAXIMUM, "{creature}");
+        }
+        assert!(oversized.is_empty(), "uncollectable gold: {oversized:?}");
+        Ok(())
     }
 
     fn rat_loot_table() -> LootTableDefinition {
