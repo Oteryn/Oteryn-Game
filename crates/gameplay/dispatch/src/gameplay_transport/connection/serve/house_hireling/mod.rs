@@ -87,7 +87,9 @@ impl State {
             return routing::house_rotation::route(authority, admitted, command).await;
         }
         match command.command_type {
-            oteryn_protocol_oteryn::item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_READ => {
+            oteryn_protocol_oteryn::item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_READ
+            | oteryn_protocol_oteryn::item_inscription::COMMAND_TYPE_ITEM_INSCRIPTION_ATTRIBUTION =>
+            {
                 return Some(
                     routing::item_inscription::route(authority, admitted, command, &self.items)
                         .await,

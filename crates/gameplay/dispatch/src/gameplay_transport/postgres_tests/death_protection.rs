@@ -7,7 +7,8 @@ use crate::gameplay_transport::death_ml_loss_postgres::death as death_request;
 
 #[test]
 fn death_protection_postgres_projects_exact_committed_consumption_and_replays() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(|| death_projection_scenario().map_err(|error| error.to_string()))?
@@ -56,6 +57,11 @@ fn death_projection_scenario() -> TestResult {
             "oteryn:blessing.spiritual_shielding".into(),
             "oteryn:blessing.twist_of_fate".into(),
         ];
+        request.public_cause = Some(
+            crate::durability::character_death::PublicDeathCause::Player {
+                character_id: id(60),
+            },
+        );
         request.pvp_contributors = vec![PvpDeathContributor {
             character_id: CharacterId::from_bytes(id(60)).map_err(debug)?,
             kind: PvpContributorKind::Damage,
@@ -110,9 +116,15 @@ fn death_projection_scenario() -> TestResult {
         admitted.item_fence = Some(current.item_fence());
         admitted.continuity.connection_generation = current.connection_generation.get();
         admitted.first_entry = FirstEntryOutcome::Positioned;
-        let offers = [OfferedCapability { id: 382, requires: &[] }, OfferedCapability { id: 199, requires: &[] }, OfferedCapability { id: 503, requires: &[199] }, OfferedCapability { id: 584, requires: &[382, 503] }];
+        let offers = [
+            OfferedCapability { id: 199, requires: &[] },
+            OfferedCapability { id: 382, requires: &[] },
+            OfferedCapability { id: 503, requires: &[199] },
+            OfferedCapability { id: 584, requires: &[382, 503] },
+            OfferedCapability { id: 595, requires: &[382] },
+        ];
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offers, &[382]).ok_or("death capability")?;
+            SelectedCapabilities::select(&offers, &[382, 595]).ok_or("death capability")?;
         let (status, bytes) = exchange(&owner, &mut admitted, 1, 664, &[]).await?;
         assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
         let projection = DeathProtectionReply::decode(&bytes)
@@ -128,11 +140,24 @@ fn death_projection_scenario() -> TestResult {
                 bytes
             )
         );
-        assert_eq!(exchange(&owner, &mut admitted, 2, 6331, &[]).await?.0,
+        use oteryn_protocol_oteryn::death_protection::{
+            COMMAND_TYPE_DEATH_OCCURRENCE, DeathOccurrence, DeathOccurrenceReply, FinalBlowKind,
+        };
+        let (status, bytes) =
+            exchange(&owner, &mut admitted, 2, COMMAND_TYPE_DEATH_OCCURRENCE, &[]).await?;
+        assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+        assert_eq!(
+            DeathOccurrenceReply::decode(&bytes),
+            Some(DeathOccurrenceReply(Some(DeathOccurrence {
+                occurrence: *death.occurrence.as_bytes(),
+                final_blow: FinalBlowKind::Player
+            })))
+        );
+        assert_eq!(exchange(&owner, &mut admitted, 3, 6331, &[]).await?.0,
             oteryn_protocol_oteryn::CommandStatus::Rejected);
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[199, 382, 503, 584]).ok_or("report capability")?;
-        let (status, bytes) = exchange(&owner, &mut admitted, 3, 6331, &[]).await?;
+        let (status, bytes) = exchange(&owner, &mut admitted, 4, 6331, &[]).await?;
         assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
         let report = DeathReportReply::decode(&bytes).and_then(|reply| reply.0).ok_or("death report")?;
         assert_eq!(report.protection, projection);

@@ -101,6 +101,27 @@ pub(super) fn encode(
                 outcome.disposition,
                 outcome.gate_message_id,
             );
+            use oteryn_protocol_oteryn::world_object::{
+                CAPABILITY_GAMEPLAY_OCCURRENCES_V1, CAPABILITY_POTION_UTTERANCE_V1, COMMAND_TYPE_USE_INTENT,
+                encode_use_result_with_utterance, encode_use_reward_result,
+            };
+            let payload = if command.command_type == COMMAND_TYPE_USE_INTENT
+                && session
+                    .selected_capabilities
+                    .contains(CAPABILITY_GAMEPLAY_OCCURRENCES_V1)
+                && disposition == UseDisposition::Committed
+                && let Some(occurrence) = outcome.reward_granted
+            {
+                encode_use_reward_result(occurrence)
+            } else {
+                encode_use_result_with_utterance(
+                    disposition,
+                    gate_message_id,
+                    outcome.potion_utterance.filter(|_| {
+                        session.selected_capabilities.contains(CAPABILITY_POTION_UTTERANCE_V1)
+                    }),
+                )
+            };
             (
                 if disposition == UseDisposition::Rejected {
                     CommandStatus::Rejected
@@ -109,16 +130,7 @@ pub(super) fn encode(
                 },
                 detailed(
                     session,
-                    oteryn_protocol_oteryn::world_object::encode_use_result_with_utterance(
-                        disposition,
-                        gate_message_id,
-                        outcome.potion_utterance.filter(|_| {
-                            session.selected_capabilities.contains(
-                            oteryn_protocol_oteryn::world_object::CAPABILITY_POTION_UTTERANCE_V1,
-                        )
-                        }),
-                    )
-                    .unwrap_or_else(|_| {
+                    payload.unwrap_or_else(|_| {
                         encode_use_result(UseDisposition::Rejected).unwrap_or_default()
                     }),
                     outcome

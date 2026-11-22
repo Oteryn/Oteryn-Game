@@ -605,6 +605,8 @@ pub struct UseCommand {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UseOutcome {
     pub disposition: oteryn_protocol_oteryn::world_object::UseDisposition,
+    /// Immutable reward-mint event ID for an admitted treasure claim.
+    pub reward_granted: Option<[u8; 16]>,
     pub committed: Option<oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry>,
     /// ACH-NOTIFY-1/2: what the grant of this `USE` earned, after its commit. The loop acts on
     /// it only for a session that selected capability 8.
@@ -625,6 +627,7 @@ impl UseOutcome {
             disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Rejected,
             committed: None,
             earned: EarnedNotice::NoneEarned,
+            reward_granted: None,
             gate_message_id: None,
             potion_utterance: None,
             refusal_detail: None,

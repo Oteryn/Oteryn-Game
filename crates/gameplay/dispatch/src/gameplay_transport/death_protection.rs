@@ -1,15 +1,25 @@
 //! C20c: current-session read of the latest death's immutable protection consumption.
 use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
 use oteryn_protocol_oteryn::death_protection::{
+    CAPABILITY_COMBAT_OCCURRENCES_V1,
     CAPABILITY_DEATH_PROTECTION_V1, CAPABILITY_DEATH_AND_BLESSINGS_V1, DeathProtection, DeathProtectionReply,
     DeathReport, DeathReportReply, DeathType,
 };
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     base.iter()
         .copied()
-        .filter(|entry| available || !matches!(entry.id, CAPABILITY_DEATH_PROTECTION_V1 | CAPABILITY_DEATH_AND_BLESSINGS_V1))
+        .filter(|entry| available || !matches!(entry.id, CAPABILITY_DEATH_PROTECTION_V1 | CAPABILITY_DEATH_AND_BLESSINGS_V1 | CAPABILITY_COMBAT_OCCURRENCES_V1))
         .collect()
 }
+pub(super) fn query_fence(
+    admitted: AdmittedSession,
+) -> Option<crate::durability::item_transfer::CurrentCharacterItemFence> {
+    let fence = admitted.item_fence?;
+    (fence.game_session_id == admitted.game_session_id
+        && fence.connection_generation.get() == admitted.continuity.connection_generation)
+        .then_some(fence)
+}
+
 macro_rules! authority_methods {
     () => {
         fn death_protection_available(&self) -> bool {
@@ -35,12 +45,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        let fence = admitted.item_fence?;
-        if fence.game_session_id != admitted.game_session_id
-            || fence.connection_generation.get() != admitted.continuity.connection_generation
-        {
-            return None;
-        }
+        let fence = query_fence(admitted)?;
         let death = self
             .root
             .read_latest_character_death(self.character, self.holder, fence)

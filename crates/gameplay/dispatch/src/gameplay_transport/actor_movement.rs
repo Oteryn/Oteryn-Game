@@ -1968,6 +1968,35 @@ mod creature_field_step_tests {
         assert_eq!(runtime.read_actor_position(actor).unwrap().position().x, 1);
     }
     #[test]
+    fn creature_field_lethal_step_retains_creature_final_blow() {
+        let (mut runtime, mut states, room, actor, session) = ready();
+        let field = contact(&runtime);
+        states
+            .get_mut(&runtime, actor, session)
+            .unwrap()
+            .restore_saved_vitals(1, 0);
+        states
+            .step_with_non_player_field_contact(
+                &mut runtime,
+                room.movement_cells(),
+                actor,
+                session,
+                0,
+                CardinalStep::East,
+                &std::collections::BTreeSet::new(),
+                None,
+                None,
+                Some(field),
+            )
+            .unwrap();
+        let death = states.player_death(&runtime, actor, session).unwrap();
+        assert_eq!(
+            death.public_cause,
+            Some(crate::durability::character_death::PublicDeathCause::UnidentifiedCreature),
+        );
+    }
+
+    #[test]
     fn blocked_step_leaves_initial_hp_condition_cursor_and_position_unchanged() {
         let (mut runtime, mut states, room, actor, session) = ready();
         let field = contact(&runtime);

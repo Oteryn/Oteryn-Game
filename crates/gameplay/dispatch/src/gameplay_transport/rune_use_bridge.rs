@@ -114,6 +114,7 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
         disposition,
         committed: None,
         earned: EarnedNotice::NoneEarned,
+        reward_granted: None,
         gate_message_id: None,
         potion_utterance: None,
         refusal_detail: None,

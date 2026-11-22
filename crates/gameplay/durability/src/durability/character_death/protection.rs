@@ -1,6 +1,7 @@
 //! Read the latest immutable death outcome under the current admitted session fence.
 use super::*;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
+use oteryn_protocol_oteryn::death_protection::FinalBlowKind;
 impl DurabilityRoot {
     /// The unique (Character, committed revision) index bounds this to one receipt.
     /// Reconnect reads the same occurrence even after pending respawn was consumed.
@@ -9,7 +10,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-    ) -> Result<Option<(CommittedCharacterDeath, Option<bool>)>> {
+    ) -> Result<Option<(CommittedCharacterDeath, Option<bool>, FinalBlowKind)>> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -21,16 +22,21 @@ impl DurabilityRoot {
             if super::super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
                 return Ok(Err(CharacterProgressionError::AuthorityRejected));
             }
-            let latest: Option<(String, Option<bool>)> = sqlx::query_as(
-                "SELECT r.death_occurrence_id::text, c.pvp FROM game_character_death_receipts r \
-                 LEFT JOIN game_public_death_classifications c USING(death_occurrence_id) \
-                 WHERE r.character_id=encode($1,'hex')::uuid ORDER BY r.committed_character_revision DESC LIMIT 1"
+            let occurrence: Option<(String, Option<bool>, i16)> = sqlx::query_as(
+                "SELECT d.death_occurrence_id::text, c.pvp, COALESCE(c.final_blow_kind, 0::smallint)
+                 FROM game_character_death_receipts d
+                 LEFT JOIN game_public_death_classifications c USING (death_occurrence_id)
+                 WHERE d.character_id=encode($1,'hex')::uuid
+                 ORDER BY d.committed_character_revision DESC LIMIT 1"
             )
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            let death = match latest {
-                Some((occurrence, pvp)) => {
+            let death = match occurrence {
+                Some((occurrence, pvp, kind)) => {
                     let occurrence = PlayerDeathOccurrence::from_bytes(uuid_text(&occurrence)?).map_err(|_| DurabilityError::InvalidStoredState)?;
-                    load_receipt(&mut tx, occurrence).await?.as_ref().map(decode_receipt).transpose()?.map(|receipt| (receipt, pvp))
+                    let kind = u8::try_from(kind).ok().and_then(FinalBlowKind::decode)
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    load_receipt(&mut tx, occurrence).await?.as_ref().map(decode_receipt).transpose()?
+                        .map(|receipt| (receipt, pvp, kind))
                 },
                 None => None,
             };

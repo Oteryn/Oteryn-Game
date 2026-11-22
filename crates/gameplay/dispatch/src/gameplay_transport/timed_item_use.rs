@@ -87,6 +87,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             committed: None,
             earned: super::connection::EarnedNotice::NoneEarned,
+            reward_granted: None,
             gate_message_id: None,
             potion_utterance: None,
             refusal_detail: None,

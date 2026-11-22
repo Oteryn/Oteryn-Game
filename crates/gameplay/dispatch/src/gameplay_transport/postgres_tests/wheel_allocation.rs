@@ -480,6 +480,16 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                 expected(true, 1, vessels)?, "free accounts cannot change vessels");
             owner.premium_coordinator = Some(&gate);
             let gift_remaining = if matches!(transition, WheelExtensionCase::Gift) {
+                let legacy_selection = admitted.continuity.selected_capabilities;
+                let (status, _) = send_kind(&owner, &mut admitted, wire::COMMAND_TYPE_WHEEL_GIFT_ACTIVATION, &[]).await?;
+                assert_eq!(status, CommandStatus::Rejected);
+                admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                    &[wire::CAPABILITY_WHEEL_ALLOCATION_V1, oteryn_protocol_oteryn::world_object::CAPABILITY_GAMEPLAY_OCCURRENCES_V1],
+                ).ok_or("Gift capability")?;
+                let (status, reply) = send_kind(&owner, &mut admitted, wire::COMMAND_TYPE_WHEEL_GIFT_ACTIVATION, &[]).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(wire::GiftActivationReply::decode(&reply), Some(wire::GiftActivationReply(None)));
                 assert!(owner.load_wheel_gift(deps.actor, session).await);
                 assert!(owner.refresh_wheel_vitals(deps.actor, session).await);
                 let now = owner.owner_now().get();
@@ -503,7 +513,15 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                     assert_eq!(next.wheel_gift_save(now, false), Some((1, 10 * 60 * 60 * 1_000_000)));
                     *state = next;
                 }
+                let (status, reply) = send_kind(&owner, &mut admitted, wire::COMMAND_TYPE_WHEEL_GIFT_ACTIVATION, &[]).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                let activation = wire::GiftActivationReply::decode(&reply).and_then(|reply| reply.0)
+                    .ok_or("confirmed Gift activation")?;
                 assert!(owner.save_wheel_gift(deps.actor, session, false).await);
+                let (status, reply) = send_kind(&owner, &mut admitted, wire::COMMAND_TYPE_WHEEL_GIFT_ACTIVATION, &[]).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                assert_eq!(wire::GiftActivationReply::decode(&reply), Some(wire::GiftActivationReply(Some(activation))));
+                admitted.continuity.selected_capabilities = legacy_selection;
                 let (snapshot_revision, remaining, occurrence): (i64, i64, String) = sqlx::query_as(
                     "SELECT revision,remaining_micros,occurrence::text FROM game_character_wheel_gift_state WHERE character_id=encode($1,'hex')::uuid")
                     .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;

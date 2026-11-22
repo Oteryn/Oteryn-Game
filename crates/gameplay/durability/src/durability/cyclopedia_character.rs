@@ -79,6 +79,57 @@ fn narrow<T: TryFrom<i64>>(value: i64) -> Result<T, sqlx::Error> {
 }
 
 impl DurabilityRoot {
+    /// Self-only credit history under the current session fence, ordered by death commit.
+    pub async fn read_player_kill_credits(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        page: PageRequest,
+    ) -> Result<Vec<oteryn_protocol_oteryn::cyclopedia_character::kill_credits::PlayerKillCredit>,
+                CharacterAuthorityError> {
+        use oteryn_protocol_oteryn::cyclopedia_character::kill_credits::PlayerKillCredit;
+        let Some(page) = PageRequest::new(page.offset, page.limit) else {
+            return Err(CharacterAuthorityError::Rejected);
+        };
+        let recovery = authority.record_for(self)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            }
+            let rows = sqlx::query(
+                "SELECT uuid_send(k.death_occurrence_id) AS occurrence,
+                        uuid_send(d.character_id) AS victim, k.committed_at, k.final_blow
+                 FROM game_character_player_kill_credits k
+                 JOIN game_character_death_receipts d USING (death_occurrence_id)
+                 WHERE k.character_id=encode($1,'hex')::uuid
+                   AND k.committed_at >= floor(extract(epoch FROM statement_timestamp())*1000)::bigint-$2
+                 ORDER BY k.committed_at DESC,k.death_occurrence_id DESC OFFSET $3 LIMIT $4",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(HISTORY_WINDOW_MS)
+            .bind(i64::from(page.offset))
+            .bind(i64::from(page.limit))
+            .fetch_all(&mut *tx).await?;
+            let credits = rows.into_iter().map(|row| {
+                let occurrence: Vec<u8> = row.try_get("occurrence")?;
+                let victim: Vec<u8> = row.try_get("victim")?;
+                Ok(PlayerKillCredit {
+                    occurrence: occurrence.try_into().map_err(|_| super::DurabilityError::InvalidStoredState)?,
+                    victim: victim.try_into().map_err(|_| super::DurabilityError::InvalidStoredState)?,
+                    at_unix_ms: row.try_get("committed_at")?,
+                    final_blow: row.try_get("final_blow")?,
+                })
+            }).collect::<Result<Vec<_>, super::DurabilityError>>()?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(credits))
+        })).await?
+    }
+
     /// PAR-P12c (Crystal `ProtocolGame::sendCyclopediaCharacter*`, `protocolgame.cpp:4372-4817`):
     /// one tab of `target`'s character window as `viewer` may see it.
     #[allow(
