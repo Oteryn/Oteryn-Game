@@ -1058,3 +1058,71 @@ fn srx3_actual_rotten_reward_yields_have_source_inventory_profiles() -> Result<(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[test]
+fn crystal_portable_containers_load_with_exact_inventory_capacities()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+            use super::super::{NativeItemDestination, NativeItemStackClass};
+            use crate::content::ReferenceItemField::Known;
+
+            let world = test_source(1)
+                .map_err(|error| format!("source world: {error:?}"))?
+                .world_id;
+            let (controller, _) = try_activate_input(world, &manifest_input())
+                .map_err(|error| format!("activate native content: {error:?}"))?;
+            let native = controller
+                .active()
+                .and_then(|generation| generation.native_gameplay())
+                .ok_or("active native gameplay")?;
+            // Crystal 201189f8 data/items/items.xml and its container/take appearance flags.
+            for (capacity, source_ids) in [
+                (1, &[6104][..]),
+                (2, &[37561]),
+                (5, &[4282, 6509]),
+                (8, &[2858, 2860, 2861, 2862, 2864, 5950, 8861, 9603, 10325]),
+                (10, &[24861, 24862]),
+                (15, &[2481, 2482, 14674]),
+                (
+                    20,
+                    &[
+                        2865, 2866, 2868, 2869, 2870, 2871, 2872, 5949, 8860, 9602, 9604, 9605,
+                        10202, 10324, 10327, 14248, 14249, 16099, 16100, 19159, 21292, 21411,
+                        22084, 24395, 35577, 37536, 53074,
+                    ],
+                ),
+            ] {
+                for &id in source_ids {
+                    let profile = native
+                        .item_policy_for_source_id(id)
+                        .ok_or_else(|| format!("missing native Item profile for {id}"))?;
+                    let record = profile.record();
+                    assert!(record.admission.materializable, "Item {id}");
+                    assert_eq!(
+                        record.admission.stack_class,
+                        NativeItemStackClass::NonStackable,
+                        "Item {id}"
+                    );
+                    assert_eq!(
+                        record.admission.legal_destinations,
+                        [
+                            NativeItemDestination::CharacterInventory,
+                            NativeItemDestination::Ground,
+                        ],
+                        "Item {id}"
+                    );
+                    assert!(
+                        matches!(&record.semantics.container,
+                        Known(container) if container.capacity == Known(capacity)),
+                        "Item {id}"
+                    );
+                }
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "container activation test panicked")?
+}
