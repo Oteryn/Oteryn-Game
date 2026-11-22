@@ -397,11 +397,17 @@ fn unchanged_rejected_geometry_is_not_recorded_again() -> TestResult {
     windows.single_mut(app.world_mut())?.position = WindowPosition::At(IVec2::new(40000, 80));
     app.update();
     app.update();
+    settle_geometry(&mut app);
     assert_eq!(app.world().resource::<LayoutStore>().rejection_count, 1);
     windows.single_mut(app.world_mut())?.position = WindowPosition::At(IVec2::new(40001, 80));
     app.update();
+    settle_geometry(&mut app);
     assert_eq!(app.world().resource::<LayoutStore>().rejection_count, 2);
-    assert!(!path.exists(), "rejected geometry must not be persisted");
+    // The console region is saved in the background; only the rejected window geometry
+    // must stay out of the file.
+    let saved = WindowLayout::load(&path)?;
+    assert!(saved.bounds("console").is_some());
+    assert_eq!(LayoutStore::load(Some(path)).window(), None);
     Ok(())
 }
 
