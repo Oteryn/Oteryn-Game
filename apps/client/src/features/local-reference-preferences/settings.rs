@@ -85,7 +85,7 @@ pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, 
 pub use tooltips::{HoverTooltip, TooltipTarget};
 pub(crate) use bindings::parse_action_chord;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
-pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
+pub use controls::{ControlPreferences, MousePreset, MouseScheme, MovementKeys, RotationModifier};
 pub use help::{HelpTopic, help_text};
 pub use profile_contexts::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;

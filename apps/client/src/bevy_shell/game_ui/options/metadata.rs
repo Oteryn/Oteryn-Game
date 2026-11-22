@@ -179,6 +179,59 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         Page::Gameplay => &miscellaneous::GAMEPLAY,
         Page::Diagnostics => &diagnostics::ROWS,
         Page::Screenshots => &[
+            Row {
+                id: "screenshots.automatic",
+                label: "Enable automatic screenshots",
+                editor: Editor::Check {
+                    read: |p| !p.screenshots.automatic_disabled,
+                    write: |p, enabled| p.screenshots.automatic_disabled = !enabled,
+                },
+            },
+            check!(
+                "screenshots.bestiary_complete",
+                "Capture completed bestiary entries",
+                screenshots.bestiary_complete
+            ),
+            check!(
+                "screenshots.bestiary_unlock",
+                "Capture unlocked bestiary entries",
+                screenshots.bestiary_unlock
+            ),
+            check!(
+                "screenshots.boss_defeat",
+                "Capture boss defeats",
+                screenshots.boss_defeat
+            ),
+            check!(
+                "screenshots.damage_record",
+                "Capture a new damage record",
+                screenshots.damage_record
+            ),
+            check!(
+                "screenshots.healing_record",
+                "Capture a new healing record",
+                screenshots.healing_record
+            ),
+            check!(
+                "screenshots.low_health",
+                "Capture low health",
+                screenshots.low_health
+            ),
+            check!(
+                "screenshots.pvp_attack",
+                "Capture incoming player attacks",
+                screenshots.pvp_attack
+            ),
+            check!(
+                "screenshots.reward_chest",
+                "Capture reward-chest treasure",
+                screenshots.reward_chest
+            ),
+            check!(
+                "screenshots.tracked_loot",
+                "Capture tracked loot",
+                screenshots.tracked_loot
+            ),
             check!(
                 "screenshots.game-only",
                 "Capture game area only",

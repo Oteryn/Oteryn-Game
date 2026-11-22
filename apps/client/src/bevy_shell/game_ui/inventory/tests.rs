@@ -798,3 +798,52 @@ fn inventory_widget_has_silhouettes_soul_and_cap_and_minimises() -> TestResult {
     assert_eq!(size(&app, equipment), Some((px(46.), px(42.))));
     Ok(())
 }
+
+#[test]
+fn configured_direct_click_opens_the_backpack_without_a_context_menu() -> TestResult {
+    use bevy::picking::{backend::HitData, pointer::PointerButton};
+    for (scheme, button) in [
+        (crate::play::MouseScheme::Classic, PointerButton::Secondary),
+        (crate::play::MouseScheme::LeftSmart, PointerButton::Primary),
+    ] {
+        let (link, mut commands, outbox) = play_channel();
+        let item = entry(77, 1)?;
+        PlayLink::bevy_items_fixture(
+            &outbox,
+            Some(CharacterInventory {
+                main_backpack: Some(item),
+                entries: vec![item],
+                equipment: vec![],
+            }),
+            Some(Default::default()),
+            false,
+            true,
+        );
+        let mut owner = host(link)?;
+        owner.settings.preferences.controls.scheme = scheme;
+        let slot = Slot {
+            generation: owner.generation(),
+            location: Location::Inventory,
+            item: Some(item),
+            destination: None,
+        };
+        let mut app = App::new();
+        app.insert_non_send(owner)
+            .init_resource::<InventoryUi>()
+            .insert_resource(UiScale(1.));
+        let entity = app.world_mut().spawn(slot).observe(actions::click).id();
+        app.world_mut().trigger(PointerClick {
+            entity,
+            button,
+            pointer: pointer(),
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        });
+        assert!(
+            matches!(commands.try_recv()?, crate::combat_input::PlayCommand::ContainerView(oteryn_session::container_tree::ContainerViewIntent::Open {handle,..}) if handle == item.handle)
+        );
+        assert!(app.world().resource::<InventoryUi>().menu.is_none());
+    }
+    Ok(())
+}

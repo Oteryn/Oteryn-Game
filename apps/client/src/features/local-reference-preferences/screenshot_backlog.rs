@@ -13,20 +13,25 @@ pub(in super::super) struct ScreenshotRuntime {
     frames: VecDeque<(Instant, Arc<Pixels>)>,
     last_frame: Option<Instant>,
     last_query: Option<Instant>,
+    last_bestiary_query: Option<Instant>,
     previous: Option<Signals>,
     game_only: Option<bool>,
 }
 struct Signals {
+    bestiary: Option<(usize, usize)>,
+    combat: crate::screenshots::CombatCaptureFacts,
     deaths: u64,
     achievement: Option<u32>,
     level: Option<u32>,
     skills: Option<[u16; 8]>,
 }
 impl Signals {
-    fn read(link: &PlayLink) -> Self {
+    fn read(link: &PlayLink, bestiary: bool) -> Self {
         let panel = link.skill_progress_panel();
         let facts = link.screenshot_facts();
         Self {
+            bestiary: bestiary.then(|| link.bestiary_stage_counts()).flatten(),
+            combat: link.combat_capture_facts(),
             deaths: facts.deaths,
             achievement: facts.achievement,
             level: panel.complete.map(|s| s.level),
@@ -101,8 +106,20 @@ impl SettingsState {
             runtime.game_only = Some(preferences.game_only);
         }
         if let Some(link) = link {
-            let signals = Signals::read(link);
-            if let Some(previous) = &runtime.previous {
+            let bestiary = !preferences.automatic_disabled
+                && (preferences.bestiary_complete || preferences.bestiary_unlock);
+            let signals = Signals::read(link, bestiary);
+            if bestiary
+                && runtime
+                    .last_bestiary_query
+                    .is_none_or(|at| now.saturating_duration_since(at) >= Duration::from_secs(4))
+            {
+                link.refresh_capture_bestiary();
+                runtime.last_bestiary_query = Some(now);
+            }
+            if let Some(previous) = &runtime.previous
+                && !preferences.automatic_disabled
+            {
                 let death = signals.deaths > previous.deaths;
                 let level = previous
                     .level
@@ -119,10 +136,33 @@ impl SettingsState {
                 self.screenshot_requested |= (preferences.on_death && death)
                     || (preferences.on_level && level)
                     || (preferences.on_skill && skill)
-                    || (preferences.on_achievement && achievement);
+                    || (preferences.on_achievement && achievement)
+                    || previous
+                        .bestiary
+                        .zip(signals.bestiary)
+                        .is_some_and(|(old, new)| {
+                            preferences.bestiary_unlock && new.0 > old.0
+                                || preferences.bestiary_complete && new.1 > old.1
+                        })
+                    || (preferences.boss_defeat
+                        && signals.combat.boss_defeats > previous.combat.boss_defeats)
+                    || (preferences.reward_chest
+                        && signals.combat.reward_collections > previous.combat.reward_collections)
+                    || (preferences.tracked_loot
+                        && signals.combat.tracked_loot > previous.combat.tracked_loot)
+                    || (preferences.damage_record
+                        && signals.combat.damage_record > previous.combat.damage_record)
+                    || (preferences.healing_record
+                        && signals.combat.healing_record > previous.combat.healing_record)
+                    || (preferences.pvp_attack
+                        && signals.combat.player_hits > previous.combat.player_hits)
+                    || (preferences.low_health
+                        && signals.combat.low_health_crossings
+                            > previous.combat.low_health_crossings);
             }
             runtime.previous = Some(signals);
-            if (preferences.on_level || preferences.on_skill)
+            if !preferences.automatic_disabled
+                && (preferences.on_level || preferences.on_skill)
                 && runtime.last_query.is_none_or(|last| {
                     now.saturating_duration_since(last) >= Duration::from_secs(2)
                 })

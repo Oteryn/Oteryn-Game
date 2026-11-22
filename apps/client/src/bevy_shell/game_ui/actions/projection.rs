@@ -193,7 +193,11 @@ pub(super) fn project(
             .map_or("", |binding| {
                 editor::slot_chord(&owner.settings.preferences, binding, hotkey.0, chat_on)
             });
-        let label = hotkey_label(chord);
+        let label = if owner.settings.preferences.action_bar.show_hotkey {
+            hotkey_label(chord)
+        } else {
+            String::new()
+        };
         if text.0 != label {
             text.0 = label;
         }
@@ -247,6 +251,32 @@ pub(super) fn project(
     for mut text in &mut ui.hints {
         if text.0 != hint {
             text.0.clone_from(&hint);
+        }
+    }
+}
+
+pub(super) fn slot_timers(
+    owner: NonSend<HostOwner>,
+    mut overlays: Query<(&SlotCooldown, &mut Node)>,
+) {
+    let prefs = owner.settings.preferences.action_bar;
+    let fills = owner
+        .play
+        .as_ref()
+        .filter(|_| prefs.cooldowns && prefs.graphical_cooldown)
+        .map(|play| play.link.slot_cooldown_fills())
+        .unwrap_or_default();
+    for (slot, mut node) in &mut overlays {
+        let fill = fills.get(slot.0).copied().unwrap_or(0);
+        let height = percent(f32::from(fill) / 10.);
+        let display = if fill == 0 {
+            Display::None
+        } else {
+            Display::Flex
+        };
+        if node.height != height || node.display != display {
+            node.height = height;
+            node.display = display;
         }
     }
 }

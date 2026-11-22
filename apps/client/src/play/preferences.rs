@@ -2,7 +2,7 @@
 pub use super::feature_local_reference_preferences::settings::{
     ArcLayout, ArcPreferences, BASIC_GROUPS, BasicOptions, ControlPreferences, CustomAction,
     FIXED_PIXEL_FONT_PROPERTY, FramePacer, FramePreferences, GraphicsPreferences, HelpTopic,
-    HoverTooltip, MiscellaneousPreferences, MousePreset, MovementKeys, ObjectTarget,
+    HoverTooltip, MiscellaneousPreferences, MousePreset, MouseScheme, MovementKeys, ObjectTarget,
     PerformancePacer, PerformanceSettings, PreferenceBinding, PreferenceInput, PreferenceStore,
     ReferencePreferences, RotationModifier, SHORTCUTS, ScreenshotPreferences, SettingsPage,
     SettingsState, ShortcutEdit, TooltipTarget, UtilityAction, WINDOW_ACTIONS,

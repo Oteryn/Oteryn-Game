@@ -143,3 +143,96 @@ fn native_cooldown_strip_keeps_groups_expires_spells_and_clears_on_disconnect() 
     assert!(named(&mut app, "Cooldown group 2").is_none());
     Ok(())
 }
+
+#[test]
+fn slot_timer_formats_follow_independent_settings() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let (link, _, outbox) = crate::play::play_channel();
+    assert!(link.spell_bar_bind(&["71".into(), "".into(), "".into(), "".into()]));
+    let entry = oteryn_session::spell_catalog::SpellCatalogEntry {
+        cast_index: 71,
+        name: "Heal".into(),
+        words: "exura".into(),
+        level: 1,
+        mana: 0,
+        mana_percent: false,
+        soul: 0,
+        learned: true,
+        available: true,
+        cooldown_groups: vec![],
+        rune_item: None,
+    };
+    crate::play::feature_0287_actor_spell_catalog::protocol::bevy_catalog_fixture(
+        &outbox,
+        oteryn_session::spell_catalog::encode_catalog(&[entry]).map_err(|e| format!("{e:?}"))?,
+    )?;
+    assert!(link.assign_bar_action(
+        1,
+        crate::play::BarAction::Spell {
+            name: "Heal".into(),
+            words: "exura".into(),
+            aim: Default::default(),
+        }
+    ));
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .link = link;
+    for (numbers, graphical) in [(true, false), (false, true)] {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings.preferences.action_bar.cooldown_numbers = numbers;
+        owner.settings.preferences.action_bar.graphical_cooldown = graphical;
+        owner
+            .settings
+            .sync_local_preferences(&owner.play.as_ref().ok_or("play")?.link);
+        replace(
+            &mut app,
+            &outbox,
+            if numbers { 1 } else { 2 },
+            100,
+            vec![ActorCooldown {
+                kind: ActorCooldownKind::Spell,
+                id: 71,
+                expires_at_ms: 50100,
+            }],
+        )?;
+        assert_eq!(
+            app.world()
+                .non_send::<HostOwner>()
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .spell_slot_labels()[0]
+                .contains(" ms"),
+            numbers
+        );
+        let labels = app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spell_slot_labels();
+        assert_eq!(labels[1].contains(" ms"), numbers);
+        let saved = named(&mut app, "Action slot 2 cooldown").ok_or("saved slot timer")?;
+        assert_eq!(
+            app.world()
+                .get::<Node>(saved)
+                .ok_or("saved overlay")?
+                .display
+                != Display::None,
+            graphical
+        );
+        let overlay = named(&mut app, "Action slot 1 cooldown").ok_or("slot timer")?;
+        let node = app.world().get::<Node>(overlay).ok_or("overlay node")?;
+        assert_eq!(node.display != Display::None, graphical);
+        if graphical {
+            assert!(matches!(node.height, Val::Percent(p) if p > 0. && p <= 100.));
+        }
+    }
+    Ok(())
+}

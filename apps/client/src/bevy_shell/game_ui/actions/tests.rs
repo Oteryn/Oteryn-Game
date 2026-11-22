@@ -938,3 +938,18 @@ pub(in crate::bevy_shell::game_ui) fn secondary_click(entity: Entity) -> Pointer
         count: 1,
     }
 }
+
+#[test]
+fn hiding_assigned_hotkeys_removes_live_slot_corner_text() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    owner.settings.preferences.action_bar.show_hotkey = false;
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<(&SlotHotkey, &Text)>()
+            .iter(app.world())
+            .all(|(_, text)| text.0.is_empty())
+    );
+    Ok(())
+}

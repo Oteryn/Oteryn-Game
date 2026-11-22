@@ -49,6 +49,27 @@ impl PlayLink {
     pub fn charm_progression_request(&self, intent: Intent) {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
+    pub(crate) fn bestiary_stage_counts(&self) -> Option<(usize, usize)> {
+        let mailbox = lock(&self.mailbox);
+        let rows = &mailbox
+            .properties
+            .charm_progression
+            .reply
+            .as_ref()?
+            .bestiary;
+        Some((
+            rows.iter().filter(|race| race.unlocked_stage() > 0).count(),
+            rows.iter().filter(|race| race.is_complete()).count(),
+        ))
+    }
+    pub(crate) fn refresh_capture_bestiary(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mailbox.properties.charm_progression;
+        if !panel.selected || panel.pending || panel.open {
+            return;
+        }
+        submit(&mut mailbox, &self.commands, Intent::Query);
+    }
     pub fn bestiary_close(&self) {
         lock(&self.mailbox).properties.charm_progression.open = false;
     }

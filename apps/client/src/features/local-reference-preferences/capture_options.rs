@@ -19,6 +19,16 @@ pub struct ScreenshotPreferences {
     pub backlog_seconds: u8,
     pub on_level: bool,
     pub on_death: bool,
+    pub automatic_disabled: bool,
+    pub low_health: bool,
+    pub tracked_loot: bool,
+    pub boss_defeat: bool,
+    pub reward_chest: bool,
+    pub bestiary_complete: bool,
+    pub bestiary_unlock: bool,
+    pub damage_record: bool,
+    pub healing_record: bool,
+    pub pvp_attack: bool,
     pub on_achievement: bool,
 }
 impl ScreenshotPreferences {
@@ -61,9 +71,9 @@ impl ScreenshotPreferences {
             && (effective.directory.is_empty() || Path::new(&effective.directory).is_absolute())
     }
     pub fn apply_policy(&self, capture: &mut CaptureController) {
-        capture.policy.level = self.on_level;
-        capture.policy.death = self.on_death;
-        capture.policy.achievement = self.on_achievement;
+        capture.policy.level = !self.automatic_disabled && self.on_level;
+        capture.policy.death = !self.automatic_disabled && self.on_death;
+        capture.policy.achievement = !self.automatic_disabled && self.on_achievement;
     }
     /// Uses the same configured or platform screenshot destination as F12.
     pub fn save_frame(

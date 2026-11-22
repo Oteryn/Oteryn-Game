@@ -146,6 +146,7 @@ pub(super) struct ConnectionInputs {
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) combat_capture: crate::screenshots::CombatCaptureFacts,
     pub(super) connection: ConnectionInputs,
     #[cfg(bevy_shell)]
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,

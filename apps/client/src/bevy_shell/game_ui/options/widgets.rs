@@ -284,9 +284,10 @@ fn checkbox(
 pub(super) fn page(
     commands: &mut Commands,
     parent: Entity,
-    (page, binding, help): (
+    (page, binding, search, help): (
         Page,
         Option<&'static str>,
+        &str,
         Option<&(crate::play::help::Topic, String)>,
     ),
     skins: &Skins,
@@ -335,7 +336,7 @@ pub(super) fn page(
     }
     if page == Page::GeneralHotkeys {
         super::profiles::build(commands, parent, skins, draft);
-        super::keys::build(commands, parent, skins, draft, binding);
+        super::keys::build(commands, parent, skins, draft, binding, search);
     }
     if page == Page::Controls {
         super::super::hotkeys::build(commands, parent, skins);

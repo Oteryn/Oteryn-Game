@@ -43,6 +43,16 @@ pub(super) fn build(
         ))
         .observe(use_folder)
         .id();
+    let open = section::action(
+        commands,
+        parent,
+        skins,
+        "Open screenshots folder",
+        170.,
+        "screenshots.open-folder",
+        false,
+    );
+    commands.entity(open).observe(open_folder);
     let caption = commands
         .spawn(source::button_caption("Use folder", skins.font.clone()))
         .id();
@@ -51,10 +61,24 @@ pub(super) fn build(
         .entity(parent)
         .add_children(&[label, field, button]);
 }
+#[derive(Resource, Default)]
+pub(super) struct FolderLaunch(Option<(u64, bevy_tasks::Task<std::io::Result<()>>)>);
+
 pub(super) fn project(
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
+    mut launch: ResMut<FolderLaunch>,
     mut fields: Query<(&mut Folder, &mut EditableText)>,
 ) {
+    if let Some((generation, task)) = &mut launch.0
+        && let Some(result) = bevy_tasks::futures::check_ready(task)
+    {
+        if *generation == owner.generation()
+            && let Err(error) = result
+        {
+            owner.settings.feedback = format!("Could not open screenshots folder: {error}");
+        }
+        launch.0 = None;
+    }
     let Some(draft) = owner.preferences_draft() else {
         return;
     };
@@ -65,6 +89,40 @@ pub(super) fn project(
             held.0.clone_from(&directory);
         }
     }
+}
+
+fn open_folder(
+    event: On<Activate>,
+    owner: NonSend<HostOwner>,
+    state: Res<OptionsState>,
+    guard: ModalGuard,
+    mut launch: ResMut<FolderLaunch>,
+) {
+    if launch.0.is_some()
+        || !section::editable(&owner, &state, &guard, event.entity, Page::Screenshots)
+    {
+        return;
+    }
+    let directory = owner.settings.preferences.screenshots.effective().directory;
+    let task = bevy_tasks::IoTaskPool::get().spawn(async move {
+        let folder =
+            crate::play::screenshot::screenshot_directory(std::path::Path::new(&directory))?;
+        std::fs::create_dir_all(&folder)?;
+        let status = crate::bevy_shell::diagnostics::folder_command(&folder)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()?;
+        // Windows Explorer can return 1 when it hands the folder to an existing process.
+        if status.success() || cfg!(windows) && status.code() == Some(1) {
+            Ok(())
+        } else {
+            Err(std::io::Error::other(format!(
+                "folder launcher exited with {status}"
+            )))
+        }
+    });
+    launch.0 = Some((owner.generation(), task));
 }
 
 fn use_folder(
@@ -140,53 +198,221 @@ mod tests {
 }
 
 #[cfg(test)]
-mod automatic_tests {
-    use super::*;
-    use crate::play::screenshot::CaptureAction;
-    use bevy::ui_widgets::ValueChange;
+#[path = "screenshots/automatic_tests.rs"]
+mod automatic_tests;
 
+#[cfg(test)]
+mod loot_test {
+    use super::*;
+    use bevy::ui_widgets::ValueChange;
+    use oteryn_session::{
+        AppliedDelta, SessionEvent,
+        analyser_transport::{AnalyserFact, AnalyserItemCount},
+    };
     #[test]
-    fn unchecking_death_capture_and_applying_prevents_a_death_capture()
+    fn tracked_loot_capture_uses_confirmed_drops_and_current_tracker()
     -> Result<(), Box<dyn std::error::Error>> {
         let mut app = super::super::tests::app(Page::Screenshots, None)?;
-        {
-            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-            owner.settings.preferences.screenshots.on_death = true;
-            owner.cancel();
-            owner.open_graphics();
-        }
         let checkbox = app
             .world_mut()
-            .spawn(Control::Check("screenshots.death"))
+            .spawn(Control::Check("screenshots.tracked_loot"))
             .observe(super::super::toggle)
             .id();
         app.world_mut().trigger(ValueChange {
             source: checkbox,
-            value: false,
+            value: true,
             is_final: true,
         });
         let (link, _, outbox) = crate::play::play_channel();
-        let now = std::time::Instant::now();
+        outbox.bevy_hud_fixture(&[], None);
+        link.analyser_open();
         let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-        assert!(owner.settings.preferences.screenshots.on_death);
         owner.apply(true);
-        for (seq, health) in [(1, 100), (2, 0)] {
-            outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
-                oteryn_session::AppliedDelta {
-                    server_sequence: seq,
-                    base_revision: seq - 1,
-                    new_revision: seq,
-                    value: oteryn_session::ActorVitals {
-                        health,
-                        max_health: 100,
-                        ..default()
+        let now = std::time::Instant::now();
+        for seq in 1..=2 {
+            outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+                server_sequence: seq,
+                base_revision: seq - 1,
+                new_revision: seq,
+                value: vec![AnalyserFact::KillLoot {
+                    race: None,
+                    gold: 0,
+                    corpse_items: vec![AnalyserItemCount {
+                        item_type: 22_u32.try_into()?,
+                        count: 1_u16.try_into()?,
+                    }],
+                }],
+            })]);
+            assert_eq!(
+                matches!(
+                    owner.settings.prepare_screenshots(now, Some(&link)),
+                    crate::play::screenshot::CaptureAction::Save
+                ),
+                seq == 2
+            );
+            assert!(link.analyser_select("loot-tracker"));
+            link.analyser_track_item("22", true);
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod bestiary_tests {
+    use super::*;
+    use bevy::ui_widgets::ValueChange;
+    use oteryn_client_runtime::{
+        charm_progression as progression, raw_feature::GatedCommandResult,
+    };
+    #[test]
+    fn confirmed_bestiary_stage_changes_trigger_only_the_selected_capture()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for (id, expected) in [
+            ("screenshots.bestiary_unlock", 1),
+            ("screenshots.bestiary_complete", 2),
+        ] {
+            let mut app = super::super::tests::app(Page::Screenshots, None)?;
+            let checkbox = app
+                .world_mut()
+                .spawn(Control::Check(id))
+                .observe(super::super::toggle)
+                .id();
+            app.world_mut().trigger(ValueChange {
+                source: checkbox,
+                value: true,
+                is_final: true,
+            });
+            let (link, mut receiver, outbox) = crate::play::play_channel();
+            outbox.bevy_bestiary_initialize();
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner.apply(true);
+            let start = std::time::Instant::now();
+            for (i, kills) in [0, 10, 30, 30].into_iter().enumerate() {
+                let now = start + std::time::Duration::from_secs(4 * i as u64);
+                owner.settings.prepare_screenshots(now, Some(&link));
+                let crate::combat_input::PlayCommand::Feature(query) = receiver.try_recv()? else {
+                    return Err("missing bestiary request".into());
+                };
+                outbox.bevy_bestiary_result(
+                    &query,
+                    &GatedCommandResult {
+                        command_id: i as u64 + 1,
+                        server_sequence: i as u64 + 1,
+                        status: oteryn_session::CommandStatus::Accepted,
+                        payload: progression::encode_charm_progression_reply(
+                            &progression::CharmProgressionReply {
+                                outcome: progression::CharmProgressionOutcome::Query,
+                                fee_gold: 0,
+                                bestiary: if kills == 0 {
+                                    vec![]
+                                } else {
+                                    vec![progression::bestiary::BestiaryRaceProgress {
+                                        race: 9_u32.try_into()?,
+                                        kill_count: kills,
+                                        kill_thresholds: [10, 20, 30],
+                                    }]
+                                },
+                                charms: Default::default(),
+                            },
+                        )
+                        .map_err(|e| format!("{e:?}"))?,
                     },
-                },
-            )]);
-            assert!(matches!(
-                owner.settings.prepare_screenshots(now, Some(&link)),
-                CaptureAction::Idle
-            ));
+                );
+                assert_eq!(
+                    matches!(
+                        owner.settings.prepare_screenshots(now, Some(&link)),
+                        crate::play::screenshot::CaptureAction::Save
+                    ),
+                    i == expected,
+                    "{id} at {kills} kills"
+                );
+                owner.settings.cancel_screenshot();
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod reward_tests {
+    use super::*;
+    use bevy::ui_widgets::ValueChange;
+    use oteryn_client_runtime::{
+        boss_encounter,
+        boss_rewards::{BossRewardsReply, BossRewardsResponse, boss_rewards},
+        raw_feature::GatedCommandResult,
+    };
+    use oteryn_session::CommandStatus;
+    #[test]
+    fn boss_defeat_and_reward_treasure_require_their_own_accepted_receipts()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for (id, boss) in [
+            ("screenshots.boss_defeat", true),
+            ("screenshots.reward_chest", false),
+        ] {
+            let mut app = super::super::tests::app(Page::Screenshots, None)?;
+            let checkbox = app
+                .world_mut()
+                .spawn(Control::Check(id))
+                .observe(super::super::toggle)
+                .id();
+            app.world_mut().trigger(ValueChange {
+                source: checkbox,
+                value: true,
+                is_final: true,
+            });
+            let (link, mut commands, outbox) = crate::play::play_channel();
+            outbox.bevy_bosstiary_initialize();
+            let now = std::time::Instant::now();
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner.apply(true);
+            owner.settings.prepare_screenshots(now, Some(&link));
+            link.boss_encounter_edit(0, "oteryn:boss.test".into());
+            link.boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Defeated);
+            assert!(
+                matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Feature(command) if command.kind == boss_encounter::COMMAND_TYPE_BOSS_DEFEATED)
+            );
+            let mut handoff = [1; 16];
+            handoff[6] = 0x70;
+            handoff[8] = 0x80;
+            outbox.bevy_bosstiary_result(&GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload: oteryn_protocol_oteryn::boss_encounter::encode_boss_activity_reply(
+                    &boss_encounter::BossActivityReply::Accepted {
+                        handoff,
+                        deadline_unix_ms: None,
+                    },
+                )
+                .map_err(|e| format!("{e:?}"))?,
+            });
+            assert_eq!(
+                matches!(
+                    owner.settings.prepare_screenshots(now, Some(&link)),
+                    crate::play::screenshot::CaptureAction::Save
+                ),
+                boss
+            );
+            owner.settings.cancel_screenshot();
+            for status in [CommandStatus::DuplicateReplay, CommandStatus::Accepted] {
+                outbox.bevy_boss_rewards_result(&BossRewardsResponse {
+                    status,
+                    reply: Some(BossRewardsReply::Collect(boss_rewards::CollectReply {
+                        status: boss_rewards::BossRewardStatus::Ok,
+                        moved: 2,
+                        remaining: 0,
+                    })),
+                });
+                assert_eq!(
+                    matches!(
+                        owner.settings.prepare_screenshots(now, Some(&link)),
+                        crate::play::screenshot::CaptureAction::Save
+                    ),
+                    !boss && status == CommandStatus::Accepted
+                );
+                owner.settings.cancel_screenshot();
+            }
         }
         Ok(())
     }

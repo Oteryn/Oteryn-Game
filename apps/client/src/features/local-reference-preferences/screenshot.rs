@@ -93,7 +93,7 @@ impl Pixels {
     }
 }
 
-pub(super) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
+pub(crate) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
     if !folder.as_os_str().is_empty() {
         if !folder.is_absolute() {
             return Err(io::Error::new(

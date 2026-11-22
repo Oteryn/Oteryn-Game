@@ -294,9 +294,13 @@ impl SettingsState {
                 _ => super::super::RotationModifier::Control,
             };
         }
-        controls.keyboard_delay_ms = controls
-            .keyboard_delay_ms
-            .max(self.preferences.keyboard_delay_ms);
+        controls.keyboard_delay_ms = if controls.default_delay {
+            0
+        } else {
+            controls
+                .keyboard_delay_ms
+                .max(self.preferences.keyboard_delay_ms)
+        };
         self.control_input.route(&controls, events, chat_open, now)
     }
 
@@ -362,6 +366,7 @@ impl SettingsState {
                     ..
                 } => {
                     if *repeat
+                        && !self.preferences.controls.default_delay
                         && self.last_key.get(code).is_some_and(|last| {
                             now.duration_since(*last).as_millis()
                                 < u128::from(self.preferences.keyboard_delay_ms)

@@ -320,6 +320,39 @@ fn ordinary_click_actor_overlap_outside_focus_modal_and_stale_generation_never_m
     Ok(())
 }
 #[test]
+fn moving_whole_stacks_by_default_submits_ground_drop_without_prompt() -> TestResult {
+    let (mut owner, mut ui, mut gesture, viewport, point, mut rx) = fixture(true, false)?;
+    owner.settings.preferences.controls.move_whole_stack = true;
+    start(&mut owner, &mut ui, &mut gesture, viewport, point)?;
+    gesture.picking.drop_on(
+        0,
+        owner.generation(),
+        Entity::PLACEHOLDER,
+        picking::Destination::Slot(Slot {
+            generation: owner.generation(),
+            location: Location::Inventory,
+            item: None,
+            destination: Some(ItemMoveDestination::MainBackpack),
+        }),
+    );
+    step(
+        &mut owner,
+        &mut ui,
+        &mut gesture,
+        viewport,
+        Vec2::ZERO,
+        button(ButtonState::Released),
+    )?;
+    let PlayCommand::MoveItem(request) = rx.try_recv()? else {
+        return Err("expected whole-stack move".into());
+    };
+    assert_eq!(request.source, 7.try_into()?);
+    assert_eq!(request.destination, ItemMoveDestination::MainBackpack);
+    assert_eq!(request.count, None);
+    Ok(())
+}
+
+#[test]
 fn ground_stack_prompts_then_confirm_uses_real_count() -> TestResult {
     let (mut owner, mut ui, mut gesture, viewport, point, mut rx) = fixture(true, false)?;
     start(&mut owner, &mut ui, &mut gesture, viewport, point)?;
