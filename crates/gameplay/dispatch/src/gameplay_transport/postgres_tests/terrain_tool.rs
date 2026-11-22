@@ -367,6 +367,15 @@ fn scenario_with_voice(
             &[(shovel, 1), ("oteryn:item.tibia.i3577", 1)],
         )
         .await?;
+        let award = match before {
+            3696 | 3702 => Some(("oteryn:achievement/nothing_can_stop_me", 100, "oteryn:terrain-tool")),
+            3653 => Some(("oteryn:achievement/happy_farmer", 200, "oteryn:item-craft")),
+            5463 => Some(("oteryn:achievement/natural_sweetener", 50, "oteryn:item-craft")),
+            _ => None,
+        };
+        if let Some((key, total, _)) = award {
+            super::achievement_granters::seed_progress(&harness, key, total - 1).await?;
+        }
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -519,6 +528,10 @@ fn scenario_with_voice(
                 .await?,
             1
         );
+        if let Some((key, total, kind)) = award {
+            super::achievement_granters::assert_progress(&harness, key, total, true, kind)
+                .await?;
+        }
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
                 "SELECT object_revision FROM game_terrain_tool_transforms"

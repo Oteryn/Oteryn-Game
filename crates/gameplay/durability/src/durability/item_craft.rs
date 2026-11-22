@@ -738,7 +738,49 @@ async fn write_with_skinning<C: ItemLoopContent>(
     // Exact replay returned before this writer, so a retry never advances the counter.
     use oteryn_gameplay_progression::achievement_granters;
     let achievement = if let Some(gathering) = &request.gathering {
-        achievement_granters::gathering(&gathering.mutation.tool_key, gathering.attempt.yield_item)
+        let tool = gathering.mutation.tool_key.as_str();
+        let (award, progress) = match (
+            tool,
+            gathering.mutation.before,
+            gathering.attempt.after,
+            gathering.attempt.yield_item,
+        ) {
+            // Crystal 201189f8, skinning.lua:153-191. Earlier stages or
+            // lower-quality figurines do not earn either sculpture award.
+            ("oteryn:item.tibia.i5908", 7445, Some(7446), None) => (
+                Some("oteryn:achievement/ice_sculptor"),
+                Some(achievement_granters::COLD_AS_ICE),
+            ),
+            ("oteryn:item.tibia.i5908", 10426, None, Some(10429)) => (
+                Some("oteryn:achievement/marblelous"),
+                Some(achievement_granters::MARBLE_MADNESS),
+            ),
+            // Crystal data-crystal/scripts/lib/register_actions.lua:418-444
+            // counts successful scythe and sickle harvests. The Global sickle
+            // operates on 5463, per data/scripts/actions/tools/sickle.lua:4-7.
+            (_, 3653, Some(3651), Some(3605)) => (None, Some(achievement_granters::HAPPY_FARMER)),
+            (_, 5463, Some(5462), Some(5466)) => (None, Some(achievement_granters::NATURAL_SWEETENER)),
+            _ => (None, achievement_granters::gathering(tool, gathering.attempt.yield_item)),
+        };
+        if let Some(key) = award {
+            super::account_achievement::grant_missing(
+                tx,
+                fence.character_id,
+                &[key],
+                achievement_granters::CRAFT_SOURCE_KIND,
+                event.as_bytes(),
+            )
+            .await?;
+        }
+        progress
+    } else if conversion.recipe.starts_with("oteryn:reward-bag.") {
+        achievement_granters::christmas_bundle(&definition.production_key)
+    } else if conversion.recipe.starts_with("oteryn:item-conversion.bake-6276-") {
+        // TibiaWiki page 62798, revision 753222: one plain cake baked.
+        Some(achievement_granters::THE_CAKES_THE_TRUTH)
+    } else if conversion.recipe.starts_with("oteryn:item-conversion.cookie-tray-") {
+        // TibiaWiki page 62446, revision 753128: one bake, regardless of cookie count.
+        Some(achievement_granters::COOKIE_MONSTER)
     } else {
         (conversion.recipe == "oteryn:fishing.global.standard")
             .then_some(achievement_granters::HERE_FISHY_FISHY)

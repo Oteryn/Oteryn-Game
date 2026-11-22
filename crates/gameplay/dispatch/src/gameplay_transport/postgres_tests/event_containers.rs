@@ -188,6 +188,14 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+        let santa = "oteryn:achievement/santa_s_li_l_helper";
+        let christmas = matches!(
+            bag_key,
+            "oteryn:item.tibia.i6506" | "oteryn:item.tibia.i6507" | "oteryn:item.tibia.i6508"
+        );
+        if christmas {
+            super::achievement_granters::seed_progress(&harness, santa, 24).await?;
+        }
         let mut seed_items = vec![(bag_key, i64::from(source_quantity))];
         if nested {
             seed_items.push((bag, 1));
@@ -348,6 +356,11 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             assert_eq!(same, raw);
             assert_eq!(ground::durable_state(&harness).await?, before);
             assert_eq!(craft_count().await?, 0);
+            if christmas {
+                super::achievement_granters::assert_progress(
+                    &harness, santa, 24, false, "oteryn:item-craft",
+                ).await?;
+            }
             drop(owner);
             drop(authority);
             drop(seal);
@@ -526,6 +539,23 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
                 .fetch_one(&harness.pool)
                 .await?;
         assert_eq!(replay_outputs, outputs);
+        if christmas {
+            let award = super::achievement_granters::assert_progress(
+                &harness,
+                santa,
+                25,
+                true,
+                "oteryn:item-craft",
+            )
+            .await?;
+            let event: String = sqlx::query_scalar("SELECT event_id::text FROM game_item_craft_records")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(
+                award.as_ref().map(|(_, event, _)| event.as_slice()),
+                Some(event.as_bytes())
+            );
+        }
         let minted: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_item_instances i JOIN game_item_craft_records r ON r.transaction_id=i.minted_transaction_id",
         ).fetch_one(&harness.pool).await?;
