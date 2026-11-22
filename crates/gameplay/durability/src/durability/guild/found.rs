@@ -275,7 +275,7 @@ impl FoundWrite {
             .bind(self.common.guild_id.as_bytes().as_slice()).bind(self.fence.runtime_scope.world_id().as_bytes().as_slice())
             .bind(self.name.as_str()).bind(now.checked_add(FORMATION_LIFETIME_MS).ok_or_else(invalid)?).bind(now).execute(&mut **tx).await?;
         for (level, name) in DEFAULT_RANKS {
-            sqlx::query("INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,$2,$3)")
+            sqlx::query("SELECT game_guild_write_rank(encode($1,'hex')::uuid,$2,$3,false)")
                 .bind(self.common.guild_id.as_bytes().as_slice()).bind(i16::from(level)).bind(name).execute(&mut **tx).await?;
         }
         sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,title,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,'',$3)")

@@ -98,7 +98,7 @@ impl LockedGuild<'_> {
             .await?;
         for (index, name) in edit.names.iter().enumerate() {
             let level = i16::try_from(index + 1).map_err(|_| invalid())?;
-            sqlx::query("INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT(guild_id,level) DO UPDATE SET name=EXCLUDED.name")
+            sqlx::query("SELECT game_guild_write_rank(encode($1,'hex')::uuid,$2,$3,true)")
                 .bind(request.guild_id.as_bytes().as_slice()).bind(level).bind(name).execute(&mut **tx).await?;
         }
         let count = i16::try_from(edit.names.len()).map_err(|_| invalid())?;

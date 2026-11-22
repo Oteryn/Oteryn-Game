@@ -550,6 +550,7 @@ async fn verify_guild_acl(
     sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1)")
         .bind(actor.as_slice()).bind(id(90).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
+    verify_guild_rank_write_fence(h).await?;
 
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 49, 515])
@@ -634,6 +635,40 @@ async fn guild_house_role(h: &Harness, actor: [u8; 16]) -> TestResult<Option<Str
 async fn guild_house_lists(h: &Harness, actor: [u8; 16]) -> TestResult<Vec<String>> {
     Ok(sqlx::query_scalar("SELECT list_key FROM game_house_acl_member_lists(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid) ORDER BY list_key")
         .bind(id(42).as_slice()).bind(HOUSE).bind(actor.as_slice()).fetch_all(&h.pool).await?)
+}
+
+async fn verify_guild_rank_write_fence(h: &Harness) -> TestResult {
+    for (statement, expected) in [
+        (
+            "INSERT INTO game_guild_ranks(guild_id,level,name,house_acl_identity)
+             OVERRIDING SYSTEM VALUE VALUES(encode($1,'hex')::uuid,3,'Forged',1)",
+            "42501",
+        ),
+        (
+            "SELECT game_guild_write_rank(encode($1,'hex')::uuid,3::smallint,'Forged',false)",
+            "23514",
+        ),
+    ] {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let error = sqlx::query(statement)
+            .bind(id(90).as_slice())
+            .execute(&mut *tx)
+            .await
+            .err()
+            .ok_or("unbound rank write succeeded")?;
+        assert_eq!(
+            error
+                .as_database_error()
+                .and_then(|error| error.code())
+                .as_deref(),
+            Some(expected)
+        );
+        tx.rollback().await?;
+    }
+    Ok(())
 }
 
 async fn verify_guild_acl_write_fence(h: &Harness, admitted: &AdmittedSession) -> TestResult {
