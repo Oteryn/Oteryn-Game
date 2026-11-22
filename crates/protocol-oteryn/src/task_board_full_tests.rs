@@ -89,7 +89,7 @@ fn reply() -> Reply {
 
 #[test]
 fn full_task_board_request_roundtrips_every_action_and_rejects_ambiguous_fields() {
-    for action in (4..=19).filter(|action| *action != 12) {
+    for action in (4..=ACTION_CLAIM_DAILY_BOUNTY_TOKEN).filter(|action| *action != 12) {
         let request = Request {
             action,
             selection: 0,
@@ -113,7 +113,8 @@ fn full_task_board_request_roundtrips_every_action_and_rejects_ambiguous_fields(
     }
     for (action, selection) in [
         (3, 0),
-        (20, 0),
+        (21, 0),
+        (ACTION_CLAIM_DAILY_BOUNTY_TOKEN, 1),
         (19, 2),
         (4, 1),
         (5, 4),

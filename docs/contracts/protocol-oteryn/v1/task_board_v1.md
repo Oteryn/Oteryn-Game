@@ -114,11 +114,12 @@ existing balances and definition pins are preserved. A reward exceeding a bound
 records arithmetic-overflow refusal atomically and returns that refusal on replay.
 
 The reroll balance uses uint64 on the wire and the existing nonnegative BIGINT
-durable owner, through `i64::MAX`. Daily Reward and completed bounties retain their existing token grants. The Winter Update 2026 client stores at most 10
+durable owner, through `i64::MAX`. Daily Reward and completed bounties retain
+their existing token grants. The Winter Update 2026 client stores at most 10
 tokens: every credit (daily claim or completed bounty) adds `min(requested, 10 - balance)`.
 A completed bounty claimed at 10 or more pays its XP and points and grants 0 tokens (the
-receipt's `reroll_tokens_granted` is 0); a daily claim at the cap writes a zero ledger
-entry. A historical balance above 10 is kept and only spending lowers it (migration 2760).
+receipt's `reroll_tokens_granted` is 0). A Daily Reward claim at the cap writes a zero
+ledger entry. A historical balance above 10 is kept and only spending lowers it (migration 2760).
 Every bounty offer reroll consumes exactly one
 token; a zero balance is refusal 4 (insufficient resources), regardless of elapsed time.
 The retired free-reroll deadline in saved board JSON is ignored when loading old boards.
