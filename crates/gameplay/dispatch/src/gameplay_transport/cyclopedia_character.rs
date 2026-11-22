@@ -167,7 +167,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .encode()
                         .map_err(|_| ());
                 }
-                if payload.first() == Some(&wire::gallery::SELECTOR) {
+                if matches!(payload.first(), Some(&wire::gallery::SELECTOR | &wire::gallery::owned::SELECTOR)) {
                     return self.cyclopedia_gallery(admitted, payload).await;
                 }
                 if payload.first() == Some(&wire::offence::SELECTOR) {

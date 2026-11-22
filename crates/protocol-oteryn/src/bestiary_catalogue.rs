@@ -3,6 +3,9 @@ use crate::charm_wire::{
     CyclopediaWireError as Error, push_message_field as bytes, push_varint_field as scalar,
     read_bytes, read_varint,
 };
+#[path = "bestiary_catalogue/quick_loot.rs"]
+pub mod quick_loot;
+
 type Result<T> = std::result::Result<T, Error>;
 pub const PAGE_SIZE: usize = 20;
 pub const MAX_CATEGORIES: usize = 64;

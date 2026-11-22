@@ -3,10 +3,11 @@ use super::*;
 #[path = "current_appearance/house_fence.rs"]
 mod house_fence;
 use house_fence::observe_house_root;
+use oteryn_protocol_oteryn::cyclopedia_character::gallery::owned::Source;
 
 #[derive(Clone, Copy)]
 enum ReadScope {
-    Channel,
+    Channel { gallery: bool },
     House { origin_channel: [u8; 16] },
 }
 
@@ -15,6 +16,9 @@ pub struct CurrentCharacterAppearance {
     pub sex: Sex,
     pub selected: Option<DurableAppearanceSelection>,
     pub earned: Vec<(String, String)>,
+    /// Same ordering as earned. Each source belongs to the matched grant.
+    pub earned_sources: Vec<Source>,
+    pub familiar_looks: Vec<u32>,
 }
 
 impl DurabilityRoot {
@@ -40,7 +44,19 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         grant_keys: Vec<String>,
     ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
-        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::Channel)
+        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::Channel { gallery: false })
+            .await
+    }
+
+    /// Observe durable appearance grants and familiar looks under one current Character fence.
+    pub async fn read_current_character_gallery(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        grant_keys: Vec<String>,
+    ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
+        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::Channel { gallery: true })
             .await
     }
 
@@ -76,7 +92,7 @@ impl DurabilityRoot {
         if fence.character_lease_generation == 0
             || !matches!(
                 (scope, fence.runtime_scope),
-                (ReadScope::Channel, RuntimeScopeRefV1::Channel { .. })
+                (ReadScope::Channel { .. }, RuntimeScopeRefV1::Channel { .. })
                     | (ReadScope::House { .. }, RuntimeScopeRefV1::Instance { .. })
             )
         {
@@ -90,12 +106,12 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = match scope {
-                        ReadScope::Channel => super::super::db::begin_observation_transaction(holder, deadline).await?,
+                        ReadScope::Channel { .. } => super::super::db::begin_observation_transaction(holder, deadline).await?,
                         ReadScope::House { .. } => super::super::db::begin_locking_observation_transaction(holder, deadline).await?,
                     };
                     super::super::character_authority::observe_recovery_fence(&mut tx, &recovery).await?;
                     let root = match scope {
-                        ReadScope::Channel => super::super::character_progression::observe_fenced_root(
+                        ReadScope::Channel { .. } => super::super::character_progression::observe_fenced_root(
                             &mut tx, &fence.item_fence(), Some(fence.expected_character_revision.get()), &node,
                         ).await?,
                         ReadScope::House { origin_channel } => {
@@ -132,9 +148,19 @@ impl DurabilityRoot {
                         Ok(sex) => sex,
                         Err(error) => return Ok(Err(error)),
                     };
-                    let earned = earned_unlocks::read(&mut tx, fence.character_id, &grant_keys).await.map_err(read_storage_error)?;
+                    let (earned, earned_sources) = earned_unlocks::read_with_sources(&mut tx, fence.character_id, &grant_keys)
+                        .await.map_err(read_storage_error)?.into_iter().unzip();
+                    let familiar_looks = if matches!(scope, ReadScope::Channel { gallery: true }) {
+                        let familiar = super::super::character_familiar::read_familiar_projection(&mut tx, fence.character_id).await?;
+                        if familiar.committed_character_revision().is_some_and(|revision| revision.get() > root.revision) {
+                            return Err(DurabilityError::InvalidStoredState);
+                        }
+                        familiar.state().granted_looks.clone()
+                    } else {
+                        Vec::new()
+                    };
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(CurrentCharacterAppearance { sex, selected, earned }))
+                    Ok(Ok(CurrentCharacterAppearance { sex, selected, earned, earned_sources, familiar_looks }))
                 })
             })
             .await?
