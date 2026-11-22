@@ -2691,7 +2691,11 @@ def build():
             callback["sources"] = [
                 f"crystal:{PIN}:{path}:{lines}:sha256:{sha(inputs[path])}"
             ]
-    from questpc7_selected_rewards import golden_recipe
+    from questpc7_selected_rewards import (
+        GOLDEN_OWNED_PROMPT,
+        golden_owned_confirmation,
+        golden_recipe,
+    )
 
     path, index, raw, _, prices = golden_recipe(ROOT)
     golden = "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit"
@@ -2726,6 +2730,7 @@ def build():
         if bit == 2:
             callbacks[-1]["completes"] = True
         callbacks[-1]["sources"] = golden_sources
+        callbacks.append(golden_owned_confirmation(callbacks[-1]))
         offers.append(
             {
                 "npc": "oteryn:npc.king_tibianus",
@@ -2733,7 +2738,10 @@ def build():
                 "topic": 2,
                 "next_topic": topic,
                 "storage": [storage(golden, bit, bit, preserve=True)],
-                "reply": [f"The chosen commission costs {gold} gold. Do you agree?"],
+                "reply": [
+                    f"The chosen commission costs {gold} gold. Do you agree?"
+                    + GOLDEN_OWNED_PROMPT
+                ],
             }
         )
     add(

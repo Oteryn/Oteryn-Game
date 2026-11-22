@@ -69,6 +69,60 @@ class Review(unittest.TestCase):
                     (effect["from"]["value"],) * 2,
                 )
 
+    def test_jack_reports_after_pre_update_zelos_passage(self):
+        rows = quest_file("npc-callbacks/questpc7-programmes")
+        passage = row(
+            quest_file("questpc7-world-callbacks"), "questpc7-grave-zelos-passage"
+        )
+        fresh = row(rows, "questpc7-inquisition-commission")
+        questline, outfit = fresh["participants"][0]["storage"]
+        track = next(
+            t
+            for q in quest_file("grave-danger-npc-state", "quests")
+            for t in q["tracks"]
+            if t["key"] == questline["track"]
+        )
+        passages = next(
+            s for s in passage["storage"] if s["track"].endswith("/passages")
+        )
+        for completed_passages in (
+            passages["minimum"],
+            passages["set"],
+            passages["set"] + 1,
+        ):
+            for outfit_value in (outfit["minimum"], outfit["set"]):
+                with self.subTest(passages=completed_passages, outfit=outfit_value):
+                    state = {
+                        fresh["storage"][0]["track"]: -1,
+                        questline["track"]: track["initial"],
+                        outfit["track"]: outfit_value,
+                        passages["track"]: completed_passages,
+                    }
+                    matching = [
+                        c
+                        for c in rows
+                        if c["npc"] == fresh["npc"]
+                        and c["topic"] == 0
+                        and "report" in c["keywords"]
+                        and holds(c, state)
+                        and all(holds(p, state) for p in c.get("participants", []))
+                    ]
+                    self.assertEqual(
+                        len(matching), int(completed_passages >= passages["set"])
+                    )
+                    if matching:
+                        callback = matching[0]
+                        effects = {
+                            s["track"]: s
+                            for s in callback["participants"][0]["storage"]
+                        }
+                        self.assertEqual(
+                            effects[questline["track"]]["set"], questline["set"]
+                        )
+                        self.assertEqual(
+                            callback["outfit"] is not None, outfit_value < outfit["set"]
+                        )
+
     def test_golden(self):
         recipe = next(
             r["definition"]
@@ -123,6 +177,49 @@ class Review(unittest.TestCase):
             )
         )
 
+    def test_golden_owned_milestones_advance_without_repurchase(self):
+        offers = quest_file("shared-reward-offers", "offers")
+        for document, prefix, middle in [
+            ("shared-reward-callbacks", "l10", "boots"),
+            ("npc-callbacks/questpc7-programmes", "questpc7", "gloves"),
+        ]:
+            rows = quest_file(document)
+            for suffix in ("base", middle, "helmet"):
+                with self.subTest(document=document, milestone=suffix):
+                    paid = row(rows, f"{prefix}-golden-{suffix}")
+                    progress = paid["storage"][0]
+                    (offer,) = [
+                        o
+                        for o in offers
+                        if o["npc"] == paid["npc"]
+                        and o["next_topic"] == paid["topic"]
+                        and o["storage"]
+                        and o["storage"][0]["track"] == progress["track"]
+                    ]
+                    candidates = [
+                        c
+                        for c in rows
+                        if c["npc"] == offer["npc"]
+                        and c["topic"] == offer["next_topic"]
+                        and holds(c, {progress["track"]: progress["minimum"]})
+                        and c.get("fee") is None
+                        and c["outfit"] is None
+                    ]
+                    self.assertEqual(len(candidates), 1)
+                    owned = candidates[0]
+                    self.assertTrue(
+                        any(
+                            word in " ".join(offer["reply"])
+                            for word in owned["keywords"]
+                        )
+                    )
+                    for kind in ("outfits", "addons"):
+                        self.assertEqual(
+                            owned.get("requires_" + kind), paid.get("forbids_" + kind)
+                        )
+                    self.assertEqual(owned["storage"], paid["storage"])
+                    self.assertEqual(owned.get("completes"), paid.get("completes"))
+
     def test_legacy_glooth_completion(self):
         rows = quest_file("shared-reward-callbacks")
         first = row(rows, "l3-glooth-engineer-first-low")
@@ -175,6 +272,33 @@ class Review(unittest.TestCase):
                         for c in programme + guards
                     )
                 )
+
+    def test_rafzan_legacy_confirmation_obeys_report_clock(self):
+        programme = quest_file("npc-callbacks/questpc7-programmes")
+        legacy = quest_file("npc-callbacks/m13-guardcatcher")
+        offer = row(legacy, "guards-offer")
+        (grant,) = [
+            c
+            for c in legacy
+            if c["topic"] == offer["next_topic"] and "yes" in c["keywords"]
+        ]
+        start = row(programme, "questpc7-goblin-accept-guards")
+        report = row(programme, "questpc7-goblin-report-guards")
+        (clock,) = [
+            op["track"]
+            for op in report["state_ops"]
+            if op["effect"]["kind"] == "set_now"
+        ]
+        (guard,) = [op for op in start["state_ops"] if op["track"] == clock]
+        post_report = {
+            s["track"]: s["set"] for s in start["storage"] + report["storage"]
+        }
+        offer_stage = offer["storage"][0]
+        post_report[offer_stage["track"]] = offer_stage["minimum"]
+        self.assertTrue(holds(offer, post_report))
+        post_report[offer_stage["track"]] = offer_stage["set"]
+        self.assertTrue(holds(grant, post_report))
+        self.assertIn(guard, grant.get("state_ops", []))
 
     def test_rafzan_gas(self):
         rows = [

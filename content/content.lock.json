@@ -71,7 +71,7 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "b0d00e9d206c12fadd1a9bbf118cb64d9573bd79c544c0accd38721587c72318"
+        "sha256": "ca1eca5e253cd199ac21feb88dcf09081388f26ac7c78447a5cb4e8338331074"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
@@ -79,7 +79,7 @@
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "0bf216fdb834c4584054c1bdcc73f41f28c1412cf632e197cf3bcf2028ec6ff2"
+        "sha256": "9200ca2eb87b79e6212e9ad5c9ac289f584100af66fcf7eb751f2e482bfc6afc"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",

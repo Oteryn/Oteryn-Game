@@ -3,6 +3,27 @@
 import hashlib
 import json
 
+GOLDEN_OWNED_CONFIRMATION = "already owned"
+GOLDEN_OWNED_PROMPT = " If your account already owns it, say {already owned}."
+
+
+def golden_owned_confirmation(paid):
+    owned = {
+        key: value
+        for key, value in paid.items()
+        if key not in {"fee", "forbids_outfits", "forbids_addons"}
+    }
+    owned.update(
+        key=paid["key"] + "-owned",
+        keywords=[GOLDEN_OWNED_CONFIRMATION],
+        outfit=None,
+        reply=["Your account already owns it. I have recorded this commission step."],
+    )
+    for kind in ("outfits", "addons"):
+        if guard := paid.get("forbids_" + kind):
+            owned["requires_" + kind] = guard
+    return owned
+
 
 def golden_recipe(root):
     path = "content/quests/definitions/quests-00100-00199.json"
@@ -103,7 +124,10 @@ def append_golden(root, callbacks, offers, inputs, pin):
                 "topic": 0,
                 "next_topic": topic,
                 "storage": guards,
-                "reply": [f"The {label} costs {price} gold. Do you agree?"],
+                "reply": [
+                    f"The {label} costs {price} gold. Do you agree?"
+                    + GOLDEN_OWNED_PROMPT
+                ],
             }
         )
         add(
@@ -116,6 +140,7 @@ def append_golden(root, callbacks, offers, inputs, pin):
             money=price,
             addon=addon,
         )
+        callbacks.append(golden_owned_confirmation(callbacks[-1]))
     add(
         "complete",
         3,

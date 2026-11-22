@@ -3646,7 +3646,7 @@
         }
       ],
       "reply": [
-        "The basic Golden outfit costs 100000 gold. Do you agree?"
+        "The basic Golden outfit costs 100000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3666,7 +3666,7 @@
         }
       ],
       "reply": [
-        "The Golden boots and gloves costs 50000 gold. Do you agree?"
+        "The Golden boots and gloves costs 50000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3686,7 +3686,7 @@
         }
       ],
       "reply": [
-        "The Golden helmet costs 50000 gold. Do you agree?"
+        "The Golden helmet costs 50000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3731,7 +3731,7 @@
         }
       ],
       "reply": [
-        "The chosen commission costs 100000 gold. Do you agree?"
+        "The chosen commission costs 100000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3751,7 +3751,7 @@
         }
       ],
       "reply": [
-        "The chosen commission costs 50000 gold. Do you agree?"
+        "The chosen commission costs 50000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3771,7 +3771,7 @@
         }
       ],
       "reply": [
-        "The chosen commission costs 50000 gold. Do you agree?"
+        "The chosen commission costs 50000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {

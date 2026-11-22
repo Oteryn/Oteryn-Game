@@ -80,6 +80,19 @@
           "set": 0
         }
       ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
       "requires": [],
       "take": [],
       "give": {

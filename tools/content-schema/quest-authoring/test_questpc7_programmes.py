@@ -549,7 +549,7 @@ class QuestPc7QuestRewards(unittest.TestCase):
             for c in self.callbacks["callbacks"]
             if c["key"].split("/")[-1].startswith("questpc7-golden-")
         ]
-        self.assertEqual(len(selected), 5)
+        self.assertEqual(len(selected), 8)
         fees = {
             c["key"].split("questpc7-golden-")[-1]: c["fee"]
             for c in selected

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 KEY = "oteryn:item.tibia.i5801"
@@ -141,10 +142,21 @@ def load_context(root, snapshot, definitions, routed_keys, appearances=None):
             separators=(",", ":"),
         ).encode()
     ).hexdigest()
-    require(
-        digest == snapshot["snapshot_sha256"] == inputs["snapshot_sha256"],
-        "snapshot digest",
-    )
+    require(digest == snapshot["snapshot_sha256"], "snapshot digest")
+    if digest != inputs["snapshot_sha256"]:
+        sys.path.insert(0, str(root / "tools/content-migration"))
+        from source_relocations import historical_wiki_records
+
+        frozen = historical_wiki_records(snapshot["records"])
+        require(
+            hashlib.sha256(
+                json.dumps(
+                    frozen, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+                ).encode()
+            ).hexdigest()
+            == inputs["snapshot_sha256"],
+            "snapshot digest",
+        )
     binding_bytes = (root / inputs["binding_path"]).read_bytes()
     require(
         hashlib.sha256(binding_bytes).hexdigest() == inputs["binding_sha256"],

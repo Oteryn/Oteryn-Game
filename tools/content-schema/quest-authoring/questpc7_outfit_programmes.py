@@ -2,6 +2,9 @@
 
 import hashlib
 import json
+from copy import deepcopy
+
+from questpc7_grave_programme import PASSAGES, state
 
 DECISION = "owner:questpc7:selected-outfit-item-bindings:2026-11-07"
 ITEM_ACTIONS = "tools/content-schema/native-gameplay/item-cosmetic-actions.json"
@@ -227,6 +230,14 @@ def append(root, callbacks, inputs, pin):
                     achievement="oteryn:achievement/inquisition_s_hand",
                     participants=[{"quest": branch["quest"], "storage": updates}],
                 )
+                # Characters who crossed Zelos's passage before it wrote questline
+                # can report using the durable passage milestone.
+                legacy = deepcopy(callbacks[-1])
+                legacy["key"] += "-legacy-zelos"
+                legacy_storage = legacy["participants"][0]["storage"]
+                legacy_storage[0].update(minimum=0, maximum=ready - 1)
+                legacy_storage.append(state(PASSAGES, 6, 7, 6, preserve=True))
+                callbacks.append(legacy)
             add("complete", 0, 3, owned=3, completes=True)
             callbacks[-1]["storage"][0]["maximum"] = 2
             continue
