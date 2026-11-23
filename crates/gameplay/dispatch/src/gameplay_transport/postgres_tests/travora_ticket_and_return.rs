@@ -47,6 +47,8 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             .ok_or_else(|| format!("missing published route {npc}/{keyword}").into())
     };
     let inbound = route("oteryn:npc.petros", "travora")?;
+    let greyhound = "oteryn:npc.captain_greyhound";
+    let thais = route(greyhound, "thais")?;
     let darashia = route("oteryn:npc.captain_tiberius", "darashia")?;
     let ankrahmun = route("oteryn:npc.captain_tiberius", "ankrahmun")?;
     let quest_state = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -103,10 +105,11 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         room.map_revision_digest(),
         (33289, 32480, 6),
     );
-    let deps = Dependencies::with_content(
+    let deps = Dependencies::with_content_and_capacity(
         channel_pin,
         room.clone(),
         crate::spell::cast::v1_spell_book().map_err(debug)?,
+        3,
     )?;
     deps.runtime
         .lock()
@@ -135,16 +138,59 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         .await?;
     super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), 2000, 80).await?;
     owner.refresh_quest_session(session, true).await;
-    let [petros] =
-        super::classic_quests_fixtures::install(&owner, &deps.admitted, ["oteryn:npc.petros"])
-            .await?;
+    let [captain, petros] = super::classic_quests_fixtures::install(
+        &owner,
+        &deps.admitted,
+        [greyhound, "oteryn:npc.petros"],
+    )
+    .await?;
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
             .await?;
     let talk = super::classic_quests_fixtures::talk;
-    talk(&mut owner, &deps.admitted, petros, 1, "hi").await?;
-    let offer = talk(&mut owner, &deps.admitted, petros, 2, "ticket").await?;
+    talk(&mut owner, &deps.admitted, captain, 1, "hi").await?;
+    talk(&mut owner, &deps.admitted, captain, 2, "ticket").await?;
+    let armed = owner
+        .states
+        .npc_conversations
+        .fixture_quest_topic(session)?;
+    assert_ne!(armed, 0);
+    let quote = talk(&mut owner, &deps.admitted, captain, 3, &thais.keyword).await?;
+    let quoted_fare = format!("{} gold", thais.route.price);
+    assert!(
+        quote
+            .iter()
+            .any(|line| line.contains(&thais.keyword) && line.contains(&quoted_fare)),
+        "{quote:?}"
+    );
+    let topic_after_quote = owner
+        .states
+        .npc_conversations
+        .fixture_quest_topic(session)?;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(60))
+        .ok_or("clock")?;
+    let expired = talk(&mut owner, &deps.admitted, captain, 4, "yes").await?;
+    let (purchased, balance): (bool, i64) = sqlx::query_as(
+        "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE track_key=$1 AND value>0),(SELECT balance FROM game_account_bank_balances)"
+    ).bind(TRACK).fetch_one(&h.pool).await?;
+    assert_eq!(
+        (
+            topic_after_quote,
+            purchased,
+            balance,
+            expired
+                .iter()
+                .any(|line| line.contains("offer has expired"))
+        ),
+        (0, false, 2000, true),
+        "travel quote must replace ticket topic {armed}: {expired:?}"
+    );
+    talk(&mut owner, &deps.admitted, captain, 5, "bye").await?;
+    talk(&mut owner, &deps.admitted, petros, 6, "hi").await?;
+    let offer = talk(&mut owner, &deps.admitted, petros, 7, "ticket").await?;
     assert!(
         offer.iter().any(|line| line.contains("1000 gold")),
         "{offer:?}"
@@ -156,8 +202,8 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             .fixture_quest_topic(session)?,
         sale.topic
     );
-    talk(&mut owner, &deps.admitted, petros, 3, "no").await?;
-    talk(&mut owner, &deps.admitted, petros, 4, "yes").await?;
+    talk(&mut owner, &deps.admitted, petros, 8, "no").await?;
+    talk(&mut owner, &deps.admitted, petros, 9, "yes").await?;
     let (purchased, balance): (bool, i64) = sqlx::query_as(
         "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE track_key=$1 AND value>0),(SELECT balance FROM game_account_bank_balances)"
     ).bind(TRACK).fetch_one(&h.pool).await?;
@@ -166,8 +212,8 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         (false, 2000),
         "declined ticket must stay cancelled"
     );
-    talk(&mut owner, &deps.admitted, petros, 5, "ticket").await?;
-    talk(&mut owner, &deps.admitted, petros, 6, "yes").await?;
+    talk(&mut owner, &deps.admitted, petros, 10, "ticket").await?;
+    talk(&mut owner, &deps.admitted, petros, 11, "yes").await?;
     let (stamp, balance): (i64, i64) = sqlx::query_as(
         "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),(SELECT balance FROM game_account_bank_balances)"
     ).bind(TRACK).fetch_one(&h.pool).await?;
