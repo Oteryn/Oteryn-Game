@@ -10,6 +10,12 @@
       },
       "tracks": [
         {
+          "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/started",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
           "key": "oteryn:quest-progress/chosen/ape-city/stage",
           "initial": 0,
           "minimum": 0,
@@ -114,6 +120,12 @@
                   "track": "oteryn:quest-progress/chosen/ape-city/stage",
                   "minimum": 0,
                   "maximum": 0,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/started",
+                  "minimum": 0,
+                  "maximum": 1,
                   "set": 1
                 }
               ],
@@ -1598,6 +1610,12 @@
                   "minimum": 14,
                   "maximum": 14,
                   "set": 15
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/started",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
                 },
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/access",

@@ -38,7 +38,7 @@ fn quest_log_content_loads_real_journals_and_records_unbound_entries() {
         matches!(&first.missions[0].journal, super::super::QuestJournal::PerStage(entries) if entries.len() == 2)
     );
     let source: serde_json::Value = serde_json::from_str(QUESTS).expect("source");
-    // Source missions retain their order, except for the native Monk pilgrimage journal.
+    // Source missions retain their order wherever a native journal does not replace them.
     for quest in source["quests"].as_array().expect("quests") {
         let key = quest["identity"]["key"]
             .as_str()
@@ -77,6 +77,15 @@ fn quest_log_content_loads_real_journals_and_records_unbound_entries() {
                 "Shrine of Serenity",
                 "Shrine of Eternity",
             ]
+        } else if key == BLIND_THE_ENEMY {
+            assert!(admitted.shown_in_quest_log);
+            assert_eq!(admitted.kind, super::super::QuestLogKind::Storyline);
+            assert_eq!(
+                admitted.start,
+                Some(("oteryn:quest-progress/to-blind-the-enemy/mission".into(), 1))
+            );
+            assert!(loaded.exclusions.iter().all(|entry| entry.quest != key));
+            vec!["To Blind the Enemy"]
         } else if matches!(
             key.as_str(),
             "oteryn:quest.fury_gates_mini_world_change" | "oteryn:quest.grimvale_mini_world_change"

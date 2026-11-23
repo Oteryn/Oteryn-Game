@@ -705,12 +705,14 @@ impl BundleFacts {
         pos: TilePos,
     ) -> Option<u8> {
         let states = self.callbacks.lock().ok().map(|s| Arc::clone(&s))?;
+        let rotations = self.rotations.lock().ok().map(|s| Arc::clone(&s))?;
         let first = placement_key(pos, 0)?;
         if states.phase_entry(pos, 0).is_some() {
             return Some(0);
         }
         if states.changed.range(first..=first + 63).next().is_none()
             && states.hidden.range(first..=first + 63).next().is_none()
+            && rotations.range(first..=first + 63).next().is_none()
         {
             return None;
         }
@@ -718,7 +720,7 @@ impl BundleFacts {
             facts: self,
             callbacks: Some(states),
             doors: self.doors.snapshot(),
-            rotations: self.rotations.lock().ok().map(|s| Arc::clone(&s)),
+            rotations: Some(rotations),
         };
         let tile = base.tile(pos.x, pos.y, pos.floor)?;
         let mut mask = 0;
@@ -2163,11 +2165,19 @@ impl BundleFacts {
                 .or_else(|| self.unique_index(id));
             blocked |= palette.is_none_or(|p| self.blocks(p));
         }
-        let ground_walkable = tile
-            .ground()
-            .and_then(|(o, _)| placement_key(pos, o))
-            .and_then(|k| states.passable.get(&k).copied())
-            .unwrap_or_else(|| tile.walkable());
+        // The retained closed shovel hole has no ground entry. Its qualified open
+        // state supplies walkable ground and the downward floor change.
+        let excavated_ground = tile.ground().is_none()
+            && tile.appearance(0) == Some(593)
+            && rotations.get(&first).is_some_and(|(_, after)| {
+                after.appearance_id == 594 && self.override_blocks(*after) == Some(false)
+            });
+        let ground_walkable = excavated_ground
+            || tile
+                .ground()
+                .and_then(|(o, _)| placement_key(pos, o))
+                .and_then(|k| states.passable.get(&k).copied())
+                .unwrap_or_else(|| tile.walkable());
         !ground_walkable || if changed { blocked } else { baseline }
     }
 }

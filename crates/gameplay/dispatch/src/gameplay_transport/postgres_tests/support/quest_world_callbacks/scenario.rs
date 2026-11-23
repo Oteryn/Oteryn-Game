@@ -967,6 +967,7 @@ fn scenario_case(
     };
     run(async |admin| {
         let h = if shared_rewards
+            || frontier
             || qengine_reward
             || outfit_world
             || matches!(
@@ -1782,7 +1783,7 @@ fn scenario_case(
         let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
             .map_err(debug)?;
         owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
-        if koshei || alawars_vault {
+        if koshei || alawars_vault || frontier {
             let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
             owner.quest_log_content = Some(
                 crate::gameplay_transport::quest_log::QuestLogLines::new(journal.content)

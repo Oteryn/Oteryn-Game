@@ -1,11 +1,14 @@
-"""Admit the supported terrain-tool family without activating unqualified harvests."""
+"""Admit supported terrain tools and quest interaction Items."""
 import hashlib
 import json
 
 from native_profile_composition import encode_native_profile
 
 PATH = 'tools/content-schema/native-gameplay/tool-item-profiles.json'
-IDS = {593, 594, 606, 608, 609, 615, 867, 868, 1791, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
+IDS = {
+    593, 594, 606, 608, 609, 615, 867, 868, 1791, 3308, 3452, 3457, 3483, 3492,
+    3695, 3696, 3701, 3702, 4597, 4851, 4995, 4996, 6093, 6105, 6119, 9843,
+}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):

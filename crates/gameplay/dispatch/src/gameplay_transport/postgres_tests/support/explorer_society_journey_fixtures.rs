@@ -35,7 +35,7 @@ const BUTTERFLY: Position = position(32580, 32731, -7);
 const BELLS: Position = position(32548, 32836, -7);
 const URN: Position = position(32957, 32834, -8);
 const POETRY: Position = position(32704, 31605, -14);
-const RACE: &str = "oteryn:creature.butterfly";
+const RACE: &str = "oteryn:creature.purple_butterfly";
 const ITEMS: [u16; 10] = [4834, 4837, 4844, 4845, 4847, 4863, 4864, 4867, 4868, 4872];
 
 const fn position(x: u16, y: u16, floor: i8) -> Position {
@@ -172,15 +172,7 @@ async fn talk(
     words: &str,
 ) -> TestResult<NpcIntentDisposition> {
     allow_next_action(owner)?;
-    let reply = wire(
-        owner,
-        session,
-        session.continuity.next_command_id,
-        7,
-        talk_payload(npc, words)?,
-    )
-    .await?;
-    decode_npc_intent_result(&reply).map_err(debug)
+    super::journey_npc_wire::say(owner, session, npc, words).await
 }
 
 async fn focus(
@@ -190,12 +182,7 @@ async fn focus(
     standing: Position,
 ) -> TestResult<EntityRef> {
     relocate(owner, session, standing).await?;
-    let actor = npc(owner, key).await?;
-    assert_eq!(
-        talk(owner, session, actor, "hi").await?,
-        NpcIntentDisposition::Ok
-    );
-    Ok(actor)
+    npc(owner, key).await
 }
 
 async fn step(
@@ -371,7 +358,7 @@ async fn move_ice(
             ItemMoveDestination::Ground(WorldTilePosition {
                 x: at.x,
                 y: at.y,
-                floor: -at.floor,
+                floor: at.floor,
             }),
         )
     };
@@ -516,8 +503,12 @@ pub(super) async fn exercise(
     .map_err(debug)?
     .service_model_for_project()
     .map_err(debug)?;
+    let authored = oteryn_gameplay_quests::quest::authored_bindings::native_dialogue_npcs()?;
+    let native = authored.iter().map(String::as_str).collect::<Vec<_>>();
     owner.states.chat.install_npc_talk(Arc::new(
-        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model(&model),
+        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model_with_native_quests(
+            &model, &native,
+        ),
     ));
     owner
         .states
@@ -548,11 +539,6 @@ pub(super) async fn exercise(
     let uzgod = npc(owner, "oteryn:npc.uzgod").await?;
     state(h, 0, None, &[]).await?;
     step(owner, session, StepDirection::West, angus_side).await?;
-    assert_eq!(
-        talk(owner, session, angus, "hi").await?,
-        NpcIntentDisposition::Ok
-    );
-
     let premium = owner.premium_coordinator.take().ok_or("Premium coordinator")?;
     let result = talk(owner, session, angus, "join").await;
     owner.premium_coordinator = Some(premium);
@@ -607,11 +593,16 @@ pub(super) async fn exercise(
         NpcIntentDisposition::Ok
     );
     state(h, 6, Some((ice, 6)), &[4872]).await?;
-    for site in [position(32132, 31688, -9), position(32133, 31689, -9), ICE] {
-        if relocate(owner, session, site).await.is_ok() {
-            break;
+    let mut approach: TestResult = Err("no walkable source approach to the Folda icicle".into());
+    'adjacent: for x in ICE.x - 1..=ICE.x + 1 {
+        for y in ICE.y - 1..=ICE.y + 1 {
+            if relocate(owner, session, position(x, y, ICE.floor)).await.is_ok() {
+                approach = Ok(());
+                break 'adjacent;
+            }
         }
     }
+    approach?;
     tool_use(owner, session, 4872, Some(ICE)).await?;
     state(h, 7, Some((ice, 7)), &[4837, 4872]).await?;
     move_ice(owner, session, h, false).await?;
@@ -711,7 +702,7 @@ pub(super) async fn exercise(
     state(h, 19, Some((poetry, 37)), &[4844, 4872]).await?;
 
     focus(owner, session, "oteryn:npc.angus", angus_side).await?;
-    let terminal = session.continuity.next_command_id;
+    let terminal = session.continuity.next_command_id + 1;
     assert_eq!(
         talk(owner, session, angus, "elven book").await?,
         NpcIntentDisposition::Ok
@@ -750,14 +741,13 @@ pub(super) async fn exercise(
     let mut funding = 90002;
     super::qengine_voucher_stories_fixtures::mint(owner, session, 3035, 2, &mut funding).await?;
     let captain = focus(owner, session, "oteryn:npc.captain_max", max_side).await?;
-    assert_eq!(
-        talk(owner, session, captain, "calassa").await?,
-        NpcIntentDisposition::Ok
-    );
-    assert_eq!(
-        talk(owner, session, captain, "yes").await?,
-        NpcIntentDisposition::Ok
-    );
+    allow_next_action(owner)?;
+    super::journey_npc_wire::exchange(owner, session, captain, async |conversation| {
+        for text in ["hi", "calassa", "yes"] {
+            conversation.expect(text, NpcIntentDisposition::Ok).await?;
+        }
+        Ok(())
+    }).await?;
     let arrived: MovementLocalPosition = owner
         .runtime
         .lock()

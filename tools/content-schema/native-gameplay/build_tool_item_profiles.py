@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Normalize the supported terrain tools using the existing pinned native Item importer.
+"""Normalize terrain tools and quest interaction items using pinned native Item facts.
 
 Basic fishing: Crystal 201189f8 data-global/scripts/actions/other/fishing.lua;
 Global: Fishing Rod revision 1113826, Worm 1113950, Fish 1113662.
 Behaviour: Crystal 201189f8 data-global/scripts/lib/register_actions.lua:6-7,363,864.
 Global: Shovel revision 1113775; Machete 1147243; Jungle Grass 1113755.
 Pick piles: Crystal 201189f8 register_actions.lua:633-648; items.xml decay 1002-1004, 1029-1031, 1046-1048.
+Shattered Isles: rake 3452 and the ring, pillow and poem used by the authored exchanges.
+New Frontier: flask with beaver bait 9843, issued by Melfar and used on the marked trees.
+Ape City: the canopic jars and both cleared catacomb object states.
 Harvest remains excluded until the durable owner can commit its yield atomically.
 """
 import argparse
@@ -17,7 +20,10 @@ import build_source_item_profiles as native
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/tool-item-profiles.json'
-IDS = {593, 594, 606, 608, 609, 615, 867, 868, 1791, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
+IDS = {
+    593, 594, 606, 608, 609, 615, 867, 868, 1791, 3308, 3452, 3457, 3483, 3492,
+    3695, 3696, 3701, 3702, 4597, 4851, 4995, 4996, 6093, 6105, 6119, 9843,
+}
 
 
 def build(directory, ids=None):

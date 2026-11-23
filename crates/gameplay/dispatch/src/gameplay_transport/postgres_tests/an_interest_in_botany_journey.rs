@@ -1,5 +1,6 @@
 use super::fixture::{Harness, debug, id, run};
 use super::m39_bone_journey_fixtures::{carried, stage};
+use super::journey_npc_wire::exchange;
 use super::quest_world_callbacks_fixtures::{input_item, local, wire};
 use super::questpc8_authored_programmes_fixtures::step;
 use super::{
@@ -131,8 +132,20 @@ fn journey(web_already_burned: bool) -> TestResult {
             )?;
             assert!(claims.served.iter().any(|claim| claim.key.as_str() == CHEST_CLAIM));
 
-            let cells = world.movement_cells(deps.room.movement_cells()).map_err(debug)?;
+            let cells = world.movement_cells(activated_pin.qualified_room().movement_cells()).map_err(debug)?;
             let start = local(START);
+            deps.combat_room = Some(
+                activated_pin.qualified_room().bundle_view(
+                    cells.clone(),
+                    activated_pin.frame_binding().digest(),
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: start.x,
+                        y: start.y,
+                        floor: start.floor,
+                    },
+                ).ok_or("journey bundle room")?,
+            );
             let pin = ChannelContentPin::from_activation(
                 deps.admitted.world_id,
                 1,
@@ -162,6 +175,9 @@ fn journey(web_already_burned: bool) -> TestResult {
             let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(deps.admitted.game_session_id).await?.0;
             let fence = crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;
+            deps.runtime.lock().await.bind_attacker_lease(
+                deps.actor, current.current_game_session_id(), current.current_character_lease(),
+            ).map_err(debug)?;
             sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
                 .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
@@ -192,13 +208,25 @@ fn journey(web_already_burned: bool) -> TestResult {
             admitted.first_entry = FirstEntryOutcome::Positioned;
             admitted.item_fence = Some(fence);
             let mut owner = deps.owner(&h, &authority);
+            use crate::gameplay_transport::spell_premium_coordinator::{
+                SpellPremiumCoordinator, purchase_fixture,
+            };
+            let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+            h.root.latch_premium_activation(
+                &activation.activation_id, activation.switch_over_us,
+                activation.switch_over_us + 60_000_000,
+            ).await.map_err(debug)?;
+            let premium = SpellPremiumCoordinator::new(
+                consumer, Some(clock), Some(activation), Some(h.root.clone()),
+            );
+            owner.premium_coordinator = Some(&premium);
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
-            owner.quest_catalogue = Some(Arc::clone(&catalogue));
+            owner.quest_catalogue = Some(catalogue);
             let log_lines = QuestLogLines::new(journal.content).ok_or("Botany journal line bounds")?;
-            owner.quest_log_content = Some(log_lines.clone());
+            owner.quest_log_content = Some(log_lines);
             deps.initialize(&owner).await;
-            admit(&mut owner, &mut admitted, Arc::clone(&talk_book)).await?;
+            admit(&mut owner, &mut admitted, talk_book).await?;
             for (index, tool) in [KNIFE, FIRE_BUG].into_iter().enumerate() {
                 input_item(&owner, fence, &Offering {
                     position: START, item: format!("oteryn:item.tibia.i{tool}"), count: 1,
@@ -207,23 +235,18 @@ fn journey(web_already_burned: bool) -> TestResult {
             let initial_log = log(&owner, &mut admitted).await?;
             exercise(&mut owner, &mut admitted, &h, npc, web_already_burned).await?;
 
-            // A new admission owner rebuilds the quest and NPC projections for the reconnect.
-            // The wire helper has already closed the first transport and retained its continuity.
-            drop(owner);
-            let mut reconnected = deps.owner(&h, &authority);
-            reconnected.active_generation = Some(generation);
-            reconnected.movement_cells = (&cells).into();
-            reconnected.quest_catalogue = Some(catalogue);
-            reconnected.quest_log_content = Some(log_lines);
-            deps.initialize(&reconnected).await;
-            admit(&mut reconnected, &mut admitted, talk_book).await?;
-            assert_eq!(speak(&mut reconnected, &mut admitted, npc, "hi").await?, NpcIntentDisposition::Ok);
-            speak(&mut reconnected, &mut admitted, npc, "mission").await?;
-            assert_eq!(speak(&mut reconnected, &mut admitted, npc, "yes").await?, NpcIntentDisposition::Rejected);
+            // Rebuild the durable quest copy when the next socket joins the same Channel.
+            owner.admit_quest_session(&admitted).await;
+            owner.clock_origin -= Duration::from_secs(2);
+            exchange(&owner, &mut admitted, npc, async |conversation| {
+                conversation.expect("hi", NpcIntentDisposition::Ok).await?;
+                conversation.talk("mission").await?;
+                conversation.expect("yes", NpcIntentDisposition::Rejected).await
+            }).await?;
             checkpoint(&h, Some(5), 0, 1, 1000).await?;
             assert_eq!(finish_receipts(&h).await?, 1);
             assert_eq!(quest_xp(&h).await?, (1, 3000), "reconnect preserves the single XP reward");
-            assert_eq!(log(&reconnected, &mut admitted).await?, initial_log, "the completed quest stays hidden");
+            assert_eq!(log(&owner, &mut admitted).await?, initial_log, "the completed quest stays hidden");
             Ok(())
         }.await;
         h.cleanup().await?;
@@ -317,7 +340,7 @@ async fn admit(
         owner.owner_now(),
     );
     owner.states.chat.set_npc_service(admitted.game_session_id);
-    super::qd_world_fixtures::select_talk_capabilities(owner, admitted, &[3, 4, 6, 11, 15, 16])
+    super::qd_world_fixtures::select_talk_capabilities(owner, admitted, &[3, 4, 6, 11, 15, 16, 18])
 }
 
 async fn exercise(
@@ -329,17 +352,14 @@ async fn exercise(
 ) -> TestResult {
     checkpoint(h, None, 0, 0, 0).await?;
     assert_eq!(stage(h, DOOR_TRACK).await?, None);
-    for word in ["hi", "mission"] {
-        assert_eq!(
-            speak(owner, admitted, npc, word).await?,
-            NpcIntentDisposition::Ok
-        );
-        checkpoint(h, None, 0, 0, 0).await?;
-    }
-    assert_eq!(
-        speak(owner, admitted, npc, "yes").await?,
-        NpcIntentDisposition::Ok
-    );
+    owner.clock_origin -= Duration::from_secs(2);
+    exchange(owner, admitted, npc, async |conversation| {
+        for word in ["hi", "mission"] {
+            conversation.expect(word, NpcIntentDisposition::Ok).await?;
+            checkpoint(h, None, 0, 0, 0).await?;
+        }
+        conversation.expect("yes", NpcIntentDisposition::Ok).await
+    }).await?;
     checkpoint(h, Some(1), 0, 0, 0).await?;
     assert_eq!(stage(h, DOOR_TRACK).await?, Some(0));
 
@@ -440,17 +460,17 @@ async fn exercise(
     checkpoint(h, Some(4), 1, 0, 0).await?;
 
     arrive(owner, admitted, START).await?;
-    for word in ["hi", "mission"] {
-        assert_eq!(
-            speak(owner, admitted, npc, word).await?,
-            NpcIntentDisposition::Ok
-        );
-        checkpoint(h, Some(4), 1, 0, 0).await?;
-    }
-    let command = admitted.continuity.next_command_id;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner.clock_origin -= Duration::from_secs(2);
+    let (command, reward) = exchange(owner, admitted, npc, async |conversation| {
+        for word in ["hi", "mission"] {
+            conversation.expect(word, NpcIntentDisposition::Ok).await?;
+            checkpoint(h, Some(4), 1, 0, 0).await?;
+        }
+        assert_eq!(quest_xp(h).await?, (0, 0));
+        Ok((conversation.next(), conversation.talk("yes").await?))
+    }).await?;
     let confirmation = speech(npc, "yes")?;
-    assert_eq!(quest_xp(h).await?, (0, 0));
-    let reward = wire(owner, admitted, command, 7, confirmation.clone()).await?;
     assert_eq!(
         decode_npc_intent_result(&reward).map_err(debug)?,
         NpcIntentDisposition::Ok
@@ -503,8 +523,8 @@ async fn use_object(
 ) -> TestResult<UseDisposition> {
     owner.clock_origin -= Duration::from_secs(2);
     let target = target(owner, pos, ordinal)?;
-    let payload = if let Some(tool) = tool {
-        let item = owner
+    if let Some(tool) = tool {
+        let definition = owner
             .active_generation
             .and_then(|g| g.native_gameplay())
             .and_then(|n| n.item_index())
@@ -516,16 +536,26 @@ async fn use_object(
                 )
             })
             .ok_or("native tool definition")?;
-        encode_item_use_intent(&UseIntent {
-            target: UseTarget::ItemByDefinition(item),
+        let payload = encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(std::num::NonZeroU64::MIN),
             use_with: None,
             use_with_map_item: Some(MapUseTarget::Object(target)),
             use_with_position: None,
         })
-        .map_err(debug)?
-    } else {
-        encode_use_intent(&target).map_err(debug)?
-    };
+        .map_err(debug)?;
+        let (next, disposition, _) = super::rust_lottery_fixtures::exchange(
+            owner,
+            *admitted,
+            admitted.continuity.next_command_id,
+            &payload,
+            Some(definition),
+            None,
+        )
+        .await?;
+        *admitted = next;
+        return Ok(disposition);
+    }
+    let payload = encode_use_intent(&target).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
     decode_use_result(&wire(owner, admitted, command, 2, payload).await?).map_err(debug)
 }
@@ -575,18 +605,6 @@ fn speech(npc_actor: EntityRef, text: &str) -> TestResult<Vec<u8>> {
         text: text.into(),
     })
     .map_err(debug)
-}
-
-async fn speak(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    npc: EntityRef,
-    text: &str,
-) -> TestResult<NpcIntentDisposition> {
-    owner.clock_origin -= Duration::from_secs(2);
-    let command = admitted.continuity.next_command_id;
-    decode_npc_intent_result(&wire(owner, admitted, command, 7, speech(npc, text)?).await?)
-        .map_err(debug)
 }
 
 async fn log(

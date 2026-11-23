@@ -203,6 +203,19 @@ async fn scenario(admin: String) -> TestResult {
         .map_err(debug)?
         .ok_or("current character")?;
     admitted.item_fence = Some(fence.item_fence());
+    deps.runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            deps.actor,
+            session,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
@@ -439,7 +452,7 @@ impl Journey<'_, '_, '_, '_> {
             .await?;
         assert_eq!(self.completions().await?, 0);
         let raymond = self.contact("raymond_striker").await?;
-        let terminal = self.admitted.continuity.next_command_id;
+        let terminal = self.admitted.continuity.next_command_id + 1;
         let original = self.talk(raymond, "mission").await?;
         assert_eq!(original, NpcIntentDisposition::Ok);
         self.terminal().await?;
@@ -532,17 +545,12 @@ impl Journey<'_, '_, '_, '_> {
             identity: actor.actor.placement_identity(),
             generation: actor.generation,
         };
-        assert_eq!(
-            self.talk(npc, "hi").await?,
-            NpcIntentDisposition::Ok,
-            "greet {name}"
-        );
         Ok(npc)
     }
 
     async fn talk(&mut self, npc: EntityRef, text: &str) -> TestResult<NpcIntentDisposition> {
-        self.talk_id(npc, text, self.admitted.continuity.next_command_id)
-            .await
+        self.advance_clock()?;
+        super::journey_npc_wire::say(self.owner, self.admitted, npc, text).await
     }
 
     async fn talk_id(
@@ -614,15 +622,17 @@ impl Journey<'_, '_, '_, '_> {
         self.wait_for_passage().await?;
         let jack = self.contact("jack_fate").await?;
         assert!(self.owner.states.newhaven_travel.set_jack_fate_test_roll(true));
-        assert_eq!(self.talk(jack, "thais").await?, NpcIntentDisposition::Ok);
-        let before = super::full_world_support::position(
-            self.owner,
-            self.admitted.runtime_actor.ok_or("actor")?,
-        )
-        .await?;
-        assert_eq!(self.talk(jack, "yes").await?, NpcIntentDisposition::Ok);
-        self.arrived((before.x, before.y, before.floor)).await?;
-        assert_eq!(self.talk(jack, "yes").await?, NpcIntentDisposition::Ok);
+        self.advance_clock()?;
+        let owner = &*self.owner;
+        let actor = self.admitted.runtime_actor.ok_or("actor")?;
+        let before = super::full_world_support::position(owner, actor).await?;
+        super::journey_npc_wire::exchange(owner, self.admitted, jack, async |conversation| {
+            for text in ["hi", "thais", "yes"] {
+                conversation.expect(text, NpcIntentDisposition::Ok).await?;
+            }
+            assert_eq!(super::full_world_support::position(owner, actor).await?, before);
+            conversation.expect("yes", NpcIntentDisposition::Ok).await
+        }).await?;
         if expect_wreck {
             self.arrived_at_goroma().await?;
         } else {
@@ -640,8 +650,13 @@ impl Journey<'_, '_, '_, '_> {
     ) -> TestResult {
         self.wait_for_passage().await?;
         let npc = self.contact(npc).await?;
-        assert_eq!(self.talk(npc, keyword).await?, NpcIntentDisposition::Ok);
-        assert_eq!(self.talk(npc, "yes").await?, NpcIntentDisposition::Ok);
+        self.advance_clock()?;
+        super::journey_npc_wire::exchange(self.owner, self.admitted, npc, async |conversation| {
+            for text in ["hi", keyword, "yes"] {
+                conversation.expect(text, NpcIntentDisposition::Ok).await?;
+            }
+            Ok(())
+        }).await?;
         if keyword == "goroma" {
             self.arrived_at_goroma().await
         } else {
@@ -727,12 +742,13 @@ impl Journey<'_, '_, '_, '_> {
     async fn pick_up_wood(&mut self) -> TestResult {
         use crate::gameplay_transport::{
             connection::UseCommand,
-            item_move::{ItemMoveStep, item_move},
+            item_move::{ItemMoveStep, LoopMove, LoopMoveResult, LoopTarget, item_move},
             item_view::{ItemKey, ItemViewContinuity, SessionItemView},
             world_map::SessionMapView,
         };
         use oteryn_protocol_oteryn::item_view::{
             ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
+            WorldTilePosition,
             encode_item_move_intent_for,
         };
         let actor = self.admitted.runtime_actor.ok_or("actor")?;
@@ -758,11 +774,51 @@ impl Journey<'_, '_, '_, '_> {
                 count: 2,
             },
             5,
-            false,
+            true,
         )
         .await?;
+        // The two new pieces can merge with the existing stack. Drop exactly
+        // two through the real custody owner before exercising Ground pickup.
+        let stack: sqlx::types::Uuid = sqlx::query_scalar(
+            "SELECT i.item_instance_id
+               FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+               JOIN game_item_instances i ON i.item_instance_id=c.item
+              WHERE i.definition_production_key=$3 AND i.lifecycle=1 AND i.quantity>=2
+              ORDER BY i.quantity LIMIT 1",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(self.admitted.world_id.as_bytes().as_slice())
+        .bind(item(5901))
+        .fetch_one(&self.h.pool)
+        .await?;
+        assert_eq!(
+            crate::gameplay_transport::loop_move::move_loop_item(
+                self.owner,
+                actor,
+                UseCommand {
+                    game_session_id: session,
+                    command_id: 99_999,
+                    item_fence: Some(fence),
+                },
+                LoopMove {
+                    item: ItemKey::Instance(*stack.as_bytes()),
+                    count: Some(2),
+                    target: LoopTarget::Ground(WorldTilePosition {
+                        x: cell.x,
+                        y: cell.y,
+                        floor: -cell.floor,
+                    }),
+                    slot: None,
+                },
+            )
+            .await,
+            LoopMoveResult::Committed
+        );
+        self.expect("shipwrecked", 1, (5901, 29)).await?;
         let wood: sqlx::types::Uuid = sqlx::query_scalar(
-            "SELECT item_instance_id FROM game_item_instances WHERE definition_production_key=$1 AND quantity=2 AND lifecycle=1 LIMIT 1",
+            "SELECT i.item_instance_id FROM game_item_instances i JOIN game_item_ground_locations g
+             USING (item_instance_id,world_id)
+             WHERE definition_production_key=$1 AND quantity=2 AND lifecycle=1",
         ).bind(item(5901)).fetch_one(&self.h.pool).await?;
         let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
         view.snapshot(

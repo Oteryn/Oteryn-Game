@@ -373,16 +373,20 @@ impl BundleFacts {
             }
         }
         // 188: spent Botany spider web (Crystal actions_fire_bug.lua:125-129).
+        // 430, 7767: pressed plate and opened stair in Thais Lighthouse (Crystal movement-stair.lua).
+        // 594: the excavated 593 hole (Crystal register_actions.lua).
+        // 4851, 4996: destroyed snake statue and canopic jars in deeper Banuta.
         // 3682, 12187, 12189: Bushwhacking entrance, laid net and captured merchant.
         // 6473, 6474: the timed Rottin wall repairs.
         // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions: BTreeMap<_, _> = [
-            188, 435, 1025, 1841, 1949, 3682, 5022, 6473, 6474, 7252, 9125, 9126, 9929, 9933, 9934,
-            9935, 9936, 9937, 9938, 9939, 10186, 10187, 12187, 12189, 12369, 13842, 13843, 13976,
-            14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077, 14163, 14164, 14255, 17939,
-            21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100, 49362,
+            188, 430, 435, 594, 1025, 1841, 1949, 3682, 4851, 4996, 5022, 6473, 6474, 7252, 7767,
+            9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187, 12187, 12189,
+            12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077,
+            14163, 14164, 14255, 17939, 21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100,
+            49362,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -1200,9 +1204,13 @@ fn palette_facts(
                         .is_some_and(|terrain| terrain.kind == TerrainKind::Wall),
             );
         facts.pickupable = definition.pickupable;
-        solid = definition
-            .solid
-            .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
+        solid = definition.solid.unwrap_or_else(|| {
+            // The admitted WorldObject collision for the New Frontier passage
+            // marker (i1953) is non-solid. It has no native Item profile.
+            entry.key != "oteryn:item.tibia.i1953"
+                && !walkable_floor_change(&entry.key)
+                && !terrain_floor(entry)
+        });
         door = palette_door(&entry.key, item);
     }
     Ok(PaletteFacts {

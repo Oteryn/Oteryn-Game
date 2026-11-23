@@ -164,9 +164,23 @@ async fn scenario(admin: String) -> TestResult {
     let native = generation.native_gameplay().ok_or("native item provider")?;
     let world = world(native)?;
     let cells = world
-        .movement_cells(deps.room.movement_cells())
+        .movement_cells(content_pin.qualified_room().movement_cells())
         .map_err(debug)?;
     let frame = content_pin.frame_binding().digest();
+    let room_start = local(START);
+
+    deps.combat_room = Some(
+        content_pin.qualified_room().bundle_view(
+            cells.clone(),
+            frame,
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: room_start.x,
+                y: room_start.y,
+                floor: room_start.floor,
+            },
+        ).ok_or("journey bundle room")?,
+    );
     let pin = ChannelContentPin::from_activation(
         deps.admitted.world_id,
         1,
@@ -213,6 +227,14 @@ async fn scenario(admin: String) -> TestResult {
 
     let (consumer, clock, activation, _) =
         crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+    h.root
+        .latch_premium_activation(
+            &activation.activation_id,
+            activation.switch_over_us,
+            activation.switch_over_us + 60_000_000,
+        )
+        .await
+        .map_err(debug)?;
     let premium =
         crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
             consumer,
@@ -378,6 +400,23 @@ impl Journey<'_, '_, '_, '_> {
         Err(format!("no enterable neighbor for {destination:?}").into())
     }
 
+    async fn approach_use(&self, target: TilePos) -> TestResult {
+        if self.approach(target).await.is_ok() {
+            return Ok(());
+        }
+        for (dx, dy) in [(0, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)] {
+            let at = tile(
+                target.x.checked_add_signed(dx).ok_or("approach x")?,
+                target.y.checked_add_signed(dy).ok_or("approach y")?,
+                target.floor,
+            );
+            if self.relocate(at).await.is_ok() {
+                return Ok(());
+            }
+        }
+        Err(format!("no enterable USE approach for {target:?}").into())
+    }
+
     async fn talk(&mut self, command: u64, text: &str) -> TestResult<NpcIntentDisposition> {
         self.owner.clock_origin = self
             .owner
@@ -402,13 +441,10 @@ impl Journey<'_, '_, '_, '_> {
 
     async fn say(&mut self, text: &str) -> TestResult<u64> {
         self.relocate(START).await?;
+        self.owner.clock_origin -= std::time::Duration::from_secs(2);
+        let command = self.next() + 1;
         assert_eq!(
-            self.talk(self.next(), "hi").await?,
-            NpcIntentDisposition::Ok
-        );
-        let command = self.next();
-        assert_eq!(
-            self.talk(command, text).await?,
+            super::journey_npc_wire::say(self.owner, self.admitted, self.npc, text).await?,
             NpcIntentDisposition::Ok,
             "{text}"
         );
@@ -420,7 +456,7 @@ impl Journey<'_, '_, '_, '_> {
         (position, ordinal): (TilePos, u8),
         expected: UseDisposition,
     ) -> TestResult {
-        self.approach(position).await?;
+        self.approach_use(position).await?;
         let target = object_target(self.owner, position, ordinal)?;
         let command = self.next();
         assert_eq!(
@@ -436,7 +472,7 @@ impl Journey<'_, '_, '_, '_> {
         (position, ordinal): (TilePos, u8),
         command: u64,
     ) -> TestResult {
-        self.approach(position).await?;
+        self.approach_use(position).await?;
         let target = object_target(self.owner, position, ordinal)?;
         let reference = self
             .owner
@@ -606,7 +642,8 @@ impl Journey<'_, '_, '_, '_> {
             NpcIntentDisposition::Ok
         );
         self.terminal().await?;
-        self.use_object(PARCHMENT, Rejected).await?;
+        // The one-shot parchment is gone from the claimed source.
+        self.use_object(PARCHMENT, UseDisposition::NothingToUse).await?;
         self.terminal().await?;
         self.enter(ENTRY, tile(32749, 32536, -10)).await?;
         self.terminal().await?;

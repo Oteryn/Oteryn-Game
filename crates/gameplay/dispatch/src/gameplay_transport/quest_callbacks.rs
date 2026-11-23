@@ -388,6 +388,38 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     {
         return false;
     }
+    if matches!(
+        callback.key.as_str(),
+        "oteryn:quest-callback/authored-new-frontier/mine-lift"
+            | "oteryn:quest-callback/authored-new-frontier/mine-lift-reset"
+            | "oteryn:quest-callback/authored-new-frontier/mine-return"
+            | "oteryn:quest-callback/authored-new-frontier/mine-return-reset"
+    ) {
+        // Both arms select the same bare source lever. The binding chooses the
+        // current projected appearance so a reset cannot shadow the next trip.
+        return selector.position.map(tile) == Some(pos)
+            && selector.ordinal == Some(u16::from(ordinal))
+            && map
+                .overlay
+                .base()
+                .tile(pos.x, pos.y, pos.floor)
+                .and_then(|base| {
+                    base.ids()
+                        .iter()
+                        .zip(base.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .nth(usize::from(ordinal))
+                        .map(|(id, _)| *id)
+                })
+                .is_some_and(|id| {
+                    [2772, 2773].into_iter().any(|appearance| {
+                        map.facts.quest_callback_native_object(key, id, appearance)
+                    }) && map
+                        .facts
+                        .base_entry(pos, ordinal, id)
+                        .is_some_and(|current| Some(current.appearance_id) == selector.appearance)
+                });
+    }
     if selector.unique.is_none()
         && selector.action.is_none()
         && map.facts.quest_callback_source_bound(key)

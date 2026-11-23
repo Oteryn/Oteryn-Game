@@ -123,11 +123,25 @@ async fn journey(admin: String) -> TestResult {
         &|_| true,
     )?;
     let cells = world
-        .movement_cells(deps.room.movement_cells())
+        .movement_cells(activated.qualified_room().movement_cells())
         .map_err(debug)?;
     let server_digest = generation.identity().server_artifact_digest();
     let client_digest = generation.identity().client_artifact_digest();
     let frame = activated.frame_binding().digest();
+    let room_start = crate::foundation::MovementLocalPosition { x: i32::from(START.x), y: i32::from(START.y), floor: -i16::from(START.floor) };
+
+    deps.combat_room = Some(
+        activated.qualified_room().bundle_view(
+            cells.clone(),
+            activated.frame_binding().digest(),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: room_start.x,
+                y: room_start.y,
+                floor: room_start.floor,
+            },
+        ).ok_or("journey bundle room")?,
+    );
     let pin = ChannelContentPin::from_activation(
         admitted.world_id,
         1,
@@ -290,42 +304,33 @@ async fn journey(admin: String) -> TestResult {
     assert_snapshot(&h, &owner, &admitted, &keys, (2, 1, false)).await?;
 
     let chest = target(&owner, placement_key(CHEST, 2).ok_or("treasure placement")?)?;
-    let before_terminal = admitted;
-    let command = before_terminal.continuity.next_command_id;
+    let command = admitted.continuity.next_command_id;
     assert_eq!(
         use_object(&mut owner, &mut admitted, command, &chest).await?,
         UseDisposition::Committed
     );
     assert_snapshot(&h, &owner, &admitted, &keys, (3, 1, true)).await?;
-    drop(owner);
-
-    // The terminal socket has closed. Rebuild the transport owner and re-admit the
-    // durable quest copy for a new connection from the last acknowledged
-    // command boundary. The terminal reply is treated as lost.
-    admitted = before_terminal;
-    let mut reconnect = deps.owner(&h, &authority);
-    reconnect.active_generation = Some(generation);
-    reconnect.quest_catalogue = Some(catalogue);
-    reconnect.quest_log_content = Some(log);
-    reconnect.movement_cells = (&cells).into();
-    reconnect.admit_progression_session(&mut admitted).await;
-    deps.initialize(&reconnect).await;
-    reconnect.admit_quest_session(&admitted).await;
+    // The terminal socket has closed. Reload the durable quest copy while the
+    // Channel retains the command response for the player's next connection.
+    owner.admit_quest_session(&admitted).await;
     assert_eq!(
-        use_object(&mut reconnect, &mut admitted, command, &chest).await?,
-        UseDisposition::Committed
+        super::quest_callbacks_fixtures::wire_use_targets_retained(
+            &owner, &mut admitted, &[(command, &chest)],
+        )
+        .await?,
+        [(oteryn_protocol_oteryn::CommandStatus::DuplicateReplay, UseDisposition::Committed)]
     );
-    assert_snapshot(&h, &reconnect, &admitted, &keys, (3, 1, true)).await?;
+    assert_snapshot(&h, &owner, &admitted, &keys, (3, 1, true)).await?;
     let fresh_command = admitted.continuity.next_command_id;
     assert_eq!(
-        use_object(&mut reconnect, &mut admitted, fresh_command, &chest).await?,
+        use_object(&mut owner, &mut admitted, fresh_command, &chest).await?,
         UseDisposition::Rejected
     );
-    assert_snapshot(&h, &reconnect, &admitted, &keys, (3, 1, true)).await?;
+    assert_snapshot(&h, &owner, &admitted, &keys, (3, 1, true)).await?;
 
     let cmd = admitted.continuity.next_command_id;
     let result = wire(
-        &reconnect,
+        &owner,
         &mut admitted,
         cmd,
         COMMAND_TYPE_QUEST_LOG_QUERY,
@@ -387,7 +392,8 @@ fn surface_path(
             let (dx, dy) = direction.delta();
             let x = i32::from(cell.x) + dx;
             let y = i32::from(cell.y) + dy;
-            if !(32595..=32665).contains(&x) || !(32225..=32265).contains(&y) {
+            // The eastern key is reached around the northern side of the camp.
+            if !(32595..=32700).contains(&x) || !(32165..=32265).contains(&y) {
                 continue;
             }
             let next = TilePos {

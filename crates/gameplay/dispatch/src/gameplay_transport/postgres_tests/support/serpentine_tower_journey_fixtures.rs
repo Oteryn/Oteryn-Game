@@ -78,8 +78,22 @@ async fn play(h: &Harness) -> TestResult {
         native,
     )?;
     let cells = world
-        .movement_cells(deps.room.movement_cells())
+        .movement_cells(activation.qualified_room().movement_cells())
         .map_err(debug)?;
+    let room_start = crate::foundation::MovementLocalPosition { x: i32::from(START.x), y: i32::from(START.y), floor: -i16::from(START.floor) };
+
+    deps.combat_room = Some(
+        activation.qualified_room().bundle_view(
+            cells.clone(),
+            activation.frame_binding().digest(),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: room_start.x,
+                y: room_start.y,
+                floor: room_start.floor,
+            },
+        ).ok_or("journey bundle room")?,
+    );
     let pin = ChannelContentPin::from_activation(
         deps.admitted.world_id,
         1,

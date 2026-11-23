@@ -38,7 +38,7 @@ const CONTACTS: [(&str, Position, Position); 8] = [
     ("humgolf", pos(32598, 31880, 9), pos(32598, 31881, 9)),
     ("wyrdin", pos(33266, 31835, 6), pos(33266, 31836, 6)),
     ("angus", pos(32670, 32730, 7), pos(32670, 32729, 7)),
-    ("telas", pos(33276, 31800, 6), pos(33276, 31801, 6)),
+    ("telas", pos(33276, 31800, 6), pos(33276, 31802, 6)),
     ("king_tibianus", pos(32311, 32172, 6), pos(32311, 32173, 6)),
 ];
 const CITY: Position = pos(33061, 31527, 12);
@@ -94,7 +94,7 @@ async fn travel_to(
         false,
         &doors,
     )
-    .map_err(debug)?;
+    .map_err(|err| format!("source crop travel to {p:?}: {err:?}"))?;
     runtime.commit_source_step(proof).map_err(debug)?;
     Ok(())
 }
@@ -349,7 +349,7 @@ pub(super) async fn exercise(
         },
     )
     .await?;
-    defeat_mine_leader(owner, a).await?;
+    defeat_mine_leader(owner, a, h).await?;
     state(h, 12, ("mine_leader", 1), 0).await?;
     travel_to(owner, a, MINE_EXIT).await?;
     use_object(owner, a, pos(33064, 31489, 15), 2, Committed).await?;
@@ -423,7 +423,7 @@ pub(super) async fn exercise(
     for item in [7439, 7440, 7443] {
         assert_eq!(carried(h, item).await?, 1);
     }
-    use_object(owner, a, POTIONS, 1, UseRejected).await?;
+    use_object(owner, a, POTIONS, 1, UseDisposition::NothingToUse).await?;
     move_potion(owner, a, h).await?;
     for item in [7439, 7440, 7443] {
         assert_eq!(carried(h, item).await?, 1);
@@ -635,8 +635,8 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
         crop!(
             "region-z06-x129-y124.b3",
             (6, 129, 124),
-            (33276, 31800, 33277, 31802),
-            (33276, 31801),
+            (33276, 31800, 33277, 31803),
+            (33276, 31802),
             vec![]
         ),
         crop!(
@@ -660,22 +660,42 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
 async fn defeat_mine_leader(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
+    h: &Harness,
 ) -> TestResult {
     use oteryn_protocol_oteryn::attack::{
         COMMAND_TYPE_ATTACK_TARGET_INTENT, COMMAND_TYPE_FIGHT_MODES_INTENT, FightMode, FightModes,
         encode_attack_target_intent, encode_fight_modes_intent,
     };
     let player = a.runtime_actor.ok_or("player")?;
+    // The source boss's armor can absorb every unarmed hit from this fixture.
+    super::arena_match_fixtures::fixture::equip_sword(h).await?;
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
         .ok_or("creature policies")?;
     let scheduled = farmine_world_spawn()?;
+    let spawn_key = scheduled.key.clone();
     {
         let mut runtime = owner.runtime.lock().await;
         native.install_companion_policies(&mut runtime).map_err(debug)?;
         runtime.configure_boss_spawns(vec![scheduled]).map_err(debug)?;
     }
+    crate::durability::DurabilityRoot::with_background_holder(
+        owner.boss_spawn_pass(&mut std::collections::BTreeMap::new()),
+    ).await.map_err(debug)?;
+    // Advance the scheduled 90-second wait in the fixture database. The
+    // background owner still claims the due clock and realizes the creature.
+    let expired = sqlx::query(
+        "UPDATE game_boss_spawn_clocks SET due_at=0
+         WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
+           AND spawn_key=$3 AND cycle=0 AND state=1 AND due_at IS NOT NULL",
+    )
+    .bind(a.world_id.as_bytes().as_slice())
+    .bind(a.channel_id.as_bytes().as_slice())
+    .bind(spawn_key)
+    .execute(&h.pool)
+    .await?;
+    assert_eq!(expired.rows_affected(), 1, "initial mine leader clock");
     crate::durability::DurabilityRoot::with_background_holder(
         owner.boss_spawn_pass(&mut std::collections::BTreeMap::new()),
     ).await.map_err(debug)?;
@@ -724,9 +744,9 @@ async fn defeat_mine_leader(
             .refresh_source_party_presence(player, a.game_session_id)
             .await
     );
-    owner.refresh_attack_weapon(player, a.game_session_id).await;
     for _ in 0..64 {
         owner.clock_origin -= std::time::Duration::from_secs(2);
+        owner.refresh_attack_weapon(player, a.game_session_id).await;
         owner.drain_auto_attacks().await;
         if owner
             .runtime
@@ -751,7 +771,7 @@ async fn move_potion(
     use crate::gameplay_transport::item_view::ItemKey;
     let (potion, bag): (Vec<u8>, Vec<u8>) = sqlx::query_as(
         "SELECT uuid_send(child.item_instance_id), uuid_send(parent.item_instance_id) \
-         FROM game_item_container_entries e JOIN game_item_instances child USING(item_instance_id) \
+         FROM game_item_nested_entries e JOIN game_item_instances child USING(item_instance_id) \
          JOIN game_item_instances parent ON parent.item_instance_id=e.parent_item_instance_id \
          WHERE child.definition_production_key='oteryn:item.tibia.i7439' \
            AND parent.definition_production_key='oteryn:item.tibia.i2854' AND child.lifecycle=1",
@@ -760,7 +780,7 @@ async fn move_potion(
     .await?;
     let children = || {
         sqlx::query_scalar::<_, i64>(
-        "SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
+        "SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
         .bind(&bag).fetch_one(&h.pool)
     };
     assert_eq!(

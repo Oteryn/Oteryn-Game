@@ -37,10 +37,12 @@ pub(super) async fn apply(
         "SELECT EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=ANY($1::uuid[])
          UNION ALL SELECT 1 FROM game_item_timed_states WHERE item_instance_id=ANY($1::uuid[])
          UNION ALL SELECT 1 FROM game_item_texts WHERE item_instance_id=ANY($1::uuid[])
+           AND NOT game_quest_botany_almanach_handover($2,item_instance_id,$3)
          UNION ALL SELECT 1 FROM game_item_imbuements WHERE item_instance_id=ANY($1::uuid[])
          UNION ALL SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=ANY($1::uuid[])
          UNION ALL SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=ANY($1::uuid[]))",
-    ).bind(&ids).fetch_one(&mut **tx).await?;
+    ).bind(&ids).bind(Uuid::from_bytes(*fence.character_id.as_bytes()))
+        .bind(&request.transition_key).fetch_one(&mut **tx).await?;
     if special {
         return Ok(false);
     }

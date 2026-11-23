@@ -86,10 +86,10 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
-        // #3319 adds one Arbaziloth callback and nine Rottin Wood callbacks.
+        // The journey bindings add 65 authored callbacks to the previous 31.
         assert_eq!(base.len(), 1_012);
-        assert_eq!(bindings.world_callbacks().count(), 31);
-        assert_eq!(callbacks.len(), 1_043);
+        assert_eq!(bindings.world_callbacks().count(), 96);
+        assert_eq!(callbacks.len(), 1_108);
         assert!(callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS);
         let expected: BTreeSet<_> = base
             .iter()

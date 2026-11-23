@@ -14,6 +14,7 @@ const QUESTS: &str = include_str!(
 const TEXTS: &str = include_str!(
     "../../../../../../tools/content-schema/quest-authoring/samples/source_texts/source_texts.json"
 );
+const BLIND_THE_ENEMY: &str = "oteryn:quest.to_blind_the_enemy_quest";
 
 /// CP 2026-10-22: content without an admitted track/ordered binding is excluded.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -88,6 +89,13 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
             .map(|(_, key)| key)
             .ok_or("foreign journal quest")?;
         let key = format!("oteryn:quest.{source}");
+        // The captured reward-only entry predates the authored Eroth journey.
+        if key == BLIND_THE_ENEMY
+            && let Some(journal) = blind_the_enemy_journal(lowered)
+        {
+            entries.push(journal);
+            continue;
+        }
         let kind = match quest.kind.as_str() {
             "storyline" => QuestLogKind::Storyline,
             "reward_only" => QuestLogKind::RewardOnly,
@@ -111,6 +119,11 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
         };
         if lowered.catalogue().definition_hash(&key).is_none()
             || (quest.start.is_some() && start.is_none())
+            || (key == "oteryn:quest.thais_lighthouse_quest"
+                && kind == QuestLogKind::ScriptOnly
+                && !quest.shown_in_quest_log
+                && start.is_none()
+                && quest.missions.is_empty())
         {
             exclusions.push(QuestLogExclusion {
                 quest: key,
@@ -164,10 +177,6 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
     entries.push(super::super::monk_shrines::journal());
     entries.retain(|entry| entry.key != super::super::kill_objectives::QUEST);
     entries.push(super::super::kill_objectives::journal());
-    if let Some(journal) = blind_the_enemy_journal(lowered) {
-        entries.retain(|entry| entry.key != journal.key);
-        entries.push(journal);
-    }
     super::super::world_change_journals::append_journals(&mut entries)?;
     let catalogue = QuestLogCatalogue::new(lowered.catalogue(), entries)
         .map_err(|e| format!("journal catalogue: {e:?}"))?;
@@ -179,11 +188,16 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
 
 fn blind_the_enemy_journal(lowered: &LoweredQuestState) -> Option<QuestLogQuest> {
     use super::{JournalText, QuestJournal};
-    let key = "oteryn:quest.to_blind_the_enemy_quest";
     let mission = "oteryn:quest-progress/to-blind-the-enemy/mission";
-    lowered.catalogue().track(mission)?;
+    let track = lowered.catalogue().track(mission)?;
+    if track.quest != BLIND_THE_ENEMY
+        || !(track.min..=track.max).contains(&1)
+        || !(track.min..=track.max).contains(&4)
+    {
+        return None;
+    }
     Some(QuestLogQuest {
-        key: key.into(),
+        key: BLIND_THE_ENEMY.into(),
         title: "To Blind the Enemy Quest".into(),
         kind: QuestLogKind::Storyline,
         shown_in_quest_log: true,
