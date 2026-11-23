@@ -19,6 +19,8 @@ pub(in crate::qualification) use mp::legacy_d150;
 
 include!("character_core.rs");
 include!("character_release.rs");
+#[path = "character_prep.rs"]
+mod character_prep;
 include!("e2e_row_batch.rs");
 include!("floor_journey.rs");
 include!("full_e2ef7_mount.rs");

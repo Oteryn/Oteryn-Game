@@ -2,7 +2,8 @@
 //!
 //! Concrete player scenario derived from the C05 audit/matrix row and its chat,
 //! parameter-cast, Exiva-preference, and PostgreSQL owner tests:
-//! 1. Admit two ordinary node-boot characters and obtain the target's served name.
+//! 1. Prepare the dedicated caster at level 8, then admit it and the ordinary target.
+//!    Obtain the target's served name.
 //! 2. As the target, send the player Exiva-settings command to allow all locates;
 //!    assert the accepted result frame and persisted settings-list delta/reply.
 //! 3. As the caster, say `exiva "<target>"`; assert an accepted chat result, the
@@ -16,6 +17,11 @@ use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::exiva;
+
+const PREPARATION: character_prep::Seeded = character_prep::Seeded {
+    profile: "c05-exiva",
+    reason: "Exiva privacy and persistence require an eligible caster before the first cast",
+};
 
 const ACTIONS: &[&str] = &["allow", "locate", "deny", "refusal", "fresh-admission"];
 
@@ -82,9 +88,21 @@ async fn cast(client: &mut DevClientSession, target: &str) -> TestResult<(oteryn
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut caster = connect_character(clients, 0xc5, 0)
-        .await
-        .map_err(|error| admission_error("caster-admission", error))?;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_EXIVA_ACCOUNT_ID").await?;
+    let caster_clients = identity.clients(clients);
+    let mut caster = PREPARATION.connect(&caster_clients, 0xc5, 0).await
+        .map_err(|error| admission_error("caster-preparation", error))?;
+    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        8,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    ).ok_or("caster preparation has no source vitals")?;
+    if !caster.actor_vitals().is_some_and(|vitals| {
+        vitals.max_health == max_health && vitals.max_mana == max_mana && vitals.mana >= 20
+    }) {
+        return Err(format!("caster preparation did not load level-8 sorcerer vitals: {:?}", caster.actor_vitals()).into());
+    }
     let mut target = connect_character(clients, 0xc6, 1)
         .await
         .map_err(|error| admission_error("target-admission", error))?;
@@ -152,7 +170,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 fn locate_eligibility(entries: &[oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry]) -> Option<String> {
     match entries.iter().find(|entry| entry.words.eq_ignore_ascii_case("exiva")) {
         Some(entry) if entry.available => None,
-        Some(entry) => Some(format!("step=locate-eligibility observed=exiva-unavailable required-level={} learned={} need=player-earned-exiva-eligibility", entry.level, entry.learned)),
+        Some(entry) => Some(format!("step=locate-eligibility observed=exiva-unavailable required-level={} learned={} need=prepared-exiva-eligibility", entry.level, entry.learned)),
         None => Some("step=locate-eligibility observed=exiva-absent-from-vocation-catalogue need=served-exiva-for-admitted-vocation".into()),
     }
 }

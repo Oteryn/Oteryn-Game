@@ -10,11 +10,11 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
     let session = parse_operation_id(session.as_bytes())?;
-    matches!(
+    (matches!(
         profile,
         "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
-    )
-    .then_some((session, profile))
+    ) || (cfg!(any(test, feature = "qualification-spawn")) && profile == "c05-exiva"))
+        .then_some((session, profile))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -681,6 +681,7 @@ async fn prepare_build(
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
     let (vocation, level) = match profile {
+        "c05-exiva" => ("sorcerer", 8),
         "knight-underlevel" => ("knight", 66),
         "explorer" => ("knight", 100),
         _ => (profile, 100),
@@ -706,6 +707,9 @@ async fn prepare_build(
         deadline,
     )
     .await?;
+    if profile == "c05-exiva" {
+        return Ok(());
+    }
     prepare_items(root, authority, proof, &current, native, deadline).await
 }
 
@@ -1455,7 +1459,12 @@ mod tests {
 
     #[test]
     fn fixture_disabled_has_a_classified_warning() {
-        let refused = prepare_request(false, Some(()), b"untrusted request").err();
+        let refused = prepare_request(
+            false,
+            Some(()),
+            b"qualify 01890f4c-3b2a-7c01-8d11-9a321b7c0004 c05-exiva",
+        )
+        .err();
         assert_eq!(refused, Some(EarlyRefusal::FixtureDisabled));
         assert_early_warning(EarlyRefusal::FixtureDisabled, "fixture_disabled");
     }
@@ -1495,9 +1504,15 @@ mod tests {
                             .join(format!("qualification-{}.sock", uuid_text(&session)));
                         let result = tokio::time::timeout(Duration::from_secs(10), async {
                             let listener = UnixListener::bind(&path)?;
-                            for profile in
-                                ["knight", "druid", "paladin", "sorcerer", "explorer", "monk"]
-                            {
+                            for profile in [
+                                "knight",
+                                "druid",
+                                "paladin",
+                                "sorcerer",
+                                "explorer",
+                                "monk",
+                                "c05-exiva",
+                            ] {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
                                 let socket = path.clone();
@@ -1683,7 +1698,15 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
-        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk"] {
+        for profile in [
+            "explorer",
+            "knight",
+            "paladin",
+            "sorcerer",
+            "druid",
+            "monk",
+            "c05-exiva",
+        ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [
