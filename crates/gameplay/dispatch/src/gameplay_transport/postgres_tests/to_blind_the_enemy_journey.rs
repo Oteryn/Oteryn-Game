@@ -23,7 +23,7 @@ use oteryn_protocol_oteryn::quest_log::{self, QuestLogQuery, QuestLogView};
 use oteryn_protocol_oteryn::world_object::{
     self, MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
-use oteryn_protocol_oteryn::world_spatial::StepDirection;
+use oteryn_protocol_oteryn::world_spatial::{CAPABILITY_DIAGONAL_MOVEMENT_V1, StepDirection};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::collections::{BTreeMap, VecDeque};
 use std::sync::Arc;
@@ -263,7 +263,7 @@ async fn scenario(admin: String) -> TestResult {
         owner.offered_capabilities(),
         owner.appearance_available(),
     );
-    let mut pending = vec![3, 11, 13, 15, 16];
+    let mut pending = vec![3, 11, 13, 15, 16, CAPABILITY_DIAGONAL_MOVEMENT_V1];
     let mut selected = std::collections::BTreeSet::new();
     while let Some(id) = pending.pop() {
         if selected.insert(id)
@@ -458,7 +458,9 @@ async fn journey(
         tool_use(owner, member, TOOLS[1], target(owner, FORTRESS_HOLE, 0)?).await?,
         UseDisposition::Committed
     );
-    super::desert_earned_route_fixtures::step(owner, member, StepDirection::North).await?;
+    super::questpc8_authored_programmes_fixtures::step(
+        owner, member, member.continuity.next_command_id, StepDirection::North,
+    ).await?;
 
     walk(owner, member, at(32593, 31644, 5)).await?;
     assert_eq!(
@@ -782,7 +784,9 @@ async fn walk(
     }
     drop(runtime);
     for direction in path.into_iter().rev() {
-        super::desert_earned_route_fixtures::step(owner, member, direction).await?;
+        super::questpc8_authored_programmes_fixtures::step(
+            owner, member, member.continuity.next_command_id, direction,
+        ).await?;
     }
     Ok(())
 }

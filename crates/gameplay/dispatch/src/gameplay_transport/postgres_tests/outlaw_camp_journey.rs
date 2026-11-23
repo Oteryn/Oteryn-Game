@@ -433,7 +433,8 @@ async fn step(
     admitted: &mut AdmittedSession,
     direction: StepDirection,
 ) -> TestResult {
-    super::desert_earned_route_fixtures::step(owner, admitted, direction).await
+    let command = admitted.continuity.next_command_id;
+    super::questpc8_authored_programmes_fixtures::step(owner, admitted, command, direction).await
 }
 
 fn target(owner: &ComposedFreshAdmission<'_, '_, '_>, key: u64) -> TestResult<WorldObjectTarget> {

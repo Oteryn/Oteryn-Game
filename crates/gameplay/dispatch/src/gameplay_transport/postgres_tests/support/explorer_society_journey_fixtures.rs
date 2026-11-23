@@ -365,7 +365,7 @@ async fn move_ice(
             ItemMoveDestination::Ground(WorldTilePosition {
                 x: at.x,
                 y: at.y,
-                floor: -at.floor,
+                floor: at.floor,
             }),
         )
     };

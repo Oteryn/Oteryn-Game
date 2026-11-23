@@ -12,7 +12,8 @@ use oteryn_protocol_oteryn::world_object::{
 };
 
 use oteryn_protocol_oteryn::world_spatial::{
-    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+    CAPABILITY_DIAGONAL_MOVEMENT_V1, CAPABILITY_PACED_MOVEMENT_V1,
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result_profile,
     encode_step_intent,
 };
 
@@ -167,8 +168,15 @@ pub(super) async fn step(
         encode_step_intent(direction),
     )
     .await?;
+    let capabilities = admitted.continuity.selected_capabilities;
+    let decoded = decode_step_result_profile(
+        &result,
+        capabilities.contains(CAPABILITY_PACED_MOVEMENT_V1),
+        capabilities.contains(CAPABILITY_DIAGONAL_MOVEMENT_V1),
+    )
+    .map_err(debug)?;
     assert_eq!(
-        decode_step_result(&result).map_err(debug)?,
+        decoded.disposition,
         StepDisposition::Moved,
         "command={command} direction={direction:?} position={:?}",
         owner

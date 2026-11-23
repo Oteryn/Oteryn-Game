@@ -671,14 +671,21 @@ async fn defeat_mine_leader(
         .and_then(|g| g.native_gameplay())
         .ok_or("creature policies")?;
     let scheduled = farmine_world_spawn()?;
+    let spawn_key = scheduled.key.clone();
     {
         let mut runtime = owner.runtime.lock().await;
         native.install_companion_policies(&mut runtime).map_err(debug)?;
         runtime.configure_boss_spawns(vec![scheduled]).map_err(debug)?;
     }
-    crate::durability::DurabilityRoot::with_background_holder(
-        owner.boss_spawn_pass(&mut std::collections::BTreeMap::new()),
-    ).await.map_err(debug)?;
+    let mut timers = std::collections::BTreeMap::new();
+    crate::durability::DurabilityRoot::with_background_holder(owner.boss_spawn_pass(&mut timers))
+        .await
+        .map_err(debug)?;
+    let due = timers.get(&spawn_key).copied().flatten().ok_or("mine leader spawn timer")?;
+    tokio::time::sleep_until(due).await;
+    crate::durability::DurabilityRoot::with_background_holder(owner.boss_spawn_pass(&mut timers))
+        .await
+        .map_err(debug)?;
     let (actor, target) = {
         let mut runtime = owner.runtime.lock().await;
         let actor = runtime
