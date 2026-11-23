@@ -253,6 +253,7 @@ SIDE_IDS |= {
 # Bushwhacking scenery is Ground-only; the wave owner schedules removal.
 MERCHANT_SCENERY = {12187, 12189}
 STATIC_IDS = MERCHANT_SCENERY | {
+    7845,  # Crystal Brotherhood lever 3047 creates immovable lava.
     8995,
     8996,
     9527,

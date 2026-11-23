@@ -247,21 +247,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
-            use crate::map::facts::QuestCallbackProjection;
-            projection = Some(match projection {
-                Some(QuestCallbackProjection::ItemPresence { position, entry }) => {
-                    QuestCallbackProjection::TimedLeverWithItemPresence {
-                        position,
-                        entry,
-                        due,
-                        restore: before,
-                    }
-                }
-                _ => QuestCallbackProjection::TimedTransform {
+            if let Some(crate::map::facts::QuestCallbackProjection::Scene {
+                source_reset, ..
+            }) = projection.as_mut()
+            {
+                *source_reset = Some((due, before));
+            } else {
+                projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
                     due,
                     restore: before,
-                },
-            });
+                });
+            }
         }
         if super::amphoras::is_strike(callback) {
             projection = match super::amphoras::prepare(
@@ -544,7 +540,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => Some(key),
             },
             Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { .. }) => Some(key),
-            Some(crate::map::facts::QuestCallbackProjection::TimedLeverWithItemPresence {
+            Some(crate::map::facts::QuestCallbackProjection::Scene {
+                source_reset: Some(_),
                 ..
             }) => Some(key),
             _ if super::amphoras::is_strike(callback) => Some(key),
@@ -789,8 +786,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 } else if callback.effects.place_item.is_some()
                     || callback.effects.loot_merchant
                     || matches!(
-                        projection,
-                        Some(crate::map::facts::QuestCallbackProjection::TimedLeverWithItemPresence { .. })
+                        &projection,
+                        Some(crate::map::facts::QuestCallbackProjection::Scene {
+                            source_reset: Some(_),
+                            ..
+                        })
                     )
                 {
                     8
@@ -1498,14 +1498,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         due,
                         ..
                     })
-                    | Some(
-                        crate::map::facts::QuestCallbackProjection::TimedLeverWithItemPresence {
-                            due,
-                            ..
-                        },
-                    )
                     | Some(crate::map::facts::QuestCallbackProjection::TimedAmphoras {
                         due, ..
+                    })
+                    | Some(crate::map::facts::QuestCallbackProjection::Scene {
+                        source_reset: Some((due, _)),
+                        ..
                     })
                     | Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
                         reset: Some((due, _)),

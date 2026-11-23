@@ -30,12 +30,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .facts
                 .movement_item_facts(presence.appearance)
                 .ok_or(UseDisposition::Rejected)?;
-            // The retained appearance facts mark Dreamers Challenge lava immovable
-            // and walkable, like the existing source ladder projections.
+            // Initially admit known walkable ladders; projections cannot mint portable value
+            // or introduce collision without an owning collision catalogue.
             if map.facts.house_tile(pos)
                 || facts.pickupable
-                || !(crate::map::floor::is_ladder_appearance(facts.appearance_id)
-                    || (presence.appearance == 7845 && callback.effects.reset_after_ms.is_some()))
+                || !crate::map::floor::is_ladder_appearance(facts.appearance_id)
                 || map.overlay.base().tile(pos.x, pos.y, pos.floor).is_none()
             {
                 return Err(UseDisposition::Rejected);

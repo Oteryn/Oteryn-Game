@@ -1378,6 +1378,37 @@ mod read_only_pin_tests {
     }
 
     #[test]
+    fn dreamer_callback_admits_a_saved_merge_base_definition() -> Result<(), String> {
+        let quest = "oteryn:quest.dreamer_s_challenge_quest";
+        let loaded =
+            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-current")
+                .map_err(|error| format!("{error:?}"))?;
+        let mut saved = super::super::quest_state::QuestStateRecord {
+            pinned_content_revision: "content-previous".into(),
+            // Captured by the production loader at d48146720.
+            definition_hash: [
+                150, 187, 115, 173, 106, 90, 14, 49, 151, 7, 72, 74, 242, 100, 217, 214, 172, 72,
+                179, 215, 181, 171, 221, 118, 126, 124, 218, 225, 21, 220, 141, 140,
+            ],
+            completed: false,
+        };
+        assert_ne!(
+            loaded.catalogue().definition_hash(quest),
+            Some(saved.definition_hash)
+        );
+        assert!(
+            read_only_pin_allows(&saved, loaded.catalogue(), quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        saved.definition_hash[0] ^= 1;
+        assert!(
+            !read_only_pin_allows(&saved, loaded.catalogue(), quest)
+                .map_err(|error| format!("{error:?}"))?
+        );
+        Ok(())
+    }
+
+    #[test]
     fn read_only_callback_accepts_registered_main_era_save() -> Result<(), String> {
         let quest = "oteryn:quest.grave_danger_quest";
         let loaded =

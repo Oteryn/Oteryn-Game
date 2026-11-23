@@ -938,7 +938,9 @@ pub fn activated_loop_monster_missing_child(
 
 #[cfg(test)]
 #[test]
-fn knightwatch_diamond_lever_has_a_nonportable_map_definition() -> Result<(), String> {
+fn knightwatch_diamond_lever_creates_crystal_ground_item() -> Result<(), String> {
+    use crate::content::native_gameplay::NativeItemDestination;
+
     let levers: serde_json::Value = serde_json::from_str(include_str!(
         "../../../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"
     ))
@@ -947,11 +949,21 @@ fn knightwatch_diamond_lever_has_a_nonportable_map_definition() -> Result<(), St
         .as_array()
         .and_then(|rows| rows.iter().find(|row| row["selector"]["unique"] == 3047))
         .ok_or("Dread Lord lever")?;
-    assert!(lever.get("item_reward").is_none());
-    let id = lever["effects"]["item_presence"]["appearance"]
-        .as_u64()
-        .ok_or("lava appearance")?;
-    let key = format!("oteryn:item.tibia.i{id}");
+    assert!(lever["item_reward"].is_null());
+    let [offering] = lever["offerings"].as_array().ok_or("offerings")?.as_slice() else {
+        return Err("expected one offering".into());
+    };
+    assert_eq!(offering["item"], "oteryn:item.tibia.i3028");
+    assert_eq!(offering["count"], 1);
+    let [created] = lever["effects"]["scene"]["open"]
+        .as_array()
+        .ok_or("scene")?
+        .as_slice()
+    else {
+        return Err("expected one ground item".into());
+    };
+    assert_eq!(created["position"], offering["position"]);
+    assert_eq!(created["create"], 7845);
 
     let world = test_source(1)
         .map_err(|error| format!("source world: {error:?}"))?
@@ -962,13 +974,14 @@ fn knightwatch_diamond_lever_has_a_nonportable_map_definition() -> Result<(), St
         .active()
         .and_then(|generation| generation.native_gameplay())
         .ok_or("active native gameplay")?;
-    let index = native.item_index().ok_or("active Item index")?;
-    let revision = index.revision(&key).ok_or("lava revision")?;
-    assert!(index.definition_ref("Item", &key, revision).is_some());
-    assert!(
-        native
-            .item_policy(&key, revision)
-            .is_none_or(|policy| { !policy.record().admission.materializable })
+    let record = native
+        .item_policy_for_source_id(7845)
+        .ok_or("missing policy for Crystal lever ground item")?
+        .record();
+    assert!(record.admission.materializable);
+    assert_eq!(
+        record.admission.legal_destinations,
+        [NativeItemDestination::Ground]
     );
     Ok(())
 }

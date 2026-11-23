@@ -18,14 +18,13 @@ fn dread_lord_lever_projects_lava_on_the_offering_tile() -> Result<(), String> {
         lever.item_reward().is_none(),
         "the lever does not mint an inventory reward"
     );
-    assert_eq!(
-        lever
-            .effects
-            .item_presence
-            .as_ref()
-            .map(|presence| (presence.position, presence.appearance)),
-        Some((offering.position, 7845))
-    );
+    let scene = lever.effects.scene.as_ref().ok_or("lava scene")?;
+    let [created] = scene.open.as_slice() else {
+        return Err("expected one ground item".into());
+    };
+    assert_eq!(created.position, offering.position);
+    assert_eq!(created.create, Some(7845));
+    assert_eq!(created.passable, Some(true));
     assert_eq!(lever.effects.reset_after_ms, Some(4_000));
     assert!(loaded.catalogue().transition(&lever.key).is_some());
     Ok(())

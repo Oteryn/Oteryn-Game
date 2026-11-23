@@ -44,11 +44,6 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
     ),
     (
-        "oteryn:quest.grimvale_quest",
-        hash(b"0e190e8ec58f1d4b5600a3743a45fe185371815e9fc20c0b1971316e986fc2fc"),
-        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
-    ),
-    (
         "oteryn:quest.heart_of_destruction_quest",
         hash(b"d562a2963056485a18d5066552f7ece897ef7642bc2d4c703baebea8cfd45c88"),
         hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
@@ -68,6 +63,66 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
+    // Active save pins captured with the production loader at d48146720 (the merge base).
+    (
+        "oteryn:quest.authored.hive_born_world_change",
+        hash(b"8a8b041a8ac06324c70f4f7b197253ce64d3c8b6bbd46a0daaf4af9083ae480e"),
+        &[hash(
+            b"9db34a9d74b69bc46f47b39bfe3665cb009826d55cc02df1c5f9fee078fd12b6",
+        )],
+    ),
+    (
+        "oteryn:quest.dreamer_s_challenge_quest",
+        hash(b"6419507bfce77447ba549c62db2375b230d24ccb5677828e4c6eb2ce058d232f"),
+        &[hash(
+            b"96bb73ad6a5a0e319707484af264d9d6ac48b3d7b5abdd767e7cdae115dc8d8c",
+        )],
+    ),
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        hash(b"904af0470d70e7f7de11c50d476be4eb899041a8b397a67a79e9c41f00d9036c"),
+        &[
+            hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
+            hash(b"e86e12f668231e6ff93181caf6bd34a4dde5b7d53b9bacff6bc4a44bd12fb464"),
+        ],
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        hash(b"c3f10d04b28f58a30f98fa7df4082712661ed21f638e12318e9f1d323e386650"),
+        &[
+            hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+            hash(b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a"),
+        ],
+    ),
+    (
+        "oteryn:quest.grimvale_quest",
+        hash(b"0e190e8ec58f1d4b5600a3743a45fe185371815e9fc20c0b1971316e986fc2fc"),
+        &[
+            hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
+            hash(b"4fb22937877e3de361938b3dc7358b9bb98f799341987579ec56e4f54063a819"),
+        ],
+    ),
+    (
+        "oteryn:quest.nightmare_outfits_quest",
+        hash(b"dc94a505cae469502aacecb2886cf794f483a0a5082583c9c9fdf505f592bca2"),
+        &[hash(
+            b"34b34208aeb0321bb2a60bb20de7521a3485153d0338c1e8b71269c22e836d9d",
+        )],
+    ),
+    (
+        "oteryn:quest.the_ape_city_quest",
+        hash(b"11bdc83b25d2857d49be51cceb845bca1b00d14ec6e4e140e846c42cb0fb17d0"),
+        &[hash(
+            b"18884601e04fc41671d5b24abc67f63cc0cf234813bc1f967ab24297871d1e05",
+        )],
+    ),
+    (
+        "oteryn:quest.the_beginning_quest",
+        hash(b"e7262552558e41f8213c5f4a8dd38f9b976f772606b06df3ba258b3fd545e0ec"),
+        &[hash(
+            b"2b72c6adf88ff455b53f305bc0f8f35912a8de6fd520222a26bfc0e574e93852",
+        )],
+    ),
     // Active quest definitions captured from main at 3e09916423181c795c829eca5e5414dde3f29a3e.
     (
         "oteryn:quest.dream_warrior_outfits_quest",
@@ -104,22 +159,6 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
         &[hash(
             b"057ad49a3c234eed32bb2eec994e78225d67424ba67796d099844eaa3d454a8e",
         )],
-    ),
-    (
-        "oteryn:quest.ferumbras_ascension_quest",
-        hash(b"904af0470d70e7f7de11c50d476be4eb899041a8b397a67a79e9c41f00d9036c"),
-        &[
-            hash(b"e86e12f668231e6ff93181caf6bd34a4dde5b7d53b9bacff6bc4a44bd12fb464"),
-            hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
-        ],
-    ),
-    (
-        "oteryn:quest.forgotten_knowledge_quest",
-        hash(b"c3f10d04b28f58a30f98fa7df4082712661ed21f638e12318e9f1d323e386650"),
-        &[
-            hash(b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a"),
-            hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
-        ],
     ),
     (
         "oteryn:quest.steal_from_thieves_quest",
@@ -230,38 +269,6 @@ mod tests {
     }
 
     #[test]
-    fn ferumbras_ascension_keeps_the_merge_base_definition() -> Result<(), String> {
-        let loaded =
-            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
-        let catalogue = loaded.catalogue();
-        let quest = "oteryn:quest.ferumbras_ascension_quest";
-        // Active definition at package merge base d48146720.
-        let saved = hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f");
-        assert_ne!(catalogue.definition_hash(quest), Some(saved));
-        assert!(
-            npc_rules::legacy_defaults(catalogue, quest, &saved).is_some(),
-            "{quest} rejects the merge-base definition"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn forgotten_knowledge_keeps_the_merge_base_definition() -> Result<(), String> {
-        let loaded =
-            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
-        let catalogue = loaded.catalogue();
-        let quest = "oteryn:quest.forgotten_knowledge_quest";
-        // Active definition at package merge base d48146720.
-        let saved = hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce");
-        assert_ne!(catalogue.definition_hash(quest), Some(saved));
-        assert!(
-            npc_rules::legacy_defaults(catalogue, quest, &saved).is_some(),
-            "{quest} rejects the merge-base definition"
-        );
-        Ok(())
-    }
-
-    #[test]
     fn reviewed_package_keeps_exact_published_definition_pins() -> Result<(), String> {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
@@ -290,6 +297,109 @@ mod tests {
                 assert!(npc_rules::legacy_defaults(catalogue, quest, &foreign).is_none());
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn accepts_every_changed_active_merge_base_pin() -> Result<(), String> {
+        // Captured using load_embedded_quest_state at d4814672050acda4458f7d8129f351183df02b65.
+        let saved = [
+            (
+                "oteryn:quest.authored.hive_born_world_change",
+                hash(b"9db34a9d74b69bc46f47b39bfe3665cb009826d55cc02df1c5f9fee078fd12b6"),
+            ),
+            (
+                "oteryn:quest.brotherhood_outfits_quest",
+                hash(b"4269816e523e2daa58821cadf770d45b98da24e8d149800499f151904dee2905"),
+            ),
+            (
+                "oteryn:quest.deeper_fibula_quest",
+                hash(b"cf4bbe71022ae339892baec90149fb287837d1ae9736cc70f4b27fdd7cb22088"),
+            ),
+            (
+                "oteryn:quest.demon_helmet_quest",
+                hash(b"d8dc7ff3be9461581bca7600168cf4ee5de64d90e1ff622e52cabd7309a06028"),
+            ),
+            (
+                "oteryn:quest.demon_oak",
+                hash(b"057ad49a3c234eed32bb2eec994e78225d67424ba67796d099844eaa3d454a8e"),
+            ),
+            (
+                "oteryn:quest.dream_warrior_outfits_quest",
+                hash(b"549d02b6c708850ac156f8c1bda5211cae5ecf4b1cc4a12cf9e512278d4c191f"),
+            ),
+            (
+                "oteryn:quest.dreamer_s_challenge_quest",
+                hash(b"96bb73ad6a5a0e319707484af264d9d6ac48b3d7b5abdd767e7cdae115dc8d8c"),
+            ),
+            (
+                "oteryn:quest.ferumbras_ascension_quest",
+                hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
+            ),
+            (
+                "oteryn:quest.forgotten_knowledge_quest",
+                hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+            ),
+            (
+                "oteryn:quest.grimvale_quest",
+                hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
+            ),
+            (
+                "oteryn:quest.hot_cuisine_quest",
+                hash(b"d34cbfa3109adfc1d61e4ad871a88c097329b1510ed414d85dfbe8d590b5f4f2"),
+            ),
+            (
+                "oteryn:quest.hunting_for_tokens",
+                hash(b"f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3"),
+            ),
+            (
+                "oteryn:quest.hydra_egg_quest",
+                hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
+            ),
+            (
+                "oteryn:quest.nightmare_outfits_quest",
+                hash(b"34b34208aeb0321bb2a60bb20de7521a3485153d0338c1e8b71269c22e836d9d"),
+            ),
+            (
+                "oteryn:quest.outfit_and_addon_quests",
+                hash(b"ce65daca1c0a3c499c3f23fe60ae01aeb517e1aaea4689022c055971de786e6f"),
+            ),
+            (
+                "oteryn:quest.sam_s_old_backpack_quest",
+                hash(b"e618fcebed1f65d871a0228c3f508c8fa74abae80f6c162585dda4dcff2e0364"),
+            ),
+            (
+                "oteryn:quest.steal_from_thieves_quest",
+                hash(b"ba0a6aa9a34a16c8e56ae191d6af5fbe3ce07928fafbeb50fffeeaf97b4f2672"),
+            ),
+            (
+                "oteryn:quest.the_ape_city_quest",
+                hash(b"18884601e04fc41671d5b24abc67f63cc0cf234813bc1f967ab24297871d1e05"),
+            ),
+            (
+                "oteryn:quest.the_beginning_quest",
+                hash(b"2b72c6adf88ff455b53f305bc0f8f35912a8de6fd520222a26bfc0e574e93852"),
+            ),
+            (
+                "oteryn:quest.the_first_dragon_quest",
+                hash(b"2000974093d7ce811040df0d025f3e725f0a624e5bb6f8c8fdccbda8c1e3dd66"),
+            ),
+        ];
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let mut missing = Vec::new();
+        for (quest, pin) in saved {
+            if catalogue.definition_hash(quest) != Some(pin)
+                && npc_rules::legacy_defaults(catalogue, quest, &pin).is_none()
+            {
+                missing.push(quest);
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "unrecognized merge-base saves: {missing:?}"
+        );
         Ok(())
     }
 }

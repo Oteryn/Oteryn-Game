@@ -591,13 +591,19 @@
           },
           "effect": 11
         },
-        "item_presence": {
-          "position": {
-            "x": 32781,
-            "y": 32226,
-            "floor": -14
-          },
-          "appearance": 7845
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32781,
+                "y": 32226,
+                "floor": -14
+              },
+              "create": 7845,
+              "passable": true
+            }
+          ],
+          "close": []
         }
       }
     }

@@ -4,22 +4,34 @@ use super::*;
 mod questpc2_source_profile_cohort;
 
 #[test]
-fn dread_lord_lever_loads_a_nonportable_bundle_item() -> TestResult {
+fn dread_lord_lever_loads_its_active_ground_policy() -> TestResult {
+    use oteryn_gameplay_content::content::native_gameplay::NativeItemDestination;
     use oteryn_gameplay_quests::quest::{loader, world_callbacks};
 
     let quests = loader::load_embedded_quest_state("dread-lord-lever")
         .map_err(|error| format!("{error:?}"))?;
     let callbacks = world_callbacks::load_for(quests.catalogue())?;
-    let presence = callbacks
+    let scene = callbacks
         .iter()
         .find(|callback| callback.key == "oteryn:quest-callback/dreamer-dread-lord-scroll")
-        .and_then(|callback| callback.effects.item_presence.as_ref())
-        .ok_or("Dread Lord lever lava")?;
+        .and_then(|callback| callback.effects.scene.as_ref())
+        .ok_or("Dread Lord lever ground scene")?;
+    let [created] = scene.open.as_slice() else {
+        return Err("expected one ground item".into());
+    };
+    let id = u32::from(created.create.ok_or("Dread Lord lever ground appearance")?);
     let content = native(&input()?)?;
-    let key = format!("oteryn:item.tibia.i{}", presence.appearance);
-    let definition = crate::map::boot::native_item_definition(Some(&content), &key)
-        .ok_or("Dread Lord lever bundle Item")?;
-    assert!(!definition.pickupable);
+    let record = content
+        .item_policy_for_source_id(id)
+        .ok_or("Dread Lord lever ground Item policy")?
+        .record();
+    assert!(record.admission.materializable);
+    assert_eq!(
+        record.admission.legal_destinations,
+        [NativeItemDestination::Ground]
+    );
+    assert_eq!(record.attributes.blocks_movement, Some(false));
+    assert_eq!(record.attributes.blocks_projectile, Some(false));
     Ok(())
 }
 
@@ -418,7 +430,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // both pinned appearance banks; no original key is removed or relabeled.
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
-    // QENGINE2 captures 261 source-qualified Items (qengine_reward_item_profiles.IDS).
+    // QENGINE2 captures 262 source-qualified Items (qengine_reward_item_profiles.IDS).
     // Exact nonzero and unknown source speeds are checked below.
     ("QENGINE-REWARDS", 53),
     // W05d:48 canonical seasonal profiles;35 further keys are new after the
@@ -486,7 +498,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
     }
     // QENGINE2 identities: generated begin
-    assert_eq!(added_keys.len(), 261);
+    assert_eq!(added_keys.len(), 262);
     assert_eq!(
         added_keys,
         std::collections::BTreeSet::from([
@@ -743,6 +755,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i769",
             "oteryn:item.tibia.i770",
             "oteryn:item.tibia.i7785",
+            "oteryn:item.tibia.i7845",
             "oteryn:item.tibia.i8044",
             "oteryn:item.tibia.i875",
             "oteryn:item.tibia.i8995",
@@ -926,7 +939,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .sum::<usize>();
     assert_eq!(later_main_profiles, 2593);
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 208);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 209);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES
@@ -989,7 +1002,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 48),
-        ("qengine-reward-item-profiles.json", 261),
+        ("qengine-reward-item-profiles.json", 262),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))
