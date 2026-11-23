@@ -9,9 +9,17 @@ use bevy::{
 };
 use std::ffi::OsString;
 
-pub(super) fn plugins(smoke: bool) -> PluginGroupBuilder {
+pub(super) fn plugins(smoke: bool, engine: oteryn_renderer::GraphicsEngine) -> PluginGroupBuilder {
+    let mut settings = select(smoke, |name| std::env::var_os(name));
+    if !smoke && std::env::var_os("WGPU_BACKEND").is_none() {
+        settings.backends = match engine {
+            oteryn_renderer::GraphicsEngine::Vulkan => Some(Backends::VULKAN),
+            oteryn_renderer::GraphicsEngine::Direct3D12 if cfg!(windows) => Some(Backends::DX12),
+            oteryn_renderer::GraphicsEngine::Direct3D12 => settings.backends,
+        };
+    }
     DefaultPlugins.set(RenderPlugin {
-        render_creation: select(smoke, |name| std::env::var_os(name)).into(),
+        render_creation: settings.into(),
         ..Default::default()
     })
 }
@@ -31,6 +39,37 @@ fn select(smoke: bool, env: impl Fn(&str) -> Option<OsString>) -> WgpuSettings {
         }
     }
     settings
+}
+
+pub(super) fn apply_window(
+    preferences: &crate::play::ReferencePreferences,
+    window: &mut bevy::window::Window,
+) {
+    use bevy::window::{PresentMode, WindowMode};
+    let mode = if preferences.graphics.fullscreen {
+        WindowMode::BorderlessFullscreen(
+            preferences
+                .graphics
+                .monitor
+                .checked_sub(1)
+                .map_or(bevy::window::MonitorSelection::Current, |index| {
+                    bevy::window::MonitorSelection::Index(usize::from(index))
+                }),
+        )
+    } else {
+        WindowMode::Windowed
+    };
+    let present = if preferences.graphics.vsync {
+        PresentMode::AutoVsync
+    } else {
+        PresentMode::AutoNoVsync
+    };
+    if window.mode != mode {
+        window.mode = mode;
+    }
+    if window.present_mode != present {
+        window.present_mode = present;
+    }
 }
 
 #[cfg(test)]

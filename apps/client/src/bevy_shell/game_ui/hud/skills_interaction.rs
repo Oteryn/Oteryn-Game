@@ -9,12 +9,16 @@ use std::time::Duration;
 #[derive(Clone, Copy, Component)]
 enum Control {
     Skill(u8),
+    Group(usize),
+    Bar(u8),
     Progress,
     Reset,
     Defaults,
 }
 #[derive(Component)]
 struct Menu;
+#[derive(Component)]
+struct Group(usize);
 #[derive(Component)]
 struct Tooltip;
 type SkillRows = Or<(With<Slot>, With<Header>)>;
@@ -27,6 +31,7 @@ struct State {
     latest: Option<(u64, u32, u16)>,
     last_gain: Duration,
     refresh: Option<Duration>,
+    details_refresh: Option<Duration>,
     hover: Option<(Entity, Duration)>,
 }
 impl State {
@@ -100,6 +105,7 @@ pub(super) fn install(app: &mut App) {
         .init_resource::<UiScale>()
         .add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, (hover, project).chain().after(super::project))
+        .add_systems(Update, groups)
         .add_observer(activate)
         .add_observer(context_menu);
 }
@@ -144,6 +150,13 @@ fn setup(
             Control::Skill(family as u8),
             &format!("Toggle {name}"),
         );
+        control(
+            &mut commands,
+            &skins,
+            menu,
+            Control::Bar(family as u8),
+            &format!("Toggle {name} progress bar"),
+        );
     }
     for (action, name) in [
         (Control::Progress, "Show/hide all bars"),
@@ -153,6 +166,22 @@ fn setup(
         control(&mut commands, &skins, menu, action, name);
     }
     commands.entity(regions.skills).add_child(menu);
+    for (index, (_, name)) in crate::play::SKILLS_GROUPS.iter().enumerate() {
+        control(
+            &mut commands,
+            &skins,
+            menu,
+            Control::Group(index),
+            &format!("Toggle {name} stats"),
+        );
+        let row = commands
+            .spawn((
+                Group(index),
+                source::text("", source::font(skins.font.clone(), false)),
+            ))
+            .id();
+        commands.entity(regions.skills).add_child(row);
+    }
     commands
         .spawn((
             Name::new("Skills tooltip"),
@@ -199,6 +228,8 @@ fn activate(
                         prefs.skills_layout.order.push(*family);
                     }
                 }
+                Control::Group(index) => prefs.skills_layout.combat_groups ^= 1 << index,
+                Control::Bar(family) => prefs.skills_layout.hidden_bars ^= 1 << family,
                 Control::Progress => prefs.skills_layout.progress = !prefs.skills_layout.progress,
                 Control::Defaults => prefs.skills_layout = default(),
                 _ => {}
@@ -208,6 +239,37 @@ fn activate(
             if let Some(play) = play {
                 settings.sync_skills_layout(&play.link);
             }
+        }
+    }
+}
+fn groups(
+    owner: NonSend<HostOwner>,
+    time: Res<Time<Real>>,
+    mut rows: Query<(&Group, &mut Node, &mut Text)>,
+    mut last: Local<[Option<(u64, Duration)>; 3]>,
+) {
+    for (group, mut node, mut text) in &mut rows {
+        let enabled = owner.settings.preferences.skills_layout.combat_groups & (1 << group.0) != 0;
+        let Some(play) = owner.play.as_ref().filter(|_| enabled) else {
+            node.display = Display::None;
+            last[group.0] = None;
+            continue;
+        };
+        let now = time.elapsed();
+        let refresh = last[group.0].is_none_or(|(g, t)| {
+            g != owner.generation() || now.saturating_sub(t) >= Duration::from_secs(10)
+        });
+        if refresh {
+            last[group.0] = Some((owner.generation(), now));
+        }
+        let label = crate::play::SKILLS_GROUPS[group.0].1;
+        let value = play.link.skills_group(group.0, refresh).map_or_else(
+            || format!("{label}: unavailable"),
+            |rows| format!("{label}\n{rows}"),
+        );
+        node.display = Display::Flex;
+        if text.0 != value {
+            text.0 = value;
         }
     }
 }
@@ -296,6 +358,16 @@ fn project(
         return;
     };
     let slot = slots.get(entity).ok();
+    if slots.get(entity).is_err()
+        && state
+            .details_refresh
+            .is_none_or(|last| now.saturating_sub(last) >= Duration::from_secs(30))
+    {
+        play.link.potion_durations_request();
+        play.link.premium_overview_refresh();
+        play.link.refresh_skills_character();
+        state.details_refresh = Some(now);
+    }
     let widget = play.link.skills_widget();
     text.0 = if let Some(slot) = slot {
         let Some(row) = widget.rows.get(slot.0) else {
@@ -322,9 +394,12 @@ fn project(
         format!("{name}\n{progress}\n{counts}")
     } else {
         format!(
-            "{}\n{}",
+            "{}\n{}\n{}",
             widget.header.replace("\r\n", "\n"),
-            state.estimate(now)
+            state.estimate(now),
+            state.latest.map_or_else(String::new, |(_, level, _)| play
+                .link
+                .skills_xp_details(level))
         )
     };
     if now.saturating_sub(since)

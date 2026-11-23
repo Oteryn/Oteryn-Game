@@ -4,6 +4,48 @@ pub(in crate::play) mod catalogue;
 mod related;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
+    pub(in crate::play) fn sync_inspection_permission(
+        &self,
+        panel: &mut oteryn_client_ui::inspection::Panel,
+        allow: bool,
+    ) {
+        use oteryn_client_ui::inspection as wire;
+        if !panel.selected
+            || panel.pending
+            || (panel.allow_inspection == allow && panel.permission_retry_at.is_none())
+            || panel
+                .permission_retry_at
+                .is_some_and(|(previous, at)| previous == allow && at > std::time::Instant::now())
+        {
+            return;
+        }
+        let request = wire::Request::Permission {
+            action: if allow { 4 } else { 5 },
+            target: None,
+        };
+        let Ok(payload) = wire::encode_request(request) else {
+            return;
+        };
+        let command = oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
+            capability: wire::CAPABILITY_INSPECTION_V1,
+            command_type: wire::COMMAND_TYPE_INSPECTION,
+            payload,
+        };
+        if self
+            .commands
+            .send(crate::combat_input::PlayCommand::ServerMechanic(command))
+            .is_ok()
+        {
+            panel.permission_pending = Some(allow);
+            panel.pending = true;
+        } else {
+            panel.feedback = tr!("Session ended").into();
+            panel.permission_retry_at = Some((
+                allow,
+                std::time::Instant::now() + std::time::Duration::from_secs(5),
+            ));
+        }
+    }
     pub fn inspect(&self, request: oteryn_client_ui::inspection::Request) -> bool {
         let command = oteryn_client_ui::inspection::request(
             &mut lock(&self.mailbox).discovery.inspection,

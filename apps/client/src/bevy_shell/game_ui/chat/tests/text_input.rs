@@ -313,3 +313,24 @@ fn transcript_supports_read_only_selection_and_copy() -> TestResult {
 }
 
 include!("text_input_interaction.rs");
+
+#[test]
+fn link_copy_after_same_frame_selection_requests_confirmation() -> TestResult {
+    use bevy::{ecs::system::RunSystemOnce, text::TextEdit};
+    let (mut app, editor, _) = app()?;
+    app.world_mut()
+        .run_system_once(crate::bevy_shell::ui::setup)
+        .map_err(|e| format!("{e:?}"))?;
+    widgets::copy_link::install(&mut app);
+    let mut field = app
+        .world_mut()
+        .get_mut::<EditableText>(editor)
+        .ok_or("editor")?;
+    field.queue_edit(TextEdit::Insert(" https://example.org".into()));
+    field.queue_edit(TextEdit::SelectAll);
+    field.queue_edit(TextEdit::Copy);
+    app.update();
+    app.update();
+    assert!(app.world().resource::<ChatState>().menu.is_some());
+    Ok(())
+}
