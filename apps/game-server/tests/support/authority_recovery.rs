@@ -1,9 +1,7 @@
 //! Recovery owns database/process orchestration; authority_matrix remains the
 //! single independent source and invariant/operator registry.
 use super::authority_matrix::*;
-use super::durability::{
-    AdmissionReconnectJournal, AdmissionReconnectJournalV2, DurabilityError,
-};
+use super::durability::{AdmissionReconnectJournal, AdmissionReconnectJournalV2, DurabilityError};
 use super::{postgres, postgres_e2e_is_configured};
 use oteryn_game_server::foundation::*;
 use sqlx::{Connection, PgConnection};

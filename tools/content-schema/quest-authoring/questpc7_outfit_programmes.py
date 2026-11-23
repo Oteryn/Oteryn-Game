@@ -71,7 +71,10 @@ def append(root, callbacks, inputs, pin):
                    f'crystal:{pin}:{source}:1-{len(inputs[source].splitlines())}:sha256:{hashlib.sha256(inputs[source]).hexdigest()}']
         track = f'oteryn:quest-progress/questpc7/{slug}/programme'
 
-        def add(name, before, after, *, give=None, addon=None, owned=None, completes=False):
+        def add(
+            name, before, after, *, give=None, addon=None, owned=None, completes=False,
+            claim_requirement=claim_requirement,
+        ):
             req = dict(requirements)
             if owned is not None:
                 req['owned_cosmetics'] = [{'outfit': 'oteryn:outfit.' + outfit, 'addons': owned}]

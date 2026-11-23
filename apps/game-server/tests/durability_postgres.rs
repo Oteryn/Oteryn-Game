@@ -1713,7 +1713,8 @@ fn wp3_shared_root_deadline_retires_and_rearms_on_configured_postgres()
         .block_on(async {
             use durability::{DB_PASS_DEADLINE, DurabilityRoot};
 
-            let database = postgres::IsolatedPostgres::create_migrated("wp3_shared_root_deadline").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("wp3_shared_root_deadline").await?;
             let result = async {
                 let url = database.database_url()?;
                 let root = DurabilityRoot::connect_test_runtime(&url)?;
@@ -1758,7 +1759,8 @@ fn wp3_commit_outcome_unknown_retires_holder_and_preserves_success_path()
         .block_on(async {
             use durability::{DurabilityError, DurabilityRoot};
 
-            let database = postgres::IsolatedPostgres::create_migrated("wp3_commit_outcome_unknown").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("wp3_commit_outcome_unknown").await?;
             let result = async {
                 let url = database.database_url()?;
                 let root = DurabilityRoot::connect_test_runtime(&url)?;
@@ -2258,7 +2260,8 @@ fn same_prepare_replay_returns_the_existing_durable_disposition()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create_migrated("same_attempt_replay").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("same_attempt_replay").await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -2305,7 +2308,8 @@ fn same_prepare_replay_survives_process_replacement() -> Result<(), Box<dyn std:
                 return Ok(());
             }
 
-            let database = postgres::IsolatedPostgres::create_migrated("cross_process_replay").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("cross_process_replay").await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -2350,7 +2354,8 @@ fn transport_ref_collision_is_durable_and_same_attempt_replays_terminal()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create_migrated("transport_ref_collision").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("transport_ref_collision").await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -2392,7 +2397,8 @@ fn reconnect_account_incumbent_is_a_stale_denial_without_candidate_effects()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create_migrated("account_incumbent_denial").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("account_incumbent_denial").await?;
             let result = async {
                 let url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
@@ -2630,7 +2636,8 @@ fn same_attempt_with_changed_record_conflicts_without_consuming_the_new_ref()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create_migrated("idempotency_conflict").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("idempotency_conflict").await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -2995,7 +3002,8 @@ fn committed_prepare_replay_after_process_restart_routes_to_reconciliation()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create_migrated("committed_prepare_replay").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("committed_prepare_replay").await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -3077,9 +3085,10 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
         .enable_all()
         .build()?
         .block_on(async {
-            let database =
-                postgres::IsolatedPostgres::create_migrated("committed_replay_transport_reservation")
-                    .await?;
+            let database = postgres::IsolatedPostgres::create_migrated(
+                "committed_replay_transport_reservation",
+            )
+            .await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -3165,7 +3174,8 @@ fn fresh_commit_holds_the_transport_reservation_lock_through_commit()
         .build()?
         .block_on(async {
             let database =
-                postgres::IsolatedPostgres::create_migrated("fresh_commit_reservation_lock").await?;
+                postgres::IsolatedPostgres::create_migrated("fresh_commit_reservation_lock")
+                    .await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -3437,8 +3447,10 @@ fn protection_continuity_rejects_a_distinct_game_session_for_the_same_control_lo
         .enable_all()
         .build()?
         .block_on(async {
-            let database =
-                postgres::IsolatedPostgres::create_migrated("protection_continuity_session_binding").await?;
+            let database = postgres::IsolatedPostgres::create_migrated(
+                "protection_continuity_session_binding",
+            )
+            .await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -3504,8 +3516,10 @@ fn reconnect_sessions_reject_a_distinct_game_session_for_a_later_control_loss_ep
         .enable_all()
         .build()?
         .block_on(async {
-            let database =
-                postgres::IsolatedPostgres::create_migrated("reconnect_session_cross_epoch_binding").await?;
+            let database = postgres::IsolatedPostgres::create_migrated(
+                "reconnect_session_cross_epoch_binding",
+            )
+            .await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -3669,7 +3683,8 @@ fn expired_prepared_replay_retires_incumbent_and_allows_fresh_attempt()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create_migrated("expired_prepared_replay").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("expired_prepared_replay").await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -3943,7 +3958,8 @@ fn new_epoch_rejects_committed_winner_without_compatibility_evidence()
         .build()?
         .block_on(async {
             let database =
-                postgres::IsolatedPostgres::create_migrated("new_epoch_compatibility_evidence").await?;
+                postgres::IsolatedPostgres::create_migrated("new_epoch_compatibility_evidence")
+                    .await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -4607,7 +4623,8 @@ fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection
             ];
             for (index, corruption) in corruptions.into_iter().enumerate() {
                 let database =
-                    postgres::IsolatedPostgres::create_migrated(&format!("hist_prep_{index}")).await?;
+                    postgres::IsolatedPostgres::create_migrated(&format!("hist_prep_{index}"))
+                        .await?;
                 let result = async {
                     let database_url = database.database_url()?;
                     let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
@@ -4806,7 +4823,8 @@ fn committed_replay_fails_closed_when_session_state_is_inconsistent()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create_migrated("corrupt_commit_state").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("corrupt_commit_state").await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;

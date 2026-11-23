@@ -443,10 +443,7 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
         DrainOutcome::Drained
     );
     assert_eq!(rewards(h).await?, counts);
-    assert_eq!(
-        progress(h, id(41), objective).await?,
-        if primary_credit { earned } else { (0, -1) }
-    );
+    assert_eq!(progress(h, id(41), objective).await?, earned, "{creature}");
     assert_eq!(
         progress(h, id(101), objective).await?,
         if peer_credit { earned } else { (0, -1) }
