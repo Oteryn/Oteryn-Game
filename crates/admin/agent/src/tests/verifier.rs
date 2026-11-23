@@ -191,10 +191,22 @@ fn verifier_rejections_and_conformance_vectors() -> Result<(), WireError> {
     )?;
     let mut r = base.clone();
     r.target.world_id = Some("disabled".into());
+    let op = Operation::WorldGet;
+    r.operation = op.name().into();
+    r.actor.permission = op.permission().into();
+    let mut world_policy = p.clone();
+    world_policy.operations.insert(
+        r.operation.clone(),
+        crate::policy::OperationPolicy {
+            min_risk_class: op.minimum(),
+            allowed_permissions: [op.permission().into()].into(),
+            worlds: ["w-antica".into()].into(),
+        },
+    );
     add(
         "disabled-world",
         r,
-        p.clone(),
+        world_policy,
         Evidence::default(),
         E::AdmForbidden,
         true,

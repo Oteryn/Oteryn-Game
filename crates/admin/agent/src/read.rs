@@ -6,11 +6,91 @@ mod topology;
 use crate::{config::Config, policy::Policy};
 use oteryn_admin_contracts::{ErrorCode as E, *};
 use serde::de::DeserializeOwned;
-use sqlx::{PgPool, Postgres, Transaction, types::Json};
+use sqlx::{PgPool, Postgres, SqlSafeStr, Transaction, types::Json};
+use tokio::time::Instant;
 use uuid::Uuid;
 
-pub(crate) fn implemented(op: Operation) -> bool {
-    !matches!(op, Operation::AdminAgentList | Operation::AnalyticsCatalog)
+pub(crate) const IMPLEMENTED: &[Operation] = &[
+    Operation::AdminLedgerQuery,
+    Operation::AdminPolicyGet,
+    Operation::DbMigrationsList,
+    Operation::DbStatus,
+    Operation::NodeGet,
+    Operation::NodeList,
+    Operation::OpsOverviewGet,
+    Operation::PlayerCharacterGet,
+    Operation::PlayerInventoryGet,
+    Operation::PlayerSearch,
+    Operation::SanctionList,
+    Operation::WorldGet,
+    Operation::WorldList,
+];
+
+pub(crate) async fn preconditions(
+    op: Operation,
+    target: &Target,
+    pool: Option<&PgPool>,
+    deadline: Instant,
+) -> Result<Option<Transaction<'static, Postgres>>, E> {
+    if matches!(
+        op,
+        Operation::PlayerCharacterGet | Operation::PlayerInventoryGet
+    ) {
+        let mut tx = begin(pool.ok_or(E::AdmTargetUnavailable)?, deadline).await?;
+        players::check_offline_target(&mut tx, target).await?;
+        return Ok(Some(tx));
+    }
+    Ok(None)
+}
+
+pub(crate) async fn check_retained_sanctions(
+    request: &Request,
+    config: &Config,
+    policy: &Policy,
+    pool: Option<&PgPool>,
+    deadline: Instant,
+    response: &Response,
+) -> Result<(), E> {
+    if let Some(OperationResult::SanctionList(result)) = &response.result {
+        if result.sanctions.is_empty() {
+            return Ok(());
+        }
+        let worlds = scoped_worlds(Operation::SanctionList, &request.target, config, policy)?;
+        let worlds = world_ids(&worlds);
+        let mut tx = begin(pool.ok_or(E::AdmTargetUnavailable)?, deadline).await?;
+        players::check_sanction_visibility(&mut tx, &worlds, &result.sanctions).await?;
+        tx.commit().await.map_err(db_error)?;
+    }
+    Ok(())
+}
+
+fn scoped_worlds(
+    op: Operation,
+    target: &Target,
+    config: &Config,
+    policy: &Policy,
+) -> Result<Vec<String>, E> {
+    if op.is_global_read() {
+        return Ok(vec![]);
+    }
+    let rule = policy.operations.get(op.name()).ok_or(E::AdmForbidden)?;
+    let mut worlds: Vec<_> = config
+        .worlds
+        .iter()
+        .filter(|id| rule.worlds.contains(*id))
+        .filter(|id| target.world_id.as_ref().is_none_or(|world| world == *id))
+        .cloned()
+        .collect();
+    worlds.sort_unstable();
+    worlds.dedup();
+    Ok(worlds)
+}
+
+fn world_ids(worlds: &[String]) -> Vec<Uuid> {
+    worlds
+        .iter()
+        .filter_map(|id| Uuid::parse_str(id).ok())
+        .collect()
 }
 
 pub(crate) async fn execute(
@@ -19,49 +99,34 @@ pub(crate) async fn execute(
     config: &Config,
     policy: &Policy,
     pool: Option<&PgPool>,
+    snapshot: Option<Transaction<'static, Postgres>>,
+    deadline: Instant,
 ) -> Result<OperationResult, E> {
     use OperationResult as R;
+    check_deadline(deadline)?;
     if op == Operation::AdminPolicyGet {
         return Ok(R::AdminPolicyGet(policy.view()));
     }
-    if !implemented(op) {
-        return Err(E::AdmUnknownOperation);
-    }
     let params = &request.params;
     let target = &request.target;
-    let rule = policy.operations.get(op.name()).ok_or(E::AdmForbidden)?;
-    let mut worlds: Vec<_> = config
-        .worlds
-        .iter()
-        .filter(|id| rule.worlds.is_empty() || rule.worlds.contains(*id))
-        .filter(|id| target.world_id.as_ref().is_none_or(|world| world == *id))
-        .cloned()
-        .collect();
-    worlds.sort_unstable();
-    worlds.dedup();
-
-    if target.world_id.is_some() && worlds.is_empty() {
-        return Err(E::AdmTargetNotFound);
-    }
-    let world_ids: Vec<_> = worlds
-        .iter()
-        .filter_map(|id| Uuid::parse_str(id).ok())
-        .collect();
+    let worlds = scoped_worlds(op, target, config, policy)?;
+    let world_ids = world_ids(&worlds);
     let nodes: Vec<_> = config
         .nodes
         .iter()
+        .filter(|id| target.node_id.as_ref().is_none_or(|node| node == *id))
         .filter_map(|id| Uuid::parse_str(id).ok())
         .collect();
-    let global = target.world_id.is_none() && rule.worlds.is_empty();
 
     if op == Operation::OpsOverviewGet {
         return Ok(R::OpsOverviewGet(
-            topology::overview(pool, &worlds, &world_ids, &nodes, global).await?,
+            topology::overview(pool, &worlds, &world_ids, &nodes, deadline).await?,
         ));
     }
-    let mut tx = match pool {
-        Some(pool) => Some(begin(pool).await?),
-        None => None,
+    let mut tx = match (snapshot, pool) {
+        (Some(tx), _) => Some(tx),
+        (None, Some(pool)) => Some(begin(pool, deadline).await?),
+        (None, None) => None,
     };
     let conn = tx.as_deref_mut();
     let first_page = || Page {
@@ -77,25 +142,20 @@ pub(crate) async fn execute(
             R::WorldGet(page.worlds.into_iter().next().ok_or(E::AdmTargetNotFound)?)
         }
         Operation::NodeList => R::NodeList(match conn {
-            Some(conn) => {
-                topology::node_page(conn, &nodes, &world_ids, global, parse(params)?).await?
-            }
+            Some(conn) => topology::node_page(conn, &nodes, &world_ids, parse(params)?).await?,
             None => NodePage {
                 nodes: vec![],
                 next_cursor: None,
             },
         }),
         Operation::NodeGet => {
-            let id = required(&target.node_id)?;
-            if !config.nodes.iter().any(|node| node == id) {
+            if nodes.is_empty() {
                 return Err(E::AdmTargetNotFound);
             }
-            let node = Uuid::parse_str(id).map_err(|_| E::AdmTargetUnavailable)?;
             let page = topology::node_page(
                 conn.ok_or(E::AdmTargetUnavailable)?,
-                &[node],
+                &nodes,
                 &world_ids,
-                global,
                 first_page(),
             )
             .await?;
@@ -111,6 +171,7 @@ pub(crate) async fn execute(
             players::search(
                 conn.ok_or(E::AdmTargetUnavailable)?,
                 &world_ids,
+                target,
                 parse(params)?,
             )
             .await?,
@@ -127,7 +188,6 @@ pub(crate) async fn execute(
                 conn.ok_or(E::AdmTargetUnavailable)?,
                 target,
                 &world_ids,
-                global,
                 parse(params)?,
             )
             .await?,
@@ -137,7 +197,6 @@ pub(crate) async fn execute(
                 conn.ok_or(E::AdmTargetUnavailable)?,
                 target,
                 &worlds,
-                global,
                 parse(params)?,
             )
             .await?,
@@ -150,24 +209,43 @@ pub(crate) async fn execute(
     Ok(result)
 }
 
-async fn begin(pool: &PgPool) -> Result<Transaction<'static, Postgres>, E> {
-    let mut tx = pool
-        .begin_with("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY")
-        .await
-        .map_err(db_error)?;
-    sqlx::raw_sql(
-        "SET LOCAL statement_timeout = '5s';
-        SET LOCAL search_path = pg_catalog, public;
-        SET LOCAL TIME ZONE 'UTC'",
+pub(crate) fn check_deadline(deadline: Instant) -> Result<(), E> {
+    if Instant::now() >= deadline {
+        return Err(E::AdmExpired);
+    }
+    Ok(())
+}
+
+async fn begin(pool: &PgPool, deadline: Instant) -> Result<Transaction<'static, Postgres>, E> {
+    let connection = pool.acquire().await.map_err(db_error)?;
+    check_deadline(deadline)?;
+    let mut tx = Transaction::begin(
+        connection,
+        Some("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY".into_sql_str()),
     )
+    .await
+    .map_err(db_error)?;
+    check_deadline(deadline)?;
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    let transaction_timeout = format!("{}ms", remaining.as_millis() + 1);
+    sqlx::query(
+        "SELECT pg_catalog.set_config('transaction_timeout', $1, true),
+                pg_catalog.set_config('statement_timeout', '5s', true),
+                pg_catalog.set_config('search_path', 'pg_catalog, public', true),
+                pg_catalog.set_config('TimeZone', 'UTC', true)",
+    )
+    .bind(transaction_timeout)
     .execute(&mut *tx)
     .await
     .map_err(db_error)?;
+    check_deadline(deadline)?;
     Ok(tx)
 }
 
 fn db_error(error: sqlx::Error) -> E {
     match error {
+        // PostgreSQL's transaction_timeout can win the race with the local timer.
+        sqlx::Error::Database(error) if error.code().as_deref() == Some("25P04") => E::AdmExpired,
         sqlx::Error::ColumnDecode { .. } | sqlx::Error::Decode(_) => E::AdmInternal,
         _ => E::AdmTargetUnavailable,
     }
