@@ -63,6 +63,7 @@ pub(super) async fn exercise(
                 deadline_ms: None,
                 at_ms: 0,
                 pending: Some((request, 1)),
+                ..ItemClock::default()
             },
         );
     let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_state_writes")

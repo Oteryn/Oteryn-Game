@@ -597,6 +597,7 @@ impl PlayerSpellState {
     pub fn respawned(&self, now: SemanticTimeMicros) -> Option<Self> {
         let mut next = self.clone();
         crate::spell::actor_conditions::clear_on_lifecycle(&mut next);
+        next.skip_dead_wear_through(now.get() / 1_000);
         next.health = next.facts.max_health;
         next.mana = next.facts.max_mana;
         next.revision = next.revision.checked_add(1)?;

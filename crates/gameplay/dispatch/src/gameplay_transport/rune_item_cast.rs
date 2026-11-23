@@ -216,6 +216,7 @@ mod tests {
                 definition: source.definition.definition.clone(),
                 quantity: source.quantity_before,
                 state_revision: source.state_revision,
+                wear: None,
             }],
         }
     }

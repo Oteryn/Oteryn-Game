@@ -694,7 +694,7 @@ async fn move_equipment_inner(
         Ok(Ok(_receipt)) => {
             // Keep the lane permit across the checkpoint, fresh read and publication.
             if !admission
-                .checkpoint_timed_equipment(actor, session, true)
+                .checkpoint_timed_equipment(actor, session, false)
                 .await
                 || admission
                     .refresh_clock_equipment_effects(actor, session, fence, house)

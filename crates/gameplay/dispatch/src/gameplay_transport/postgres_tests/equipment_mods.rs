@@ -34,6 +34,7 @@ fn eqmod2_content_forge_tiers_and_modifiers_are_projected() -> TestResult {
                 item_instance_id: id(slot),
                 quantity: 1,
                 state_revision: 1,
+                wear: None,
                 definition: TypedDefinitionRef {
                     family: "Item".into(),
                     production_key: format!("oteryn:item.tibia.i{key}"),

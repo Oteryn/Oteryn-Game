@@ -421,7 +421,7 @@ async fn observe_once(
             && target_session != session
             && (admission.states.staff_world.invisible(*actor)
                 && admission.states.staff_world.group(observer) < 4
-                || player.equipped_invisible()
+                || player.equipped_invisible(now)
                 || spell.invisible_at(now)
                 || owned.invisible_at(now))
         {

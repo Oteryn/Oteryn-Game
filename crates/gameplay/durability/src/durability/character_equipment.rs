@@ -75,7 +75,7 @@ impl CombatMode {
         }
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq)]
 pub struct EquippedItem {
     /// Stored forge tier, read under the same item/root locks as equipment custody.
     pub tier: u8,
@@ -84,7 +84,32 @@ pub struct EquippedItem {
     pub definition: super::item_mint::TypedDefinitionRef,
     pub quantity: u32,
     pub state_revision: u64,
+    /// Timing bound to this exact committed slot, when read by the equipment owner.
+    pub wear: Option<EquipmentWear>,
 }
+
+// A timing debit does not change the physical equipment proof used by combat
+// and movement. Its independent timed-row revision is checked by the timer owner.
+impl PartialEq for EquippedItem {
+    fn eq(&self, other: &Self) -> bool {
+        self.tier == other.tier
+            && self.slot == other.slot
+            && self.item_instance_id == other.item_instance_id
+            && self.definition == other.definition
+            && self.quantity == other.quantity
+            && self.state_revision == other.state_revision
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EquipmentWear {
+    pub placement: [u8; 16],
+    pub placement_session: Option<[u8; 16]>,
+    pub checkpoint_unix_ms: Option<u64>,
+    /// No row means the definition's full budget. A row with no budget is spent.
+    pub stored_remaining_ms: Option<Option<u64>>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EquipmentSnapshot {
     pub character: [u8; 16],
@@ -134,7 +159,7 @@ impl DurabilityRoot {
                 for row in rows {
                     let definition=super::item_mint::TypedDefinitionRef {family:row.try_get("definition_family")?,production_key:row.try_get("definition_production_key")?,revision_ref:row.try_get("definition_revision_ref")?};
                     if !content.is_ammunition(&definition) { return Err(DurabilityError::InvalidStoredState); }
-                    entries.push(EquippedItem {slot,tier:u8::try_from(row.try_get::<i16,_>("tier")?).ok().filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX).ok_or(DurabilityError::InvalidStoredState)?,item_instance_id:uuid(row.try_get("item_instance_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,definition,quantity:u32::try_from(row.try_get::<i64,_>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,state_revision:number(row.try_get("state_revision")?).map_err(|_| DurabilityError::InvalidStoredState)?});
+                    entries.push(EquippedItem {slot,tier:u8::try_from(row.try_get::<i16,_>("tier")?).ok().filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX).ok_or(DurabilityError::InvalidStoredState)?,item_instance_id:uuid(row.try_get("item_instance_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,definition,quantity:u32::try_from(row.try_get::<i64,_>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,state_revision:number(row.try_get("state_revision")?).map_err(|_| DurabilityError::InvalidStoredState)?,wear:None});
                 }
             }
             super::db::commit_semantic_transaction(tx,deadline).await?;Ok(entries)
@@ -427,7 +452,14 @@ async fn equipment_snapshot(
     let state_sql = "SELECT revision::text,combat_mode FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE";
     let row = sqlx::query(if lock { state_sql } else { state_sql.trim_end_matches(" FOR UPDATE") })
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment owner not initialized"))?;
-    let slots_sql = "SELECT s.slot,COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.lifecycle,i.world_id::text AS item_world,s.world_id::text AS slot_world FROM game_character_equipment_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid ORDER BY s.slot FOR UPDATE OF i";
+    let slots_sql = "SELECT s.slot,COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.lifecycle,i.world_id::text AS item_world,s.world_id::text AS slot_world, \
+        s.placed_transaction_id::text AS placement,r.game_session_id::text AS placement_session, \
+        ts.state_revision IS NOT NULL AS has_timing,ts.remaining_ms,tw.committed_at \
+        FROM game_character_equipment_slots s JOIN game_item_instances i USING(item_instance_id) \
+        LEFT JOIN game_character_equipment_receipts r ON r.transaction_id=s.placed_transaction_id \
+        LEFT JOIN game_item_timed_states ts ON ts.item_instance_id=s.item_instance_id \
+        LEFT JOIN game_item_timed_state_writes tw ON tw.item_instance_id=ts.item_instance_id AND tw.expected_revision=ts.state_revision-1 \
+        WHERE s.character_id=encode($1,'hex')::uuid ORDER BY s.slot FOR UPDATE OF i";
     let rows = sqlx::query(if lock { slots_sql } else { slots_sql.trim_end_matches(" FOR UPDATE OF i") })
         .bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
     if rows.len() > 9 {
@@ -458,6 +490,19 @@ async fn equipment_snapshot(
             quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
                 .map_err(|_| rejected("equipment quantity"))?,
             state_revision: number(row.try_get("state_revision")?)?,
+            wear: Some(EquipmentWear {
+                placement: uuid(row.try_get("placement")?)?,
+                placement_session: row.try_get::<Option<String>, _>("placement_session")?
+                    .map(uuid).transpose()?,
+                checkpoint_unix_ms: row.try_get::<Option<i64>, _>("committed_at")?
+                    .map(u64::try_from).transpose().map_err(|_| rejected("equipment checkpoint time"))?,
+                stored_remaining_ms: if row.try_get("has_timing")? {
+                    Some(row.try_get::<Option<i64>, _>("remaining_ms")?
+                        .map(u64::try_from).transpose().map_err(|_| rejected("equipment wear budget"))?)
+                } else {
+                    None
+                },
+            }),
         });
     }
     Ok(EquipmentSnapshot {

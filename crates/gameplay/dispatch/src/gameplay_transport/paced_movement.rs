@@ -143,6 +143,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _ = Self::return_unused_field_step_pass(field_pass).await;
             return (StepOutcome::rejected(), None);
         }
+        // Resolve the outgoing tile before a step can change regeneration eligibility.
+        // This also covers native teleports taken from the paced movement turn.
+        if states
+            .get(&runtime, actor, session)
+            .is_some_and(|state| !state.equipped_regeneration().is_empty())
+        {
+            let in_pz = super::actor_spell::qualified_protection_zone(
+                &mut runtime,
+                self.movement_cells(),
+                actor,
+            ) != Some(false);
+            if let Some(state) = states.get_mut(&runtime, actor, session) {
+                state.settle_equipped_wear(now / 1_000, in_pz);
+            }
+        }
         let cardinal = match direction {
             StepDirection::North => CardinalStep::North,
             StepDirection::East => CardinalStep::East,

@@ -118,17 +118,6 @@ pub(super) fn snapshot(
     session: GameSessionId,
     now: u64,
 ) -> Option<ConditionStatus> {
-    snapshot_with_equipment(runtime, states, actor, session, now, |_| None)
-}
-
-fn snapshot_with_equipment(
-    runtime: &ChannelRuntimeV1,
-    states: &ChannelSpellStates,
-    actor: ExactActorRef,
-    session: GameSessionId,
-    now: u64,
-    remaining_wear: impl Fn(&[u8; 16]) -> Option<i64>,
-) -> Option<ConditionStatus> {
     if runtime
         .player_control_facts(actor, session)
         .ok()?
@@ -153,7 +142,7 @@ fn snapshot_with_equipment(
             state
                 .equipped_invisibility_sources()
                 .iter()
-                .filter_map(&remaining_wear)
+                .filter_map(|item| state.equipped_remaining_ms(item, now))
                 .max(),
         ),
         (
@@ -162,7 +151,7 @@ fn snapshot_with_equipment(
             state
                 .equipped_regeneration()
                 .iter()
-                .filter_map(|clock| remaining_wear(&clock.worn.item))
+                .filter_map(|clock| state.equipped_remaining_ms(&clock.worn.item, now))
                 .max(),
         ),
     ];
@@ -221,33 +210,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let states = self.states.spell_states.try_lock().ok()?;
-        let state = states.get(&runtime, actor, admitted.game_session_id)?;
-        let wear = if !state.equipped_invisibility_sources().is_empty()
-            || state
-                .equipped_regeneration()
-                .iter()
-                .any(|clock| clock.worn.timed)
-        {
-            Some(self.states.timed_items.sessions.try_lock().ok()?)
-        } else {
-            None
-        };
-        let clock = wear
-            .as_ref()
-            .and_then(|wear| wear.get(&admitted.game_session_id));
-        let wear_now = super::timed_item_clock::clock_ms(self);
-        snapshot_with_equipment(
+        snapshot(
             &runtime,
             &states,
             actor,
             admitted.game_session_id,
             self.owner_now().get(),
-            |item| {
-                let remaining = clock?.items.get(item)?.deadline_ms?.checked_sub(wear_now)?;
-                i64::try_from(remaining)
-                    .ok()
-                    .filter(|remaining| *remaining > 0)
-            },
         )?
         .encode()
     }

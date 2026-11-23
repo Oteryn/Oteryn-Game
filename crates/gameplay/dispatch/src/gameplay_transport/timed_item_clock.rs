@@ -1,14 +1,67 @@
 //! Server owner clock; independent of client packets and selected capabilities.
 use super::timed_item::*;
-use crate::durability::character_equipment::EquipmentSnapshot;
+use crate::durability::character_equipment::{EquipmentSnapshot, EquippedItem};
 use crate::durability::item_timed_runtime::{TimedOperation, TimedRequest};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ExactActorRef, GameSessionId};
+use crate::spell::cast::EquippedWear;
 use sha2::{Digest, Sha256};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub(super) fn clock_ms(owner: &super::ComposedFreshAdmission<'_, '_, '_>) -> u64 {
-    u64::try_from(owner.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX)
+    owner.owner_now().get() / 1_000
+}
+
+fn track_item<'a>(
+    items: &'a mut HashMap<[u8; 16], ItemClock>,
+    item: &EquippedItem,
+    session: GameSessionId,
+    now: u64,
+    unix_now: u64,
+    full_ms: u64,
+) -> &'a mut ItemClock {
+    let placement = item.wear.map(|wear| wear.placement);
+    let lane = items.entry(item.item_instance_id).or_default();
+    if lane.deadline_ms.is_none() && lane.pending.is_none() && !lane.retired
+        || lane.placement != placement
+    {
+        let at_ms = item
+            .wear
+            .filter(|wear| {
+                wear.placement_session.as_ref() == Some(session.as_bytes())
+                    && wear.placement[6] >> 4 == 7
+            })
+            .map_or(now, |wear| {
+                // The slot is fenced to the committed UUIDv7 transition. A previous
+                // debit is a later anchor, and an older session does not spend offline time.
+                let [a, b, c, d, e, f, ..] = wear.placement;
+                let placed = u64::from_be_bytes([0, 0, a, b, c, d, e, f]);
+                let anchor = placed.max(wear.checkpoint_unix_ms.unwrap_or(0));
+                now.saturating_sub(unix_now.saturating_sub(anchor))
+            });
+        let remaining = item
+            .wear
+            .and_then(|wear| wear.stored_remaining_ms)
+            .unwrap_or(Some(full_ms));
+        *lane = ItemClock {
+            placement,
+            started_at_ms: at_ms,
+            deadline_ms: remaining.map(|ms| at_ms.saturating_add(ms)),
+            at_ms,
+            ..ItemClock::default()
+        };
+    }
+    lane
+}
+
+impl ItemClock {
+    fn qualified_wear(&self, item: [u8; 16]) -> Option<EquippedWear> {
+        Some(EquippedWear {
+            item,
+            started_at_ms: self.started_at_ms,
+            deadline_ms: self.deadline_ms?,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -20,6 +73,61 @@ tokio::task_local! {
 }
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
+    /// Publish the admitted slot's timing alongside the equipment effects, including
+    /// when no background clock has seen that slot yet.
+    pub(super) fn prepare_equipped_wear(
+        &self,
+        session: GameSessionId,
+        equipment: &EquipmentSnapshot,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        regeneration: &mut Vec<oteryn_gameplay_progression::regeneration::WornRegeneration>,
+    ) -> Option<Vec<EquippedWear>> {
+        let timed = equipment
+            .items
+            .iter()
+            .filter_map(|item| {
+                Some((
+                    item,
+                    facts(native, &item.definition)?.0.full.remaining_ms()?,
+                ))
+            })
+            .collect::<Vec<_>>();
+        let now = clock_ms(self);
+        let unix_now = super::npc_trade_command::unix_ms_now().try_into().ok()?;
+        let mut clocks = self.states.timed_items.sessions.try_lock().ok()?;
+        let clock = if timed.is_empty() {
+            let Some(clock) = clocks.get_mut(&session) else {
+                return Some(Vec::new());
+            };
+            clock
+        } else {
+            clocks.entry(session).or_default()
+        };
+        let wear = timed
+            .into_iter()
+            .filter_map(|(item, full)| {
+                let lane = track_item(&mut clock.items, item, session, now, unix_now, full);
+                if lane.retired {
+                    None
+                } else {
+                    lane.qualified_wear(item.item_instance_id)
+                }
+            })
+            .collect();
+        // A re-projection can precede deferred expiry publication. Keep its
+        // regeneration cursor without publishing any remaining wear or invisibility.
+        for lane in clock.items.values().filter(|lane| lane.retired) {
+            if let Some(worn) = lane.regeneration
+                && !regeneration
+                    .iter()
+                    .any(|existing| existing.item == worn.item)
+            {
+                regeneration.push(worn);
+            }
+        }
+        Some(wear)
+    }
+
     pub(super) async fn stop_timed_actor(
         &self,
         actor: crate::foundation::ExactActorRef,
@@ -290,6 +398,16 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         let now = clock_ms(self);
+        let Ok(unix_now) = u64::try_from(super::npc_trade_command::unix_ms_now()) else {
+            return false;
+        };
+        use super::equipment_move::equipment_effects_owner as effects;
+        let Some(regeneration) = effects::equipped_regeneration(&equipment, native) else {
+            return false;
+        };
+        let Some(invisible) = effects::equipped_invisibility(&equipment, native) else {
+            return false;
+        };
         let Some(mut active_mana_shield) =
             super::equipment_move::equipment_effects_owner::equipped_mana_shield(
                 &equipment, native,
@@ -309,9 +427,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // cannot prove whether the value-moving transaction committed.
         let mut retired_equipment =
             clock.refresh_equipment || (house && clock.items.keys().any(|id| !held.contains(id)));
-        let mut retired_items = Vec::new();
         let advanced = async {
-            for (id, lane) in &clock.items {
+            for (id, lane) in &mut clock.items {
                 if !held.contains(id)
                     && let Some((request, _)) = &lane.pending
                 {
@@ -329,33 +446,37 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .await
                     {
-                        Ok(_)
-                        | Err(crate::durability::item_timed_state::TimedWriteError::NotHeld) => {}
+                        Ok(result) => {
+                            lane.retired |= result.retired;
+                        }
+                        Err(crate::durability::item_timed_state::TimedWriteError::NotHeld) => {}
                         Err(_) => return false,
                     }
+                    lane.pending = None;
                     retired_equipment = true;
                 }
             }
             clock.refresh_equipment = retired_equipment;
             if !house {
-                clock.items.retain(|id, _| held.contains(id));
+                clock
+                    .items
+                    .retain(|id, lane| held.contains(id) || lane.retired);
             }
             for item in &equipment.items {
                 let Some((definition, target)) = facts(native, &item.definition) else {
                     continue;
                 };
-                if definition.full.remaining_ms().is_none() {
+                let Some(full_ms) = definition.full.remaining_ms() else {
+                    continue;
+                };
+                let lane = track_item(&mut clock.items, item, session, now, unix_now, full_ms);
+                if lane.retired {
                     continue;
                 }
-                let lane = clock
-                    .items
-                    .entry(item.item_instance_id)
-                    .or_insert(ItemClock {
-                        started_at_ms: now,
-                        deadline_ms: None,
-                        at_ms: now,
-                        pending: None,
-                    });
+                lane.regeneration = regeneration
+                    .iter()
+                    .find(|worn| worn.item == item.item_instance_id)
+                    .copied();
                 if lane.pending.is_none() {
                     let elapsed = now.saturating_sub(lane.at_ms);
                     let Ok(row) = self
@@ -441,9 +562,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     {
                         retired_equipment |= result.retired;
                         clock.refresh_equipment |= result.retired;
-                        if result.retired {
-                            retired_items.push(item.item_instance_id);
-                        }
+                        lane.retired |= result.retired;
                         lane.at_ms = at;
                         lane.pending = None;
                     }
@@ -460,30 +579,25 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             true
         }
         .await;
-        let wear = clock
+        let wear: Vec<_> = clock
             .items
             .iter()
             .filter_map(|(item, lane)| {
-                let deadline = lane.deadline_ms?;
-                held.contains(item)
-                    .then_some((*item, lane.started_at_ms, deadline.min(now)))
+                if held.contains(item) || lane.retired {
+                    lane.qualified_wear(*item)
+                } else {
+                    None
+                }
             })
-            .collect::<Vec<_>>();
-        for item in &retired_items {
-            clock.items.remove(item);
-        }
+            .collect();
+        let retired: Vec<_> = clock
+            .items
+            .iter()
+            .filter_map(|(item, lane)| lane.retired.then_some((*item, lane.regeneration)))
+            .collect();
         drop(clocks);
-
-        use super::equipment_move::equipment_effects_owner as effects;
-        let Some(regeneration) = effects::equipped_regeneration(&equipment, native) else {
-            return false;
-        };
-        let Some(invisible) = effects::equipped_invisibility(&equipment, native) else {
-            return false;
-        };
         {
             let mut runtime = self.runtime.lock().await;
-            // Unqualified locations cannot grant outside-PZ regeneration.
             let in_pz = house
                 || super::actor_spell::qualified_protection_zone(
                     &mut runtime,
@@ -491,21 +605,49 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     actor,
                 ) != Some(false);
             let mut states = self.states.spell_states.lock().await;
-            let state = if house {
+            let available = !states.has_pending_spell_commit(actor, session)
+                && if house {
+                    runtime
+                        .assert_house_actor_spell_unreserved(actor, session)
+                        .is_ok()
+                } else {
+                    runtime.assert_actor_spell_unreserved(actor).is_ok()
+                };
+            let state = if !available {
+                None
+            } else if house {
                 states.house_equipment_state_mut(&runtime, actor, session, item_fence)
             } else {
                 states.get_mut(&runtime, actor, session)
             };
-            if let Some(state) = state {
-                state.install_equipped_regeneration(regeneration);
-                state.install_equipped_invisibility(invisible);
-                for (item, start, until) in wear {
-                    state.settle_worn_regeneration(item, start, until, in_pz);
+            let Some(state) = state else {
+                // The committed receipt and the wear interval survive until this
+                // exact actor can publish. Never change a parked predecessor.
+                return false;
+            };
+            // Take this without waiting under the runtime and spell guards.
+            // The pulse and the retirement acknowledgement are one owner turn.
+            let Ok(mut clocks) = self.states.timed_items.sessions.try_lock() else {
+                return false;
+            };
+            let Some(clock) = clocks.get_mut(&session) else {
+                return false;
+            };
+            let mut regeneration = regeneration;
+            for (item, source) in &retired {
+                if let Some(source) = source
+                    && !regeneration.iter().any(|worn| worn.item == *item)
+                {
+                    regeneration.push(*source);
                 }
-                // Successful burns are authoritative even if the follow-up read is unavailable.
-                for item in retired_items {
-                    state.retire_worn_effect(item);
-                }
+            }
+            state.install_equipped_regeneration(regeneration);
+            state.install_equipped_invisibility(invisible);
+            state.install_equipped_wear(wear);
+            state.settle_equipped_wear(now, in_pz);
+            for (item, _) in &retired {
+                state.retire_worn_effect(*item);
+                clock.items.remove(item);
             }
         }
         if !advanced {

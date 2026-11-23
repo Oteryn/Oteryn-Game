@@ -145,6 +145,7 @@ pub struct PlayerSpellState {
     pub(super) equipped_mana_shield: bool,
     /// I05-r2: a worn item's active form grants invisibility (Crystal CONDITION_INVISIBLE per slot).
     pub(super) equipped_invisible: Vec<[u8; 16]>,
+    pub(super) equipped_wear: Vec<EquippedWear>,
     /// SHIELD-DEFENCE-1: what the hands of the last committed equipment read defend with.
     pub(super) equipped_defence:
         Option<oteryn_gameplay_combat_rules::resolution::player_defence::HandDefence>,
@@ -246,6 +247,7 @@ impl PlayerSpellState {
                 equipped_armor: 0,
                 equipped_mana_shield: false,
                 equipped_invisible: Vec::new(),
+                equipped_wear: Vec::new(),
                 equipped_defence: None,
                 equipped_physical_protection: None,
                 equipped_ice_protection: None,
@@ -265,6 +267,7 @@ impl PlayerSpellState {
 mod drome;
 mod equipped_armor;
 mod equipped_invisibility;
+pub use equipped_invisibility::EquippedWear;
 mod equipped_regeneration;
 mod gate;
 mod level_up_vitals;

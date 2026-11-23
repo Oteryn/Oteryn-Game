@@ -158,8 +158,7 @@ pub fn credit_equipment_second(
 }
 
 impl EquipmentRegenerationClock {
-    /// Settle elapsed active wear, retaining any fractional pulse. A blocked pool
-    /// carries at most one due pulse into its next eligible interval.
+    /// Settle eligible active wear, retaining any fractional pulse.
     pub fn settle_wear(
         &mut self,
         elapsed_ms: u64,
@@ -167,17 +166,12 @@ impl EquipmentRegenerationClock {
         streak: u32,
     ) -> (u32, u32) {
         fn pulses(progress: &mut u32, elapsed_ms: u64, period: u32, eligible: bool) -> u32 {
-            if period == 0 || elapsed_ms == 0 {
+            if period == 0 || elapsed_ms == 0 || !eligible {
                 return 0;
             }
             let elapsed = u64::from(*progress).saturating_add(elapsed_ms);
-            if eligible {
-                *progress = (elapsed % u64::from(period)) as u32;
-                u32::try_from(elapsed / u64::from(period)).unwrap_or(u32::MAX)
-            } else {
-                *progress = elapsed.min(u64::from(period)) as u32;
-                0
-            }
+            *progress = (elapsed % u64::from(period)) as u32;
+            u32::try_from(elapsed / u64::from(period)).unwrap_or(u32::MAX)
         }
 
         let regeneration = self.worn.regeneration;

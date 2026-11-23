@@ -1493,6 +1493,7 @@ mod weapon_tests {
             },
             quantity: 1,
             state_revision: 1,
+            wear: None,
         }
     }
 

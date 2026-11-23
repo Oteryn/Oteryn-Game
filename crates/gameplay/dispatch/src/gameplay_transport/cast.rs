@@ -554,7 +554,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return None;
                 }
                 Some(
-                    player.equipped_invisible()
+                    player.equipped_invisible(now)
                         || spell.invisible_at(now)
                         || owned.invisible_at(now),
                 )

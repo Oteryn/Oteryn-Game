@@ -187,21 +187,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Global's narrower resting-area subset. This preserves the existing tile gate.
         {
             let mut runtime = self.runtime.lock().await;
-            let inside =
-                actor_spell::qualified_protection_zone(&mut runtime, self.movement_cells(), actor)
-                    == Some(true);
+            let zone =
+                actor_spell::qualified_protection_zone(&mut runtime, self.movement_cells(), actor);
+            let inside = zone == Some(true);
             // Winter Update 2026: the area's tier no longer depends on the streak.
             let streak = self
                 .states
                 .resting_areas
                 .tier(game_session_id, actor, inside);
-            if let Some(state) =
-                self.states
-                    .spell_states
-                    .lock()
-                    .await
-                    .get_mut(&runtime, actor, game_session_id)
+            let mut states = self.states.spell_states.lock().await;
+            if states.spell_idle(&runtime, actor, game_session_id)
+                && let Some(state) = states.get_mut(&runtime, actor, game_session_id)
             {
+                state.settle_equipped_wear(self.owner_now().get() / 1_000, zone != Some(false));
                 state.set_resting_streak(streak);
             }
         }

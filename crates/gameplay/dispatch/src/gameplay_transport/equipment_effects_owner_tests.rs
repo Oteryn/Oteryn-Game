@@ -83,6 +83,7 @@ fn snapshot(content: &NativeGameplayState, key: &str, slot: u8) -> EquipmentSnap
             item_instance_id: [2; 16],
             quantity: 1,
             state_revision: 1,
+            wear: None,
             definition: TypedDefinitionRef {
                 family: "Item".into(),
                 production_key: key.into(),

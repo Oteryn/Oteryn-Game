@@ -35,7 +35,11 @@ pub(super) struct SessionClock {
     pub(super) refresh_equipment: bool,
     pub(super) serial: u64,
 }
+#[derive(Default)]
 pub(super) struct ItemClock {
+    pub(super) placement: Option<[u8; 16]>,
+    pub(super) retired: bool,
+    pub(super) regeneration: Option<oteryn_gameplay_progression::regeneration::WornRegeneration>,
     pub(super) started_at_ms: u64,
     pub(super) deadline_ms: Option<u64>,
     pub(super) at_ms: u64,

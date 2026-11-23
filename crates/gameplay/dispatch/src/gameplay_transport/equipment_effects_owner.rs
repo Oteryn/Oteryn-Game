@@ -831,7 +831,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             self.install_proficiency_equipment(runtime, actor, session, &equipment)
                 .await?;
             let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
-            let regeneration =
+            let mut regeneration =
                 equipped_regeneration(&equipment, self.active_generation?.native_gameplay()?)?;
             let invisible =
                 equipped_invisibility(&equipment, self.active_generation?.native_gameplay()?)?;
@@ -839,6 +839,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 equipped_wheel_hands(&equipment, self.active_generation?.native_gameplay()?);
             let (proficiency_weapon, proficiency_defense, proficiency_shield_modifier) =
                 self.equipped_proficiency_defense(session, &equipment)?;
+            let wear = self.prepare_equipped_wear(
+                session,
+                &equipment,
+                self.active_generation?.native_gameplay()?,
+                &mut regeneration,
+            )?;
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
             state.install_wheel_equipment(wheel_hands);
@@ -850,6 +856,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             install_prepared_effects(state, effects, armor, defence, mana_shield, offence, mantra);
             state.install_equipped_regeneration(regeneration);
             state.install_equipped_invisibility(invisible);
+            state.install_equipped_wear(wear);
         }
         Some(())
     }
@@ -867,7 +874,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             self.install_house_proficiency_equipment(runtime, actor, session, fence, &equipment)
                 .await?;
             let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
-            let regeneration =
+            let mut regeneration =
                 equipped_regeneration(&equipment, self.active_generation?.native_gameplay()?)?;
             let invisible =
                 equipped_invisibility(&equipment, self.active_generation?.native_gameplay()?)?;
@@ -875,6 +882,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 equipped_wheel_hands(&equipment, self.active_generation?.native_gameplay()?);
             let (proficiency_weapon, proficiency_defense, proficiency_shield_modifier) =
                 self.equipped_proficiency_defense(session, &equipment)?;
+            let wear = self.prepare_equipped_wear(
+                session,
+                &equipment,
+                self.active_generation?.native_gameplay()?,
+                &mut regeneration,
+            )?;
             let mut states = self.states.spell_states.lock().await;
             let state = states.house_equipment_state_mut(runtime, actor, session, fence)?;
             state.install_wheel_equipment(wheel_hands);
@@ -886,6 +899,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             install_prepared_effects(state, effects, armor, defence, mana_shield, offence, mantra);
             state.install_equipped_regeneration(regeneration);
             state.install_equipped_invisibility(invisible);
+            state.install_equipped_wear(wear);
         }
         Some(())
     }
