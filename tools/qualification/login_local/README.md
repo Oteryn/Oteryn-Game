@@ -17,6 +17,14 @@ game node ─ Character projection (own mTLS identity) ─> Platform (ownership 
 
 ## Run
 
+**Current blocker for the legacy local stack:** the pinned Laravel Platform
+`3bc2d0e9` issues Character bootstrap intents at contract v3. Game now requires
+v4, including `requested_vocation`. At Game `5aad10531f87` the node becomes
+ready, then rejects the intent with `E6006 OPS_OUTCOME_AMBIGUOUS` before writing
+`client.env`. For headless coverage of the v4 producer, use the pinned
+[Game ↔ portal-rs qualification](../game_platform/README.md). For the Windows
+procedure below, obtain a fresh profile from a compatible test environment.
+
 ```bash
 # Platform main carrying U1 (>= 71bbe6c) and #1472, exactly the pinned SHA in run.sh:
 git clone https://github.com/Oteryn/Oteryn-Platform _platform && git -C _platform checkout 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
@@ -35,8 +43,10 @@ on the same LAN, such as a Synology NAS, set `LOGIN_LOCAL_HOST` (next section).
 
 ## Native Windows acceptance on WSL2 loopback
 
-From a Game checkout at the SHA under test, start a fresh run with the pinned
-Platform checkout. Wait for both `ready client_env=...` and `holding services`.
+Use a fresh test profile with a test account whose Character is projected and
+an active channel. For a compatible local RUNBOOK-1 stack, start from a Game
+checkout at the SHA under test and wait for both `ready client_env=...` and
+`holding services`.
 
 ```bash
 LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0 bash tools/qualification/login_local/run.sh
