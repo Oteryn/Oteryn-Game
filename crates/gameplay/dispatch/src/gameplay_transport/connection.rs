@@ -329,6 +329,8 @@ pub struct SessionContinuity {
     pub quest_log: QuestLogContinuity,
     /// ITEMLOOK1-RL-01: carried across resume and transfer with the GameSession.
     pub look: LookWindow,
+    /// Market statistics request window, carried across resume and transfer.
+    pub market_statistics: LookWindow,
     /// ATTACK-1b: the domain 10 revision, the last state sent and the command 11 and 12 windows.
     /// Used only with capability 17; a resume or channel transfer carries it.
     pub combat: CombatContinuity,
@@ -387,6 +389,7 @@ impl SessionContinuity {
         },
         quest_log: QuestLogContinuity::FRESH,
         look: LookWindow::EMPTY,
+        market_statistics: LookWindow::EMPTY,
         combat: CombatContinuity::FRESH,
         world_map_revision: 0,
         chat_revision: 0,

@@ -69,6 +69,7 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
                 item_view: ItemViewContinuity::default(),
                 quest_log: QuestLogContinuity::FRESH,
                 look: LookWindow::EMPTY,
+                market_statistics: LookWindow::EMPTY,
                 combat: CombatContinuity::FRESH,
                 world_map_revision: 0,
                 chat_revision: 0,
