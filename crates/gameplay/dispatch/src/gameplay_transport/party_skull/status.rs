@@ -1,6 +1,8 @@
 use super::*;
 use oteryn_gameplay_combat_rules::pvp::skull::{BLACK_THRESHOLDS_MILLI, RED_THRESHOLDS_MILLI};
-use oteryn_protocol_oteryn::party_skull::{CAPABILITY_PARTY_SKULL_V1, PvpSituation, PvpStatus};
+use oteryn_protocol_oteryn::party_skull::{
+    CAPABILITY_PARTY_SKULL_V1, CAPABILITY_PVP_SITUATION_ID_V1, PvpSituation, PvpStatus,
+};
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn observe_own_pvp(
         &self,
@@ -13,6 +15,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
+        let identified = admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_PVP_SITUATION_ID_V1);
         let actor = admitted.runtime_actor?;
         let fence = admitted.item_fence?;
         if fence.game_session_id != admitted.game_session_id
@@ -51,11 +57,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(row) => (u8::try_from(row.try_get::<i32,_>("skull")?).map_err(|_| unavailable())?, u64::try_from(row.try_get::<i64,_>("remaining_ms")?).map_err(|_| unavailable())?),
                     None => (0,0),
                 };
-                let rows = sqlx::query("SELECT target=encode($1,'hex')::uuid AS incoming, ceil(extract(epoch FROM (until_at-transaction_timestamp()))*1000)::bigint AS remaining_ms FROM game_character_pvp_aggression WHERE scope_generation=$2::text::numeric AND ((attacker=encode($1,'hex')::uuid AND attacker_placement=$3) OR (target=encode($1,'hex')::uuid AND target_placement=$3)) AND until_at>transaction_timestamp() ORDER BY until_at,attacker,target LIMIT 65")
+                let rows = sqlx::query("SELECT target=encode($1,'hex')::uuid AS incoming, ceil(extract(epoch FROM (until_at-transaction_timestamp()))*1000)::bigint AS remaining_ms, situation_id FROM game_character_pvp_aggression WHERE scope_generation=$2::text::numeric AND ((attacker=encode($1,'hex')::uuid AND attacker_placement=$3) OR (target=encode($1,'hex')::uuid AND target_placement=$3)) AND until_at>transaction_timestamp() ORDER BY until_at,attacker,target LIMIT 65")
                     .bind(observer.as_slice()).bind(binding.scope_generation().get().to_string()).bind(actor.placement_identity().as_slice()).fetch_all(&mut *tx).await?;
                 if rows.len() > 64 { return Err(unavailable()); }
                 let situations = rows.iter().map(|row| Ok(PvpSituation {
-                    incoming: row.try_get("incoming")?, remaining_ms: u64::try_from(row.try_get::<i64,_>("remaining_ms")?).map_err(|_| unavailable())?,
+                    incoming: row.try_get("incoming")?,
+                    remaining_ms: u64::try_from(row.try_get::<i64,_>("remaining_ms")?).map_err(|_| unavailable())?,
+                    situation_id: if identified {
+                        Some(u64::try_from(row.try_get::<i64,_>("situation_id")?).map_err(|_| unavailable())?)
+                    } else {
+                        None
+                    },
                 })).collect::<Result<Vec<_>, DurabilityError>>()?;
                 let status = PvpStatus {points_milli, red_limits_milli: RED_THRESHOLDS_MILLI, black_limits_milli: BLACK_THRESHOLDS_MILLI, skull, remaining_ms, situations};
                 status.encode().map_err(|_| unavailable())?;

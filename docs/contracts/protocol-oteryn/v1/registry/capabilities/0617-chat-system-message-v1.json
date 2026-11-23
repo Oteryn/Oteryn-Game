@@ -1,0 +1,13 @@
+{
+  "id": 617,
+  "name": "CHAT_SYSTEM_MESSAGE_V1",
+  "owner_decision": "2026-11-23 server/protocol client lane allocation",
+  "owner": "Game chat egress (domain 12 delta 1)",
+  "requires": [
+    7
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Selected with 7. Server feedback uses kind 9 with text. Legacy feedback preserves kind 2 and the Game speaker name."
+}

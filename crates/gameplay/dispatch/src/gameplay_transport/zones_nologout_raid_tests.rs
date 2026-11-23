@@ -12,16 +12,25 @@ fn id(seed: u8) -> [u8; 16] {
 }
 
 #[test]
-fn raid_warning_and_advance_use_only_selected_existing_server_message_domain()
+fn server_message_framing_requires_the_domain_and_boss_event_capabilities()
 -> Result<(), Box<dyn std::error::Error>> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
         .block_on(async {
-            for selected in [false, true] {
+            for (capabilities, server_messages, boss_defeats) in [
+                (&[][..], false, false),
+                (&[CAPABILITY_ZONES_NOLOGOUT_V1][..], true, false),
+                (
+                    &[CAPABILITY_ZONES_NOLOGOUT_V1, CAPABILITY_BOSS_DEFEATED_V1][..],
+                    true,
+                    true,
+                ),
+            ] {
                 for message in [
                     ServerMessage::Warning("A raid is coming!".into()),
                     ServerMessage::Advance("The army has arrived!".into()),
+                    ServerMessage::BossDefeated("oteryn:creature.ferumbras".into()),
                 ] {
                     let mut admitted = AdmittedSession {
                         game_session_id: crate::foundation::GameSessionId::decode(&id(50))?,
@@ -33,12 +42,13 @@ fn raid_warning_and_advance_use_only_selected_existing_server_message_domain()
                         continuity: SessionContinuity::FRESH,
                         item_fence: None,
                     };
-                    if selected {
-                        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
                         crate::gameplay_transport::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
-                        &[21, CAPABILITY_ZONES_NOLOGOUT_V1],
-                    ).ok_or("server-message capability")?;
-                    }
+                        capabilities,
+                    )
+                    .ok_or("server-message capability")?;
+                    let selected = server_messages
+                        && (boss_defeats || !matches!(message, ServerMessage::BossDefeated(_)));
                     admitted.continuity.server_message_revision = 4;
                     admitted.continuity.server_sequence = 7;
                     let mut sequence = 7;

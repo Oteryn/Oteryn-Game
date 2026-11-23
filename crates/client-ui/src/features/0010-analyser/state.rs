@@ -55,7 +55,7 @@ pub struct Panel {
     pub item_info: std::collections::BTreeMap<u32, oteryn_client_runtime::analyser::ItemInfo>,
     pub catalogue_pending: Vec<u32>,
     pub loot_sources: std::collections::BTreeMap<u32, super::PriceSource>,
-    pub loot_prices: std::collections::BTreeMap<u32, u64>,
+    pub loot_prices: std::sync::Arc<std::collections::BTreeMap<u32, u64>>,
     pub price_input: [String; 2],
     pub omitted_items: u64,
     pub goal_xp: Option<u64>,

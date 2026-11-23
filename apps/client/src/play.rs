@@ -48,7 +48,9 @@ pub struct PlayView {
     world_clock: Option<oteryn_session::world_clock::WorldClock>,
     resource_hud: resource_hud::ViewState,
     party_icon_epoch: std::time::Instant,
-    party_summons: std::collections::BTreeMap<oteryn_session::EntityRef, oteryn_session::EntityRef>,
+    party_summons: std::sync::Arc<
+        std::collections::BTreeMap<oteryn_session::EntityRef, oteryn_session::EntityRef>,
+    >,
     party_summons_refresh: Option<std::time::Instant>,
     party_icons_refresh: Option<std::time::Instant>,
     party_icons: Vec<oteryn_client_runtime::party_skull::PartyIcon>,
@@ -58,8 +60,8 @@ pub struct PlayView {
     battle_instinct_refresh: Option<std::time::Instant>,
     sounds: Vec<SoundCue>,
     visuals: Vec<VisualCue>,
-    /// When the own character last took a hit from an attacker while attacking (N006).
     combat_target: Option<oteryn_session::EntityRef>,
+    /// When the own character last took a hit from an attacker while attacking (N006).
     hit_flash: Option<std::time::Instant>,
     spell_words: std::collections::BTreeMap<u32, String>,
     pub(crate) tutorial_overlay: tutorial_overlay::Overlay,
