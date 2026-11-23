@@ -10,8 +10,14 @@ struct CallbackTeleport<'a> {
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
     facing: Option<MovementFacing>,
-    player_stack: bool,
+    occupancy: LandingOccupancy,
     forced: bool,
+}
+
+enum LandingOccupancy {
+    Empty,
+    SharePlayers,
+    Shared,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -62,7 +68,38 @@ pub fn prepare_quest_callback_teleport_facing<'a>(
         pz_blocked,
         closed,
         facing,
-        player_stack: false,
+        occupancy: LandingOccupancy::Empty,
+        forced: false,
+    };
+    proof.check(runtime)?;
+    Ok(proof)
+}
+
+/// WORLD-INTERACTION-0 §6.6: a portal can share its landing with other occupants.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the proof binds the actor, movement scope and qualified landing"
+)]
+pub fn prepare_shared_callback_teleport<'a>(
+    runtime: &ChannelRuntimeV1,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    destination: MovementLocalPosition,
+    pz_blocked: bool,
+    closed: &'a dyn CellBlocker,
+) -> Result<impl crate::foundation::SourceStepCommitProof + 'a, MovementError> {
+    let proof = CallbackTeleport {
+        cells,
+        actor,
+        session,
+        expected,
+        destination,
+        pz_blocked,
+        closed,
+        facing: None,
+        occupancy: LandingOccupancy::Shared,
         forced: false,
     };
     proof.check(runtime)?;
@@ -94,7 +131,11 @@ pub fn prepare_quest_encounter_member<'a>(
         closed,
         pz_blocked,
         facing: None,
-        player_stack,
+        occupancy: if player_stack {
+            LandingOccupancy::SharePlayers
+        } else {
+            LandingOccupancy::Empty
+        },
         forced: false,
     };
     proof.check(runtime)?;
@@ -121,7 +162,7 @@ pub fn prepare_quest_encounter_ejection<'a>(
         closed,
         pz_blocked: false,
         facing: None,
-        player_stack: true,
+        occupancy: LandingOccupancy::SharePlayers,
         forced: true,
     };
     proof.check(runtime)?;
@@ -144,18 +185,18 @@ impl CallbackTeleport<'_> {
         let cell = (to.x, to.y, i32::from(to.floor));
         if ground_of(self.cells)(cell) != Ground::Walkable
             || !landable_of(self.cells, self.pz_blocked, self.closed)(cell)
-            || if self.player_stack {
-                runtime
+            || match self.occupancy {
+                LandingOccupancy::SharePlayers => runtime
                     .positioned_melee_census()
                     .map_err(MovementError::Actor)?
                     .iter()
                     .any(|(actor, position, session)| {
                         *actor != self.actor && session.is_none() && position.position() == to
-                    })
-            } else {
-                runtime
+                    }),
+                LandingOccupancy::Empty => runtime
                     .position_occupied_by_other(self.actor, to)
-                    .map_err(MovementError::Actor)?
+                    .map_err(MovementError::Actor)?,
+                LandingOccupancy::Shared => false,
             }
         {
             return Err(MovementError::Blocked);

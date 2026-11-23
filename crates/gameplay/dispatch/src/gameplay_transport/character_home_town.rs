@@ -448,6 +448,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let town = self.home_town(session, None).await?;
+        if premium_area_town(town)? && !self.session_premium_gate(session).await.premium_current() {
+            return None;
+        }
         let temple = map.overlay.base().subareas.town(town)?.temple?;
         let target = MovementLocalPosition {
             x: i32::from(temple.x),
@@ -465,7 +468,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
-        let proof = crate::map::floor::prepare_quest_callback_teleport(
+        let proof = crate::map::floor::prepare_shared_callback_teleport(
             &runtime,
             self.movement_cells(),
             actor,

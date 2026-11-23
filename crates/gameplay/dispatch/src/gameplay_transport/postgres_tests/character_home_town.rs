@@ -1,21 +1,33 @@
 //! Synthetic citizenship tile and two temples through the real bundle loader.
+use super::character_home_town_fixtures::towns;
 use oteryn_gameplay_combat::ability::creature_bite::CreatureBiteVitals;
-use super::character_home_town_fixtures::{towns};
 
 use super::fixture::{Harness, debug, fence, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 
-use crate::foundation::{CharacterLease, MovementLocalPosition};
+use crate::foundation::{CharacterLease, ExactActorRef, GameSessionId, MovementLocalPosition};
+use crate::gameplay_transport::ComposedFreshAdmission;
+use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
+use crate::premium::PremiumConsumer;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
+use std::sync::Arc;
 
 #[test]
 fn citizen_tile_persists_town_death_uses_temple_and_reconnect_keeps_it() -> TestResult {
-    on_large_stack(None)
+    on_large_stack(HomeTownCase::Citizenship)
 }
 
 #[test]
 fn p20_login_path_moves_an_ended_premium_area_citizen_to_the_thais_temple() -> TestResult {
-    on_large_stack(Some(PremiumEntry::Stored))
+    on_large_stack(HomeTownCase::PremiumEntry(PremiumEntry::Stored))
+}
+
+#[derive(Clone, Copy)]
+enum HomeTownCase {
+    Citizenship,
+    PremiumEntry(PremiumEntry),
+    GuildPremium,
+    GuildSharedLanding,
 }
 
 #[derive(Clone, Copy)]
@@ -27,24 +39,34 @@ enum PremiumEntry {
 
 #[test]
 fn p20_ended_premium_consumes_pending_respawn_with_relocation() -> TestResult {
-    on_large_stack(Some(PremiumEntry::Respawn))
+    on_large_stack(HomeTownCase::PremiumEntry(PremiumEntry::Respawn))
 }
 
 #[test]
 fn p20_ended_premium_consumes_pending_arrival_with_relocation() -> TestResult {
-    on_large_stack(Some(PremiumEntry::Arrival))
+    on_large_stack(HomeTownCase::PremiumEntry(PremiumEntry::Arrival))
 }
 
-fn on_large_stack(p20: Option<PremiumEntry>) -> TestResult {
+#[test]
+fn guild_exits_require_current_premium_for_edron() -> TestResult {
+    on_large_stack(HomeTownCase::GuildPremium)
+}
+
+#[test]
+fn guild_exits_share_the_occupied_thais_temple() -> TestResult {
+    on_large_stack(HomeTownCase::GuildSharedLanding)
+}
+
+fn on_large_stack(case: HomeTownCase) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(p20).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(case).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "home town PostgreSQL thread panicked")??;
     Ok(())
 }
 
-fn scenario(p20: Option<PremiumEntry>) -> TestResult {
+fn scenario(case: HomeTownCase) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "citizen_temple", false, false).await?;
@@ -88,7 +110,7 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
             room.map_revision_digest(),
             (2, 11, 7),
         );
-        if p20.is_some() {
+        if matches!(case, HomeTownCase::PremiumEntry(_)) {
             // Real first entry independently verifies this activation before P20 placement.
             sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
                 .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
@@ -108,7 +130,10 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
                 .clone(),
         )?;
         deps.combat_room = Some(deps.room.clone());
-        let (consumer, coordinator) = premium_reads(&h);
+        let clock = Arc::new(P20Clock(std::sync::Mutex::new(
+            crate::premium::TrustedNow::new(P20_NOW, 1_000_000),
+        )));
+        let (consumer, coordinator) = premium_reads(&h, Arc::clone(&clock));
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
@@ -173,16 +198,27 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
                 .await
                 .map_err(debug)?,
         );
-        if let Some(entry) = p20 {
-            premium_ended(
-                &h,
-                &mut owner,
-                (&consumer, &coordinator),
-                actor,
-                session,
-                (&deps, &request, entry),
-            )
-            .await?;
+        match case {
+            HomeTownCase::PremiumEntry(entry) => {
+                premium_ended(
+                    &h,
+                    &mut owner,
+                    (&consumer, &coordinator),
+                    actor,
+                    session,
+                    (&deps, &request, entry),
+                )
+                .await?;
+            }
+            HomeTownCase::GuildPremium => {
+                guild_premium(&mut owner, &consumer, &coordinator, &clock, actor, session).await?;
+            }
+            HomeTownCase::GuildSharedLanding => {
+                guild_shared_landing(&owner, actor, session).await?;
+            }
+            HomeTownCase::Citizenship => {}
+        }
+        if !matches!(case, HomeTownCase::Citizenship) {
             drop(owner);
             drop(authority);
             drop(seal);
@@ -331,19 +367,13 @@ impl crate::gameplay_transport::spell_premium_coordinator::RegisteredPremiumCloc
 /// P20: delivered Premium reads with a trusted clock and the durable latch.
 fn premium_reads(
     h: &Harness,
-) -> (
-    std::sync::Arc<crate::premium::PremiumConsumer>,
-    crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
-) {
-    use crate::gameplay_transport::spell_premium_coordinator::{
-        PremiumActivation, SpellPremiumCoordinator,
-    };
-    let consumer = std::sync::Arc::new(crate::premium::PremiumConsumer::default());
+    clock: Arc<P20Clock>,
+) -> (Arc<PremiumConsumer>, SpellPremiumCoordinator) {
+    use crate::gameplay_transport::spell_premium_coordinator::PremiumActivation;
+    let consumer = Arc::new(PremiumConsumer::default());
     let coordinator = SpellPremiumCoordinator::new(
         consumer.clone(),
-        Some(std::sync::Arc::new(P20Clock(std::sync::Mutex::new(
-            crate::premium::TrustedNow::new(P20_NOW, 1_000_000),
-        )))),
+        Some(clock),
         Some(PremiumActivation {
             activation_id: "p20-test".to_owned(),
             switch_over_us: P20_NOW - 60_000_000,
@@ -351,6 +381,182 @@ fn premium_reads(
         Some(h.root.clone()),
     );
     (consumer, coordinator)
+}
+
+const GUILD_EXITS: [(i32, StepDirection, i32); 2] =
+    [(8, StepDirection::East, 9), (11, StepDirection::West, 10)];
+
+async fn step_guild_exit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    from: i32,
+    direction: StepDirection,
+) -> TestResult<MovementLocalPosition> {
+    owner
+        .runtime
+        .lock()
+        .await
+        .place_respawned_player(
+            actor,
+            session,
+            MovementLocalPosition {
+                x: from,
+                y: 11,
+                floor: 7,
+            },
+        )
+        .map_err(debug)?;
+    let (outcome, _) = owner
+        .ordinary_paced_step(actor, session, direction, None, None)
+        .await;
+    let observed = outcome.moved_to.ok_or("Guild exit step")?.actor_position;
+    let position = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    assert_eq!(
+        (observed.x, observed.y, observed.floor),
+        (position.x, position.y, position.floor)
+    );
+    Ok(position)
+}
+
+async fn guild_premium<'a>(
+    owner: &mut ComposedFreshAdmission<'a, '_, '_>,
+    consumer: &PremiumConsumer,
+    coordinator: &'a SpellPremiumCoordinator,
+    clock: &P20Clock,
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> TestResult {
+    use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
+    let expires = P20_NOW + 30_000_000;
+    assert_eq!(owner.home_town(session, Some((actor, 11))).await, Some(11));
+    owner.premium_coordinator = Some(coordinator);
+    owner.admit_premium(id(40), session);
+    consumer.prove_for_test(PremiumEvidence {
+        effective_until_us: expires,
+        ..premium_evidence(EntitlementState::Active)
+    });
+    assert!(owner.session_premium_gate(session).await.premium_current());
+    for (from, direction, _) in GUILD_EXITS {
+        assert_eq!(
+            step_guild_exit(owner, actor, session, from, direction)
+                .await?
+                .x,
+            14
+        );
+    }
+
+    *clock.0.lock().map_err(debug)? =
+        crate::premium::TrustedNow::new(expires + 2_000_000, 1_000_000);
+    assert!(!owner.session_premium_gate(session).await.premium_current());
+    for (from, direction, exit) in GUILD_EXITS {
+        assert_eq!(
+            step_guild_exit(owner, actor, session, from, direction)
+                .await?
+                .x,
+            exit,
+            "expired Premium must stop the Edron relocation"
+        );
+    }
+
+    // The entitlement also fails closed when trusted time is unavailable.
+    *clock.0.lock().map_err(debug)? = None;
+    assert!(!owner.session_premium_gate(session).await.premium_current());
+    for (from, direction, exit) in GUILD_EXITS {
+        assert_eq!(
+            step_guild_exit(owner, actor, session, from, direction)
+                .await?
+                .x,
+            exit,
+            "unavailable entitlement must stop the Edron relocation"
+        );
+    }
+    assert_eq!(owner.home_town(session, None).await, Some(11));
+    owner.release_premium(id(40), session);
+    eprintln!(
+        "W12_GUILD_PREMIUM_POSTGRES_EXECUTED: both exits accept current Premium and refuse expired or unavailable Premium"
+    );
+    Ok(())
+}
+
+async fn guild_shared_landing(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> TestResult {
+    assert_eq!(owner.home_town(session, Some((actor, 8))).await, Some(8));
+    let temple = MovementLocalPosition {
+        x: 2,
+        y: 11,
+        floor: 7,
+    };
+    let occupant = {
+        let mut runtime = owner.runtime.lock().await;
+        let occupant_session = GameSessionId::decode(&id(82)).map_err(debug)?;
+        let reservation = runtime
+            .reserve_fresh_session(occupant_session)
+            .map_err(debug)?;
+        let occupant = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_first_entry_position(occupant)
+            .map_err(debug)?;
+        assert_eq!(
+            runtime
+                .read_actor_position(occupant)
+                .map_err(debug)?
+                .position(),
+            temple
+        );
+        occupant
+    };
+    for (from, direction, _) in GUILD_EXITS {
+        assert_eq!(
+            step_guild_exit(owner, actor, session, from, direction).await?,
+            temple,
+            "the returning player shares the occupied Thais temple"
+        );
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(occupant)
+                .map_err(debug)?
+                .position(),
+            temple
+        );
+    }
+    eprintln!(
+        "W12_GUILD_SHARED_LANDING_POSTGRES_EXECUTED: both exits share the occupied Thais temple"
+    );
+    Ok(())
+}
+
+fn premium_evidence(
+    state: crate::durability::premium_fence::EntitlementState,
+) -> crate::durability::premium_fence::PremiumEvidence {
+    crate::durability::premium_fence::PremiumEvidence {
+        account_id: id(40),
+        producer_revision: "1".repeat(40),
+        producer_profile: crate::premium::PRODUCER_PROFILE.to_owned(),
+        product_id: crate::premium::PRODUCT_ID.to_owned(),
+        product_version: crate::premium::PRODUCT_VERSION,
+        entitlement_id: Some("01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70".to_owned()),
+        state,
+        lifecycle_revision: 1,
+        authority_revision: 7,
+        effective_from_us: P20_NOW - 60_000_000,
+        effective_until_us: P20_NOW + 3_600_000_000,
+        authority_issued_at_us: P20_NOW,
+        authority_valid_until_us: P20_NOW + 3_600_000_000,
+        refresh_after_us: P20_NOW + 1_800_000_000,
+    }
 }
 
 /// P20: Crystal 201189f8 `data-global/scripts/creaturescripts/others/login.lua:8-15`.
@@ -370,23 +576,6 @@ async fn premium_ended<'a>(
     ),
 ) -> TestResult {
     use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
-    let now = P20_NOW;
-    let evidence = |state| PremiumEvidence {
-        account_id: id(40),
-        producer_revision: "1".repeat(40),
-        producer_profile: crate::premium::PRODUCER_PROFILE.to_owned(),
-        product_id: crate::premium::PRODUCT_ID.to_owned(),
-        product_version: crate::premium::PRODUCT_VERSION,
-        entitlement_id: Some("01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70".to_owned()),
-        state,
-        lifecycle_revision: 1,
-        authority_revision: 7,
-        effective_from_us: now - 60_000_000,
-        effective_until_us: now + 3_600_000_000,
-        authority_issued_at_us: now,
-        authority_valid_until_us: now + 3_600_000_000,
-        refresh_after_us: now + 1_800_000_000,
-    };
     let town = async |h: &Harness| -> TestResult<i32> {
         Ok(sqlx::query_scalar("SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
     };
@@ -428,7 +617,7 @@ async fn premium_ended<'a>(
     assert_eq!(owner.premium_ended_temple(id(40), session).await, None);
     owner.premium_coordinator = Some(coordinator);
     // Current Premium keeps the premium-area town.
-    consumer.prove_for_test(evidence(EntitlementState::Active));
+    consumer.prove_for_test(premium_evidence(EntitlementState::Active));
     assert_eq!(owner.premium_ended_temple(id(40), session).await, None);
     assert_eq!(town(h).await?, 11);
     match entry {
@@ -467,7 +656,7 @@ async fn premium_ended<'a>(
     // An ended entitlement moves the citizen to Thais (town 8) and enters at its temple.
     consumer.prove_for_test(PremiumEvidence {
         authority_revision: 8,
-        ..evidence(EntitlementState::Expired)
+        ..premium_evidence(EntitlementState::Expired)
     });
     let thais = MovementLocalPosition {
         x: 2,
@@ -671,7 +860,7 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
         npcs: Default::default(),
     };
     // The P20 restart case saves a real walkable cell in the premium town, Edron (14, 11).
-    let tiles = [(2, 0), (3, 0), (8, 0), (9, 0), (14, 0)]
+    let tiles = [(2, 0), (3, 0), (8, 0), (9, 0), (10, 0), (11, 0), (14, 0)]
         .into_iter()
         .map(|(x, flags)| Tile {
             x,
@@ -683,7 +872,7 @@ fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::Bund
                 palette: 0,
                 depth: 0,
                 attrs: Attrs {
-                    action: (x == 9).then_some(4253),
+                    action: matches!(x, 9 | 10).then_some(4253),
                     unique: (x == 3).then_some(9056),
                     ..Attrs::default()
                 },
