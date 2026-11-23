@@ -546,6 +546,18 @@ def apply_stats(definition, basic, counts):
                 boosts,
                 "skill_boosts",
             )
+            # Native profiles retain a raw speed attribute alongside the typed boost.
+            if (attributes := definition.get("attributes")) is not None:
+                speed = next(
+                    (
+                        row["parameter"]["value"]["value"]
+                        for row in boosts
+                        if row["kind"] == "SPEED"
+                    ),
+                    None,
+                )
+                if speed is not None or any(row["kind"] == "SPEED" for row in previous):
+                    attributes["speed_bonus"] = speed if speed is not None else 0
 
     requirements = {}
     if "Vocations" in basic:
