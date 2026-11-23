@@ -41,3 +41,13 @@ fn classic_quest_native_dragon_tower_backpacks_complete_in_either_order() -> Tes
     }
     Ok(())
 }
+
+#[test]
+fn classic_quest_native_dragon_corpse_shovel_rolls_back_with_quest_credit() -> TestResult {
+    super::classic_quest_native_fixtures::run("corpse-shovel-rollback")
+}
+
+#[test]
+fn classic_quest_native_dragon_corpse_scythe_rolls_back_with_quest_credit() -> TestResult {
+    super::classic_quest_native_fixtures::run("corpse-scythe-rollback")
+}

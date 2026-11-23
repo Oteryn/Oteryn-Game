@@ -38,7 +38,7 @@ fn start(route: &str) -> TestResult<Position> {
         "keys" => p(32793, 31572, 7),
         "puzzle" => p(32804, 31587, 1),
         "devil" => p(32575, 32216, 15),
-        "corpse" => p(32148, 32207, 7),
+        "corpse" | "corpse-shovel-rollback" | "corpse-scythe-rollback" => p(32148, 32207, 7),
         "bags" | "bags-reverse" => p(32804, 31584, 2),
         "tower" | "tower-reverse" => p(33073, 32170, 2),
         _ => return Err("classic quest route".into()),
@@ -228,7 +228,7 @@ pub(super) fn world(
                 crop(15, (32454, 32142, 32485, 32178))?,
             ]
         }
-        "corpse" => {
+        "corpse" | "corpse-shovel-rollback" | "corpse-scythe-rollback" => {
             extras = &[594, 3651, 3652, 3605];
             vec![
                 crop(7, (32146, 32207, 32149, 32208))?,
@@ -765,7 +765,9 @@ pub(super) async fn exercise(
         }
         "puzzle" => draconia_puzzle(owner, admitted, h).await?,
         "devil" => devil(owner, admitted, h).await?,
-        "corpse" => corpse(owner, admitted, h).await?,
+        "corpse" | "corpse-shovel-rollback" | "corpse-scythe-rollback" => {
+            corpse(owner, admitted, h, route).await?
+        }
         "bags" | "bags-reverse" | "tower" | "tower-reverse" => {
             reward_pair(
                 owner,
@@ -886,6 +888,7 @@ async fn corpse(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    route: &str,
 ) -> TestResult {
     const QUEST: &str = "oteryn:quest.dragon_corpse_quest";
     let fence = admitted.item_fence.ok_or("corpse tool fence")?;
@@ -909,6 +912,9 @@ async fn corpse(
     let hole = p(32166, 32216, 8);
     walk_to(owner, admitted, hole, 0).await?;
     assert_eq!(at(owner, admitted).await?, hole);
+    if route == "corpse-shovel-rollback" {
+        return corpse_tool_rollback(owner, admitted, h, 3457, hole, 0).await;
+    }
     assert_eq!(
         use_tool(owner, admitted, 3457, hole, 0, 0).await?,
         UseDisposition::Committed
@@ -920,6 +926,9 @@ async fn corpse(
     for x in 32170..=32172 {
         let wheat = p(x, 32214, 9);
         walk_to(owner, admitted, wheat, 1).await?;
+        if route == "corpse-scythe-rollback" {
+            return corpse_tool_rollback(owner, admitted, h, 3453, wheat, 1).await;
+        }
         assert_eq!(
             use_tool(owner, admitted, 3453, wheat, 1, 0).await?,
             UseDisposition::Committed
@@ -963,6 +972,57 @@ async fn corpse(
             ("oteryn:item.tibia.i3430".into(), 1)
         ]
     );
+    Ok(())
+}
+
+async fn corpse_tool_rollback(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    tool: u16,
+    position: Position,
+    ordinal: u8,
+) -> TestResult {
+    sqlx::raw_sql(
+        "CREATE SEQUENCE refused_terrain_credit;
+         CREATE FUNCTION refuse_terrain_credit() RETURNS trigger LANGUAGE plpgsql
+         SECURITY DEFINER SET search_path=public,pg_temp AS $$
+         BEGIN
+             PERFORM nextval('refused_terrain_credit');
+             RAISE EXCEPTION 'injected Dragon Corpse credit write failure';
+         END $$;
+         CREATE TRIGGER refuse_terrain_credit BEFORE INSERT ON game_character_quest_receipts
+         FOR EACH ROW WHEN (NEW.transition_key LIKE 'oteryn:quest-terrain-use/dragon-corpse-%')
+         EXECUTE FUNCTION refuse_terrain_credit();",
+    )
+    .execute(&h.pool)
+    .await?;
+    let command = admitted.continuity.next_command_id.to_string();
+    let session = admitted.game_session_id;
+    let result = use_tool(owner, admitted, tool, position, ordinal, 0).await;
+    let attempted: bool = sqlx::query_scalar("SELECT is_called FROM refused_terrain_credit")
+        .fetch_one(&h.pool)
+        .await?;
+    assert!(
+        attempted,
+        "the real USE must attempt to persist its quest credit"
+    );
+    let (terrain, craft): (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_terrain_tool_receipts
+                   WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric),
+                (SELECT count(*) FROM game_item_craft_records
+                   WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric)",
+    )
+    .bind(session.as_bytes().as_slice())
+    .bind(command)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        (terrain, craft),
+        (0, 0),
+        "a failed quest write must roll back the native tool USE"
+    );
+    assert!(!matches!(result, Ok(UseDisposition::Committed)));
     Ok(())
 }
 

@@ -101,6 +101,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         reset_epoch: 0,
     };
     let mutation = durability::terrain_tool::TerrainMutation {
+        quest_catalogue: None,
         tool,
         tool_key: "oteryn:item.tibia.i3457".into(),
         tool_revision: "definition-r1".into(),
@@ -338,6 +339,7 @@ async fn production_dead_archer_entry(
         placement.extend_from_slice(&key.to_be_bytes());
         let command = reward_fixture::command(ordinal)?;
         let mutation = durability::terrain_tool::TerrainMutation {
+            quest_catalogue: None,
             tool,
             tool_key: "oteryn:item.tibia.i3457".into(),
             tool_revision: "definition-r1".into(),
@@ -493,6 +495,7 @@ async fn terrain_counter_fixture(
         }
         let command = reward_fixture::command(9700 + n)?;
         let mutation = durability::terrain_tool::TerrainMutation {
+            quest_catalogue: None,
             tool,
             tool_key: "oteryn:item.tibia.i3457".into(),
             tool_revision: "definition-r1".into(),

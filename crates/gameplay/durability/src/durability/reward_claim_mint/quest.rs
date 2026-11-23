@@ -495,11 +495,15 @@ pub(crate) async fn apply(
         .chain_update(callback.key.as_bytes())
         .finalize();
     for progress in &callback.achievement_progress {
-        let mut amount = 1;
-        if progress.key == "oteryn:achievement/cave_completionist" {
-            // Both purchase routes already hold the appearance account lock.
-            // A main-era purchase can own its addon with no achievement counter.
-            let cosmetics = admission.native.cosmetics().ok_or(DurabilityError::InvalidStoredState)?;
+        const CAVE_COMPLETIONIST: &str = "oteryn:achievement/cave_completionist";
+        if progress.key == CAVE_COMPLETIONIST {
+            // Both NPC routes hold the appearance account lock and have already
+            // written this purchase. Bazaar transfers Character progress but
+            // keeps the addon unlocks with the account that bought them.
+            let cosmetics = admission
+                .native
+                .cosmetics()
+                .ok_or(DurabilityError::InvalidStoredState)?;
             let mut owned = 0;
             for addon in 1..=2 {
                 if super::super::character_appearance::podium_cosmetic_owned(
@@ -507,22 +511,33 @@ pub(crate) async fn apply(
                     fence.character_id,
                     cosmetics,
                     EarnedCosmetic::Addon("oteryn:outfit.cave_explorer", addon),
-                ).await? {
+                )
+                .await?
+                {
                     owned += 1;
                 }
             }
-            amount = amount.max(owned);
+            super::super::account_achievement::record_owned_progress(
+                tx,
+                fence.character_id,
+                &progress.key,
+                progress.target,
+                "oteryn:quest-reward",
+                &progress_event,
+                owned,
+            )
+            .await?;
+        } else {
+            super::super::account_achievement::add_progress(
+                tx,
+                fence.character_id,
+                &progress.key,
+                progress.target,
+                "oteryn:quest-reward",
+                &progress_event,
+            )
+            .await?;
         }
-        super::super::account_achievement::add_progress_amount(
-            tx,
-            fence.character_id,
-            &progress.key,
-            progress.target,
-            "oteryn:quest-reward",
-            &progress_event,
-            amount,
-        )
-        .await?;
     }
     if let Some(achievement) = achievement {
         let mut grant = achievement.clone();

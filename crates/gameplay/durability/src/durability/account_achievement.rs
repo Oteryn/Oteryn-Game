@@ -305,34 +305,53 @@ pub(super) async fn add_progress(
     source_kind: &str,
     event_id: &[u8],
 ) -> std::result::Result<(), DurabilityError> {
-    add_progress_amount(tx, character_id, key, total, source_kind, event_id, 1).await
+    let progress: Option<i64> = sqlx::query_scalar(
+        "INSERT INTO game_character_achievement_progress AS p \
+                (character_id, achievement_key, progress) \
+         VALUES (encode($1,'hex')::uuid, $2, 1) \
+         ON CONFLICT (character_id, achievement_key) \
+         DO UPDATE SET progress = p.progress + 1 WHERE p.progress < $3 \
+         RETURNING progress",
+    )
+    .bind(character_id.as_bytes().as_slice())
+    .bind(key)
+    .bind(i64::from(total))
+    .fetch_optional(&mut **tx)
+    .await?;
+    if progress == Some(i64::from(total)) {
+        grant_missing(tx, character_id, &[key], source_kind, event_id).await?;
+    }
+    Ok(())
 }
 
-/// Record earned progress in one capped upsert, including progress recovered from ownership.
-pub(super) async fn add_progress_amount(
+/// Project an account-owned count onto the current Character after a purchase.
+/// The account evidence alone decides the grant, even at an inherited cap.
+pub(super) async fn record_owned_progress(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character_id: CharacterId,
     key: &str,
     total: u32,
     source_kind: &str,
     event_id: &[u8],
-    amount: u32,
+    owned: u32,
 ) -> std::result::Result<(), DurabilityError> {
-    let progress: Option<i64> = sqlx::query_scalar(
-        "INSERT INTO game_character_achievement_progress AS p \
-                (character_id, achievement_key, progress) \
-         VALUES (encode($1,'hex')::uuid, $2, LEAST($3::bigint, $4::bigint)) \
-         ON CONFLICT (character_id, achievement_key) \
-         DO UPDATE SET progress = LEAST(p.progress + EXCLUDED.progress, $3) WHERE p.progress < $3 \
-         RETURNING progress",
+    if owned == 0 || owned > total {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    sqlx::query(
+        "INSERT INTO game_character_achievement_progress AS p
+                (character_id, achievement_key, progress)
+         VALUES (encode($1,'hex')::uuid, $2, $3)
+         ON CONFLICT (character_id, achievement_key)
+         DO UPDATE SET progress = EXCLUDED.progress
+         WHERE p.progress <> EXCLUDED.progress",
     )
     .bind(character_id.as_bytes().as_slice())
     .bind(key)
-    .bind(i64::from(total))
-    .bind(i64::from(amount))
-    .fetch_optional(&mut **tx)
+    .bind(i64::from(owned))
+    .execute(&mut **tx)
     .await?;
-    if progress == Some(i64::from(total)) {
+    if owned == total {
         grant_missing(tx, character_id, &[key], source_kind, event_id).await?;
     }
     Ok(())
