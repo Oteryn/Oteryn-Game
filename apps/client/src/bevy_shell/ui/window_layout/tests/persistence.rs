@@ -199,22 +199,7 @@ fn simultaneous_publications_are_complete_documents() -> TestResult {
                         .x = index as f32;
                     barrier.wait();
                     for _ in 0..20 {
-                        let deadline =
-                            std::time::Instant::now() + std::time::Duration::from_secs(1);
-                        loop {
-                            match layouts.save(path) {
-                                Err(error)
-                                    if error.kind() == io::ErrorKind::WouldBlock
-                                        && std::time::Instant::now() < deadline =>
-                                {
-                                    std::thread::sleep(std::time::Duration::from_millis(1));
-                                }
-                                result => {
-                                    result?;
-                                    break;
-                                }
-                            }
-                        }
+                        layouts.save(path)?;
                         WindowLayouts::load(path)?;
                     }
                     Ok(())

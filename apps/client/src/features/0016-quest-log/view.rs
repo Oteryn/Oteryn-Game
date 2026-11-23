@@ -35,6 +35,21 @@ impl PlayLink {
         true
     }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn update_quest_snapshot(&self, snapshot: &mut QuestPanel) -> bool {
+        let mailbox = lock(&self.mailbox);
+        if mailbox.quest == *snapshot {
+            return false;
+        }
+        snapshot.clone_from(&mailbox.quest);
+        true
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn quest_sort_selection(&self) -> usize {
+        lock(&self.mailbox).quest.list_sort.selection()
+    }
+
     /// A consistent projection for the native feature window and recorded-frame tests.
     #[must_use]
     pub fn quest_panel(&self) -> QuestPanel {
