@@ -28,6 +28,7 @@ from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[3]
 PIN = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+GOLDEN_NPC_SOURCE = "data-global/npc/king_tibianus.lua"
 PROVENANCE = "crystal-9f5a72c-quest-rewards-v1"
 DECISION = "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06"
 
@@ -282,6 +283,14 @@ def donor_inputs():
             corpus, manifest
         )
     return result
+
+
+def golden_source_prices(source):
+    # Crystal charges for armour, helmet, then boots.
+    armour, helmet, boots = map(
+        int, re.findall(rb"player:removeMoneyBank\(([0-9]+)\)", source)
+    )
+    return [armour, boots, helmet]
 
 
 def load_module(name, path):
@@ -2697,11 +2706,13 @@ def build():
         golden_recipe,
     )
 
-    path, index, raw, _, prices = golden_recipe(ROOT)
+    # The recipe supplies the milestone order. Crystal supplies the L10 fees.
+    path, index, raw, _, _ = golden_recipe(ROOT)
+    prices = golden_source_prices(inputs[GOLDEN_NPC_SOURCE])
     golden = "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit"
     base = "oteryn:outfit.golden"
     golden_sources = [
-        f"crystal:{PIN}:data-global/npc/king_tibianus.lua:131-200:sha256:{sha(inputs['data-global/npc/king_tibianus.lua'])}",
+        f"crystal:{PIN}:{GOLDEN_NPC_SOURCE}:131-200:sha256:{sha(inputs[GOLDEN_NPC_SOURCE])}",
         f"canonical:{path}:1#/records/{index}/definition:sha256:{sha(raw)}",
     ]
     for bit, (suffix, topic, word) in enumerate(

@@ -3731,7 +3731,7 @@
         }
       ],
       "reply": [
-        "The chosen commission costs 100000 gold. Do you agree? If your account already owns it, say {already owned}."
+        "The chosen commission costs 500000000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3751,7 +3751,7 @@
         }
       ],
       "reply": [
-        "The chosen commission costs 50000 gold. Do you agree? If your account already owns it, say {already owned}."
+        "The chosen commission costs 250000000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3771,7 +3771,7 @@
         }
       ],
       "reply": [
-        "The chosen commission costs 50000 gold. Do you agree? If your account already owns it, say {already owned}."
+        "The chosen commission costs 250000000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {

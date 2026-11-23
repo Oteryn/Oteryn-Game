@@ -132,15 +132,17 @@ class Review(unittest.TestCase):
             for r in quest_file("definitions/quests-00100-00199", "records")
             if r["definition"]["identity"]["key"] == "oteryn:quest.golden_outfits_quest"
         )
-        prices = [
+        selected_prices = [
             r["count"]
             for r in recipe["oteryn_recipe"]["payload"]["recipe"]["stages"]
             if r["kind"] == "use"
         ]
-        for document, suffixes in [
+        source_prices = q.golden_source_prices(q.donor_inputs()[q.GOLDEN_NPC_SOURCE])
+        for document, suffixes, prices in [
             (
                 "shared-reward-callbacks",
                 ["l10-golden-base", "l10-golden-boots", "l10-golden-helmet"],
+                source_prices,
             ),
             (
                 "npc-callbacks/questpc7-programmes",
@@ -149,6 +151,7 @@ class Review(unittest.TestCase):
                     "questpc7-golden-gloves",
                     "questpc7-golden-helmet",
                 ],
+                selected_prices,
             ),
         ]:
             with self.subTest(document=document):

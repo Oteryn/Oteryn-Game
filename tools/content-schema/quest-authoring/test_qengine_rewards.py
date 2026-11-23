@@ -435,9 +435,7 @@ class QuestRewards(unittest.TestCase):
 
     def test_l10_golden_source_prices_and_order(self):
         rows = {c["key"].rsplit("/", 1)[-1]: c for c in self.callbacks["callbacks"]}
-        from questpc7_selected_rewards import golden_recipe
-
-        prices = golden_recipe(q.ROOT)[-1]
+        prices = q.golden_source_prices(q.donor_inputs()[q.GOLDEN_NPC_SOURCE])
         for bit, (suffix, after) in enumerate(
             [("base", 1), ("boots", 2), ("helmet", 4)]
         ):

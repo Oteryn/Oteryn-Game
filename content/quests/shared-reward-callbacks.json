@@ -1129,7 +1129,7 @@
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
       ],
       "fee": {
-        "gold": 100000,
+        "gold": 500000000,
         "include_bank": true
       },
       "forbids_outfits": [
@@ -1200,7 +1200,7 @@
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
       ],
       "fee": {
-        "gold": 50000,
+        "gold": 250000000,
         "include_bank": true
       },
       "forbids_addons": [
@@ -1313,7 +1313,7 @@
         "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08"
       ],
       "fee": {
-        "gold": 50000,
+        "gold": 250000000,
         "include_bank": true
       },
       "forbids_addons": [
