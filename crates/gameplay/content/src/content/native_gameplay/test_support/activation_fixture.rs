@@ -938,6 +938,62 @@ pub fn activated_loop_monster_missing_child(
 
 #[cfg(test)]
 #[test]
+fn knightwatch_diamond_lever_reward_has_native_custody() -> Result<(), String> {
+    let levers: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"
+    ))
+    .map_err(|error| error.to_string())?;
+    let rewards: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../../content/quests/shared-reward-callbacks.json"
+    ))
+    .map_err(|error| error.to_string())?;
+    let lever_reward = &levers["callbacks"]
+        .as_array()
+        .and_then(|rows| rows.iter().find(|row| row["selector"]["unique"] == 3047))
+        .ok_or("Dread Lord lever")?["item_reward"];
+    let key = lever_reward["item"].as_str().ok_or("lever reward item")?;
+    let id = key
+        .strip_prefix("oteryn:item.tibia.i")
+        .and_then(|id| id.parse().ok())
+        .ok_or("native source item ID")?;
+
+    let world = test_source(1)
+        .map_err(|error| format!("source world: {error:?}"))?
+        .world_id;
+    let (controller, _) = try_activate_input(world, &manifest_input())
+        .map_err(|error| format!("native activation: {error:?}"))?;
+    let native = controller
+        .active()
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("active native gameplay")?;
+    let record = native
+        .item_policy_for_source_id(id)
+        .ok_or_else(|| format!("missing policy for {key}"))?
+        .record();
+    assert!(record.admission.materializable);
+    assert!(
+        record
+            .admission
+            .legal_destinations
+            .contains(&crate::content::native_gameplay::NativeItemDestination::CharacterInventory)
+    );
+
+    // Crystal's lever uses the old document ID. The officer NPC exchange
+    // provides the canonical identity in the current item catalogue.
+    let officer = rewards["callbacks"]
+        .as_array()
+        .and_then(|rows| {
+            rows.iter()
+                .find(|row| row["key"] == "oteryn:quest-reward/l10-brotherhood-officer")
+        })
+        .ok_or("Brotherhood officer reward")?;
+    assert_eq!(lever_reward["item"], officer["give"]["item"]);
+    assert_eq!(lever_reward["count"], officer["give"]["count"]);
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
 fn srx3_actual_grand_mother_reward_boss_has_source_corpse_and_complete_material_loot()
 -> Result<(), String> {
     // Crystal201189f data-global/monster/raids/grand_mother_foulscale.lua:

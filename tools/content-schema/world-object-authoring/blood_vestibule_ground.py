@@ -1,4 +1,5 @@
 """Admit the client-confirmed ground connecting Crystal's vestibule entry and Bloodshade."""
+
 import argparse
 
 import summer_ground
