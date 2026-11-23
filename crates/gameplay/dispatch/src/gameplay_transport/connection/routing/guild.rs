@@ -27,13 +27,21 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 {
                     return None;
                 }
+                if command.command_type
+                    == oteryn_protocol_oteryn::guild::COMMAND_TYPE_GUILD_TEXT_INTENT
+                    && oteryn_protocol_oteryn::guild::decode_guild_intent_result(&bytes).is_err()
+                {
+                    return None;
+                }
                 Dispatch::Guild(bytes)
             }
             transport::guild_intent::GuildReply::Rejected => Dispatch::Unregistered,
             transport::guild_intent::GuildReply::Unavailable
-                if matches!(command.command_type,
+                if matches!(
+                    command.command_type,
                     oteryn_protocol_oteryn::guild::COMMAND_TYPE_GUILD_QUERY
-                    | oteryn_protocol_oteryn::guild_bank::COMMAND_TYPE_GUILD_BANK_QUERY) =>
+                        | oteryn_protocol_oteryn::guild_bank::COMMAND_TYPE_GUILD_BANK_QUERY
+                ) =>
             {
                 // A read has no uncertain command effect to reconcile. Refuse this query
                 // explicitly and keep gameplay alive while the root's holder is busy.

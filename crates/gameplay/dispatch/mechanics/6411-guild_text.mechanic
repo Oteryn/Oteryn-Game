@@ -1,0 +1,8 @@
+name=guild_text
+commands=6411
+offer=728,guild_intent::offer_guild_text,guild_text_available
+[route]
+match routing::guild::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

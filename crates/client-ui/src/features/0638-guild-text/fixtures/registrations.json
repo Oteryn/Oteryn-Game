@@ -1,0 +1,20 @@
+[
+  {
+    "mechanic": "0638-guild-text",
+    "kind": "handlers",
+    "id": "0638-guild-text-intent",
+    "status": "unsupported",
+    "commands": [
+      6411
+    ],
+    "direction": "client_to_server",
+    "reason": "S03 implements the server command family. The native Guild panel reads the Guild summary.",
+    "not_applicable": {
+      "state": "The server owns the text and Guild revision.",
+      "protocol": "The command is opt-in under Guild text v1.",
+      "view": "Guild v1 already presents persisted Guild summary data.",
+      "input": "The native Guild panel has no input for command 6411.",
+      "settings": "Guild text has no client setting."
+    }
+  }
+]

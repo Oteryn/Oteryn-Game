@@ -1,0 +1,15 @@
+{
+  "id": 638,
+  "name": "GUILD_TEXT_V1",
+  "owner_decision": "S03 server mechanics package",
+  "owner": "Guild management",
+  "requires": [
+    40
+  ],
+  "command_types": [
+    6411
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES on bundle Worlds with native Guild command authority."
+}
