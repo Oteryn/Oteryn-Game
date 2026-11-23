@@ -45,6 +45,7 @@ pub(super) fn resolve(plan: &mut NpcRulePlan, face: i16) -> StoredResult<()> {
 }
 
 /// Advisory totals use the same carried-coin universe as the authoritative fee owner.
+/// The fee writer holds the Type2 activation fence while it rereads these totals.
 pub(super) async fn inventory(
     tx: &mut PgConnection,
     fence: CurrentCharacterGameplayFence,
@@ -56,7 +57,8 @@ pub(super) async fn inventory(
                 (SELECT coalesce(max(b.balance),0)::bigint
                     FROM game_account_bank_balances b
                     JOIN game_character_roots r ON r.account_id=b.account_id AND r.world_id=b.world_id
-                    WHERE r.character_id=encode($1,'hex')::uuid AND r.world_id=encode($2,'hex')::uuid)",
+                    WHERE r.character_id=encode($1,'hex')::uuid AND r.world_id=encode($2,'hex')::uuid
+                      AND EXISTS (SELECT 1 FROM game_type2_audit_activation WHERE id=1))",
     )
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(fence.runtime_scope.world_id().as_bytes().as_slice())

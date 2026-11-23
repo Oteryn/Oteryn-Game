@@ -246,7 +246,7 @@ impl NpcTalkEntry {
             || focus_reply(self.focus_greet.as_ref(), &said, false).is_some()
             || focus_reply(self.focus_farewell.as_ref(), &said, false).is_some()
             || says_any(&said, &TRADE_WORDS)
-            || self.dialogue_keyword(text, &said).is_some()
+            || self.dialogue_keyword(text, &said, false).is_some()
     }
 
     /// Whether the focused NPC's authored dialogue consumes the message before its shop: an
@@ -302,12 +302,16 @@ impl NpcTalkEntry {
         &self,
         text: &str,
         said: &[String],
+        require_whole_words: bool,
     ) -> Option<&crate::content::ProjectV2DialogueKeyword> {
         let lower = text.to_ascii_lowercase();
         self.dialogue_keywords
             .iter()
             .enumerate()
-            .find(|(index, keyword)| self.keyword_matches(*index, &lower, said, &keyword.triggers))
+            .find(|(index, keyword)| {
+                self.keyword_matches(*index, &lower, said, &keyword.triggers)
+                    && (!require_whole_words || dialogue_triggers_match(said, &keyword.triggers))
+            })
             .map(|(_, keyword)| keyword)
     }
 
@@ -1139,8 +1143,11 @@ pub fn talk_with_speaker<K: Copy + PartialEq>(
             *engaged = None;
             return start(speaker, text, &said, npcs, engaged, female);
         };
+        let generic_farewell = npc.entry.is_farewell(&said);
+        // Require a whole-word topic when the message also matches a generic farewell.
+        let keyword = npc.entry.dialogue_keyword(text, &said, generic_farewell);
         let farewell = focus_reply(npc.entry.focus_farewell.as_ref(), &said, female)
-            .or_else(|| npc.entry.is_farewell(&said).then_some(npc.entry.farewell()));
+            .or_else(|| (generic_farewell && keyword.is_none()).then_some(npc.entry.farewell()));
         if let Some(farewell) = farewell {
             *engaged = None;
             return Some(NpcReply {
@@ -1149,7 +1156,7 @@ pub fn talk_with_speaker<K: Copy + PartialEq>(
                 continuation: Vec::new(),
             });
         }
-        if let Some(keyword) = npc.entry.dialogue_keyword(text, &said) {
+        if let Some(keyword) = keyword {
             return Some(NpcReply {
                 id: npc.id,
                 text: keyword.reply[0].clone(),

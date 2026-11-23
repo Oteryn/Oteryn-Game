@@ -180,3 +180,119 @@ fn crystal_kevin_postgres_requires_the_full_tour_briefing_and_takes_all_bones() 
     eprintln!("POSTGRES_CASE_COMPLETED postman_kevin_tour_briefing_and_bones");
     Ok(())
 }
+
+#[test]
+fn postman_olrik_postgres_only_uses_bank_after_type2_activation() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("postman-olrik", || {
+        run(async |admin| {
+            reset();
+            let h = Harness::create_with_admission_seed(admin, "postman_olrik", true, false).await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+            let (controller, pin) = activated_with_loot_tables(world, None);
+            let deps = Dependencies::with_content(
+                ChannelContentPin::from_activation(
+                    world,
+                    pin.activation_sequence(),
+                    pin.identity().server_artifact_digest(),
+                    pin.identity().client_artifact_digest(),
+                    pin.frame_binding().digest(),
+                    pin.qualified_room().map_revision_digest(),
+                    (2, 0, 7),
+                ),
+                pin.qualified_room().clone(),
+                crate::spell::cast::v1_spell_book().map_err(debug)?,
+            )?;
+            let mut owner = deps.owner(&h, &authority);
+            owner.active_generation = Some(controller.active().ok_or("active content")?);
+            owner.quest_catalogue = Some(Arc::new(
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?
+                    .catalogue()
+                    .clone(),
+            ));
+            deps.initialize(&owner).await;
+            deps.runtime
+                .lock()
+                .await
+                .initialize_first_entry_position(deps.actor)
+                .map_err(debug)?;
+            let mut admitted = deps.admitted;
+            super::qengine_outfit_stories_fixtures::seed_production_progression_context(
+                &h,
+                &owner,
+                admitted.game_session_id,
+            )
+            .await?;
+            owner.admit_progression_session(&mut admitted).await;
+            assert!(owner.progression_binding(admitted.game_session_id).is_some());
+            let [olrik] = super::classic_quests_fixtures::install(
+                &owner,
+                &admitted,
+                ["oteryn:npc.olrik"],
+            )
+            .await?;
+            super::item_look_fixtures::seed_main_backpack(
+                &h,
+                &[("oteryn:item.tibia.i3031", 2)],
+            )
+            .await?;
+            let mission07 = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07";
+            super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                &h,
+                &owner,
+                &deps.admitted,
+                &[(mission07.into(), 5)],
+                94,
+            )
+            .await?;
+            super::guild_bank_fixtures::bank_seed::balance(&h, id(40), id(41), 3, 180).await?;
+            owner
+                .refresh_quest_session(deps.admitted.game_session_id, true)
+                .await;
+            for (command, text) in [(96, "hi"), (97, "measurements")] {
+                super::classic_quests_fixtures::talk(&mut owner, &deps.admitted, olrik, command, text)
+                    .await?;
+            }
+            let reply =
+                super::classic_quests_fixtures::talk(&mut owner, &deps.admitted, olrik, 98, "yes")
+                    .await?;
+            assert!(reply.is_empty(), "V1 cannot fund the wager from the bank");
+            let unpaid: bool = sqlx::query_scalar(
+                "SELECT NOT EXISTS (SELECT 1 FROM game_item_fee_burns
+                  WHERE purchase_service_key='oteryn:quest-npc/postman/olrik/roll')",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert!(unpaid);
+            sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
+                .execute(&h.pool)
+                .await?;
+            // The V1 refusal keeps the offer open. With V2, the same topic can use bank funds.
+            super::classic_quests_fixtures::talk(&mut owner, &deps.admitted, olrik, 99, "yes").await?;
+            let wager: (i64, i64, i64) = sqlx::query_as(
+                "SELECT fee_gold_units,burned_gold_units,bank_debit_gold_units
+                   FROM game_item_fee_burns
+                  WHERE purchase_service_key='oteryn:quest-npc/postman/olrik/roll'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(wager, (5, 2, 3));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await
+        })
+    })?;
+    eprintln!("POSTGRES_CASE_COMPLETED postman_olrik_type2_activation");
+    Ok(())
+}
