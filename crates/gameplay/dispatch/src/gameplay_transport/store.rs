@@ -102,26 +102,69 @@ async fn purchase_with_mode(
 }
 
 
-const ITEM_CATALOGUE_JSON: &[u8] = include_bytes!("../../../../../rulesets/economy/store/catalogue.json");
-const HIRELING_CATALOGUE_JSON: &[u8] = include_bytes!("../../../../../rulesets/economy/store/hirelings.json");
+const ITEM_CATALOGUE_JSON: &[u8] =
+    include_bytes!("../../../../../rulesets/economy/store/catalogue.json");
+const HIRELING_CATALOGUE_JSON: &[u8] =
+    include_bytes!("../../../../../rulesets/economy/store/hirelings.json");
 const COSMETIC_CATALOGUE_JSON: &[u8] = crate::content::store_cosmetics::DOCUMENT;
-const PLATFORM_CATALOGUE_JSON: &[u8] = include_bytes!("../../../../../rulesets/economy/store/platform-catalogue.json");
+const PLATFORM_CATALOGUE_JSON: &[u8] =
+    include_bytes!("../../../../../rulesets/economy/store/platform-catalogue.json");
 
-static PLATFORM_REVISION: LazyLock<String> = LazyLock::new(|| {
-    Sha256::digest(PLATFORM_CATALOGUE_JSON).iter().map(|byte| format!("{byte:02x}")).collect()
+const PLATFORM_PREDECESSORS_JSON: &[u8] =
+    include_bytes!("../../../../../rulesets/economy/store/platform-predecessors.json");
+
+fn platform_revision(bytes: &[u8]) -> String {
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+static PLATFORM_REVISION: LazyLock<String> =
+    LazyLock::new(|| platform_revision(PLATFORM_CATALOGUE_JSON));
+
+static PLATFORM_PREDECESSORS: LazyLock<Vec<(String, serde_json::Value)>> = LazyLock::new(|| {
+    serde_json::from_slice::<Vec<String>>(PLATFORM_PREDECESSORS_JSON)
+        .into_iter()
+        .flatten()
+        .filter_map(|snapshot| {
+            let document = serde_json::from_str(&snapshot).ok()?;
+            Some((platform_revision(snapshot.as_bytes()), document))
+        })
+        .collect()
 });
 
 static PLATFORM_OFFERS: LazyLock<Option<serde_json::Value>> =
     LazyLock::new(|| serde_json::from_slice(PLATFORM_CATALOGUE_JSON).ok());
 
 pub(super) fn platform_unit_kind(revision: &str, offer_key: &str) -> Option<&'static str> {
-    if revision != PLATFORM_REVISION.as_str() {
-        return Some("ITEM");
-    }
-    let offers = PLATFORM_OFFERS.as_ref()?.get("offers")?.as_array()?;
-    let offer = offers.iter().find(|offer| offer["offer_key"] == offer_key)?;
-    let [unit] = offer["units"].as_array()?.as_slice() else { return None; };
-    unit["unit_kind"].as_str().filter(|kind| matches!(*kind, "ITEM" | "COSMETIC"))
+    let document = if revision == PLATFORM_REVISION.as_str() {
+        PLATFORM_OFFERS.as_ref()?
+    } else if let Some((_, document)) = PLATFORM_PREDECESSORS
+        .iter()
+        .find(|(old, _)| old == revision)
+    {
+        document
+    } else {
+        // The legacy runtime import projects outfits and mounts as COSMETIC.
+        return Some(
+            if crate::content::store_cosmetics::offer(offer_key).is_some() {
+                "COSMETIC"
+            } else {
+                "ITEM"
+            },
+        );
+    };
+    let offers = document.get("offers")?.as_array()?;
+    let offer = offers
+        .iter()
+        .find(|offer| offer["offer_key"] == offer_key)?;
+    let [unit] = offer["units"].as_array()?.as_slice() else {
+        return None;
+    };
+    unit["unit_kind"]
+        .as_str()
+        .filter(|kind| matches!(*kind, "ITEM" | "COSMETIC"))
 }
 
 fn load_active_catalogue(bytes: &[u8]) -> Option<RuntimeCatalogue> {
@@ -135,13 +178,28 @@ static HIRELING_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> =
 static COSMETIC_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> =
     LazyLock::new(|| load_active_catalogue(COSMETIC_CATALOGUE_JSON));
 
-static PREDECESSOR_CATALOGUES: LazyLock<[Option<RuntimeCatalogue>; 5]> = LazyLock::new(|| [
-    RuntimeCatalogue::from_json(include_bytes!("../../../../../rulesets/economy/store/predecessors/catalogue.json")),
-    RuntimeCatalogue::from_json(include_bytes!("../../../../../rulesets/economy/store/predecessors/cosmetics.json")),
-    RuntimeCatalogue::from_json(include_bytes!("../../../../../rulesets/economy/store/predecessors/charged-catalogue.json")),
-    RuntimeCatalogue::from_json(COSMETIC_CATALOGUE_JSON),
-    RuntimeCatalogue::from_json(HIRELING_CATALOGUE_JSON),
-]);
+static PREDECESSOR_CATALOGUES: LazyLock<Vec<Option<RuntimeCatalogue>>> = LazyLock::new(|| {
+    [
+        RuntimeCatalogue::from_json(include_bytes!(
+            "../../../../../rulesets/economy/store/predecessors/catalogue.json"
+        )),
+        RuntimeCatalogue::from_json(include_bytes!(
+            "../../../../../rulesets/economy/store/predecessors/cosmetics.json"
+        )),
+        RuntimeCatalogue::from_json(include_bytes!(
+            "../../../../../rulesets/economy/store/predecessors/charged-catalogue.json"
+        )),
+        RuntimeCatalogue::from_json(COSMETIC_CATALOGUE_JSON),
+        RuntimeCatalogue::from_json(HIRELING_CATALOGUE_JSON),
+    ]
+    .into_iter()
+    .chain(
+        PLATFORM_PREDECESSORS
+            .iter()
+            .map(|(revision, document)| RuntimeCatalogue::from_platform(document, revision)),
+    )
+    .collect()
+});
 
 #[cfg(test)]
 pub(super) fn active_catalogue_revision() -> &'static str {

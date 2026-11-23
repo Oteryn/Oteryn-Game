@@ -22,6 +22,8 @@ impl DurabilityRoot {
                  WHERE c.world_id=encode($3,'hex')::uuid AND h.account_id=encode($1,'hex')::uuid AND h.offer_key=$2 AND h.currency='TIBIA_COIN' AND p.state=2
                    AND NOT EXISTS(SELECT 1 FROM store_delivery_receipts r
                        WHERE r.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid)
+                   AND NOT EXISTS(SELECT 1 FROM game_store_restore_conflicts conflict
+                       WHERE conflict.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid)
                  ORDER BY h.purchased_at_ms,h.purchase_request_id LIMIT 1",
             ).bind(account.as_slice()).bind(offer).bind(world.as_slice()).fetch_optional(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
@@ -60,7 +62,9 @@ impl DurabilityRoot {
                      OR ($5 AND p.state=2 AND p.binding_digest=ANY($4::bytea[])
                          AND convert_from(p.answer,'UTF8')::jsonb ->> 'result' = 'ACCEPTED'
                          AND NOT EXISTS (SELECT 1 FROM store_delivery_receipts r
-                             WHERE r.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid))
+                             WHERE r.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid)
+                         AND NOT EXISTS(SELECT 1 FROM game_store_restore_conflicts conflict
+                       WHERE conflict.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid))
                    )
                    AND NOT EXISTS(SELECT 1 FROM game_store_purchase_retries r WHERE r.retry_id=p.purchase_request_id)
                  ORDER BY (p.binding_digest=ANY($4::bytea[])) DESC,p.created_at,p.purchase_request_id LIMIT 20",

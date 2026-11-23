@@ -40,15 +40,56 @@ impl DurabilityRoot {
             .await?
     }
     /// Read the reconciled generation installed by the Game recovery owner.
-    pub async fn store_publication_generation(&self) -> Result<Option<String>, StoreDurabilityError> {
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let generation = sqlx::query_scalar(
+    pub async fn store_publication_generation(
+        &self,
+    ) -> Result<Option<String>, StoreDurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let generation = sqlx::query_scalar(
                 "SELECT CASE WHEN reconciled_at IS NOT NULL THEN recovery_generation::text END
                  FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1",
             ).fetch_optional(&mut *tx).await?.flatten();
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(generation))
+                })
+            })
+            .await?
+    }
+
+    /// Register a Platform-owned Premium Time grant without changing the premium snapshot.
+    pub async fn record_premium_store_registration(
+        &self,
+        operation: [u8; 16],
+        binding_digest: String,
+        restore_generation: Option<u64>,
+    ) -> Result<Option<(String, i64)>, StoreDurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:character-recovery-admission', 0))")
+                .execute(&mut *tx).await?;
+            let current: Option<String> = sqlx::query_scalar(
+                "SELECT CASE WHEN reconciled_at IS NOT NULL THEN recovery_generation::text END
+                 FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1",
+            ).fetch_optional(&mut *tx).await?.flatten();
+            let Some(current) = current else { return Ok(Ok(None)); };
+            if restore_generation.is_some_and(|generation| current != generation.to_string()) {
+                return Ok(Ok(None));
+            }
+            sqlx::query(
+                "INSERT INTO game_store_premium_registrations(operation_id,binding_digest,recovery_generation,decided_at)
+                 VALUES (encode($1,'hex')::uuid,decode($2,'hex'),$3::text::numeric,
+                         floor(extract(epoch FROM statement_timestamp()))::bigint)
+                 ON CONFLICT DO NOTHING",
+            ).bind(operation.as_slice()).bind(&binding_digest).bind(current)
+                .execute(&mut *tx).await?;
+            let registration = sqlx::query_as(
+                "SELECT recovery_generation::text,decided_at FROM game_store_premium_registrations
+                 WHERE operation_id=encode($1,'hex')::uuid AND binding_digest=decode($2,'hex')",
+            ).bind(operation.as_slice()).bind(binding_digest).fetch_optional(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(generation))
+            Ok(Ok(registration))
         })).await?
     }
 
@@ -57,6 +98,7 @@ impl DurabilityRoot {
         &self,
         operation: [u8; 16],
         generation: u64,
+        delivery: Option<[u8; 16]>,
     ) -> Result<Option<i64>, StoreDurabilityError> {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -68,10 +110,11 @@ impl DurabilityRoot {
                      SELECT reconciled_at FROM latest
                      WHERE recovery_generation=$2::text::numeric AND predecessor_generation>0
                  ), marked AS (
-                     INSERT INTO game_store_restore_conflicts(operation_id)
-                     SELECT encode($1,'hex')::uuid FROM restored ON CONFLICT DO NOTHING
+                     INSERT INTO game_store_restore_conflicts(operation_id,delivery_operation_id)
+                     SELECT encode($1,'hex')::uuid,encode($3,'hex')::uuid FROM restored
+                     ON CONFLICT DO NOTHING
                  ) SELECT reconciled_at / 1000 FROM restored",
-            ).bind(operation.as_slice()).bind(generation.to_string()).fetch_optional(&mut *tx).await?;
+            ).bind(operation.as_slice()).bind(generation.to_string()).bind(delivery.as_ref().map(|id| id.as_slice())).fetch_optional(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(decided_at))
         })).await?
@@ -81,15 +124,22 @@ impl DurabilityRoot {
         &self,
         operation: [u8; 16],
     ) -> Result<bool, StoreDurabilityError> {
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let marked = sqlx::query_scalar(
-                "SELECT EXISTS(SELECT 1 FROM game_store_restore_conflicts
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let marked = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_store_restore_conflicts
                  WHERE operation_id=encode($1,'hex')::uuid)",
-            ).bind(operation.as_slice()).fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(marked))
-        })).await?
+                    )
+                    .bind(operation.as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(marked))
+                })
+            })
+            .await?
     }
 
     /// Read committed delivery evidence even after the outbox was acknowledged.
@@ -116,8 +166,9 @@ impl DurabilityRoot {
     ) -> Result<Option<(DeliveryReceipt, [u8; 16])>, StoreDurabilityError> {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let row: Option<(Vec<u8>, sqlx::types::Uuid, i64)> = sqlx::query_as(
-                "SELECT d.receipt,d.item_instance_id,floor(extract(epoch FROM m.created_at))::bigint
+            let row: Option<(Vec<u8>, sqlx::types::Uuid, i64, String)> = sqlx::query_as(
+                "SELECT d.receipt,d.item_instance_id,floor(extract(epoch FROM m.created_at))::bigint,
+                        COALESCE(m.inbox_recovery_generation,d.recovery_generation)::text
                  FROM store_delivery_receipts d
                  JOIN game_item_loop_move_lines l ON l.item_instance_id=d.item_instance_id
                  JOIN game_item_loop_move_receipts m ON m.transaction_id=l.transaction_id
@@ -125,10 +176,11 @@ impl DurabilityRoot {
                    AND m.character_id=d.character_id AND m.world_id=d.world_id
                  ORDER BY m.created_at,m.transaction_id LIMIT 1",
             ).bind(delivery_id.as_slice()).fetch_optional(&mut *tx).await?;
-            let source = row.map(|(bytes, unit, decided_at)| {
+            let source = row.map(|(bytes, unit, decided_at, generation)| {
                 let mut receipt: DeliveryReceipt =
                     serde_json::from_slice(&bytes).map_err(|_| DurabilityError::InvalidStoredState)?;
                 receipt.decided_at = decided_at.to_string();
+                receipt.recovery_generation = generation;
                 Ok::<_, DurabilityError>((receipt, *unit.as_bytes()))
             }).transpose()?;
             commit_semantic_transaction(tx, deadline).await?;
@@ -144,9 +196,11 @@ impl DurabilityRoot {
         account: String,
         entitlement: String,
     ) -> Result<(), StoreDurabilityError> {
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            sqlx::query(
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    sqlx::query(
                 "INSERT INTO game_store_claim_operations (delivery_operation_id,claim_operation_id)
                  SELECT operation_id,encode($2,'hex')::uuid FROM store_delivery_receipts
                  WHERE operation_id=encode($1,'hex')::uuid AND account_id=$3::text::uuid
@@ -154,9 +208,11 @@ impl DurabilityRoot {
                  ON CONFLICT DO NOTHING",
             ).bind(delivery.as_slice()).bind(claim.as_slice()).bind(account).bind(entitlement)
                 .execute(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(()))
-        })).await?
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(()))
+                })
+            })
+            .await?
     }
 
     /// Find the exact Player-bound Store item named by the entitlement.
@@ -167,21 +223,33 @@ impl DurabilityRoot {
         world: [u8; 16],
         entitlement: String,
     ) -> Result<Option<([u8; 16], [u8; 16], [u8; 16])>, StoreDurabilityError> {
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let source: Option<(sqlx::types::Uuid, sqlx::types::Uuid, sqlx::types::Uuid)> = sqlx::query_as(
-                "SELECT r.operation_id,c.claim_operation_id,r.item_instance_id
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let source: Option<(sqlx::types::Uuid, sqlx::types::Uuid, sqlx::types::Uuid)> =
+                        sqlx::query_as(
+                            "SELECT r.operation_id,c.claim_operation_id,r.item_instance_id
                  FROM store_delivery_receipts r JOIN game_store_claim_operations c
                    ON c.delivery_operation_id=r.operation_id
                  WHERE r.account_id=encode($1,'hex')::uuid AND r.character_id=encode($2,'hex')::uuid
                    AND r.world_id=encode($3,'hex')::uuid AND r.fulfilment_unit_id=$4
                    AND r.item_instance_id IS NOT NULL
                  ORDER BY r.operation_id LIMIT 1",
-            ).bind(account.as_slice()).bind(character.as_slice()).bind(world.as_slice()).bind(entitlement)
-                .fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(source.map(|(delivery, claim, item)| (*delivery.as_bytes(), *claim.as_bytes(), *item.as_bytes()))))
-        })).await?
+                        )
+                        .bind(account.as_slice())
+                        .bind(character.as_slice())
+                        .bind(world.as_slice())
+                        .bind(entitlement)
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(source.map(|(delivery, claim, item)| {
+                        (*delivery.as_bytes(), *claim.as_bytes(), *item.as_bytes())
+                    })))
+                })
+            })
+            .await?
     }
 
     /// Mark a known receipt once; repeated or unknown acknowledgements return false.

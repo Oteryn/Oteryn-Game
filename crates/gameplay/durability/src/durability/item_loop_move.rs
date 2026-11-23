@@ -1482,11 +1482,11 @@ async fn apply_loop_move<C: ItemLoopContent>(
         "INSERT INTO game_item_loop_move_receipts (transaction_id, event_id, character_id, \
                 game_session_id, command_id, connection_generation, lease_generation, world_id, \
                 channel_id, scope_generation, content_digest, operation, line_count, intent, \
-                intent_sha256, depot_town, depot_box, quick_loot_ordinal, scope_kind, instance_id) \
+                intent_sha256, depot_town, depot_box, quick_loot_ordinal, scope_kind, instance_id, inbox_recovery_generation) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
                  encode($4,'hex')::uuid, $5::text::numeric(20,0), $6::text::numeric(20,0), \
                  $7::text::numeric(20,0), encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
-                 $10::text::numeric(20,0), $11, $12, $13, $14, sha256($14), $15, $16, $17, $18, encode($19,'hex')::uuid)",
+                 $10::text::numeric(20,0), $11, $12, $13, $14, sha256($14), $15, $16, $17, $18, encode($19,'hex')::uuid, $20::text::numeric)",
     )
     .bind(transaction_id.as_slice())
     .bind(event_id.as_slice())
@@ -1506,6 +1506,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(depot.map(|access| i16::from(access.box_number)))
     .bind(quick.map_or(search.unwrap_or(0), |q| q.ordinal))
     .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
+    .bind((source == SourceKind::Inbox).then(|| record.recovery_generation.to_string()))
     .execute(&mut **tx)
     .await?;
     if let Some(context) = house {

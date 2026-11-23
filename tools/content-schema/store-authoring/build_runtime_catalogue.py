@@ -327,6 +327,20 @@ def platform_catalogue(catalogue: dict, platform_base: dict | None = None) -> by
     ).encode()
 
 
+def write_platform_catalogue(document: bytes) -> None:
+    if PLATFORM_OUT.is_file():
+        previous = PLATFORM_OUT.read_bytes()
+        if previous == document:
+            return
+        archive = PLATFORM_OUT.with_name("platform-predecessors.json")
+        retained = json.loads(archive.read_bytes()) if archive.is_file() else []
+        snapshot = previous.decode("utf-8")
+        if snapshot not in retained:
+            retained.append(snapshot)
+            archive.write_text(json.dumps(retained, indent=2) + "\n", encoding="utf-8")
+    PLATFORM_OUT.write_bytes(document)
+
+
 def check(platform_base: dict | None = None) -> list[str]:
     catalogue = json.loads(OUT.read_text(encoding="utf-8"))
     items = admitted_items()
@@ -404,7 +418,7 @@ def main() -> int:
         or args.refresh_owner_offers
         or (args.platform_base and not args.check)
     ):
-        PLATFORM_OUT.write_bytes(
+        write_platform_catalogue(
             platform_catalogue(json.loads(OUT.read_bytes()), platform_base)
         )
     errors = check(platform_base)

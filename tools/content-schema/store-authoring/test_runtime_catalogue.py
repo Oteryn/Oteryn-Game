@@ -59,6 +59,35 @@ class RuntimeCatalogueTests(unittest.TestCase):
         ]
         self.assertEqual(web_offers, active["offers"])
 
+    def test_price_refresh_retains_the_previous_combined_import(self):
+        fixture = (
+            runtime.ROOT
+            / "docs/contracts/fixtures/store-price-list-v1/price-list.valid.json"
+        )
+        active = json.loads(
+            fixture.read_text(encoding="utf-8").replace("ITEM", "PREMIUM_TIME")
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "active.json"
+            combined = Path(directory) / "combined.json"
+            retained = Path(directory) / "platform-predecessors.json"
+            base.write_text(json.dumps(active))
+            with (
+                patch.object(runtime, "PLATFORM_OUT", combined),
+                patch(
+                    "sys.argv",
+                    ["build_runtime_catalogue.py", "--platform-base", str(base)],
+                ),
+            ):
+                self.assertEqual(runtime.main(), 0)
+                original = combined.read_text()
+                offer = active["offers"][0]
+                offer["unit_price"] = str(int(offer["unit_price"]) + 1)
+                base.write_text(json.dumps(active))
+                self.assertEqual(runtime.main(), 0)
+                self.assertNotEqual(combined.read_text(), original)
+                self.assertIn(original, json.loads(retained.read_bytes()))
+
     def test_platform_only_creates_claims_for_physical_inbox_deliveries(self):
         catalogue = json.loads(runtime.OUT.read_bytes())
         prey = next(

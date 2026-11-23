@@ -144,7 +144,15 @@ impl DurabilityRoot {
                         JOIN store_delivery_receipts r ON r.item_instance_id=x.item_instance_id
                         WHERE x.item_instance_id=encode($1,'hex')::uuid
                           AND x.character_id=encode($2,'hex')::uuid AND x.world_id=encode($3,'hex')::uuid
-                          AND r.character_id=x.character_id AND r.world_id=x.world_id AND i.lifecycle=1")
+                          AND r.character_id=x.character_id AND r.world_id=x.world_id AND i.lifecycle=1
+                          AND NOT EXISTS (
+                              SELECT 1 FROM store_delivery_receipts r
+                              LEFT JOIN game_store_claim_operations c ON c.delivery_operation_id=r.operation_id
+                              WHERE r.item_instance_id=x.item_instance_id AND (
+                                  EXISTS(SELECT 1 FROM game_store_restore_conflicts f WHERE f.delivery_operation_id=r.operation_id)
+                                  OR EXISTS(SELECT 1 FROM game_store_restore_conflicts f WHERE f.operation_id=c.claim_operation_id)
+                              )
+                          )")
                         .bind(item.as_slice()).bind(fence.character_id.as_bytes().as_slice())
                         .bind(world.as_bytes().as_slice()).fetch_all(&mut *tx).await?
                 } else {
@@ -158,6 +166,14 @@ impl DurabilityRoot {
                           FROM game_item_character_inbox_locations x JOIN game_item_instances p USING(item_instance_id)
                          WHERE x.character_id=encode($1,'hex')::uuid AND x.world_id=encode($2,'hex')::uuid
                            AND p.definition_production_key<>'oteryn:item.tibia.i23721'
+                           AND NOT EXISTS (
+                               SELECT 1 FROM store_delivery_receipts r
+                               LEFT JOIN game_store_claim_operations c ON c.delivery_operation_id=r.operation_id
+                               WHERE r.item_instance_id=x.item_instance_id AND (
+                                   EXISTS(SELECT 1 FROM game_store_restore_conflicts f WHERE f.delivery_operation_id=r.operation_id)
+                                   OR EXISTS(SELECT 1 FROM game_store_restore_conflicts f WHERE f.operation_id=c.claim_operation_id)
+                               )
+                           )
                     ), tree AS (
                         SELECT item_instance_id, kind, town_id, box_number, 0 depth, ARRAY[item_instance_id::text] path FROM roots
                         UNION ALL

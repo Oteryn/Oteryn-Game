@@ -61,7 +61,10 @@ pub(super) async fn inbox_occupancy(
     Ok(sqlx::query_scalar(
         "SELECT (SELECT count(*) FROM game_item_character_inbox_locations WHERE character_id=encode($1,'hex')::uuid)
          +(SELECT count(*) FROM game_hireling_store_reservations WHERE character_id=encode($1,'hex')::uuid AND state=1 AND kind=1)
-         +(SELECT count(*) FROM game_store_item_reservations WHERE character_id=encode($1,'hex')::uuid)",
+         +(SELECT count(*) FROM game_store_item_reservations r JOIN store_purchase_requests p USING(purchase_request_id)
+           WHERE r.character_id=encode($1,'hex')::uuid
+             AND NOT EXISTS(SELECT 1 FROM game_store_restore_conflicts conflict
+                 WHERE conflict.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid))",
     ).bind(character.as_slice()).fetch_one(&mut **tx).await?)
 }
 
