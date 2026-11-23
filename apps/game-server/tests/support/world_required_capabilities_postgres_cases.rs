@@ -44,7 +44,8 @@ fn admit0_fresh_atomic_refusal_preserves_nonce_claims_and_reservations() -> Test
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create_migrated("admit0_fresh_refusal").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("admit0_fresh_refusal").await?;
             let result = async {
                 let url = database.database_url()?;
                 let pool = sqlx::PgPool::connect(&url).await?;
@@ -209,7 +210,8 @@ fn admit0_current_runtime_replacement_refuses_a_prepared_old_generation() -> Tes
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create_migrated("admit0_current_owner").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("admit0_current_owner").await?;
             let result = async {
                 let url = database.database_url()?;
                 let pool = sqlx::PgPool::connect(&url).await?;
