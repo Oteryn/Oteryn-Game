@@ -1,6 +1,6 @@
 use super::fixture::{Harness, debug, id, run};
-use super::item_craft_fixtures::exchange;
 use super::item_look_fixtures::seed_main_backpack;
+use super::rust_lottery_fixtures::exchange;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{
     ChannelContentPin, ChannelRuntimeV1, GameSessionId, MovementLocalPosition,
@@ -9,7 +9,7 @@ use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::map::boot::{BootPins, native_item_definition};
 use crate::map::overlay::TilePos;
-use crate::map::view::{MapFacts, placement_key};
+use crate::map::view::{MapFacts, RoofFacts, compose_tile, placement_key};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
@@ -28,14 +28,50 @@ const BAR_POS: TilePos = TilePos {
 #[test]
 fn world_wooden_bars_break_replay_and_restore_postgres() -> TestResult {
     run_case("break_replay_and_restore", || {
-        scenario(2295, false)?;
-        scenario(2296, false)
+        scenario(2295, Case::Replay)?;
+        scenario(2296, Case::Replay)
     })
 }
 
 #[test]
 fn world_furniture_break_refuses_bound_or_distant_target_postgres() -> TestResult {
-    run_case("refuses_bound_or_distant_target", || scenario(2295, true))
+    run_case("refuses_bound_or_distant_target", || {
+        scenario(2295, Case::Refusals)
+    })
+}
+
+#[test]
+fn world_wooden_bars_break_crystal_variants_postgres() -> TestResult {
+    run_case("crystal_variants", || {
+        for bar in [2291, 2292, 2293, 2294] {
+            scenario(bar, Case::Replay)?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn world_wooden_bars_break_with_equipped_weapon_postgres() -> TestResult {
+    run_case("equipped_weapon", || scenario(2295, Case::Equipped))
+}
+
+#[test]
+fn world_wooden_bars_break_projects_spell_tile_postgres() -> TestResult {
+    run_case("spell_tile", || scenario(2295, Case::SpellTile))
+}
+
+#[test]
+fn world_wooden_bars_restore_transparent_but_solid_postgres() -> TestResult {
+    run_case("restored_sight", || scenario(2295, Case::Sight))
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Replay,
+    Refusals,
+    Equipped,
+    SpellTile,
+    Sight,
 }
 
 fn run_case(label: &str, case: impl FnOnce() -> TestResult + Send + 'static) -> TestResult {
@@ -55,19 +91,20 @@ fn run_case(label: &str, case: impl FnOnce() -> TestResult + Send + 'static) -> 
     Ok(())
 }
 
-fn scenario(bar_id: u16, refusals: bool) -> TestResult {
-    run(async move |admin| exercise(admin, bar_id, refusals).await)
+fn scenario(bar_id: u16, case: Case) -> TestResult {
+    run(async move |admin| exercise(admin, bar_id, case).await)
 }
 
-async fn exercise(admin: String, bar_id: u16, refusals: bool) -> TestResult {
+async fn exercise(admin: String, bar_id: u16, case: Case) -> TestResult {
     let harness =
         Harness::create_with_admission_seed(admin, "world_furniture_break", true, false).await?;
-    let result = exercise_with_harness(&harness, bar_id, refusals).await;
+    let result = exercise_with_harness(&harness, bar_id, case).await;
     harness.cleanup().await?;
     result
 }
 
-async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -> TestResult {
+async fn exercise_with_harness(harness: &Harness, bar_id: u16, case: Case) -> TestResult {
+    let refusals = case == Case::Refusals;
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -93,12 +130,14 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -
         (&bar, bar_reference.get() - 1),
     );
     let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
-    // Production routes the Item through wall Terrain and does not place the debris.
+    // Use a served ground source identity so the real bundle spell reader qualifies the tile.
+    data.manifest.palette[0].key = "oteryn:terrain.tibia.i103".into();
+    let collision = crate::map::facts::wooden_bar_collision(bar_id).ok_or("pinned bar facts")?;
     data.manifest.palette[4].terrain = Some(oteryn_world_bundle::bundle::Terrain {
-        kind: oteryn_world_bundle::bundle::TerrainKind::Wall,
-        walkable: Some(false),
+        kind: collision.terrain_kind.ok_or("pinned bar terrain")?,
+        walkable: Some(!collision.block_solid),
         ground_speed: None,
-        blocks_projectile: None,
+        blocks_projectile: Some(collision.blocks_projectile),
     });
     if refusals {
         let tiles = &mut data.sectors[0].tiles;
@@ -123,6 +162,7 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -
         native.source_digest(),
         deps.admitted.game_session_id,
         refusals,
+        matches!(bar_id, 2291 | 2292),
     )?;
     pins.digest = digest;
     let base = crate::map::load(&bytes, &pins).map_err(debug)?;
@@ -197,7 +237,7 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -
     admitted.runtime_actor = Some(deps.actor);
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 12, 15, 18])
             .ok_or("terrain offers")?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
@@ -207,6 +247,16 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice())
         .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
     seed_main_backpack(harness, &[(WEAPON, 1)]).await?;
+    if case == Case::Equipped {
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("WITH weapon AS (DELETE FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid RETURNING character_id,item_instance_id,world_id,placed_transaction_id) INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) SELECT character_id,5,item_instance_id,world_id,placed_transaction_id FROM weapon")
+            .bind(id(41).as_slice()).bind(id(71).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+
     let weapon = reference(WEAPON).ok_or("weapon definition")?;
 
     if refusals {
@@ -223,6 +273,7 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -
                 command_id,
                 &payload(target)?,
                 Some(weapon),
+                None,
             )
             .await?;
             assert_eq!(result, expected, "refusal at {pos:?}");
@@ -241,21 +292,64 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -
 
     let (key, initial_target) = target(&base, BAR_POS)?;
     assert!(!map.enterable(BAR_POS));
-    let (_, result, wire_payload) =
-        exchange(&owner, admitted, 1, &payload(initial_target)?, Some(weapon)).await?;
+    let cell = crate::content::LogicalCell { x: 7, y: 0, z: 7 };
+    if case == Case::SpellTile {
+        assert!(
+            cells
+                .spell_tiles()
+                .lookup(cells.scope(), cell)
+                .map_err(debug)?
+                .flags()
+                .block_solid
+        );
+    }
+    let (_, result, wire_payload) = exchange(
+        &owner,
+        admitted,
+        1,
+        &payload(initial_target)?,
+        Some(weapon),
+        None,
+    )
+    .await?;
     assert_eq!(
         result,
         UseDisposition::Committed,
         "eligible bars must break on a successful draw"
     );
+    if case == Case::SpellTile {
+        let tile = cells
+            .spell_tiles()
+            .lookup(cells.scope(), cell)
+            .map_err(debug)?;
+        assert!(
+            !tile.flags().block_solid,
+            "the field creation reader must see the open passage"
+        );
+        assert_eq!(tile.top_source_ids(), &[3145]);
+    }
+    let (debris, intact) = if matches!(bar_id, 2291 | 2292) {
+        (3146, 2296)
+    } else {
+        (3145, 2295)
+    };
     let state: (i64, i64, Vec<i64>, Vec<i64>, bool) = sqlx::query_as(
         "SELECT state_item_id, object_revision, decay_states, decay_delays, decay_at_unix_ms > floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_terrain_tool_transforms"
     ).fetch_one(&harness.pool).await?;
-    assert_eq!(state, (3145, 1, vec![2295], vec![120_000], true));
+    assert_eq!(
+        state,
+        (
+            i64::from(debris),
+            1,
+            vec![i64::from(intact)],
+            vec![120_000],
+            true
+        )
+    );
     assert_eq!(receipts(harness).await?, 1);
     assert_eq!(map.facts().object_revision(key), 1);
     assert!(map.enterable(BAR_POS));
-    assert_eq!(appearance(&map, bar_reference)?, 3145);
+    assert_eq!(appearance(&map, bar_reference)?, debris);
 
     let restored = boot()?;
     let restored_cells = restored
@@ -266,12 +360,12 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -
     restarted.movement_cells = (&restored_cells).into();
     deps.initialize(&restarted).await;
     assert_eq!(restored.facts().object_revision(key), 0);
-    let (next, replay, _) = exchange(&restarted, admitted, 1, &wire_payload, None).await?;
+    let (next, replay, _) = exchange(&restarted, admitted, 1, &wire_payload, None, None).await?;
     assert_eq!(replay, UseDisposition::Committed);
     assert_eq!(receipts(harness).await?, 1);
     restarted.refresh_terrain_tools().await;
     assert_eq!(restored.facts().object_revision(key), 1);
-    assert_eq!(appearance(&restored, bar_reference)?, 3145);
+    assert_eq!(appearance(&restored, bar_reference)?, debris);
     assert!(restored.enterable(BAR_POS));
 
     sqlx::query("UPDATE game_terrain_tool_transforms SET decay_at_unix_ms=0")
@@ -281,24 +375,41 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -
     let restored_state: (i64, i64, bool) = sqlx::query_as(
         "SELECT state_item_id, object_revision, decay_at_unix_ms IS NULL FROM game_terrain_tool_transforms"
     ).fetch_one(&harness.pool).await?;
-    assert_eq!(restored_state, (2295, 2, true));
+    assert_eq!(restored_state, (i64::from(intact), 2, true));
     assert_eq!(restored.facts().object_revision(key), 2);
-    assert_eq!(appearance(&restored, bar_reference)?, 2295);
+    assert_eq!(appearance(&restored, bar_reference)?, intact);
     assert!(!restored.enterable(BAR_POS));
+    if case == Case::SpellTile {
+        let tile = restored_cells
+            .spell_tiles()
+            .lookup(restored_cells.scope(), cell)
+            .map_err(debug)?;
+        assert!(tile.flags().block_solid);
+        assert_eq!(tile.top_source_ids(), &[2295]);
+    }
+    if case == Case::Sight {
+        let facts = restored.facts().pinned();
+        let tile = compose_tile(restored.overlay(), &facts, BAR_POS).map_err(debug)?;
+        assert!(
+            RoofFacts::of(tile.as_ref()).look_through,
+            "restored solid bars must be transparent to the map visibility reader"
+        );
+    }
 
     let (_, mut restored_target) = target(&base, BAR_POS)?;
     restored_target.expected_revision = 2;
-    let (_, miss, _) = exchange(
+    let (next, miss, _) = exchange(
         &restarted,
         next,
         2,
         &payload(restored_target)?,
         Some(weapon),
+        None,
     )
     .await?;
     assert_eq!(miss, UseDisposition::Committed);
     assert_eq!(restored.facts().object_revision(key), 2);
-    assert_eq!(appearance(&restored, bar_reference)?, 2295);
+    assert_eq!(appearance(&restored, bar_reference)?, intact);
     assert_eq!(receipts(harness).await?, 1, "a miss creates no receipt");
 
     let late = boot()?;
@@ -310,9 +421,30 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -
     late_owner.movement_cells = (&late_cells).into();
     late_owner.refresh_terrain_tools().await;
     assert_eq!(late.facts().object_revision(key), 2);
-    assert_eq!(appearance(&late, bar_reference)?, 2295);
+    assert_eq!(appearance(&late, bar_reference)?, intact);
     assert!(!late.enterable(BAR_POS));
     assert_eq!(receipts(harness).await?, 1);
+
+    if matches!(bar_id, 2291 | 2292) {
+        // The next crystal draw uses the restored 2296, while the immutable map still has
+        // 2291/2292 at this placement. That second break must project revision 3 as 3145.
+        let (_, mut next_target) = target(&base, BAR_POS)?;
+        next_target.expected_revision = 2;
+        let (_, result, _) = exchange(
+            &restarted,
+            next,
+            3,
+            &payload(next_target)?,
+            Some(weapon),
+            None,
+        )
+        .await?;
+        assert_eq!(result, UseDisposition::Committed);
+        assert_eq!(restored.facts().object_revision(key), 3);
+        assert_eq!(appearance(&restored, bar_reference)?, 3145);
+        assert!(restored.enterable(BAR_POS));
+        assert_eq!(receipts(harness).await?, 2);
+    }
     Ok(())
 }
 
@@ -344,6 +476,7 @@ fn fixture_bundle(
     root: [u8; 32],
     session: GameSessionId,
     refusals: bool,
+    rebreak: bool,
 ) -> TestResult<(Vec<u8>, [u8; 32])> {
     let write = |data: &oteryn_world_bundle::bundle::Bundle| -> TestResult<_> {
         let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
@@ -360,6 +493,7 @@ fn fixture_bundle(
     }
     // Only a new stream's first command can be replayed here after a fresh map boot.
     // Vary a remote grass tile until command 1 hits and command 2 misses.
+    // The sequential decay-chain cases also need command 3 to hit.
     let grass = data.sectors[0].tiles.first().ok_or("grass tile")?.clone();
     data.sectors[0].tiles.push(grass);
     let key = placement_key(BAR_POS, 1).ok_or("bar placement")?;
@@ -370,7 +504,10 @@ fn fixture_bundle(
             let (bytes, digest) = write(&data)?;
             let mut placement = digest.to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
-            if hits(root, session, 1, &placement)? && !hits(root, session, 2, &placement)? {
+            if hits(root, session, 1, &placement)?
+                && !hits(root, session, 2, &placement)?
+                && (!rebreak || hits(root, session, 3, &placement)?)
+            {
                 return Ok((bytes, digest));
             }
         }

@@ -159,7 +159,9 @@ pub(super) struct CallbackStates {
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
     pub(super) actions: BTreeMap<u64, Option<u16>>,
     pub(super) hidden: BTreeSet<u64>,
-    passable: BTreeMap<u64, bool>,
+    pub(super) passable: BTreeMap<u64, bool>,
+    pub(super) wooden_bar_spell_tiles:
+        BTreeMap<TilePos, Option<Arc<super::wooden_bars::WoodenBarSpellTile>>>,
     arena_pillars: BTreeMap<u64, [u8; 16]>,
     arena_recreated: BTreeMap<TilePos, arena_pillars::RecreatedPillar>,
     pub(super) movement_items: BTreeMap<TilePos, Vec<view::ComposedEntry>>,
@@ -177,7 +179,7 @@ pub(super) struct CallbackStates {
 }
 
 impl CallbackStates {
-    fn key_reserved(&self, key: u64) -> bool {
+    pub(super) fn key_reserved(&self, key: u64) -> bool {
         self.reserved.contains(&key)
             || view::placement_of(key)
                 .map(|(pos, _)| pos)
@@ -569,11 +571,30 @@ impl CallbackStates {
             || self.merchant_barricades.values().any(|(at, _)| *at == pos)
     }
 
+    pub(super) fn wooden_bar_spell(
+        &self,
+        pos: TilePos,
+        rotations: &super::RotationStates,
+    ) -> Result<Option<crate::content::QualifiedSpellTile>, crate::content::SpellTileLookupError>
+    {
+        let Some(tile) = self.wooden_bar_spell_tiles.get(&pos) else {
+            return Ok(None);
+        };
+        let tile = tile
+            .as_ref()
+            .ok_or(crate::content::SpellTileLookupError::Unknown)?;
+        if self.arena_pillar_closed_at(pos) {
+            return Err(crate::content::SpellTileLookupError::Unknown);
+        }
+        tile.lookup(self, pos, rotations).map(Some)
+    }
+
     pub(super) fn clear_feroxa_scenery(&mut self, inside: impl Fn(TilePos) -> bool) {
         let key_inside = |key: &u64| view::placement_of(*key).is_some_and(|(p, _)| inside(p));
         self.changed.retain(|key, _| !key_inside(key));
         self.hidden.retain(|key| !key_inside(key));
         self.passable.retain(|key, _| !key_inside(key));
+        self.wooden_bar_spell_tiles.retain(|pos, _| !inside(*pos));
         self.movement_decays.retain(|(_, key), _| !key_inside(key));
         let cleared = |p: &TilePos| {
             p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
@@ -594,6 +615,11 @@ impl CallbackStates {
             + self.arena_recreated.len()
             + self.reserved_positions.len()
             + self.changed.len()
+            + self
+                .wooden_bar_spell_tiles
+                .values()
+                .map(|tile| tile.as_ref().map_or(1, |tile| tile.footprint()))
+                .sum::<usize>()
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
