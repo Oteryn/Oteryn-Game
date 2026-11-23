@@ -1,5 +1,7 @@
 //! CRAFT-1: admitted USE bytes → real composed owner → atomic PG rows → result/reload.
-use super::item_craft_fixtures::{exchange};
+use super::item_craft_fixtures::exchange;
+use super::rust_lottery_fixtures::exchange as exchange_carried;
+use std::num::{NonZeroU32, NonZeroU64};
 
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -7,7 +9,7 @@ use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPositi
 
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    FirstEntryOutcome, FreshAdmissionAuthority,
+    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
 };
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
@@ -20,15 +22,31 @@ fn item_craft_cooking_wire_atomic_replay_restart_and_refusals() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "craft e2e panic")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn i11_carried_food_dispatch_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "carried food dispatch panic")??;
+    eprintln!("I11_CARRIED_FOOD_POSTGRES_EXECUTED elapsed={:?}", started.elapsed());
+    Ok(())
+}
+
+fn scenario(carried_food: bool) -> TestResult {
     run(async |admin| {
-        let harness = Harness::create_with_admission_seed(admin, "item_craft", true, false).await?;
+        let name = if carried_food { "i11_carried_food" } else { "item_craft" };
+        let harness = Harness::create_with_admission_seed(admin, name, true, false).await?;
         super::reset();
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -83,15 +101,18 @@ fn scenario() -> TestResult {
         )
         .map_err(debug)?;
         let cells = map
-            .movement_cells(deps.room.movement_cells())
+            .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
+        let action_room = super::rust_lottery_fixtures::bundle_action_room(
+            pin.qualified_room(), &map, deps.admitted.world_id, &cells,
+        )?;
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
-            pin.qualified_room().map_revision_digest(),
+            action_room.frame_binding().digest(),
+            action_room.map_revision_digest(),
             (6, 0, 7),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -123,6 +144,7 @@ fn scenario() -> TestResult {
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&action_room));
         owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
@@ -135,11 +157,6 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look_fixtures::seed_main_backpack(
-            &harness,
-            &[(dough, 3), ("oteryn:item.tibia.i3577", 1)],
-        )
-        .await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -162,6 +179,33 @@ fn scenario() -> TestResult {
             placement,
             expected_revision: 0,
         };
+        if carried_food {
+            let exact_fill =
+                carried_food_cases(&harness, &owner, admitted, station, reference).await?;
+            drop(owner);
+            // Reuse the original admission with a new transport owner and no retained result.
+            let mut restarted = deps.owner(&harness, &authority);
+            restarted.active_generation = Some(active);
+            restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&action_room));
+            restarted.movement_cells = (&cells).into();
+            deps.initialize(&restarted).await;
+            let (_, replayed, _) = exchange(&restarted, admitted, 1, &exact_fill, None).await?;
+            assert_eq!(
+                replayed,
+                UseDisposition::Committed,
+                "exact receipt replay after tray retirement"
+            );
+            assert_eq!(carried_food_receipt_count(&harness).await?, 7);
+            drop(restarted);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+        super::item_look_fixtures::seed_main_backpack(
+            &harness,
+            &[(dough, 3), ("oteryn:item.tibia.i3577", 1)],
+        )
+        .await?;
         // Domain 9 uses newest-first order: bag=1, unknown food=2, dough=3.
         let intent = UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("source")?),
@@ -211,6 +255,7 @@ fn scenario() -> TestResult {
         drop(owner);
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
+        restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&action_room));
         restarted.movement_cells = (&cells).into();
         deps.initialize(&restarted).await;
         let (_, replayed, _) = exchange(&restarted, admitted, 1, &payload, None).await?;
@@ -265,4 +310,188 @@ fn scenario() -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+async fn carried_food_cases(
+    harness: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    oven: WorldObjectTarget,
+    reference: impl Fn(&str) -> Option<NonZeroU32>,
+) -> TestResult<Vec<u8>> {
+    let cake_dough = "oteryn:item.tibia.i6276";
+    let tray = "oteryn:item.tibia.i3464";
+    let filled_tray = "oteryn:item.tibia.i8020";
+    let cookie = "oteryn:item.tibia.i3598";
+    let chocolate = "oteryn:item.tibia.i6574";
+    let chocolate_dough = "oteryn:item.tibia.i8018";
+    let chocolate_cake = "oteryn:item.tibia.i8019";
+    let garlic_dough = "oteryn:item.tibia.i8196";
+    let garlic_bread = "oteryn:item.tibia.i8194";
+    let garlic_tray = "oteryn:item.tibia.i8198";
+    let garlic_cookie = "oteryn:item.tibia.i8199";
+    let bread_dough = "oteryn:item.tibia.i3604";
+    let cane = "oteryn:item.tibia.i5466";
+    let wheat = "oteryn:item.tibia.i3605";
+    let mut entries = vec![
+        (cake_dough, 2),
+        (tray, 1),
+        (chocolate, 1),
+        (garlic_dough, 1),
+        (garlic_dough, 1),
+        (cane, 1),
+        (wheat, 1),
+        (bread_dough, 1),
+    ];
+    entries.resize(20, ("oteryn:item.tibia.i3031", 1));
+    super::item_look_fixtures::seed_main_backpack(harness, &entries).await?;
+
+    let carried = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Item(NonZeroU64::MIN)),
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let bake = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(oven)),
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    let combine = |session, command, used, target| {
+        exchange_carried(owner, session, command, &carried, reference(used), reference(target))
+    };
+    let oven_use = |session, command, used| {
+        exchange(owner, session, command, &bake, reference(used))
+    };
+    let (next, result, exact_fill) = combine(admitted, 1, cake_dough, tray).await?;
+    assert_eq!(
+        result,
+        UseDisposition::Committed,
+        "Global cake dough fills an empty tray"
+    );
+    assert_eq!(carried_quantity(harness, cake_dough).await?, 1);
+    assert_eq!(carried_quantity(harness, tray).await?, 0);
+    assert_eq!(carried_quantity(harness, filled_tray).await?, 1);
+    let (recipe, before, ingredient_before, debit, outputs): (
+        String,
+        serde_json::Value,
+        serde_json::Value,
+        i64,
+        serde_json::Value,
+    ) = sqlx::query_as(
+        "SELECT recipe,before_item,ingredient_before_item,ingredient_consumed_quantity,outputs
+         FROM game_item_craft_records",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(recipe, "oteryn:item-conversion.fill-cookie-tray");
+    assert_eq!(before["quantity"], 2);
+    assert_eq!(ingredient_before["definition_production_key"], tray);
+    assert_eq!(ingredient_before["quantity"], 1);
+    assert_eq!(debit, 1);
+    assert_eq!(outputs[0]["key"], filled_tray);
+    assert_eq!(outputs[0]["count"], 1);
+    assert_eq!(carried_food_receipt_count(harness).await?, 1);
+
+    let (next, result, _) = exchange(owner, next, 2, &exact_fill, reference(cake_dough)).await?;
+    assert_eq!(
+        result,
+        UseDisposition::StaleState,
+        "a live source cannot use the retired tray handle"
+    );
+    let (next, result, _) = oven_use(next, 3, filled_tray).await?;
+    assert_eq!(
+        result,
+        UseDisposition::NoRoom,
+        "two outputs need an additional slot"
+    );
+    assert_eq!(carried_quantity(harness, filled_tray).await?, 1);
+    assert_eq!(carried_quantity(harness, tray).await?, 0);
+    assert_eq!(carried_quantity(harness, cookie).await?, 0);
+    assert_eq!(carried_food_receipt_count(harness).await?, 1);
+
+    // The chocolate conversion frees a slot by retiring both final units.
+    let (next, result, _) = combine(next, 4, cake_dough, chocolate).await?;
+    assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(carried_quantity(harness, cake_dough).await?, 0);
+    assert_eq!(carried_quantity(harness, chocolate).await?, 0);
+    assert_eq!(carried_quantity(harness, chocolate_dough).await?, 1);
+    let (next, result, _) = oven_use(next, 5, chocolate_dough).await?;
+    assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(carried_quantity(harness, chocolate_dough).await?, 0);
+    assert_eq!(carried_quantity(harness, chocolate_cake).await?, 1);
+
+    let (next, result, _) = oven_use(next, 6, filled_tray).await?;
+    assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(carried_quantity(harness, filled_tray).await?, 0);
+    assert_eq!(carried_quantity(harness, tray).await?, 1);
+    assert_eq!(carried_quantity(harness, cookie).await?, 12);
+
+    let (next, result, _) = combine(next, 7, garlic_dough, tray).await?;
+    assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(carried_quantity(harness, garlic_dough).await?, 1);
+    assert_eq!(carried_quantity(harness, tray).await?, 0);
+    assert_eq!(carried_quantity(harness, garlic_tray).await?, 1);
+
+    let (next, result, _) = oven_use(next, 8, garlic_dough).await?;
+    assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(carried_quantity(harness, garlic_dough).await?, 0);
+    assert_eq!(carried_quantity(harness, garlic_bread).await?, 1);
+
+    let (next, result, _) = oven_use(next, 9, garlic_tray).await?;
+    assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(carried_quantity(harness, garlic_tray).await?, 0);
+    assert_eq!(carried_quantity(harness, tray).await?, 1);
+    assert_eq!(carried_quantity(harness, garlic_cookie).await?, 12);
+
+    let (next, result, _) = combine(next, 10, bread_dough, tray).await?;
+    assert_eq!(
+        result,
+        UseDisposition::NothingToUse,
+        "the Global fill uses cake dough"
+    );
+    assert_eq!(carried_quantity(harness, bread_dough).await?, 1);
+    assert_eq!(carried_quantity(harness, tray).await?, 1);
+
+    let (_, result, _) =
+        combine(next, 11, cane, wheat).await?;
+    assert_eq!(
+        result,
+        UseDisposition::NothingToUse,
+        "sugar oat requires native Item admission"
+    );
+    assert_eq!(carried_quantity(harness, cane).await?, 1);
+    assert_eq!(carried_quantity(harness, wheat).await?, 1);
+    assert_eq!(
+        carried_quantity(harness, "oteryn:item.tibia.i12802").await?,
+        0
+    );
+    assert_eq!(carried_food_receipt_count(harness).await?, 7);
+    Ok(exact_fill)
+}
+
+async fn carried_quantity(harness: &Harness, key: &str) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT coalesce(sum(i.quantity), 0)::bigint
+         FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
+         WHERE e.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.definition_production_key=$2",
+    )
+    .bind(id(41).as_slice())
+    .bind(key)
+    .fetch_one(&harness.pool)
+    .await?)
+}
+
+async fn carried_food_receipt_count(harness: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT CASE WHEN count(*) = count(a.event_id) FILTER (
+             WHERE r.envelope_sha256=a.envelope_sha256 AND a.envelope_sha256=sha256(a.envelope))
+         THEN count(*) ELSE -1 END
+         FROM game_item_craft_records r LEFT JOIN game_item_audit_outbox a USING(event_id)",
+    )
+    .fetch_one(&harness.pool)
+    .await?)
 }
