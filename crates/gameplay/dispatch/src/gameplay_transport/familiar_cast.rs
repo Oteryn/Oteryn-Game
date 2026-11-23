@@ -6,8 +6,12 @@
 )]
 use super::super::{AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission};
 use super::{ChannelSpellStates, SpellCastIntent, SpellCastOutcome};
+use crate::durability::DurabilityError;
+use crate::durability::character_equipment::EquipmentError;
 use crate::durability::character_familiar::{FamiliarCleanEndResolution, FamiliarStateRequest};
-use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::durability::character_progression::{
+    CharacterProgressionError, CurrentCharacterGameplayFence,
+};
 use crate::foundation::{ExactActorRef, GameSessionId};
 use crate::spell::cast::PlayerSpellState;
 use crate::spell::combat_batch::SpellAnchor;
@@ -449,6 +453,95 @@ fn same_familiar_writer(
     current.expected_character_revision = original.expected_character_revision;
     current == original
 }
+/// Retry checkout misses under the Login owner's one foreground window. Each operation
+/// returns before waiting, so it releases any runtime guards it took for that attempt.
+async fn familiar_login_checkout<T, E>(
+    budget: Option<&AdmissionRetryBudget<'_>>,
+    mut step: impl AsyncFnMut() -> Result<T, E>,
+    is_checkout_unavailable: impl Fn(&E) -> bool,
+) -> Result<T, E> {
+    loop {
+        let result = step().await;
+        if let Some(budget) = budget
+            && result.as_ref().is_err_and(&is_checkout_unavailable)
+            && budget
+                .retries_unavailable(AdmissionRefusal::Unavailable)
+                .await
+        {
+            continue;
+        }
+        return result;
+    }
+}
+
+fn familiar_checkout_unavailable(error: &DurabilityError) -> bool {
+    matches!(error, DurabilityError::RootUnavailable)
+}
+
+fn familiar_progression_checkout_unavailable(error: &CharacterProgressionError) -> bool {
+    matches!(error, CharacterProgressionError::Unavailable(error) if familiar_checkout_unavailable(error))
+}
+
+#[cfg(test)]
+mod login_checkout_tests {
+    use super::*;
+    #[test]
+    fn familiar_login_retries_busy_preparation_checkout() -> Result<(), Box<dyn std::error::Error>>
+    {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .start_paused(true)
+            .build()?
+            .block_on(async {
+                let mut id = [0x40; 16];
+                id[6] = 0x70;
+                id[8] = 0x80;
+                let session = GameSessionId::decode(&id)?;
+                let budget = AdmissionRetryBudget::new(&session);
+                let ready_at = tokio::time::Instant::now() + std::time::Duration::from_secs(1);
+                let mut attempts = 0;
+                let result = familiar_login_checkout(
+                    Some(&budget),
+                    async || {
+                        attempts += 1;
+                        if tokio::time::Instant::now() < ready_at {
+                            Err(DurabilityError::RootUnavailable)
+                        } else {
+                            Ok(())
+                        }
+                    },
+                    familiar_checkout_unavailable,
+                )
+                .await;
+                assert!(result.is_ok(), "{result:?}");
+                assert!(attempts > 1);
+
+                let before_refusal = tokio::time::Instant::now();
+                let refused = familiar_login_checkout(
+                    Some(&budget),
+                    async || Err::<(), _>(CharacterProgressionError::AuthorityRejected),
+                    familiar_progression_checkout_unavailable,
+                )
+                .await;
+                assert!(matches!(
+                    refused,
+                    Err(CharacterProgressionError::AuthorityRejected)
+                ));
+                assert_eq!(tokio::time::Instant::now(), before_refusal);
+
+                let still_busy = familiar_login_checkout(
+                    Some(&budget),
+                    async || Err::<(), _>(DurabilityError::RootUnavailable),
+                    familiar_checkout_unavailable,
+                )
+                .await;
+                assert!(matches!(still_busy, Err(DurabilityError::RootUnavailable)));
+                assert!(tokio::time::Instant::now() + budget.backoff >= budget.deadline);
+                Ok(())
+            })
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Source Login composition after the real first-entry owners have been installed.
     /// Reads the actual noncast admission/lifecycle owners with no manufactured cast
@@ -468,29 +561,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(());
         }
         let owned = self
-            .read_familiar_lifecycle_inputs(actor, session, content, access)
+            .read_familiar_lifecycle_inputs_with_budget(
+                actor,
+                session,
+                content,
+                access,
+                Some(budget),
+            )
             .await?;
         let vocation =
             crate::spell::Vocation::from_key(owned.durable_build().vocation()).ok_or(())?;
         let Some(index) = self.active_familiar_index(base_familiar_vocation(vocation)) else {
             return Ok(None);
         };
-        let fence =
-            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
-                .await
-                .ok_or(())?;
-        let group = {
-            let runtime = self.runtime.lock().await;
-            if !current_owner(&runtime, &fence, actor, session)
-                || runtime.content_pin().server_artifact_digest() != content.source_digest()
-            {
-                return Err(());
-            }
-            self.root
-                .initialize_familiar_group(self.character, self.holder, fence)
-                .await
-                .map_err(|_| ())?
-        };
+        let fence = self.familiar_lifecycle_fence(session, Some(budget)).await?;
+        let group = familiar_login_checkout(
+            Some(budget),
+            async || {
+                let runtime = self.runtime.lock().await;
+                if !current_owner(&runtime, &fence, actor, session)
+                    || runtime.content_pin().server_artifact_digest() != content.source_digest()
+                {
+                    return Err(CharacterProgressionError::AuthorityRejected);
+                }
+                self.root
+                    .initialize_familiar_group(self.character, self.holder, fence)
+                    .await
+            },
+            familiar_progression_checkout_unavailable,
+        )
+        .await
+        .map_err(|_| ())?;
         let administrative = PersistedFamiliarGroupOwner::from_observed(group);
         let source = FamiliarSourceAdapter {
             config,
@@ -535,20 +636,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         content: &NativeGameplayState,
         access: &impl super::super::spell_access_facts::CurrentSpellAccessOwner,
     ) -> Result<OwnedCastFacts, ()> {
-        let fence =
-            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
-                .await
-                .ok_or(())?;
-        let raw = self
-            .root
-            .read_lifecycle_durable_facts(
-                self.character,
-                self.holder,
-                &fence,
-                content.source_digest(),
-            )
+        self.read_familiar_lifecycle_inputs_with_budget(actor, session, content, access, None)
             .await
-            .map_err(|_| ())?;
+    }
+
+    async fn read_familiar_lifecycle_inputs_with_budget(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        content: &NativeGameplayState,
+        access: &impl super::super::spell_access_facts::CurrentSpellAccessOwner,
+        login_budget: Option<&AdmissionRetryBudget<'_>>,
+    ) -> Result<OwnedCastFacts, ()> {
+        let fence = self.familiar_lifecycle_fence(session, login_budget).await?;
+        let raw = familiar_login_checkout(
+            login_budget,
+            async || {
+                self.root
+                    .read_lifecycle_durable_facts(
+                        self.character,
+                        self.holder,
+                        &fence,
+                        content.source_digest(),
+                    )
+                    .await
+            },
+            |error| matches!(error, EquipmentError::Durability(error) if familiar_checkout_unavailable(error)),
+        )
+        .await
+        .map_err(|_| ())?;
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         let state = states.get(&runtime, actor, session).ok_or(())?;
@@ -586,6 +702,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         OwnedCastFacts::from_owner_reads(binding, raw.build, raw.level, raw.equipment, projections)
             .map_err(|_| ())
     }
+    async fn familiar_lifecycle_fence(
+        &self,
+        session: GameSessionId,
+        login_budget: Option<&AdmissionRetryBudget<'_>>,
+    ) -> Result<CurrentCharacterGameplayFence, ()> {
+        familiar_login_checkout(
+            login_budget,
+            async || {
+                crate::gameplay_transport::character_gameplay_fence::current_once(
+                    self, session, false,
+                )
+                .await
+            },
+            familiar_checkout_unavailable,
+        )
+        .await
+        .map_err(|_| ())?
+        .ok_or(())
+    }
+
     pub(in crate::gameplay_transport) fn active_familiar_index(
         &self,
         vocation: &str,
@@ -2029,26 +2165,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if profile.spell()["execution"]["native_behavior"]["key"] != "familiar_summon" {
             return Err(());
         }
-        let fence =
-            crate::gameplay_transport::character_gameplay_fence::current(self, session, false)
-                .await
-                .ok_or(())?;
-        let progression = self
-            .root
-            .read_character_progression(self.character, fence.character_id)
-            .await
-            .map_err(|_| ())?
-            .ok_or(())?;
-        let loaded = self
-            .root
-            .read_character_familiar_state(self.character, fence.character_id)
-            .await
-            .map_err(|_| ())?;
-        let unix = self
-            .root
-            .read_familiar_unix_time(self.character)
-            .await
-            .map_err(|_| ())?;
+        let fence = self.familiar_lifecycle_fence(session, login_budget).await?;
+        let progression = familiar_login_checkout(
+            login_budget,
+            async || {
+                self.root
+                    .read_character_progression(self.character, fence.character_id)
+                    .await
+            },
+            familiar_progression_checkout_unavailable,
+        )
+        .await
+        .map_err(|_| ())?
+        .ok_or(())?;
+        let loaded = familiar_login_checkout(
+            login_budget,
+            async || {
+                self.root
+                    .read_character_familiar_state(self.character, fence.character_id)
+                    .await
+            },
+            familiar_progression_checkout_unavailable,
+        )
+        .await
+        .map_err(|_| ())?;
+        let unix = familiar_login_checkout(
+            login_budget,
+            async || self.root.read_familiar_unix_time(self.character).await,
+            familiar_progression_checkout_unavailable,
+        )
+        .await
+        .map_err(|_| ())?;
         let now = self.owner_now();
         let mut runtime = self.runtime.lock().await;
         let _measurement = FamiliarOwnerTurnMeasurement(std::time::Instant::now());
@@ -2399,9 +2546,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         crate::spell::companion_lifecycle::LifecycleFamiliarApplyReceipt,
         FamiliarLifecycleFinishError,
     > {
-        use crate::durability::DurabilityError;
         use crate::durability::character_familiar::FamiliarStateOutcome;
-        use crate::durability::character_progression::CharacterProgressionError;
         use crate::spell::companion_lifecycle::commit_lifecycle_familiar;
         use crate::spell::delayed_execution::LifecycleScheduleRequest;
         use FamiliarLifecycleFinishError::{CheckoutUnavailable, Refused};

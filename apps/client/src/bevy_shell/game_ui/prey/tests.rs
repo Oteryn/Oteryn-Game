@@ -76,9 +76,25 @@ fn fixture_details(
     ),
     Box<dyn std::error::Error>,
 > {
+    fixture_level(balance, free_reroll_at, false)
+}
+fn fixture_level(
+    balance: u8,
+    free_reroll_at: u64,
+    with_level: bool,
+) -> Result<
+    (
+        App,
+        tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+    ),
+    Box<dyn std::error::Error>,
+> {
     use crate::play::{PlayView, play_channel};
     use oteryn_client_ui::prey::{CommandStatus, PreyResponse, prey};
     let (link, mut commands, outbox) = play_channel();
+    if with_level {
+        outbox.bevy_hud_skills_fixture()?;
+    }
     outbox.bevy_prey_initialize(true);
     outbox.bevy_store_initialize();
     link.prey_set_open(true);
@@ -139,17 +155,19 @@ fn fixture_details(
         link,
     });
     let mut app = App::new();
-    app.insert_non_send(host).insert_resource(Skins {
-        buttons: source::ButtonImages {
-            up: Handle::default(),
-            down: Handle::default(),
-        },
-        checked: Handle::default(),
-        unchecked: Handle::default(),
-        frame: Handle::default(),
-        inset: Handle::default(),
-        font: Handle::default(),
-    });
+    app.insert_non_send(outbox)
+        .insert_non_send(host)
+        .insert_resource(Skins {
+            buttons: source::ButtonImages {
+                up: Handle::default(),
+                down: Handle::default(),
+            },
+            checked: Handle::default(),
+            unchecked: Handle::default(),
+            frame: Handle::default(),
+            inset: Handle::default(),
+            font: Handle::default(),
+        });
     install(&mut app);
     app.update();
     Ok((app, commands))
@@ -689,5 +707,131 @@ fn prey_and_bestiary_open_as_stacked_windows_and_a_press_raises_the_back_one() -
         Some(back)
     );
     assert!(depth(&app, back) > depth(&app, front));
+    Ok(())
+}
+
+#[test]
+fn prey_paid_reroll_quotes_confirmed_character_level() -> TestResult {
+    let (mut app, mut commands) = fixture_level(5, i64::MAX as u64, true)?;
+    click(&mut app, Kind::Reroll(2))?;
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("6000 gold"))
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn prey_tracker_stays_visible_after_closing_prey() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let button = named(&mut app, "prey.tracker.toggle")?;
+    app.world_mut().trigger(Activate { entity: button });
+    click(&mut app, Kind::Close)?;
+    app.update();
+    let tracker = named(&mut app, "prey.tracker")?;
+    let text = &app
+        .world()
+        .get::<Text>(tracker)
+        .ok_or("tracker contents")?
+        .0;
+    assert!(text.contains("dragon") && text.contains("19%") && text.contains("01:01"));
+    Ok(())
+}
+
+#[test]
+fn prey_catalogue_search_selects_unoffered_species() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    let field = named(&mut app, "prey.wildcard.creature.2")?;
+    app.world_mut()
+        .entity_mut(field)
+        .insert(EditableText::new("dragon lor"));
+    app.update();
+    let choice = named(&mut app, "prey.catalogue.oteryn:creature.dragon_lord")?;
+    app.world_mut().trigger(Activate { entity: choice });
+    let choose = named(&mut app, "prey.wildcard.choose.2")?;
+    app.world_mut().trigger(Activate { entity: choose });
+    app.update();
+    let confirm = named(&mut app, "prey.wildcard.confirm")?;
+    app.world_mut().trigger(Activate { entity: confirm });
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Prey(
+        oteryn_client_ui::prey::prey::Request::SelectAny { slot: 2, creature }
+    ) if creature == "oteryn:creature.dragon_lord")
+    );
+    Ok(())
+}
+#[test]
+fn prey_offered_rat_has_pinned_portrait() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let portrait = named(&mut app, "prey.portrait.oteryn:creature.rat")?;
+    assert_eq!(
+        app.world()
+            .get::<portraits::Portrait>(portrait)
+            .ok_or("portrait binding")?
+            .look,
+        21
+    );
+    app.world_mut().resource_mut::<portraits::Library>().root =
+        Some(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."));
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
+    while app.world().get::<ImageNode>(portrait).is_none() {
+        assert!(std::time::Instant::now() < deadline, "pinned rat artwork");
+        app.update();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    let image = &app
+        .world()
+        .get::<ImageNode>(portrait)
+        .ok_or("portrait image")?
+        .image;
+    assert_eq!(
+        app.world()
+            .resource::<Assets<Image>>()
+            .get(image)
+            .ok_or("pixels")?
+            .size(),
+        UVec2::splat(128)
+    );
+    Ok(())
+}
+
+#[test]
+fn prey_open_confirmation_updates_when_actor_level_arrives() -> TestResult {
+    let (mut app, mut commands) = fixture_details(5, i64::MAX as u64)?;
+    click(&mut app, Kind::Reroll(2))?;
+    app.update();
+    app.world()
+        .non_send::<crate::play::Outbox>()
+        .bevy_hud_skills_fixture()?;
+    click(&mut app, Kind::Confirm)?;
+    assert!(
+        commands.try_recv().is_err(),
+        "the previous price cannot authorize the reroll"
+    );
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("6000 gold"))
+    );
+    Ok(())
+}
+#[test]
+fn prey_elapsed_local_deadline_still_discloses_possible_charge() -> TestResult {
+    let (mut app, mut commands) = fixture_level(5, 1, true)?;
+    click(&mut app, Kind::Reroll(2))?;
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("6000 gold"))
+    );
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

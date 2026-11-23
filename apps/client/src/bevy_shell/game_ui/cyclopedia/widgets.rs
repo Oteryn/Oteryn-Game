@@ -67,6 +67,7 @@ pub(super) fn render(
     parent: Entity,
     control: Control,
     tab: Tab,
+    grid: bool,
     panel: &CyclopediaCharacterPanel,
 ) -> Entity {
     let content = commands
@@ -80,6 +81,14 @@ pub(super) fn render(
         })
         .id();
     commands.entity(parent).add_child(content);
+    use crate::bevy_shell::game_ui::cyclopedia_navigation::{Subject, bar};
+    bar(
+        commands,
+        skin,
+        content,
+        control.generation,
+        Subject::Character,
+    );
     let tabs = commands
         .spawn((
             Name::new("cyclopedia.tabs"),
@@ -157,6 +166,40 @@ pub(super) fn render(
         .filter(|_| tab == Tab::Character(CharacterTab::Achievements))
     {
         text(commands, skin, content, error);
+    }
+    if tab == Tab::General {
+        button(
+            commands,
+            skin,
+            content,
+            Control {
+                kind: Kind::XpBoost,
+                ..control
+            },
+            "XP boost shop",
+            panel.pending || !panel.selected,
+        );
+    }
+    let shortcut = match tab {
+        Tab::General => Some((Kind::Wheel, "Wheel of Destiny")),
+        Tab::Character(CharacterTab::Defence | CharacterTab::Offence) => {
+            Some((Kind::Blessings, "Blessings"))
+        }
+        Tab::Items => Some((
+            Kind::HoldingsLayout,
+            if grid { "List view" } else { "Grid view" },
+        )),
+        _ => None,
+    };
+    if let Some((kind, label)) = shortcut {
+        button(
+            commands,
+            skin,
+            content,
+            Control { kind, ..control },
+            label,
+            panel.pending || !panel.selected,
+        );
     }
     if tab == Tab::Items {
         use oteryn_client_runtime::cyclopedia_character::items::Location;
@@ -310,6 +353,24 @@ pub(super) fn render(
             },
         );
     }
+    let rows = if grid && tab == Tab::Items {
+        let grid = commands
+            .spawn((
+                Name::new("cyclopedia.holdings"),
+                Node {
+                    display: Display::Grid,
+                    grid_template_columns: vec![RepeatedGridTrack::flex(3, 1.)],
+                    column_gap: px(6.),
+                    row_gap: px(6.),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(rows).add_child(grid);
+        grid
+    } else {
+        rows
+    };
     for (index, row) in projected.into_iter().enumerate() {
         let parent = if let Some(entry) = gallery.get(index) {
             let card = commands
@@ -399,7 +460,12 @@ pub(super) fn render(
     }
     body
 }
-fn text(commands: &mut Commands, skin: &Skins, parent: Entity, value: impl Into<String>) {
+pub(super) fn text(
+    commands: &mut Commands,
+    skin: &Skins,
+    parent: Entity,
+    value: impl Into<String>,
+) {
     let row = commands
         .spawn((
             source::text(value, source::font(skin.font.clone(), false)),

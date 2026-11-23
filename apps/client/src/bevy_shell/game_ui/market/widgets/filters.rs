@@ -13,6 +13,40 @@ pub(super) fn catalogue_filters(
     drafts: &mut Drafts,
 ) {
     let filters = scroll(commands, parent, px(220.), 8);
+    button(
+        commands,
+        skin,
+        filters,
+        key,
+        Kind::MyLevel,
+        "My level",
+        140.,
+    );
+    button(
+        commands,
+        skin,
+        filters,
+        key,
+        Kind::MyVocation,
+        "My vocation",
+        140.,
+    );
+    for (hand, label) in [(1, "One-handed"), (2, "Two-handed")] {
+        let caption = if panel.hand_filter == Some(hand) {
+            format!("[x] {label}")
+        } else {
+            label.to_owned()
+        };
+        button(
+            commands,
+            skin,
+            filters,
+            key,
+            Kind::Hands(hand),
+            &caption,
+            140.,
+        );
+    }
     let filter = &panel.details.filter;
     for (kind, name, caption, value) in [
         (

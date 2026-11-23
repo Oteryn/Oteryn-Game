@@ -20,6 +20,8 @@ pub(super) struct Options {
     pvp_frame: bool,
     loot_highlight: bool,
     health: bool,
+    own_health: bool,
+    other_health: bool,
     own_marks: bool,
     other_marks: bool,
     npc: bool,
@@ -39,15 +41,17 @@ impl Options {
         icon_cells: Option<HudIconCells>,
     ) -> Self {
         Self {
+            own_health: preferences.player_hud_enabled && preferences.hud_bars && preferences.hud_health,
+            other_health: preferences.other_hud_enabled && preferences.hud_other_health,
             age,
             icon_cells,
             pvp_frame: preferences.game_window.pvp_frame,
             loot_highlight: preferences.game_window.loot_highlight,
             health: preferences.creature_bars && !shared_frontend,
             scale: preferences.interface_scale,
-            own_marks: preferences.hud_marks_own,
-            other_marks: preferences.hud_marks_other,
-            npc: preferences.hud_npc_icons,
+            own_marks: preferences.player_hud_enabled && preferences.hud_marks_own,
+            other_marks: preferences.other_hud_enabled && preferences.hud_marks_other,
+            npc: preferences.other_hud_enabled && preferences.hud_npc_icons,
             floor,
             own,
         }
@@ -63,6 +67,7 @@ pub(super) fn draw(
     own: TileCoord,
     entities: &[WorldSpatialEntity],
     icons: &[PartyIcon],
+    summons: &std::collections::BTreeMap<EntityRef, EntityRef>,
     emblems: &[GuildEmblem],
     options: Options,
 ) -> Result<Vec<std::ops::Range<usize>>, BatchError> {
@@ -85,7 +90,7 @@ pub(super) fn draw(
                 pixel(batch, view, atlas, at, size, color)?;
             }
         }
-        if options.health
+        if options.health && (if Some(entity.entity) == options.own { options.own_health } else { options.other_health })
             && let EntityDetail::Actor { health_percent, .. } = entity.detail
         {
             let at = [x + 2.0 * scale, (y - 4.0 * scale).max(10.0 * scale)];
@@ -145,6 +150,17 @@ pub(super) fn draw(
                 emblem as u8,
                 scale,
             )?;
+        }
+        if marks && let Some(master) = summons.get(&entity.entity) {
+            let color = if Some(*master) == options.own { PresentationColor::LightGreen } else { PresentationColor::Red };
+            // Summon emblem, aligned after the guild mark.
+            for (row, bits) in [0b01110_u8, 0b10000, 0b01110, 0b00001, 0b01110].into_iter().enumerate() {
+                for col in 0..5 {
+                    if bits & (16 >> col) != 0 {
+                        pixel(batch, view, atlas, [x + (44.0 + col as f32 * 2.0) * scale, y + row as f32 * 2.0 * scale], [2.0 * scale; 2], color)?;
+                    }
+                }
+            }
         }
         if options.npc && entity.kind == EntityKind::Npc {
             for (row, bits) in [7_u8, 5, 7, 2].into_iter().enumerate() {
@@ -209,7 +225,7 @@ mod health_tests {
                 detail: EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref: 1, health_percent: health },
             };
             let mut batch = SpriteBatch::new();
-            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO, false, None))?;
+            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], &Default::default(), &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO, false, None))?;
             let mut expected = SpriteBatch::new();
             super::super::pixel_rgb(&mut expected, &view, world.atlas(), [0.0;2], [1.0;2], [0;3])?;
             assert_eq!(batch.instances().first().map(|q| q.uv), expected.instances().first().map(|q| q.uv));

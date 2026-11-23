@@ -10,6 +10,13 @@ pub struct MapHouse {
 
 /// North-up entrance map for the selected floor of the confirmed catalogue page.
 pub fn map_houses(panel: &Panel) -> Vec<MapHouse> {
+    filtered_map_houses(panel, None, None)
+}
+pub fn filtered_map_houses(
+    panel: &Panel,
+    guildhalls: Option<bool>,
+    rented: Option<bool>,
+) -> Vec<MapHouse> {
     let Some((_, _, floor)) = panel.page.rows.get(panel.index).and_then(|r| r.entrance) else {
         return Vec::new();
     };
@@ -19,6 +26,7 @@ pub fn map_houses(panel: &Panel) -> Vec<MapHouse> {
             .rows
             .iter()
             .enumerate()
+            .filter(|(_, row)| super::matches_filters(row, guildhalls, rented))
             .filter_map(|(i, row)| row.entrance.filter(|p| p.2 == floor).map(|p| (i, row, p)))
     };
     let min_x = entrances().map(|(_, _, p)| p.0).min().unwrap_or(0);
