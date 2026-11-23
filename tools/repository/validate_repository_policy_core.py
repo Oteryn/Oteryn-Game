@@ -34,15 +34,16 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
   pull_request:
     branches:
       - main
+      - staging
     types:
       - opened
       - reopened
       - synchronize
       - edited
 """
-EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "fa39175ae4cd95951781d3955f63a005f7ea16398159a37ab9018c2d916cc890"
-EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "2b2a88ed7e73595a349286cbb029264f3989a8e5b3f6c312101e1759154fa4c1"
-EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "96caca0e141757f3b18e9d97b574aa6362f147791b6e01a53a4c11e2597bdedd"
+EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = "c68a68a46fbe0ff499480f118ef86622954ab87f2127b858b8d6f6b1040668c0"
+EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = "e88e302c86da693e0f0d3feb4a6cfa50d643aacf3d06344bad7b1511a4773c1e"
+EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "a845179dae52c1379778f7f589d916dab7f27f6c23fd5ba5208ad8ab9a2708fb"
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "3f488a4e42d3c3c61186ec6a7d38ea5528b43b852da51b0d98a58d2ff090a7bd"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
@@ -425,7 +426,7 @@ def main() -> int:
         else:
             for fragment in (
                 "    name: game-gate\n",
-                "    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)\n",
+                "    if: always() && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref)\n",
                 "    needs: [scope, lanes, rust_fast_build, validate]\n",
                 "          LEGACY_VALIDATE: ${{ needs.validate.result }}\n",
                 "          RUST_FAST_BUILD: ${{ needs.rust_fast_build.result }}\n",
