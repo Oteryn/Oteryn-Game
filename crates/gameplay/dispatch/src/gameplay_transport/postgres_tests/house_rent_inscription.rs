@@ -1,4 +1,5 @@
-use super::fixture::{Harness, debug, id, run};
+use super::fixture::{Harness, debug, id};
+use super::kill_reward_e2e_fixtures::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_loop_move::DepotSearchRetrieval;
@@ -28,27 +29,18 @@ fn run_inscription_case(with_legacy: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(move || {
-            run(async move |admin| {
-                let started = std::time::Instant::now();
-                let h = Harness::create_with_admission_seed(admin, "rent_inscription", true, false)
-                    .await?;
-                let result = scenario(&h, with_legacy).await;
-                h.cleanup().await?;
-                result?;
-                println!(
-                    "PG_MARKER house-rent warning inscription elapsed={:?}",
-                    started.elapsed()
-                );
-                Ok(())
-            })
-            .map_err(|error| error.to_string())
-        })?
-        .join()
-        .map_err(|_| "rent inscription PostgreSQL worker panicked")??;
-    Ok(())
+    run(async move |admin| {
+        let started = std::time::Instant::now();
+        let h = Harness::create_with_admission_seed(admin, "rent_inscription", true, false).await?;
+        let result = scenario(&h, with_legacy).await;
+        h.cleanup().await?;
+        result?;
+        println!(
+            "PG_MARKER house-rent warning inscription elapsed={:?}",
+            started.elapsed()
+        );
+        Ok(())
+    })
 }
 
 async fn scenario(h: &Harness, with_legacy: bool) -> TestResult {

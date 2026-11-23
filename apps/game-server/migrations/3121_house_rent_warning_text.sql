@@ -185,6 +185,59 @@ DO $$ BEGIN EXECUTE format('ALTER FUNCTION game_house_rent_tick(UUID,UUID,NUMERI
 REVOKE ALL ON FUNCTION game_house_rent_tick(UUID,UUID,NUMERIC,BYTEA) FROM PUBLIC,oteryn_game_control;
 GRANT EXECUTE ON FUNCTION game_house_rent_tick(UUID,UUID,NUMERIC,BYTEA) TO oteryn_game_runtime;
 
+-- Arbitrate under the disposition worker's ownership and operation locks.
+-- The rent worker performs the final bank collection and audits both changes
+-- if it replaces the move-out. A paid house can proceed on the next pass.
+DO $patch$
+DECLARE
+ body TEXT;
+ freeze_seam CONSTANT TEXT:='PERFORM game_house_disposition_fence_check(o.world_id,o.house_key,NULL,FALSE);';
+ freeze_guard CONSTANT TEXT:=$guard$
+  IF o.cause='MOVE_OUT' AND o.owner_guild_id IS NULL
+   AND EXISTS(SELECT 1 FROM game_house_rent_config WHERE rent_period<>'never')
+   AND NOT EXISTS(SELECT 1 FROM game_house_sale_offers sale WHERE sale.disposition=op AND sale.state=2) THEN
+   -- Rent and acquisition pin this row before changing the unpaid period.
+   -- Avoid waiting in reverse order when a property writer holds it.
+   PERFORM 1 FROM game_house_properties p WHERE (p.world_id,p.house_key)=(o.world_id,o.house_key)
+    FOR SHARE NOWAIT;
+   IF FOUND AND EXISTS(
+    SELECT 1 FROM game_house_properties p JOIN game_house_rent_state s USING(world_id,house_key)
+    JOIN game_house_rent_inbox_letters l ON l.letter_id=s.notice_letter_id
+    WHERE (p.world_id,p.house_key,p.owner_character_id,p.ownership_generation)=
+          (o.world_id,o.house_key,o.owner_character_id,o.ownership_revision)
+     AND s.ownership_generation=p.ownership_generation AND s.notice_due_at=p.paid_until
+     AND (l.world_id,l.house_key,l.owner_character_id)=(p.world_id,p.house_key,p.owner_character_id)
+     AND s.grace_until<to_timestamp(o.due_at::numeric/1000)
+   ) THEN RETURN 0; END IF;
+  END IF;
+  $guard$;
+ release_seam CONSTANT TEXT:='DELETE FROM game_account_housing_slots WHERE account_id=p.owner_account_id AND world_id=d.world_id;';
+ eviction_ban CONSTANT TEXT:=$ban$
+ IF d.cause='EVICTION' THEN
+  INSERT INTO game_account_house_bans AS b(account_id,world_id,banned_until)
+   VALUES(p.owner_account_id,d.world_id,clock_timestamp()+interval '30 days')
+   ON CONFLICT(account_id,world_id) DO UPDATE
+   SET banned_until=greatest(b.banned_until,EXCLUDED.banned_until);
+ END IF;
+ $ban$;
+BEGIN
+ body:=pg_get_functiondef('game_house_disposition_advance(UUID,INT,INT,INT)'::regprocedure);
+ IF strpos(body,freeze_guard)=0 THEN
+  IF (length(body)-length(replace(body,freeze_seam,'')))/length(freeze_seam)<>1 THEN
+   RAISE EXCEPTION 'house disposition freeze seam changed';
+  END IF;
+  EXECUTE replace(body,freeze_seam,freeze_guard||freeze_seam);
+ END IF;
+ -- The same custody and audit proof that releases the slot admits the ban.
+ body:=pg_get_functiondef('game_house_move_out_release(UUID)'::regprocedure);
+ IF strpos(body,eviction_ban)=0 THEN
+  IF (length(body)-length(replace(body,release_seam,'')))/length(release_seam)<>1 THEN
+   RAISE EXCEPTION 'house disposition release seam changed';
+  END IF;
+  EXECUTE replace(body,release_seam,eviction_ban||release_seam);
+ END IF;
+END $patch$;
+
 -- 0941's live Inbox letters have the exact mint and delivery receipts but an
 -- obsolete definition revision. The table lock from ALTER TABLE keeps the two
 -- item-change guards unavailable only inside this migration transaction.
@@ -193,8 +246,9 @@ ALTER TABLE game_item_instances DISABLE TRIGGER game_item_instance_change_proven
 SET CONSTRAINTS ALL IMMEDIATE;
 -- Normalize every proven live Inbox letter. Render a deadline for each
 -- active legacy warning still in its owner's Inbox and bind one of those
--- receipts to the original paid_until. 0941's retry date could be later than
--- paid_until. The readable cutover notice opens a full seven-day window.
+-- receipts to the original paid_until. A retained retry date can be on
+-- either side of paid_until, so match the actual delivery to the unpaid
+-- period. Open a seven-day window only if eviction has not already started.
 WITH normalized AS (
  UPDATE game_item_instances i SET definition_revision_ref='definition-r1'
  FROM game_house_rent_letter_mints m
@@ -209,7 +263,7 @@ JOIN game_item_character_inbox_locations l
 WHERE (i.item_instance_id,i.world_id,i.minted_transaction_id)=(m.letter_id,m.world_id,m.transaction_id)
  AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)=('Item','oteryn:item.tibia.i3506','house-rent-warning')
  AND i.lifecycle=1 AND i.quantity=1
- RETURNING r.letter_id,r.world_id,r.house_key,r.owner_character_id,r.rent_due_at,
+ RETURNING r.letter_id,r.world_id,r.house_key,r.owner_character_id,
            r.delivered_at,r.rent_gold,l.character_id AS inbox_owner
 ), active AS (
  SELECT l.*,p.paid_until,p.ownership_generation,c.rent_period,
@@ -219,7 +273,11 @@ WHERE (i.item_instance_id,i.world_id,i.minted_transaction_id)=(m.letter_id,m.wor
  CROSS JOIN game_house_rent_config c
  WHERE l.inbox_owner=l.owner_character_id AND p.owner_character_id=l.owner_character_id
   AND p.paid_until<=statement_timestamp() AND s.warnings>0
-  AND l.rent_due_at>=p.paid_until AND l.delivered_at>=l.rent_due_at
+  AND l.delivered_at>=p.paid_until
+  AND NOT EXISTS(SELECT 1 FROM game_house_dispositions d
+   WHERE (d.world_id,d.house_key,d.owner_character_id,d.ownership_revision)=
+         (p.world_id,p.house_key,p.owner_character_id,p.ownership_generation)
+    AND d.cause='EVICTION' AND d.state<>4 AND d.released_at IS NULL)
 ), revisions AS (
  INSERT INTO game_item_text_revisions(item_instance_id,last_revision)
   SELECT letter_id,1 FROM active RETURNING item_instance_id

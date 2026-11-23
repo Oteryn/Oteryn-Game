@@ -95,6 +95,60 @@ async fn expire_rent_fixture(h: &Harness) -> TestResult {
 }
 
 #[test]
+fn house_rent_expiry_precedes_move_out_when_disposition_worker_runs_first() -> TestResult {
+    let Some(admin) = configured_admin() else { return Ok(()); };
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "house_rent_worker_first").await?;
+        seed_due_rent(&h, 1).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        assert!(h.root.advance_house_rent(&authority, &h.node, scope()?, 1).await?);
+        expire_rent_fixture(&h).await?;
+        let notice: String = sqlx::query_scalar(
+            "WITH timing AS (
+               UPDATE game_house_rent_state SET grace_until=grace_until-interval '2 hours'
+               WHERE house_key=$1 RETURNING world_id,house_key,grace_until
+             )
+             INSERT INTO game_house_dispositions(world_id,house_key,owner_character_id,
+               ownership_revision,state,noticed_at,due_at)
+             SELECT p.world_id,p.house_key,p.owner_character_id,p.ownership_generation,1,
+               floor(extract(epoch FROM timing.grace_until+interval '1 hour')*1000)::bigint-86400000,
+               floor(extract(epoch FROM timing.grace_until+interval '1 hour')*1000)::bigint
+             FROM game_house_properties p JOIN timing USING(world_id,house_key)
+             RETURNING operation_id::text",
+        ).bind(HOUSE).fetch_one(&h.pool).await?;
+        let account: String = sqlx::query_scalar(
+            "SELECT owner_account_id::text FROM game_house_properties WHERE house_key=$1",
+        ).bind(HOUSE).fetch_one(&h.pool).await?;
+        let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(scope()?)
+            .await.map_err(debug)?;
+        h.root.drain_house_dispositions(&permit, &authority, &h.node, scope()?, 1).await.map_err(debug)?;
+        let pending: i16 = sqlx::query_scalar(
+            "SELECT state FROM game_house_dispositions WHERE operation_id=$1::uuid",
+        ).bind(&notice).fetch_one(&h.pool).await?;
+        assert_eq!(pending, 1, "the disposition worker froze a move-out with a later deadline");
+        assert!(h.root.advance_house_rent(&authority, &h.node, scope()?, 1).await?);
+        for _ in 0..2 {
+            h.root.drain_house_dispositions(&permit, &authority, &h.node, scope()?, 1).await.map_err(debug)?;
+        }
+        let (cancelled, evicted, banned): (bool, bool, bool) = sqlx::query_as(
+            "SELECT
+               EXISTS(SELECT 1 FROM game_house_dispositions WHERE operation_id=$1::uuid AND state=4),
+               EXISTS(SELECT 1 FROM game_house_dispositions WHERE house_key=$2 AND cause='EVICTION'
+                       AND released_at IS NOT NULL),
+               EXISTS(SELECT 1 FROM game_account_house_bans WHERE world_id=encode($3,'hex')::uuid
+                       AND account_id=$4::uuid AND banned_until>statement_timestamp()+interval '29 days')",
+        ).bind(&notice).bind(HOUSE).bind(id(WORLD).as_slice()).bind(&account).fetch_one(&h.pool).await?;
+        drop(authority);
+        drop(seal);
+        h.cleanup().await?;
+        assert_eq!((cancelled, evicted, banned), (true, true, true));
+        println!("PG_MARKER disposition worker honors earlier rent expiry");
+        Ok(())
+    })
+}
+
+#[test]
 fn house_rent_after_outage_delivers_readable_notice_before_eviction() -> TestResult {
     let Some(admin) = configured_admin() else { return Ok(()); };
     runtime()?.block_on(async move {
@@ -129,14 +183,7 @@ fn house_rent_upgrade_reuses_warning_for_the_original_due_date() -> TestResult {
     runtime()?.block_on(async move {
         let h = Harness::create(admin, "house_rent_upgrade").await?;
         seed_due_rent(&h, 24).await?;
-        let legacy = include_str!("../../../migrations/0941_house_rent_parity.sql");
-        let tick_start = legacy.find("CREATE OR REPLACE FUNCTION game_house_rent_tick")
-            .ok_or("0941 rent tick")?;
-        let tick = legacy[tick_start..].replace(
-            "OUT operation TEXT)",
-            "OUT operation TEXT,OUT cancelled_operation TEXT)",
-        );
-        sqlx::raw_sql(sqlx::AssertSqlSafe(tick)).execute(&h.pool).await?;
+        restore_legacy_rent_tick(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
         assert!(h.root.advance_house_rent(&authority, &h.node, scope()?, 1).await?);
@@ -145,10 +192,7 @@ fn house_rent_upgrade_reuses_warning_for_the_original_due_date() -> TestResult {
              JOIN game_house_properties p USING(world_id,house_key) WHERE p.house_key=$1",
         ).bind(HOUSE).fetch_one(&h.pool).await?;
         assert!(late_receipt, "the predecessor actually recorded a late due timestamp");
-        let mut tx = h.pool.begin().await?;
-        sqlx::raw_sql(include_str!("../../../migrations/3121_house_rent_warning_text.sql"))
-            .execute(&mut *tx).await?;
-        tx.commit().await?;
+        apply_rent_cutover(&h).await?;
         assert!(h.root.advance_house_rent(&authority, &h.node, scope()?, 1).await?);
         let (letters, readable): (i64,i64) = sqlx::query_as(
             "SELECT count(*),count(t.text) FROM game_house_rent_inbox_letters l
@@ -168,6 +212,107 @@ fn house_rent_upgrade_reuses_warning_for_the_original_due_date() -> TestResult {
         assert!(original_due_is_bound,"the upgraded notice binds the original due date and grants seven readable days");
         assert_eq!(readable,1,"the active legacy letter must become readable");
         println!("PG_MARKER rent warning cutover");
+        Ok(())
+    })
+}
+
+async fn restore_legacy_rent_tick(h: &Harness) -> TestResult {
+    let legacy = include_str!("../../../migrations/0941_house_rent_parity.sql");
+    let tick_start = legacy.find("CREATE OR REPLACE FUNCTION game_house_rent_tick")
+        .ok_or("0941 rent tick")?;
+    let tick = legacy[tick_start..].replace(
+        "OUT operation TEXT)",
+        "OUT operation TEXT,OUT cancelled_operation TEXT)",
+    );
+    sqlx::raw_sql(sqlx::AssertSqlSafe(tick)).execute(&h.pool).await?;
+    Ok(())
+}
+
+async fn apply_rent_cutover(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::raw_sql(include_str!("../../../migrations/3121_house_rent_warning_text.sql"))
+        .execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+#[test]
+fn house_rent_upgrade_preserves_live_eviction_without_offering_new_grace() -> TestResult {
+    let Some(admin) = configured_admin() else { return Ok(()); };
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "house_rent_upgrade_eviction").await?;
+        seed_due_rent(&h, 24).await?;
+        restore_legacy_rent_tick(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        assert!(h.root.advance_house_rent(&authority, &h.node, scope()?, 1).await?);
+        // Advance the predecessor's retry schedule to its terminal attempt.
+        sqlx::query(
+            "UPDATE game_house_rent_state SET warnings=7, next_rent_at=statement_timestamp()
+             WHERE house_key=$1",
+        ).bind(HOUSE).execute(&h.pool).await?;
+        assert!(h.root.advance_house_rent(&authority, &h.node, scope()?, 1).await?);
+        apply_rent_cutover(&h).await?;
+        let (pending_eviction, normalized, promised_grace): (bool, bool, bool) = sqlx::query_as(
+            "SELECT EXISTS(SELECT 1 FROM game_house_dispositions d
+                      WHERE (d.world_id,d.house_key,d.owner_character_id,d.ownership_revision)=
+                            (p.world_id,p.house_key,p.owner_character_id,p.ownership_generation)
+                        AND d.cause='EVICTION' AND d.state=1 AND d.released_at IS NULL),
+                    i.definition_revision_ref='definition-r1',
+                    s.grace_until IS NOT NULL OR s.notice_letter_id IS NOT NULL OR t.text IS NOT NULL
+             FROM game_house_properties p JOIN game_house_rent_state s USING(world_id,house_key)
+             JOIN game_house_rent_inbox_letters l USING(world_id,house_key)
+             JOIN game_item_instances i ON i.item_instance_id=l.letter_id
+             LEFT JOIN game_item_texts t ON t.item_instance_id=l.letter_id WHERE p.house_key=$1",
+        ).bind(HOUSE).fetch_one(&h.pool).await?;
+        drop(authority);
+        drop(seal);
+        h.cleanup().await?;
+        assert!(pending_eviction, "0941 queued an eviction for the current tenure");
+        assert!(normalized, "the letter in the Inbox can still be retrieved");
+        assert!(!promised_grace, "cutover advertised grace after eviction was queued");
+        println!("PG_MARKER rent cutover preserves live eviction");
+        Ok(())
+    })
+}
+
+#[test]
+fn house_rent_upgrade_reuses_current_delivery_with_earlier_retry_date() -> TestResult {
+    let Some(admin) = configured_admin() else { return Ok(()); };
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "house_rent_upgrade_old_schedule").await?;
+        seed_due_rent(&h, 24).await?;
+        // An acquisition changes paid_until and leaves the previous schedule in place.
+        sqlx::query(
+            "INSERT INTO game_house_rent_state(world_id,house_key,next_rent_at)
+             SELECT world_id,house_key,paid_until-interval '1 day' FROM game_house_properties WHERE house_key=$1",
+        ).bind(HOUSE).execute(&h.pool).await?;
+        restore_legacy_rent_tick(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        assert!(h.root.advance_house_rent(&authority, &h.node, scope()?, 1).await?);
+        let legacy: String = sqlx::query_scalar(
+            "SELECT l.letter_id::text FROM game_house_rent_inbox_letters l
+             JOIN game_house_properties p USING(world_id,house_key)
+             WHERE p.house_key=$1 AND l.owner_character_id=p.owner_character_id
+               AND l.rent_due_at<p.paid_until AND l.delivered_at>=p.paid_until",
+        ).bind(HOUSE).fetch_one(&h.pool).await?;
+        apply_rent_cutover(&h).await?;
+        assert!(h.root.advance_house_rent(&authority, &h.node, scope()?, 1).await?);
+        let (count, legacy_bound): (i64, bool) = sqlx::query_as(
+            "SELECT count(*), bool_or(l.letter_id=$2::uuid AND t.text LIKE '%Pay by %'
+                      AND s.notice_letter_id=l.letter_id AND s.notice_due_at=p.paid_until
+                      AND s.ownership_generation=p.ownership_generation)
+             FROM game_house_properties p JOIN game_house_rent_state s USING(world_id,house_key)
+             JOIN game_house_rent_inbox_letters l USING(world_id,house_key)
+             LEFT JOIN game_item_texts t ON t.item_instance_id=l.letter_id WHERE p.house_key=$1",
+        ).bind(HOUSE).bind(&legacy).fetch_one(&h.pool).await?;
+        drop(authority);
+        drop(seal);
+        h.cleanup().await?;
+        assert_eq!(count, 1, "cutover minted a duplicate for the current unpaid period");
+        assert!(legacy_bound, "the current delivery was reconciled to the current paid_until");
+        println!("PG_MARKER rent cutover reconciles earlier retry date");
         Ok(())
     })
 }
