@@ -154,10 +154,10 @@ impl Database {
             version.starts_with("18"),
             "PostgreSQL 18 required: {version}"
         );
-        if let Some(version) = upto {
-            oteryn_gameplay_durability::GAME_MIGRATOR
-                .run_to(version, &mut connection)
-                .await?;
+        let migrator = &oteryn_gameplay_durability::GAME_MIGRATOR;
+        match upto {
+            Some(version) => migrator.run_to(version, &mut connection).await?,
+            None => migrator.run(&mut connection).await?,
         }
         connection.close().await?;
         Ok(())
