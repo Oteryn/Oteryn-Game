@@ -54,7 +54,7 @@ impl SettingsState {
         }
         let mut save = None;
         let local_channels;
-        let mut reopen = None;
+        let mut room_change = None;
         let mut public_rooms = None;
         let conversations;
         let guild_channel;
@@ -68,7 +68,10 @@ impl SettingsState {
                     ComposerMode::Off
                 };
             }
-            let session = std::sync::Arc::as_ptr(&link.mailbox) as usize;
+            let session = (
+                std::sync::Arc::as_ptr(&link.mailbox) as usize,
+                mailbox.chat.scope,
+            );
             let rooms = mailbox.chat_public.rooms;
             let ready = mailbox.chat.selected
                 && !mailbox.chat_public.pending
@@ -78,12 +81,37 @@ impl SettingsState {
             let console = &mut mailbox.chat.console;
             if self.chat_mode_seen.is_some_and(|(seen, _)| seen != session) {
                 self.chat_mode_seen = None;
+                self.restore_closed_rooms = true;
             }
             use oteryn_client_ui::chat::ChannelTab;
             let tabs = [ChannelTab::Loot, ChannelTab::ServerLog, ChannelTab::Npc];
             if self.chat_mode_seen.is_none() {
-                self.restoring_rooms = self.preferences.console.public_rooms;
-                self.unconfirmed_rooms = self.restoring_rooms;
+                self.room_retry = [None; 8];
+                let reconcile_closed = std::mem::take(&mut self.restore_closed_rooms);
+                self.unconfirmed_rooms = self
+                    .preferences
+                    .console
+                    .public_rooms
+                    .map(|open| (open || reconcile_closed).then_some(open));
+                let keep = |tab: &ChannelTab| match tab {
+                    ChannelTab::Conversation(name) => {
+                        self.preferences.console.conversations.contains(name)
+                    }
+                    ChannelTab::Guild => self.preferences.console.guild_channel,
+                    _ => tabs
+                        .iter()
+                        .position(|local| local == tab)
+                        .is_none_or(|i| self.preferences.console.local_channels[i]),
+                };
+                let closed: Vec<_> = console
+                    .channels
+                    .iter()
+                    .filter(|tab| !keep(tab))
+                    .cloned()
+                    .collect();
+                for tab in closed {
+                    console.drop_channel(&tab);
+                }
                 self.restore_guild_channel = self.preferences.console.guild_channel;
                 for name in &self.preferences.console.conversations {
                     let tab = ChannelTab::Conversation(name.clone());
@@ -107,19 +135,25 @@ impl SettingsState {
                 self.restore_guild_channel || console.channels.contains(&ChannelTab::Guild);
             if ready {
                 for (index, room) in ChatRoom::ALL.into_iter().enumerate() {
-                    if rooms.contains(room) {
-                        self.unconfirmed_rooms[index] = false;
-                        self.restoring_rooms[index] = false;
+                    let Some(desired) = self.unconfirmed_rooms[index] else {
+                        continue;
+                    };
+                    if desired == rooms.contains(room) {
+                        self.unconfirmed_rooms[index] = None;
+                        self.room_retry[index] = None;
                     } else if (public || !room.requires_public_channels())
-                        && std::mem::take(&mut self.restoring_rooms[index])
+                        && self.room_retry[index]
+                            .is_none_or(|last| last.elapsed() >= std::time::Duration::from_secs(5))
                     {
-                        reopen = Some(room);
+                        self.room_retry[index] = Some(std::time::Instant::now());
+                        room_change = Some((room, desired));
                         break;
                     }
                 }
-                if reopen.is_none() {
+                if room_change.is_none() {
                     public_rooms = Some(std::array::from_fn(|i| {
-                        self.unconfirmed_rooms[i] || rooms.contains(ChatRoom::ALL[i])
+                        self.unconfirmed_rooms[i]
+                            .unwrap_or_else(|| rooms.contains(ChatRoom::ALL[i]))
                     }));
                 }
             }
@@ -156,8 +190,12 @@ impl SettingsState {
             // Chat On and an Auto input holding the focus use the chatOn hotkey set.
             console.can_send()
         };
-        if let Some(room) = reopen {
-            link.chat_open_entry(&oteryn_client_ui::chat::ChannelEntry::Room(room));
+        if let Some((room, open)) = room_change {
+            if open {
+                link.chat_open_entry(&oteryn_client_ui::chat::ChannelEntry::Room(room));
+            } else {
+                link.chat_close_room(room);
+            }
         }
         if save.is_some()
             || self.preferences.console.local_channels != local_channels

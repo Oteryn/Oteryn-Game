@@ -116,14 +116,6 @@ impl crate::play::mailbox::Mailbox {
             {
                 self.screen_loot.record(corpse_items, *gold);
             }
-            if let AnalyserFact::KillLoot { corpse_items, .. } = fact
-                && corpse_items
-                    .iter()
-                    .any(|item| self.analyser.loot_tracked.contains(&item.item_type.get()))
-            {
-                self.capture_observations.tracked_loot =
-                    self.capture_observations.tracked_loot.wrapping_add(1);
-            }
             if matches!(fact, AnalyserFact::Kill { .. }) {
                 self.capture_observations.credited_kills =
                     self.capture_observations.credited_kills.wrapping_add(1);
@@ -152,6 +144,7 @@ impl crate::play::PlayLink {
     fn capture_observations(&self) -> CaptureObservations {
         let mailbox = crate::play::mailbox::lock(&self.mailbox);
         CaptureObservations {
+            tracked_loot: mailbox.analyser.tracked_loot_receipts,
             kill_feed: mailbox.analyser.selected,
             ..mailbox.capture_observations
         }

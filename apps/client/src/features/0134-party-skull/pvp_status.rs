@@ -14,7 +14,14 @@ pub(in crate::play) fn apply(panel: &mut Panel, result: &GatedCommandResult) {
         panel.feedback = "Invalid PvP status reply".into();
         return;
     };
-    panel.incoming_situations = Some(status.situations.iter().filter(|s| s.incoming).count());
+    let mut incoming: Vec<_> = status
+        .situations
+        .iter()
+        .filter(|s| s.incoming)
+        .map(|s| s.remaining_ms)
+        .collect();
+    incoming.sort_unstable_by(|a, b| b.cmp(a));
+    panel.incoming_situations = Some(incoming);
     panel.unjustified = Some(UnjustifiedSnapshot {
         windows: std::array::from_fn(|i| FragWindow {
             points_milli: status.points_milli[i],
