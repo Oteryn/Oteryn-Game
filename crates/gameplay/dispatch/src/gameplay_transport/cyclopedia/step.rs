@@ -43,9 +43,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 y: position.at.y,
                 floor: position.at.floor,
             };
-            content::admit_at(self, at).map(|area| (area, at))
+            content::admit_at(self, at).map(|area| (area, at, main_area_count(position.map)))
         };
-        let Some((area, at)) = area_at else {
+        let Some((area, at, main_area_count)) = area_at else {
             return;
         };
         let binding: [u8; 32] = Sha256::new()
@@ -74,6 +74,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             legacy_area: area.legacy_area,
             subarea: area.subarea,
             subareas: area.subareas,
+            main_area_count,
             pool: area.pool,
             at,
             fee: None,

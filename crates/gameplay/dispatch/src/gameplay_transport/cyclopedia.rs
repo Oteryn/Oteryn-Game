@@ -26,6 +26,16 @@ mod speed;
 #[path = "cyclopedia/step.rs"]
 mod step;
 
+fn main_area_count(map: &crate::map::boot::BundleMap) -> usize {
+    map.overlay
+        .base()
+        .subareas
+        .areas
+        .iter()
+        .filter(|area| area.parent.is_none())
+        .count()
+}
+
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     let mut offers: Vec<_> = base
         .iter()
@@ -253,6 +263,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             legacy_area: area.legacy_area,
             subarea: area.subarea,
             subareas: area.subareas,
+            main_area_count: main_area_count(position.map),
             epoch: self.reset_epoch,
             pool: area.pool,
             at,
