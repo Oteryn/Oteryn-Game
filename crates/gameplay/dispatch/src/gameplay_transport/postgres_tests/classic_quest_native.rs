@@ -27,6 +27,11 @@ fn classic_quest_native_dragon_corpse_tools_and_reward() -> TestResult {
 }
 
 #[test]
+fn classic_quest_native_dragon_corpse_predecessor_tools_and_reward() -> TestResult {
+    super::classic_quest_native_fixtures::run("corpse-predecessor")
+}
+
+#[test]
 fn classic_quest_native_draconia_bags_complete_in_either_order() -> TestResult {
     for route in ["bags", "bags-reverse"] {
         super::classic_quest_native_fixtures::run(route)?;

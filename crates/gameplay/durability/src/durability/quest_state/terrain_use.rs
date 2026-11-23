@@ -115,7 +115,15 @@ pub(in crate::durability) async fn credit_dragon_corpse(
         Some((pin, hash, completed)) => {
             let hash = <[u8; 32]>::try_from(hash.as_slice())
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
-            if hash != current_hash && !completed {
+            if hash != current_hash
+                && !completed
+                && oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                    catalogue,
+                    DRAGON_CORPSE,
+                    &hash,
+                )
+                .is_none()
+            {
                 return Ok(());
             }
             (pin.as_str(), hash)

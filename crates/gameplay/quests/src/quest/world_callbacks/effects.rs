@@ -95,6 +95,9 @@ pub struct CallbackEffects {
     pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    /// Repeat the public cue independently of object decay.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub repeat_magic_after_ms: Option<u32>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
@@ -666,6 +669,12 @@ pub(super) fn valid(callback: &Callback) -> bool {
                                 .bytes()
                                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                     })
+        })
+        || effects.repeat_magic_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay)
+                || effects.magic.is_none()
+                || callback.trigger != Trigger::Use
+                || callback.actor_kind != ActorKind::Player
         })
         || effects.reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)

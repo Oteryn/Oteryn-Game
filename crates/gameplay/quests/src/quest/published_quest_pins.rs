@@ -203,7 +203,7 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
 ];
 
-const DRAGON_CORPSE_PREDECESSOR: (&str, DefinitionHash) = (
+pub const DRAGON_CORPSE_PREDECESSOR: (&str, DefinitionHash) = (
     "oteryn:quest.dragon_corpse_quest",
     hash(b"ba645250c7b9827e710e57059c40e56ba56c1950c76433932125927c670b2f06"),
 );

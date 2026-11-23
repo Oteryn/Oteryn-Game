@@ -1906,6 +1906,51 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 #[cfg(test)]
 mod tests {
     #[test]
+    fn curos_partial_refuses_a_character_without_days_of_doom() -> Result<(), String> {
+        let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(|err| format!("{err:?}"))?;
+        let catalogue = loaded.catalogue();
+        let rewards = super::offered_for(catalogue)?;
+        let start = rewards
+            .iter()
+            .find(|r| r.key == "oteryn:quest-reward/l2-alliance-start")
+            .ok_or("Curos mission start")?;
+        let [guard] = start.requires.as_slice() else {
+            return Err("Curos must have the donor's Days of Doom gate".into());
+        };
+        assert_eq!(
+            guard.track,
+            "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06"
+        );
+        assert_eq!((guard.minimum, guard.maximum), (5, 5));
+        assert!(!guard.holds(catalogue, &std::collections::BTreeMap::new()));
+        Ok(())
+    }
+
+    #[test]
+    fn zalamon_final_confirmation_admits_a_fresh_character() -> Result<(), String> {
+        use crate::quest::{loader, reward_callbacks};
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|err| format!("{err:?}"))?;
+        let catalogue = loaded.catalogue();
+        let rewards = reward_callbacks::offered_for(catalogue)?;
+        let confirm = rewards
+            .iter()
+            .find(|r| r.key == "oteryn:quest-reward/l2-zalamon-accept")
+            .ok_or("Zalamon topic-two confirmation")?;
+        assert_eq!(confirm.topic, 2);
+        let fresh = std::collections::BTreeMap::new();
+        assert!(
+            confirm
+                .requires
+                .iter()
+                .all(|guard| guard.holds(catalogue, &fresh)),
+            "topic two must admit a character without New Frontier progress"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn extended_quests_accept_published_character_progress() -> Result<(), String> {
         let lowered = crate::quest::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;

@@ -34,8 +34,8 @@ def append(add, callbacks, offers, declarations, inputs, pin):
     add('l2-alliance-tower', 'an_uneasy_alliance_quest', 'curos', ['mission'],
         [state(alliance+'questline',2,3)])
     callbacks[-1].update(sources=[curos_source+'#L86-L94'], reply=[
-        'The lizards spy on us from a tower in the Dragonblaze Mountains. Enter through their '
-        'underground fortress and destroy the scrying device.'])
+        ('The lizards spy on us from a tower in the Dragonblaze Mountains. Enter through their '
+         'underground fortress and destroy the scrying device.')])
     add('l2-alliance-finish', 'an_uneasy_alliance_quest', 'curos', ['mission'],
         [state(alliance+'questline',4,5)], give=(10217,1))
     callbacks[-1].update(completes=True, sources=[witness('data-global/npc/curos.lua','95-101')],
@@ -94,11 +94,10 @@ def append(add, callbacks, offers, declarations, inputs, pin):
                        'storage': [state(child + 'questline', step, step, preserve=True), *guards],
                        'reply': [reply]})
 
-    frontier_gate = {'track': frontier + 'mission08', 'minimum': 2, 'maximum': 2}
     prompt(('mission',), 0, 1, 0, 'Will you work for the resistance?', any_topic=True)
     prompt(('yes',), 1, 2, 0, 'Find the enemy plans in the outpost beyond the mountains. Will you go?')
     progress('accept', 0, 1, '244-262', 'Watch the mountain passes.', topic=2, words=('yes',),
-             mission=[('mission00', 0, 0, 1)], requires=[frontier_gate])
+             mission=[('mission00', 0, 0, 1)])
     prompt(('mission',), 0, 3, 2, 'Did you find the enemy plans?', any_topic=True)
     prompt(('yes',), 3, 4, 2, 'Will you give me the map?')
     progress('map', 2, 3, '262-275', 'These troop movements will help us plan a defence.',

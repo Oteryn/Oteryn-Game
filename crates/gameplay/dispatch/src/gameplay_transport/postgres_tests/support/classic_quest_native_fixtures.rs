@@ -38,7 +38,9 @@ fn start(route: &str) -> TestResult<Position> {
         "keys" => p(32793, 31572, 7),
         "puzzle" => p(32804, 31587, 1),
         "devil" => p(32575, 32216, 15),
-        "corpse" | "corpse-shovel-rollback" | "corpse-scythe-rollback" => p(32148, 32207, 7),
+        "corpse" | "corpse-predecessor" | "corpse-shovel-rollback" | "corpse-scythe-rollback" => {
+            p(32148, 32207, 7)
+        }
         "bags" | "bags-reverse" => p(32804, 31584, 2),
         "tower" | "tower-reverse" => p(33073, 32170, 2),
         _ => return Err("classic quest route".into()),
@@ -228,7 +230,7 @@ pub(super) fn world(
                 crop(15, (32454, 32142, 32485, 32178))?,
             ]
         }
-        "corpse" | "corpse-shovel-rollback" | "corpse-scythe-rollback" => {
+        "corpse" | "corpse-predecessor" | "corpse-shovel-rollback" | "corpse-scythe-rollback" => {
             extras = &[594, 3651, 3652, 3605];
             vec![
                 crop(7, (32146, 32207, 32149, 32208))?,
@@ -765,7 +767,7 @@ pub(super) async fn exercise(
         }
         "puzzle" => draconia_puzzle(owner, admitted, h).await?,
         "devil" => devil(owner, admitted, h).await?,
-        "corpse" | "corpse-shovel-rollback" | "corpse-scythe-rollback" => {
+        "corpse" | "corpse-predecessor" | "corpse-shovel-rollback" | "corpse-scythe-rollback" => {
             corpse(owner, admitted, h, route).await?
         }
         "bags" | "bags-reverse" | "tower" | "tower-reverse" => {
@@ -909,6 +911,28 @@ async fn corpse(
     step(owner, admitted, StepDirection::West).await?;
     step(owner, admitted, StepDirection::West).await?;
     assert_eq!(at(owner, admitted).await?, p(32145, 32207, 8));
+    if route == "corpse-predecessor" {
+        let (quest, hash) = oteryn_gameplay_quests::quest::DRAGON_CORPSE_PREDECESSOR;
+        assert_eq!(quest, QUEST);
+        let mut save = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *save)
+            .await?;
+        let character = fence.character_id.as_bytes().as_slice();
+        for statement in [
+            "UPDATE game_character_quest_states SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2 AND character_id=encode($3,'hex')::uuid",
+            "UPDATE game_character_quest_receipts SET pinned_content_revision='content-main-era', definition_hash=$1 WHERE quest_key=$2 AND character_id=encode($3,'hex')::uuid",
+        ] {
+            let updated = sqlx::query(statement)
+                .bind(hash.as_slice())
+                .bind(QUEST)
+                .bind(character)
+                .execute(&mut *save)
+                .await?;
+            assert_eq!(updated.rows_affected(), 1);
+        }
+        save.commit().await?;
+    }
     let hole = p(32166, 32216, 8);
     walk_to(owner, admitted, hole, 0).await?;
     assert_eq!(at(owner, admitted).await?, hole);
@@ -920,6 +944,15 @@ async fn corpse(
         UseDisposition::Committed
     );
     assert!(has(owner, hole, 594)?);
+    let shovel_credit: Option<i64> = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE quest_key=$1 AND track_key=$2 AND character_id=encode($3,'hex')::uuid",
+    )
+    .bind(QUEST)
+    .bind("oteryn:quest-progress/chosen-source/dragon_corpse_quest/s2/shoveled")
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_optional(&h.pool)
+    .await?;
+    assert_eq!(shovel_credit, Some(1));
     walk_to(owner, admitted, p(32167, 32216, 8), 0).await?;
     step(owner, admitted, StepDirection::West).await?;
     assert_eq!(at(owner, admitted).await?, p(32166, 32216, 9));

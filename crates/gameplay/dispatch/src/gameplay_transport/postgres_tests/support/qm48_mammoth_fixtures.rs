@@ -198,13 +198,16 @@ pub(super) async fn exercise_horn(
         assert!((10..=30).contains(&(before - bear_health(owner, admitted).await?)));
         tokio::time::sleep(use_interval).await;
     }
-    let payload = encode_item_use_intent(&UseIntent {
-        target: UseTarget::Item(std::num::NonZeroU64::MIN),
-        use_with: None,
-        use_with_map_item: Some(MapUseTarget::Object(target())),
-        use_with_position: None,
-    })
-    .map_err(debug)?;
+    let horn_use = || {
+        encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(std::num::NonZeroU64::MIN),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Object(target())),
+            use_with_position: None,
+        })
+        .map_err(debug)
+    };
+    let payload = horn_use()?;
     let (next, result, _) = super::item_craft_fixtures::exchange(
         owner,
         *admitted,
@@ -232,6 +235,29 @@ pub(super) async fn exercise_horn(
             .ok_or("bear appearance")
     };
     if position == BEAR {
+        assert_eq!(appearance()?, 7175);
+        let progress = super::m39_bone_journey_fixtures::stage(h, barbarian_mead::TRACKS[0]).await?;
+        let decay = map.facts.next_movement_decay_time().ok_or("bear decay")?;
+        assert_eq!(map.facts.expire_movement_items(decay - 1), 0);
+        assert_eq!(map.facts.expire_movement_items(decay), 1);
+        assert_eq!(appearance()?, 7174);
+        assert_eq!(
+            super::m39_bone_journey_fixtures::stage(h, barbarian_mead::TRACKS[0]).await?,
+            progress,
+            "decaying an unclaimed stun earns no personal credit"
+        );
+        tokio::time::sleep(use_interval).await;
+        let payload = horn_use()?;
+        let (next, result, _) = super::item_craft_fixtures::exchange(
+            owner,
+            *admitted,
+            admitted.continuity.next_command_id,
+            &payload,
+            Some(source),
+        )
+        .await?;
+        *admitted = next;
+        assert_eq!(result, UseDisposition::Committed);
         assert_eq!(appearance()?, 7175);
         tokio::time::sleep(use_interval).await;
         let payload = encode_use_intent(&target()).map_err(debug)?;
@@ -475,11 +501,23 @@ pub(super) async fn exercise(
     );
     let map = owner.bundle_map().ok_or("map")?;
     assert_eq!(map.facts.object_revision(key), 1);
-    assert_eq!(map.facts.expire_movement_items(owner.owner_now().get()), 0);
+    let cues = map.facts.movement_effects_since(0);
+    assert_eq!(cues.len(), 1, "replay must not repeat the immediate cue");
+    let (sequence, position, effect) = cues[0];
+    let now = owner.owner_now().get();
+    let decay = map.facts.next_movement_decay_time().ok_or("mammoth decay")?;
+    assert!((now..=now + 5_000_000).contains(&decay));
+    assert_eq!(map.facts.expire_movement_items(decay - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(decay), 1);
+    assert_eq!(map.facts.object_revision(key), 2);
+    let cue = map.facts.next_movement_decay_time().ok_or("sleep cue")?;
+    assert!((decay + 55_000_000..=now + 60_000_000).contains(&cue));
+    assert_eq!(map.facts.expire_movement_items(cue - 1), 0);
+    assert!(map.facts.movement_effects_since(sequence).is_empty());
+    assert_eq!(map.facts.expire_movement_items(cue), 0);
     assert_eq!(
-        map.facts
-            .expire_movement_items(owner.owner_now().get() + 60_000_000),
-        1
+        map.facts.movement_effects_since(sequence),
+        [(sequence + 1, position, effect)]
     );
     Ok(())
 }
