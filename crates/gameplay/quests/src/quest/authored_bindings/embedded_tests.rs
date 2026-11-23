@@ -486,6 +486,61 @@ mod main_native_contract {
     }
 
     #[test]
+    fn knightwatch_join_and_rank_four_require_dreamer_puzzle() -> Result<(), String> {
+        use crate::quest::reward_callbacks::{TrackRequirement, offered_for};
+        use std::collections::BTreeMap;
+
+        #[derive(serde::Deserialize)]
+        struct Offers {
+            offers: Vec<Offer>,
+        }
+        #[derive(serde::Deserialize)]
+        struct Offer {
+            npc: String,
+            next_topic: u16,
+            #[serde(default)]
+            requires: Vec<TrackRequirement>,
+        }
+
+        let loaded = crate::quest::loader::load_embedded_quest_state("knightwatch-prerequisite")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let callbacks = offered_for(catalogue)?;
+        let offers: Offers = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/quests/shared-reward-offers.json"
+        )))
+        .map_err(|error| error.to_string())?;
+        let puzzle = "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4";
+        // PARTIAL: the terminal Dreamer puzzle is an independent writer.
+        let without_puzzle = BTreeMap::new();
+        for npc in ["oteryn:npc.the_bone_master", "oteryn:npc.the_dream_master"] {
+            for topic in [2, 5] {
+                let callback = callbacks
+                    .iter()
+                    .find(|callback| callback.npc == npc && callback.topic == topic)
+                    .ok_or("Knightwatch confirmation")?;
+                let offer = offers
+                    .offers
+                    .iter()
+                    .find(|offer| offer.npc == npc && offer.next_topic == topic)
+                    .ok_or("Knightwatch offer")?;
+                for requirements in [&callback.requires, &offer.requires] {
+                    let required = requirements
+                        .iter()
+                        .find(|requirement| requirement.track == puzzle)
+                        .ok_or("donor Dreamer prerequisite")?;
+                    assert!(
+                        !required.holds(catalogue, &without_puzzle),
+                        "{npc} topic {topic}"
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn explicit_empty_native_bindings_preserve_the_legacy_catalogue() -> Result<(), String> {
         use crate::quest::{QuestTrack, arena_completion, completion_sets, native_kills};
 
@@ -572,7 +627,8 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        assert_eq!(before.tracks.len(), 2165);
+        // Knightwatch adds the shared tower permit and the diamond lever claim.
+        assert_eq!(before.tracks.len(), 2167);
         let festive_guard = "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5";
         assert_eq!(
             before.tracks.get(festive_guard),
