@@ -135,6 +135,9 @@ impl DurabilityRoot {
         command: CommandRef,
         payload: &[u8],
     ) -> Result<Read, CharacterProgressionError> {
+        if command.game_session_id() != fence.game_session_id {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -150,15 +153,34 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     let now = now(&mut tx).await?;
-                    let state = load(&mut tx, fence).await?;
-                    let rotation_points_eligible = state.progress.rotation
-                        >= now / ROTATION_SECONDS
+                    let rotation = now / ROTATION_SECONDS;
+                    let mut state = load(&mut tx, fence).await?;
+                    let rotation_points_eligible = state.progress.rotation >= rotation
                         || rotation_eligible(&mut tx, fence.character_id, state.progress.rotation)
                             .await?;
                     let replay = replay(&mut tx, fence, command, &payload).await?;
-                    publish(&mut tx, fence.character_id, now / ROTATION_SECONDS).await?;
+                    publish(&mut tx, fence.character_id, rotation).await?;
                     let potion = next_potion(&mut tx, fence).await?;
-                    let (rank, potions) = standing(&mut tx, fence, now / ROTATION_SECONDS).await?;
+                    // The potion mint path owns the reply and bypasses the normal command
+                    // commit. Settle an inactive Character's closed rotation before mint reads it.
+                    if !state.active
+                        && state.progress.rotation < rotation
+                        && replay.is_none()
+                        && potion.is_some()
+                        && matches!(
+                            oteryn_protocol_oteryn::arena::decode_match_request(&payload),
+                            Ok(oteryn_protocol_oteryn::arena::ArenaAction::Drome(
+                                oteryn_protocol_oteryn::arena::DromeAction::ClaimPotion
+                            ))
+                        )
+                    {
+                        if !rotation_points_eligible {
+                            state.progress.waves = 0;
+                        }
+                        state.progress.rotate(rotation);
+                        save_state(&mut tx, fence, &state).await?;
+                    }
+                    let (rank, potions) = standing(&mut tx, fence, rotation).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(Read {
                         potion,
@@ -295,6 +317,14 @@ pub(super) async fn save(
 ) -> Result<(), DurabilityError> {
     sqlx::query("INSERT INTO game_tibiadrome_receipts(character_id,game_session_id,command_id,payload,reply) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(payload).bind(reply).execute(&mut **tx).await?;
+    save_state(tx, fence, state).await
+}
+
+async fn save_state(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    state: &Record,
+) -> Result<(), DurabilityError> {
     sqlx::query("INSERT INTO game_character_tibiadrome(character_id,body) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body")
         .bind(fence.character_id.as_bytes().as_slice()).bind(serde_json::to_value(state).map_err(|_|DurabilityError::InvalidStoredState)?).execute(&mut **tx).await?;
     Ok(())
