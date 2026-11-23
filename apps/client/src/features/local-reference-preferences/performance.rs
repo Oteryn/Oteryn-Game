@@ -45,6 +45,7 @@ pub struct FramePacer {
     sample_start: Option<Instant>,
     frames: u64,
     fps: Option<u64>,
+    range: Option<(u64, u64)>,
     window_max: Duration,
     max_frame: Option<Duration>,
 }
@@ -58,6 +59,7 @@ impl Default for FramePacer {
             sample_start: None,
             frames: 0,
             fps: None,
+            range: None,
             window_max: Duration::ZERO,
             max_frame: None,
         }
@@ -102,6 +104,10 @@ impl FramePacer {
                 u64::try_from(u128::from(self.frames) * 1_000_000_000 / elapsed.as_nanos().max(1))
                     .unwrap_or(u64::MAX),
             );
+            if let Some(fps) = self.fps {
+                let (min, max) = self.range.unwrap_or((fps, fps));
+                self.range = Some((min.min(fps), max.max(fps)));
+            }
             self.max_frame = Some(self.window_max);
             self.window_max = Duration::ZERO;
             self.frames = 0;
@@ -116,6 +122,10 @@ impl FramePacer {
             .is_some_and(|at| now.saturating_duration_since(at) <= Duration::from_secs(2));
         self.fps.zip(self.max_frame).filter(|_| fresh)
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn fps_range(&self) -> Option<(u64, u64)> { self.range }
+    #[cfg(bevy_shell)]
+    pub(crate) fn reset_range(&mut self) { self.range = None; }
     pub fn indicator(
         &self,
         now: Instant,
@@ -138,7 +148,15 @@ impl FramePacer {
                 .filter(|(at, _)| now.saturating_duration_since(*at) <= Duration::from_secs(15))
                 .map_or_else(
                     || "—".into(),
-                    |(_, duration)| format!("{} ms", duration.as_millis()),
+                    |(_, duration)| {
+                        let ms = duration.as_millis();
+                        let class = match ms {
+                            0..250 => "Low lag",
+                            250..500 => "Medium lag",
+                            _ => "High lag",
+                        };
+                        format!("{ms} ms ({class})")
+                    },
                 );
             parts.push(format!("Command RTT: {value}"));
         }
@@ -154,7 +172,7 @@ impl crate::play::Outbox {
     pub(in crate::play) fn performance_reset(&self) {
         crate::play::mailbox::lock(&self.0).command_latency = None;
     }
-    pub(in crate::play) fn performance_command_result(&self, elapsed: Duration) {
+    pub(crate) fn performance_command_result(&self, elapsed: Duration) {
         crate::play::mailbox::lock(&self.0).command_latency = Some((Instant::now(), elapsed));
     }
 }
