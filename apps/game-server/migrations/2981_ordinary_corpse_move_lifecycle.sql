@@ -150,7 +150,8 @@ BEGIN
     END IF;
     body := replace(body,original,'(('||original||') OR
         (cg.runtime_scope_ownership_generation<r.scope_generation
-         AND game_ordinary_corpse_loop_ground(cg.item_instance_id)))');
+         AND (game_ordinary_corpse_loop_ground(cg.item_instance_id)
+              OR game_ordinary_corpse_drag_source(cg.item_instance_id))))');
     EXECUTE body;
 
     -- Try the exact relocated receipt independently of the original death scope.

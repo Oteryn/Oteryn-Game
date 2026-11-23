@@ -57,6 +57,7 @@ def compact_item_profile(row):
         "imbuement",
         "protection",
         "readable_writeable",
+        "skill_modifiers",
         "trade_restrictions",
         "use_transform",
         "weapon",

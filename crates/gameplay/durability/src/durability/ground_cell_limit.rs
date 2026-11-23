@@ -9,7 +9,7 @@ use super::item_mint::GroundItemInstance;
 use super::item_mint::{GroundPlacement, TypedDefinitionRef};
 use super::spell_item_transaction::{
     SpellItemError, SpellItemScopeAuthority, assert_spell_item_scope_with_recovery,
-    locked_physical_tile_rows_for_scope, locked_tile_rows_for_scope,
+    locked_tile_rows_for_scope,
 };
 use super::spell_items_abi::{SpellGroundTarget, decode_ground_cell};
 use super::spell_owner_commit::SpellLanePermit;
@@ -144,8 +144,6 @@ pub async fn check_ground_cell_root_insert_in_transaction(
     ground: &GroundPlacement,
     item_instance_id: &[u8; 16],
 ) -> Result<(), GroundCellAdmissionError> {
-    use sha2::{Digest, Sha256};
-
     let target = SpellGroundTarget {
         item_profile_source: None,
         spatial_position: ground.spatial_position.clone(),
@@ -153,26 +151,9 @@ pub async fn check_ground_cell_root_insert_in_transaction(
         content_revision: ground.content_revision.clone(),
         placement_context: ground.native_room_placement_context.clone(),
     };
-    let cell = decode_ground_cell(&ground.spatial_position)
+    decode_ground_cell(&ground.spatial_position)
         .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
-    // Command 9 uses bundle axes and the bundle revision. Native writers can
-    // use the opposite floor and SHA-256 of that revision. The query also
-    // tests the reverse hash relation when the writer already has that hash.
-    let other_cell = i16::try_from(-cell.z).ok().map(|floor| {
-        let mut bytes = ground.spatial_position.clone();
-        bytes[8..].copy_from_slice(&floor.to_be_bytes());
-        bytes
-    });
-    let other_map = super::map_item_mint_audit::map_revision_of(
-        Sha256::digest(ground.map_revision.as_bytes()).as_slice(),
-    );
-    let rows = locked_physical_tile_rows_for_scope(
-        tx,
-        authority,
-        &target,
-        other_cell.as_deref().map(|cell| (cell, other_map.as_str())),
-    )
-    .await?;
+    let rows = locked_tile_rows_for_scope(tx, authority, &target).await?;
     let world = WorldId::decode(&authority.world_bytes())
         .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
     let remaining = native_roots(rows, authority, world)?;

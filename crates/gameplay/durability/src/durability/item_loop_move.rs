@@ -2018,6 +2018,19 @@ impl DurabilityRoot {
         character_id: CharacterId,
         command: CommandRef,
     ) -> std::result::Result<LoopMoveReplay, DurabilityError> {
+        self.read_item_loop_move_receipt_with_corpse(recovery, character_id, command)
+            .await
+            .map(|(replay, _)| replay)
+    }
+
+    /// A committed move can also identify the materialized corpse whose current
+    /// custody its owner must publish before acknowledging a retry.
+    pub async fn read_item_loop_move_receipt_with_corpse(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        command: CommandRef,
+    ) -> std::result::Result<(LoopMoveReplay, Option<[u8; 16]>), DurabilityError> {
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -2029,22 +2042,36 @@ impl DurabilityRoot {
                     // An attempt in flight holds this lock, so `Absent` proves none is.
                     lock_loop_command(&mut tx, command).await?;
                     let row = sqlx::query(
-                        "SELECT character_id::text FROM game_item_loop_move_receipts \
-                          WHERE quick_loot_ordinal = 0 AND game_session_id = encode($1,'hex')::uuid \
-                            AND command_id = $2::text::numeric(20,0)",
+                        "SELECT r.character_id::text, (
+                            SELECT l.item_instance_id::text
+                              FROM game_item_loop_move_lines l
+                              JOIN game_item_instances i USING(item_instance_id)
+                              JOIN game_item_mint_receipts m ON m.item_instance_id=i.item_instance_id
+                                AND m.transaction_id=i.minted_transaction_id
+                             WHERE l.transaction_id=r.transaction_id AND l.created_xact_id=r.created_xact_id
+                               AND (l.from_kind=3 OR l.to_kind=3)
+                               AND l.quantity_before=1 AND l.quantity_after=1
+                               AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
+                               AND m.materialized_at IS NOT NULL
+                             ORDER BY l.line_ordinal LIMIT 1
+                        ) AS corpse_item_instance_id
+                          FROM game_item_loop_move_receipts r
+                         WHERE r.quick_loot_ordinal=0 AND r.game_session_id=encode($1,'hex')::uuid
+                           AND r.command_id=$2::text::numeric(20,0)",
                     )
                     .bind(command.game_session_id().as_bytes().as_slice())
                     .bind(command.command_id().get().to_string())
                     .fetch_optional(&mut *tx)
                     .await?;
                     let replay = match row {
-                        None => LoopMoveReplay::Absent,
+                        None => (LoopMoveReplay::Absent, None),
                         Some(row) => {
                             if uuid_text(row.try_get("character_id")?)? == *character_id.as_bytes()
                             {
-                                LoopMoveReplay::Moved
+                                let corpse = row.try_get::<Option<String>, _>("corpse_item_instance_id")?;
+                                (LoopMoveReplay::Moved, corpse.as_deref().map(uuid_text).transpose()?)
                             } else {
-                                LoopMoveReplay::Conflicting
+                                (LoopMoveReplay::Conflicting, None)
                             }
                         }
                     };

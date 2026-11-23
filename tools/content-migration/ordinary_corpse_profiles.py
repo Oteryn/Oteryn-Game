@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 import re
+from itertools import pairwise
 
 import qengine_reward_item_profiles as items
 from boss_conditional_item_reference import definition
@@ -217,6 +218,65 @@ def qualify_inherited_portable_stages(root, records):
         admission["legal_destinations"] = ["CharacterInventory", "Ground"]
 
 
+def native_decay_edges(root, active):
+    from fourth_quarter_corpses import source as fourth_quarter_source
+    from ordinary_corpse_cohort import packet
+
+    first = (zip(ids, durations, strict=True) for ids, durations in read(root, "decay"))
+    slice_two = json.loads(
+        (
+            root
+            / "tools/content-schema/native-gameplay/ordinary-corpse-decay-slice2.json"
+        ).read_bytes()
+    )
+    second = (zip(row["chain"], row["durations_ms"], strict=True) for row in slice_two)
+    third = packet(root)["chains"].values()
+    fourth = fourth_quarter_source(root)["decay_chains"].values()
+
+    materialized = {
+        key for key, record in active.items() if record["admission"]["materializable"]
+    }
+    for stages in (*first, *second, *third, *fourth):
+        chain = list(stages)
+        if item_ref(chain[0][0])["key"] not in materialized:
+            continue
+        for (item, duration), (target, _) in pairwise(chain):
+            key, successor = item_ref(item)["key"], item_ref(target)
+            if key not in materialized or successor["key"] not in materialized:
+                # A reference-only successor cannot acquire Item custody here.
+                continue
+            yield (
+                key,
+                items.source.K(
+                    {
+                        "consumption_mode": items.source.K("DURABLE_ABSOLUTE_DEADLINE"),
+                        "duration": items.source.K(duration),
+                        "stop_duration": items.source.K(False),
+                        "decay_target": items.source.K(
+                            {"key": successor["key"], "revision": successor["revision"]}
+                        ),
+                    }
+                ),
+            )
+
+
+def qualify_native_decay_edges(root, records):
+    active = {
+        record["production_definition"]["production_key"]: record for record in records
+    }
+    for key, expected in native_decay_edges(root, active):
+        semantics = active[key]["semantics"]
+        prior = semantics.get("temporal")
+        if prior is None or prior == items.source.U:
+            semantics["temporal"] = expected
+        elif decay_target(prior) != decay_target(expected):
+            raise ValueError(f"Conflicting native corpse decay successor: {key}")
+
+
+def decay_target(temporal):
+    return (temporal or {}).get("value", {}).get("decay_target")
+
+
 def check_movable_stages(root):
     profile_path = root / "content/items/definitions/spell-native-profiles.json"
     active = {
@@ -235,6 +295,11 @@ def check_movable_stages(root):
             or actual["semantics"].get("physical") != record["semantics"]["physical"]
         ):
             raise ValueError(f"Missing or inconsistent movable corpse admission: {key}")
+
+    for key, temporal in native_decay_edges(root, active):
+        actual = active[key]["semantics"].get("temporal")
+        if decay_target(actual) != decay_target(temporal):
+            raise ValueError(f"Missing captured native corpse decay successor: {key}")
 
     for item in inherited_portable_stage_ids(root):
         key = item_ref(item)["key"]

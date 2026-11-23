@@ -108,6 +108,14 @@ pub(super) async fn exercise_drag(
         (at, corpse)
     };
     assert_ne!(before.position, at);
+    let (map_revision, content_revision, placement_context) =
+        sqlx::query_as::<_, (String, String, Vec<u8>)>(
+            "SELECT map_revision, content_revision, native_room_placement_context
+             FROM game_item_ground_locations WHERE item_instance_id=$1",
+        )
+        .bind(sqlx::types::Uuid::from_bytes(before.item.item_instance_id))
+        .fetch_one(&h.pool)
+        .await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -161,6 +169,66 @@ pub(super) async fn exercise_drag(
         (persisted.x, persisted.y, persisted.z),
         (at.x, at.y, -i32::from(at.floor))
     );
+    {
+        use crate::durability::spell_item_transaction as item_tx;
+        use crate::durability::spell_items_abi::{QualifiedItemDefinition, SpellGroundTarget};
+        use crate::foundation::{CommandId, CommandRef};
+
+        let native = owner
+            .active_generation
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("active native policies")?;
+        let target = SpellGroundTarget {
+            item_profile_source: native.item_profile_source(),
+            spatial_position: [
+                at.x.to_be_bytes().as_slice(),
+                at.y.to_be_bytes().as_slice(),
+                at.floor.to_be_bytes().as_slice(),
+            ]
+            .concat(),
+            map_revision,
+            content_revision,
+            placement_context,
+        };
+        let permit = owner.spell_lane_permit().await.ok_or("item lane")?;
+        let mut tx = h.pool.begin().await?;
+        let authority = item_tx::assert_spell_item_authority_in_transaction(
+            &mut tx,
+            &permit,
+            owner.root,
+            owner.character,
+            owner.holder,
+            &fence,
+            CommandRef::new(admitted.game_session_id, CommandId::new(60004).map_err(debug)?),
+            native.source_digest(),
+        )
+        .await
+        .map_err(debug)?;
+        let definition = item_tx::current_top_corpse_definition_in_transaction(
+            &mut tx, &authority, &target,
+        )
+        .await
+        .map_err(debug)?;
+        let qualified = QualifiedItemDefinition::from_native_policy(
+            native
+                .item_policy(&definition.production_key, &definition.revision_ref)
+                .ok_or("relocated corpse policy")?,
+        )
+        .map_err(debug)?;
+        let corpse = item_tx::prepare_corpse_in_transaction(
+            &mut tx, &authority, &target, &qualified,
+        )
+        .await
+        .map_err(debug)?;
+        assert_eq!(corpse.item_instance_id, before.item.item_instance_id);
+        let cell = corpse.cell()?;
+        assert_eq!((cell.x, cell.y, cell.z), (at.x, at.y, i32::from(at.floor)));
+        let tile = item_tx::read_spell_tile_in_transaction(&mut tx, &authority, &target)
+            .await
+            .map_err(debug)?;
+        assert_eq!(tile.items[0].item_instance_id, corpse.item_instance_id);
+        tx.rollback().await?;
+    }
     use oteryn_protocol_oteryn::quick_loot::{QuickLootAction, QuickLootRequest};
 
     let loot = QuickLootRequest {
@@ -220,6 +288,29 @@ pub(super) async fn exercise_drag(
             .bound_corpse(before.identity)
             .is_none(),
         "a carried corpse cannot remain visible on the Ground"
+    );
+    // Recreate the persisted / published split left by losing the pickup ACK.
+    owner
+        .runtime
+        .lock()
+        .await
+        .set_corpse_item_ground_position(before.item.item_instance_id, Some(at))
+        .map_err(debug)?;
+    assert_eq!(
+        crate::gameplay_transport::loop_move::committed_loop_move(
+            owner,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: 60003,
+                item_fence: Some(fence),
+            },
+        )
+        .await,
+        Some(crate::gameplay_transport::item_move::LoopMoveReplay::Moved),
+    );
+    assert!(
+        owner.runtime.lock().await.bound_corpse(before.identity).is_none(),
+        "the committed pickup must publish current custody before replay ACK"
     );
     Ok(())
 }

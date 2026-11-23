@@ -1359,21 +1359,36 @@ async fn locked_tile_rows(
     locked_tile_rows_for_scope(tx, &scope, target).await
 }
 
+fn opposite_ground_floor(position: &[u8]) -> Option<Vec<u8>> {
+    let cell = decode_ground_cell(position).ok()?;
+    let floor = i16::try_from(-cell.z).ok()?;
+    let mut opposite = position.to_vec();
+    opposite[8..].copy_from_slice(&floor.to_be_bytes());
+    Some(opposite)
+}
+
+fn alternate_ground_cell(target: &SpellGroundTarget) -> Option<(Vec<u8>, String)> {
+    let position = opposite_ground_floor(&target.spatial_position)?;
+    // Native writers hash the bundle revision string and invert the floor.
+    // The shared census also tests the reverse revision relation in SQL.
+    let revision = super::map_item_mint_audit::map_revision_of(
+        Sha256::digest(target.map_revision.as_bytes()).as_slice(),
+    );
+    Some((position, revision))
+}
+
+/// Native readers and Ground admission share the physical order across both
+/// encodings. An ordinary drop can sit above a corpse on the same tile.
 pub async fn locked_tile_rows_for_scope(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
     target: &SpellGroundTarget,
 ) -> Result<Vec<sqlx::postgres::PgRow>> {
-    locked_physical_tile_rows_for_scope(tx, authority, target, None).await
-}
-
-pub(super) async fn locked_physical_tile_rows_for_scope(
-    tx: &mut Transaction<'_, Postgres>,
-    authority: &SpellItemScopeAuthority,
-    target: &SpellGroundTarget,
-    alternate: Option<(&[u8], &str)>,
-) -> Result<Vec<sqlx::postgres::PgRow>> {
-    let (other_cell, other_map) = alternate.unzip();
+    let alternate = alternate_ground_cell(target);
+    let (other_cell, other_map) = alternate
+        .as_ref()
+        .map(|(cell, map)| (cell.as_slice(), map.as_str()))
+        .unzip();
     let current: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
         .fetch_one(&mut **tx)
         .await?;
@@ -3841,12 +3856,35 @@ pub async fn read_creature_empty_tiles_in_transaction(
     // An opaque live placement invalidates emptiness everywhere, just as in
     // locked_tile_rows_for_scope. With <=256 distinct requested addresses,
     // LIMIT 257 cannot hide an opaque address behind requested cells.
-    Ok(sqlx::query_scalar("WITH occupied AS MATERIALIZED (SELECT DISTINCT g.spatial_position FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR g.spatial_position=ANY($3::bytea[])) LIMIT 257) SELECT p FROM unnest($3::bytea[]) AS requested(p) WHERE NOT EXISTS(SELECT 1 FROM occupied WHERE octet_length(spatial_position)<>10 OR spatial_position=p)")
+    let loop_positions: Vec<_> = positions
+        .iter()
+        .map(|position| opposite_ground_floor(position))
+        .collect();
+    Ok(sqlx::query_scalar("WITH requested AS MATERIALIZED (
+        SELECT * FROM unnest($3::bytea[], $6::bytea[]) AS addresses(native, loop)
+    ), occupied AS MATERIALIZED (
+        SELECT DISTINCT p.native
+        FROM game_item_ground_locations g
+        JOIN game_item_instances i USING(item_instance_id)
+        LEFT JOIN requested p ON g.spatial_position=p.native
+            OR (g.spatial_position=p.loop AND game_item_loop_drop_ref(g.corpse_ref))
+        WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$4
+          AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid
+          AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid
+          AND i.lifecycle=1
+          AND (octet_length(g.spatial_position)<>10 OR g.spatial_position=ANY($3)
+               OR g.spatial_position=ANY($6))
+          AND (p.native IS NOT NULL OR octet_length(g.spatial_position)<>10)
+        LIMIT 257
+    )
+    SELECT p.native FROM requested p
+    WHERE NOT EXISTS(SELECT 1 FROM occupied WHERE native IS NULL OR native=p.native)")
         .bind(authority.world.as_slice())
         .bind(channel.map(|id| id.to_vec()))
         .bind(positions)
         .bind(scope_kind)
         .bind(instance.map(|id| id.to_vec()))
+        .bind(loop_positions)
         .fetch_all(&mut **tx)
         .await?)
 }

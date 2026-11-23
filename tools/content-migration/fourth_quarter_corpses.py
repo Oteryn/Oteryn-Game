@@ -60,6 +60,7 @@ def apply_items(root, items, provider_order, shared_ids):
     from ordinary_corpse_profiles import (
         movable_stage_profiles,
         qualify_inherited_portable_stages,
+        qualify_native_decay_edges,
     )
     from ordinary_corpse_slice2 import merge_shared_item
 
@@ -166,6 +167,7 @@ def apply_items(root, items, provider_order, shared_ids):
         items["records"].append(record)
         present.add(key)
     qualify_inherited_portable_stages(root, items["records"])
+    qualify_native_decay_edges(root, items["records"])
     items["records"].sort(key=provider_order)
 
 
