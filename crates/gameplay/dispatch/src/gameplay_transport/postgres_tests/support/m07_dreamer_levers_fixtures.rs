@@ -91,6 +91,7 @@ async fn counts(harness:&Harness)->TestResult<(i64,i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_receipts),(SELECT count(*) FROM game_quest_callback_consumptions)").fetch_one(&harness.pool).await?)
 }
 
+pub(super) const DREAD_LORD_CONTENTION: &str = "dreamer-dread-lord-scroll/contention";
 pub(super) const DREAD_LORD_LEVER: Position = Position { x: 32781, y: 32225, floor: -14 };
 pub(super) const DREAD_LORD_START: Position = Position { x: 32782, y: 32226, floor: -14 };
 
@@ -116,11 +117,7 @@ pub(super) async fn exercise_dread_lord(
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     callback: &Callback,
 ) -> TestResult {
-    use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
-    use std::sync::Arc;
-
     let [offering] = callback.offerings.as_slice() else { return Err("diamond offering".into()) };
-    let [rank, _claim] = callback.storage.as_slice() else { return Err("rank and claim guards".into()) };
     let [resting_lever, _active_lever] = callback.lever.ok_or("source lever")?;
     let ground_outputs = |owner: &ComposedFreshAdmission<'_, '_, '_>| -> TestResult<usize> {
         let map = owner.bundle_map().ok_or("map")?;
@@ -150,25 +147,7 @@ pub(super) async fn exercise_dread_lord(
     assert_eq!(counts(harness).await?, before);
     assert_eq!(ground_outputs(owner)?, 0);
 
-    // A returning Dread Lord supplies the rank prerequisite. USE, offering
-    // consumption, claim and ground placement go through their real owners.
-    let transition = "oteryn:quest-transition/fixture/dread-lord-rank";
-    let catalogue = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?.clone()
-        .with_fixture_transition(QuestTransition {
-            key: transition.into(),
-            quest: callback.quest.clone(),
-            effects: vec![QuestEffect {
-                track: rank.track.clone(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(rank.minimum),
-            }],
-            completes: false,
-            experience: None,
-            world_change: None,
-        }).map_err(debug)?;
-    owner.quest_catalogue = Some(Arc::new(catalogue));
-    super::qengine_outfit_stories_fixtures::commit_fixture(owner, admitted, transition, 90002).await?;
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    seed_dread_lord_rank(harness, owner, admitted, callback, 168).await?;
     assert_eq!(pull(owner, admitted, resting_lever).await?, UseDisposition::Committed);
 
     let map = owner.bundle_map().ok_or("map")?;
@@ -185,5 +164,174 @@ pub(super) async fn exercise_dread_lord(
         .fetch_one(&harness.pool).await?;
     assert_eq!(after_mints, before_mints);
     eprintln!("POSTGRES_CASE_COMPLETED dread-lord-lever");
+    Ok(())
+}
+
+async fn seed_dread_lord_rank(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    callback: &Callback,
+    occurrence: u8,
+) -> TestResult {
+    let [rank, _claim] = callback.storage.as_slice() else {
+        return Err("rank and claim guards".into());
+    };
+    // A returning player has earned the NPC-owned rank. The fixture imports
+    // that historical prerequisite and leaves the lever's claim at its default.
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        harness,
+        owner,
+        admitted,
+        &[(rank.track.clone(), rank.minimum)],
+        occurrence,
+    )
+    .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, true)
+        .await;
+    Ok(())
+}
+
+pub(super) async fn exercise_dread_lord_contention(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    callback: &Callback,
+) -> TestResult {
+    use super::quest_world_callbacks_fixtures::{local, offering, wire};
+    use crate::durability::guild_chat_fixture as history;
+    use oteryn_protocol_oteryn::world_object::decode_use_result;
+
+    let evidence = super::house_transfer_fixtures::RecoverySource::start(harness).await?;
+    let member = 1;
+    let character = history::sid(u32::from(member), 1);
+    history::historical_character(
+        &harness.pool,
+        u32::from(member),
+        crate::domain::CharacterId::from_bytes(character).map_err(debug)?,
+        history::sid(u32::from(member), 2),
+        *admitted.world_id.as_bytes(),
+        "Lever Peer",
+    )
+    .await?;
+    let session = super::activity_deadline_paging_fixtures::admit_created_member(
+        harness,
+        &evidence.evidence,
+        member,
+        character,
+    )
+    .await?;
+    let peer_fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "peer fence")?
+        .ok_or("peer fence")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                local(Position {
+                    x: DREAD_LORD_START.x,
+                    y: DREAD_LORD_LEVER.y,
+                    floor: DREAD_LORD_LEVER.floor,
+                }),
+            )
+            .map_err(debug)?;
+        runtime
+            .bind_attacker_lease(
+                actor,
+                session,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(&character).map_err(debug)?,
+                    peer_fence.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        actor
+    };
+    let mut peer = AdmittedSession {
+        game_session_id: session,
+        runtime_actor: Some(actor),
+        item_fence: Some(peer_fence.item_fence()),
+        controller: None,
+        ..*admitted
+    };
+    owner.admit_progression_session(&mut peer).await;
+
+    for (player, occurrence) in [(&*admitted, 168), (&peer, 169)] {
+        seed_dread_lord_rank(harness, owner, player, callback, occurrence).await?;
+    }
+
+    let [diamond] = callback.offerings.as_slice() else {
+        return Err("diamond offering".into());
+    };
+    let [resting, _] = callback.lever.ok_or("source lever")?;
+    let [edit] = callback
+        .effects
+        .scene
+        .as_ref()
+        .ok_or("ground scene")?
+        .open
+        .as_slice()
+    else {
+        return Err("one ground output".into());
+    };
+    let appearance = edit.create.ok_or("ground output appearance")?;
+    let outputs = |owner: &ComposedFreshAdmission<'_, '_, '_>| -> TestResult<usize> {
+        let map = owner.bundle_map().ok_or("map")?;
+        Ok(map
+            .facts
+            .movement_items(crate::map::overlay::TilePos {
+                x: edit.position.x,
+                y: edit.position.y,
+                floor: edit.position.floor,
+            })
+            .iter()
+            .filter(|entry| entry.facts.appearance_id == appearance)
+            .count())
+    };
+    let before = counts(harness).await?;
+    owner.clock_origin -= std::time::Duration::from_secs(1);
+    offering(owner, fence, diamond, 90001).await?;
+    let target = super::questpc7_hoist_story_fixtures::target(owner, DREAD_LORD_LEVER, resting)?;
+    owner
+        .states
+        .quest_callbacks
+        .interrupt_after_commit
+        .store(true, std::sync::atomic::Ordering::Release);
+    let command = admitted.continuity.next_command_id;
+    assert!(
+        wire(owner, admitted, command, 2, target.clone())
+            .await
+            .is_err()
+    );
+    assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+    let interrupted = counts(harness).await?;
+    assert_eq!(interrupted, (before.0 + 1, before.1 + 1));
+    assert_eq!(outputs(owner)?, 0);
+
+    offering(owner, fence, diamond, 90003).await?;
+    let peer_command = peer.continuity.next_command_id;
+    let reply = wire(owner, &mut peer, peer_command, 2, target).await?;
+    let peer_result = decode_use_result(&reply).map_err(debug)?;
+    let reconciled = owner
+        .reconcile_quest_callbacks(admitted.game_session_id)
+        .await;
+    // The base wire capability maps the internal Exhausted outcome to Rejected.
+    assert_eq!(
+        (peer_result, reconciled),
+        (UseDisposition::Rejected, true),
+        "the pending source refuses the peer and permits original receipt recovery"
+    );
+    assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
+    assert_eq!(outputs(owner)?, 1);
+    assert_eq!(counts(harness).await?, interrupted);
+    eprintln!("POSTGRES_CASE_COMPLETED {DREAD_LORD_CONTENTION}");
     Ok(())
 }

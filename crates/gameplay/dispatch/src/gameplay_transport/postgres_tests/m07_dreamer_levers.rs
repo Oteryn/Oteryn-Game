@@ -33,3 +33,17 @@ fn dread_lord_lever_burns_diamond_creates_ground_item_and_resets_postgres() -> T
         )
     })
 }
+
+#[test]
+fn dread_lord_lever_reserves_shared_source_until_reconciliation_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("dread-lord-lever-contention", || {
+        super::quest_world_callbacks_fixtures::scenario(
+            super::m07_dreamer_levers_fixtures::DREAD_LORD_CONTENTION,
+            super::m07_dreamer_levers_fixtures::DREAD_LORD_LEVER,
+            false,
+        )
+    })
+}

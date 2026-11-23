@@ -39,6 +39,13 @@ fn scenario_case(
         "lions-rock-strength-first" | "lions-rock-beauty" | "lions-rock-tears"
     );
     let m07_lion = name.starts_with("m07/lion-");
+    let dread_lord_contention =
+        name == super::super::m07_dreamer_levers_fixtures::DREAD_LORD_CONTENTION;
+    let name = if dread_lord_contention {
+        "dreamer-dread-lord-scroll"
+    } else {
+        name
+    };
     let dread_lord = name == "dreamer-dread-lord-scroll";
     let m07_dreamer = name.starts_with("m07/dreamer-lever-");
     let m49 = name.starts_with("m49-");
@@ -2078,6 +2085,15 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 fence,
+                &callback,
+            ))
+            .await?;
+        } else if dread_lord_contention {
+            Box::pin(super::super::m07_dreamer_levers_fixtures::exercise_dread_lord_contention(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence.item_fence(),
                 &callback,
             ))
             .await?;

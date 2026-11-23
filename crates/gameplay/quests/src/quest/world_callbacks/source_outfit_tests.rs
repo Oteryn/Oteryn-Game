@@ -2,7 +2,7 @@ use super::*;
 use crate::quest::{QuestComparison, reward_callbacks};
 
 #[test]
-fn dread_lord_lever_exchanges_the_offering_for_the_officer_document() -> Result<(), String> {
+fn dread_lord_lever_creates_a_passable_ground_item_at_the_offering() -> Result<(), String> {
     let loaded = crate::quest::loader::load_embedded_quest_state("dread-lord-lever")
         .map_err(|error| format!("{error:?}"))?;
     let callbacks = load_for(loaded.catalogue())?;
@@ -14,17 +14,17 @@ fn dread_lord_lever_exchanges_the_offering_for_the_officer_document() -> Result<
         return Err("diamond offering".into());
     };
     assert_eq!(offering.count, 1);
-    let reward = lever.item_reward().as_ref().ok_or("lever reward")?;
-    let rewards = reward_callbacks::load_for(loaded.catalogue())?;
-    let officer = rewards
-        .iter()
-        .find(|callback| callback.key == "oteryn:quest-reward/l10-brotherhood-officer")
-        .and_then(|callback| callback.give.as_ref())
-        .ok_or("officer document")?;
-    assert_eq!(
-        (reward.item.as_str(), reward.count),
-        (officer.item.as_str(), officer.count)
-    );
+    assert!(lever.item_reward().is_none());
+    let scene = lever.effects.scene.as_ref().ok_or("lever scene")?;
+    let [created] = scene.open.as_slice() else {
+        return Err("one ground output".into());
+    };
+    assert_eq!(created.position, offering.position);
+    assert!(created.create.is_some());
+    assert_eq!(created.remove, None);
+    assert_eq!(created.passable, Some(true));
+    let magic = lever.effects.magic.as_ref().ok_or("offering effect")?;
+    assert_eq!(magic.position, offering.position);
     assert!(lever.effects.item_presence.is_none());
     assert_eq!(lever.effects.reset_after_ms, Some(4_000));
     assert!(loaded.catalogue().transition(&lever.key).is_some());

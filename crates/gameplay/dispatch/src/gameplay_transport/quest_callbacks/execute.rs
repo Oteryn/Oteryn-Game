@@ -540,6 +540,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => Some(key),
             },
             Some(crate::map::facts::QuestCallbackProjection::ReleaseMerchant { .. }) => Some(key),
+            // An offering can be spent before its scene publishes. Keep the shared
+            // lever at the receipt's source revision until reconciliation publishes it.
+            Some(crate::map::facts::QuestCallbackProjection::Scene { .. })
+                if !callback.offerings.is_empty() =>
+            {
+                Some(key)
+            }
             _ if super::amphoras::is_strike(callback) => Some(key),
             Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
                 if callback

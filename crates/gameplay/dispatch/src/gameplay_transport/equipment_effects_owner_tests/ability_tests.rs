@@ -4,30 +4,36 @@ use super::*;
 mod questpc2_source_profile_cohort;
 
 #[test]
-fn dread_lord_lever_loads_its_active_inventory_policy() -> TestResult {
+fn dread_lord_lever_loads_its_active_ground_item_policy() -> TestResult {
     use oteryn_gameplay_content::content::native_gameplay::NativeItemDestination;
     use oteryn_gameplay_quests::quest::{loader, world_callbacks};
 
     let quests = loader::load_embedded_quest_state("dread-lord-lever")
         .map_err(|error| format!("{error:?}"))?;
     let callbacks = world_callbacks::load_for(quests.catalogue())?;
-    let reward = callbacks
+    let lever = callbacks
         .iter()
         .find(|callback| callback.key == "oteryn:quest-callback/dreamer-dread-lord-scroll")
-        .and_then(|callback| callback.item_reward().as_ref())
-        .ok_or("Dread Lord lever reward")?;
+        .ok_or("Dread Lord lever")?;
+    assert!(lever.item_reward().is_none());
+    let scene = lever
+        .effects
+        .scene
+        .as_ref()
+        .ok_or("Dread Lord lever scene")?;
+    let [created] = scene.open.as_slice() else {
+        return Err("expected one Dread Lord lever ground item".into());
+    };
+    let appearance = created.create.ok_or("Dread Lord lever ground item")?;
     let content = native(&input()?)?;
     let policy = content
-        .item_policy(&reward.item, "definition-r1")
+        .item_policy_for_source_id(u32::from(appearance))
         .ok_or("Dread Lord lever item policy")?;
     let record = policy.record();
     assert!(record.admission.materializable);
     assert_eq!(
         record.admission.legal_destinations,
-        [
-            NativeItemDestination::CharacterInventory,
-            NativeItemDestination::Ground
-        ]
+        [NativeItemDestination::Ground]
     );
     assert_eq!(record.attributes.blocks_movement, Some(false));
     Ok(())
