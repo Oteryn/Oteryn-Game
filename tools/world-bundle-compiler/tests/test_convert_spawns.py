@@ -87,6 +87,22 @@ class ConvertSpawnsTest(unittest.TestCase):
             "boss_policy": {"respawn": {"min_s": 90, "max_s": 90}},
         }])
 
+    def test_crystal_butterfly_spawn_keeps_the_purple_specimen(self):
+        group = next(
+            record["declaration"]
+            for record in self.records
+            if record["declaration"]["identity"]["key"] == "oteryn:spawn.x32576_y32735_z7"
+        )
+        self.assertIn(
+            {
+                "cell": {"floor": 7, "x": 32580, "y": 32731},
+                "creature": "oteryn:creature.purple_butterfly",
+                "direction": "north",
+                "respawn_ms": 90_000,
+            },
+            group["points"],
+        )
+
     def test_other_hash_fails_closed(self):
         with self.assertRaises(SystemExit):
             cs.convert(b"<monsters/>")

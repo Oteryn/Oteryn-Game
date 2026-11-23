@@ -138,6 +138,11 @@ CHECKS = (
     ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
     [
         "python3",
+        "tools/content-schema/world-object-authoring/eroth_ground.py",
+        "--check",
+    ],
+    [
+        "python3",
         "tools/content-schema/world-object-authoring/feroxa_static.py",
         "--check",
     ],
@@ -1016,6 +1021,7 @@ def main() -> int:
                 "content",
             ]
         )
+        run(["python3", "tools/content-schema/world-object-authoring/eroth_ground.py"])
         run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
         run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
         refresh_quest_callback_proof()
@@ -1128,6 +1134,7 @@ def main() -> int:
     install_buddel(ROOT, WORLD)
     project_routes(ROOT, WORLD)
     canonicalize_world()
+    run(["python3", "tools/content-schema/world-object-authoring/eroth_ground.py"])
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()

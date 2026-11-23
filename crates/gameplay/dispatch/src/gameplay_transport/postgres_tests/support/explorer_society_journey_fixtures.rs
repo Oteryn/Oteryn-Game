@@ -35,7 +35,7 @@ const BUTTERFLY: Position = position(32580, 32731, -7);
 const BELLS: Position = position(32548, 32836, -7);
 const URN: Position = position(32957, 32834, -8);
 const POETRY: Position = position(32704, 31605, -14);
-const RACE: &str = "oteryn:creature.butterfly";
+const RACE: &str = "oteryn:creature.purple_butterfly";
 const ITEMS: [u16; 10] = [4834, 4837, 4844, 4845, 4847, 4863, 4864, 4867, 4868, 4872];
 
 const fn position(x: u16, y: u16, floor: i8) -> Position {

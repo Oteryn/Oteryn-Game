@@ -24,10 +24,7 @@ use oteryn_protocol_oteryn::{
         NpcIntentDisposition, NpcTalkIntent, decode_npc_intent_result, encode_npc_talk_intent,
     },
     quest_log::{QuestLogQuery, QuestLogView, decode_quest_log, encode_quest_log_query},
-    world_object::{
-        MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
-        encode_item_use_intent, encode_use_intent,
-    },
+    world_object::{UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent},
     world_spatial::StepDirection,
     world_spatial_entities::EntityRef,
 };
@@ -352,7 +349,11 @@ async fn admit(
         owner.owner_now(),
     );
     owner.states.chat.set_npc_service(admitted.game_session_id);
-    super::qd_world_fixtures::select_talk_capabilities(owner, admitted, &[3, 4, 6, 11, 15, 16])
+    super::qd_world_fixtures::select_talk_capabilities(owner, admitted, &[3, 4, 6, 11, 13, 15, 16, 18])?;
+    assert!(admitted.continuity.selected_capabilities.contains(
+        oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1
+    ));
+    Ok(())
 }
 
 async fn exercise(
@@ -539,7 +540,7 @@ async fn use_object(
 ) -> TestResult<UseDisposition> {
     owner.clock_origin -= Duration::from_secs(2);
     let target = target(owner, pos, ordinal)?;
-    let payload = if let Some(tool) = tool {
+    if let Some(tool) = tool {
         let item = owner
             .active_generation
             .and_then(|g| g.native_gameplay())
@@ -552,16 +553,9 @@ async fn use_object(
                 )
             })
             .ok_or("native tool definition")?;
-        encode_item_use_intent(&UseIntent {
-            target: UseTarget::ItemByDefinition(item),
-            use_with: None,
-            use_with_map_item: Some(MapUseTarget::Object(target)),
-            use_with_position: None,
-        })
-        .map_err(debug)?
-    } else {
-        encode_use_intent(&target).map_err(debug)?
-    };
+        return super::quest_world_callbacks_fixtures::wire_selected_map_tool(owner, admitted, item, target).await;
+    }
+    let payload = encode_use_intent(&target).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
     decode_use_result(&wire(owner, admitted, command, 2, payload).await?).map_err(debug)
 }

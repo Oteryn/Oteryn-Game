@@ -2,8 +2,8 @@
 """Convert the pinned CrystalServer monster spawn file into the `Spawn.Source` family.
 
 Writes content/world/spawns/ (index.json plus spawns-*.json shards): one source per XML
-`<monster centerx centery centerz radius>` element, in file order, each point bound to the
-creature definition `oteryn:creature.<slug(name)>` and placed at the centre plus its offset.
+`<monster centerx centery centerz radius>` element, in file order, each point bound to an
+admitted Creature and placed at the centre plus its offset.
 The source is OTS_HYPOTHESIS_ONLY migration evidence: only normalized facts are written. The
 groups listed in the import's `spawns/held-groups.json` stay out (they wait for their owning
 contract). Fails closed on a hash other than the pinned one, an unbound name, a point off its
@@ -47,6 +47,11 @@ SOURCE = {
     "source_key": "oteryn:source.crystalserver",
 }
 DIRECTIONS = {None: "north", "0": "north", "1": "east", "2": "south", "3": "west"}
+
+# Crystal 00ce02a5 places the Explorer Society specimen in the three-colour
+# spawn at 32576,32735,7. Its vermins/butterfly.lua:34 declares corpse 4992,
+# matching Canary 47dfd51f quests/the_explorer_society/purple_butterfly.lua:35.
+EXPLORER_PURPLE_BUTTERFLY = (32580, 32731, 7)
 
 
 # Public Ancient Tombs bosses use the fixed respawn in Crystal 201189f8
@@ -151,10 +156,12 @@ def convert(xml: bytes) -> dict[str, str]:
         points = []
         for point in element:
             name = point.get("name")
+            x, y, z = cx + int(point.get("x")), cy + int(point.get("y")), int(point.get("z", cz))
             creature = f"oteryn:creature.{slug(name)}"
+            if name == "Butterfly" and (x, y, z) == EXPLORER_PURPLE_BUTTERFLY:
+                creature = "oteryn:creature.purple_butterfly"
             if creature not in known:
                 sys.exit(f"{key}: `{name}` is not an admitted creature definition")
-            x, y, z = cx + int(point.get("x")), cy + int(point.get("y")), int(point.get("z", cz))
             if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
                 sys.exit(f"{key}: point ({x}, {y}, {z}) is off the source")
             points.append(

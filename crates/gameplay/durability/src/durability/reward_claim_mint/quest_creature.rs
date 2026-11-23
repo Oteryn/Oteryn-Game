@@ -16,6 +16,7 @@ enum Target {
     Corpse {
         item: [u8; 16],
         position: [i32; 3],
+        map_revision_digest: [u8; 32],
     },
 }
 
@@ -142,9 +143,11 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         }
     }
 
-    pub(super) fn corpse(&self) -> Option<([u8; 16], [i32; 3])> {
+    pub(super) fn corpse(&self) -> Option<([u8; 16], [i32; 3], [u8; 32])> {
         match self.target {
-            Target::Corpse { item, position } => Some((item, position)),
+            Target::Corpse { item, position, map_revision_digest } => {
+                Some((item, position, map_revision_digest))
+            }
             Target::Live { .. } | Target::FreshCorpse => None,
         }
     }
@@ -189,6 +192,7 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             target: Target::Corpse {
                 item: corpse,
                 position,
+                map_revision_digest: runtime.content_pin().map_revision_digest(),
             },
         })
     }

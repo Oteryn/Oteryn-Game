@@ -639,6 +639,13 @@ def validate_record(record):
 
         if record != qm50_ground.record():
             errors.append("M50 ground differs from its qualified source")
+    import eroth_ground
+
+    if (
+        record["provenance"]["source_item_id"] == eroth_ground.IDENTIFIER
+        or source.get("profile") == eroth_ground.PROFILE
+    ) and record != eroth_ground.record():
+        errors.append("Eroth fortress ground differs from its qualified source")
     for field in known_fields(record):
         if field not in record["provenance"]["fields"]:
             errors.append(f"provenance/fields: no source for KNOWN {field}")

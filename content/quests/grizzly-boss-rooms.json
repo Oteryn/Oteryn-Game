@@ -666,7 +666,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "1962e9f77027fd100c2df2d66a8040c0e6bcc3c02286cbad6d00c83a5428d6e9",
+    "content/items/definitions/spell-native-profiles.json": "f76802b95824dc40d7c617418405cd48b2a2abcd6ec207e5448864cca38a0841",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
@@ -756,6 +756,7 @@
     "content/world/terrain/terrain-08693-08693.json": "9a1acf62162cfebf939e5d4146199be0733642279701c94b4b5bb41e4b0b2f00",
     "content/world/terrain/terrain-08748-08748.json": "34b262af1c1cc7e0379152c1ed2b8110bb5390613930018ebe284f3f086fd4dd",
     "content/world/terrain/terrain-08749-08749.json": "32cd0b4c3a4195516fecfe567bbd384352973e24c9fdedb63ecd0211b5c08da3",
-    "content/world/terrain/terrain-08750-08750.json": "590d200b3bb126cf08b68b83de6f37f440e904ff8049419c75ce9f48011b2a0c"
+    "content/world/terrain/terrain-08750-08750.json": "590d200b3bb126cf08b68b83de6f37f440e904ff8049419c75ce9f48011b2a0c",
+    "content/world/terrain/terrain-08751-08751.json": "c952c60cde272f711d2ce34affb799af93e1f4932d38a840e391733135b97ca9"
   }
 }

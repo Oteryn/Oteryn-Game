@@ -652,6 +652,8 @@ def main():
     if not args.check:
         previous_registry = ROOT / "content/encounters/source-static-definitions.json"
         if previous_registry.exists():
+            import eroth_ground
+
             previous = json.loads(previous_registry.read_bytes())
             current = json.loads(planned[REGISTRY])
             old_keys = set(previous["technical_terrain_keys"])
@@ -659,14 +661,22 @@ def main():
             additions = {
                 f"oteryn:terrain.tibia.i{i}" for i in (7748, 13841, 17970, 53439)
             }
+            eroth = {eroth_ground.KEY}
+            added = new_keys - old_keys
+            allowed = (set(), additions)
+            if (
+                eroth <= added
+                and (ROOT / eroth_ground.SHARD).read_bytes() == eroth_ground.output()
+            ):
+                allowed += (eroth, additions | eroth)
             # The legacy materializer retains the pre-lane terrain inventory.
-            # All source records must still match; only the four independently
-            # qualified lane grounds may extend that generated inventory.
+            # All source records must still match. Only the exact source-qualified
+            # grounds may extend the generated inventory.
             if (
                 previous | {"technical_terrain_keys": current["technical_terrain_keys"]}
                 != current
                 or not old_keys <= new_keys
-                or new_keys - old_keys not in (set(), additions)
+                or added not in allowed
             ):
                 raise ValueError("refusing to replace changed activity static registry")
             previous_registry.unlink()

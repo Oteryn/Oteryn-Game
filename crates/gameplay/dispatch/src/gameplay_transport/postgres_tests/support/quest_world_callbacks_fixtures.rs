@@ -83,6 +83,35 @@ pub(super) async fn input_item(
     n: u64,
     carried: bool,
 ) -> TestResult {
+    let custody = if carried { InputCustody::Backpack } else { InputCustody::Drop };
+    arrange_input_item(owner, fence, offering, n, custody).await
+}
+
+pub(super) async fn mint_input_on_ground(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    offering: &oteryn_gameplay_quests::quest::world_callbacks::Offering,
+    n: u64,
+) -> TestResult {
+    arrange_input_item(owner, fence, offering, n, InputCustody::Ground).await?;
+    owner.states.loop_ground.invalidate();
+    Ok(())
+}
+
+#[derive(PartialEq, Eq)]
+enum InputCustody {
+    Ground,
+    Backpack,
+    Drop,
+}
+
+async fn arrange_input_item(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    offering: &oteryn_gameplay_quests::quest::world_callbacks::Offering,
+    n: u64,
+    custody: InputCustody,
+) -> TestResult {
     use crate::durability::{
         item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest},
         item_mint::{
@@ -167,6 +196,9 @@ pub(super) async fn input_item(
     else {
         return Err("mint".into());
     };
+    if custody == InputCustody::Ground {
+        return Ok(());
+    }
     let command = |offset| -> TestResult<_> {
         Ok(crate::foundation::CommandRef::new(
             fence.game_session_id,
@@ -217,7 +249,7 @@ pub(super) async fn input_item(
         )
         .await
         .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
-    if carried {
+    if custody == InputCustody::Backpack {
         return Ok(());
     }
     let moved = owner
@@ -1180,6 +1212,27 @@ pub(super) async fn wire(
         *admitted = a;
     }
     result
+}
+
+pub(super) async fn wire_selected_map_tool(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    definition: std::num::NonZeroU32,
+    target: WorldObjectTarget,
+) -> TestResult<UseDisposition> {
+    use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent, UseTarget, encode_item_use_intent};
+
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(std::num::NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(target)),
+        use_with_position: None,
+    }).map_err(debug)?;
+    let (next, reply) = super::rust_lottery_fixtures::exchange_with_continuity(
+        owner, *admitted, admitted.continuity.next_command_id, &payload, Some(definition), None,
+    ).await?;
+    *admitted = next;
+    reply.map(|(disposition, _)| disposition)
 }
 
 pub(super) struct WireConversation {

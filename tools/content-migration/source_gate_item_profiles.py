@@ -4,7 +4,8 @@ Canary04b83 items.xml:14552-14559 declares5111/5112 as doors and the
 closed state's levelDoor base1000. The existing native DoorBook owns pair,
 placed-action level predicates, toggling and step-off closure. No rule is
 inferred from missing metadata, and no coordinate or identity is allocated.
-The same pinned XML:3918-3920 identifies ladder1948; exact client flags
+The same pinned XML:17158-17166 records Outlaw Camp's locked door6251 and
+its closed successor6252. XML:3918-3920 identifies ladder1948; exact client flags
 prove walkable, immovable, non-pickup Ground custody. LADDER is an existing
 closed native Item class, not a new name-based interaction or floor flag.
 XML:3517-3519 declares open archways1626/1627, XML:43330 grass21935.
@@ -29,7 +30,7 @@ from build_spell_item_identities import historical_binding_bytes
 CLASSES = {1626: None, 1627: None, 1634: None, 1635: None, 1948: "ladder",
            2572: None, 2573: None, 2574: None, 2575: None, 2576: None,
            2577: None, 2578: None, 2579: None, 2580: None,
-           5111: "door", 5112: "door", 21935: None}
+           5111: "door", 5112: "door", 6251: "door", 21935: None}
 IDS = set(CLASSES)
 XML = 'imports/canary/items-xml/items.xml'
 XML_SHA = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
@@ -68,6 +69,10 @@ def capture(root=ROOT):
             raise ValueError('SOURCE_GATE_ITEM_LEVEL_BASE')
         record = source.profile(item, xml[item], objects[item], physical[item], bindings, None)
         canonical = definitions[f'oteryn:item.tibia.i{item}']
+        if item == 6251:
+            if canonical['materializable'] is not False:
+                raise ValueError('OUTLAW_CAMP_DOOR_MUST_REMAIN_STATIC')
+            record['admission']['materializable'] = False
         semantics = canonical.get('semantics', {})
         for group in ('physical', 'stack', 'container'):
             if accepted.known_conflict(semantics.get(group, {'state': 'UNKNOWN'}), record['semantics'][group]):

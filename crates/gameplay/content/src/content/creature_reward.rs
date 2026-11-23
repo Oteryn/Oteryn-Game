@@ -784,6 +784,9 @@ fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
         && matches!(
             (creature, corpse.key.as_str()),
             (
+                "oteryn:creature.purple_butterfly",
+                "oteryn:item.tibia.i4992"
+            ) | (
                 "oteryn:creature.symbol_of_hatred",
                 "oteryn:item.tibia.i33792"
             ) | ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793")
@@ -832,7 +835,7 @@ fn verified_soul_war_corpses(
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
         let source_plain = matches!(definition.production_key.as_str(),
-            "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
+            "oteryn:item.tibia.i4992" | "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
             | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984")
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;

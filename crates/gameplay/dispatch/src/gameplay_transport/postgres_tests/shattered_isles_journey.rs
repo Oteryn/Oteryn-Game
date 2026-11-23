@@ -39,8 +39,8 @@ use oteryn_protocol_oteryn::{
         decode_npc_intent_result, encode_npc_talk_intent,
     },
     world_object::{
-        COMMAND_TYPE_USE_INTENT, MapUseTarget, UseDisposition, UseIntent, UseTarget,
-        WorldObjectTarget, decode_use_result, encode_item_use_intent, encode_use_intent,
+        COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, decode_use_result,
+        encode_use_intent,
     },
     world_spatial::StepDirection,
     world_spatial_entities::EntityRef,
@@ -734,7 +734,7 @@ impl Journey<'_, '_, '_, '_> {
             placement,
             expected_revision: map.facts.object_revision(key),
         };
-        let payload = if let Some(tool) = tool {
+        let disposition = if let Some(tool) = tool {
             let reference = self
                 .owner
                 .active_generation
@@ -742,26 +742,21 @@ impl Journey<'_, '_, '_, '_> {
                 .and_then(|n| n.item_index())
                 .and_then(|i| i.definition_ref("Item", &item(tool), "definition-r1"))
                 .ok_or("selected native tool")?;
-            encode_item_use_intent(&UseIntent {
-                target: UseTarget::ItemByDefinition(reference),
-                use_with: None,
-                use_with_position: None,
-                use_with_map_item: Some(MapUseTarget::Object(target)),
-            })
-            .map_err(debug)?
+            super::quest_world_callbacks_fixtures::wire_selected_map_tool(
+                self.owner, self.admitted, reference, target,
+            ).await?
         } else {
-            encode_use_intent(&target).map_err(debug)?
+            let reply = wire(
+                self.owner,
+                self.admitted,
+                self.admitted.continuity.next_command_id,
+                COMMAND_TYPE_USE_INTENT,
+                encode_use_intent(&target).map_err(debug)?,
+            ).await?;
+            decode_use_result(&reply).map_err(debug)?
         };
-        let reply = wire(
-            self.owner,
-            self.admitted,
-            self.admitted.continuity.next_command_id,
-            COMMAND_TYPE_USE_INTENT,
-            payload,
-        )
-        .await?;
         assert_eq!(
-            decode_use_result(&reply).map_err(debug)?,
+            disposition,
             UseDisposition::Committed,
             "USE at {x},{y},{z}"
         );
@@ -789,7 +784,7 @@ impl Journey<'_, '_, '_, '_> {
             .map_err(debug)?
             .ok_or("wood fence")?
             .item_fence();
-        input_item(
+        super::quest_world_callbacks_fixtures::mint_input_on_ground(
             self.owner,
             fence,
             &Offering {
@@ -802,7 +797,6 @@ impl Journey<'_, '_, '_, '_> {
                 count: 2,
             },
             5,
-            false,
         )
         .await?;
         let wood: sqlx::types::Uuid = sqlx::query_scalar(

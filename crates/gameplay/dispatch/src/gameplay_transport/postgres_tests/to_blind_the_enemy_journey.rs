@@ -20,9 +20,7 @@ use oteryn_gameplay_quests::quest::{
 };
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::quest_log::{self, QuestLogQuery, QuestLogView};
-use oteryn_protocol_oteryn::world_object::{
-    self, MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
-};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use oteryn_protocol_oteryn::world_spatial::{CAPABILITY_DIAGONAL_MOVEMENT_V1, StepDirection};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::collections::{BTreeMap, VecDeque};
@@ -461,6 +459,17 @@ async fn journey(
     super::questpc8_authored_programmes_fixtures::step(
         owner, member, member.continuity.next_command_id, StepDirection::North,
     ).await?;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(member.runtime_actor.ok_or("actor")?)
+            .map_err(debug)?
+            .position(),
+        super::quest_world_callbacks_fixtures::local(FORTRESS_ROPE_SPOT),
+        "the opened source hole routes the step to its lower chamber"
+    );
 
     walk(owner, member, at(32593, 31644, 5)).await?;
     assert_eq!(
@@ -620,22 +629,7 @@ async fn tool_use(
             .ok_or("tool fence")?
             .item_fence(),
     );
-    let command = member.continuity.next_command_id;
-    let reply = super::quest_world_callbacks_fixtures::wire(
-        owner,
-        member,
-        command,
-        world_object::COMMAND_TYPE_USE_INTENT,
-        world_object::encode_item_use_intent(&UseIntent {
-            target: UseTarget::ItemByDefinition(definition),
-            use_with: None,
-            use_with_map_item: Some(MapUseTarget::Object(target)),
-            use_with_position: None,
-        })
-        .map_err(debug)?,
-    )
-    .await?;
-    world_object::decode_use_result(&reply).map_err(debug)
+    super::quest_world_callbacks_fixtures::wire_selected_map_tool(owner, member, definition, target).await
 }
 
 async fn journal(

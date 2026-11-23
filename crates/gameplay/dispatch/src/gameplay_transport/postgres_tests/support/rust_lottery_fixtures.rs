@@ -46,6 +46,30 @@ pub(super) async fn exchange(
     current_source: Option<std::num::NonZeroU32>,
     current_target: Option<std::num::NonZeroU32>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    let (admitted, reply) = exchange_with_continuity(
+        owner,
+        admitted,
+        command_id,
+        payload,
+        current_source,
+        current_target,
+    )
+    .await?;
+    let (disposition, actual) = reply?;
+    Ok((admitted, disposition, actual))
+}
+
+type UseReply = TestResult<(UseDisposition, Vec<u8>)>;
+
+/// Retain the server's command cursor even if the peer lost the result frame.
+pub(super) async fn exchange_with_continuity(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    current_source: Option<std::num::NonZeroU32>,
+    current_target: Option<std::num::NonZeroU32>,
+) -> TestResult<(AdmittedSession, UseReply)> {
     exchange_selected_source(
         owner,
         admitted,
@@ -68,7 +92,7 @@ pub(super) async fn exchange_latest_source(
     payload: &[u8],
     current_source: Option<std::num::NonZeroU32>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
-    exchange_selected_source(
+    let (admitted, reply) = exchange_selected_source(
         owner,
         admitted,
         command_id,
@@ -78,7 +102,9 @@ pub(super) async fn exchange_latest_source(
         true,
         None,
     )
-    .await
+    .await?;
+    let (disposition, actual) = reply?;
+    Ok((admitted, disposition, actual))
 }
 
 /// Drain presentation deltas after the result, through the real production publisher.
@@ -95,7 +121,7 @@ pub(super) async fn exchange_with_visuals(
     Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
 )> {
     let visuals = std::cell::RefCell::new(Vec::new());
-    let (end, result, actual) = exchange_selected_source(
+    let (admitted, reply) = exchange_selected_source(
         owner,
         admitted,
         command_id,
@@ -106,7 +132,8 @@ pub(super) async fn exchange_with_visuals(
         Some(&visuals),
     )
     .await?;
-    Ok((end, result, actual, visuals.into_inner()))
+    let (disposition, actual) = reply?;
+    Ok((admitted, disposition, actual, visuals.into_inner()))
 }
 
 #[allow(
@@ -124,7 +151,7 @@ async fn exchange_selected_source(
     visuals: Option<
         &std::cell::RefCell<Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>>,
     >,
-) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+) -> TestResult<(AdmittedSession, UseReply)> {
     if owner.root.has_ready_demand() {
         owner.root.maintain_ready_once().await.map_err(debug)?;
     }
@@ -395,6 +422,5 @@ async fn exchange_selected_source(
     let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else {
         return Err(format!("{end:?}; client_result={result:?}").into());
     };
-    let (result, actual) = result.ok_or("client did not finish")??;
-    Ok((admitted, result, actual))
+    Ok((admitted, result.ok_or("client did not finish")?))
 }

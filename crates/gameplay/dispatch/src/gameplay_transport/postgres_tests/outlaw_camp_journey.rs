@@ -300,8 +300,7 @@ async fn journey(admin: String) -> TestResult {
     assert_snapshot(&h, &owner, &admitted, &keys, (2, 1, false)).await?;
 
     let chest = target(&owner, placement_key(CHEST, 2).ok_or("treasure placement")?)?;
-    let before_terminal = admitted;
-    let command = before_terminal.continuity.next_command_id;
+    let command = admitted.continuity.next_command_id;
     assert_eq!(
         use_object(&mut owner, &mut admitted, command, &chest).await?,
         UseDisposition::Committed
@@ -309,10 +308,8 @@ async fn journey(admin: String) -> TestResult {
     assert_snapshot(&h, &owner, &admitted, &keys, (3, 1, true)).await?;
     drop(owner);
 
-    // The terminal socket has closed. Rebuild the transport owner and re-admit the
-    // durable quest copy for a new connection from the last acknowledged
-    // command boundary. The terminal reply is treated as lost.
-    admitted = before_terminal;
+    // Reconnect using the server's committed continuity. The client retries
+    // the same terminal command after losing its reply.
     let mut reconnect = deps.owner(&h, &authority);
     reconnect.active_generation = Some(generation);
     reconnect.quest_catalogue = Some(catalogue);

@@ -321,7 +321,8 @@ async fn journey(h: &Harness) -> TestResult {
         use_object(&mut owner, &mut player, &shield).await?,
         (CommandStatus::Accepted, UseDisposition::Committed)
     );
-    let inventory = assert_state(&owner, &player, 3, &[HAMMER, SHIELD]).await?;
+    // The last grant takes the first backpack slot.
+    let inventory = assert_state(&owner, &player, 3, &[SHIELD, HAMMER]).await?;
 
     assert_eq!(
         owner.lose_control(player, Duration::ZERO, None).await,
@@ -352,7 +353,7 @@ async fn journey(h: &Harness) -> TestResult {
         [(CommandStatus::DuplicateReplay, UseDisposition::Committed)]
     );
     assert_eq!(
-        assert_state(&owner, &resumed, 3, &[HAMMER, SHIELD]).await?,
+        assert_state(&owner, &resumed, 3, &[SHIELD, HAMMER]).await?,
         inventory
     );
     for chest in [&shield, &hammer] {
@@ -361,7 +362,7 @@ async fn journey(h: &Harness) -> TestResult {
             UseDisposition::NothingToUse
         );
         assert_eq!(
-            assert_state(&owner, &resumed, 3, &[HAMMER, SHIELD]).await?,
+            assert_state(&owner, &resumed, 3, &[SHIELD, HAMMER]).await?,
             inventory
         );
     }

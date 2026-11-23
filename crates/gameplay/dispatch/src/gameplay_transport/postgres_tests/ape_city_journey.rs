@@ -452,7 +452,13 @@ impl Journey<'_, '_, '_, '_> {
         (position, ordinal): (TilePos, u8),
         expected: UseDisposition,
     ) -> TestResult {
-        self.approach(position).await?;
+        if [MOSS.0, PARCHMENT.0].contains(&position) {
+            // The source chests are walkable. Closed doors and walls occupy
+            // their neighboring cells.
+            self.relocate(position).await?;
+        } else {
+            self.approach(position).await?;
+        }
         let target = object_target(self.owner, position, ordinal)?;
         let command = self.next();
         assert_eq!(

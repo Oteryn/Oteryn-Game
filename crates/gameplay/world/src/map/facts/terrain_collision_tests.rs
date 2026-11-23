@@ -2,6 +2,59 @@
 use super::*;
 
 #[test]
+fn a_shoveled_hole_changes_floor_routing_until_it_regrows() {
+    use crate::map::boot::tests as fixture;
+    let (bytes, pins) = fixture::bundle_with_item_states(
+        ("oteryn:item.tibia.i593", 0),
+        ("oteryn:item.tibia.i1772", 1),
+        &[("oteryn:item.tibia.i594", 2)],
+    );
+    let data = oteryn_world_bundle::bundle::read(&bytes).expect("fixture source");
+    let base = crate::map::load(&bytes, &pins).expect("base");
+    let mut facts = BundleFacts::palette(&data.manifest, |key| {
+        let id = match key {
+            "oteryn:item.tibia.i593" => 1,
+            "oteryn:item.tibia.i1772" => 2,
+            "oteryn:item.tibia.i594" => 3,
+            _ => return None,
+        };
+        Some(ItemDefinition {
+            reference: NonZeroU32::new(id).expect("reference"),
+            solid: Some(false),
+            blocks_projectile: false,
+            pickupable: false,
+            door: false,
+        })
+    })
+    .expect("facts");
+    let mut blocked = BTreeSet::new();
+    for sector in &data.sectors {
+        facts.push(&data.manifest, sector, &mut blocked);
+    }
+    facts.finish();
+    let pos = TilePos {
+        x: 6,
+        y: 0,
+        floor: -7,
+    };
+    let key = placement_key(pos, 1).expect("source key");
+    let covered = facts.base_entry(pos, 1, 0).expect("covered hole");
+    let opened = EntryFacts {
+        definition: MapDefinition::Item(NonZeroU32::new(3).expect("open hole reference")),
+        appearance_id: 594,
+        ..covered
+    };
+    assert_eq!(facts.quest_callback_floor_mask(&base, pos), None);
+    assert!(facts.install_terrain_state(key, 1, opened));
+    assert_eq!(
+        facts.quest_callback_floor_mask(&base, pos),
+        Some(palette_mask(Family::Item, "oteryn:item.tibia.i594"))
+    );
+    assert!(facts.install_terrain_state(key, 2, covered));
+    assert_eq!(facts.quest_callback_floor_mask(&base, pos), Some(0));
+}
+
+#[test]
 fn cleared_terrain_releases_only_its_own_blocker_and_regrowth_restores_it() {
     use crate::map::boot::tests as fixture;
     for other_blocker in [false, true] {

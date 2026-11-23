@@ -666,6 +666,16 @@ async fn defeat_mine_leader(
         encode_attack_target_intent, encode_fight_modes_intent,
     };
     let player = a.runtime_actor.ok_or("player")?;
+    // A starter's fists top out at 9 damage. The source Shard has 20 armor
+    // and 20 defense, so prepare a fighter whose native swing can finish it.
+    super::questpc8_magic_sword_fixtures::raise_level(owner, a, 250, 201).await?;
+    let fence = owner
+        .current_quest_fence(a.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("mine fighter fence")?;
+    owner.states.level_refresh.mark([fence.character_id]);
+    Box::pin(owner.refresh_level_up_vitals(player, a.game_session_id)).await;
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -731,9 +741,9 @@ async fn defeat_mine_leader(
             .refresh_source_party_presence(player, a.game_session_id)
             .await
     );
-    owner.refresh_attack_weapon(player, a.game_session_id).await;
     for _ in 0..64 {
         owner.clock_origin -= std::time::Duration::from_secs(2);
+        owner.refresh_attack_weapon(player, a.game_session_id).await;
         owner.drain_auto_attacks().await;
         if owner
             .runtime
