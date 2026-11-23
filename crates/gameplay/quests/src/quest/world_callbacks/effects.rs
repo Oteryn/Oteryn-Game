@@ -672,7 +672,13 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || callback.actor_kind != ActorKind::Player
                 || (effects.transform.is_none() && callback.lever.is_none())
                 || effects.portals.is_some()
-                || effects.item_presence.is_some()
+                || effects.item_presence.as_ref().is_some_and(|presence| {
+                    callback.trigger != Trigger::Use
+                        || callback.reversible
+                        || callback.lever.is_none()
+                        || !callback.requires_world_admission
+                        || !matches!(callback.offerings.as_slice(), [offering] if offering.position == presence.position)
+                })
                 || effects.item_cycle.is_some()
                 || effects.encounter.is_some()
                 || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
@@ -764,6 +770,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || effects.portals.is_some()
             || effects.item_cycle.is_some()
             || effects.encounter.is_some()
+            || effects.scene.is_some()
     }) {
         return false;
     }

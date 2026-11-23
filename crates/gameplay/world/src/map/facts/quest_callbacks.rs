@@ -125,6 +125,13 @@ pub enum QuestCallbackProjection {
         position: TilePos,
         entry: EntryFacts,
     },
+    /// Keep the offering-tile projection after the source lever resets.
+    TimedLeverWithItemPresence {
+        position: TilePos,
+        entry: EntryFacts,
+        due: u64,
+        restore: EntryFacts,
+    },
     ReleaseMerchant {
         position: TilePos,
     },
@@ -461,6 +468,33 @@ impl CallbackStates {
                             expires: *expires,
                         },
                     );
+                }
+            }
+            QuestCallbackProjection::TimedLeverWithItemPresence {
+                position,
+                entry,
+                due,
+                restore,
+            } => {
+                if close
+                    || !self.project(
+                        owner,
+                        &QuestCallbackProjection::ItemPresence {
+                            position: *position,
+                            entry: *entry,
+                        },
+                        false,
+                    )
+                    || !self.project(
+                        owner,
+                        &QuestCallbackProjection::TimedTransform {
+                            due: *due,
+                            restore: *restore,
+                        },
+                        false,
+                    )
+                {
+                    return false;
                 }
             }
             QuestCallbackProjection::ItemPresence {
@@ -1865,6 +1899,7 @@ impl BundleFacts {
                 }
                 QuestCallbackProjection::ReleaseMerchant { position }
                 | QuestCallbackProjection::ItemPresence { position, .. }
+                | QuestCallbackProjection::TimedLeverWithItemPresence { position, .. }
                 | QuestCallbackProjection::ItemCycle { position, .. } => {
                     states.position_reserved(*position)
                 }

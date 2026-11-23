@@ -590,12 +590,15 @@
             "floor": -14
           },
           "effect": 11
+        },
+        "item_presence": {
+          "position": {
+            "x": 32781,
+            "y": 32226,
+            "floor": -14
+          },
+          "appearance": 7845
         }
-      },
-      "item_reward": {
-        "item": "oteryn:item.tibia.i769",
-        "count": 1,
-        "contents": []
       }
     }
   ]

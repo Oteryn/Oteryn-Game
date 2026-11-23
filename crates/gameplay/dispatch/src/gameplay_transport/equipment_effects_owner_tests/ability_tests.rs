@@ -4,32 +4,22 @@ use super::*;
 mod questpc2_source_profile_cohort;
 
 #[test]
-fn dread_lord_lever_loads_its_active_inventory_policy() -> TestResult {
-    use oteryn_gameplay_content::content::native_gameplay::NativeItemDestination;
+fn dread_lord_lever_loads_a_nonportable_bundle_item() -> TestResult {
     use oteryn_gameplay_quests::quest::{loader, world_callbacks};
 
     let quests = loader::load_embedded_quest_state("dread-lord-lever")
         .map_err(|error| format!("{error:?}"))?;
     let callbacks = world_callbacks::load_for(quests.catalogue())?;
-    let reward = callbacks
+    let presence = callbacks
         .iter()
         .find(|callback| callback.key == "oteryn:quest-callback/dreamer-dread-lord-scroll")
-        .and_then(|callback| callback.item_reward().as_ref())
-        .ok_or("Dread Lord lever reward")?;
+        .and_then(|callback| callback.effects.item_presence.as_ref())
+        .ok_or("Dread Lord lever lava")?;
     let content = native(&input()?)?;
-    let policy = content
-        .item_policy(&reward.item, "definition-r1")
-        .ok_or("Dread Lord lever item policy")?;
-    let record = policy.record();
-    assert!(record.admission.materializable);
-    assert_eq!(
-        record.admission.legal_destinations,
-        [
-            NativeItemDestination::CharacterInventory,
-            NativeItemDestination::Ground
-        ]
-    );
-    assert_eq!(record.attributes.blocks_movement, Some(false));
+    let key = format!("oteryn:item.tibia.i{}", presence.appearance);
+    let definition = crate::map::boot::native_item_definition(Some(&content), &key)
+        .ok_or("Dread Lord lever bundle Item")?;
+    assert!(!definition.pickupable);
     Ok(())
 }
 

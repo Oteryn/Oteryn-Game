@@ -376,13 +376,15 @@ impl BundleFacts {
         // 6473, 6474: the timed Rottin wall repairs.
         // 4851 and 4996: Banuta monument and broken amphora after Snake Destroyer strikes.
         // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
+        // 7845: the Dreamers Challenge diamond offering leaves immovable lava.
+        // Its retained appearance has neither unpass nor unsight.
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions: BTreeMap<_, _> = [
-            435, 1025, 1841, 1949, 3682, 4851, 4996, 5022, 6473, 6474, 7252, 9125, 9126, 9929,
-            9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187, 12187, 12189, 12369, 13842,
-            13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077, 14163, 14164,
-            14255, 17939, 21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100, 49362,
+            435, 1025, 1841, 1949, 3682, 4851, 4996, 5022, 6473, 6474, 7252, 7845, 9125, 9126,
+            9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186, 10187, 12187, 12189, 12369,
+            13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064, 14074, 14076, 14077, 14163,
+            14164, 14255, 17939, 21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100, 49362,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -395,7 +397,7 @@ impl BundleFacts {
                     definition: MapDefinition::Item(definition.reference),
                     terrain_kind: None,
                     appearance_id: id,
-                    blocks_projectile: definition.blocks_projectile,
+                    blocks_projectile: id != 7845 && definition.blocks_projectile,
                     pickupable: definition.pickupable,
                     bound: false,
                     count: 1,

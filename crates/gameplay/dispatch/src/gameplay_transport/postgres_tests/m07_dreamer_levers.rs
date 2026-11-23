@@ -21,7 +21,7 @@ fn m07_dreamer_native_lever_conditional_walls_and_distinct_deadlines_postgres() 
 }
 
 #[test]
-fn dread_lord_lever_mints_the_officer_document_and_resets_postgres() -> TestResult {
+fn dread_lord_lever_creates_lava_and_resets_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }

@@ -45,7 +45,7 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
     ),
     (
         "oteryn:quest.grimvale_quest",
-        hash(b"4fb22937877e3de361938b3dc7358b9bb98f799341987579ec56e4f54063a819"),
+        hash(b"0e190e8ec58f1d4b5600a3743a45fe185371815e9fc20c0b1971316e986fc2fc"),
         hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
     ),
     (
@@ -108,16 +108,18 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     (
         "oteryn:quest.ferumbras_ascension_quest",
         hash(b"904af0470d70e7f7de11c50d476be4eb899041a8b397a67a79e9c41f00d9036c"),
-        &[hash(
-            b"e86e12f668231e6ff93181caf6bd34a4dde5b7d53b9bacff6bc4a44bd12fb464",
-        )],
+        &[
+            hash(b"e86e12f668231e6ff93181caf6bd34a4dde5b7d53b9bacff6bc4a44bd12fb464"),
+            hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
+        ],
     ),
     (
         "oteryn:quest.forgotten_knowledge_quest",
         hash(b"c3f10d04b28f58a30f98fa7df4082712661ed21f638e12318e9f1d323e386650"),
-        &[hash(
-            b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a",
-        )],
+        &[
+            hash(b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a"),
+            hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+        ],
     ),
     (
         "oteryn:quest.steal_from_thieves_quest",
@@ -223,6 +225,38 @@ mod tests {
         assert_eq!(
             defaults.get("oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door"),
             Some(&0)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn ferumbras_ascension_keeps_the_merge_base_definition() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let quest = "oteryn:quest.ferumbras_ascension_quest";
+        // Active definition at package merge base d48146720.
+        let saved = hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f");
+        assert_ne!(catalogue.definition_hash(quest), Some(saved));
+        assert!(
+            npc_rules::legacy_defaults(catalogue, quest, &saved).is_some(),
+            "{quest} rejects the merge-base definition"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn forgotten_knowledge_keeps_the_merge_base_definition() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let quest = "oteryn:quest.forgotten_knowledge_quest";
+        // Active definition at package merge base d48146720.
+        let saved = hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce");
+        assert_ne!(catalogue.definition_hash(quest), Some(saved));
+        assert!(
+            npc_rules::legacy_defaults(catalogue, quest, &saved).is_some(),
+            "{quest} rejects the merge-base definition"
         );
         Ok(())
     }
