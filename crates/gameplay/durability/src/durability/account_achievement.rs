@@ -27,10 +27,12 @@
 use super::DurabilityError;
 use super::DurabilityRoot;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::character_progression::uuid_text;
+use super::character_progression::{CharacterProgressionError, assert_item_only_fence, uuid_text};
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::item_transfer::CurrentCharacterItemFence;
 use super::reward_claim_mint::RewardClaimFenceChecked;
 use crate::domain::CharacterId;
+use crate::foundation::{ConnectionGeneration, GameSessionId};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
@@ -296,8 +298,16 @@ pub(super) async fn grant_missing(
     Ok(())
 }
 
+/// The exact damaging Character lease observed by the lethal owner.
+#[derive(Debug, Clone, Copy)]
+pub struct BossDeathAchievementRecipient {
+    pub character_id: CharacterId,
+    pub session: GameSessionId,
+    pub lease_generation: u64,
+}
+
 /// The achievement producer selected by the native wild creature death.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum BossDeathAchievements {
     Oberon,
     Scarlett,
@@ -327,22 +337,17 @@ impl BossDeathAchievements {
 }
 
 impl DurabilityRoot {
-    /// Settle the captured death roster together. A stale fence or failed write
-    /// aborts every recipient, leaving the lethal queue entry retryable.
+    /// Grant the eligible death roster together. Stale recipients are skipped;
+    /// a failed read or write leaves the transaction retryable.
     pub async fn grant_boss_death_achievements(
         &self,
-        authority: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &super::runtime_scope_assignment::NodeIncarnationProof,
-        mut fences: Vec<super::item_transfer::CurrentCharacterItemFence>,
+        mut recipients: Vec<BossDeathAchievementRecipient>,
         death: crate::foundation::CreatureDeathOccurrenceKey,
         boss: BossDeathAchievements,
     ) -> std::result::Result<(), DurabilityError> {
-        if fences.iter().any(|fence| death.runtime_scope() != fence.runtime_scope
-            || death.scope_ownership_generation() != fence.scope_ownership_generation)
-        {
-            return Err(DurabilityError::CommitRejected);
-        }
-        fences.sort_unstable_by_key(|fence| *fence.character_id.as_bytes());
+        recipients.sort_unstable_by_key(|recipient| *recipient.character_id.as_bytes());
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -351,22 +356,57 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                    super::character_authority::assert_recovery_fence(&mut tx, &recovery).await?;
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
-                    for fence in &fences {
-                        super::character_progression::assert_item_only_fence(&mut tx, fence, &node)
-                            .await?
-                            .map_err(|_| DurabilityError::CommitRejected)?;
+                    let mut eligible = Vec::with_capacity(recipients.len());
+                    for recipient in recipients {
+                        // A reconnect may advance the connection generation while
+                        // preserving this exact lease. Read and lock it in the grant
+                        // transaction so a concurrent resume cannot stale this proof.
+                        let generation: Option<String> = sqlx::query_scalar(
+                            "SELECT s.current_generation::text FROM game_durability_reconnect_sessions s \
+                             JOIN game_character_creation_receipts c USING (character_id) \
+                             WHERE s.game_session_id = encode($1,'hex')::uuid \
+                               AND s.session_state IN (1,2) \
+                               AND NOT game_account_closure_detached(s.character_id) FOR SHARE OF s",
+                        )
+                        .bind(recipient.session.as_bytes().as_slice())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                        let Some(generation) = generation else {
+                            continue;
+                        };
+                        let generation = generation
+                            .parse()
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        let fence = CurrentCharacterItemFence {
+                            character_id: recipient.character_id,
+                            game_session_id: recipient.session,
+                            connection_generation: ConnectionGeneration::new(generation)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?,
+                            character_lease_generation: recipient.lease_generation,
+                            runtime_scope: death.runtime_scope(),
+                            scope_ownership_generation: death.scope_ownership_generation(),
+                        };
+                        match assert_item_only_fence(&mut tx, &fence, &node).await? {
+                            Ok(_) => eligible.push(recipient.character_id),
+                            Err(
+                                CharacterProgressionError::AuthorityRejected
+                                | CharacterProgressionError::ProgressionContextMismatch,
+                            ) => {}
+                            Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
+                            Err(_) => return Err(DurabilityError::CommitRejected),
+                        }
                     }
-                    for fence in &fences {
+                    for character_id in eligible {
                         let occurrence = Sha256::new()
-                            .chain_update(fence.character_id.as_bytes())
+                            .chain_update(character_id.as_bytes())
                             .chain_update(death.native_bytes())
                             .finalize();
-                        grant_missing(&mut tx, fence.character_id, awards, source, &occurrence).await?;
+                        grant_missing(&mut tx, character_id, awards, source, &occurrence).await?;
                     }
-                    super::db::commit_semantic_transaction(tx, deadline).await
+                    commit_semantic_transaction(tx, deadline).await
                 })
             })
             .await

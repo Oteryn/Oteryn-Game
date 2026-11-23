@@ -1559,7 +1559,8 @@ fn scenario_case(
             } else if name == "authored-treasure-island" {
                 3
             } else if name == "authored-secret-library" {
-                5 + usize::from(past_oberon_objective)
+                // The completed-objective case captures two additional damage contributors.
+                5 + 2 * usize::from(past_oberon_objective)
             } else if matches!(name, "authored-anniversary" | "authored-venore") {
                 12
             } else if super::super::qh_authored_cases_fixtures::is_city(name) {

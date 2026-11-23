@@ -217,6 +217,7 @@ pub(super) async fn exercise(
         .await;
     assert_eq!(actors.len(), 1);
     let target = actors[0];
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
     if past_oberon_objective {
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica")
@@ -228,7 +229,13 @@ pub(super) async fn exercise(
             ON CONFLICT(character_id,track_key) DO UPDATE SET value=EXCLUDED.value")
             .bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
-        oberon_peer_damage(owner, admitted, h, target, command, creature).await?;
+        let source = super::house_transfer_fixtures::RecoverySource::start(h).await?;
+        let peers = &source.evidence;
+        let admit = super::boss_rewards_fixtures::privacy::admit_gameplay_peer;
+        let peer = admit(h, peers, 1).await?;
+        let departing = admit(h, peers, 2).await?;
+        oberon_peer_damage(owner, admitted, target, command, creature, peer).await?;
+        oberon_peer_damage(owner, admitted, target, command, creature, departing).await?;
         // Fail the first write for a different recipient. The first recipient's
         // two requests must be invisible until the entire roster commits.
         sqlx::raw_sql(
@@ -248,18 +255,64 @@ pub(super) async fn exercise(
         .await?;
         super::grizzly_npc_fixtures::questpc8_campaign::queue_lethal(
             owner, admitted, target, creature, command, 1,
-        ).await?;
-        use crate::gameplay_transport::kill_reward::DrainOutcome;
-        assert_eq!(owner.drain_kill_rewards(admitted.game_session_id).await, DrainOutcome::Deferred);
+        )
+        .await?;
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Deferred
+        );
         assert!(oberon_achievements(h, 41).await?.is_empty());
         assert!(oberon_achievements(h, 101).await?.is_empty());
         sqlx::query("DROP TRIGGER reject_second_oberon_recipient ON game_account_achievement_grant_requests")
             .execute(&h.pool).await?;
-        assert_eq!(owner.drain_kill_rewards(admitted.game_session_id).await, DrainOutcome::Drained);
+        terminalize_oberon_peer(h, departing).await?;
+        assert!(
+            owner
+                .current_quest_fence(departing)
+                .await
+                .map_err(|()| "peer fence")?
+                .is_none()
+        );
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Drained
+        );
+        assert!(oberon_achievements(h, 102).await?.is_empty());
     } else {
-        super::grizzly_npc_fixtures::questpc8_campaign::lethal(
+        // Leave the real quest descendant unresolved at the death's commit boundary.
+        sqlx::raw_sql(
+            "CREATE FUNCTION reject_oberon_objective() RETURNS trigger LANGUAGE plpgsql AS $$
+             BEGIN
+                 IF NEW.track_key = 'oteryn:quest-progress/chosen/secret-library/kills'
+                    AND NEW.value = 1
+                 THEN RAISE EXCEPTION 'injected Oberon objective failure'; END IF;
+                 RETURN NEW;
+             END $$;
+             CREATE TRIGGER reject_oberon_objective BEFORE INSERT OR UPDATE ON
+                 game_character_quest_tracks FOR EACH ROW EXECUTE FUNCTION reject_oberon_objective()",
+        )
+        .execute(&h.pool)
+        .await?;
+        super::grizzly_npc_fixtures::questpc8_campaign::queue_lethal(
             owner, admitted, target, creature, command, 1,
-        ).await?;
+        )
+        .await?;
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Deferred
+        );
+        assert!(progress(h, "kills").await? < 1);
+        assert!(
+            oberon_achievements(h, 41).await?.is_empty(),
+            "a deferred death exposed its achievements"
+        );
+        sqlx::query("DROP TRIGGER reject_oberon_objective ON game_character_quest_tracks")
+            .execute(&h.pool)
+            .await?;
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Drained
+        );
     }
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -326,17 +379,14 @@ pub(super) async fn exercise(
 async fn oberon_peer_damage(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
-    h: &Harness,
     target: crate::foundation::ExactActorRef,
     command: u64,
     creature: &str,
+    session: crate::foundation::GameSessionId,
 ) -> TestResult {
     use crate::foundation::{
         CharacterId, CharacterLease, CommandId, CommandRef, OwnerDamageCommand,
     };
-    let source = super::house_transfer_fixtures::RecoverySource::start(h).await?;
-    let session =
-        super::boss_rewards_fixtures::privacy::admit_gameplay_peer(h, &source.evidence, 1).await?;
     let fence = owner
         .current_quest_fence(session)
         .await
@@ -376,6 +426,32 @@ async fn oberon_peer_damage(
             },
         )
         .map_err(debug)?;
+    Ok(())
+}
+
+async fn terminalize_oberon_peer(
+    h: &Harness,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    use crate::durability::fresh_admission::{ExpiredLossReleaseV1, FreshAdmissionStore};
+
+    let store = FreshAdmissionStore::from_root(h.root.clone());
+    let current = store.current_session(session).await.map_err(debug)?;
+    let transport = current.current_transport().ok_or("peer transport")?;
+    let account: String = sqlx::query_scalar(
+        "SELECT account_id::text FROM game_durability_reconnect_sessions \
+         WHERE game_session_id=encode($1,'hex')::uuid",
+    )
+    .bind(session.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(matches!(
+        store
+            .release_logout_session(session, &account, transport)
+            .await
+            .map_err(debug)?,
+        ExpiredLossReleaseV1::Released { .. }
+    ));
     Ok(())
 }
 
