@@ -250,7 +250,7 @@ pub(super) fn project_regions(
         }
     }
     if let Ok(mut node) = nodes.get_mut(regions.vitals) {
-        node.display = if owner.settings.preferences.status_bar_visible {
+        node.display = if owner.settings.preferences.status_panel_visible {
             Display::Flex
         } else {
             Display::None

@@ -88,6 +88,14 @@ impl PreferenceStore {
                 fields.insert("hotkey_contexts".into(), contexts);
             }
         }
+        // The single visibility setting in older files applied to both HUD regions.
+        if let Some(fields) = document.as_object_mut() {
+            match (fields.get("status_panel_visible"), fields.get("status_bar_visible")) {
+                (Some(panel), None) => { fields.insert("status_bar_visible".into(), panel.clone()); }
+                (None, Some(bar)) => { fields.insert("status_panel_visible".into(), bar.clone()); }
+                _ => {}
+            }
+        }
         let legacy = document
             .as_object()
             .is_some_and(|fields| !fields.contains_key("custom_hotkeys"));

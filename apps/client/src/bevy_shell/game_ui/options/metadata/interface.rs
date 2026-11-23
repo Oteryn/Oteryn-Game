@@ -89,7 +89,7 @@ pub(super) const MAIN: [Row; 12] = [
         cursor_crosshair
     ),
 ];
-pub(super) const HUD: [Row; 37] = [
+pub(super) const HUD: [Row; 38] = [
     check!(
         "hud.conditions_bar_all",
         "Show Conditions in Status Bar",
@@ -159,6 +159,11 @@ pub(super) const HUD: [Row; 37] = [
             },
         },
     },
+    check!(
+        "hud.status_visible",
+        "Show Status Panel",
+        status_panel_visible
+    ),
     check!("hud.status_compact", "Compact Status Panel", compact_status),
     check!("hud.health_arc", "Show Health Arc", arcs.health),
     check!(

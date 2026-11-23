@@ -683,3 +683,37 @@ fn status_bar_control_restores_a_hidden_cpkg7_panel() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn main_status_preferences_round_trip_independently() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
+    let mut saved = serde_json::to_value(crate::play::ReferencePreferences::default())?;
+    saved["status_panel_visible"] = true.into();
+    saved["status_bar_visible"] = false.into();
+    std::fs::write(&path, serde_json::to_vec(&saved)?)?;
+    let mut app = app(Page::Hud, Some(path.clone()))?;
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .status_bar_visible
+    );
+    let checkbox = app
+        .world_mut()
+        .spawn(Control::Check("hud.status_visible"))
+        .observe(toggle)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: checkbox,
+        value: false,
+        is_final: true,
+    });
+    let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: apply });
+    let saved = serde_json::to_value(crate::play::SettingsState::new(Some(path)).preferences)?;
+    assert_eq!(saved["status_bar_visible"], false);
+    assert_eq!(saved["status_panel_visible"], false);
+    Ok(())
+}

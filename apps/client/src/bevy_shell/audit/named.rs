@@ -223,6 +223,7 @@ const IDS: &[&str] = &[
     "hud.player_names",
     "hud.status_bars",
     "hud.status_compact",
+    "hud.status_visible",
     "interface.crosshair",
     "interface.scale",
     "interface.tooltip_delay",
