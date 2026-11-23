@@ -69,7 +69,7 @@ pub(in crate::bevy_shell::game_ui::chat) fn transcript_rows(
             for notice in console
                 .channel_notices
                 .iter()
-                .filter(|notice| notice.channel_id == *id)
+                .filter(|notice| console.filters.shows_participant_notice(notice, *id))
             {
                 let text = oteryn_client_ui::chat_channel_participants::notice_text(notice);
                 rows.push(plain(format!("{text}\n")));

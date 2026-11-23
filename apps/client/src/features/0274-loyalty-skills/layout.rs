@@ -28,6 +28,8 @@ pub struct SkillsLayout {
     pub order: Vec<u8>,
     pub numbers: SkillsNumbers,
     pub progress: bool,
+    pub hidden_bars: u8,
+    pub combat_groups: u8,
 }
 
 impl Default for SkillsLayout {
@@ -36,6 +38,8 @@ impl Default for SkillsLayout {
             order: (0..8).collect(),
             numbers: SkillsNumbers::All,
             progress: true,
+            hidden_bars: 0,
+            combat_groups: 0,
         }
     }
 }
@@ -137,7 +141,7 @@ impl SkillsRow {
             .copied()
             .unwrap_or(tr!("Skill"));
         let mut text = format!("{label}: {values}");
-        if layout.progress {
+        if layout.progress && layout.hidden_bars & (1 << self.family) == 0 {
             if let Some(percent) = self.progress {
                 text.push_str(&format!(" — {}.{:02}%", percent / 100, percent % 100));
             }

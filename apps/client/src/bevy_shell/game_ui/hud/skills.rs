@@ -260,11 +260,9 @@ fn project(
             }
         } else if let Some(track) = track {
             let display = if layout.progress
-                && widget
-                    .rows
-                    .get(track.0)
-                    .is_some_and(|row| row.progress.is_some())
-            {
+                && widget.rows.get(track.0).is_some_and(|row| {
+                    row.progress.is_some() && layout.hidden_bars & (1 << row.family) == 0
+                }) {
                 Display::Flex
             } else {
                 Display::None

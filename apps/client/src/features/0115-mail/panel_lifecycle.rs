@@ -23,6 +23,11 @@ impl Panels {
             feedback: tr!("The session has ended").into(),
             ..Default::default()
         };
+        #[cfg(bevy_shell)]
+        {
+            self.expiry_pending = None;
+            self.expiry_reply = None;
+        }
         self.timed_item = oteryn_client_ui::timed_item::Panel {
             feedback: tr!("The session has ended").into(),
             ..Default::default()

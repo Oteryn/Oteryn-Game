@@ -12,6 +12,10 @@ pub struct GraphicsPreferences {
     pub fullscreen: bool,
     pub vsync: bool,
     pub integer_scaling: bool,
+    pub even_scaling: bool,
+    pub fit_viewport: bool,
+    pub monitor: u16,
+    pub remembered_foreground_fps: u16,
 }
 impl Default for GraphicsPreferences {
     fn default() -> Self {
@@ -25,6 +29,10 @@ impl Default for GraphicsPreferences {
             fullscreen: false,
             vsync: true,
             integer_scaling: false,
+            even_scaling: false,
+            fit_viewport: false,
+            monitor: 0,
+            remembered_foreground_fps: 60,
         }
     }
 }
@@ -41,8 +49,12 @@ impl GraphicsPreferences {
             .min(viewport[1] / crate::scene::SCENE_ROWS)
             .max(1);
         let base = crate::scene::SCENE_TILE_PX;
-        let requested = base * u32::from(zoom) / 100;
-        if self.integer_scaling {
+        let requested = if self.fit_viewport { fit } else { base * u32::from(zoom) / 100 };
+        if self.even_scaling {
+            let step = 2 * oteryn_renderer::PAGE_CELL_PX;
+            if fit < step { return fit.min(oteryn_renderer::PAGE_CELL_PX); }
+            ((requested + step / 2) / step).clamp(1, fit / step) * step
+        } else if self.integer_scaling {
             let cell = oteryn_renderer::PAGE_CELL_PX;
             ((requested + cell / 2) / cell)
                 .max(1)
@@ -55,7 +67,7 @@ impl GraphicsPreferences {
 }
 impl GraphicsPreferences {
     pub(super) fn valid(self) -> bool {
-        [self.ambient, self.separator, self.indoor, self.cloud]
+        (1..=500).contains(&self.remembered_foreground_fps) && [self.ambient, self.separator, self.indoor, self.cloud]
             .into_iter()
             .all(|value| value <= 100)
     }
