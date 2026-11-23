@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 use oteryn_dev_client::client_runtime::party as party_client;
 use oteryn_dev_client::{DevClientSession, EntityRef, SessionEvent};
-use oteryn_protocol_oteryn::{attack, logout::LogoutResult, party, target_move};
+use oteryn_protocol_oteryn::{attack, logout::LogoutResult, party};
 
 pub(super) struct Bot<'p, 'a> {
     pub pair: &'p SeamClients<'a>,
@@ -508,8 +508,11 @@ pub(super) async fn party(
         }
         None => party_client::PartyCommand::query(),
     };
-    let (command_id, reply) =
-        party_client::send_with_receipt(bot.client()?.session_mut(), &command).await?;
+    let stage = format!("party-command-{}", command.kind);
+    let result = party_client::send_with_receipt(bot.client()?.session_mut(), &command)
+        .await
+        .map_err(Into::into);
+    let (command_id, reply) = bot.contextualize(&stage, result)?;
     if reply.status != CommandStatus::Accepted {
         let operation = match intent {
             Some(party::PartyIntent::Invite(_)) => "Invite",
@@ -563,7 +566,7 @@ pub(super) async fn attack_target(bot: &mut Bot<'_, '_>, target: Option<&EntityR
     Ok(())
 }
 
-/// Busy uses the shared helper; real combat blocks expire on server time, never a clock poke.
+/// Busy uses the shared helper; real combat blocks expire on server time.
 async fn logout(bot: &mut Bot<'_, '_>) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(930);
     verdict::Harness::global().bounded_wait(deadline, "MP-combat-logout");
@@ -572,30 +575,67 @@ async fn logout(bot: &mut Bot<'_, '_>) -> TestResult {
     let mut observe = |attempt, detail: &str| {
         evidence(&format!("MP_BOT MP01 {context} attempt={attempt} {detail}"))
     };
+    let mut last_refusal = None;
     tokio::time::timeout_at(deadline, async {
+        // A failed hunt can exit before its own attack stop. End that intent
+        // before waiting for the server's combat lock to expire.
+        if bot
+            .client()?
+            .session_mut()
+            .combat_state()
+            .is_some_and(|state| state.target.is_some())
+        {
+            attack_target(bot, None).await?;
+        }
         loop {
-            let (result, reply, attempts, busy_timed_out) = logout_retrying_busy_observed(bot.client()?, Some(&mut observe)).await?;
+            let (result, reply, attempts, busy_timed_out) =
+                logout_retrying_busy_observed(bot.client()?, Some(&mut observe)).await?;
             match result {
-                Some(LogoutResult::Accepted) => { bot.session = None; return Ok(()); }
-                Some(LogoutResult::InFight { .. }) => {
-                    bot.client()?.service_liveness(Duration::from_millis(50)).await?;
-                    bot.client()?.take_events();
-                    if tokio::time::Instant::now() >= activity_due {
-                        let payload = target_move::encode_target_move_intent(target_move::TargetMoveIntent::Turn(StepDirection::North)).map_err(|error| format!("MP Turn encode:{error:?}"))?;
-                        let reply = bot.client()?.session_mut().gated_command(target_move::CAPABILITY_TARGET_MOVE_V1,
-                            target_move::COMMAND_TYPE_TARGET_MOVE_INTENT, &payload).await?;
-                        // A registered Turn refreshes idle activity even when gameplay refuses it.
-                        if !matches!((reply.status, reply.payload.as_slice()),
-                            (CommandStatus::Accepted, [8, 1]) | (CommandStatus::Rejected, [8, 3])) {
-                            return Err(format!("MP lock-wait Turn refused:{reply:?};source:crates/protocol-oteryn/src/target_move.rs:1").into());
+                Some(LogoutResult::Accepted) => {
+                    bot.session = None;
+                    return Ok(());
+                }
+                Some(LogoutResult::InFight { retry_after_ms }) => {
+                    last_refusal = Some(reply);
+                    let retry_at = combat_logout_retry_at(
+                        tokio::time::Instant::now(),
+                        deadline,
+                        retry_after_ms,
+                    );
+                    while tokio::time::Instant::now() < retry_at {
+                        if tokio::time::Instant::now() >= activity_due {
+                            super::super::full_e2ef7::player_turn(bot.client()?).await?;
+                            activity_due = tokio::time::Instant::now() + Duration::from_secs(30);
                         }
-                        activity_due = tokio::time::Instant::now() + Duration::from_secs(30);
+                        let wait = retry_at.saturating_duration_since(tokio::time::Instant::now());
+                        bot.client()?
+                            .service_liveness(wait.min(Duration::from_millis(250)))
+                            .await?;
+                        bot.client()?.take_events();
+                    }
+                    if tokio::time::Instant::now() >= deadline {
+                        break;
                     }
                 }
-                _ => return Err(format!("MP logout refused:{reply};attempts={attempts};busy_timed_out={busy_timed_out};source:apps/game-server/src/qualification/client_phases/world.rs:608").into()),
+                _ => {
+                    return Err(format!(
+                        "MP logout refused:{reply};attempts={attempts};busy_timed_out={busy_timed_out}"
+                    ).into());
+                }
             }
         }
-    }).await.map_err(|_| "MP logout combat release deadline")?
+        Err(format!("MP logout combat release deadline;last_refusal={last_refusal:?}").into())
+    })
+    .await
+    .map_err(|_| format!("MP logout combat release deadline;last_refusal={last_refusal:?}"))?
+}
+
+fn combat_logout_retry_at(
+    now: tokio::time::Instant,
+    deadline: tokio::time::Instant,
+    retry_after_ms: u32,
+) -> tokio::time::Instant {
+    (now + Duration::from_millis(u64::from(retry_after_ms).max(100))).min(deadline)
 }
 
 async fn logout_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
@@ -678,6 +718,21 @@ pub(super) async fn release_all(
 #[cfg(test)]
 mod movement_tests {
     use super::*;
+
+    #[test]
+    fn combat_logout_wait_uses_client_retry_hint_within_deadline() {
+        let now = tokio::time::Instant::now();
+        let deadline = now + Duration::from_secs(15);
+        assert_eq!(
+            combat_logout_retry_at(now, deadline, 1_000),
+            now + Duration::from_secs(1)
+        );
+        assert_eq!(combat_logout_retry_at(now, deadline, 60_000), deadline);
+        assert_eq!(
+            combat_logout_retry_at(now, deadline, 0),
+            now + Duration::from_millis(100)
+        );
+    }
 
     #[test]
     fn group_planner_routes_both_bots_around_occupied_and_reserved_landings() -> TestResult {

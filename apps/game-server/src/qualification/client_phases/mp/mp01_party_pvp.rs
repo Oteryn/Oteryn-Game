@@ -258,7 +258,11 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
     let expected = expected.into_iter().map(str::to_owned).collect::<Vec<_>>();
     let leader = bots[0].name.to_owned();
     let mut party_id = None;
-    for bot in &mut bots[..3] {
+    for index in 0..3 {
+        // The fourth bot is a live witness while each member's party checks run.
+        // Drain every peer before the next query can see an expired silence window.
+        bots::pump(bots).await?;
+        let bot = &mut bots[index];
         let view = party(bot, None).await?;
         let mut members = view
             .members
@@ -297,6 +301,7 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
             bot.name
         ));
     }
+    bots::pump(bots).await?;
     if !party(&mut bots[3], None).await?.members.is_empty()
         || !durable_party(&bots[3]).await?.is_empty()
     {

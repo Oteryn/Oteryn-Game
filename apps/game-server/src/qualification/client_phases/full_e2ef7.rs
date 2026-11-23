@@ -1705,6 +1705,81 @@ mod w20b_review_tests {
             Ok(())
         })
     }
+
+    #[test]
+    fn hunt_replays_target_gone_actor_jump_and_out_of_range() {
+        let actor = ActorPosition {
+            x: 30,
+            y: 40,
+            floor: 7,
+        };
+        let rat = spatial::WorldSpatialEntity {
+            motion: None,
+            display_name: None,
+            kind: spatial::EntityKind::Creature,
+            entity: spatial::EntityRef {
+                identity: [3; 16],
+                generation: 1,
+            },
+            position: ActorPosition { x: 31, ..actor },
+            detail: spatial::EntityDetail::Actor {
+                direction: StepDirection::East,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        assert_eq!(current_attack_target(actor, Some(rat)), Some(rat));
+        assert_eq!(current_attack_target(actor, None), None);
+        assert_eq!(
+            current_attack_target(ActorPosition { x: 35, ..actor }, Some(rat)),
+            None
+        );
+        assert_eq!(
+            current_attack_target(
+                actor,
+                Some(spatial::WorldSpatialEntity {
+                    position: ActorPosition {
+                        y: 43,
+                        ..rat.position
+                    },
+                    ..rat
+                })
+            ),
+            None
+        );
+
+        let from = TilePos {
+            x: 30,
+            y: 40,
+            floor: -7,
+        };
+        let landing = TilePos { x: 31, ..from };
+        let jump = TilePos { x: 35, ..from };
+        assert_eq!(
+            hunt_step_landing(from, landing, jump, StepDisposition::Moved),
+            HuntStepLanding::Replan
+        );
+        assert_eq!(
+            hunt_step_landing(from, landing, from, StepDisposition::Blocked),
+            HuntStepLanding::Occupied
+        );
+        assert_eq!(
+            hunt_step_landing(from, landing, from, StepDisposition::Rejected),
+            HuntStepLanding::Retry
+        );
+        assert_eq!(
+            hunt_step_landing(from, landing, landing, StepDisposition::Moved),
+            HuntStepLanding::Arrived
+        );
+
+        let started = tokio::time::Instant::now();
+        let later = started + Duration::from_millis(500);
+        let mut missing = None;
+        assert!(!hunt_target_lost(false, false, &mut missing, started));
+        assert!(hunt_target_lost(false, false, &mut missing, later));
+        assert!(!hunt_target_lost(false, true, &mut missing, later));
+        assert_eq!(missing, None);
+    }
 }
 
 async fn additional_rows(clients: &SeamClients<'_>) {
@@ -3744,6 +3819,7 @@ pub(super) async fn earn_player_level(
     budget: Duration,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + budget;
+    let mut spawns = None;
     loop {
         let level = player_level(client).await?;
         if level >= required_level {
@@ -3752,7 +3828,8 @@ pub(super) async fn earn_player_level(
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-rat-hunt-budget={budget:?}").into());
         }
-        let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
+        let hunt =
+            acquisition_step("hunt", hunt_one_inner(client, world, &mut spawns, deadline)).await;
         hunt.map_err(|e| {
             format!(
                 "player-level-acquisition-blocked:served-level={level};required={required_level};ordinary-hunt={e}"
@@ -3860,7 +3937,8 @@ impl HuntCorpseEvidence {
 }
 
 async fn hunt_one(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
-    acquisition_step("hunt", hunt_one_inner(client, world, None)).await
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+    acquisition_step("hunt", hunt_one_inner(client, world, &mut None, deadline)).await
 }
 
 async fn wait_for_hunt_target<T>(
@@ -3874,20 +3952,36 @@ async fn wait_for_hunt_target<T>(
         }
         let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
         if remaining.is_zero() {
-            return Err("ordinary rat route reached endpoint but no adjacent served Rat frame before the respawn deadline".into());
+            return Err(
+                "ordinary acquisition budget exhausted during rat route or respawn wait".into(),
+            );
         }
         wait = remaining.min(Duration::from_millis(250));
     }
 }
 
-async fn hunt_one_inner(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    acquisition_deadline: Option<tokio::time::Instant>,
-) -> TestResult {
+fn hunt_target_lost(
+    alive: bool,
+    earned_xp: bool,
+    missing_since: &mut Option<tokio::time::Instant>,
+    now: tokio::time::Instant,
+) -> bool {
+    if alive || earned_xp {
+        *missing_since = None;
+        return false;
+    }
+    now.duration_since(*missing_since.get_or_insert(now)) >= Duration::from_millis(500)
+}
+
+const HUNT_FIGHT_MODES: attacks::FightModes = attacks::FightModes {
+    chase: attacks::ChaseMode::Chase,
+    ..attacks::FightModes::DEFAULT
+};
+
+fn authored_rat_spawns() -> TestResult<Vec<TilePos>> {
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let positions: Vec<_> = meta
+    Ok(meta
         .spawns
         .sources
         .iter()
@@ -3903,70 +3997,253 @@ async fn hunt_one_inner(
             y: p.y,
             floor,
         })
-        .collect();
-    let route_started = tokio::time::Instant::now();
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|t| !t.protection_zone())
-            && positions
-                .iter()
-                .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1)
-    })
-    .ok_or("no reachable unprotected rat spawn in compiled world within 160-tile route budget")?;
-    evidence(&format!(
-        "acquisition step=hunt-route state=complete elapsed_ms={} steps={}",
-        route_started.elapsed().as_millis(),
-        path.len()
-    ));
-    acquisition_step("hunt-walk", async {
-        for direction in &path {
-            if acquisition_deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline)
-            {
-                return Err("ordinary acquisition budget exhausted during rat route".into());
-            }
-            // Finish each STEP and its frames before checking the budget. Cancelling
-            // a command mid-reply would leave cleanup using a desynchronised session.
-            walk(client, world, std::slice::from_ref(direction)).await?;
-        }
-        Ok(())
-    })
-    .await?;
-    let respawn_deadline = acquisition_deadline
-        .unwrap_or_else(|| tokio::time::Instant::now() + Duration::from_secs(75));
-    verdict::Harness::global().bounded_wait(respawn_deadline, "ordinary-rat-respawn");
-    let target = wait_for_hunt_target(respawn_deadline, async |wait| {
-        if !wait.is_zero() {
-            client.service_liveness(wait).await?;
-            client.take_events();
-        }
-        let at = client.world_spatial().actor_position;
-        Ok(client.world_entities().and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Creature
-                    && entity.display_name.is_some_and(|name| name.as_str() == Ok("Rat"))
-                    && entity.position.floor == at.floor
-                    && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y)) <= 1
-            }).copied()
-        }))
-    }).await?;
-    verdict::Harness::global().progress("ordinary-rat-target");
-    let modes = attacks::FightModes {
-        chase: attacks::ChaseMode::Chase,
-        ..attacks::FightModes::DEFAULT
+        .collect())
+}
+
+async fn hunt_one_inner(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &mut Option<Vec<TilePos>>,
+    deadline: tokio::time::Instant,
+) -> TestResult {
+    let origin = tile(client.world_spatial().actor_position)?;
+    let positions = match spawns {
+        Some(positions) => positions,
+        None => spawns.insert(authored_rat_spawns()?),
     };
-    let reply = client.session_mut().set_fight_modes(&modes).await?;
+    let nearby: Vec<_> = positions
+        .iter()
+        .copied()
+        .filter(|&spawn| hunt_spawn_in_route_budget(origin, spawn))
+        .collect();
+    verdict::Harness::global().bounded_wait(deadline, "ordinary-rat-hunt");
+    let reply = client
+        .session_mut()
+        .set_fight_modes(&HUNT_FIGHT_MODES)
+        .await?;
     if reply.disposition != attacks::AttackIntentDisposition::Ok {
         return Err(format!("starter chase mode refused: {reply:?}").into());
     }
-    let xp_before = player_experience(client).await?;
-    // The mode command can service movement updates before the attack starts.
-    let target = client
-        .world_entities()
-        .and_then(|entities| entities.get(&target.entity))
-        .copied()
-        .ok_or("ordinary hunt target left visibility before attack")?;
+    loop {
+        let target =
+            acquisition_step("hunt-walk", approach_rat(client, world, &nearby, deadline)).await?;
+        let xp_before = player_experience(client).await?;
+        let current = client
+            .world_entities()
+            .and_then(|entities| entities.get(&target.entity))
+            .copied();
+        let position = client.world_spatial().actor_position;
+        let Some(target) = current_attack_target(position, current) else {
+            continue;
+        };
+        if !hunt_tile_unprotected(world, tile(position)?) {
+            continue;
+        }
+        if hunt_rat(client, world, target, xp_before, deadline).await? {
+            return Ok(());
+        }
+    }
+}
+
+fn hunt_attack_range(actor: ActorPosition, target: ActorPosition) -> bool {
+    actor.floor == target.floor && actor.x.abs_diff(target.x).max(actor.y.abs_diff(target.y)) == 1
+}
+
+fn current_attack_target(
+    actor: ActorPosition,
+    target: Option<spatial::WorldSpatialEntity>,
+) -> Option<spatial::WorldSpatialEntity> {
+    target.filter(|target| hunt_attack_range(actor, target.position))
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum HuntStepLanding {
+    Arrived,
+    Replan,
+    Occupied,
+    Retry,
+}
+
+fn hunt_step_landing(
+    from: TilePos,
+    planned: TilePos,
+    actual: TilePos,
+    disposition: StepDisposition,
+) -> HuntStepLanding {
+    match disposition {
+        StepDisposition::Moved if actual == planned => HuntStepLanding::Arrived,
+        StepDisposition::Moved => HuntStepLanding::Replan,
+        _ if actual != from => HuntStepLanding::Replan,
+        StepDisposition::Blocked => HuntStepLanding::Occupied,
+        StepDisposition::TooEarly | StepDisposition::Rejected => HuntStepLanding::Retry,
+    }
+}
+
+fn hunt_tile_unprotected(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| !tile.protection_zone())
+}
+
+async fn approach_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &[TilePos],
+    deadline: tokio::time::Instant,
+) -> TestResult<spatial::WorldSpatialEntity> {
+    let mut visited = BTreeSet::new();
+    let mut blocked = BTreeSet::new();
+    let mut path = std::collections::VecDeque::new();
+    let mut goal_target = None;
+    let mut routed_from = None;
+    wait_for_hunt_target(deadline, async |delay| {
+        if !delay.is_zero() {
+            client.service_liveness(delay).await?;
+            client.take_events();
+        }
+        while tokio::time::Instant::now() < deadline {
+            let position = client.world_spatial().actor_position;
+            let from = tile(position)?;
+            let unprotected = |at| hunt_tile_unprotected(world, at);
+            let entities = client
+                .world_entities()
+                .ok_or("rat hunt requires served entities")?;
+            let rats = || {
+                entities.iter().filter(|entity| {
+                    entity.kind == spatial::EntityKind::Creature
+                        && entity
+                            .display_name
+                            .is_some_and(|name| name.as_str() == Ok("Rat"))
+                })
+            };
+            if unprotected(from)
+                && let Some(target) = rats().find(|rat| hunt_attack_range(position, rat.position))
+            {
+                return Ok(Some(*target));
+            }
+            let target = rats()
+                .filter(|rat| rat.position.floor == position.floor)
+                .min_by_key(|rat| {
+                    position
+                        .x
+                        .abs_diff(rat.position.x)
+                        .max(position.y.abs_diff(rat.position.y))
+                })
+                .map(|rat| tile(rat.position))
+                .transpose()?;
+            if goal_target != target || routed_from != Some(from) {
+                path.clear();
+                goal_target = target;
+            }
+            let occupied: BTreeSet<_> = entities
+                .iter()
+                .filter(|entity| {
+                    matches!(
+                        entity.kind,
+                        spatial::EntityKind::Player
+                            | spatial::EntityKind::Creature
+                            | spatial::EntityKind::Npc
+                    )
+                })
+                .filter_map(|entity| tile(entity.position).ok())
+                .collect();
+            if path.is_empty() {
+                let available = |at| !occupied.contains(&at) && !blocked.contains(&at);
+                let toward_rat = target.and_then(|target| {
+                    route_avoiding(
+                        world,
+                        from,
+                        |at| unprotected(at) && at != target && hunt_spawn_approach(at, target),
+                        available,
+                    )
+                });
+                let toward_spawn = || {
+                    route_avoiding(
+                        world,
+                        from,
+                        |at| {
+                            unprotected(at)
+                                && spawns.iter().any(|spawn| {
+                                    !visited.contains(spawn) && hunt_spawn_approach(at, *spawn)
+                                })
+                        },
+                        available,
+                    )
+                };
+                let next = toward_rat.or_else(toward_spawn);
+                match next {
+                    Some(next) if next.is_empty() => {
+                        visited.extend(
+                            spawns
+                                .iter()
+                                .copied()
+                                .filter(|spawn| hunt_spawn_approach(from, *spawn)),
+                        );
+                    }
+                    Some(next) => path = next.into(),
+                    None => {
+                        // New frames can clear a dynamic blocker or show a respawn.
+                        visited.clear();
+                        blocked.clear();
+                        return Ok(None);
+                    }
+                }
+            }
+            routed_from = Some(from);
+            let mut wait = Duration::ZERO;
+            if let Some(direction) = path.pop_front() {
+                let landing =
+                    destination(world, from, direction).ok_or("rat route landing absent")?;
+                let outcome = client.step(direction).await?;
+                let actual = tile(client.world_spatial().actor_position)?;
+                client.take_events();
+                match hunt_step_landing(from, landing, actual, outcome.disposition) {
+                    HuntStepLanding::Arrived => {
+                        routed_from = Some(actual);
+                        verdict::Harness::global().progress("rat-walk");
+                    }
+                    HuntStepLanding::Replan => {
+                        path.clear();
+                        blocked.clear();
+                        wait = Duration::from_millis(50);
+                    }
+                    HuntStepLanding::Occupied => {
+                        blocked.insert(landing);
+                        path.clear();
+                    }
+                    HuntStepLanding::Retry => {
+                        path.push_front(direction);
+                        wait = if outcome.disposition == StepDisposition::TooEarly {
+                            Duration::from_millis(u64::from(outcome.step_wait_ms).max(1))
+                        } else {
+                            Duration::from_millis(250)
+                        };
+                    }
+                }
+            }
+            if !wait.is_zero() {
+                client
+                    .service_liveness(
+                        wait.min(deadline.saturating_duration_since(tokio::time::Instant::now())),
+                    )
+                    .await?;
+                client.take_events();
+            }
+        }
+        Ok(None)
+    })
+    .await
+}
+
+// Returns false when visibility was lost without kill evidence and selection must restart.
+async fn hunt_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    target: spatial::WorldSpatialEntity,
+    xp_before: u64,
+    acquisition_deadline: tokio::time::Instant,
+) -> TestResult<bool> {
     let corpses_before: BTreeSet<_> = client
         .world_entities()
         .into_iter()
@@ -3982,20 +4259,23 @@ async fn hunt_one_inner(
     };
     let mut damaged = false;
     client.take_events();
-    if acquisition_deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) {
+    if tokio::time::Instant::now() >= acquisition_deadline {
         return Err("ordinary acquisition budget exhausted before rat attack".into());
     }
     let reply = client
         .session_mut()
         .attack_target(Some(&target.entity))
         .await?;
+    if reply.disposition == attacks::AttackIntentDisposition::TargetNotVisible {
+        return Ok(false);
+    }
     if reply.disposition != attacks::AttackIntentDisposition::Ok {
         return Err(format!("starter attack refused: {reply:?}").into());
     }
     let combat_started = tokio::time::Instant::now();
     let hunt_deadline = combat_started + Duration::from_secs(45);
-    let deadline =
-        acquisition_deadline.map_or(hunt_deadline, |deadline| deadline.min(hunt_deadline));
+    let deadline = acquisition_deadline.min(hunt_deadline);
+    let mut missing_since = None;
     let mut earned_xp = false;
     let mut xp_checked_at = tokio::time::Instant::now();
     let corpse = loop {
@@ -4037,6 +4317,18 @@ async fn hunt_one_inner(
         {
             break corpse;
         }
+        if hunt_target_lost(
+            alive,
+            earned_xp,
+            &mut missing_since,
+            tokio::time::Instant::now(),
+        ) {
+            let stopped = client.session_mut().attack_target(None).await?;
+            if stopped.disposition != attacks::AttackIntentDisposition::Ok {
+                return Err(format!("lost rat attack stop refused: {stopped:?}").into());
+            }
+            return Ok(false);
+        }
         if tokio::time::Instant::now() >= deadline {
             evidence(&format!(
                 "acquisition step=hunt-kill state=failed elapsed_ms={} earned_xp={earned_xp} player_position={:?} last_live_position={last_position:?}",
@@ -4060,6 +4352,18 @@ async fn hunt_one_inner(
     let stopped = client.session_mut().attack_target(None).await?;
     if stopped.disposition != attacks::AttackIntentDisposition::Ok {
         return Err(format!("starter attack stop refused: {stopped:?}").into());
+    }
+    let corpse_tile = tile(corpse.position)?;
+    let from = tile(client.world_spatial().actor_position)?;
+    if !hunt_spawn_approach(from, corpse_tile) {
+        let path = route(world, from, |at| hunt_spawn_approach(at, corpse_tile))
+            .ok_or("killed rat corpse has no reachable approach")?;
+        for direction in path {
+            if tokio::time::Instant::now() >= deadline {
+                return Err("rat corpse approach deadline".into());
+            }
+            walk(client, world, &[direction]).await?;
+        }
     }
     // Loot only a real nearby corpse; custody comes from native MOVE results.
     let oteryn_dev_client::EntityDetail::Object {
@@ -4104,7 +4408,7 @@ async fn hunt_one_inner(
             return Err(format!("ordinary loot refused: {reply:?}").into());
         }
     }
-    Ok(())
+    Ok(true)
 }
 
 async fn expert(
@@ -5139,7 +5443,7 @@ fn valid_cleanup_turn_reply(status: CommandStatus, payload: &[u8]) -> bool {
     )
 }
 
-async fn player_turn(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn player_turn(client: &mut DevClientSession) -> TestResult {
     let mut payload = Vec::new();
     bytes_field(&mut payload, 3, &encode_step_intent(StepDirection::North));
     let result = client
@@ -5731,6 +6035,7 @@ async fn earn_gold_inner(
     required: u64,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+    let mut spawns = None;
     loop {
         let served = player_gold(client).await?;
         if served >= required {
@@ -5739,7 +6044,8 @@ async fn earn_gold_inner(
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt-budget=150s").into());
         }
-        let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
+        let hunt =
+            acquisition_step("hunt", hunt_one_inner(client, world, &mut spawns, deadline)).await;
         hunt.map_err(|e|format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt={e}"))?;
     }
 }
@@ -6434,39 +6740,59 @@ impl ForgeClient {
             .map(|e| u64::from(e.count.get()))
             .sum()
     }
-    async fn walk(&mut self, world: &BundleWorld, goal: impl Fn(TilePos) -> bool) -> TestResult {
+    async fn walk(
+        &mut self,
+        world: &BundleWorld,
+        deadline: tokio::time::Instant,
+        goal: impl Fn(TilePos) -> bool,
+    ) -> TestResult {
         let mut blocked = BTreeSet::new();
         for _ in 0..160 {
+            if tokio::time::Instant::now() >= deadline {
+                return Err("forge walk deadline".into());
+            }
             let before = tile(self.position)?;
             if goal(before) {
                 return Ok(());
             }
             let direction = forge_next_step(world, before, &goal, &self.entities, &blocked)
                 .ok_or_else(|| format!("forge route has no available step at {before:?}"))?;
-            let landing = destination(world, before, direction).ok_or("forge route landing absent")?;
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            let landing =
+                destination(world, before, direction).ok_or("forge route landing absent")?;
+            let step_deadline =
+                (tokio::time::Instant::now() + Duration::from_secs(5)).min(deadline);
             loop {
                 let reply = self.step(direction).await?;
                 match reply.disposition {
                     StepDisposition::Moved => {
                         self.barrier().await?;
-                        if tile(self.position)? != landing {
-                            return Err("forge STEP endpoint frame mismatch".into());
+                        let actual = tile(self.position)?;
+                        if actual == landing {
+                            verdict::Harness::global().progress("forge-walk");
+                        } else {
+                            blocked.clear();
                         }
                         break;
                     }
                     StepDisposition::Blocked => {
                         self.barrier().await?;
-                        if tile(self.position)? != before {
-                            return Err("forge blocked STEP changed position".into());
+                        if tile(self.position)? == before {
+                            blocked.insert(landing);
+                        } else {
+                            blocked.clear();
                         }
-                        blocked.insert(landing);
                         break;
                     }
-                    StepDisposition::TooEarly if tokio::time::Instant::now() < deadline => {
+                    StepDisposition::TooEarly if tokio::time::Instant::now() < step_deadline => {
                         self.barrier().await?;
+                        if tile(self.position)? != before {
+                            blocked.clear();
+                            break;
+                        }
                     }
-                    _ => return Err(format!("forge real route step:{reply:?};at={before:?}").into()),
+                    _ => {
+                        return Err(format!("forge real route step:{reply:?};at={before:?}").into());
+                    }
                 }
             }
         }
@@ -6614,7 +6940,8 @@ async fn forge_attack_corpse(
     world: &BundleWorld,
     entity: spatial::WorldSpatialEntity,
     stacks: u8,
-) -> TestResult<(native::item_view::ItemHandle, u64)> {
+    selection_deadline: tokio::time::Instant,
+) -> TestResult<Option<(native::item_view::ItemHandle, u64)>> {
     let xp_before = client.experience().await?;
     let corpses_before: BTreeSet<_> = client
         .entities
@@ -6622,14 +6949,20 @@ async fn forge_attack_corpse(
         .filter(|e| e.kind == spatial::EntityKind::Corpse)
         .map(|e| e.entity)
         .collect();
-    let observed = client
+    let current = client
         .entities
         .iter()
         .find(|e| e.entity == entity.entity)
-        .copied()
-        .ok_or("forge target left visibility before attack")?;
+        .copied();
+    let Some(observed) = current_attack_target(client.position, current) else {
+        return Ok(None);
+    };
     client.hunt = Some(HuntCorpseEvidence::new(observed, corpses_before));
     let attack = client.attack_target(Some(&entity.entity)).await?;
+    if attack.disposition == attacks::AttackIntentDisposition::TargetNotVisible {
+        client.hunt = None;
+        return Ok(None);
+    }
     if attack.disposition != attacks::AttackIntentDisposition::Ok {
         return Err(format!(
             "forge ordinary combat blocked:stacks={stacks};attack={attack:?};vitals={:?}",
@@ -6637,11 +6970,17 @@ async fn forge_attack_corpse(
         )
         .into());
     }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    let deadline = (tokio::time::Instant::now() + Duration::from_secs(90)).min(selection_deadline);
+    let mut missing_since = None;
+    let mut earned_xp = false;
     let mut damaged = false;
     let corpse = loop {
-        client.barrier().await?;
+        // Turn yields server chase. Read stats to drain combat frames without
+        // changing the actor's movement or attack state.
+        let xp = client.experience().await?;
+        client.service_liveness(Duration::from_millis(50)).await?;
         if let Some(live) = client.entities.iter().find(|e| e.entity == entity.entity) {
+            missing_since = None;
             if let (
                 spatial::EntityDetail::Actor {
                     health_percent: before,
@@ -6655,18 +6994,37 @@ async fn forge_attack_corpse(
             {
                 damaged |= now < before;
             }
-        } else if client.experience().await? > xp_before
-            && !client.entities.iter().any(|e| e.entity == entity.entity)
-            && let Some(corpse) = client
-                .hunt
-                .as_ref()
-                .and_then(|hunt| hunt.corpse(client.entities.iter(), true))
-            && let spatial::EntityDetail::Object {
-                item_handle: Some(handle),
-                ..
-            } = corpse.detail
-        {
-            break (handle, tile(corpse.position)?);
+        } else {
+            earned_xp |= xp > xp_before;
+            if earned_xp
+                && let Some(corpse) = client
+                    .hunt
+                    .as_ref()
+                    .and_then(|hunt| hunt.corpse(client.entities.iter(), true))
+                && let spatial::EntityDetail::Object {
+                    item_handle: Some(handle),
+                    ..
+                } = corpse.detail
+            {
+                break (handle, tile(corpse.position)?);
+            }
+            if hunt_target_lost(
+                false,
+                earned_xp,
+                &mut missing_since,
+                tokio::time::Instant::now(),
+            ) {
+                client.hunt = None;
+                let stopped = client.attack_target(None).await?;
+                if stopped.disposition != attacks::AttackIntentDisposition::Ok {
+                    return Err(format!(
+                        "lost forge target attack stop refused: {:?}",
+                        stopped.disposition
+                    )
+                    .into());
+                }
+                return Ok(None);
+            }
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
@@ -6679,9 +7037,11 @@ async fn forge_attack_corpse(
     client.hunt = None;
     let (corpse, position) = corpse;
     client
-        .walk(world, |at| hunt_spawn_approach(at, position))
+        .walk(world, selection_deadline, |at| {
+            hunt_spawn_approach(at, position)
+        })
         .await?;
-    Ok((corpse, xp_before))
+    Ok(Some((corpse, xp_before)))
 }
 
 async fn forge_hunt_inner(
@@ -6709,8 +7069,29 @@ async fn forge_hunt_inner(
     let from = tile(client.position)?;
     points.retain(|point| hunt_spawn_in_route_budget(from, *point));
     let deadline = tokio::time::Instant::now() + Duration::from_secs(330);
+    let modes = client
+        .gated_command(
+            attacks::CAPABILITY_ATTACK_V1,
+            attacks::COMMAND_TYPE_FIGHT_MODES_INTENT,
+            &attacks::encode_fight_modes_intent(&HUNT_FIGHT_MODES),
+        )
+        .await?;
+    if modes.status != CommandStatus::Accepted
+        || attacks::decode_attack_intent_result(&modes.payload)
+            .map_err(|error| format!("forge chase modes: {error:?}"))?
+            != attacks::AttackIntentDisposition::Ok
+    {
+        return Err(format!("forge chase mode refused: {modes:?}").into());
+    }
     let mut visits = 0;
-    let target = loop {
+    verdict::Harness::global().bounded_wait(deadline, "forge-hunt");
+    let (entity, stacks, corpse, xp_before) = loop {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "forge-selection/combat deadline;fiendish={fiendish};visits={visits}"
+            )
+            .into());
+        }
         client.barrier().await?;
         let found = client.entities.iter().find_map(|entity| {
             if entity.kind != spatial::EntityKind::Creature {
@@ -6727,13 +7108,32 @@ async fn forge_hunt_inner(
             ((fiendish && stacks == 15) || (!fiendish && (1..=5).contains(&stacks)))
                 .then_some((*entity, stacks))
         });
-        if let Some(found) = found {
-            break found;
+        if let Some((entity, stacks)) = found {
+            let position = tile(entity.position)?;
+            client
+                .walk(world, deadline, |at| {
+                    at != position
+                        && hunt_spawn_approach(at, position)
+                        && world
+                            .base()
+                            .tile(at.x, at.y, at.floor)
+                            .is_some_and(|t| !t.protection_zone())
+                })
+                .await?;
+            if !hunt_tile_unprotected(world, tile(client.position)?) {
+                continue;
+            }
+            if let Some((corpse, xp_before)) =
+                forge_attack_corpse(client, world, entity, stacks, deadline).await?
+            {
+                break (entity, stacks, corpse, xp_before);
+            }
+            continue;
         }
-        if tokio::time::Instant::now() >= deadline || points.is_empty() {
+        if points.is_empty() {
             return Err(format!("forge-selection-blocked:required={};served-marker-absent;reachable-spawn-visits={visits};budget=330s,160-tiles;no-global-absence-inferred",if fiendish{"fiendish-15"}else{"influenced-1..5"}).into());
         }
-        let walk = client.walk(world, |at| {
+        let walk = client.walk(world, deadline, |at| {
             points.iter().any(|point| hunt_spawn_approach(at, *point))
                 && world
                     .base()
@@ -6752,19 +7152,6 @@ async fn forge_hunt_inner(
             points.len()
         ));
     };
-    let (entity, stacks) = target;
-    let position = tile(entity.position)?;
-    client
-        .walk(world, |at| {
-            at.floor == position.floor
-                && at.x.abs_diff(position.x).max(at.y.abs_diff(position.y)) == 1
-                && world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|t| !t.protection_zone())
-        })
-        .await?;
-    let (corpse, xp_before) = forge_attack_corpse(client, world, entity, stacks).await?;
     client.attack_target(None).await?;
     client.barrier().await?;
     if client.experience().await? <= xp_before {
