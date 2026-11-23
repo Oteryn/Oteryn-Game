@@ -1820,25 +1820,10 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn fiend_commission_accepts_the_forgemaster_reward_flag() -> Result<(), String> {
+    fn fiend_programme_requires_the_forgemaster_reward_at_every_stage() -> Result<(), String> {
         let callbacks = super::load()?;
-        let commission = callbacks
-            .iter()
-            .find(|callback| callback.key == "oteryn:quest-reward/questpc7-fiend-commission")
-            .ok_or("fiend commission")?;
-        let requirements = commission
-            .requirements
-            .as_ref()
-            .ok_or("commission requirements")?;
-        assert!(requirements.completed_quests.is_empty());
-        assert!(requirements.premium);
-        assert_eq!(requirements.min_level, 250);
-
         let catalogue = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
-        let [gate] = commission.requires.as_slice() else {
-            return Err("expected one reward predicate".into());
-        };
         let claimed = callbacks
             .iter()
             .filter(|callback| {
@@ -1849,14 +1834,45 @@ mod tests {
             })
             .collect::<Vec<_>>();
         assert_eq!(claimed.len(), 11);
-        assert!(!gate.holds(catalogue.catalogue(), &std::collections::BTreeMap::new()));
-        for reward in claimed {
-            let [write] = reward.storage.as_slice() else {
-                return Err("expected one Forgemaster reward write".into());
+        for (stage, addons) in [
+            ("commission", None),
+            ("first-token", Some(0)),
+            ("second-token", Some(1)),
+            ("complete", Some(3)),
+        ] {
+            let callback = callbacks
+                .iter()
+                .find(|c| c.key == format!("oteryn:quest-reward/questpc7-fiend-{stage}"))
+                .ok_or("Fiend programme stage")?;
+            let requirements = callback.requirements.as_ref().ok_or("Fiend requirements")?;
+            assert_eq!(
+                requirements
+                    .owned_cosmetics
+                    .first()
+                    .map(|outfit| outfit.addons),
+                addons,
+                "{stage}"
+            );
+            assert_eq!(
+                requirements.owned_cosmetics.len(),
+                usize::from(addons.is_some()),
+                "{stage}"
+            );
+            assert!(requirements.premium);
+            assert_eq!(requirements.min_level, 250);
+            assert!(requirements.completed_quests.is_empty(), "{stage}");
+            let [gate] = callback.requires.as_slice() else {
+                return Err(format!("{stage} needs one Forgemaster claim predicate"));
             };
-            assert_eq!(write.track, gate.track);
-            let tracks = std::collections::BTreeMap::from([(write.track.clone(), write.set)]);
-            assert!(gate.holds(catalogue.catalogue(), &tracks));
+            assert!(!gate.holds(catalogue.catalogue(), &std::collections::BTreeMap::new()));
+            for reward in &claimed {
+                let [write] = reward.storage.as_slice() else {
+                    return Err("expected one Forgemaster reward write".into());
+                };
+                assert_eq!(write.track, gate.track);
+                let tracks = std::collections::BTreeMap::from([(write.track.clone(), write.set)]);
+                assert!(gate.holds(catalogue.catalogue(), &tracks), "{stage}");
+            }
         }
         Ok(())
     }
