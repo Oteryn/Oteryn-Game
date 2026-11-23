@@ -365,6 +365,8 @@ enum SculptureSetup {
     FullBackpackNestedMaterial,
     FullBackpackNestedDropped,
     FullBackpackNestedTerrain,
+    ObtainBag,
+    FullBackpackQuiver,
     FullBackpackDirectMaterial,
     NestedTool,
     Dropped,
@@ -390,6 +392,16 @@ fn review_full_backpack_nested_marble_uses_nested_space() -> TestResult {
         }
     }
     Ok(())
+}
+
+#[test]
+fn review_marble_prefers_assigned_obtain_bag() -> TestResult {
+    run_gathering_at(5908, 10426, None, Some(10429), true, false, SculptureSetup::ObtainBag)
+}
+
+#[test]
+fn review_marble_skips_ammunition_only_quiver() -> TestResult {
+    run_gathering_at(5908, 10426, None, Some(10429), true, false, SculptureSetup::FullBackpackQuiver)
 }
 
 #[test]
@@ -505,6 +517,7 @@ fn gathering_scenario(
         SculptureSetup::FullBackpack
             | SculptureSetup::FullBackpackDirectMaterial
             | SculptureSetup::Overweight
+            | SculptureSetup::FullBackpackQuiver
     );
     run(async |admin| {
         let harness =
@@ -676,13 +689,18 @@ fn gathering_scenario(
                 // Moving an instance target out of the main backpack frees a slot.
                 entries.resize(20 + usize::from(item_target), ("oteryn:item.tibia.i3031", 1));
             }
+            SculptureSetup::ObtainBag => entries.push((bag, 1)),
+            SculptureSetup::FullBackpackQuiver => {
+                entries.push(("oteryn:item.tibia.i35562", 1));
+                entries.resize(20, ("oteryn:item.tibia.i3031", 1));
+            }
             SculptureSetup::FullBackpack | SculptureSetup::FullBackpackDirectMaterial => entries.resize(20, ("oteryn:item.tibia.i3031", 1)),
             SculptureSetup::Overweight => entries.resize(10, ("oteryn:item.tibia.i3578", 100)),
             SculptureSetup::NestedMaterial | SculptureSetup::NestedTool => entries.push((bag, 1)),
             _ => {}
         }
         let source_handle = if (fallback && !carried)
-            || matches!(setup, SculptureSetup::FullBackpackNestedTerrain | SculptureSetup::FullBackpackDirectMaterial)
+            || matches!(setup, SculptureSetup::FullBackpackNestedTerrain | SculptureSetup::FullBackpackDirectMaterial | SculptureSetup::ObtainBag)
         {
             u64::try_from(entries.len())? + 1
         } else {
@@ -694,6 +712,13 @@ fn gathering_scenario(
             2
         };
         super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
+        if setup == SculptureSetup::ObtainBag {
+            sqlx::query("INSERT INTO game_character_quick_loot_settings
+                (character_id,unassigned_container_id,committed_character_revision)
+                SELECT character_id,encode($1,'hex')::uuid,character_revision FROM game_character_roots
+                WHERE character_id=encode($2,'hex')::uuid")
+                .bind(id(73).as_slice()).bind(id(41).as_slice()).execute(&harness.pool).await?;
+        }
         if nested {
             let item = if setup == SculptureSetup::NestedTool { 71 } else { 72 };
             let mut tx = harness.pool.begin().await?;
@@ -987,7 +1012,7 @@ fn gathering_scenario(
             ).bind(format!("oteryn:item.tibia.i{next_stage}")).fetch_one(&harness.pool).await?;
             assert_eq!(minted, 0, "a carried position has no map tile for its next ice stage");
         }
-        if full_nested {
+        if full_nested || setup == SculptureSetup::ObtainBag {
             let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
             assert_eq!(remaining, 0);
@@ -998,7 +1023,7 @@ fn gathering_scenario(
             .bind(id(73).as_slice())
             .bind(format!("oteryn:item.tibia.i{}", yield_item.ok_or("nested figurine")?))
             .fetch_one(&harness.pool).await?;
-            assert_eq!(nested_outputs, 1, "use space in the nested bag before dropping");
+            assert_eq!(nested_outputs, 1, "use the selected nested bag");
         }
         if carried && after.is_some() {
             let state: i16 = sqlx::query_scalar(

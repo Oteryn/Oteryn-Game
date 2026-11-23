@@ -613,8 +613,12 @@ async fn write_with_skinning<C: ItemLoopContent>(
         - i64::from(frees_output_slot)
         - i64::from(retired_carried_ingredient && ingredient_location.is_none())
         > i64::from(capacity);
-    let nested_destination = if marble_yield && bag_full && !tree_full {
-        sculpture::nested_marble_destination(tx, &parent, content).await?
+    let nested_destination = if let Some((output, _)) =
+        conversion.outputs.first().filter(|_| marble_yield && !tree_full)
+    {
+        sculpture::nested_marble_destination(
+            tx, fence.character_id, &parent, !bag_full, output, content,
+        ).await?
     } else {
         None
     };

@@ -57,6 +57,11 @@ CHECK (ingredient_location IS NULL OR (
 
 DO $migration$
 DECLARE body TEXT; anchor TEXT; arm TEXT; location_check TEXT; name TEXT; begin_at INT;
+    -- The ammunition-only definitions used by game_quiver_entry.
+    quiver_keys CONSTANT TEXT := $keys$
+        'oteryn:item.tibia.i35562','oteryn:item.tibia.i35848','oteryn:item.tibia.i35849','oteryn:item.tibia.i35524',
+        'oteryn:item.tibia.i36666','oteryn:item.tibia.i39150','oteryn:item.tibia.i39160','oteryn:item.tibia.i45644'
+    $keys$;
 BEGIN
     SELECT substring(pg_get_constraintdef(oid) FROM 7) INTO STRICT location_check
       FROM pg_constraint WHERE conrelid='game_item_craft_records'::regclass
@@ -149,6 +154,7 @@ $arm$;
              JOIN LATERAL game_item_loop_owner(parent.item_instance_id) owner ON true
              WHERE parent.item_instance_id=(o->>'nested_parent')::uuid
              AND parent.lifecycle=1 AND parent.world_id=NEW.world_id
+             AND parent.definition_production_key NOT IN (SCULPTURE_QUIVER_KEYS)
              AND owner.owner_character=NEW.character_id AND owner.depth BETWEEN 1 AND 7
          )
          OR (o->>'ordinal')::numeric <= (
@@ -160,7 +166,8 @@ $arm$);
     -- Nested ordinals have their own monotonic check against their chosen parent.
     arm:=$arm$((o->>'ordinal')::numeric<=(SELECT coalesce(max(placement_ordinal),0) FROM game_item_container_entries WHERE parent_item_instance_id=NEW.parent_item_instance_id)$arm$;
     IF strpos(body,arm)=0 THEN RAISE EXCEPTION 'missing main backpack output ordinal guard'; END IF;
-    EXECUTE replace(body,arm,'(NOT (o ? ''nested_parent'') AND '||substring(arm FROM 2));
+    body:=replace(body,arm,'(NOT (o ? ''nested_parent'') AND '||substring(arm FROM 2));
+    EXECUTE replace(body,'SCULPTURE_QUIVER_KEYS',quiver_keys);
 
     body:=pg_get_functiondef('game_item_craft_complete(uuid)'::regprocedure);
     -- The exact ingredient debit arm originally checked direct custody only on retirement.
@@ -189,8 +196,10 @@ $arm$);
     ELSIF o ? 'nested_parent' THEN
       IF NOT EXISTS (
         SELECT 1 FROM game_item_instances n JOIN game_item_nested_entries e USING(item_instance_id,world_id)
+        JOIN game_item_instances parent ON parent.item_instance_id=e.parent_item_instance_id
         JOIN LATERAL game_item_loop_owner(e.parent_item_instance_id) owner ON true
-        WHERE n.item_instance_id=(o->>'item')::uuid AND n.world_id=r.world_id AND n.lifecycle=1
+        WHERE parent.definition_production_key NOT IN (SCULPTURE_QUIVER_KEYS)
+        AND n.item_instance_id=(o->>'item')::uuid AND n.world_id=r.world_id AND n.lifecycle=1
         AND n.quantity=(o->>'count')::bigint AND n.definition_family='Item'
         AND n.definition_production_key=o->>'key' AND n.definition_revision_ref=o->>'revision'
         AND n.minted_transaction_id=r.transaction_id AND n.last_transaction_id IS NULL
@@ -202,7 +211,8 @@ $arm$);
       ) THEN RAISE EXCEPTION 'marble output or nested custody mismatch' USING ERRCODE='23514'; END IF;
     ELSIF NOT EXISTS(SELECT 1 FROM game_item_instances n JOIN game_item_container_entries e USING(item_instance_id)$arm$;
     IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing craft output completion'; END IF;
-    EXECUTE replace(body,anchor,arm);
+    body:=replace(body,anchor,arm);
+    EXECUTE replace(body,'SCULPTURE_QUIVER_KEYS',quiver_keys);
 
     FOREACH name IN ARRAY ARRAY['game_item_nested_entry_proven()','game_item_ground_removal_proven()',
                                  'game_item_ground_insertion_guard()'] LOOP

@@ -126,29 +126,77 @@ pub(super) async fn place_ground(
     Ok(())
 }
 
-/// Breadth-first search of the carried backpack, while the marble still occupies its slot.
+/// Try managed obtain routing, then ordinary carried slots, before consuming the marble.
 pub(super) async fn nested_marble_destination<C: ItemLoopContent>(
     tx: &mut Type2Transaction<'_>,
+    character: crate::domain::CharacterId,
     backpack: &[u8],
+    main_has_room: bool,
+    output: &TypedDefinitionRef,
     content: &C,
 ) -> Result<Option<(String, u64)>, DurabilityError> {
+    use oteryn_gameplay_items::quick_loot::Recipient;
+
+    let settings = super::super::character_quick_loot::load(tx, character.as_bytes()).await?;
+    let key = &output.production_key;
+    let managed = if settings.accept_only {
+        settings.accepted_items.is_empty() || settings.accepted_items.contains(key)
+    } else {
+        !settings.skipped_items.contains(key)
+    };
+    let main: [u8; 16] = backpack.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
+    let target = |recipient| match recipient {
+        Recipient::Container(id) => Some(id),
+        Recipient::MainContainer => Some(main),
+        Recipient::GoldPouch(_) => None,
+    };
+    let category = managed
+        .then(|| settings.category_targets.get(&content.loot_category(output)).copied().and_then(target))
+        .flatten();
+    let unassigned = managed.then(|| target(settings.unassigned_target)).flatten();
+    if main_has_room && category.or(unassigned).is_none_or(|id| id == main) {
+        return Ok(None);
+    }
+    // Negative ordinals keep newest siblings first and each parent before its descendants.
     let rows = sqlx::query(
-        "WITH RECURSIVE tree(item, ordinals) AS (
-           SELECT item_instance_id, ARRAY[placement_ordinal]::numeric[]
-             FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid
+        "WITH RECURSIVE tree(item, path, ordinals) AS (
+           SELECT encode($1,'hex')::uuid, ARRAY[encode($1,'hex')::uuid], ARRAY[]::numeric[]
            UNION ALL
-           SELECT e.item_instance_id, t.ordinals || e.placement_ordinal
-             FROM tree t JOIN game_item_nested_entries e ON e.parent_item_instance_id=t.item
-            WHERE cardinality(t.ordinals)<7
+           SELECT e.item_instance_id, t.path || e.item_instance_id, t.ordinals || (-e.placement_ordinal)
+             FROM tree t JOIN LATERAL (
+               SELECT item_instance_id, placement_ordinal FROM game_item_container_entries
+                WHERE parent_item_instance_id=t.item AND cardinality(t.ordinals)=0
+               UNION ALL
+               SELECT item_instance_id, placement_ordinal FROM game_item_nested_entries
+                WHERE parent_item_instance_id=t.item AND cardinality(t.ordinals)>0
+             ) e ON true WHERE cardinality(t.ordinals)<7
+         ), preferred AS (
+           SELECT coalesce(
+             (SELECT item FROM tree WHERE item=encode($2,'hex')::uuid),
+             (SELECT item FROM tree WHERE item=encode($3,'hex')::uuid)
+           ) AS item
          )
-         SELECT item::text AS item, i.definition_family, i.definition_production_key, i.definition_revision_ref
-           FROM tree JOIN game_item_instances i ON i.item_instance_id=tree.item
-          WHERE i.lifecycle=1 ORDER BY cardinality(ordinals), ordinals DESC LIMIT 500",
+         SELECT tree.item::text AS item, cardinality(ordinals)=0 AS main,
+                i.definition_family, i.definition_production_key, i.definition_revision_ref
+           FROM tree JOIN game_item_instances i ON i.item_instance_id=tree.item CROSS JOIN preferred
+          WHERE i.lifecycle=1
+          ORDER BY CASE WHEN preferred.item=ANY(path) THEN 0 WHEN $4 THEN 1 ELSE 2 END,
+                   CASE WHEN preferred.item=ANY(path) OR $4 THEN 0 ELSE cardinality(ordinals) END,
+                   ordinals LIMIT 501",
     )
     .bind(backpack)
+    .bind(category.as_ref().map(<[u8; 16]>::as_slice))
+    .bind(unassigned.as_ref().map(<[u8; 16]>::as_slice))
+    .bind(managed && settings.fallback_to_main)
     .fetch_all(&mut ***tx)
     .await?;
     for row in rows {
+        if row.try_get::<bool, _>("main")? {
+            if main_has_room {
+                return Ok(None);
+            }
+            continue;
+        }
         let definition = TypedDefinitionRef {
             family: row.try_get("definition_family")?,
             production_key: row.try_get("definition_production_key")?,
@@ -160,6 +208,9 @@ pub(super) async fn nested_marble_destination<C: ItemLoopContent>(
         else {
             continue;
         };
+        if content.is_quiver(&definition) {
+            continue;
+        }
         let parent: String = row.try_get("item")?;
         let (occupied, highest): (i64, String) = sqlx::query_as(
             "SELECT count(*), coalesce(max(placement_ordinal),0)::text
