@@ -62,6 +62,111 @@ fn execute(relogin: bool, name: &'static str) -> TestResult {
     Ok(())
 }
 
+#[test]
+fn discovery_milestone_reconciliation_keeps_existing_progress_and_replies() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| reconcile_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "discovery reconciliation PostgreSQL scenario panicked")??;
+    eprintln!(
+        "POSTGRES_EXECUTED discovery_milestone_reconciliation_keeps_existing_progress_and_replies elapsed_ms={}",
+        started.elapsed().as_millis()
+    );
+    Ok(())
+}
+
+fn reconcile_scenario() -> TestResult {
+    run(async |admin| {
+        for (progress, action) in [
+            (
+                serde_json::json!({"legacy": {"discovered": false, "exploration": null},
+                "subareas": {"11": {"discovered": true, "exploration": null}}}),
+                MapAction::Query,
+            ),
+            (
+                serde_json::json!({"discovered": true, "exploration": null}),
+                MapAction::Find,
+            ),
+        ] {
+            let h = Harness::create_with_admission_seed(
+                admin.clone(),
+                "discovery_reconcile",
+                true,
+                false,
+            )
+            .await?;
+            prepare_current_session(&h).await?;
+            support::seed(&h, BUNDLE).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let deps = Dependencies::new()?;
+            let owner = deps.owner(&h, &authority);
+            let session = GameSessionId::decode(&id(50)).map_err(debug)?;
+            let fence = crate::gameplay_transport::character_gameplay_fence::current(
+                &owner, session, false,
+            )
+            .await
+            .ok_or("current discovery fence")?;
+            let sequencer = CharacterRevisionSequencer::new();
+            let mut slot = sequencer.acquire(fence.character_id).await;
+            let roster = [(1, 11)];
+            let start = request(session, 1, &roster, 1, 11, MapAction::Start, 0)?;
+            let retained = call(&mut slot, &h, &authority, fence, start.clone()).await?;
+            let revision = decode_retained_result(&retained).map_err(debug)?.revision;
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("UPDATE game_character_cyclopedia SET progress=$1::text::jsonb")
+                .bind(progress.to_string())
+                .execute(&mut *tx)
+                .await?;
+            tx.commit().await?;
+            assert_rewards(&h, &[], &[]).await?;
+            assert_eq!(
+                call(&mut slot, &h, &authority, fence, start.clone()).await?,
+                retained
+            );
+            eprintln!(
+                "POSTGRES_STARTED discovery_milestone_reconciliation_keeps_existing_progress_and_replies {action:?}"
+            );
+
+            for command in [2, 3] {
+                let read = request(session, command, &roster, 1, 11, action, 20)?;
+                let reply = call(&mut slot, &h, &authority, fence, read).await?;
+                let result = decode_retained_result(&reply).map_err(debug)?;
+                assert!(result.discovered);
+                assert_eq!(result.area_percent, 100);
+                assert_eq!(result.revision, revision);
+                assert_rewards(&h, &[BASE, ADDON_ONE, ADDON_TWO], &[MEASURING, WIDELY]).await?;
+            }
+            assert_eq!(
+                call(&mut slot, &h, &authority, fence, start).await?,
+                retained
+            );
+            let after: String =
+                sqlx::query_scalar("SELECT progress::text FROM game_character_cyclopedia")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(serde_json::from_str::<serde_json::Value>(&after)?, progress);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+        }
+        Ok(())
+    })
+}
+
 fn scenario(relogin: bool, name: &'static str) -> TestResult {
     run(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, "discovery_m12", true, false).await?;
@@ -187,11 +292,7 @@ fn request(
         legacy_area: 1,
         subarea: Some(subarea),
         subareas: subareas.to_vec(),
-        main_area_count: subareas
-            .iter()
-            .map(|&(area, _)| area)
-            .collect::<std::collections::BTreeSet<_>>()
-            .len(),
+        milestone_subareas: subareas.into(),
         pool: (20..27).map(point).collect(),
         at: point(x),
         fee: None,
@@ -229,5 +330,43 @@ async fn assert_rewards(h: &Harness, outfits: &[&str], achievements: &[&str]) ->
     );
     assert_eq!(facts, achievements, "account achievement facts");
     assert_eq!(grant_requests, achievements, "one request per achievement");
+    Ok(())
+}
+
+#[test]
+fn discovery_milestone_roster_is_playable_on_the_world_pin() -> TestResult {
+    let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+    let (controller, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+        world_id,
+        "content-1",
+    )?;
+    let native = controller
+        .active()
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("admitted native content")?;
+    let world = super::qc_pinned_world::world(native)?;
+    let table = &world.base().subareas;
+    let sampling = crate::domain::cyclopedia::BasicArea::embedded().ok_or("sampling catalogue")?;
+    let door_at = |pos| world.facts().doors().at(pos);
+    let roster =
+        crate::gameplay_transport::cyclopedia::discoverable_subareas(table, &sampling, door_at);
+    let playable =
+        crate::gameplay_transport::cyclopedia::discoverable_subareas(table, &sampling, |pos| {
+            door_at(pos) || !world.enterable(pos)
+        });
+    assert_eq!(
+        roster, playable,
+        "each required subarea must support the native POI pool"
+    );
+    let mains = roster
+        .iter()
+        .map(|&(main, _)| main)
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(
+        mains.into_iter().collect::<Vec<_>>(),
+        [
+            1, 2, 3, 4, 7, 8, 9, 11, 14, 16, 17, 19, 20, 22, 23, 24, 25, 27, 355, 434
+        ],
+    );
     Ok(())
 }

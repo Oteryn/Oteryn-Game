@@ -34,7 +34,7 @@ pub struct MapRequest {
     pub legacy_area: u32,
     pub subarea: Option<u32>,
     pub subareas: Vec<(u32, u32)>,
-    pub main_area_count: usize,
+    pub milestone_subareas: std::sync::Arc<[(u32, u32)]>,
     pub pool: Vec<Point>,
     pub at: Point,
     pub fee: Option<FeeChangeFacts>,
@@ -70,7 +70,7 @@ impl DurabilityRoot {
             if request.command.game_session_id() != fence.game_session_id || !(1..=1024).contains(&request.area) || !(1..=1024).contains(&request.legacy_area) || request.subarea.is_none_or(|id| !request.subareas.contains(&(request.area,id))) || request.subareas.len() > 512 || request.pool.len() > 128 || request.pool.len() < 7 || request.now <= 0 {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             }
-            if !(1..=oteryn_world_bundle::subarea::MAX_AREAS).contains(&request.main_area_count) {
+            if request.milestone_subareas.len() > request.subareas.len() {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             }
             // Current authority is checked even on replay; a retained receipt grants no custody.
@@ -130,8 +130,8 @@ impl DurabilityRoot {
             if advanced || request.action != MapAction::Query {
                 storage::save(&mut tx,&fence,&request,&progress,advanced,donation,pool,pool_after,&bytes).await?;
             }
-            if changed && request.action == MapAction::Find && progress.discovered {
-                milestones::grant(&mut tx, &fence, &request).await?;
+            if matches!(request.action, MapAction::Query | MapAction::Find) {
+                milestones::reconcile(&mut tx, &fence, &request).await?;
             }
             tx.commit(deadline).await?;
             Ok(Ok((revision,bytes)))

@@ -26,14 +26,89 @@ mod speed;
 #[path = "cyclopedia/step.rs"]
 mod step;
 
-fn main_area_count(map: &crate::map::boot::BundleMap) -> usize {
-    map.overlay
-        .base()
-        .subareas
+// Crystal 201189f8 discovery_geometry.lua:7-34, discovery_system.lua:528-537.
+// Gnome Deep Hub and Water are map roots but are outside the discovery roster.
+const DISCOVERY_MAINS: [u32; 26] = [
+    1, 2, 3, 4, 5, 7, 8, 9, 11, 14, 16, 17, 18, 19, 20, 22, 23, 24, 25, 27, 305, 329, 352, 355,
+    434, 466,
+];
+
+type MilestoneSubareas = std::sync::Arc<[(u32, u32)]>;
+
+struct PinnedMilestones {
+    digest: [u8; 32],
+    subareas: MilestoneSubareas,
+}
+
+fn milestone_subareas(map: &crate::map::boot::BundleMap) -> MilestoneSubareas {
+    static PINNED: std::sync::Mutex<Option<PinnedMilestones>> = std::sync::Mutex::new(None);
+    let base = map.overlay.base();
+    let digest = base.digest();
+    let mut pinned = PINNED
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some(roster) = pinned.as_ref().filter(|roster| roster.digest == digest) {
+        return roster.subareas.clone();
+    }
+    let subareas: MilestoneSubareas = BasicArea::embedded()
+        .map_or_else(Vec::new, |sampling| {
+            discoverable_subareas(&base.subareas, &sampling, |pos| map.facts.doors().at(pos))
+        })
+        .into();
+    *pinned = Some(PinnedMilestones {
+        digest,
+        subareas: subareas.clone(),
+    });
+    subareas
+}
+
+pub(super) fn discoverable_subareas(
+    table: &oteryn_world_bundle::subarea::Table,
+    sampling: &BasicArea,
+    excluded: impl Fn(crate::map::overlay::TilePos) -> bool,
+) -> Vec<(u32, u32)> {
+    let excluded = &excluded;
+    let mut runs = std::collections::BTreeMap::<u32, Vec<_>>::new();
+    for run in &table.runs {
+        runs.entry(run.subarea).or_default().push(run);
+    }
+    table
         .areas
         .iter()
-        .filter(|area| area.parent.is_none())
-        .count()
+        .filter_map(|area| {
+            let main = area
+                .parent
+                .filter(|id| DISCOVERY_MAINS.binary_search(id).is_ok())?;
+            // Native runs are admitted walkable membership. Follow the discovery sampler's
+            // run order, cap and door exclusion, and require an entry tile that can roll POIs.
+            let cells = || {
+                runs.get(&area.id).into_iter().flatten().flat_map(|run| {
+                    (run.begin..run.end).filter_map(move |x| {
+                        let pos = crate::map::overlay::TilePos {
+                            x,
+                            y: run.y,
+                            floor: run.floor,
+                        };
+                        (!excluded(pos)).then_some(Point {
+                            x: i32::from(pos.x),
+                            y: i32::from(pos.y),
+                            floor: i16::from(pos.floor),
+                        })
+                    })
+                })
+            };
+            let pool: Vec<_> = cells().take(sampling.pool_limit).collect();
+            (pool.len() >= sampling.generated_count
+                && cells().any(|at| {
+                    pool.iter()
+                        .filter(|point| !point.in_window(at))
+                        .take(sampling.generated_count)
+                        .count()
+                        == sampling.generated_count
+                }))
+            .then_some((main, area.id))
+        })
+        .collect()
 }
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
@@ -263,7 +338,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             legacy_area: area.legacy_area,
             subarea: area.subarea,
             subareas: area.subareas,
-            main_area_count: main_area_count(position.map),
+            milestone_subareas: milestone_subareas(position.map),
             epoch: self.reset_epoch,
             pool: area.pool,
             at,
@@ -388,3 +463,77 @@ macro_rules! composed_methods {
     };
 }
 pub(super) use composed_methods;
+
+#[cfg(test)]
+mod milestone_tests {
+    use super::*;
+    use oteryn_world_bundle::subarea::{Area, Mask, Run, Table};
+
+    #[test]
+    fn discovery_milestone_roster_requires_playable_subareas()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let areas = [
+            (1, None),
+            (3, None),
+            (18, None),
+            (51, Some(1)),
+            (52, Some(1)),
+            (53, Some(1)),
+            (54, Some(3)),
+            (55, Some(18)),
+            (10, None),
+            (441, Some(10)),
+        ]
+        .into_iter()
+        .map(|(id, parent)| Area {
+            id,
+            key: format!("oteryn:content.area.fixture{id}"),
+            name: format!("Area {id}"),
+            parent,
+            source_record_sha256: "a".repeat(64),
+            town_id: None,
+            hometown: false,
+            temple: None,
+        })
+        .collect();
+        let masks = [(51, 16), (53, 7), (54, 16), (55, 0), (441, 16)]
+            .into_iter()
+            .map(|(subarea, admitted_tiles)| Mask {
+                subarea,
+                admitted_tiles,
+                source_tiles: 16,
+                asset: String::new(),
+                compressed_sha256: "a".repeat(64),
+                bmp_sha256: "a".repeat(64),
+                source_record_sha256: "a".repeat(64),
+            })
+            .collect();
+        let runs = [(51, 16), (53, 7), (54, 16), (441, 16)]
+            .into_iter()
+            .enumerate()
+            .map(|(y, (subarea, size))| Run {
+                floor: -7,
+                y: y as u16,
+                begin: 0,
+                end: size,
+                subarea,
+            })
+            .collect();
+        let table = Table {
+            areas,
+            masks,
+            runs,
+            ..Table::default()
+        };
+        let sampling = BasicArea::embedded().ok_or("discovery sampling catalogue")?;
+        assert_eq!(
+            discoverable_subareas(&table, &sampling, |_| false),
+            [(1, 51), (3, 54)]
+        );
+        assert_eq!(
+            discoverable_subareas(&table, &sampling, |pos| pos.x == 0 && pos.y == 0),
+            [(3, 54)]
+        );
+        Ok(())
+    }
+}

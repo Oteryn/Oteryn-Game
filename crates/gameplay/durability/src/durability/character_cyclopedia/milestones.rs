@@ -1,7 +1,9 @@
-//! Discovery milestones use the same progress, fence and transaction as the final POI.
+//! Discovery milestones reconcile in the fenced discovery transaction.
 use super::storage::CanonicalProgress;
 use super::{CurrentCharacterGameplayFence, DurabilityError, MapRequest, Type2Transaction};
-use crate::durability::{account_achievement::grant_missing, character_appearance::lock_account_grants};
+use crate::durability::{
+    account_achievement::grant_missing, character_appearance::lock_account_grants,
+};
 use oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE;
 use sqlx::types::Uuid;
 use std::collections::BTreeMap;
@@ -17,42 +19,59 @@ const ACHIEVEMENTS: [&str; 2] = [
     "oteryn:achievement/measuring_the_world",
 ];
 
-pub(super) async fn grant(
+pub(super) async fn reconcile(
     tx: &mut Type2Transaction<'_>,
     fence: &CurrentCharacterGameplayFence,
     request: &MapRequest,
 ) -> Result<(), DurabilityError> {
+    if request.milestone_subareas.is_empty() {
+        return Ok(());
+    }
     let character = Uuid::from_bytes(*fence.character_id.as_bytes());
-    let text: String = sqlx::query_scalar(
-        "SELECT progress::text FROM game_character_cyclopedia WHERE character_id=$1",
+    let row: Option<(String, Uuid, Vec<String>, Vec<String>)> = sqlx::query_as(
+        "SELECT c.progress::text, r.account_id, \
+           ARRAY(SELECT unlock_key FROM game_account_appearance_unlocks \
+                 WHERE account_id=r.account_id AND unlock_key=ANY($2)), \
+           ARRAY(SELECT achievement_key FROM game_account_achievements \
+                 WHERE account_id=r.account_id AND achievement_key=ANY($3)) \
+         FROM game_character_cyclopedia c JOIN game_character_roots r USING(character_id) \
+         WHERE c.character_id=$1",
     )
     .bind(character)
-    .fetch_one(&mut ***tx)
+    .bind(DISCOVERER.as_slice())
+    .bind(ACHIEVEMENTS.as_slice())
+    .fetch_optional(&mut ***tx)
     .await?;
+    let Some((text, account, outfits, achievements)) = row else {
+        return Ok(());
+    };
     let progress = CanonicalProgress::decode(&text)?;
     let mut mains = BTreeMap::new();
-    for &(main, subarea) in &request.subareas {
-        let discovered = progress.subareas.get(&subarea).is_some_and(|state| state.discovered);
+    for &(main, subarea) in request.milestone_subareas.as_ref() {
+        // Match legacy conversion: an explicitly stored subarea takes precedence.
+        let discovered = progress
+            .subareas
+            .get(&subarea)
+            .map_or(progress.legacy.discovered, |state| state.discovered);
         *mains.entry(main).or_insert(true) &= discovered;
     }
-    if mains.len() > request.main_area_count {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    // Crystal 201189f8 discovery_system.lua:528-559 counts only fully explored mains.
     let completed = mains.values().filter(|&&complete| complete).count();
     if completed == 0 {
         return Ok(());
     }
-    let halfway = completed * 2 >= request.main_area_count;
-    let all = completed == request.main_area_count;
+    let halfway = completed * 2 >= mains.len();
+    let all = completed == mains.len();
     let outfit_count = 1 + usize::from(halfway) + usize::from(all);
     let achievement_count = 1 + usize::from(all);
-    let account: Uuid = sqlx::query_scalar(
-        "SELECT account_id FROM game_character_roots WHERE character_id=$1",
-    )
-    .bind(character)
-    .fetch_one(&mut ***tx)
-    .await?;
+    if DISCOVERER[..outfit_count]
+        .iter()
+        .all(|key| outfits.iter().any(|outfit| outfit == key))
+        && ACHIEVEMENTS[..achievement_count]
+            .iter()
+            .all(|key| achievements.iter().any(|achievement| achievement == key))
+    {
+        return Ok(());
+    }
     lock_account_grants(tx, account).await?;
     // Reuse the admitted quest-style outfit mappings and namespace the discovery event.
     let mut event = b"oteryn:cyclopedia-discovery:v1\0".to_vec();
