@@ -228,3 +228,45 @@ fn passive_inspect_refreshes_visible_item_on_the_wire() -> Result {
     assert_eq!(intent.expected_revision, 0);
     Ok(())
 }
+
+#[test]
+fn manual_inspect_shares_pending_passive_inspection() -> Result {
+    use oteryn_client_runtime::timed_item as wire;
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_property_items_selected();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .expiry_containers = true;
+    app.update();
+    let command = property_command(&mut commands)?;
+    let intent = wire::decode_timed_item_intent(&command.payload).map_err(|e| format!("{e:?}"))?;
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("missing play")?.link;
+    link.timed_item_inspect(intent.target);
+    assert!(commands.try_recv().is_err(), "duplicate manual Inspect");
+    assert!(link.timed_item_panel().pending);
+    outbox.bevy_properties_result(&command, &property_reply(timed_ok(9)?));
+    let panel = link.timed_item_panel();
+    assert!(!panel.pending);
+    assert_eq!(panel.fields[1], "9");
+    assert_eq!(
+        link.take_slot_expiry()
+            .and_then(|(_, reply)| reply)
+            .and_then(|r| r.charges),
+        Some(8)
+    );
+
+    link.timed_item_edit(1, "0".into());
+    assert!(link.inspect_slot_expiry(intent.target));
+    let retry = property_command(&mut commands)?;
+    link.timed_item_inspect(intent.target);
+    assert!(commands.try_recv().is_err());
+    let mut refused = property_reply(Vec::new());
+    refused.status = oteryn_client_runtime::raw_feature::CommandStatus::Rejected;
+    outbox.bevy_properties_result(&retry, &refused);
+    assert!(!link.timed_item_panel().pending);
+    assert_eq!(link.take_slot_expiry(), Some((intent.target, None)));
+    Ok(())
+}
