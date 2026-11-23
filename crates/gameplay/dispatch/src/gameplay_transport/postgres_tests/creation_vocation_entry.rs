@@ -40,12 +40,19 @@ fn familiar_login_retries_first_write_checkout_without_replaying_first_entry_pos
     creation_vocation_entry(Some(FamiliarRegression::WriteCheckout))
 }
 
+#[test]
+fn familiar_login_defers_restore_during_pending_respawn_postgres() -> TestResult {
+    creation_vocation_entry(Some(FamiliarRegression::RespawnPending))
+}
+
 fn creation_vocation_entry(regression: Option<FamiliarRegression>) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run("creation-vocation-entry", move || {
         let checkout = matches!(regression, Some(FamiliarRegression::WriteCheckout));
+        let respawn_pending = matches!(regression, Some(FamiliarRegression::RespawnPending));
+        let paused_login = checkout || respawn_pending;
         tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async move {
             let normal_cases = [
                 ("Knight", true),
@@ -55,7 +62,7 @@ fn creation_vocation_entry(regression: Option<FamiliarRegression>) -> TestResult
                 ("Monk", true),
                 ("Sorcerer", false),
             ];
-            let cases: &[(&str, bool)] = if checkout { &[("Druid", false)] } else if regression.is_some() { &normal_cases[5..] } else { &normal_cases[..] };
+            let cases: &[(&str, bool)] = if paused_login { &[("Druid", false)] } else if regression.is_some() { &normal_cases[5..] } else { &normal_cases[..] };
             for &(vocation, with_premium) in cases {
                 let h = Harness::create_newhaven(admin.clone(), "creation_entry").await?;
                 let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
@@ -64,7 +71,7 @@ fn creation_vocation_entry(regression: Option<FamiliarRegression>) -> TestResult
                 let active = controller.active().ok_or("active generation")?;
                 super::tutorial_vitals_fixture::native_asset_revisions(&h, active).await?;
                 let room = pin.qualified_room().clone();
-                let native_familiar = checkout || vocation == "Sorcerer";
+                let native_familiar = paused_login || vocation == "Sorcerer";
                 let spells = if native_familiar {
                     let native = active.native_gameplay().ok_or("native gameplay")?;
                     assert!(native.familiar_config().is_some());
@@ -83,7 +90,7 @@ fn creation_vocation_entry(regression: Option<FamiliarRegression>) -> TestResult
                 let seal = h.recovery.seal_current().map_err(debug)?;
                 let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
                 assert!(h.root.read_character_progression(&authority, character).await?.is_none());
-                if regression.is_some() && !checkout {
+                if regression.is_some() && !paused_login {
                     let policy = active.progression().ok_or("progression policy")?
                         .policy_for("profile-1", "ruleset-1", "content-1").map_err(debug)?;
                     let xp = policy.thresholds.iter().find(|row| row.level == 250)
@@ -117,7 +124,7 @@ fn creation_vocation_entry(regression: Option<FamiliarRegression>) -> TestResult
                 use crate::gameplay_transport::spell_premium_coordinator::{
                     SpellPremiumCoordinator, purchase_fixture,
                 };
-                let premium = if checkout {
+                let premium = if paused_login {
                     revoked_premium(&h.root).await?
                 } else if with_premium {
                     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
@@ -151,8 +158,12 @@ fn creation_vocation_entry(regression: Option<FamiliarRegression>) -> TestResult
                 let entry = Box::pin(
                     owner.enter_committed_actor(&budget, &request, session, transport, deps.actor),
                 );
-                if checkout {
-                    let result = FAMILIAR_LOGIN_CHECKOUT.scope(Default::default(), async {
+                if paused_login {
+                    let probe = crate::gameplay_transport::composed_admission::FamiliarLoginCheckoutProbe {
+                        hold_first_write: checkout,
+                        ..Default::default()
+                    };
+                    let result = FAMILIAR_LOGIN_CHECKOUT.scope(probe, async {
                         let barrier = FAMILIAR_LOGIN_CHECKOUT.with(|probe| probe.seed_barrier.clone());
                         let mut entry = entry;
                         tokio::select! {
@@ -163,6 +174,28 @@ fn creation_vocation_entry(regression: Option<FamiliarRegression>) -> TestResult
                         }
                         let seed = FamiliarStateOccurrence::from_bytes(id(83)).map_err(debug)?;
                         let look = seed_checkout_look(&h, &owner, session, seed).await?;
+                        if respawn_pending {
+                            let before = h.root.read_character_familiar_state(&authority, character).await?;
+                            // Seed only the already pending death fence, as in
+                            // appearance_respawn_pending.rs. First entry already placed the actor.
+                            let mut tx = h.pool.begin().await?;
+                            sqlx::query("SET LOCAL session_replication_role = replica")
+                                .execute(&mut *tx).await?;
+                            sqlx::query("INSERT INTO game_character_pending_respawns (character_id, death_occurrence_id, respawn_position) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, decode('01','hex'))")
+                                .bind(character.as_bytes().as_slice())
+                                .bind(id(84).as_slice())
+                                .execute(&mut *tx).await?;
+                            tx.commit().await?;
+                            barrier.1.notify_one();
+                            let (outcome, item_fence, position) = entry.await;
+                            assert_eq!(outcome, FirstEntryOutcome::Positioned);
+                            assert!(item_fence.is_some() && position.is_some());
+                            let after = h.root.read_character_familiar_state(&authority, character).await?;
+                            assert_eq!(after, before);
+                            assert_eq!(FAMILIAR_LOGIN_CHECKOUT.with(|probe| probe.writes.get()), 1);
+                            eprintln!("PG_EXECUTED Familiar Login deferred during pending respawn");
+                            return Ok(());
+                        }
                         barrier.1.notify_one();
                         let (outcome, item_fence, _) = entry.await;
                         let (backpack, kit, placement, writes, misses) =
@@ -513,6 +546,7 @@ enum FamiliarRegression {
     ExistingLook { revoked: bool },
     BlockedReturn,
     WriteCheckout,
+    RespawnPending,
 }
 
 #[test]

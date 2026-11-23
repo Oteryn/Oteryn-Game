@@ -649,7 +649,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             premium: access,
             administrative: &administrative,
         };
-        let receipt = self
+        let receipt = match self
             .apply_familiar_owner_event(
                 actor,
                 session,
@@ -660,7 +660,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &source,
                 Some(budget),
             )
-            .await?;
+            .await
+        {
+            Ok(receipt) => receipt,
+            Err(FamiliarLoginError::RespawnDeferred) => return Ok(None),
+            Err(error) => return Err(error),
+        };
         // #2199 Codex P2 4302041461: no free tile kept the stored familiar waiting; the
         // owner cadence returns it once a tile frees (`retry_waiting_familiar_return`).
         if crate::spell::companion_lifecycle::login_left_familiar_waiting(
@@ -2205,6 +2210,7 @@ pub(in crate::gameplay_transport) enum FamiliarLoginError {
     ProgressionRefused(&'static str, CharacterProgressionError),
     Write(CharacterProgressionError),
     WriteCheckoutUnavailable,
+    RespawnDeferred,
     FinalFence(DurabilityError),
 }
 
@@ -2263,6 +2269,7 @@ impl FamiliarLoginError {
             Self::ProgressionRefused(stage, error) => (*stage, format!("{error:?}")),
             Self::Write(error) => ("write", format!("{error:?}")),
             Self::WriteCheckoutUnavailable => ("write", "RootUnavailable".to_owned()),
+            Self::RespawnDeferred => ("write", "RespawnPending".to_owned()),
             Self::FinalFence(error) => ("final_fence", format!("{error:?}")),
         };
         super::super::operator_event(&format!(
@@ -2831,7 +2838,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     assert_eq!(prepared.settings.value.premium_revision, 8);
                     assert_eq!(prepared.familiar.owner_facts().premium, Some(false));
                     probe.writes.set(probe.writes.get() + 1);
-                    probe.writes.get() == 1
+                    probe.hold_first_write && probe.writes.get() == 1
                 })
                 .unwrap_or(false)
             {
@@ -2917,6 +2924,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         states.pending_familiar_lifecycle.retain(|v| {
                             v.actor != actor || v.session != session || v.spell_index != index
                         });
+                        // The writer refused before commit. With the placement
+                        // rolled back, Login can continue without restoring the familiar.
+                        if matches!(error, CharacterProgressionError::RespawnPending)
+                            && matches!(
+                                prepared.familiar.binding().origin(),
+                                FamiliarLifecycleOrigin::Login { .. }
+                            )
+                        {
+                            return Err(FamiliarLoginError::RespawnDeferred);
+                        }
                     }
                     return Err(FamiliarLoginError::Write(error));
                 }
