@@ -8,6 +8,7 @@ from pathlib import Path
 
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
 SHARD = "content/quests/npc-callbacks/token-exchanges.json"
+BIGFOOT_RULES = "content/dialogues/quest-rules/quest-batch3-a-bigfoot_burden.json"
 GNOMALLY_SOURCE = "content/dialogues/quest-source/quest-batch3-a-bigfoot-burden.json"
 SOURCES = {
     "cledwyn": "crystal:"
@@ -278,17 +279,18 @@ def append(add, storage, callbacks, offers):
             preserve_topic=True,
             reward_order="before",
         )
-    source = json.loads(
-        (Path(__file__).resolve().parents[3] / GNOMALLY_SOURCE).read_text()
-    )
+    root = Path(__file__).resolve().parents[3]
+    source = json.loads((root / GNOMALLY_SOURCE).read_text())
     gnomally = next(
         row for row in source["npcs"] if row["npc"] == "oteryn:npc.gnomally"
     )
     replies = {row["line"]: row["literal_parts"] for row in gnomally["fragments"]}
     quest_line = "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line"
+    tracks = json.loads((root / BIGFOOT_RULES).read_text())["tracks"]
+    declaration = next(row for row in tracks if row["key"] == quest_line)
     for minimum, maximum, reply, preserve in (
-        (0, 24, replies[133], True),
-        (25, 30, ["Renown exchanges are unavailable."], False),
+        (declaration["min"], 24, replies[133], True),
+        (25, declaration["max"], ["Renown exchanges are unavailable."], False),
     ):
         offer(
             "gnomally",
@@ -306,12 +308,24 @@ def append(add, storage, callbacks, offers):
         "gnomally",
         "items",
         0,
-        0,
+        5,
         replies[143],
         msg_contains=True,
         any_topic=True,
         reward_order="before",
     )
+
+    for word, lines in (("yes", replies[186]), ("no", gnomally_no)):
+        offer(
+            "gnomally",
+            word,
+            5,
+            0,
+            lines,
+            msg_contains=True,
+            reward_order="before",
+            **({"open_shop": True} if word == "yes" else {}),
+        )
 
     # The retained vouchers and supply package share the same quote lifecycle.
     for row in callbacks:

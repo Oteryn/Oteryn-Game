@@ -941,6 +941,28 @@ fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), 
             sex: 0,
             outfits: &BTreeMap::new(),
         };
+        let ask = format!("can I take the {} hunt?", task.replace('-', " "));
+        let quote = programme
+            .plan_storage(&crate::quest::npc_rules::NpcRuleInput {
+                message: &ask,
+                topic: 0,
+                ..input
+            })
+            .map_err(|error| error.to_string())?
+            .ok_or_else(|| format!("{task} phrased offer refused"))?;
+        assert_eq!(quote.next_topic, input.topic, "{task}");
+        let phrased_accept = programme
+            .plan_storage(&crate::quest::npc_rules::NpcRuleInput {
+                message: "yes please",
+                ..input
+            })
+            .map_err(|error| error.to_string())?
+            .ok_or_else(|| format!("{task} phrased acceptance refused"))?;
+        assert_eq!(
+            phrased_accept.selected_rule_keys.as_slice(),
+            std::slice::from_ref(&acceptance_key)
+        );
+        assert!(report.matches_keyword("I finished the task"), "{task}");
         let prefix = format!("oteryn:quest-transition/native-kills/hunting-tasks/{task}/");
         assert!(
             !crate::quest::native_kills::active_for(catalogue, &tracks)
@@ -1032,6 +1054,12 @@ fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), St
         == "oteryn:quest-progress/wrath-city/supplies"
         && guard.minimum == 2
         && guard.maximum == 2));
+    assert!(briefing.matches_keyword("tell me about the mission"));
+    let handoff = callbacks
+        .iter()
+        .find(|c| c.key == "oteryn:quest-reward/wrath-city/zlak-handoff")
+        .ok_or("handoff")?;
+    assert!(handoff.matches_keyword("tell me about imperial service"));
     let gates = crate::quest::npc_rules::NpcRuleCatalog::runtime()
         .and_then(|rules| rules.admitted_for_npc("oteryn:npc.gate_guardian", catalogue))
         .map_err(|error| error.to_string())?
@@ -1056,6 +1084,21 @@ fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), St
             sex: 0,
             outfits: &BTreeMap::new(),
         };
+        let offer = gates
+            .plan_storage(&crate::quest::npc_rules::NpcRuleInput {
+                message: "can I have a pass?",
+                topic: 0,
+                ..input
+            })
+            .map_err(|error| error.to_string())?;
+        assert_eq!(offer.map(|plan| plan.next_topic), can_enter.then_some(1));
+        let confirmed = gates
+            .plan_storage_teleport(&crate::quest::npc_rules::NpcRuleInput {
+                message: "yes please",
+                ..input
+            })
+            .map_err(|error| error.to_string())?;
+        assert_eq!(confirmed.is_some(), can_enter);
         let entry = gates
             .plan_storage_teleport(&input)
             .map_err(|error| error.to_string())?;

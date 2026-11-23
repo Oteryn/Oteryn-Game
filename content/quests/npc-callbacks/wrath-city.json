@@ -54,6 +54,7 @@
       "keywords": [
         "mission"
       ],
+      "msg_contains": true,
       "topic": 0,
       "next_topic": 0,
       "storage": [
@@ -206,6 +207,7 @@
         "mission",
         "imperial service"
       ],
+      "msg_contains": true,
       "topic": 0,
       "next_topic": 0,
       "storage": [

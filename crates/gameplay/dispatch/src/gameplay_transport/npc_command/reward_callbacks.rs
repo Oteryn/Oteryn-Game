@@ -35,6 +35,8 @@ pub(super) struct Offer {
     #[serde(default)]
     preserve_topic: bool,
     #[serde(default)]
+    open_shop: bool,
+    #[serde(default)]
     reward_order: Option<RewardOrder>,
     next_topic: u16,
     storage: Vec<Storage>,
@@ -136,6 +138,7 @@ pub(super) fn prepare(
     let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();
     let mut refused = false;
+    let mut open_shop = false;
     let mut clear_topic_on_refusal = false;
     let refusal_topic = |callback: &reward_callbacks::RewardCallback| {
         callback.clear_topic_on_refusal.then(Topic::default)
@@ -178,6 +181,7 @@ pub(super) fn prepare(
                         return refusal(&offer.failure_reply);
                     }
                     if offer.reward_order == Some(RewardOrder::Before) {
+                        open_shop = offer.open_shop;
                         return Some(offer.choice());
                     }
                 }
@@ -333,6 +337,7 @@ pub(super) fn prepare(
         step.with_failure_reply(failure_reply)
             .with_refusal(refused)
             .with_quote_retirement(clear_topic_on_refusal)
+            .with_shop_window(open_shop)
     })
 }
 

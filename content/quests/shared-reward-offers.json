@@ -2971,7 +2971,7 @@
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
-          "minimum": 0,
+          "minimum": -1,
           "maximum": 24
         }
       ],
@@ -2995,7 +2995,7 @@
         {
           "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
           "minimum": 25,
-          "maximum": 30
+          "maximum": 2147483647
         }
       ],
       "msg_contains": true
@@ -3006,7 +3006,7 @@
         "items"
       ],
       "topic": 0,
-      "next_topic": 0,
+      "next_topic": 5,
       "storage": [],
       "reply": [
         "Do you need to buy any mission items?"
@@ -3274,6 +3274,35 @@
         "Will you help me with this task?"
       ],
       "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Let us see if I have what you need."
+      ],
+      "reward_order": "before",
+      "open_shop": true,
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "no"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "As you like."
+      ],
+      "reward_order": "before",
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.gnomally",

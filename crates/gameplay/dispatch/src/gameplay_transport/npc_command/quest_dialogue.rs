@@ -124,10 +124,16 @@ pub(super) struct Step {
     reply: Vec<String>,
     failure_reply: Vec<String>,
     refused: bool,
+    open_shop: bool,
     clear_topic_on_refusal: bool,
 }
 
 impl Step {
+    pub(super) fn with_shop_window(mut self, open_shop: bool) -> Self {
+        self.open_shop = open_shop;
+        self
+    }
+
     pub(super) fn with_failure_reply(mut self, lines: Vec<String>) -> Self {
         self.failure_reply = lines;
         self
@@ -194,6 +200,7 @@ pub(super) fn prepare(
         reply: choice.reply,
         failure_reply: Vec::new(),
         refused: false,
+        open_shop: false,
         clear_topic_on_refusal: false,
     })
 }
@@ -333,8 +340,21 @@ pub(super) async fn apply(
             return rejected();
         }
         state.apply_topic(step.context, step.next_topic);
+        drop(sessions);
         if step.refused {
             rendered.disposition = NpcIntentDisposition::Rejected;
+        } else if step.open_shop {
+            rendered.window = admission.states.npc_conversations.open_window(
+                &admission.states.chat,
+                &runtime,
+                command.game_session_id,
+                intent.npc_actor,
+                super::super::item_ref_admission::pinned_index(
+                    &runtime,
+                    admission.active_generation,
+                ),
+                None,
+            );
         }
         return rendered;
     };

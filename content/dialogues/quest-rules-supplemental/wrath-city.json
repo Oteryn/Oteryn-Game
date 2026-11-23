@@ -34,7 +34,7 @@
         "mission",
         "pass"
       ],
-      "keyword_mode": "exact",
+      "keyword_mode": "msg_contains",
       "topics": [
         0
       ],
@@ -73,7 +73,7 @@
       "keywords": [
         "yes"
       ],
-      "keyword_mode": "exact",
+      "keyword_mode": "msg_contains",
       "topics": [
         1
       ],

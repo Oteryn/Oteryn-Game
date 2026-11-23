@@ -147,14 +147,14 @@ pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatal
     const PINS: &[PredecessorPin] = &[
         (
             "oteryn:quest.killing_in_the_name_of_quest",
-            hash(b"2bca7cb3d070656c140bdd4161a63d7344d56525338688010d9a4adf764d1824"),
+            hash(b"a7f389a365008c76a903abdf77166d015d73d5824067df9b08a83d89d00d06c2"),
             &[hash(
                 b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5",
             )],
         ),
         (
             "oteryn:quest.wrath_of_the_emperor_quest",
-            hash(b"0a0b59bb1d9cfc9ab1e625e938a14013701fe5da5db048798222d1aaf5fc08bb"),
+            hash(b"58e9e5d6281350894a50b1903b1bce8e3bcc0c8f67d20407f7ef73ae8313a7cf"),
             &[hash(
                 b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86",
             )],

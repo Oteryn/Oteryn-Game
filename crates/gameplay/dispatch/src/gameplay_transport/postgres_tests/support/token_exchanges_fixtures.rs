@@ -154,6 +154,57 @@ pub(super) async fn exercise(
         }
     }
 
+    for (offset, (text, opens_shop)) in [
+        ("hi", false),
+        ("items", false),
+        ("no thanks", false),
+        ("yes", false),
+        ("mission items", false),
+        ("yes please", true),
+        ("yes", false),
+        ("bye", false),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+        use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
+
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?;
+        let outcome = owner
+            .npc_talk(
+                admitted.runtime_actor.ok_or("actor")?,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: 949_960 + u64::try_from(offset)?,
+                    item_fence: Some(fence.item_fence()),
+                },
+                NpcTalkIntent {
+                    npc_actor: gnomally,
+                    text: text.into(),
+                },
+            )
+            .await;
+        let open = outcome
+            .window
+            .and_then(|window| window.open.map(|(npc, _)| (npc, window.offers.len())));
+        if opens_shop && !open.is_some_and(|(npc, offers)| npc == gnomally && offers > 0)
+            || !opens_shop && open.is_some()
+        {
+            regressions.push(format!(
+                "Gnomally {text:?}: unexpected shop window {open:?}"
+            ));
+        }
+    }
+
     let supply = find("l9-gnomish-supply")?;
     let initial_supply = quantity(h, 15698).await?;
     assert_eq!(quantity(h, 16128).await?, 0);
