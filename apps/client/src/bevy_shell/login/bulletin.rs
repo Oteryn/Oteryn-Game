@@ -8,6 +8,7 @@ pub(in crate::bevy_shell) struct State {
     pub visible: bool,
     calendar: bool,
     body: String,
+    news_day: Option<u64>,
 }
 impl State {
     pub fn receive(&mut self, document: &str) -> Result<(), String> {
@@ -28,10 +29,12 @@ impl State {
     }
     fn refresh(&mut self) {
         if let Some(browser) = &self.browser {
+            let now = std::time::SystemTime::now();
+            self.news_day = Some(day_number(now));
             self.body = if self.calendar {
                 browser.month()
             } else {
-                browser.news()
+                browser.admission_news(now)
             };
         }
     }
@@ -52,6 +55,56 @@ enum Action {
 pub(super) fn install(app: &mut App) {
     app.add_message::<bevy::input::keyboard::KeyboardInput>();
     app.add_systems(Update, (keyboard, project).chain().after(super::project));
+}
+pub(super) fn featured_hint(commands: &mut Commands, skins: &Skins) -> Entity {
+    use std::hash::{BuildHasher, RandomState};
+    let hints = [
+        (
+            "control-battle",
+            "Battle",
+            "Use the Battle List filters to find a nearby creature, then select it to attack.",
+        ),
+        (
+            "control-spellbook",
+            "Spells",
+            "Open Spellbook to browse spells and check their requirements.",
+        ),
+    ];
+    let index = RandomState::new().hash_one("login hint") as usize % hints.len();
+    let (key, fallback, message) = hints[index];
+    let hint = commands
+        .spawn((
+            Name::new("login.featured_hint"),
+            source::frame(skins.inset.clone(), [4.; 4]),
+            Node {
+                position_type: PositionType::Absolute,
+                bottom: px(4.),
+                width: px(420.),
+                max_width: percent(95.),
+                padding: UiRect::all(px(6.)),
+                column_gap: px(8.),
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            bevy::picking::Pickable::IGNORE,
+        ))
+        .id();
+    let icon = crate::bevy_shell::game_ui::art::spawn(
+        commands,
+        &skins.font,
+        key,
+        fallback,
+        Vec2::splat(32.),
+    );
+    let caption = commands
+        .spawn(source::text(
+            message,
+            source::font(skins.font.clone(), false),
+        ))
+        .insert(TextLayout::default())
+        .id();
+    commands.entity(hint).add_children(&[icon, caption]);
+    hint
 }
 pub(super) fn setup(commands: &mut Commands, skins: &Skins) {
     let modal = commands
@@ -200,8 +253,14 @@ fn keyboard(
         keys.clear();
     }
 }
+fn day_number(now: std::time::SystemTime) -> u64 {
+    now.duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+        / 86400
+}
 fn project(
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
     mut dialogs: Query<&mut Node, With<Dialog>>,
     mut bodies: Query<&mut Text, With<Body>>,
     actions: Query<(Entity, &Action)>,
@@ -217,7 +276,14 @@ fn project(
         };
     }
     if visible {
-        let value = owner.login.bulletin.text();
+        let state = &mut owner.login.bulletin;
+        if !state.calendar
+            && state.browser.is_some()
+            && state.news_day != Some(day_number(std::time::SystemTime::now()))
+        {
+            state.refresh();
+        }
+        let value = state.text();
         for mut text in &mut bodies {
             if text.0 != value {
                 text.0 = value.to_owned();

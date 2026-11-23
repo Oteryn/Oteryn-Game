@@ -129,3 +129,45 @@ fn submit_repairs_empty_saved_gateway_from_environment() -> TestResult {
     assert_eq!(LoginSettings::load(&path)?.gateway_url, gateway);
     Ok(())
 }
+
+#[test]
+fn blank_optional_environment_values_are_session_only() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.join("login.json");
+    let original = settings(&temp)?;
+    original.save(&path)?;
+    let mut state = LoginState::default();
+    let character = "01890a5d-ac96-774b-bcce-b302099a8058";
+    state.load(Some(path.clone()), |key| match key {
+        "OTERYN_CHARACTER_ID" => Some(character.into()),
+        "OTERYN_WORLD" => Some("session-world".into()),
+        _ => None,
+    });
+    let config = state.submit()?;
+    assert_eq!(config.character_id, character);
+    assert_eq!(config.world_ref, "session-world");
+    assert!(LoginSettings::load(&path)? == original);
+    Ok(())
+}
+#[test]
+fn invalid_optional_environment_override_allows_sign_in() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.join("login.json");
+    let original = settings(&temp)?;
+    let mut invalid = original.clone();
+    invalid.character_id = "invalid".into();
+    invalid.world_ref = "invalid\0world".into();
+    std::fs::write(&path, serde_json::to_vec(&invalid)?)?;
+    let mut state = LoginState::default();
+    let character = "01890a5d-ac96-774b-bcce-b302099a8058";
+    state.load(Some(path.clone()), |key| match key {
+        "OTERYN_CHARACTER_ID" => Some(character.into()),
+        "OTERYN_WORLD" => Some("session-world".into()),
+        _ => None,
+    });
+    let config = state.submit()?;
+    assert_eq!(config.character_id, character);
+    assert_eq!(config.world_ref, "session-world");
+    assert!(LoginSettings::load(&path)? == original);
+    Ok(())
+}
