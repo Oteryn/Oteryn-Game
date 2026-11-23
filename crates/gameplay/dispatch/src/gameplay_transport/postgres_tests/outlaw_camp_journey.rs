@@ -24,7 +24,9 @@ use oteryn_protocol_oteryn::quest_log::{
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
-use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDirection::*};
+use oteryn_protocol_oteryn::world_spatial::{
+    CAPABILITY_DIAGONAL_MOVEMENT_V1, StepDirection, StepDirection::*,
+};
 use std::collections::{BTreeMap, VecDeque};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -214,8 +216,11 @@ async fn journey(admin: String) -> TestResult {
     owner.quest_log_content = Some(log.clone());
     owner.movement_cells = (&cells).into();
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 13, 15, 16, 18])
-            .ok_or("journey capabilities")?;
+        SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[4, 6, 11, 13, 15, 16, 18, CAPABILITY_DIAGONAL_MOVEMENT_V1],
+        )
+        .ok_or("journey capabilities")?;
     owner.admit_progression_session(&mut admitted).await;
     deps.initialize(&owner).await;
     owner.admit_quest_session(&admitted).await;
@@ -388,7 +393,7 @@ fn surface_path(
             path.reverse();
             return Ok(path);
         }
-        for direction in [North, East, South, West] {
+        for direction in [North, East, South, West, NorthEast, SouthEast, SouthWest, NorthWest] {
             let (dx, dy) = direction.delta();
             let x = i32::from(cell.x) + dx;
             let y = i32::from(cell.y) + dy;
@@ -428,8 +433,7 @@ async fn step(
     admitted: &mut AdmittedSession,
     direction: StepDirection,
 ) -> TestResult {
-    let command = admitted.continuity.next_command_id;
-    super::questpc8_authored_programmes_fixtures::step(owner, admitted, command, direction).await
+    super::desert_earned_route_fixtures::step(owner, admitted, direction).await
 }
 
 fn target(owner: &ComposedFreshAdmission<'_, '_, '_>, key: u64) -> TestResult<WorldObjectTarget> {

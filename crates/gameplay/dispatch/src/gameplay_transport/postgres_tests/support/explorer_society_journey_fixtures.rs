@@ -604,11 +604,7 @@ pub(super) async fn exercise(
         Ok(())
     })
     .await?;
-    for site in [position(32132, 31688, -9), position(32133, 31689, -9), ICE] {
-        if relocate(owner, session, site).await.is_ok() {
-            break;
-        }
-    }
+    relocate(owner, session, position(ICE.x, ICE.y - 1, ICE.floor)).await?;
     tool_use(owner, session, 4872, Some(ICE)).await?;
     state(h, 7, Some((ice, 7)), &[4837, 4872]).await?;
     move_ice(owner, session, h, false).await?;

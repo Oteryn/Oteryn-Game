@@ -5,13 +5,14 @@ use super::questpc8_authored_programmes_fixtures::step;
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
 };
-use crate::content::channel_content_pin::ChannelContentPin;
+use crate::content::{NativeEntryStart, channel_content_pin::ChannelContentPin};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{
     ChannelRuntimeV1, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
 };
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::quest_log::QuestLogLines;
+use crate::gameplay_transport::spell_premium_coordinator::{SpellPremiumCoordinator, purchase_fixture};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_quests::quest::{
     loader::load_embedded_quest_state, log::loader::load_embedded_quest_log,
@@ -131,8 +132,16 @@ fn journey(web_already_burned: bool) -> TestResult {
             )?;
             assert!(claims.served.iter().any(|claim| claim.key.as_str() == CHEST_CLAIM));
 
-            let cells = world.movement_cells(deps.room.movement_cells()).map_err(debug)?;
+            let entry = activated_pin.qualified_room();
+            let cells = world.movement_cells(entry.movement_cells()).map_err(debug)?;
             let start = local(START);
+            let frame = activated_pin.frame_binding().digest();
+            deps.combat_room = Some(entry.bundle_view(
+                cells.clone(),
+                frame,
+                world.map_revision_digest(),
+                NativeEntryStart { x: start.x, y: start.y, floor: start.floor },
+            ).ok_or("Botany bundle combat room")?);
             let pin = ChannelContentPin::from_activation(
                 deps.admitted.world_id,
                 1,
@@ -191,8 +200,21 @@ fn journey(web_already_burned: bool) -> TestResult {
             admitted.runtime_actor = Some(deps.actor);
             admitted.first_entry = FirstEntryOutcome::Positioned;
             admitted.item_fence = Some(fence);
+            let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            let premium = SpellPremiumCoordinator::new(
+                consumer, Some(clock), Some(activation), Some(h.root.clone()),
+            );
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
+            owner.premium_coordinator = Some(&premium);
             owner.movement_cells = (&cells).into();
             owner.quest_catalogue = Some(Arc::clone(&catalogue));
             let log_lines = QuestLogLines::new(journal.content).ok_or("Botany journal line bounds")?;
@@ -212,6 +234,7 @@ fn journey(web_already_burned: bool) -> TestResult {
             drop(owner);
             let mut reconnected = deps.owner(&h, &authority);
             reconnected.active_generation = Some(generation);
+            reconnected.premium_coordinator = Some(&premium);
             reconnected.movement_cells = (&cells).into();
             reconnected.quest_catalogue = Some(catalogue);
             reconnected.quest_log_content = Some(log_lines);

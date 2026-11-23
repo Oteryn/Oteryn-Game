@@ -163,10 +163,24 @@ async fn scenario(admin: String) -> TestResult {
     let generation = controller.active().ok_or("native generation")?;
     let native = generation.native_gameplay().ok_or("native item provider")?;
     let world = world(native)?;
-    let cells = world
-        .movement_cells(deps.room.movement_cells())
-        .map_err(debug)?;
+    let entry = content_pin.qualified_room();
+    let cells = world.movement_cells(entry.movement_cells()).map_err(debug)?;
     let frame = content_pin.frame_binding().digest();
+    let start = local(START);
+    deps.combat_room = Some(
+        entry
+            .bundle_view(
+                cells.clone(),
+                frame,
+                world.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: start.x,
+                    y: start.y,
+                    floor: start.floor,
+                },
+            )
+            .ok_or("Ape City bundle combat room")?,
+    );
     let pin = ChannelContentPin::from_activation(
         deps.admitted.world_id,
         1,
@@ -213,6 +227,14 @@ async fn scenario(admin: String) -> TestResult {
 
     let (consumer, clock, activation, _) =
         crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+    h.root
+        .latch_premium_activation(
+            &activation.activation_id,
+            activation.switch_over_us,
+            activation.switch_over_us + 60_000_000,
+        )
+        .await
+        .map_err(debug)?;
     let premium =
         crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
             consumer,

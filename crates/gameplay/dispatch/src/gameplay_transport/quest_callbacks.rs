@@ -408,7 +408,8 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         && selector.unique.is_none()
         && selector.action.is_none()
         && let Some(appearance) = selector.appearance
-        && !map
+    {
+        let Some(id) = map
             .overlay
             .base()
             .tile(pos.x, pos.y, pos.floor)
@@ -420,11 +421,37 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                     .nth(usize::from(ordinal))
                     .map(|(id, _)| *id)
             })
-            .is_some_and(|id| map.facts.quest_callback_native_object(key, id, appearance))
-    {
+        else {
+            return false;
+        };
+        if callback
+            .key
+            .starts_with("oteryn:quest-callback/authored-new-frontier/")
+            && let Some(replacement) = callback.effects.transform
+            && matches!((appearance, replacement), (2772, 2773) | (2773, 2772))
+        {
+            // The donor binds both lever states to the same placement. The
+            // retained stack proves its identity and the live state selects
+            // which arm of action_elevator.lua may run.
+            return selector.position
+                == Some(Position {
+                    x: pos.x,
+                    y: pos.y,
+                    floor: pos.floor,
+                })
+                && selector.ordinal == Some(u16::from(ordinal))
+                && (map.facts.quest_callback_native_object(key, id, appearance)
+                    || map.facts.quest_callback_native_object(key, id, replacement))
+                && map
+                    .facts
+                    .base_entry(pos, ordinal, id)
+                    .is_some_and(|entry| entry.appearance_id == appearance);
+        }
         // An authored ordinal alias describes a bare native object. Retained
         // UID/AID bindings keep their existing source owner, including chests.
-        return false;
+        if !map.facts.quest_callback_native_object(key, id, appearance) {
+            return false;
+        }
     }
     // A position-registered USE acts on the resolved object the player clicked;
     // its native placement may be above ground. STEP still selects the floor.

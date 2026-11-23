@@ -17,7 +17,7 @@ use crate::gameplay_transport::connection::{
     ControlLossResult, ControllerBinding, FreshAdmissionAuthority, ResumeAttempt,
 };
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
-use crate::map::overlay::TilePos;
+use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::{
     loader::load_embedded_quest_state, log::loader::load_embedded_quest_log,
 };
@@ -283,6 +283,16 @@ async fn journey(h: &Harness) -> TestResult {
     let mut helper = plate_helper(h, &deps, &owner, &player).await?;
     walk(&mut owner, &mut helper, &[North]).await?;
     assert_at(&owner, &helper, tile(32225, 32268, 9)).await?;
+    let map = owner.bundle_map().ok_or("Lighthouse source map")?;
+    let stairs = tile(32225, 32282, 9);
+    let ground = map.overlay.base().tile(stairs.x, stairs.y, stairs.floor)
+        .and_then(|tile| tile.ids().first().copied())
+        .ok_or("donor staircase ground")?;
+    assert_eq!(
+        map.facts.base_entry(stairs, 0, ground).map(|entry| entry.appearance_id),
+        Some(7767),
+        "the helper's pressure plate opens the donor staircase"
+    );
     assert_state(&owner, &player, 2, &[]).await?;
 
     walk(&mut owner, &mut player, &[South, South]).await?;
@@ -417,6 +427,7 @@ async fn plate_helper(
         ..*player
     };
     owner.admit_progression_session(&mut peer).await;
+    owner.admit_quest_session(&peer).await;
     Ok(peer)
 }
 

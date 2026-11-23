@@ -4,7 +4,8 @@ use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult};
 use crate::content::NativeEntryStart;
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{
-    ChannelRuntimeV1, MovementFacing, NodeId, NpcPlacement, NpcPlacementTable, NpcPlacements,
+    ChannelRuntimeV1, MovementFacing, MovementLocalPosition, NodeId, NpcPlacement,
+    NpcPlacementTable, NpcPlacements,
 };
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -715,13 +716,9 @@ async fn walk(
 ) -> TestResult {
     use crate::content::{CollisionClass, LogicalCell};
     use crate::map::floor::{Ground, resolve_landing};
-    let at = owner
-        .runtime
-        .lock()
-        .await
-        .read_actor_position(member.runtime_actor.ok_or("actor")?)
-        .map_err(debug)?
-        .position();
+    let actor = member.runtime_actor.ok_or("actor")?;
+    let runtime = owner.runtime.lock().await;
+    let at = runtime.read_actor_position(actor).map_err(debug)?.position();
     let start = (at.x, at.y, i32::from(at.floor));
     let end = (i32::from(goal.x), i32::from(goal.y), -i32::from(goal.floor));
     let map = owner.bundle_map().ok_or("source map")?;
@@ -757,6 +754,14 @@ async fn walk(
         }
         for (direction, command) in directions {
             if let Ok(next) = resolve_landing(table, ground, |_| true, cell, direction)
+                && !runtime.position_occupied_by_other(
+                    actor,
+                    MovementLocalPosition {
+                        x: next.0,
+                        y: next.1,
+                        floor: next.2.try_into()?,
+                    },
+                ).map_err(debug)?
                 && next != start
                 && let std::collections::btree_map::Entry::Vacant(entry) = previous.entry(next)
             {
@@ -775,6 +780,7 @@ async fn walk(
         path.push(direction);
         cell = prior;
     }
+    drop(runtime);
     for direction in path.into_iter().rev() {
         super::desert_earned_route_fixtures::step(owner, member, direction).await?;
     }

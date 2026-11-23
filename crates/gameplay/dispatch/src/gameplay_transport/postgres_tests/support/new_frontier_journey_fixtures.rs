@@ -333,6 +333,7 @@ pub(super) async fn exercise(
     use_object(owner, a, pos(33056, 31527, 12), 2, Committed).await?;
     at(owner, a, MINE_EXIT).await?;
     use_object(owner, a, pos(33064, 31489, 15), 2, Committed).await?;
+    at(owner, a, MINE_EXIT).await?;
     use_object(owner, a, pos(33064, 31489, 15), 2, Committed).await?;
     at(owner, a, MINE_PLATFORM).await?;
     state(h, 11, ("mine_leader", 0), 0).await?;

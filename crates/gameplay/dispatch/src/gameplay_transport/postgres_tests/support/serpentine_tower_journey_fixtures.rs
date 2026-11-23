@@ -241,14 +241,15 @@ async fn play(h: &Harness) -> TestResult {
     assert!(hidden_placement(&owner, torch_wall, 1)?);
     progress(&owner, &admitted, h, 2).await?;
 
-    // Return portal, library door, then two retained floors of stairs and passages.
+    walk(&mut owner, &mut admitted, h, &[South, South, West], 2).await?;
+    assert_at(&owner, &admitted, START).await?;
+    // Library door, then two retained floors of stairs and passages.
     walk(
         &mut owner,
         &mut admitted,
         h,
         &[
-            South, South, West, North, West, West, West, West, South, South, South, East, East,
-            South,
+            North, West, West, West, West, South, South, South, East, East, South,
         ],
         2,
     )

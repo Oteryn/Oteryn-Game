@@ -87,6 +87,10 @@ EXPLORER_ITEMS = {4834, 4837, 4844, 4845, 4847, 4863, 4864, 4868, 4872, 9605}
 EXPLORER_CORPSES = {4378, 4992}
 EXPLORER_PROPS = {3874, 4055, 4994}
 IDS |= EXPLORER_ITEMS | EXPLORER_CORPSES | EXPLORER_PROPS
+# Shattered Isles carried rake, crystal ring, pillow, and poem scroll.
+IDS |= {3452, 6093, 6105, 6119}
+# Farmine's beaver bait is granted, consumed, and replaced during mission 02.
+IDS |= {9843}
 
 # Already present in main f5b584ef1's native provider; the existing cohort
 # cardinality includes these six shells, even when a source fact is refined.
