@@ -1,0 +1,79 @@
+{
+  "family": "item_conversion",
+  "records": [
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:item-conversion.fill-cookie-tray",
+        "revision": "craft-r1"
+      },
+      "kind": "item_conversion",
+      "recipe": {
+        "capacity_check": true,
+        "input_item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i6276",
+          "revision": "definition-r1"
+        },
+        "operands": [
+          {
+            "count": 1,
+            "effect": "CONSUME",
+            "item_id": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i6276",
+              "revision": "definition-r1"
+            },
+            "role": "USED"
+          },
+          {
+            "count": 1,
+            "effect": "TRANSFORM_TO",
+            "item_id": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3464",
+              "revision": "definition-r1"
+            },
+            "lifecycle": "REPLACE_INSTANCE",
+            "output_item_id": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i8020",
+              "revision": "definition-r1"
+            },
+            "role": "TARGET"
+          }
+        ],
+        "outputs": {
+          "entries": [],
+          "kind": "fixed"
+        },
+        "result_message": {
+          "empty": "There was just rubbish in it.",
+          "no_fish": "no fish",
+          "no_room": "not enough room",
+          "not_owner": "You are not the owner.",
+          "success": "",
+          "too_heavy": "too heavy"
+        },
+        "source": {
+          "differences": [
+            "Global uses cake dough 6276 (TibiaWiki Lump of Cake Dough, revision 1013648). Crystal uses bread dough 3604."
+          ],
+          "evidence": "OtsHypothesisOnly",
+          "line_end": 37,
+          "line_start": 35,
+          "lines": 73,
+          "path": "data-global/scripts/actions/other/baking.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "d777b7ca7bfa08f2ebb89bfd4d22e52f9df8c2b2e4e6c6e0472755d7a3604883"
+        },
+        "target": {
+          "kind": "carried"
+        },
+        "tool": "none"
+      }
+    }
+  ],
+  "schema": "OTERYN_ITEM_CONVERSION_SHARD/v1"
+}

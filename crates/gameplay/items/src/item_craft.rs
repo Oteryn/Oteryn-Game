@@ -149,9 +149,14 @@ fn catalogue_rows() -> Option<&'static [ProjectV2Declaration]> {
     }
     static ROWS: OnceLock<Option<Vec<ProjectV2Declaration>>> = OnceLock::new();
     ROWS.get_or_init(|| {
-        serde_json::from_str::<Catalogue>(include_str!("../../../../content/craft/recipes.json"))
-            .ok()
-            .map(|c| c.records)
+        let mut records = Vec::new();
+        for shard in [
+            include_str!("../../../../content/craft/recipes.json"),
+            include_str!("../../../../content/craft/carried-food.json"),
+        ] {
+            records.extend(serde_json::from_str::<Catalogue>(shard).ok()?.records);
+        }
+        Some(records)
     })
     .as_deref()
 }
@@ -376,6 +381,36 @@ pub fn output_definition(
         production_key: production.production_key.clone(),
         revision_ref: production.revision_ref.clone(),
     })
+}
+
+#[cfg(test)]
+mod carried_food_tests {
+    use super::*;
+    use oteryn_gameplay_content::content::native_gameplay::test_support;
+
+    #[test]
+    fn i11_global_cookie_tray_fills_with_cake_dough() -> Result<(), Box<dyn std::error::Error>> {
+        let seed = test_support::activated_with_item_keys(None);
+        let world = seed.active().ok_or("seed")?.identity().world_id();
+        let (controller, _) = test_support::activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("native")?;
+        let item = |id| TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: format!("oteryn:item.tibia.i{id}"),
+            revision_ref: "definition-r1".into(),
+        };
+        let tray = item(3464);
+        let conversion =
+            carried_cooking_conversion_with_quantity(native, &item(6276), &tray, None, 1)
+                .ok_or("Global cookie tray fill")?;
+        assert_eq!(conversion.target_debit, 1);
+        assert_eq!(conversion.conversion.outputs, [(item(8020), 1)]);
+        assert!(carried_cooking_conversion(native, &item(3604), &tray).is_none());
+        Ok(())
+    }
 }
 
 #[cfg(test)]
