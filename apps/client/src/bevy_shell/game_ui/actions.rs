@@ -62,6 +62,7 @@ enum ActionControl {
     Slot(usize),
     Lock(usize),
     Scroll(usize, i8),
+    Jump(usize, i8),
 }
 /// A row of the slot popup menu.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
@@ -98,6 +99,8 @@ struct DockAnchor(crate::play::BarDock);
 #[derive(Component)]
 struct SlotCaption(usize);
 #[derive(Component)]
+struct SlotCooldown(usize);
+#[derive(Component)]
 struct ActionHint;
 #[derive(Component)]
 struct CooldownLine;
@@ -115,6 +118,7 @@ pub(super) fn install(app: &mut App) {
                 projection::project,
                 editor::project,
                 cooldown::project,
+                projection::slot_timers,
             )
                 .chain(),
         );
@@ -179,13 +183,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                 },
             ))
             .id();
-        let previous = button(
-            &mut commands,
-            &skins,
-            ActionControl::Scroll(bar, -1),
-            SCROLL_SIZE,
-            "<",
-        );
+        let previous = arrows(&mut commands, &skins, bar, -1);
         commands.entity(row).add_child(previous);
         for local in 0..ROW_SLOTS {
             let slot = bar * ROW_SLOTS + local;
@@ -238,16 +236,27 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                     },
                 ))
                 .id();
-            commands.entity(entity).add_children(&[caption, hotkey]);
+            let overlay = commands
+                .spawn((
+                    SlotCooldown(slot),
+                    Name::new(format!("Action slot {} cooldown", slot + 1)),
+                    Pickable::IGNORE,
+                    Node {
+                        position_type: PositionType::Absolute,
+                        bottom: px(0.),
+                        width: percent(100.),
+                        display: Display::None,
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgba(0., 0., 0., 0.5)),
+                ))
+                .id();
+            commands
+                .entity(entity)
+                .add_children(&[overlay, caption, hotkey]);
             commands.entity(row).add_child(entity);
         }
-        let next = button(
-            &mut commands,
-            &skins,
-            ActionControl::Scroll(bar, 1),
-            SCROLL_SIZE,
-            ">",
-        );
+        let next = arrows(&mut commands, &skins, bar, 1);
         // The bar's lock replaces the old "1 on / Locked" configuration row.
         let lock = control_button(&mut commands, &skins, ActionControl::Lock(bar), LOCK_SIZE.x);
         commands
@@ -303,6 +312,35 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
     commands
         .entity(regions.bars)
         .add_children(&[cooldown, hint]);
+}
+
+#[derive(Component)]
+struct ArrowGroup(usize);
+
+fn arrows(commands: &mut Commands, skins: &Skins, bar: usize, step: i8) -> Entity {
+    let first = step < 0;
+    let single = button(
+        commands,
+        skins,
+        ActionControl::Scroll(bar, step),
+        SCROLL_SIZE,
+        if first { "<" } else { ">" },
+    );
+    let jump = button(
+        commands,
+        skins,
+        ActionControl::Jump(bar, step),
+        SCROLL_SIZE,
+        if first { "«" } else { "»" },
+    );
+    let caption = if first { "First" } else { "Last" };
+    commands
+        .entity(jump)
+        .insert(Name::new(format!("{caption} action button {}", bar + 1)));
+    commands
+        .spawn((ArrowGroup(bar), Node::default()))
+        .add_children(&[single, jump])
+        .id()
 }
 
 fn button(
@@ -446,10 +484,15 @@ fn activate(
             }
         }
         ActionControl::Lock(bar) => configure(&play.link, bar, false, true),
-        ActionControl::Scroll(bar, by) => {
+        ActionControl::Jump(bar, by) | ActionControl::Scroll(bar, by) => {
             let row = &layout.rows[bar];
             let visible = row.visible_slots(capacities.0[bar]);
             let last = usize::from(row.count) - visible.len();
+            let by = if matches!(control, ActionControl::Jump(..)) {
+                by * ROW_SLOTS as i8
+            } else {
+                by
+            };
             let next = visible
                 .start
                 .saturating_add_signed(isize::from(by))
@@ -468,10 +511,14 @@ fn configure(link: &crate::play::PlayLink, bar: usize, hide: bool, lock: bool) {
     let Some(row) = layout.rows.get(bar) else {
         return;
     };
-    link.bar_gesture(BarGesture::Configure {
-        bar,
-        dock: row.dock,
-        enabled: row.enabled != hide,
-        locked: row.locked != lock,
-    });
+    for (index, other) in layout.rows.iter().enumerate() {
+        if index == bar || lock && other.dock == row.dock {
+            link.bar_gesture(BarGesture::Configure {
+                bar: index,
+                dock: other.dock,
+                enabled: other.enabled != (index == bar && hide),
+                locked: row.locked != lock,
+            });
+        }
+    }
 }

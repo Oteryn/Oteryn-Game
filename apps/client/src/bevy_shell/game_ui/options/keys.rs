@@ -45,6 +45,7 @@ pub(super) fn build(
     skins: &Skins,
     draft: &ReferencePreferences,
     selected: Option<&'static str>,
+    search: &str,
 ) {
     section::label(
         commands,
@@ -52,6 +53,9 @@ pub(super) fn build(
         skins,
         "Key Bindings: choose an action, type a chord (for example CTRL+SHIFT+F1), then set it.",
     );
+    section::label(commands, parent, skins, "Search actions by name");
+    let field = section::field(commands, parent, skins, "hotkeys.binding.search", search);
+    commands.entity(field).insert(SearchField);
     let list = commands
         .spawn((
             bevy::ui_widgets::ScrollArea,
@@ -84,8 +88,6 @@ pub(super) fn build(
     }
     let selected = selected.and_then(|id| bindings.iter().find(|binding| binding.id == id));
     let chord = selected.map_or("", |binding| draft.binding_chord(binding));
-    // Extra action-bar slots keep a single key, so they offer no secondary controls.
-    let single = selected.is_some_and(PreferenceBinding::is_extra_action_bar_slot);
     let field = section::field(commands, parent, skins, "hotkeys.binding.chord", chord);
     commands.entity(field).insert(ChordField);
     let bar = section::bar(commands, parent);
@@ -103,11 +105,32 @@ pub(super) fn build(
         ),
         ("Default", Action::Default, "hotkeys.binding.default"),
     ] {
-        if single && matches!(action, Action::Secondary | Action::ClearSecondary) {
-            continue;
-        }
         let button = section::action(commands, bar, skins, text, 110., id, false);
         commands.entity(button).insert(action).observe(activate);
+    }
+}
+
+#[derive(Component)]
+pub(super) struct SearchField;
+
+pub(super) fn filter(
+    fields: Query<&EditableText, (With<SearchField>, Changed<EditableText>)>,
+    mut rows: Query<(&Action, &mut Node)>,
+    mut state: ResMut<OptionsState>,
+) {
+    let Ok(field) = fields.single() else {
+        return;
+    };
+    state.search = field.value().to_string();
+    let query = state.search.trim().to_ascii_lowercase();
+    for (action, mut node) in &mut rows {
+        if let Action::Pick(id) = action {
+            node.display = if id.replace('-', " ").contains(&query) {
+                Display::Flex
+            } else {
+                Display::None
+            };
+        }
     }
 }
 
@@ -115,6 +138,8 @@ pub(super) fn build(
 /// Extra action-bar slots are unbound in their own action-bar storage.
 fn restore(p: &mut ReferencePreferences, binding: &PreferenceBinding) -> Result<(), String> {
     if binding.is_extra_action_bar_slot() {
+        p.rebind_secondary(binding.id, "")
+            .map_err(|error| error.to_string())?;
         return p.rebind(binding.id, "").map_err(|error| error.to_string());
     }
     if binding.default_chord.is_empty() {
@@ -164,9 +189,6 @@ pub(super) fn activate(
             Action::Primary => p
                 .rebind(binding.id, &chord)
                 .map_err(|error| error.to_string()),
-            Action::Secondary | Action::ClearSecondary if binding.is_extra_action_bar_slot() => {
-                Err("Action bar slots take a single key".into())
-            }
             Action::Secondary => p
                 .rebind_secondary(binding.id, &chord)
                 .map_err(|error| error.to_string()),
@@ -311,10 +333,22 @@ mod tests {
                     .editor_mut()
                     .set_text("CTRL+ALT+SHIFT+F8");
                 press(&mut app, Action::Secondary);
+                app.world_mut().non_send_mut::<HostOwner>().apply(false);
+                let mut saved = crate::play::SettingsState::new(Some(path.clone()));
                 assert_eq!(
-                    app.world().non_send::<HostOwner>().settings.feedback,
-                    "Action bar slots take a single key"
+                    saved
+                        .preferences
+                        .secondary_keybindings
+                        .get(id)
+                        .map(String::as_str),
+                    Some("CTRL+ALT+SHIFT+F8")
                 );
+                for chord in ["CTRL+ALT+SHIFT+F9", "CTRL+ALT+SHIFT+F8"] {
+                    saved.input(&[key(chord)?]);
+                    assert!(
+                        matches!(saved.take_custom_actions().as_slice(), [crate::play::CustomAction::ActionBar { slot: bound }] if *bound == slot)
+                    );
+                }
                 press(&mut app, Action::Default);
                 assert_eq!(chord(&app)?, "", "slot {slot}");
                 app.world_mut().non_send_mut::<HostOwner>().apply(false);

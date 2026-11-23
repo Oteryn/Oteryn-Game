@@ -336,3 +336,18 @@ fn successful_private_send_clears_only_the_submitted_draft() -> Result<(), Error
 
 #[path = "../native.rs"]
 mod native_controls;
+
+#[cfg(bevy_shell)]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_vip_owned_channel(&self) {
+        self.chat_private_publish(&Peer {
+            commands: Default::default(),
+            list: ChatChannelList {
+                own_channel: Some(100),
+                ..Default::default()
+            },
+            lines: Vec::new(),
+            extras: Default::default(),
+        });
+    }
+}

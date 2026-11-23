@@ -1,21 +1,25 @@
 use super::*;
 
 /// Diagnostic state only; the lock is never held across an await.
-pub(super) struct EntryPhase(std::sync::Mutex<&'static str>);
+pub(super) struct EntryPhase(std::sync::Mutex<(&'static str, Option<u64>)>);
 
 impl Default for EntryPhase {
     fn default() -> Self {
-        Self(std::sync::Mutex::new("resolve_session"))
+        Self(std::sync::Mutex::new(("resolve_session", None)))
     }
 }
 
 impl EntryPhase {
     pub(super) fn set(&self, phase: &'static str) {
-        *self.0.lock().unwrap_or_else(|error| error.into_inner()) = phase;
+        *self.0.lock().unwrap_or_else(|error| error.into_inner()) = (phase, None);
+    }
+
+    pub(super) fn set_familiar_login_attempts(&self, attempts: u64) {
+        self.0.lock().unwrap_or_else(|error| error.into_inner()).1 = Some(attempts);
     }
 
     pub(super) fn current(&self) -> &'static str {
-        *self.0.lock().unwrap_or_else(|error| error.into_inner())
+        self.0.lock().unwrap_or_else(|error| error.into_inner()).0
     }
 }
 
@@ -56,7 +60,13 @@ pub(super) async fn enter_with_retry(
         }
         _ => "unplayable",
     };
-    record_entry_decision(outcome, attempts, started.elapsed(), phase.current());
+    let (phase, phase_attempts) = *phase.0.lock().unwrap_or_else(|error| error.into_inner());
+    record_entry_decision(
+        outcome,
+        phase_attempts.unwrap_or(attempts),
+        started.elapsed(),
+        phase,
+    );
     result
 }
 

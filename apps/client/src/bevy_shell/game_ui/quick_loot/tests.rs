@@ -198,6 +198,32 @@ fn destination_remains_unconfirmed_until_accepted_and_refusal_preserves_it() -> 
     config_response(&outbox, CommandStatus::Accepted)?;
     app.update();
     assert_eq!(panel(&app)?.destinations, vec![assignment.clone()]);
+    let backpack = oteryn_session::ItemEntry {
+        handle: 10.try_into()?,
+        item_definition_ref: 42.try_into()?,
+        appearance_id: 0,
+        count: 1.try_into()?,
+        sub_type: 0,
+    };
+    crate::play::PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(oteryn_session::CharacterInventory {
+            main_backpack: Some(backpack),
+            ..default()
+        }),
+        Some(Default::default()),
+        true,
+        true,
+    );
+    let open = control(&mut app, Kind::OpenDestination(Some(Category::Gold)))?;
+    app.world_mut().trigger(Activate { entity: open });
+    assert_eq!(
+        commands.try_recv()?,
+        PlayCommand::ContainerView(oteryn_session::container_tree::ContainerViewIntent::Open {
+            handle: backpack.handle,
+            replace_view: None
+        })
+    );
     let toggle = control(
         &mut app,
         Kind::Request(destination(Some(Category::Gold), true)),
@@ -564,6 +590,35 @@ fn confirmed_filter_mutations_update_the_displayed_mode() -> TestResult {
         config_response(&outbox, CommandStatus::Accepted)?;
         app.update();
         assert!(has_label(&mut app, label));
+    }
+    Ok(())
+}
+
+#[test]
+fn loot_navigation_opens_catalogue_and_store_from_panel() -> TestResult {
+    for (label, catalogue) in [("Item Catalogue", true), ("Get Premium", false)] {
+        let (mut app, _commands, _) = fixture(true)?;
+        open(&mut app)?;
+        let entity = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == label).then_some(parent.parent()))
+            .ok_or(label)?;
+        app.world_mut().trigger(Activate { entity });
+        let link = &app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link;
+        assert!(!link.quick_loot_panel().open);
+        if catalogue {
+            assert!(link.discovery_panel().inspection.catalogue_open);
+        } else {
+            assert!(link.store_panel().open);
+        }
     }
     Ok(())
 }

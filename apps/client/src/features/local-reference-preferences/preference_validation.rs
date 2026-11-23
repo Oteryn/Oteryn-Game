@@ -44,6 +44,11 @@ impl ReferencePreferences {
     }
 
     pub(crate) fn validate(&self) -> Result<(), PreferenceError> {
+        if self.outfit_presets.len() > 64 || self.outfit_presets.iter().any(|(name, (fields, _))| {
+            name.trim().is_empty() || name.len() > 128 || name.chars().any(char::is_control) || fields.iter().any(|field| field.len() > 255 || field.chars().any(char::is_control))
+        }) {
+            return Err(PreferenceError);
+        }
         if !self.hud_layout.valid() || !self.graphics.valid() || !self.performance.valid() {
             return Err(PreferenceError);
         }
@@ -102,8 +107,16 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
-        if self.tooltip_delay_ms > 3000
+        if self.game_window.loot_style > 2 || self.game_window.upper_pane_height > 600 || self.graphics.monitor > 32 || self.tooltip_delay_ms > 3000
             || self.arc_opacity > 100
+            || self.console.conversations.len() > 128
+            || self
+                .console
+                .conversations
+                .iter()
+                .any(|s| s.trim().is_empty() || s.len() > 120 || s.contains('\0'))
+            || self.gameplay.loot_click > 3
+            || self.miscellaneous.character_sort_column > 2
             || !(10..=32).contains(&self.console_font_px)
             || !crate::play::feature_0017_attack::view::validate_lists(&self.battle_lists)
             || self.arc_distance > 80

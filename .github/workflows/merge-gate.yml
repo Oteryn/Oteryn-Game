@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - main
+      - staging
     types:
       - opened
       - reopened
@@ -23,7 +24,7 @@ concurrency:
 jobs:
   scope:
     name: Merge gate / scope
-    if: github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref
+    if: github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -33,6 +34,7 @@ jobs:
       pr_number: ${{ steps.detect.outputs.pr_number }}
       target_sha: ${{ steps.detect.outputs.target_sha }}
       base_sha: ${{ steps.detect.outputs.base_sha }}
+      base_ref: ${{ steps.detect.outputs.base_ref }}
       file_records: ${{ steps.detect.outputs.file_records }}
       file_count: ${{ steps.detect.outputs.file_count }}
       complete: ${{ steps.detect.outputs.complete }}
@@ -42,6 +44,8 @@ jobs:
         env:
           EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
           EVENT_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_BASE_FROM: ${{ github.event.changes.base.ref.from }}
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
         run: |
@@ -55,7 +59,17 @@ jobs:
           repository = os.environ['REPOSITORY']
           number_text = os.environ.get('EVENT_PR_NUMBER', '').strip()
           expected_head = os.environ.get('EVENT_PR_HEAD_SHA', '').strip().lower()
+          # A rerun keeps the original event: qualify only the base that event targeted.
+          event_base_ref = os.environ.get('EVENT_PR_BASE_REF', '').strip()
+          # game-gate has one name for both bases: a retarget must not let the
+          # old base's success stand while the new run is pending. It fails
+          # until a new push qualifies the head for the new base.
+          retarget_from = os.environ.get('EVENT_BASE_FROM', '').strip()
           errors: list[str] = []
+          if retarget_from:
+              errors.append(
+                  f'pull request was retargeted from {retarget_from}; push a new commit to qualify the new base'
+              )
 
           if re.fullmatch(r'[1-9][0-9]*', number_text) is None:
               errors.append('pull request number must be a positive integer')
@@ -94,8 +108,10 @@ jobs:
               errors.append('pull request head moved after event head was resolved')
           if head_repository != repository:
               errors.append('merge gate only accepts same-repository pull request heads')
-          if base_ref != 'main':
-              errors.append('merge gate only accepts pull requests targeting main')
+          if base_ref not in ('main', 'staging'):
+              errors.append('merge gate only accepts pull requests targeting main or staging')
+          if base_ref != event_base_ref:
+              errors.append('pull request base ref differs from the event base ref')
           if re.fullmatch(r'[0-9a-f]{40}', base_sha) is None:
               errors.append('pull request base SHA is invalid')
           if type(changed_files) is not int or changed_files < 0:
@@ -137,7 +153,7 @@ jobs:
                   errors.append('pull request repository changed during scope classification')
               if pull_after_files.get('base', {}).get('sha', '').lower() != base_sha:
                   errors.append('pull request base moved during scope classification')
-              if pull_after_files.get('base', {}).get('ref') != 'main':
+              if pull_after_files.get('base', {}).get('ref') != base_ref:
                   errors.append('pull request base ref changed during scope classification')
               changed_files_after = pull_after_files.get('changed_files')
               if type(changed_files_after) is not int or changed_files_after < 0:
@@ -167,6 +183,7 @@ jobs:
               output.write(f'pr_number={number_text}\n')
               output.write(f'target_sha={head_sha}\n')
               output.write(f'base_sha={base_sha}\n')
+              output.write(f'base_ref={base_ref}\n')
               output.write(f'file_count={changed_files}\n')
               output.write(f'file_records={serialized}\n')
               output.write(f"complete={'true' if complete else 'false'}\n")
@@ -276,6 +293,7 @@ jobs:
     steps:
       - name: Verify pull request metadata
         env:
+          EXPECTED_BASE_REF: ${{ needs.scope.outputs.base_ref }}
           EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
           GH_TOKEN: ${{ github.token }}
           PULL_NUMBER: ${{ needs.scope.outputs.pr_number }}
@@ -315,8 +333,8 @@ jobs:
               errors.append('pull request head moved after scope validation')
           if head_repository != repository:
               errors.append('merge gate only accepts same-repository pull request heads')
-          if base_ref != 'main':
-              errors.append('merge gate only accepts pull requests targeting main')
+          if base_ref not in ('main', 'staging') or base_ref != os.environ['EXPECTED_BASE_REF']:
+              errors.append('pull request base ref differs from the qualified base ref')
 
           warnings: list[str] = []
           pattern = re.compile(
@@ -437,7 +455,7 @@ jobs:
       contents: read
     steps:
       - name: Review dependency changes
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           fail-on-severity: high
           base-ref: ${{ needs.scope.outputs.base_sha }}
@@ -1551,7 +1569,7 @@ jobs:
 
   validate:
     name: Merge gate / validate
-    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
+    if: always() && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref)
     needs: [scope, lanes, governance, dependency_review, routing_contract, world_bundle, rust_policy, runner_route, rust_fast_build, rust_fast, rust_clippy, rust_supply_chain, rust_client_ui]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1639,7 +1657,7 @@ jobs:
 
   game_gate:
     name: game-gate
-    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
+    if: always() && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref)
     needs: [scope, lanes, rust_fast_build, validate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1663,6 +1681,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
           EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
+          EXPECTED_BASE_REF: ${{ needs.scope.outputs.base_ref }}
         run: |
           python - <<'PY'
           import json
@@ -1689,7 +1708,8 @@ jobs:
           if (pull.get('number') != int(number) or pull.get('state') != 'open'
               or pull.get('head', {}).get('sha') != expected_head
               or pull.get('head', {}).get('repo', {}).get('full_name') != repository
-              or pull.get('base', {}).get('ref') != 'main'
+              or pull.get('base', {}).get('ref') not in ('main', 'staging')
+              or pull.get('base', {}).get('ref') != os.environ['EXPECTED_BASE_REF']
               or pull.get('base', {}).get('sha') != expected_base):
               raise SystemExit('isolated edit target changed after qualification; current qualification is required')
           print('Isolated edit still matches the qualified live head and base.')

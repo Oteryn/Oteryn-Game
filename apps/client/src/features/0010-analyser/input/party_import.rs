@@ -25,6 +25,7 @@ fn read_summary(path: &Path) -> io::Result<Summary> {
     Summary::parse(&text).map_err(io::Error::other)
 }
 fn apply(panel: &mut Panel, imported: Summary) {
+    panel.party_split_error = None;
     panel.party_import = Some(imported);
     panel.tool = Tool::Party;
     panel.feedback = None;
@@ -32,6 +33,9 @@ fn apply(panel: &mut Panel, imported: Summary) {
 pub(super) fn export(panel: &Panel, path: &Path) -> io::Result<()> {
     if !panel.selected {
         return Err(io::Error::other(tr!("No active analyser session")));
+    }
+    if let Some(error) = panel.party_split_error {
+        return Err(io::Error::other(error));
     }
     let text = if let Some(imported) = &panel.party_import {
         imported.export()
@@ -69,6 +73,43 @@ pub(super) fn submit(panel: &mut Panel, importing: bool, path: Option<&str>) -> 
     result.is_ok()
 }
 impl PlayLink {
+    pub fn analyser_feedback(&self, message: &'static str) {
+        lock(&self.mailbox).analyser.feedback = Some(message);
+    }
+    pub fn analyser_split_party(&self) -> Option<String> {
+        let mut mailbox = lock(&self.mailbox);
+        let leader = mailbox
+            .party
+            .state
+            .as_ref()
+            .and_then(|state| state.members.iter().find(|member| member.leader))
+            .map(|member| member.name.clone());
+        let log = oteryn_client_ui::analyser::party::handoff(&mut mailbox.analyser, leader);
+        if log.is_none() {
+            mailbox.analyser.feedback =
+                Some("Refresh complete party measurements before splitting");
+        }
+        log
+    }
+    pub fn analyser_paste_hunt(&self, log: &str) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        match Summary::from_hunt_log(log) {
+            Ok(summary) => apply(panel, summary),
+            Err(error) => {
+                panel.party_split_error = Some(error);
+                panel.party_import = None;
+                panel.feedback = Some(error);
+            }
+        }
+    }
+    pub fn analyser_edit_split(&self, name: &str, cost: Option<&str>, excluded: Option<bool>) {
+        oteryn_client_ui::analyser::party::edit(
+            &mut lock(&self.mailbox).analyser,
+            name,
+            cost,
+            excluded,
+        );
+    }
     pub fn analyser_import_party(&self, path: &Path) -> io::Result<()> {
         if !lock(&self.mailbox).analyser.selected {
             return Err(io::Error::other(tr!("No active analyser session")));

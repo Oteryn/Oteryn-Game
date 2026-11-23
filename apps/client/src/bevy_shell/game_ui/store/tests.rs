@@ -298,3 +298,20 @@ fn store_gift_panel() -> ResultTest {
 }
 
 include!("store_session_cases.rs");
+
+#[test]
+fn disabling_store_confirmation_submits_the_displayed_quote() -> ResultTest {
+    let (mut app, mut rx, _) = fixture(250)?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .confirm_store_purchase = false;
+    click(&mut app, Kind::Buy)?;
+    let quote = wire::decode_purchase_request(&command(&mut rx)?.payload)
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(quote.catalog_revision, "server-revision");
+    assert_eq!(quote.price, 100);
+    assert!(app.world().resource::<State>().confirmation.is_none());
+    Ok(())
+}

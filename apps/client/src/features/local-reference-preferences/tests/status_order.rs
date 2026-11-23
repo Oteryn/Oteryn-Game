@@ -18,6 +18,7 @@ fn status_order_settings_reach_confirmed_panels_and_survive_restart()
     assert!(preferences.move_status_entry(false, 1, false));
     assert!(!preferences.move_status_entry(false, 0, false));
     assert!(!preferences.move_status_entry(true, 7, true));
+    preferences.status_bar_visible = false;
     preferences.status_panel_visible = false;
     settings.apply(preferences);
     let (link, _, outbox) = play_channel();

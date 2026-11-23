@@ -12,16 +12,27 @@
 //!    position delta.  This proves an invalid destination is not mistaken for map reachability.
 //! 5. Log out, obtain a fresh admission, and require a new game session at the last reached cell;
 //!    NPC dialogue is static population, so no inventory, quest, or economy mutation is expected.
-//! 6. Only after the real STEP/TARGET_WALK attempts, report the first observed refusal, missing
-//!    delta, or bounded timeout.  The row cannot pass unless all authored Summer NPC destinations
-//!    and their replies were reached through player movement; the owner's boss profiles have no
-//!    authored player-reachable spawn/encounter command in the compiled world and therefore do
-//!    not get source-only or synthetic PASS evidence here.
+//! 6. Follow the compiled Radiant spawn routes and require each live creature in the roster.
+//!    Report the missing player-facing boss encounters after the population checks.
+
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 
+const SUMMER_ACTORS: &[(&str, &str)] = &[
+    ("radiant_acolyte", "Radiant Acolyte"),
+    ("radiant_inquisitor", "Radiant Inquisitor"),
+    ("radiant_paragon", "Radiant Paragon"),
+    ("radiant_templar", "Radiant Templar"),
+    ("radiant_warden", "Radiant Warden"),
+    ("radiant_zealot", "Radiant Zealot"),
+];
+
 const NPCS: [&str; 2] = ["oteryn:npc.mayor_pocaro", "oteryn:npc.wayland_smythers"];
+
+fn summer_placements_match(mayor: usize, wayland: usize) -> bool {
+    mayor == 1 && wayland == 2
+}
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -29,7 +40,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
-            "all-summer-map-and-dialogue-steps-validated".to_owned(),
+            "all-summer-map-dialogue-and-population-steps-validated".to_owned(),
         ),
         Ok(Err(error)) => ("FAIL", evidence_token(&error.to_string())),
         Err(_) => (
@@ -37,6 +48,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "step=summer-route-observed=deadline-timeout".to_owned(),
         ),
     };
+    if status == "FAIL" {
+        evidence(&format!("W16_GAP {detail}"));
+    }
     evidence(&format!(
         "SEAM_EVIDENCE e2e_all scenario=W16.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
@@ -46,12 +60,24 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let mut client = connect_world(clients, 0xb6).await?;
 
     // The first mechanic command is deliberately local and must produce the same real delta as
     // every other player walk.  It prevents a missing remote route from becoming a probe-only row.
     let before = client.world_spatial().actor_position;
-    let step = client.step_retrying(StepDirection::East).await?;
+    let start = tile(before)?;
+    let direction = [StepDirection::East, StepDirection::North, StepDirection::West, StepDirection::South]
+        .into_iter()
+        .find(|direction| destination(world, start, *direction).is_some())
+        .ok_or("step=initial-step observed=no-compiled-landing")?;
+    let step = client.step_retrying(direction).await?;
     if step.disposition != StepDisposition::Moved || step.world_spatial_delta.is_none() {
         return Err(format!("step=initial-step observed={step:?}").into());
     }
@@ -59,8 +85,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=initial-step observed=accepted-without-position-delta".into());
     }
 
-    let mut reached = 0usize;
-    for key in NPCS {
+    let mut reached = [0usize; 2];
+    for (index, key) in NPCS.into_iter().enumerate() {
         let npc = metadata
             .npcs
             .npcs
@@ -83,12 +109,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 .into());
             }
             wait_for_destination(&mut client, target, key).await?;
-            reached += 1;
+            reached[index] += 1;
             talk(&mut client, key, target).await?;
         }
     }
-    if reached != 3 {
-        return Err(format!("step=summer-placements observed=reached-{reached}-expected-3").into());
+    if !summer_placements_match(reached[0], reached[1]) {
+        return Err(format!("step=summer-placements observed=reached-{reached:?} need=1-Mayor-and-2-Wayland-placements").into());
     }
 
     let saved = client.world_spatial().actor_position;
@@ -110,7 +136,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=logout observed=refused".into());
     }
     drop(client);
-    let fresh = connect_world(clients, 0xb7).await?;
+    let mut fresh = connect_world(clients, 0xb7).await?;
     if fresh.world_spatial().actor_position != saved {
         return Err(format!(
             "step=fresh-admission observed={:?}-expected={saved:?}",
@@ -118,7 +144,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    Ok(())
+    for &(suffix, name) in SUMMER_ACTORS {
+        let key = format!("oteryn:creature.{suffix}");
+        super::full_row_w22a::travel_to_named_spawn(&mut fresh, world, &metadata.spawns, &key, name)
+            .await
+            .map_err(|error| format!("step=summer-population-route need={key} observed={error}"))?;
+        if !fresh.world_entities().is_some_and(|entities| {
+            entities.iter().any(|entry| {
+                entry.kind == oteryn_dev_client::EntityKind::Creature
+                    && entry.display_name.is_some_and(|label| {
+                        label.as_str().is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
+                    })
+            })
+        }) {
+            return Err(format!("step=summer-population-observation need={key} observed=no-matching-live-actor").into());
+        }
+    }
+    if fresh.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=final-logout observed=refused".into());
+    }
+    Err("step=summer-boss-encounters observed=no-authored-player-entry need=Maior-Domus,Mimar-Haffar,Phosphorus,Rakesh-Moonfang,The-Moonsnow-Magnolia".into())
 }
 
 async fn wait_for_destination(
@@ -215,6 +262,19 @@ fn evidence_token(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn review_regression_population_plan_excludes_encounter_bosses() {
+        assert_eq!(super::SUMMER_ACTORS.len(), 6);
+        assert!(super::SUMMER_ACTORS.iter().all(|(key, _)| key.starts_with("radiant_")));
+    }
+
+    #[test]
+    fn journey_regression_requires_each_summer_npcs_placements() {
+        assert!(super::summer_placements_match(1, 2));
+        assert!(!super::summer_placements_match(0, 3));
+        assert!(!super::summer_placements_match(2, 1));
+    }
+
     #[test]
     fn evidence_is_one_report_token() {
         let token = super::evidence_token("step=walk observed=Rejected [8, 1]");

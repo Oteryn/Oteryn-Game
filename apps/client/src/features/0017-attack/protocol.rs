@@ -42,6 +42,7 @@ impl crate::play::Outbox {
         panel_command: Option<CombatCommand>,
     ) {
         let mut mailbox = crate::play::mailbox::lock(&self.0);
+        mailbox.observe_capture_combat(state);
         mailbox.battle.combat = state;
         mailbox.battle_feedback(report, panel_command);
         mailbox.combat_report(report);
@@ -54,6 +55,7 @@ impl crate::play::Outbox {
         entities: &[oteryn_session::WorldSpatialEntity],
     ) {
         let mut mailbox = crate::play::mailbox::lock(&self.0);
+        mailbox.observe_capture_combat(state);
         mailbox.battle.combat = state;
         let frame = mailbox.wire_frame();
         let entities = mailbox.native_entities(entities);
@@ -64,6 +66,13 @@ impl crate::play::Outbox {
 }
 
 impl crate::play::mailbox::Mailbox {
+    fn observe_capture_combat(&mut self, state: Option<oteryn_session::ActorCombatState>) {
+        if self.battle.combat.is_some_and(|previous| previous.in_fight)
+            && state.is_some_and(|current| !current.in_fight)
+        {
+            self.capture_attackers.clear();
+        }
+    }
     /// Cursor-aimed casts name their tile in the wire frame.
     fn wire_combat(&self, command: CombatCommand) -> CombatCommand {
         let wire = |position: oteryn_session::SpellTargetPosition| {

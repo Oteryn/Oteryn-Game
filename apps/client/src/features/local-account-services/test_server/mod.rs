@@ -46,6 +46,9 @@ pub(crate) struct Authority {
     pub pending_first: bool,
     pub paginate: bool,
     pub fail_pages: bool,
+    pub status_failure: Option<u16>,
+    pub held_bazaar_status: Option<String>,
+    pub status_barrier: Option<Arc<tokio::sync::Barrier>>,
     pub offline: bool,
     pub lease_active: bool,
     pub in_guild: bool,
@@ -272,6 +275,9 @@ impl Authority {
         if method == "GET"
             && let Some(id) = target.strip_prefix("/api/v1/native-account/bazaar/commands/")
         {
+            if let Some(status) = self.status_failure {
+                return (status, String::new());
+            }
             if let Some((_, receipt)) = self.commands.get_mut(id) {
                 if receipt.state == OperationState::Pending && !self.pending_first {
                     receipt.state = OperationState::Committed;
@@ -290,11 +296,4 @@ impl Authority {
 mod http;
 
 type TestResultWith<T> = Result<T, Box<dyn std::error::Error>>;
-pub(crate) fn test_thread(test: impl FnOnce() -> TestResult + Send + 'static) -> TestResult {
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(move || test().map_err(|e| e.to_string()))?
-        .join()
-        .map_err(|_| "test thread failed")?
-        .map_err(Into::into)
-}
+pub(crate) use http::test_thread;

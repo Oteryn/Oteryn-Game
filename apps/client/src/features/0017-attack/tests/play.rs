@@ -21,7 +21,7 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
             generation: 1,
         },
         position: ActorPosition {
-            x: 1,
+            x: i32::from(id) * 2,
             y: 2,
             floor: 7,
         },
@@ -79,6 +79,18 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
         link.sync_battle_lists(&mut preferences.battle_lists, 0)
             .is_none()
     );
+    lock(&link.mailbox).wire.observe_wire(low.position);
+    for (order, expected) in [
+        ("AppearanceDescending", vec![low, player, high]),
+        ("DistanceAscending", vec![low, high, player]),
+        ("DistanceDescending", vec![player, high, low]),
+        ("NameDescending", vec![high, low, player]),
+    ] {
+        let mut lists = vec![serde_json::from_value(serde_json::json!({"sort": order}))?];
+        link.sync_battle_lists(&mut lists, 0);
+        assert_eq!(link.filtered_battle_rows(0), expected);
+    }
+    link.sync_battle_lists(&mut preferences.battle_lists, 0);
     let sorted = BattleListPreferences {
         sort: BattleSort::HealthAscending,
         ..Default::default()
@@ -565,5 +577,105 @@ impl crate::play::Outbox {
             payload: snapshot.encode().ok_or("skill fixture encode")?,
         });
         Ok(())
+    }
+}
+
+#[test]
+fn secondary_battle_list_clears_only_its_own_configuration()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::feature_0115_mail::view::form::FeatureForm;
+    let (link, _commands, _outbox) = play_channel();
+    link.battle_list_editor_open();
+    let form = *FeatureForm::all()
+        .iter()
+        .find(|f| f.title(&link) == "Battle lists")
+        .ok_or("battle form")?;
+    let original = link.battle_list_preferences();
+    link.feature_form_submit(form, 1, vec![]);
+    let mut values = link.feature_form_view(form).fields;
+    values[1] = "dragon".into();
+    link.feature_form_submit(form, 0, values);
+    let action = link
+        .feature_form_view(form)
+        .buttons
+        .iter()
+        .position(|b| *b == "Clear configurations")
+        .ok_or("clear list action")?;
+    link.feature_form_submit(form, action, vec![]);
+    let lists = link.battle_list_preferences();
+    assert_eq!(lists.len(), 2);
+    assert_eq!(lists[0], original[0]);
+    assert!(lists[1].search.is_empty());
+    Ok(())
+}
+
+#[test]
+fn visible_npc_can_be_shown_or_hidden_without_becoming_attackable()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+    };
+    let (link, mut commands, outbox) = play_channel();
+    let npc = WorldSpatialEntity {
+        position: ActorPosition {
+            x: 1,
+            y: 1,
+            floor: 7,
+        },
+        kind: EntityKind::Npc,
+        entity: EntityRef {
+            identity: [8; 16],
+            generation: 1,
+        },
+        detail: EntityDetail::Actor {
+            health_percent: 100,
+            appearance_ref: 2,
+            direction: StepDirection::South,
+        },
+        display_name: None,
+        motion: None,
+    };
+    outbox.battle_publish(
+        Some(ActorCombatState {
+            target: None,
+            modes: FightModes::DEFAULT,
+            in_fight: false,
+        }),
+        Some(7),
+        &[npc],
+    );
+    for hidden in [false, true] {
+        let mut lists = vec![serde_json::from_value(
+            serde_json::json!({"hide_npcs":hidden}),
+        )?];
+        link.sync_battle_lists(&mut lists, 0);
+        assert_eq!(link.filtered_battle_rows(0).contains(&npc), !hidden);
+        link.battle_request(Action::Attack(npc.entity));
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+impl crate::play::Outbox {
+    pub(crate) fn battle_marks_fixture(&self, entity: oteryn_session::EntityRef) {
+        use oteryn_session::guild_emblem::{Emblem, GuildEmblem};
+        lock(&self.0).properties.party_skull.icons =
+            vec![oteryn_client_runtime::party_skull::PartyIcon {
+                entity,
+                shield: 0,
+                skull: 3,
+            }];
+        self.push(vec![oteryn_session::SessionEvent::GuildEmblems(
+            oteryn_session::AppliedDelta {
+                server_sequence: 1,
+                base_revision: 0,
+                new_revision: 1,
+                value: vec![GuildEmblem {
+                    entity,
+                    emblem: Emblem::Enemy,
+                }],
+            },
+        )]);
     }
 }

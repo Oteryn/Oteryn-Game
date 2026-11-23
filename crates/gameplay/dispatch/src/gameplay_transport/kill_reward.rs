@@ -3450,9 +3450,8 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
         self.admission
             .refresh_native_objective_recipients(entry)
             .await;
-        // Row-less Grizzly/Bosstiary work never binds a corpse Item, but its final
-        // settlement must release exactly the same native projection pin as loot.
-        if entry.row.is_none() {
+        // Hold the corpse pin through all kill descendants and cache refreshes.
+        if report.verdict == SettleVerdict::Final {
             release_settled_corpse(
                 &mut *self.admission.runtime.lock().await,
                 entry,
@@ -3718,7 +3717,8 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         // corpse reward row still has a canonical death and frozen quest recipients.
         if entry.row.is_none()
             && entry.encounter_experience.is_none()
-            && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
+            && (oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
+                || super::quest_kill_objectives::has_grave_boss_credit(entry))
         {
             let Some(permit) = admission.spell_lane_permit().await else {
                 return SettleReport {
@@ -3899,11 +3899,6 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             }
             admission.credit_weapon_proficiency_kill(entry).await;
-            release_settled_corpse(
-                &mut *admission.runtime.lock().await,
-                entry,
-                SettleVerdict::Final,
-            );
             return SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
@@ -3992,11 +3987,6 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     };
                 }
             }
-            release_settled_corpse(
-                &mut *admission.runtime.lock().await,
-                &entry,
-                SettleVerdict::Final,
-            );
             return SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
@@ -4017,6 +4007,13 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 Ok(party) => Some(party),
                 Err(error) => {
                     operator_event(&format!("party_xp_settle_deferred reason={error:?}"));
+                    // A composed Quest failure must retry the entire settlement.
+                    if super::quest_kill_objectives::has_grave_boss_credit(&entry) {
+                        return SettleReport {
+                            verdict: SettleVerdict::Retry,
+                            no_progression: false,
+                        };
+                    }
                     Some(super::party_kill_settlement::SettledPartyXp {
                         xp: Err(CombatDeathRewardXpError::Progression(error)),
                         slots: Vec::new(),
@@ -4340,7 +4337,6 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         if source_plain_body && outcome.is_ok() {
             admission.states.loop_ground.invalidate();
         }
-        release_settled_corpse(&mut runtime, &entry, report.verdict);
         report
     }
 }

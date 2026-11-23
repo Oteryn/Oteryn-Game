@@ -584,6 +584,10 @@ pub(crate) fn place(
 }
 
 #[cfg(test)]
+#[path = "bundle_npcs/travel_origin_tests.rs"]
+mod travel_origin_tests;
+
+#[cfg(test)]
 #[allow(clippy::expect_used, clippy::panic, reason = "test fixtures")]
 pub(crate) mod tests {
     use super::*;
@@ -713,7 +717,7 @@ pub(crate) mod tests {
         channel_runtime_with(8)
     }
 
-    fn channel_runtime_with(capacity: usize) -> ChannelRuntimeV1 {
+    pub(super) fn channel_runtime_with(capacity: usize) -> ChannelRuntimeV1 {
         let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
             .expect("world");
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])

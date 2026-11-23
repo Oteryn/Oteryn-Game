@@ -125,6 +125,9 @@ pub(super) fn render(
     catalogue_filters(commands, skin, left, key, panel, drafts);
     let items = scroll(commands, left, Val::Auto, 1);
     for (index, ware) in panel.details.items.iter().enumerate() {
+        if !panel.matches_hand_filter(ware.definition) {
+            continue;
+        }
         button(
             commands,
             skin,
@@ -135,7 +138,17 @@ pub(super) fn render(
             140.,
         );
     }
-    if panel.details.items.is_empty() {
+    if panel.hand_filter.is_some() && panel.hand_pending.is_some() {
+        label(commands, skin, items, "Checking weapon positions…");
+    } else if panel.hand_filter.is_some()
+        && !panel
+            .details
+            .items
+            .iter()
+            .any(|w| panel.matches_hand_filter(w.definition))
+    {
+        label(commands, skin, items, "No matching weapons on this page");
+    } else if panel.details.items.is_empty() {
         label(commands, skin, items, "No catalogue items loaded");
     }
     label(
@@ -282,6 +295,36 @@ pub(super) fn render(
     }
     if let Some(feedback) = panel.details.feedback.or(panel.feedback) {
         label(commands, skin, root, feedback);
+    }
+    let services = row(commands, root);
+    button(
+        commands,
+        skin,
+        services,
+        key,
+        Kind::Funds,
+        "Check funds",
+        110.,
+    );
+    button(
+        commands,
+        skin,
+        services,
+        key,
+        Kind::Potions,
+        "Get potions",
+        110.,
+    );
+    if let Some((carried, bank)) = panel.funds {
+        label(
+            commands,
+            skin,
+            root,
+            &format!(
+                "{} gold ({carried} carried, {bank} bank)",
+                u128::from(carried) + u128::from(bank)
+            ),
+        );
     }
     // Tibia Global's bottom row: 75px buttons, Close last.
     let footer = row(commands, root);
@@ -474,6 +517,12 @@ pub(super) fn button(
             source::button(skin.buttons.clone(), width),
             Action { key, kind },
             Name::new(match kind {
+                Kind::Hands(1) => "market.filter.one_handed",
+                Kind::Hands(2) => "market.filter.two_handed",
+                Kind::Funds => "market.funds",
+                Kind::Potions => "market.potions",
+                Kind::MyLevel => "market.filter.my_level",
+                Kind::MyVocation => "market.filter.my_vocation",
                 Kind::Coins => "market.operations.coins",
                 Kind::Browse => "market.tab.browse",
                 Kind::Intent(Intent::OwnOffers) => "market.tab.own",

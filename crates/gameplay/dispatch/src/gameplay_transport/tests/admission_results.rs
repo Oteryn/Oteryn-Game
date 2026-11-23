@@ -438,3 +438,45 @@ fn account_achievements_reply_encodes_or_fails_closed() -> Result<(), Box<dyn Er
 // USE-WIRE-V1 reach (#162 5868482467). SEAM_EVIDENCE: gameplay_transport/mod.rs
 // use_object_reachable unit coverage (a genuine TOO_FAR case cannot be reached through real
 // movement in the qualified native entry room; see `use_object_reachable`'s own doc comment).
+
+
+#[test]
+fn review_admission_post_entry_has_retry_time_after_familiar_login() {
+    run_paused(async {
+        let session = GameSessionId::decode(&uuid_v7(0x40)).expect("session");
+        let budget = AdmissionRetryBudget::new(&session);
+        tokio::time::sleep(crate::durability::ROOT_RECOVERY_WINDOW).await;
+        let budget = budget.for_post_entry();
+        let mut attempts = 0;
+        let result = budget
+            .retry_unavailable(async || {
+                attempts += 1;
+                if attempts == 1 {
+                    Err(post_entry_checkout_refusal(crate::durability::DurabilityError::RootUnavailable))
+                } else {
+                    Ok(())
+                }
+            })
+            .await;
+        assert!(result.is_ok());
+        assert_eq!(attempts, 2);
+    });
+}
+
+#[test]
+fn review_admission_post_entry_definitive_refusal_does_not_retry() {
+    run_paused(async {
+        use crate::durability::character_progression::CharacterProgressionError;
+        let session = GameSessionId::decode(&uuid_v7(0x40)).expect("session");
+        let budget = AdmissionRetryBudget::new(&session).for_post_entry();
+        let now = tokio::time::Instant::now();
+        let mut attempts = 0;
+        let result = budget.retry_unavailable(async || {
+            attempts += 1;
+            Err::<(), _>(post_entry_progression_refusal(CharacterProgressionError::AuthorityRejected))
+        }).await;
+        assert!(matches!(result, Err(AdmissionRefusal::Rejected)));
+        assert_eq!(attempts, 1);
+        assert_eq!(tokio::time::Instant::now(), now);
+    });
+}

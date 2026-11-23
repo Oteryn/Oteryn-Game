@@ -12,7 +12,7 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
-async fn talk(
+pub(super) async fn talk(
     client: &mut DevClientSession,
     npc: EntityRef,
     text: &str,

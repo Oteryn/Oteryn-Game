@@ -1,4 +1,8 @@
 //! Live analyser reports over the retained session measurements.
+mod boss_rows;
+mod highs;
+mod output;
+use output::CopyReport;
 #[cfg(test)]
 mod tests;
 mod tracker;
@@ -6,7 +10,10 @@ mod widgets;
 use super::modal::ModalGuard;
 use crate::bevy_shell::{owner::HostOwner, ui::Skins};
 use bevy::{input_focus::InputFocus, prelude::*, ui_widgets::Activate};
-use oteryn_client_ui::analyser::Tool;
+use oteryn_client_ui::analyser::{
+    Tool,
+    display::{Rate, Section},
+};
 use std::collections::VecDeque;
 
 #[derive(Component)]
@@ -55,7 +62,12 @@ struct IdentityProgress {
     items: Vec<u32>,
     resolved: usize,
 }
-fn resolve_items(owner: NonSend<HostOwner>, mut previous: Local<Option<IdentityProgress>>) {
+fn resolve_items(
+    owner: NonSend<HostOwner>,
+    time: Res<Time<Real>>,
+    mut retry_at: Local<std::time::Duration>,
+    mut previous: Local<Option<IdentityProgress>>,
+) {
     let Some(play) = &owner.play else {
         *previous = None;
         return;
@@ -84,7 +96,10 @@ fn resolve_items(owner: NonSend<HostOwner>, mut previous: Local<Option<IdentityP
         resolved: panel.item_info.len(),
         items,
     };
-    if previous.as_ref() != Some(&progress) {
+    if previous.as_ref() != Some(&progress) || time.elapsed() >= *retry_at {
+        *retry_at = time
+            .elapsed()
+            .saturating_add(std::time::Duration::from_secs(2));
         if panel.catalogue_pending.is_empty()
             && progress
                 .items
@@ -100,6 +115,19 @@ fn resolve_items(owner: NonSend<HostOwner>, mut previous: Local<Option<IdentityP
 struct ConfigField(usize, Tool);
 #[derive(Clone, Copy)]
 enum ConfigKind {
+    BossSearch,
+    BossOrder(bool),
+    Copy,
+    Save(bool),
+    Handoff,
+    CopySplit,
+    Toggle(Section),
+    Target(Rate),
+    Mode,
+    ResetHigh,
+    Split,
+    Cost,
+    Include(bool),
     Goal,
     Loot,
     Supply,
@@ -132,10 +160,12 @@ fn configure(
     }
 }
 fn finish_configuration(
+    mut export: ResMut<output::ExportTask>,
+    mut commands: Commands,
     owner: NonSend<HostOwner>,
     mut pending: ResMut<ConfigPending>,
     guard: ModalGuard,
-    fields: Query<(&ConfigField, &bevy::text::EditableText)>,
+    mut fields: Query<(&ConfigField, &mut bevy::text::EditableText)>,
 ) {
     let Some(play) = &owner.play else {
         pending.0.clear();
@@ -164,7 +194,7 @@ fn finish_configuration(
             pending.0.push_front((entity, generation, tool, kind));
             break;
         }
-        let mut values: [String; 3] = default();
+        let mut values: [String; 9] = default();
         for (field, text) in &fields {
             if field.1 != tool {
                 continue;
@@ -173,7 +203,69 @@ fn finish_configuration(
                 *value = text.value().to_string();
             }
         }
+        let party_log = || {
+            let party = play.link.party_panel();
+            let leader = party
+                .state
+                .as_ref()
+                .and_then(|state| state.members.iter().find(|m| m.leader))
+                .map(|m| m.name.as_str());
+            oteryn_client_ui::analyser::party::hunt_log(&panel, leader)
+        };
         match kind {
+            ConfigKind::BossSearch => play.link.analyser_boss_search(&values[8]),
+            ConfigKind::BossOrder(name) => play.link.analyser_boss_order(name),
+            ConfigKind::Copy => {
+                let text = if tool == Tool::Hunting {
+                    oteryn_client_ui::analyser::session_text(&panel)
+                } else if tool == Tool::Party {
+                    party_log().unwrap_or_else(|| play.link.analyser_text_for(tool))
+                } else {
+                    play.link.analyser_text_for(tool)
+                };
+                commands.trigger(CopyReport(text));
+            }
+            ConfigKind::Save(json) => {
+                let status = if export.submit(generation, panel, values[7].trim().into(), json) {
+                    "Saving hunt report"
+                } else {
+                    "A hunt report is being saved"
+                };
+                play.link.analyser_feedback(status);
+            }
+            ConfigKind::Handoff => {
+                if let Some(log) = play.link.analyser_split_party()
+                    && let Some((_, mut text)) = fields
+                        .iter_mut()
+                        .find(|(field, _)| field.1 == Tool::Party && field.0 == 3)
+                {
+                    // Preserve the original multiline editor configuration when populating the clipboard log.
+                    let mut replacement = bevy::text::EditableText::new(log);
+                    replacement.allow_newlines = true;
+                    replacement.max_characters = text.max_characters;
+                    *text = replacement;
+                }
+            }
+            ConfigKind::CopySplit => {
+                if let Some(text) = oteryn_client_ui::analyser::party::instructions(&panel) {
+                    commands.trigger(CopyReport(text));
+                } else {
+                    play.link
+                        .analyser_feedback("No complete settlement to copy");
+                }
+            }
+            ConfigKind::Toggle(section) => play.link.analyser_toggle(section),
+            ConfigKind::Target(rate) => play.link.analyser_target(rate, &values[6]),
+            ConfigKind::Mode => play.link.analyser_rate_mode(tool),
+            ConfigKind::ResetHigh => play.link.analyser_reset_high(),
+            ConfigKind::Split => play.link.analyser_paste_hunt(&values[3]),
+            ConfigKind::Cost => play
+                .link
+                .analyser_edit_split(&values[4], Some(&values[5]), None),
+            ConfigKind::Include(include) => {
+                play.link
+                    .analyser_edit_split(&values[4], None, Some(!include))
+            }
             ConfigKind::Goal => {
                 play.link.analyser_xp_goal(&values[0]);
             }
@@ -194,7 +286,11 @@ fn finish_configuration(
     }
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<InputFocus>()
+    app.init_resource::<output::ExportTask>()
+        .add_systems(Update, (output::finish, output::finish_copy))
+        .init_resource::<output::CopyTask>()
+        .add_observer(output::copy)
+        .init_resource::<InputFocus>()
         .init_resource::<ConfigPending>()
         .add_systems(
             PostUpdate,
@@ -202,7 +298,10 @@ pub(super) fn install(app: &mut App) {
         )
         .add_observer(configure)
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (keyboard, resolve_items, project).chain())
+        .add_systems(
+            Update,
+            (keyboard, resolve_items, highs::sync, project).chain(),
+        )
         .add_observer(activate)
         .add_observer(refresh);
     tracker::install(app);
@@ -239,7 +338,11 @@ fn activate(
     play.link.analyser_select(control.tool.key());
     if control.reset {
         if !play.view.gameplay_input_blocked(&play.link) {
-            play.link.analyser_reset();
+            if control.tool == Tool::Hunting {
+                play.link.analyser_start_hunt();
+            } else {
+                play.link.analyser_reset();
+            }
         }
     } else {
         play.link.analyser_close();
@@ -314,7 +417,7 @@ fn project(
     for tool in &panel.open_tools {
         let mut report_panel = panel.clone();
         report_panel.tool = *tool;
-        let mut text = if *tool == Tool::Bosses {
+        let mut text = if matches!(*tool, Tool::Bosses | Tool::LootTracker) {
             play.link.analyser_text_for(*tool)
         } else {
             oteryn_client_ui::analyser::panel_text(&report_panel)
@@ -348,12 +451,24 @@ fn project(
         else {
             continue;
         };
+        if let Some(root) = window.boss_rows {
+            let bosses = play.link.boss_encounter_panel();
+            let keys = oteryn_client_ui::analyser::bosses::rows(&panel, &bosses)
+                .into_iter()
+                .map(|(key, _)| key.clone())
+                .collect::<Vec<_>>();
+            if keys != window.boss_keys {
+                boss_rows::replace(&mut commands, root, &skins, owner.generation(), &keys);
+                window.boss_keys = keys;
+            }
+        }
         if window.needs_cooldowns && !play.link.boss_encounter_panel().pending {
             play.link
                 .boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Refresh);
             window.needs_cooldowns = false;
         }
         if let Some(caption) = window.tracker_filter {
+            play.link.charm_race_names_request();
             commands
                 .entity(caption)
                 .insert(Text::new(if panel.loot_only_tracked {

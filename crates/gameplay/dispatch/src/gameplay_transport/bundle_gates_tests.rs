@@ -1106,6 +1106,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         2,
     ),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
+    ("gameplay_transport/postgres_tests/map_item_triggers.rs", 1),
+    ("gameplay_transport/postgres_tests/measuring_tibia.rs", 1),
     ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
     (
         "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
@@ -1168,7 +1170,15 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     // Soul War's Bundle fixture supplies combat only, never qualification.
     ("gameplay_transport/postgres_tests/soul_war.rs", 1),
     // I14 special-potion fixture supplies only combat; its qualified room stays None.
+    (
+        "gameplay_transport/postgres_tests/server_save_sweep_projection.rs",
+        3,
+    ),
     ("gameplay_transport/postgres_tests/special_potions.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/step_personal_encounter.rs",
+        1,
+    ),
     // Soulpit's production owner and PG fixture both withhold qualification.
     ("gameplay_transport/soulpit/content.rs", 2),
     (

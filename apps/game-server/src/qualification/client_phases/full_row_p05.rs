@@ -70,7 +70,7 @@ async fn command(
     };
     let payload = full::encode_request(&request).map_err(|error| StepFailure {
         step: 1,
-        observed: format!("request-encode-{error:?}"),
+        observed: format!("action-{action}-request-encode-{error:?}"),
         source: None,
     })?;
     let response = client
@@ -85,7 +85,7 @@ async fn command(
             verdict::record_error(verdict::IndexedError::as_error(&error));
             StepFailure {
                 step: 1,
-                observed: format!("transport-{error}"),
+                observed: format!("action-{action}-transport-{error}"),
                 source: Some(error.into()),
             }
         })?;
@@ -95,7 +95,10 @@ async fn command(
         Some(
             full::decode_reply(&response.payload).map_err(|error| StepFailure {
                 step: 1,
-                observed: format!("status-{:?}-decode-{error:?}", response.status),
+                observed: format!(
+                    "action-{action}-status-{:?}-decode-{error:?}",
+                    response.status
+                ),
                 source: None,
             })?,
         )
@@ -123,10 +126,8 @@ fn accepted(
     Ok(reply)
 }
 
-fn item_count(client: &DevClientSession) -> TestResult<u32> {
-    let definitions = provisioning::item_index()?;
-    let reference = provisioning::item_reference(&definitions, TALISMAN_ITEM)?;
-    Ok(client
+fn item_count(client: &DevClientSession, reference: std::num::NonZeroU32) -> u32 {
+    client
         .inventory()
         .map(|inventory| {
             inventory
@@ -136,7 +137,483 @@ fn item_count(client: &DevClientSession) -> TestResult<u32> {
                 .map(|entry| entry.count.get())
                 .sum()
         })
-        .unwrap_or(0))
+        .unwrap_or(0)
+}
+
+pub(super) async fn wait_for_inventory(
+    client: &mut DevClientSession,
+    step: &str,
+    committed: impl Fn(&DevClientSession) -> bool,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
+    while !committed(client) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step={step} accepted-command-inventory-delta-missing").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    Ok(())
+}
+
+pub(super) async fn complete_bounty(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    opened: &full::Reply,
+) -> TestResult<full::Reply> {
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let (index, offer) = reachable_offer(&opened.bounty.offers, |race| {
+        has_reachable_spawn(world, from, &metadata.spawns, race)
+    })
+    .ok_or_else(|| {
+        format!(
+            "step=bounty-route no reachable authored spawn for {:?}",
+            opened.bounty.offers
+        )
+    })?;
+
+    let mut state = accepted(4, command(client, 8, u16::try_from(index)?).await?)?;
+    for previous in 0..offer.required {
+        if state.bounty.active.as_ref().is_none_or(|active| {
+            active.race != offer.race
+                || active.required != offer.required
+                || active.points != offer.points
+        }) || state.bounty.current != previous
+        {
+            return Err(format!(
+                "step=bounty-selection-or-credit expected={} kills={previous}; observed={:?}",
+                offer.race, state.bounty
+            )
+            .into());
+        }
+        hunt_for_race(client, world, &metadata.spawns, &offer.race).await?;
+        state = accepted(4, command(client, 4, 0).await?)?;
+    }
+    if state.bounty.current != offer.required || state.bounty.state != 3 {
+        return Err(format!(
+            "step=bounty-completion expected={} kills={}; observed={:?}",
+            offer.race, offer.required, state.bounty
+        )
+        .into());
+    }
+    let claimed = accepted(4, command(client, 9, 0).await?)?;
+    if state.bounty_points.checked_add(u64::from(offer.points)) != Some(claimed.bounty_points) {
+        return Err(format!(
+            "step=bounty-claim balance={}->{} expected-credit={}",
+            state.bounty_points, claimed.bounty_points, offer.points
+        )
+        .into());
+    }
+    Ok(claimed)
+}
+
+fn spawn_points(spawns: &oteryn_world_bundle::spawn::Table, race: &str) -> Vec<(TilePos, u32)> {
+    spawns
+        .sources
+        .iter()
+        .flat_map(|source| {
+            source.points.iter().filter_map(move |point| {
+                spawns
+                    .creatures
+                    .get(point.creature as usize)
+                    .is_some_and(|entry| entry.key == race)
+                    .then_some((
+                        TilePos {
+                            x: point.x,
+                            y: point.y,
+                            floor: source.floor,
+                        },
+                        point.respawn_ms,
+                    ))
+            })
+        })
+        .collect()
+}
+
+fn next_to(at: TilePos, point: TilePos) -> bool {
+    at.floor == point.floor && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) <= 1
+}
+
+fn outside_spawn_view(at: TilePos, point: TilePos) -> bool {
+    at.floor == point.floor
+        && (!(-8..=9).contains(&(i32::from(point.x) - i32::from(at.x)))
+            || !(-6..=7).contains(&(i32::from(point.y) - i32::from(at.y))))
+}
+
+pub(super) async fn wait_for_spawn(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    race: &str,
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
+    use oteryn_dev_client::EntityKind;
+    let points = spawn_points(spawns, race);
+    let from = tile(client.world_spatial().actor_position)?;
+    let approach = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+            && points
+                .iter()
+                .any(|(point, _)| at != *point && next_to(at, *point))
+    };
+    let path = route(world, from, approach)
+        .ok_or_else(|| format!("step=spawn-route race={race} no reachable authored spawn"))?;
+    walk(client, world, &path).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(95);
+    verdict::Harness::global().bounded_wait(deadline, "authored-spawn-respawn");
+    let mut searched = Vec::new();
+    let mut retreat_at = Some(tokio::time::Instant::now() + Duration::from_secs(1));
+    loop {
+        let at = tile(client.world_spatial().actor_position)?;
+        if let Some(target) = client.world_entities().and_then(|entities| {
+            entities
+                .iter()
+                .find(|entity| {
+                    entity.kind == EntityKind::Creature
+                        && tile(entity.position).is_ok_and(|position| {
+                            next_to(at, position)
+                                && points.iter().any(|(point, _)| *point == position)
+                        })
+                })
+                .copied()
+        }) {
+            return Ok(target);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=spawn-respawn race={race} no creature on an adjacent authored spawn before deadline").into());
+        }
+        for (point, _) in &points {
+            if next_to(at, *point) && !searched.contains(point) {
+                searched.push(*point);
+            }
+        }
+        let visible = client
+            .world_entities()
+            .into_iter()
+            .flat_map(|entities| entities.iter())
+            .filter(|entity| entity.kind == EntityKind::Creature)
+            .filter_map(|entity| tile(entity.position).ok())
+            .filter(|at| points.iter().any(|(point, _)| point == at))
+            .find_map(|point| route(world, at, |tile| approach(tile) && next_to(tile, point)));
+        let alternate = visible.or_else(|| {
+            route(world, at, |tile| {
+                approach(tile)
+                    && points
+                        .iter()
+                        .any(|(point, _)| next_to(tile, *point) && !searched.contains(point))
+            })
+        });
+        if let Some(alternate) = alternate.filter(|path| !path.is_empty()) {
+            walk(client, world, &alternate).await?;
+            continue;
+        }
+        if retreat_at.is_some_and(|at| tokio::time::Instant::now() >= at) {
+            retreat_at = None;
+            if let Some(&(point, delay)) = points
+                .iter()
+                .find(|(point, delay)| *delay > 0 && next_to(at, *point))
+                && let Some(retreat) = route(world, at, |tile| outside_spawn_view(tile, point))
+            {
+                // Ordinary blockable points defer while a player has the cell in view.
+                walk(client, world, &retreat).await?;
+                let until = (tokio::time::Instant::now() + Duration::from_millis(u64::from(delay)))
+                    .min(deadline);
+                while tokio::time::Instant::now() < until {
+                    client.service_liveness(Duration::from_millis(100)).await?;
+                    client.take_events();
+                }
+                let from = tile(client.world_spatial().actor_position)?;
+                let path = route(world, from, |at| approach(at) && next_to(at, point)).ok_or_else(
+                    || format!("step=spawn-respawn race={race} return route missing"),
+                )?;
+                walk(client, world, &path).await?;
+            }
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+}
+
+pub(super) fn canonical_races()
+-> TestResult<&'static [(crate::domain::bestiary::BestiaryRace, u32)]> {
+    static RACES: std::sync::LazyLock<Option<Vec<(crate::domain::bestiary::BestiaryRace, u32)>>> =
+        std::sync::LazyLock::new(|| {
+            let mut races: Vec<_> =
+                crate::content::canonical_bestiary_rows(crate::content::ProjectEvidenceLimits {
+                    max_documents: 5,
+                    max_document_bytes: 2_500_000,
+                    max_total_bytes: 8_000_000,
+                    max_json_depth: 10,
+                    max_decoded_fields: 70_000,
+                    max_string_bytes: 10_000_000,
+                    max_locator_bytes: 128,
+                    max_locator_segments: 5,
+                    max_reference_records: 4096,
+                    max_import_records: 1,
+                    max_reimport_states: 1,
+                })
+                .ok()?;
+            races.sort_unstable_by(|a, b| a.0.key().cmp(b.0.key()));
+            Some(races)
+        });
+    RACES
+        .as_deref()
+        .ok_or_else(|| "canonical bestiary unavailable".into())
+}
+
+fn race_reference(race: &str) -> TestResult<std::num::NonZeroU32> {
+    let index = canonical_races()?
+        .binary_search_by(|(entry, _)| entry.key().cmp(race))
+        .map_err(|_| {
+            format!("step=hunt-credit race={race} has no canonical analyser race reference")
+        })?;
+    std::num::NonZeroU32::new(
+        u32::try_from(index)?
+            .checked_add(1)
+            .ok_or("race reference overflow")?,
+    )
+    .ok_or_else(|| "zero race reference".into())
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) struct KillSample {
+    pub race: std::num::NonZeroU32,
+    pub raw_xp: u64,
+    pub gained_xp: u64,
+    pub fire_damage: bool,
+}
+
+fn corpse_handle(detail: oteryn_dev_client::EntityDetail) -> Option<oteryn_dev_client::ItemHandle> {
+    use oteryn_dev_client::EntityDetail;
+    match detail {
+        EntityDetail::Object { item_handle, .. }
+        | EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
+        _ => None,
+    }
+}
+
+pub(super) async fn hunt_for_race(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    key: &str,
+) -> TestResult<KillSample> {
+    use oteryn_dev_client::{EntityKind, SessionEvent};
+    use oteryn_protocol_oteryn::analyser::AnalyserFact;
+    let race = race_reference(key)?;
+    let target = wait_for_spawn(client, world, spawns, key).await?;
+    let old_corpses: Vec<_> = client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| {
+            entities
+                .iter()
+                .filter(|entity| entity.kind == EntityKind::Corpse)
+                .map(|entity| entity.entity)
+        })
+        .collect();
+    client.take_events();
+    let attack = client
+        .session_mut()
+        .attack_target(Some(&target.entity))
+        .await?;
+    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+        return Err(format!("step=hunt-attack race={key} reply={attack:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    verdict::Harness::global().bounded_wait(deadline, "targeted-combat-and-credit");
+    let mut last_position = target.position;
+    let mut kills = Vec::new();
+    let mut fire_damage = false;
+    let mut experience = Vec::new();
+    let (corpse, raw_xp, gained_xp) = loop {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        for event in client.take_events() {
+            let facts = match event {
+                SessionEvent::WorldSpatialEntities(delta) => {
+                    if let Some(updated) = delta
+                        .value
+                        .update
+                        .iter()
+                        .find(|entry| entry.entity == target.entity)
+                    {
+                        last_position = updated.position;
+                    }
+                    continue;
+                }
+                SessionEvent::AnalyserFacts(delta) => delta.value,
+                SessionEvent::AnalyserAttributedFacts(delta) => {
+                    delta.value.into_iter().map(|fact| fact.fact).collect()
+                }
+                _ => continue,
+            };
+            for fact in facts {
+                match fact {
+                    AnalyserFact::Kill { race } => kills.push(race),
+                    AnalyserFact::Impact(
+                        oteryn_protocol_oteryn::analyser::AnalyserImpact::Damage {
+                            element: oteryn_protocol_oteryn::damage_element::DamageElement::Fire,
+                            ..
+                        },
+                    ) => fire_damage = true,
+                    AnalyserFact::Experience { raw, gained } => experience.push((raw, gained)),
+                    _ => {}
+                }
+            }
+        }
+        if !kills.is_empty() && kills != [Some(race)] || experience.len() > 1 {
+            client.session_mut().attack_target(None).await?;
+            return Err(format!("step=hunt-credit expected={key}/{race} observed={kills:?} experience={experience:?}").into());
+        }
+        if let [Some(_)] = kills.as_slice()
+            && let [(raw, gained)] = experience.as_slice()
+            && let Some(corpse) = client.world_entities().and_then(|entities| {
+                if entities.get(&target.entity).is_some() {
+                    return None;
+                }
+                entities
+                    .iter()
+                    .find(|entry| {
+                        entry.kind == EntityKind::Corpse
+                            && entry.position == last_position
+                            && !old_corpses.contains(&entry.entity)
+                    })
+                    .copied()
+            })
+        {
+            break (corpse, *raw, *gained);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            client.session_mut().attack_target(None).await?;
+            return Err(format!("step=hunt-credit race={key} missing target corpse, kill credit or XP; kills={kills:?} experience={experience:?}").into());
+        }
+    };
+    client.session_mut().attack_target(None).await?;
+    let handle =
+        corpse_handle(corpse.detail).ok_or("hunt corpse has no server-issued item handle")?;
+    let used = client.use_item(handle).await?;
+    if used.status != CommandStatus::Accepted
+        || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err("hunt corpse USE refused".into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while client
+        .open_container()
+        .is_none_or(|view| view.container_handle != Some(handle))
+    {
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+        if tokio::time::Instant::now() >= deadline {
+            return Err("hunt corpse container delta missing".into());
+        }
+    }
+    let entries = client
+        .open_container()
+        .ok_or("corpse view")?
+        .entries
+        .clone();
+    if let Some(item) = entries.first() {
+        let before = client
+            .inventory()
+            .ok_or("hunt backpack")?
+            .entries
+            .iter()
+            .filter(|entry| entry.item_definition_ref == item.item_definition_ref)
+            .map(|entry| u64::from(entry.count.get()))
+            .sum::<u64>();
+        let corpse_before = entries
+            .iter()
+            .filter(|entry| entry.item_definition_ref == item.item_definition_ref)
+            .map(|entry| u64::from(entry.count.get()))
+            .sum::<u64>();
+        let moved = client
+            .move_item(&oteryn_dev_client::ItemMoveIntent {
+                source: item.handle,
+                destination: oteryn_dev_client::ItemMoveDestination::MainBackpack,
+            })
+            .await?;
+        if moved.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
+            return Err(format!("hunt loot move: {moved:?}").into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let after = client
+                .inventory()
+                .ok_or("hunt inventory delta")?
+                .entries
+                .iter()
+                .filter(|entry| entry.item_definition_ref == item.item_definition_ref)
+                .map(|entry| u64::from(entry.count.get()))
+                .sum::<u64>();
+            let corpse_after = client
+                .open_container()
+                .ok_or("loot corpse delta")?
+                .entries
+                .iter()
+                .filter(|entry| entry.item_definition_ref == item.item_definition_ref)
+                .map(|entry| u64::from(entry.count.get()))
+                .sum::<u64>();
+            if after == before + u64::from(item.count.get())
+                && corpse_after + u64::from(item.count.get()) == corpse_before
+            {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err("hunt loot inventory conservation failed".into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+            client.take_events();
+        }
+    }
+    Ok(KillSample {
+        race,
+        raw_xp,
+        gained_xp,
+        fire_damage,
+    })
+}
+
+pub(super) fn has_reachable_spawn(
+    world: &BundleWorld,
+    from: TilePos,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    race: &str,
+) -> bool {
+    let points = spawn_points(spawns, race);
+    !points.is_empty()
+        && route(world, from, |at| {
+            world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+                && points
+                    .iter()
+                    .any(|(point, _)| at != *point && next_to(at, *point))
+        })
+        .is_some()
+}
+
+fn reachable_offer(
+    offers: &[full::BountyOffer],
+    mut reachable: impl FnMut(&str) -> bool,
+) -> Option<(usize, &full::BountyOffer)> {
+    offers
+        .iter()
+        .enumerate()
+        .filter(|(_, offer)| !offer.elite && offer.required > 0 && reachable(&offer.race))
+        .min_by_key(|(_, offer)| offer.required)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
@@ -155,83 +632,153 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
         before.bounty_points, before.talisman[0].level
     ));
 
-    let items_before = item_count(&client).map_err(|error| { verdict::record_error(error.as_ref()); StepFailure {
-        step: 2,
-        observed: format!("inventory-before-{error}"),
-        source: Some(error),
-    } })?;
-    let _bought = accepted(2, command(&mut client, 17, 0).await?)?;
-    let items_after = item_count(&client).map_err(|error| { verdict::record_error(error.as_ref()); StepFailure {
-        step: 2,
-        observed: format!("inventory-after-{error}"),
-        source: Some(error),
-    } })?;
-    if items_after != items_before + 1 {
-        return Err(StepFailure {
+    let reference = provisioning::item_index()
+        .and_then(|definitions| provisioning::item_reference(&definitions, TALISMAN_ITEM))
+        .map_err(|error| StepFailure {
             step: 2,
-            observed: format!(
-                "status-Accepted-refusal-0-missing-inventory-delta-before-{items_before}-after-{items_after}"
-            ),
-            source: None,
-        });
-    }
+            observed: format!("talisman-definition-{error}"),
+            source: Some(error),
+        })?;
+    let items_before = item_count(&client, reference);
+    let bought = accepted(2, command(&mut client, 17, 0).await?).map_err(|mut failure| {
+        failure.observed.push_str(";need=5000-spendable-gold;source=crates/gameplay/quests/src/quest/task_board_full.rs:604");
+        failure
+    })?;
+    let items_after = items_before.checked_add(1).ok_or_else(|| StepFailure {
+        step: 2,
+        observed: "talisman-count-overflow".into(),
+        source: None,
+    })?;
+    wait_for_inventory(&mut client, "talisman-purchase", |client| {
+        item_count(client, reference) == items_after
+    })
+    .await
+    .map_err(|error| StepFailure {
+        step: 2,
+        observed: error.to_string(),
+        source: Some(error),
+    })?;
     evidence("P05_CHECK step=2 status=PASS purchase-and-inventory-delta");
 
-    let duplicate = command(&mut client, 17, 0).await?;
-    let duplicate_reply = duplicate.1.ok_or_else(|| StepFailure {
-        step: 3,
-        observed: format!("status-{:?}-missing-reply", duplicate.0),
-        source: None,
-    })?;
-    let duplicate_items = item_count(&client).map_err(|error| { verdict::record_error(error.as_ref()); StepFailure {
-        step: 3,
-        observed: format!("inventory-{error}"),
-        source: Some(error),
-    } })?;
-    if duplicate.0 != CommandStatus::Accepted
-        || duplicate_reply.refusal == 0
-        || duplicate_items != items_after
-    {
+    // A new command ID can legitimately buy a second talisman. Keep the replay
+    // prerequisite explicit instead of spending another 5,000 gold.
+    evidence("P05_CHECK step=purchase-replay status=UNPROVEN need=exact-original-command-replay");
+
+    let mut claimed = bought.clone();
+    for _ in 0..2 {
+        if claimed.bounty_points >= u64::from(claimed.talisman[0].next_cost) {
+            break;
+        }
+        let opened = accepted(4, command(&mut client, 7, 0).await?)?;
+        claimed = complete_bounty(&mut client, clients, &opened)
+            .await
+            .map_err(|error| StepFailure {
+                step: 4,
+                observed: error.to_string(),
+                source: Some(error),
+            })?;
+    }
+    if claimed.bounty_points < u64::from(claimed.talisman[0].next_cost) {
         return Err(StepFailure {
-            step: 3,
+            step: 5,
             observed: format!(
-                "status-{:?}-refusal-{}-items-{duplicate_items}-expected-{items_after}",
-                duplicate.0, duplicate_reply.refusal
+                "upgrade-funding bounty-points={} next-cost={};need=more-completed-bounties",
+                claimed.bounty_points, claimed.talisman[0].next_cost
             ),
             source: None,
         });
     }
-    evidence("P05_CHECK step=3 status=PASS duplicate-purchase-refused-no-delta");
-
-    let opened = accepted(4, command(&mut client, 7, 0).await?)?;
-    let offer = opened.bounty.offers.first().ok_or_else(|| StepFailure {
-        step: 4,
-        observed: "status-Accepted-refusal-0-missing-bounty-offer".into(),
-        source: None,
-    })?;
-    let race = offer.race.clone();
-    let required = offer.required;
-    let selected = accepted(4, command(&mut client, 8, 0).await?)?;
-    if selected
-        .bounty
-        .active
-        .as_ref()
-        .map(|task| task.race.as_str())
-        != Some(race.as_str())
+    let prior = claimed.talisman[0];
+    let upgraded = accepted(5, command(&mut client, 18, 0).await?)?;
+    if prior.level.checked_add(1) != Some(upgraded.talisman[0].level)
+        || upgraded.talisman[0].bonus <= prior.bonus
+        || claimed
+            .bounty_points
+            .checked_sub(u64::from(prior.next_cost))
+            != Some(upgraded.bounty_points)
     {
         return Err(StepFailure {
-            step: 4,
-            observed: "status-Accepted-refusal-0-missing-selected-bounty-delta".into(),
+            step: 5,
+            observed: format!("upgrade-delta {prior:?} -> {:?}", upgraded.talisman[0]),
             source: None,
         });
     }
+    let next_cost = u64::from(upgraded.talisman[0].next_cost);
+    if next_cost > upgraded.bounty_points {
+        let refused = command(&mut client, 18, 0).await?;
+        if !matches!(refused, (CommandStatus::Accepted, Some(ref reply)) if reply.refusal == 4
+            && reply.talisman == upgraded.talisman && reply.bounty_points == upgraded.bounty_points)
+        {
+            return Err(StepFailure {
+                step: 5,
+                observed: format!("unaffordable-upgrade refusal/state mismatch {refused:?}"),
+                source: None,
+            });
+        }
+    } else {
+        evidence(
+            "P05_CHECK step=unaffordable-upgrade status=UNPROVEN need=balance-below-next-cost",
+        );
+    }
+    let saved = accepted(7, command(&mut client, 4, 0).await?)?;
+    logout(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_character(clients, 0xd6, 0)
+        .await
+        .map_err(|error| StepFailure {
+            step: 7,
+            observed: format!("fresh-admission-{error}"),
+            source: Some(error),
+        })?;
+    let persisted = accepted(7, command(&mut fresh, 4, 0).await?)?;
+    if persisted != saved || item_count(&fresh, reference) != items_after {
+        return Err(StepFailure {
+            step: 7,
+            observed: "fresh-admission lost board or talisman custody".into(),
+            source: None,
+        });
+    }
+    logout(&mut fresh).await?;
     Err(StepFailure {
-        step: 4,
-        observed: format!(
-            "status-Accepted-refusal-0-combat-route-needed-race-{race}-required-{required}"
-        ),
+        step: 6,
+        observed: "need=exact-original-purchase-command-replay-and-wire-equipment-slot-10-for-talisman-combat-and-loot;source=crates/protocol-oteryn/src/item_view.rs:209".into(),
         source: None,
     })
+}
+
+pub(super) async fn logout_after_combat(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    verdict::Harness::global().bounded_wait(deadline, "logout-combat-lock");
+    loop {
+        let result = client.session_mut().logout().await?.result;
+        let retry = match result {
+            Some(LogoutResult::Accepted) => return Ok(()),
+            Some(LogoutResult::Busy) => Duration::from_millis(250),
+            Some(LogoutResult::InFight { retry_after_ms }) => {
+                Duration::from_millis(u64::from(retry_after_ms).max(100))
+            }
+            _ => return Err(format!("step=logout observed={result:?}").into()),
+        };
+        let until = (tokio::time::Instant::now() + retry).min(deadline);
+        while tokio::time::Instant::now() < until {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=logout retry deadline observed={result:?}").into());
+        }
+    }
+}
+
+async fn logout(client: &mut DevClientSession) -> Result<(), StepFailure> {
+    logout_after_combat(client)
+        .await
+        .map_err(|error| StepFailure {
+            step: 7,
+            observed: error.to_string(),
+            source: Some(error),
+        })
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -239,6 +786,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result =
         verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
             .await;
+    match &result {
+        Ok(Ok(())) => evidence("P05_GAP status=PASS"),
+        Ok(Err(error)) => evidence(&format!("P05_GAP status=FAIL observed={error}")),
+        Err(_) => evidence("P05_GAP status=FAIL step=deadline observed=no-reply"),
+    }
     match result {
         Ok(Ok(())) => evidence(&format!(
             "e2e_all scenario=P05.full status=PASS seconds={:.3}",
@@ -263,7 +815,31 @@ impl verdict::IndexedError for StepFailure {
 
 #[cfg(test)]
 mod tests {
-    use super::sanitize;
+    use super::{full, reachable_offer, sanitize};
+
+    #[test]
+    fn selects_shortest_reachable_ordinary_offer_at_its_wire_index() {
+        let offer = |race: &str, required, elite| full::BountyOffer {
+            elite,
+            dust: 0,
+            race: race.into(),
+            required,
+            experience: 1,
+            points: 1,
+            grade: 0,
+        };
+        let offers = [
+            offer("unreachable", 1, false),
+            offer("reachable", 1, true),
+            offer("reachable", 6, false),
+            offer("reachable", 4, false),
+        ];
+        assert_eq!(
+            reachable_offer(&offers, |race| race == "reachable"),
+            Some((3, &offers[3]))
+        );
+        assert_eq!(reachable_offer(&offers, |_| false), None);
+    }
 
     #[test]
     fn evidence_is_one_token() {
@@ -272,4 +848,70 @@ mod tests {
             "status-Accepted---missing-delta"
         );
     }
+}
+
+#[cfg(test)]
+#[test]
+fn row_05_publishes_a_gap_for_an_unproven_journey() {
+    assert!(
+        include_str!("full_row_p05.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(production, _)| production.contains("P05_GAP status="))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_p05_guards_the_journey() {
+    assert!(
+        include_str!("full_row_p05.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("wait_for_spawn"))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn p05_distinguishes_a_purchase_replay_and_funds_the_upgrade_before_submitting() {
+    let production = include_str!("full_row_p05.rs").split_once("#[cfg(test)]");
+    assert!(production.is_some_and(|(body, _)| {
+        body.contains("step=purchase-replay status=UNPROVEN")
+            && body.contains("need=more-completed-bounties")
+    }));
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p05() {
+    assert!(
+        include_str!("full_row_p05.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("corpse_handle"))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn loot_uses_handles_from_both_corpse_projections() -> TestResult {
+    use oteryn_dev_client::{EntityDetail, ItemHandle};
+    let handle = ItemHandle::new(7).ok_or("test handle")?;
+    let appearance_id = std::num::NonZeroU16::new(8).ok_or("test appearance")?;
+    assert_eq!(
+        corpse_handle(EntityDetail::Object {
+            item_definition_ref: 9,
+            quantity: 1,
+            item_handle: Some(handle),
+        }),
+        Some(handle)
+    );
+    assert_eq!(
+        corpse_handle(EntityDetail::ObjectWithAppearance {
+            item_definition_ref: 9,
+            quantity: 1,
+            item_handle: Some(handle),
+            appearance_id,
+        }),
+        Some(handle)
+    );
+    Ok(())
 }

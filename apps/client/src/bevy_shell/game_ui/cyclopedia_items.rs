@@ -1,4 +1,6 @@
 //! Public item encyclopedia; inventory/player inspection remains a separate window.
+mod equipment;
+mod widgets;
 use super::{
     super::{
         owner::{HostOwner, Phase},
@@ -14,11 +16,25 @@ use bevy::{
     ui::InteractionDisabled,
     ui_widgets::{Activate, ScrollArea, TextInput},
 };
+use equipment::Filters;
 use oteryn_client_ui::inspection::{Panel, Request, catalogue};
 use oteryn_client_ui_bevy as source;
+use widgets::build;
 
+use oteryn_client_ui::quick_loot::{Action as LootAction, QuickLootFilterMode as Mode};
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Action {
+    Track,
+    ExcludeSale,
+    OwnValue,
+    MarketValue,
+    MerchantValue,
+    Hands,
+    Class,
+    Level,
+    Vocation,
+    ManageLoot,
+    LootFilter(Mode),
     Browse,
     Next,
     Category(bool),
@@ -35,13 +51,52 @@ struct Control {
     serial: u64,
     action: Action,
 }
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+struct LootControls {
+    analyser: bool,
+    tracked: bool,
+    market: Option<u64>,
+    merchant: Option<u64>,
+    value: Option<u64>,
+    source: Option<oteryn_client_ui::analyser::PriceSource>,
+    excluded: bool,
+    available: bool,
+    ready: bool,
+    skipped: bool,
+    accepted: bool,
+}
+impl LootControls {
+    fn read(link: &crate::play::PlayLink, panel: &Panel) -> Self {
+        let loot = link.quick_loot_panel();
+        let id = panel.catalogue_definition.parse::<u32>().ok();
+        let (analyser, tracked, excluded) = link.catalogue_loot_options(id);
+        let (market, merchant, value, source) =
+            id.map(|id| link.catalogue_price(id)).unwrap_or_default();
+        Self {
+            market,
+            merchant,
+            value,
+            source,
+            analyser,
+            tracked,
+            excluded,
+            available: loot.selected,
+            ready: loot.selected && loot.pending.is_none(),
+            skipped: id.is_some_and(|id| loot.skipped.contains(&id)),
+            accepted: id.is_some_and(|id| loot.accepted.contains(&id)),
+        }
+    }
+}
 #[derive(Component)]
 struct Search;
+#[derive(Component)]
+struct OwnPrice;
 #[derive(Resource, Default)]
 struct State {
     overlay: Option<Entity>,
-    snapshot: Option<(u64, Panel, String)>,
+    snapshot: Option<(u64, Panel, String, LootControls)>,
     serial: u64,
+    filters: Filters,
     drop_owner: Option<(u64, u32)>,
     pending: Option<(Entity, Control)>,
 }
@@ -78,6 +133,10 @@ fn keyboard(
         play.link.item_catalogue_set_open(false);
     }
 }
+type ItemEditors<'w, 's> = (
+    Query<'w, 's, &'static EditableText, With<Search>>,
+    Query<'w, 's, &'static EditableText, With<OwnPrice>>,
+);
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
@@ -85,15 +144,24 @@ fn project(
     mut state: ResMut<State>,
     mut focus: ResMut<InputFocus>,
     parents: Query<&ChildOf>,
-    search: Query<&EditableText, With<Search>>,
+    editors: ItemEditors,
 ) {
+    let (search, own_price) = editors;
     let generation = owner.generation();
     let snapshot = owner
         .play
         .as_ref()
         .filter(|_| owner.phase == Phase::Playing)
         .and_then(|play| {
-            let panel = play.link.inspection_panel();
+            let mut panel = play.link.inspection_panel();
+            if state
+                .snapshot
+                .as_ref()
+                .is_none_or(|(old, ..)| *old != generation)
+            {
+                state.filters = Default::default();
+            }
+            state.filters.project(&mut panel, &play.link);
             if let Some(Request::CatalogueQuery(catalogue::Query::Drops { reference, .. })) =
                 panel.last_request
             {
@@ -101,9 +169,13 @@ fn project(
             } else if panel.catalogue_drop_next.is_none() {
                 state.drop_owner = None;
             }
-            panel
-                .catalogue_open
-                .then(|| (generation, panel, play.link.item_catalogue_text()))
+            panel.catalogue_open.then(|| {
+                let loot = LootControls::read(&play.link, &panel);
+                {
+                    let details = play.link.item_catalogue_projected_text(&panel);
+                    (generation, panel, details, loot)
+                }
+            })
         });
     if state.snapshot == snapshot {
         return;
@@ -121,11 +193,11 @@ fn project(
     }
     let search_value = snapshot
         .as_ref()
-        .map(|(generation, panel, _)| {
+        .map(|(generation, panel, _, _)| {
             if state
                 .snapshot
                 .as_ref()
-                .is_some_and(|(previous, _, _)| previous == generation)
+                .is_some_and(|(previous, _, _, _)| previous == generation)
             {
                 search
                     .single()
@@ -136,8 +208,17 @@ fn project(
             }
         })
         .unwrap_or_default();
+    let own_draft = state.snapshot.as_ref().zip(snapshot.as_ref()).and_then(
+        |((old_gen, old, _, old_loot), (generation, panel, _, _))| {
+            if old_gen != generation || old.catalogue_definition != panel.catalogue_definition {
+                return None;
+            }
+            let text = own_price.single().ok()?.value().to_string();
+            (text != old_loot.value.map(|v| v.to_string()).unwrap_or_default()).then_some(text)
+        },
+    );
     state.snapshot = snapshot;
-    let Some((generation, panel, text)) = &state.snapshot else {
+    let Some((generation, panel, text, loot)) = &state.snapshot else {
         return;
     };
     let Some(serial) = state.serial.checked_add(1) else {
@@ -154,209 +235,12 @@ fn project(
         &skin,
         panel,
         text,
-        &search_value,
+        (&search_value, own_draft.as_deref()),
         control,
-        continuation.is_some(),
+        (continuation.is_some(), *loot, state.filters),
     );
     state.serial = serial;
     state.overlay = Some(overlay);
-}
-fn build(
-    commands: &mut Commands,
-    skin: &Skins,
-    panel: &Panel,
-    details: &str,
-    search_value: &str,
-    control: Control,
-    can_continue_drops: bool,
-) -> Entity {
-    let overlay = commands
-        .spawn((
-            GameModal,
-            crate::bevy_shell::ui::window_layout::WindowLayer("cyclopedia_items"),
-            GlobalZIndex(170),
-            bevy::input_focus::tab_navigation::TabGroup {
-                order: 2,
-                modal: true,
-            },
-            Node {
-                position_type: PositionType::Absolute,
-                width: percent(100.),
-                height: percent(100.),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
-        ))
-        .id();
-    let window = commands
-        .spawn((
-            crate::bevy_shell::window_drag::DraggableDialog,
-            source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
-            Node {
-                width: px(820.),
-                height: px(620.),
-                max_width: percent(95.),
-                max_height: percent(94.),
-                padding: UiRect::all(px(22.)),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(6.),
-                ..default()
-            },
-        ))
-        .id();
-    commands.entity(overlay).add_child(window);
-    source::dialog_caption(commands, window, "Cyclopedia Items", skin.font.clone());
-    label(
-        commands,
-        skin,
-        window,
-        "Search item name; choose a category, then Browse. Prices include market offers and completed trades.",
-    );
-    let search = commands
-        .spawn((
-            Search,
-            TextInput,
-            bevy::input_focus::tab_navigation::TabIndex(0),
-            EditableText::new(search_value),
-            source::font(skin.font.clone(), false),
-            TextColor(source::TEXT_COLOR),
-            Node {
-                width: percent(100.),
-                min_height: px(24.),
-                ..default()
-            },
-        ))
-        .id();
-    if panel.pending || !panel.selected {
-        commands.entity(search).insert(InteractionDisabled);
-    }
-    commands.entity(window).add_child(search);
-    label(
-        commands,
-        skin,
-        window,
-        &format!(
-            "Category: {}",
-            if panel.category.is_empty() {
-                "All"
-            } else {
-                &panel.category
-            }
-        ),
-    );
-    let buttons = commands
-        .spawn(Node {
-            flex_wrap: FlexWrap::Wrap,
-            column_gap: px(4.),
-            row_gap: px(4.),
-            ..default()
-        })
-        .id();
-    commands.entity(window).add_child(buttons);
-    let selected = panel
-        .catalogue_definition
-        .parse::<u32>()
-        .ok()
-        .is_some_and(|id| panel.catalogue.contains_key(&id));
-    for (action, caption, enabled) in [
-        (Action::Browse, "Browse", true),
-        (Action::Next, "Next page", panel.catalogue_next.is_some()),
-        (
-            Action::Category(true),
-            "Previous category",
-            !panel.categories().is_empty(),
-        ),
-        (
-            Action::Category(false),
-            "Next category",
-            !panel.categories().is_empty(),
-        ),
-        (Action::Details, "Item details", selected),
-        (Action::DropSources, "Drop sources", selected),
-        (
-            Action::NextDropSources,
-            "Next drop sources",
-            can_continue_drops,
-        ),
-        (Action::Prices, "Market prices", selected),
-        (Action::Close, "Close", true),
-    ] {
-        button(
-            commands,
-            skin,
-            buttons,
-            Control { action, ..control },
-            caption,
-            action != Action::Close && (!enabled || panel.pending || !panel.selected),
-        );
-    }
-    let scroll = commands
-        .spawn((
-            ScrollArea,
-            Node {
-                width: percent(100.),
-                flex_grow: 1.,
-                min_height: px(0.),
-                overflow: Overflow::scroll_y(),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(4.),
-                ..default()
-            },
-        ))
-        .id();
-    commands.entity(window).add_child(scroll);
-    for item in panel.catalogue.values() {
-        button(
-            commands,
-            skin,
-            scroll,
-            Control {
-                action: Action::Select(item.definition_ref),
-                ..control
-            },
-            &item.name,
-            panel.pending || !panel.selected,
-        );
-    }
-    label(commands, skin, scroll, &details.replace("\r\n", "\n"));
-    if panel.pending {
-        label(commands, skin, scroll, "Waiting for the server");
-    }
-    overlay
-}
-fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) {
-    let child = commands
-        .spawn((
-            source::text(text, source::font(skin.font.clone(), false)),
-            Node {
-                flex_shrink: 0.,
-                ..default()
-            },
-        ))
-        .id();
-    commands.entity(parent).add_child(child);
-}
-fn button(
-    commands: &mut Commands,
-    skin: &Skins,
-    parent: Entity,
-    control: Control,
-    caption: &str,
-    disabled: bool,
-) {
-    let button = commands
-        .spawn((source::button(skin.buttons.clone(), 130.), control))
-        .observe(activate)
-        .id();
-    if disabled {
-        commands.entity(button).insert(InteractionDisabled);
-    }
-    let caption = commands
-        .spawn(source::button_caption(caption, skin.font.clone()))
-        .id();
-    commands.entity(button).add_child(caption);
-    commands.entity(parent).add_child(button);
 }
 fn activate(
     event: On<Activate>,
@@ -383,6 +267,7 @@ fn drop_query(
 
 fn finish(
     guard: ModalGuard,
+    own: Query<&EditableText, With<OwnPrice>>,
     search: Query<&EditableText, With<Search>>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -399,12 +284,13 @@ fn finish(
     let Some(play) = &owner.play else {
         return;
     };
-    let panel = play.link.inspection_panel();
+    let mut panel = play.link.inspection_panel();
+    state.filters.project(&mut panel, &play.link);
     if !panel.catalogue_open
         || state
             .snapshot
             .as_ref()
-            .is_none_or(|(_, previous, _)| previous != &panel)
+            .is_none_or(|(_, previous, _, _)| previous != &panel)
     {
         return;
     }
@@ -416,6 +302,124 @@ fn finish(
         return;
     }
     match control.action {
+        Action::OwnValue | Action::MarketValue | Action::MerchantValue => {
+            use oteryn_client_ui::analyser::PriceSource;
+            let Ok(id) = panel.catalogue_definition.parse() else {
+                return;
+            };
+            let Some((_, _, _, shown)) = &state.snapshot else {
+                return;
+            };
+            let (source, price) = match control.action {
+                Action::MarketValue => (PriceSource::Market, shown.market),
+                Action::MerchantValue => (PriceSource::Merchant, shown.merchant),
+                Action::OwnValue => {
+                    let Ok(editor) = own.single() else { return };
+                    if editor.pending_paste.is_some()
+                        || editor
+                            .pending_edits
+                            .iter()
+                            .any(bevy::text::TextEdit::is_destructive)
+                    {
+                        state.pending = Some((entity, control));
+                        return;
+                    }
+                    (
+                        PriceSource::Own,
+                        editor.value().to_string().trim().parse().ok(),
+                    )
+                }
+                _ => return,
+            };
+            if let Some(price) = price {
+                play.link.catalogue_choose_price(id, source, price);
+            }
+        }
+        Action::Track | Action::ExcludeSale => {
+            let Ok(id) = panel.catalogue_definition.parse::<u32>() else {
+                return;
+            };
+            let loot = LootControls::read(&play.link, &panel);
+            if state
+                .snapshot
+                .as_ref()
+                .is_none_or(|(_, _, _, shown)| shown != &loot)
+            {
+                return;
+            }
+            let tracking = control.action == Action::Track;
+            play.link.catalogue_loot_preference(
+                id,
+                tracking,
+                if tracking {
+                    !loot.tracked
+                } else {
+                    !loot.excluded
+                },
+            );
+        }
+        Action::Hands | Action::Class | Action::Level | Action::Vocation => {
+            match control.action {
+                Action::Hands => state.filters.hands = (state.filters.hands + 1) % 3,
+                Action::Class => {
+                    state.filters.class = match state.filters.class {
+                        None => Some(0),
+                        Some(4) => None,
+                        Some(c) => Some(c + 1),
+                    }
+                }
+                Action::Level => state.filters.level = !state.filters.level,
+                Action::Vocation => state.filters.vocation = !state.filters.vocation,
+                _ => return,
+            }
+            let character = play.link.cyclopedia_character_panel();
+            if state.filters.level && character.general.is_none()
+                || state.filters.vocation && character.vocation_id.is_none()
+            {
+                play.link.cyclopedia_character_request(
+                    oteryn_client_ui::cyclopedia_character::Intent::SelectTab(
+                        oteryn_client_runtime::cyclopedia_character::CharacterTab::GeneralStats,
+                    ),
+                );
+            }
+            if let Some(snapshot) = &mut state.snapshot {
+                snapshot.2.clear();
+            }
+        }
+        Action::ManageLoot | Action::LootFilter(_) => {
+            let Ok(definition) = panel.catalogue_definition.parse::<u32>() else {
+                return;
+            };
+            if !panel.catalogue.contains_key(&definition) {
+                return;
+            }
+            let loot = LootControls::read(&play.link, &panel);
+            if !loot.available {
+                return;
+            }
+            if let Action::LootFilter(mode) = control.action {
+                if !loot.ready
+                    || state
+                        .snapshot
+                        .as_ref()
+                        .is_none_or(|(_, _, _, shown)| shown != &loot)
+                {
+                    return;
+                }
+                let listed = match mode {
+                    Mode::Skip => loot.skipped,
+                    Mode::Accept => loot.accepted,
+                };
+                play.link.quick_loot_action(if listed {
+                    LootAction::Remove { mode, definition }
+                } else {
+                    LootAction::Add { mode, definition }
+                });
+            } else {
+                play.link.item_catalogue_set_open(false);
+                play.link.discovery_open(98);
+            }
+        }
         Action::Select(id) => {
             play.link.item_catalogue_select(id);
         }

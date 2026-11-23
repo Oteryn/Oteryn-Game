@@ -345,6 +345,15 @@ fn bosstiary_window_pulls_boss_lever_and_equips_boss_slot() -> Result<(), Box<dy
     outbox.bevy_bosstiary_result(&accepted(slots(["", ""]).encode().ok_or("slots")?));
     assert!(window_text(&mut app).contains("Slot 1: Empty"));
     click(&mut app, Kind::Slot)?;
+    app.world_mut()
+        .query_filtered::<&mut bevy::text::EditableText, With<BossSearch>>()
+        .single_mut(app.world_mut())?
+        .editor_mut()
+        .set_text("Confirmed");
+    click(&mut app, Kind::Search)?;
+    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == 133));
+    outbox.bevy_bosstiary_result(&accepted(page.encode().ok_or("matched boss")?));
+    app.update();
     click(&mut app, Kind::SlotBoss(false))?;
     click(&mut app, Kind::Request(Intent::SlotEquipSelected))?;
     let PlayCommand::Feature(equip) = commands.try_recv()? else {
@@ -537,6 +546,62 @@ fn catalogue_page_controls_preserve_selected_boss() -> Result<(), Box<dyn std::e
     .add_systems(Startup, crate::bevy_shell::ui::setup);
     install(&mut app);
     app.update();
+    click(&mut app, Kind::Stage(0))?;
+    assert!(!window_text(&mut app).contains("Morgaroth"));
+    click(&mut app, Kind::Stage(0))?;
+    click(&mut app, Kind::Rarity(1))?;
+    assert!(!window_text(&mut app).contains("Ferumbras —"));
+    click(&mut app, Kind::Rarity(1))?;
+    {
+        let mut search = app
+            .world_mut()
+            .query_filtered::<&mut bevy::text::EditableText, With<BossSearch>>();
+        *search.single_mut(app.world_mut())? = bevy::text::EditableText::new("morga");
+    }
+    click(&mut app, Kind::Search)?;
+    let PlayCommand::Feature(query) = commands.try_recv()? else {
+        return Err("search request".into());
+    };
+    assert_eq!(
+        oteryn_client_runtime::boss_encounter::catalogue::Query::decode(&query.payload)
+            .ok_or("query")?
+            .search,
+        "morga"
+    );
+    let mut filtered = page.clone();
+    filtered.entries.remove(0);
+    outbox.bevy_bosstiary_result(&accepted(filtered.encode().ok_or("filtered page")?));
+    app.update();
+    {
+        let mut search = app
+            .world_mut()
+            .query_filtered::<&mut bevy::text::EditableText, With<BossSearch>>();
+        *search.single_mut(app.world_mut())? = bevy::text::EditableText::new("");
+    }
+    click(&mut app, Kind::Search)?;
+    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == 133));
+    let mut first = page.clone();
+    first.entries.pop();
+    first.next = Some(1);
+    outbox.bevy_bosstiary_result(&accepted(first.encode().ok_or("first")?));
+    app.update();
+    click(&mut app, Kind::Request(Intent::CatalogueNext))?;
+    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == 133));
+    outbox.bevy_bosstiary_result(&accepted(filtered.encode().ok_or("second")?));
+    app.update();
+    click(&mut app, Kind::Request(Intent::CataloguePrevious))?;
+    let PlayCommand::Feature(previous) = commands.try_recv()? else {
+        return Err("previous request".into());
+    };
+    assert_eq!(
+        oteryn_client_runtime::boss_encounter::catalogue::Query::decode(&previous.payload)
+            .ok_or("previous")?
+            .after,
+        0
+    );
+    outbox.bevy_bosstiary_result(&accepted(page.encode().ok_or("page")?));
+    app.update();
+    click(&mut app, Kind::Boss(false))?;
     for intent in [Intent::CatalogueNext, Intent::CatalogueRefresh] {
         click(&mut app, Kind::Request(intent))?;
         assert!(window_text(&mut app).contains("Selected boss: Ferumbras"));

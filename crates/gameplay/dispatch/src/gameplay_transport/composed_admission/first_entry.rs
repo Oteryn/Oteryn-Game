@@ -587,31 +587,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 barrier.0.notify_one();
                 barrier.1.notified().await;
             }
+            let login_budget =
+                AdmissionRetryBudget::for_foreground_root(&game_session_id, self.root)
+                    .unwrap_or_else(|_| {
+                        AdmissionRetryBudget::for_root(&game_session_id, self.root)
+                    });
             let access = self
-                .refresh_and_apply_spell_access(actor, game_session_id)
+                .refresh_and_apply_spell_access_with_budget(
+                    actor,
+                    game_session_id,
+                    Some(&login_budget),
+                )
                 .await;
             // #2199: a familiar Login that did not complete restored neither the stored familiar
             // nor its cooldowns, so the entry fails closed like the other post-position owners.
-            let initialized = Box::pin(self.initialize_familiar_login(
-                budget,
-                actor,
-                game_session_id,
-                request,
-                native,
-                &access,
-                config,
+            let (login, login_attempts) = Box::pin(familiar_login::run(
+                async || {
+                    Box::pin(self.initialize_familiar_login(
+                        &login_budget,
+                        actor,
+                        game_session_id,
+                        request,
+                        native,
+                        &access,
+                        config,
+                    ))
+                    .await
+                    .map(|_| ())
+                },
+                |error| error.retryable(),
+                async || {
+                    login_budget
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                        && tokio::time::Instant::now() < login_budget.deadline
+                },
+                |error, attempt| error.report(attempt),
             ))
-            .await
-            .is_ok();
-            let outcome = familiar_login_first_entry(outcome, initialized);
-            if outcome == FirstEntryOutcome::RefusedByChannel {
-                return (outcome, None, None);
+            .await;
+            phase.set_familiar_login_attempts(login_attempts);
+            if let Err(error) = login {
+                // Retain the placement marker so the outer first-entry retry cannot
+                // replay placement and post-entry writes stay gated on unavailable storage.
+                if error.unavailable() {
+                    return (FirstEntryOutcome::RefusedUnavailable, None, Some(decided));
+                }
+                return (familiar_login_first_entry(outcome, false), None, None);
             }
         }
         (outcome, item_fence, Some(decided))
     }
 }
 
+mod familiar_login;
 mod retry;
 mod starter;
 

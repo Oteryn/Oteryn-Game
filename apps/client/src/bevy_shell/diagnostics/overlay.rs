@@ -327,7 +327,7 @@ pub(super) fn clipboard_text(overlay: &str) -> String {
 }
 
 /// The platform file browser, with the folder as one argument and no shell.
-pub(super) fn folder_command(folder: &std::path::Path) -> std::process::Command {
+pub(in crate::bevy_shell) fn folder_command(folder: &std::path::Path) -> std::process::Command {
     let program = if cfg!(windows) {
         "explorer"
     } else if cfg!(target_os = "macos") {
@@ -408,22 +408,41 @@ fn open_log_folder() {
         warn!("Open log folder: the client user-data directory is unavailable");
         return;
     };
-    if let Err(error) = std::fs::create_dir_all(&folder) {
-        warn!(
-            "Open log folder: cannot create {}: {error}",
-            folder.display()
-        );
-        return;
-    }
-    match folder_command(&folder)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-    {
-        Ok(mut child) => {
-            std::thread::spawn(move || child.wait());
-        }
-        Err(error) => warn!("Open log folder {} failed: {error}", folder.display()),
+    bevy_tasks::IoTaskPool::get()
+        .spawn(async move {
+            let result = async {
+                std::fs::create_dir_all(&folder)?;
+                let mut command = folder_command(&folder);
+                command
+                    .stdin(std::process::Stdio::null())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null());
+                launch_folder(command).await
+            }
+            .await;
+            if let Err(error) = result {
+                warn!("Open log folder {} failed: {error}", folder.display());
+            }
+        })
+        .detach();
+}
+
+pub(in crate::bevy_shell) async fn launch_folder(
+    mut command: std::process::Command,
+) -> std::io::Result<()> {
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    std::thread::Builder::new()
+        .name("folder-launcher".into())
+        .spawn(move || {
+            let result = command.spawn().and_then(|mut child| child.wait());
+            let _ = sender.send(result);
+        })?;
+    let status = receiver.await.map_err(std::io::Error::other)??;
+    if status.success() || cfg!(windows) && status.code() == Some(1) {
+        Ok(())
+    } else {
+        Err(std::io::Error::other(format!(
+            "folder launcher exited with {status}"
+        )))
     }
 }
