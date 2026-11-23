@@ -180,6 +180,7 @@ fn otc_textmsg_routes_real_server_delivery_and_keeps_chat() -> TestResult {
             ServerMessage::StatusText(text)
             | ServerMessage::Warning(text)
             | ServerMessage::Advance(text) => text,
+            ServerMessage::BossDefeated(_) => return Err("expected a text message".into()),
         };
         let shown = state
             .visible(area, Duration::ZERO)

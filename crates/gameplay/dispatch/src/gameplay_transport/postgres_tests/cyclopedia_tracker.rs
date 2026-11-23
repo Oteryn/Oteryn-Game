@@ -52,9 +52,7 @@ const BOSS: &str = "oteryn:creature.ferumbras";
 
 #[test]
 fn cyclopedia_tracker_postgres_dispatch_kill_refresh_and_restart() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     super::kill_reward_e2e_fixtures::scenario_thread::run("cyclopedia-tracker", scenario)
 }
 
@@ -669,6 +667,45 @@ fn scenario() -> TestResult {
                 .fetch_one(&harness.pool)
                 .await?;
         assert_eq!(rows, 0);
+
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 92, 197, 615],
+        ).ok_or("boss defeat selection")?;
+        connect(&reopened, &mut admitted, async |mut client| {
+            let (_, bosstiary) = client.join().await?.ok_or("tracker snapshot")?;
+            assert!(bosstiary.entries.is_empty());
+            {
+                let mut runtime = reopened.runtime.lock().await;
+                let boss = runtime.admit_pinned_monster_lab_creature(OPEN_RAT, BOSS, 1).map_err(debug)?;
+                let target = EntityRef {
+                    identity: boss.placement_identity(),
+                    generation: boss.actor_local_generation(),
+                };
+                assert_eq!(
+                    reopened.states.attack.lock().await.set_target(
+                        &runtime, Some(&room), actor, session, reopened.owner_now(), Some(target), 1
+                    ),
+                    oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
+                );
+            }
+            reopened.refresh_attack_weapon(actor, session).await;
+            reopened.drain_auto_attacks().await;
+            let event = tokio::time::timeout(PASS, async {
+                loop {
+                    let frame = read_frame(&mut client.stream).await?;
+                    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                    if envelope.message_type() != MessageType::StateDelta {
+                        continue;
+                    }
+                    let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+                    if delta.domain_id == 57 && delta.delta_type == 1 && delta.payload.first() == Some(&42) {
+                        break TestResult::Ok(oteryn_protocol_oteryn::zones_nologout::decode_server_message(delta.payload).map_err(debug)?);
+                    }
+                }
+            }).await??;
+            assert_eq!(event, oteryn_protocol_oteryn::zones_nologout::ServerMessage::BossDefeated(BOSS.into()));
+            Ok(client)
+        }).await?;
 
         // The migration grants the runtime only what the owner uses.
         let access: (bool, bool, bool) = sqlx::query_as("SELECT has_table_privilege('oteryn_game_runtime','game_character_cyclopedia_tracker','INSERT'),has_table_privilege('oteryn_game_runtime','game_character_cyclopedia_tracker','DELETE'),has_table_privilege('oteryn_game_runtime','game_character_cyclopedia_tracker','UPDATE')")

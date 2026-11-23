@@ -1,6 +1,12 @@
 // ZONES-NOLOGOUT-1: capability 92, domain 57. Reuses TutorialNoticeV1 status_text bytes.
 // Snapshot: empty=1 or the once-per-login configured MOTD (status_text).
-// Delta: exactly one status_text, raid warning or raid advance.
+// Delta: exactly one status_text, raid warning, raid advance, or boss_defeated.
+// Capability 615 requires 92. Only a live selected killing player's connection
+// receives a boss_defeated event, including for bosses outside its trackers.
+// Field 5 carries the authoritative creature definition key (1..255 UTF-8 bytes).
+// The event is advisory and transient. Join/resume snapshots never replay it,
+// and older clients retain the existing delta shape. The client may use the
+// event and its domain revision to trigger a boss-defeated screenshot.
 // Text is 1..=255 UTF-8 bytes; message is at most 260 bytes. No hint IDs.
 syntax = "proto3";
 package oteryn.protocol.v1.server_messages;
@@ -10,5 +16,6 @@ message ServerMessageV1 {
     string status_text = 2;
     string warning = 3; // Crystal MESSAGE_GAME_HIGHLIGHT raid announcement.
     string advance = 4; // Crystal MESSAGE_EVENT_ADVANCE, including XML type=event.
+    string boss_defeated = 5;
   }
 }

@@ -84,6 +84,14 @@ pub(super) async fn emit_message<S: AsyncWrite + Unpin>(
     if !selected(admitted) {
         return Some(());
     }
+    if matches!(message, ServerMessage::BossDefeated(_))
+        && !admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_BOSS_DEFEATED_V1)
+    {
+        return Some(());
+    }
     let payload = encode_server_message(message).ok()?;
     let next_sequence = sequence.checked_add(1)?;
     let revision = admitted.continuity.server_message_revision;

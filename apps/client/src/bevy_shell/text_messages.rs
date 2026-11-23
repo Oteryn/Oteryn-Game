@@ -84,6 +84,7 @@ impl ScreenMessages {
                 ServerMessage::StatusText(text) => (Area::Bottom, text, [255; 3]),
                 ServerMessage::Warning(text) => (Area::Center, text, [245, 94, 94]),
                 ServerMessage::Advance(text) => (Area::Top, text, [255; 3]),
+                ServerMessage::BossDefeated(_) => continue,
             };
             self.show(area, text, colour, now);
             self.last_sequence = Some(message.server_sequence);

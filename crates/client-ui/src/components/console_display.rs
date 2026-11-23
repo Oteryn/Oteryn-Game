@@ -45,7 +45,7 @@ pub fn speaker(line: &ChatLine) -> Option<&str> {
         | ChatLine::Party { speaker_name, .. } => Some(speaker_name),
         ChatLine::Guild(line) => Some(&line.speaker_name),
         ChatLine::PrivateChannel(line) => Some(&line.speaker_name),
-        ChatLine::Dropped => None,
+        ChatLine::System { .. } | ChatLine::Dropped => None,
     }
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

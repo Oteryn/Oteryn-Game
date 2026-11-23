@@ -399,6 +399,7 @@ impl Mailbox {
                         oteryn_session::ServerMessage::Warning(text) => {
                             (NoticeClass::Status, format!("Warning: {text}"))
                         }
+                        oteryn_session::ServerMessage::BossDefeated(_) => continue,
                     };
                     self.chat.console.notices.push(class, &text, received);
                 }
