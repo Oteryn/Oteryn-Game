@@ -405,6 +405,11 @@ async fn wrath_chest(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: AdmittedSession,
 ) -> TestResult {
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+            .ok_or("world interaction capability")?;
     let fence = admitted.item_fence.ok_or("item fence")?;
     let session = admitted.game_session_id;
     let map = owner.bundle_map().ok_or("native map")?;
@@ -441,7 +446,7 @@ async fn wrath_chest(
     let denied = wire(owner, &mut admitted, 1, 2, selected.clone()).await?;
     assert_eq!(
         decode_use_result(&denied).map_err(debug)?,
-        UseDisposition::Rejected
+        UseDisposition::NoRoom
     );
     assert_eq!(
         ledger().await?,
@@ -785,12 +790,16 @@ async fn wrath_capacity(
             .selected_capabilities
             .contains(oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,)
     );
-    super::item_look_fixtures::seed_main_backpack(h, &[("oteryn:item.tibia.i3031", 1); 20]).await?;
     let mut results = Vec::new();
     for (count, detail) in [
+        (0, RefusalDetail::NotEnoughRoom),
         (20, RefusalDetail::NotEnoughRoom),
         (12, RefusalDetail::NotEnoughCapacity),
     ] {
+        if count == 20 {
+            super::item_look_fixtures::seed_main_backpack(h, &[("oteryn:item.tibia.i3031", 1); 20])
+                .await?;
+        }
         if count == 12 {
             let mut tx = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role = replica")
@@ -802,7 +811,7 @@ async fn wrath_capacity(
             sqlx::query("UPDATE game_item_instances SET definition_production_key='oteryn:item.tibia.i11686' WHERE item_instance_id IN (SELECT item_instance_id FROM game_item_container_entries)").execute(&mut *tx).await?;
             tx.commit().await?;
         }
-        for (x, y, _, _) in CHOICES {
+        for (x, y, uid, _) in CHOICES {
             let target = Position { x, y, floor: -8 };
             let at = target;
             relocate(owner, admitted, at).await?;
@@ -811,16 +820,16 @@ async fn wrath_capacity(
             let id = admitted.continuity.next_command_id;
             let response = wire(owner, &mut admitted, id, 2, payload).await?;
             let (result, actual) = split_refusal_detail(&response).map_err(debug)?;
-            results.push((decode_use_result(result).map_err(debug)?, actual, detail));
+            results.push((uid, count, decode_use_result(result).map_err(debug)?, actual, detail));
         }
     }
-    for (result, actual, expected) in results {
-        assert_eq!(actual, Some(expected));
+    for (uid, count, result, actual, expected) in results {
+        assert_eq!(actual, Some(expected), "chest {uid}, {count} carried items");
         let expected_disposition = match expected {
             RefusalDetail::NotEnoughRoom => UseDisposition::NoRoom,
             _ => UseDisposition::Rejected,
         };
-        assert_eq!(result, expected_disposition);
+        assert_eq!(result, expected_disposition, "chest {uid}, {count} carried items");
     }
     let ledger: (i64, i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_reward_claims), (SELECT count(*) FROM game_reward_claim_mint_reservations), (SELECT count(*) FROM game_reward_claim_mint_receipts)",

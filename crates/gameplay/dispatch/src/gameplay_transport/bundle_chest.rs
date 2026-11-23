@@ -408,9 +408,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 fn mint_refusal(error: RewardClaimMintError) -> UseOutcome {
     match error {
-        RewardClaimMintError::Refused(RewardClaimRefusal::MainBackpackFull) => {
-            outcome(UseDisposition::NoRoom)
-        }
+        RewardClaimMintError::Refused(
+            RewardClaimRefusal::NoMainBackpack | RewardClaimRefusal::MainBackpackFull,
+        ) => outcome(UseDisposition::NoRoom),
         RewardClaimMintError::Refused(RewardClaimRefusal::CarryingCapacity) => UseOutcome {
             refusal_detail: Some(RefusalDetail::NotEnoughCapacity),
             ..outcome(UseDisposition::Rejected)
