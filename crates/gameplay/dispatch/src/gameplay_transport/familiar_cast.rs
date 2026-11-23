@@ -649,7 +649,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             premium: access,
             administrative: &administrative,
         };
-        let receipt = match self
+        let receipt = self
             .apply_familiar_owner_event(
                 actor,
                 session,
@@ -660,12 +660,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &source,
                 Some(budget),
             )
-            .await
-        {
-            Ok(receipt) => receipt,
-            Err(FamiliarLoginError::RespawnDeferred) => return Ok(None),
-            Err(error) => return Err(error),
-        };
+            .await?;
         // #2199 Codex P2 4302041461: no free tile kept the stored familiar waiting; the
         // owner cadence returns it once a tile frees (`retry_waiting_familiar_return`).
         if crate::spell::companion_lifecycle::login_left_familiar_waiting(

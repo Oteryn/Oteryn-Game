@@ -1368,27 +1368,31 @@ mod e2ef1 {
             evidence(&format!("E2EF1_GAP row=M05 phase=doors error={error}"));
         }
         let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-        let (saved, inventory, previous) = tokio::time::timeout_at(deadline, async {
+        tokio::time::timeout_at(deadline, async move {
             leave_fight(&mut door_client, world, deadline).await?;
             let saved = door_client.world_spatial().actor_position;
             let inventory = inventory_signature(&door_client)?;
             let previous = door_client.join_snapshot().game_session_id;
             logout_by(&mut door_client, deadline).await?;
-            TestResult::Ok((saved, inventory, previous))
+            drop(door_client);
+            let mut fresh = connect_character(clients, 0xb4, 0).await?;
+            let landed = fresh.world_spatial().actor_position;
+            let durable = landed == saved
+                && fresh.join_snapshot().game_session_id != previous
+                && inventory_signature(&fresh)? == inventory;
+            let back = route(world, tile(saved)?, |at| at == origin).ok_or("M05 return route")?;
+            walk(&mut fresh, world, &back).await?;
+            if tile(fresh.world_spatial().actor_position)? != origin {
+                return Err("M05 cleanup did not return to the original tile".into());
+            }
+            logout_by(&mut fresh, deadline).await?;
+            if !durable {
+                return Err("M05 fresh admission did not preserve position and inventory".into());
+            }
+            TestResult::Ok(())
         })
         .await
         .map_err(|_| "M05 fight cleanup exceeded the logout deadline")??;
-        drop(door_client);
-        let mut fresh = connect_character(clients, 0xb4, 0).await?;
-        let durable = fresh.world_spatial().actor_position == saved
-            && fresh.join_snapshot().game_session_id != previous
-            && inventory_signature(&fresh)? == inventory;
-        let back = route(world, tile(saved)?, |at| at == origin).ok_or("M05 return route")?;
-        walk(&mut fresh, world, &back).await?;
-        logout(&mut fresh).await?;
-        if !durable {
-            return Err("M05 fresh admission did not preserve position and inventory".into());
-        }
         doors
     }
 

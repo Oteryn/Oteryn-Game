@@ -30,7 +30,7 @@ fn a_committed_actor_enters_after_a_busy_holder_is_returned_postgres() -> TestRe
             // entry used to have (RECONCILE_ATTEMPTS rounds of RECONCILE_BACKOFF).
             let busy = hold_holder(&h.root, Duration::from_millis(1_500))?;
             let budget = AdmissionRetryBudget::for_root(&session, &h.root);
-            let (outcome, item_fence, _) = Box::pin(owner.enter_committed_actor(
+            let (outcome, item_fence, _, _) = Box::pin(owner.enter_committed_actor(
                 &budget,
                 &request,
                 session,

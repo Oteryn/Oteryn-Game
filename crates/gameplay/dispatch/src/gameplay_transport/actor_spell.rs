@@ -42,6 +42,7 @@ pub use crate::monster_combat_lane::native_invisibility::{SelfInvisibleSource, S
 pub(super) mod actor_movement;
 #[path = "familiar_cast.rs"]
 mod familiar_cast;
+pub(super) use familiar_cast::FamiliarLoginError;
 #[path = "actor_spell/house_admission.rs"]
 mod house_admission;
 #[path = "actor_spell/house_transfer.rs"]

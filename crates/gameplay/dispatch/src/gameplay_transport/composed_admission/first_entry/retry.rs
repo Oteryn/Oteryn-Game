@@ -1,21 +1,42 @@
 use super::*;
 
 /// Diagnostic state only; the lock is never held across an await.
-pub(super) struct EntryPhase(std::sync::Mutex<(&'static str, Option<u64>)>);
+pub(super) struct EntryPhase {
+    diagnostic: std::sync::Mutex<(&'static str, Option<u64>)>,
+    familiar_deferred: std::sync::atomic::AtomicBool,
+}
 
 impl Default for EntryPhase {
     fn default() -> Self {
-        Self(std::sync::Mutex::new(("resolve_session", None)))
+        Self {
+            diagnostic: std::sync::Mutex::new(("resolve_session", None)),
+            familiar_deferred: std::sync::atomic::AtomicBool::new(false),
+        }
     }
 }
 
 impl EntryPhase {
     pub(super) fn set(&self, phase: &'static str) {
-        *self.0.lock().unwrap_or_else(|error| error.into_inner()) = (phase, None);
+        *self
+            .diagnostic
+            .lock()
+            .unwrap_or_else(|error| error.into_inner()) = (phase, None);
     }
 
     pub(super) fn set_familiar_login_attempts(&self, attempts: u64) {
-        self.0.lock().unwrap_or_else(|error| error.into_inner()).1 = Some(attempts);
+        self.diagnostic
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .1 = Some(attempts);
+    }
+    pub(super) fn defer_familiar(&self) {
+        self.familiar_deferred
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub(super) fn familiar_deferred(&self) -> bool {
+        self.familiar_deferred
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 }
 
@@ -56,7 +77,10 @@ pub(super) async fn enter_with_retry(
         }
         _ => "unplayable",
     };
-    let (phase, phase_attempts) = *phase.0.lock().unwrap_or_else(|error| error.into_inner());
+    let (phase, phase_attempts) = *phase
+        .diagnostic
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
     record_entry_decision(
         outcome,
         phase_attempts.unwrap_or(attempts),

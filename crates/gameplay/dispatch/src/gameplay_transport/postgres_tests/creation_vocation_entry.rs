@@ -167,37 +167,78 @@ fn creation_vocation_entry(regression: Option<FamiliarRegression>) -> TestResult
                         let barrier = FAMILIAR_LOGIN_CHECKOUT.with(|probe| probe.seed_barrier.clone());
                         let mut entry = entry;
                         tokio::select! {
-                            (outcome, _, _) = &mut entry => {
+                            (outcome, _, _, _) = &mut entry => {
                                 return Err(format!("entry ended before the Familiar fixture checkpoint: {outcome:?}").into());
                             }
                             () = barrier.0.notified() => {}
                         }
                         let seed = FamiliarStateOccurrence::from_bytes(id(83)).map_err(debug)?;
-                        let look = seed_checkout_look(&h, &owner, session, seed).await?;
+                        let look = seed_checkout_look(&h, &owner, session, seed, respawn_pending).await?;
                         if respawn_pending {
                             let before = h.root.read_character_familiar_state(&authority, character).await?;
-                            // Seed only the already pending death fence, as in
-                            // appearance_respawn_pending.rs. First entry already placed the actor.
-                            let mut tx = h.pool.begin().await?;
-                            sqlx::query("SET LOCAL session_replication_role = replica")
-                                .execute(&mut *tx).await?;
-                            sqlx::query("INSERT INTO game_character_pending_respawns (character_id, death_occurrence_id, respawn_position) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, decode('01','hex'))")
-                                .bind(character.as_bytes().as_slice())
-                                .bind(id(84).as_slice())
-                                .execute(&mut *tx).await?;
-                            tx.commit().await?;
+                            let (prior_position, map) = {
+                                let runtime = owner.runtime.lock().await;
+                                (runtime.read_actor_position(deps.actor).map_err(debug)?,
+                                 runtime.content_pin().map_revision_digest())
+                            };
+                            let tile = prior_position.position();
+                            let occurrence = crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(84)).map_err(debug)?;
+                            let fence = super::death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
+                            let progression = owner.progression_binding(session).ok_or("respawn progression binding")?;
+                            let death = crate::gameplay_transport::player_death_request(
+                                &progression, fence.runtime_scope, map,
+                                crate::gameplay_transport::actor_spell::PlayerDeath { occurrence, public_cause: None, cell: tile },
+                                tile,
+                            );
+                            let death = h.root.commit_character_death(&authority, &h.node, fence, death).await?;
+                            assert!(matches!(death, crate::durability::character_death::CharacterDeathOutcome::Committed(_)));
                             barrier.1.notify_one();
-                            let (outcome, item_fence, position) = entry.await;
+                            let (outcome, item_fence, position, deferred) = entry.await;
                             assert_eq!(outcome, FirstEntryOutcome::Positioned);
-                            assert!(item_fence.is_some() && position.is_some());
+                            assert!(item_fence.is_some() && position.is_some() && deferred);
                             let after = h.root.read_character_familiar_state(&authority, character).await?;
                             assert_eq!(after, before);
                             assert_eq!(FAMILIAR_LOGIN_CHECKOUT.with(|probe| probe.writes.get()), 1);
-                            eprintln!("PG_EXECUTED Familiar Login deferred during pending respawn");
+                            let mut admitted = crate::gameplay_transport::connection::AdmittedSession {
+                                first_entry: outcome,
+                                item_fence,
+                                controller: Some(crate::gameplay_transport::connection::ControllerBinding {
+                                    transport,
+                                    account_id: id(40),
+                                }),
+                                ..deps.admitted
+                            };
+                            owner.complete_entry_arrival(&budget, &request, &mut admitted, deps.actor, position.as_ref(), deferred).await;
+                            assert_eq!(admitted.first_entry, FirstEntryOutcome::Positioned);
+                            let placed = owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
+                            assert_eq!(placed.position(), tile);
+                            assert_eq!(placed.revision(), prior_position.revision() + 1, "exactly one respawn placement");
+                            let (pending, death_count): (i64, i64) = sqlx::query_as(
+                                "SELECT (SELECT count(*) FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND death_occurrence_id=encode($2,'hex')::uuid)"
+                            ).bind(character.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+                            assert_eq!((pending, death_count), (0, 1));
+                            let durable_tile: (i32, i32, i16) = sqlx::query_as(
+                                "SELECT tile_x, tile_y, tile_floor FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid"
+                            ).bind(character.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+                            assert_eq!(durable_tile, (tile.x, tile.y, tile.floor));
+
+                            assert_eq!(FAMILIAR_LOGIN_CHECKOUT.with(|probe| probe.writes.get()), 2);
+                            use crate::gameplay_transport::actor_spell::{FamiliarActorEnd, FamiliarLogoutSave};
+                            assert_eq!(
+                                owner.save_familiar_logout(deps.actor, session, FamiliarActorEnd::Logout(transport, 1)).await,
+                                FamiliarLogoutSave::Saved,
+                            );
+                            let saved = h.root.read_character_familiar_state(&authority, character).await?;
+                            let [cooldown] = saved.state().cooldowns.as_slice() else {
+                                return Err("clean logout lost the saved Familiar cooldown".into());
+                            };
+                            assert_eq!(cooldown.reference_spell_id, before.state().cooldowns[0].reference_spell_id);
+                            assert!((1..=60_000_123).contains(&cooldown.remaining_micros));
+                            eprintln!("PG_EXECUTED Familiar Login resumed after one respawn and clean logout kept its cooldown");
                             return Ok(());
                         }
                         barrier.1.notify_one();
-                        let (outcome, item_fence, _) = entry.await;
+                        let (outcome, item_fence, _, _) = entry.await;
                         let (backpack, kit, placement, writes, misses) =
                             FAMILIAR_LOGIN_CHECKOUT.with(|probe| (
                                 probe.backpack.get(), probe.kit.get(), probe.placement.get(),
@@ -229,7 +270,7 @@ fn creation_vocation_entry(regression: Option<FamiliarRegression>) -> TestResult
                     result?;
                     return cleanup;
                 }
-                let (outcome, _, _) = entry.await;
+                let (outcome, _, _, _) = entry.await;
                 assert_eq!(
                     outcome,
                     FirstEntryOutcome::Positioned,
@@ -285,6 +326,7 @@ async fn seed_checkout_look(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
     occurrence: FamiliarStateOccurrence,
+    with_cooldown: bool,
 ) -> TestResult<u32> {
     let index = owner
         .active_familiar_index("druid")
@@ -319,6 +361,12 @@ async fn seed_checkout_look(
     )?;
     after.selected_look = look;
     after.granted_looks = vec![look];
+    if with_cooldown {
+        after.cooldowns = vec![FamiliarCooldownSnapshot {
+            reference_spell_id: u32::try_from(profile.spell()["reference_spell_id"].as_u64().ok_or("Familiar reference spell")?)?,
+            remaining_micros: 60_000_123,
+        }];
+    }
     let outcome = h
         .root
         .commit_character_familiar_state(

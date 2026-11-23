@@ -388,7 +388,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // NODEBOOT-1: the committed actor's entry steps share a window of their own, from the
         // commit, and a busy holder is retried under it; stale authority keeps its round bound.
         budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
-        let (first_entry, item_fence, decided) = self
+        let (first_entry, item_fence, decided, familiar_deferred) = self
             .enter_committed_actor(
                 &budget,
                 &request,
@@ -448,15 +448,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
         ) {
-            let settled = self
-                .consume_admitted_newhaven_arrival(
-                    &budget,
-                    admitted.game_session_id,
-                    actor,
-                    decided.as_ref(),
-                )
-                .await;
-            admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
+            self.complete_entry_arrival(
+                &budget,
+                &request,
+                &mut admitted,
+                actor,
+                decided.as_ref(),
+                familiar_deferred,
+            )
+            .await;
         }
         if writes_after_progression(positioned, admitted.first_entry) {
             let trained = admitted.first_entry;

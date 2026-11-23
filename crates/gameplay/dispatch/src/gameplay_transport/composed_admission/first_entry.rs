@@ -1,4 +1,5 @@
 use super::*;
+use crate::gameplay_transport::actor_spell::FamiliarLoginError;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// [`Self::initialize_first_entry`], repeated from fresh reads while it is refused before
@@ -15,9 +16,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         FirstEntryOutcome,
         Option<CurrentCharacterItemFence>,
         Option<last_position::AdmissionPosition>,
+        bool,
     ) {
         let phase = EntryPhase::default();
-        enter_with_retry(budget, &phase, async || {
+        let (outcome, fence, position) = enter_with_retry(budget, &phase, async || {
             self.initialize_first_entry_traced(
                 request,
                 game_session_id,
@@ -28,7 +30,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         })
-        .await
+        .await;
+        (outcome, fence, position, phase.familiar_deferred())
     }
 
     #[cfg(test)]
@@ -563,70 +566,102 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         // A Character without a vocation has no familiar; its absent build row is valid.
-        if facts.vocation != crate::spell::Vocation::None
-            && let Some(native) = self
-                .active_generation
-                .and_then(|active| active.native_gameplay())
-            && let Some(config) = native.familiar_config()
-        {
+        if facts.vocation != crate::spell::Vocation::None {
             phase.set("familiar_login");
-            // The test seeds its durable Familiar checkpoint with the positioned fence.
-            #[cfg(test)]
-            if let Ok(Some(barrier)) = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
-                (!probe.seed_started.replace(true)).then(|| probe.seed_barrier.clone())
-            }) {
-                barrier.0.notify_one();
-                barrier.1.notified().await;
-            }
-            let login_budget =
-                AdmissionRetryBudget::for_foreground_root(&game_session_id, self.root)
-                    .unwrap_or_else(|_| {
-                        AdmissionRetryBudget::for_root(&game_session_id, self.root)
-                    });
-            let access = self
-                .refresh_and_apply_spell_access_with_budget(
-                    actor,
-                    game_session_id,
-                    Some(&login_budget),
-                )
+            let (login, attempts) = self
+                .run_admission_familiar_login(request, actor, game_session_id)
                 .await;
-            // #2199: a familiar Login that did not complete restored neither the stored familiar
-            // nor its cooldowns, so the entry fails closed like the other post-position owners.
-            let (login, login_attempts) = Box::pin(familiar_login::run(
-                async || {
-                    Box::pin(self.initialize_familiar_login(
-                        &login_budget,
-                        actor,
-                        game_session_id,
-                        request,
-                        native,
-                        &access,
-                        config,
-                    ))
-                    .await
-                    .map(|_| ())
-                },
-                |error| error.retryable(),
-                async || {
-                    login_budget
-                        .retries_unavailable(AdmissionRefusal::Unavailable)
-                        .await
-                        && tokio::time::Instant::now() < login_budget.deadline
-                },
-                |error, attempt| error.report(attempt),
-            ))
-            .await;
-            phase.set_familiar_login_attempts(login_attempts);
-            if let Err(error) = login {
-                // Retain the placement marker so the outer first-entry retry cannot
-                // replay placement and post-entry writes stay gated on unavailable storage.
-                if error.unavailable() {
+            phase.set_familiar_login_attempts(attempts);
+            match login {
+                Ok(()) => {}
+                Err(FamiliarLoginError::RespawnDeferred) => phase.defer_familiar(),
+                Err(error) if error.unavailable() => {
                     return (FirstEntryOutcome::RefusedUnavailable, None, Some(decided));
                 }
-                return (familiar_login_first_entry(outcome, false), None, None);
+                Err(_) => return (familiar_login_first_entry(outcome, false), None, None),
             }
         }
         (outcome, item_fence, Some(decided))
+    }
+
+    pub(in crate::gameplay_transport) async fn complete_entry_arrival(
+        &self,
+        budget: &AdmissionRetryBudget<'_>,
+        request: &FreshAdmissionCommitRequestV1,
+        admitted: &mut AdmittedSession,
+        actor: ExactActorRef,
+        decided: Option<&last_position::AdmissionPosition>,
+        familiar_deferred: bool,
+    ) {
+        let session = admitted.game_session_id;
+        let settled = self
+            .consume_admitted_newhaven_arrival(budget, session, actor, decided)
+            .await;
+        admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
+        if settled && familiar_deferred {
+            // The blocked Login rolled its reservation back. Prepare again against the
+            // newly current session fence after the durable respawn and placement.
+            if let Err(error) = self
+                .run_admission_familiar_login(request, actor, session)
+                .await
+                .0
+            {
+                admitted.first_entry = if error.unavailable() {
+                    FirstEntryOutcome::RefusedUnavailable
+                } else {
+                    FirstEntryOutcome::RefusedByChannel
+                };
+                admitted.item_fence = None;
+            }
+        }
+    }
+
+    pub(super) async fn run_admission_familiar_login(
+        &self,
+        request: &FreshAdmissionCommitRequestV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> (Result<(), FamiliarLoginError>, u64) {
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return (Ok(()), 0);
+        };
+        let Some(config) = native.familiar_config() else {
+            return (Ok(()), 0);
+        };
+        // The test seeds its durable Familiar checkpoint with the positioned fence.
+        #[cfg(test)]
+        if let Ok(Some(barrier)) = FAMILIAR_LOGIN_CHECKOUT.try_with(|probe| {
+            (!probe.seed_started.replace(true)).then(|| probe.seed_barrier.clone())
+        }) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
+        let budget = AdmissionRetryBudget::for_foreground_root(&session, self.root)
+            .unwrap_or_else(|_| AdmissionRetryBudget::for_root(&session, self.root));
+        let access = self
+            .refresh_and_apply_spell_access_with_budget(actor, session, Some(&budget))
+            .await;
+        Box::pin(familiar_login::run(
+            async || {
+                Box::pin(self.initialize_familiar_login(
+                    &budget, actor, session, request, native, &access, config,
+                ))
+                .await
+                .map(|_| ())
+            },
+            |error| error.retryable(),
+            async || {
+                budget
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
+                    && tokio::time::Instant::now() < budget.deadline
+            },
+            |error, attempt| error.report(attempt),
+        ))
+        .await
     }
 }
 
