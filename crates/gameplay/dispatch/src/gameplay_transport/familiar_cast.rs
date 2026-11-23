@@ -2957,7 +2957,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fresh = match finish.deadline {
             Some(limit) => tokio::time::timeout_at(tokio::time::Instant::from_std(limit), fresh)
                 .await
-                .map_err(|_| FamiliarLoginError::FinalFence(DurabilityError::RootPassDeadlineExceeded))?,
+                .map_err(|_| {
+                    FamiliarLoginError::FinalFence(DurabilityError::RootPassDeadlineExceeded)
+                })?,
             None => fresh.await,
         }
         .map_err(|error| FamiliarLoginError::fence("final_fence", error))?

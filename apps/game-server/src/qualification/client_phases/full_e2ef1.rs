@@ -589,11 +589,20 @@ mod e2ef1 {
         .await?;
         let before = tile(client.world_spatial().actor_position)?;
         let revision = *revisions.get(&(object.at, object.ordinal)).unwrap_or(&0);
-        if door_use(client, world, object, revision).await? != UseDisposition::Committed
-            || distance(tile(client.world_spatial().actor_position)?, object.at) > 1
-            || tile(client.world_spatial().actor_position)? == before
-        {
-            return Err("far USE did not walk and commit retry".into());
+        if distance(before, object.at) != 3 {
+            return Err(format!(
+                "far USE approach {before:?} is out of setup range for {object:?}"
+            )
+            .into());
+        }
+        let disposition = door_use(client, world, object, revision).await?;
+        let after = tile(client.world_spatial().actor_position)?;
+        if disposition != UseDisposition::Committed || distance(after, object.at) > 1 {
+            let detail = client.session_mut().last_refusal_detail();
+            return Err(format!(
+                "far USE did not walk and commit retry: target={object:?} revision={revision} before={before:?} after={after:?} disposition={disposition:?} detail={detail:?}"
+            )
+            .into());
         }
         checks.pass("far-use-retry", (before, object, client.world_spatial()));
         // Restore the channel-scoped door, using its actual transition revision.
@@ -743,6 +752,7 @@ mod e2ef1 {
         );
         let mut ready = tokio::time::Instant::now();
         let mut exhausted = 0;
+        let origin = tile(client.world_spatial().actor_position)?;
         for teleport in [false, true] {
             // Settle the spell's own cooldown before starting a distinct floor experiment.
             while tokio::time::Instant::now() < ready {
@@ -752,6 +762,14 @@ mod e2ef1 {
                 let from = tile(client.world_spatial().actor_position)?;
                 let outside = |at: TilePos| world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone());
                 if teleport {
+                    // Select the teleport from the row's starting area, independent of
+                    // which staircase the first experiment found.
+                    let back = route(world, from, |at| at == origin)
+                        .ok_or_else(|| format!("no return route from stair landing {from:?} to {origin:?}"))?;
+                    walk(client, world, &back).await?;
+                    if tile(client.world_spatial().actor_position)? != origin {
+                        return Err("stair cleanup did not restore the teleport experiment origin".into());
+                    }
                     let object = approach(
                         client, world, objects,
                         |o| matches!(o.kind, ObjectKind::Teleport(to) if to.floor != o.at.floor && outside(to)),
