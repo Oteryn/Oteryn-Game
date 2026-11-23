@@ -115,6 +115,7 @@ pub(super) async fn exercise_dread_lord(
     harness: &Harness,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     callback: &Callback,
+    retire: bool,
 ) -> TestResult {
     let [offering] = callback.offerings.as_slice() else { return Err("diamond offering".into()) };
     let [rank, _claim] = callback.storage.as_slice() else { return Err("rank and claim guards".into()) };
@@ -179,6 +180,28 @@ pub(super) async fn exercise_dread_lord(
 
     // Supply a new diamond so the second Dread Lord would otherwise be eligible.
     super::quest_world_callbacks_fixtures::offering(owner, fence, offering, 90004).await?;
+    if retire {
+        use crate::gameplay_transport::connection::GraceExpiryResult;
+
+        let transport = admitted.controller.ok_or("Dread Lord controller")?.transport;
+        assert_eq!(
+            owner
+                .release_terminal(
+                    *admitted,
+                    crate::gameplay_transport::TerminalRelease::StaffKick(transport),
+                )
+                .await,
+            GraceExpiryResult::Released
+        );
+        assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
+        assert_eq!(
+            pull(owner, &mut peer, resting_lever).await?,
+            UseDisposition::Committed
+        );
+        assert_eq!(counts(harness).await?.1, before.1 + 2);
+        assert_eq!(ground_outputs(owner)?, 1);
+        return Ok(());
+    }
     let competing_pull = pull(owner, &mut peer, resting_lever).await?;
     let resumed = owner.reconcile_quest_callbacks(admitted.game_session_id).await;
     // Without ITEM_USE_V1 the wire encodes exhaustion as a generic refusal.

@@ -126,6 +126,12 @@ pub(super) struct PendingCallbacks {
 }
 
 impl PendingCallbacks {
+    pub(super) fn forget(&self, session: GameSessionId) {
+        if let Ok(mut records) = self.records.lock() {
+            records.remove(&session);
+        }
+    }
+
     pub(super) fn complete_native_quest(
         &self,
         runtime: &mut ChannelRuntimeV1,

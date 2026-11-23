@@ -25,6 +25,12 @@ fn scenario_case(
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let dread_lord_retirement = name == "dreamer-dread-lord-scroll/retirement";
+    let name = if dread_lord_retirement {
+        "dreamer-dread-lord-scroll"
+    } else {
+        name
+    };
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -2088,6 +2094,7 @@ fn scenario_case(
                 &h,
                 fence.item_fence(),
                 &callback,
+                dread_lord_retirement,
             ))
             .await?;
         } else if m07_dreamer {

@@ -2453,7 +2453,7 @@ mod tests {
         // and the Forgemaster and Rottin Wood additions.
         assert_eq!(
             load()?.len(),
-            250 + 132 + 125 + 4 + 4 + 4 + 3 + 2 + 1 + 1 + 13 + 12 + 2
+            251 + 132 + 125 + 4 + 4 + 4 + 3 + 2 + 1 + 1 + 13 + 12 + 2
         );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
@@ -2484,6 +2484,7 @@ mod tests {
         let added_keys = [
             "oteryn:quest-reward/between-the-lines-phillip-accept",
             "oteryn:quest-reward/l10-brotherhood-dread-lord",
+            "oteryn:quest-reward/l10-nightmare-lord-protector",
             "oteryn:quest-reward/l11-dream-warrior-task-base",
             "oteryn:quest-reward/l11-dream-warrior-undal-base",
             "oteryn:quest-reward/l11-dream-warrior-undal-first",
@@ -2513,7 +2514,7 @@ mod tests {
             .filter(|key| added_keys.contains(key))
             .collect();
         assert_eq!(added, BTreeSet::from(added_keys));
-        assert_eq!(legacy.len(), 219);
+        assert_eq!(legacy.len(), 220);
         let original: Vec<_> = legacy
             .iter()
             .filter(|callback| !added_keys.contains(&callback.key.as_str()))

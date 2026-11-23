@@ -33,3 +33,18 @@ fn dread_lord_lever_burns_diamond_creates_ground_item_and_resets_postgres() -> T
         )
     })
 }
+
+#[test]
+fn dread_lord_lever_releases_reservation_on_terminal_retirement_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    const NAME: &str = "dreamer-dread-lord-scroll/retirement";
+    super::kill_reward_e2e_fixtures::scenario_thread::run(NAME, || {
+        super::quest_world_callbacks_fixtures::scenario(
+            NAME,
+            super::m07_dreamer_levers_fixtures::DREAD_LORD_LEVER,
+            false,
+        )
+    })
+}
