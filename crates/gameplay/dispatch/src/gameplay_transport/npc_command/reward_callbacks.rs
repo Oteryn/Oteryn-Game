@@ -370,6 +370,42 @@ fn sterling_marker_offer_and_refusal_follow_the_source_topics() -> Result<(), se
     Ok(())
 }
 
+#[cfg(test)]
+#[test]
+fn regional_hunt_dialogue_earlier_offers_admit_mixed_keywords() -> Result<(), String> {
+    let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("hunt-offers")
+        .map_err(|error| format!("{error:?}"))?;
+    let offers: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/shared-reward-offers.json"
+    ))
+    .map_err(|error| error.to_string())?;
+    let mut missed = Vec::new();
+    for npc in ["oteryn:npc.lugri", "oteryn:npc.gabel", "oteryn:npc.malor"] {
+        let mut matching = offers
+            .offers
+            .iter()
+            .filter(|offer| offer.npc == npc && offer.topic == 0)
+            .peekable();
+        assert!(matching.peek().is_some(), "missing offers for {npc}");
+        for offer in matching {
+            let tracks = offer
+                .storage
+                .iter()
+                .map(|s| (s.track.clone(), s.minimum))
+                .chain(offer.requires.iter().map(|r| (r.track.clone(), r.minimum)))
+                .collect();
+            for keyword in &offer.keywords {
+                let message = format!("{keyword} task");
+                if !offer.admits(npc, 0, &message, loaded.catalogue(), &tracks) {
+                    missed.push((npc, message));
+                }
+            }
+        }
+    }
+    assert!(missed.is_empty(), "earlier offers missed: {missed:?}");
+    Ok(())
+}
+
 #[cfg(any(test, feature = "test-support"))]
 pub(in crate::gameplay_transport) fn fixture_rafzan_resume(
     npc: &str,

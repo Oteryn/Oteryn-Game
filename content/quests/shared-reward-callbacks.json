@@ -4182,7 +4182,8 @@
           "minimum": 5,
           "maximum": 5
         }
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "key": "oteryn:quest-reward/l4-pirate-eye-patches",

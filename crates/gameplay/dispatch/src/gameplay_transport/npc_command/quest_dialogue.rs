@@ -267,6 +267,16 @@ fn publish_committed_reply(
     }
 }
 
+impl SessionNpc {
+    fn publish_quest_topic(&mut self, context: Context, next: Option<Topic>) {
+        if next.is_some() {
+            // An explicit topic from either dialogue owner supersedes the previous one.
+            catalogue::retire_for_quest_dialogue(self, &context);
+        }
+        self.quest_dialogue.apply_topic(context, next);
+    }
+}
+
 fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId, committed: bool) {
     if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
         && let Some(state) = sessions.get_mut(&session)
@@ -279,7 +289,7 @@ fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId
         } else {
             return;
         };
-        state.quest_dialogue.apply_topic(pending.context, topic);
+        state.publish_quest_topic(pending.context, topic);
     }
 }
 
@@ -332,14 +342,16 @@ pub(super) async fn apply(
         let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
             return rejected();
         };
-        let state = &mut sessions
-            .entry(command.game_session_id)
-            .or_default()
-            .quest_dialogue;
-        if state.pending.is_some() || state.topic(&step.context) != step.topic {
+        let state = sessions.entry(command.game_session_id).or_default();
+        if matches!(state.catalogue, Some(catalogue::Pending::Commit { .. })) {
+            return unknown();
+        }
+        if state.quest_dialogue.pending.is_some()
+            || state.quest_dialogue.topic(&step.context) != step.topic
+        {
             return rejected();
         }
-        state.apply_topic(step.context, step.next_topic);
+        state.publish_quest_topic(step.context, step.next_topic);
         drop(sessions);
         if step.refused {
             rendered.disposition = NpcIntentDisposition::Rejected;
@@ -426,17 +438,16 @@ pub(super) async fn apply(
         let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
             return rejected();
         };
-        let state = &mut sessions
-            .entry(command.game_session_id)
-            .or_default()
-            .quest_dialogue;
-        if state.pending.is_some() {
+        let state = sessions.entry(command.game_session_id).or_default();
+        if state.quest_dialogue.pending.is_some()
+            || matches!(state.catalogue, Some(catalogue::Pending::Commit { .. }))
+        {
             return unknown();
         }
-        if state.topic(&step.context) != step.topic {
+        if state.quest_dialogue.topic(&step.context) != step.topic {
             return rejected();
         }
-        state.pending = Some(Pending {
+        state.quest_dialogue.pending = Some(Pending {
             actor,
             character: fence.character_id,
             request: request.clone(),

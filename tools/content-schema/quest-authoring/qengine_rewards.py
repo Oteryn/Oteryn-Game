@@ -530,6 +530,7 @@ def build():
     add('l4-pirate-base',pirate_owner,'raymond_striker',['pirate outfit'],
         [storage(pirate+'pirate_base_outfit',-1,1,0)],outfit=('pirate',0),requires=[
             requirement(shattered+'access_to_laguna_island',1),requirement(shattered+'rays_mission4',5)])
+    callbacks[-1]["msg_contains"] = True
     sabre=pirate+'pirate_sabre_addon'
     start=[storage(sabre,-1,1,0),storage('oteryn:quest-progress/outfit_quest/default_start',-1,1,1)]
     add('l4-pirate-sabre-start',pirate_owner,'duncan',['yes'],start,topic=2)

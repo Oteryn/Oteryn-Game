@@ -2863,7 +2863,8 @@
       ],
       "reply": [
         "Think carefully, human, for this mission will bring you into real danger. Are you prepared to do us that final favour?"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.gabel",
@@ -2884,7 +2885,8 @@
       "requires": [],
       "reply": [
         "Have you found Fa'hradin's lamp and placed it in Malor's personal chambers?"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.gnomadness",
@@ -4843,7 +4845,8 @@
       ],
       "reply": [
         "Is it your true wish to sacrifice this to Zathroth?"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.lugri",
@@ -4863,7 +4866,8 @@
       ],
       "reply": [
         "Is it your true wish to sacrifice this to Zathroth?"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.lugri",
@@ -4889,7 +4893,8 @@
       ],
       "reply": [
         "Are you willing to prove your loyalty through these sacrifices?"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.lugri",
@@ -4909,7 +4914,8 @@
       ],
       "reply": [
         "Is it your true wish to sacrifice this to Zathroth?"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.lugri",
@@ -4929,7 +4935,8 @@
       ],
       "reply": [
         "Is it your true wish to sacrifice this to Zathroth?"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.lugri",
@@ -5116,7 +5123,8 @@
       ],
       "reply": [
         "But think carefully, human, for this mission will bring you close to certain death. Are you prepared to embark on this mission?"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.malor",
@@ -5137,7 +5145,8 @@
       "requires": [],
       "reply": [
         "Have you found Fa'hradin's lamp and placed it in Malor's personal chambers?"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.miraia",

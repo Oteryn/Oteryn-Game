@@ -287,7 +287,9 @@ fn scenario_case(
     );
     let qengine_reward = name.starts_with("qengine-rewards-");
     let outfit_world = name.starts_with("l1-") && name.ends_with("-wardrobe");
-    let shared_rewards = name == "questpc7-grave"
+    let regional_hunt_dialogue = name.starts_with("regional-hunt-dialogue-");
+    let shared_rewards = regional_hunt_dialogue
+        || name == "questpc7-grave"
         || name == "questpc7-ferumbras"
         || name == "questpc7-hero"
         || name == "questpc7-hydra"
@@ -1396,6 +1398,8 @@ fn scenario_case(
         };
 
         let initial_level: Option<u32> = match name {
+            "regional-hunt-dialogue-daniel" => Some(30),
+            _ if regional_hunt_dialogue => Some(60),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
@@ -1657,7 +1661,8 @@ fn scenario_case(
                 Some(activation),
                 Some(h.root.clone()),
             );
-        let eligibility_premium = if feaster
+        let eligibility_premium = if regional_hunt_dialogue
+            || feaster
             || name == "catalogue-npc-inventory"
             || matches!(
                 name,
@@ -2670,6 +2675,11 @@ fn scenario_case(
             super::super::questpc7_hydra_fixtures::replenishment(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hoist-story" {
             super::super::questpc7_hoist_story_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if regional_hunt_dialogue {
+            Box::pin(super::super::regional_hunt_save_fixtures::dialogue(
+                &mut owner, &mut admitted, &h, name,
+            ))
+            .await?;
         } else if name == "regional-hunt-save" {
             Box::pin(super::super::regional_hunt_save_fixtures::exercise(&mut owner, &mut admitted, &h))
                 .await?;

@@ -90,3 +90,105 @@ pub(super) async fn exercise(
     assert_eq!(after_report.tracks().get(&phase.track), Some(&phase.set));
     Ok(())
 }
+
+pub(super) async fn dialogue(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    name: &str,
+) -> TestResult {
+    use super::classic_quests_fixtures::{install, progress, talk};
+    use super::qengine_outfit_stories_fixtures::{
+        seed_quest_prerequisites, select_outfit_capabilities,
+    };
+    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog;
+
+    let source = NpcRuleCatalog::runtime().map_err(debug)?;
+    let rule = |key: &str| {
+        source
+            .programs()
+            .iter()
+            .flat_map(|program| &program.document.rules)
+            .find(|rule| rule.key.strip_prefix("oteryn:quest-npc/hunting-tasks/") == Some(key))
+            .ok_or("regional hunt rule")
+    };
+    let (ask_key, hunt) = match name {
+        "regional-hunt-dialogue-daniel" => ("cyclops/ask", "rotworms"),
+        "regional-hunt-dialogue-lugri" => ("necromancers/ask", "necromancers"),
+        _ => ("pirates/ask", "pirates"),
+    };
+    let ask = rule(ask_key)?;
+    let phase = format!("oteryn:quest-progress/hunting-tasks/{hunt}/phase");
+    let [npc] = install(owner, admitted, [ask.npc.as_str()]).await?;
+    let reward = if name.starts_with("regional-hunt-dialogue-raymond") {
+        select_outfit_capabilities(owner, admitted)?;
+        let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+        let reward = offered_for(catalogue)?
+            .into_iter()
+            .find(|callback| callback.key == "oteryn:quest-reward/l4-pirate-base")
+            .ok_or("Raymond outfit reward")?;
+        let values = reward
+            .requires
+            .iter()
+            .map(|r| (r.track.clone(), r.minimum))
+            .collect::<Vec<_>>();
+        seed_quest_prerequisites(harness, owner, admitted, &values, 120).await?;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+        Some(reward)
+    } else {
+        None
+    };
+    talk(owner, admitted, npc, 121, "hi").await?;
+    if name != "regional-hunt-dialogue-raymond-mixed" {
+        assert_eq!(talk(owner, admitted, npc, 122, "task").await?, ask.reply);
+    }
+    if name == "regional-hunt-dialogue-daniel" {
+        assert_eq!(
+            talk(owner, admitted, npc, 123, "no").await?,
+            rule("cyclops/decline")?.reply
+        );
+        assert_eq!(
+            talk(owner, admitted, npc, 124, "yes cyclops").await?,
+            rule("rotworms/accept")?.reply
+        );
+        assert_eq!(progress(owner, admitted, owner.character, &phase).await?, 1);
+    } else if let Some(reward) = reward {
+        let keyword = &reward.keywords[0];
+        let message = if name.ends_with("-mixed") {
+            format!("{keyword} task")
+        } else {
+            keyword.clone()
+        };
+        talk(owner, admitted, npc, 123, &message).await?;
+        let outfit = reward.storage.first().ok_or("outfit track")?;
+        assert_eq!(
+            progress(owner, admitted, owner.character, &outfit.track).await?,
+            outfit.set
+        );
+        if !name.ends_with("-mixed") {
+            talk(owner, admitted, npc, 124, "yes").await?;
+            assert_eq!(progress(owner, admitted, owner.character, &phase).await?, 0);
+        }
+    } else {
+        talk(owner, admitted, npc, 123, "outfit").await?;
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            1
+        );
+        talk(owner, admitted, npc, 124, "yes").await?;
+        assert_eq!(progress(owner, admitted, owner.character, &phase).await?, 0);
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            2
+        );
+    }
+    Ok(())
+}

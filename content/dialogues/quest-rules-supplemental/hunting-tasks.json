@@ -555,8 +555,7 @@
       "npc": "oteryn:npc.daniel_steelsoul",
       "trigger": "say",
       "keywords": [
-        "task",
-        "trolls"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "guards": [
@@ -621,8 +620,7 @@
       "npc": "oteryn:npc.daniel_steelsoul",
       "trigger": "say",
       "keywords": [
-        "task",
-        "trolls"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "guards": [
@@ -771,8 +769,7 @@
       "npc": "oteryn:npc.daniel_steelsoul",
       "trigger": "say",
       "keywords": [
-        "task",
-        "goblins"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "guards": [
@@ -837,8 +834,7 @@
       "npc": "oteryn:npc.daniel_steelsoul",
       "trigger": "say",
       "keywords": [
-        "task",
-        "goblins"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "guards": [
@@ -999,8 +995,7 @@
       "npc": "oteryn:npc.daniel_steelsoul",
       "trigger": "say",
       "keywords": [
-        "task",
-        "cyclops"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "guards": [
@@ -1065,8 +1060,7 @@
       "npc": "oteryn:npc.daniel_steelsoul",
       "trigger": "say",
       "keywords": [
-        "task",
-        "cyclops"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "guards": [
@@ -1227,8 +1221,7 @@
       "npc": "oteryn:npc.daniel_steelsoul",
       "trigger": "say",
       "keywords": [
-        "task",
-        "rotworms"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "guards": [
@@ -1293,8 +1286,7 @@
       "npc": "oteryn:npc.daniel_steelsoul",
       "trigger": "say",
       "keywords": [
-        "task",
-        "rotworms"
+        "task"
       ],
       "keyword_mode": "msg_contains",
       "guards": [

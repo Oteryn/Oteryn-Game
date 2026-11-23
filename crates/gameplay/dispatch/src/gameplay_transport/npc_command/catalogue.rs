@@ -545,6 +545,12 @@ fn install(
     }
 }
 
+pub(super) fn retire_for_quest_dialogue(state: &mut SessionNpc, context: &Context) {
+    if matches!(&state.catalogue, Some(Pending::Topic(topic)) if &topic.context == context) {
+        state.catalogue = None;
+    }
+}
+
 fn install_success(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,

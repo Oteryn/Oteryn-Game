@@ -1520,21 +1520,24 @@ fn review_batch_regional_hunts_follow_crystal_branch_order() -> Result<(), Strin
         if decline.as_ref().map(|plan| plan.next_topic) != Some(alternate_topic) {
             failures.push(format!("declining {task} did not offer {alternate}"));
         }
-        let accept = programme
-            .plan_storage(&NpcRuleInput {
-                message: "yes",
-                topic: alternate_topic,
-                ..input
-            })
-            .map_err(|error| error.to_string())?;
-        if !accept.is_some_and(|plan| {
-            plan.track_changes
-                .iter()
-                .any(|change| change.key == phase(alternate) && change.after == 1)
-        }) {
-            failures.push(format!(
-                "could not accept alternate {alternate} after declining {task}"
-            ));
+        let confirmation = format!("yes {task}");
+        for message in ["yes", confirmation.as_str()] {
+            let accept = programme
+                .plan_storage(&NpcRuleInput {
+                    message,
+                    topic: alternate_topic,
+                    ..input
+                })
+                .map_err(|error| error.to_string())?;
+            if !accept.is_some_and(|plan| {
+                plan.track_changes
+                    .iter()
+                    .any(|change| change.key == phase(alternate) && change.after == 1)
+            }) {
+                failures.push(format!(
+                    "{message:?} did not accept alternate {alternate} after declining {task}"
+                ));
+            }
         }
     }
     for (npc, earlier) in [
