@@ -26,6 +26,13 @@ fn contains_whole_keyword(text: &str, keyword: &str) -> bool {
     })
 }
 
+fn open_conversation(npc: EntityRef) -> NpcConversation {
+    NpcConversation {
+        open: Some((npc, NpcConversationState::Open)),
+        lines: Vec::new(),
+    }
+}
+
 fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalkOutcome {
     let line = match cause {
         TravelRefusal::UnavailableRoute => "I'm sorry but I don't sail there.",
@@ -48,6 +55,53 @@ fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalk
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn follow_npc_session(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        shown: Option<EntityRef>,
+    ) -> Option<npc_command::NpcUpdate> {
+        let runtime = self.runtime.lock().await;
+        let conversations = &self.states.npc_conversations;
+        let chat = &self.states.chat;
+        let mut update = conversations.follow(chat, &runtime, session, shown);
+        if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock()
+            && let Some(prompt) = prompts.get(&session)
+        {
+            let npc = prompt.npc;
+            let intent = NpcTalkIntent {
+                npc_actor: npc,
+                text: String::new(),
+            };
+            if prompt.is_live(self.owner_now().get())
+                && conversations
+                    .current_npc(chat, &runtime, actor, session, &intent)
+                    .as_ref()
+                    == Some(&prompt.context)
+            {
+                if let Some((shown_npc, state)) = update
+                    .as_mut()
+                    .and_then(|update| update.conversation.as_mut())
+                    .and_then(|conversation| conversation.open.as_mut())
+                    && *shown_npc == npc
+                {
+                    *state = NpcConversationState::Confirming;
+                }
+            } else {
+                prompts.remove(&session);
+                // Ordinary follow already reports a closed or changed NPC. The
+                // same focused NPC needs an explicit correction out of Confirming.
+                if shown == Some(npc) {
+                    update
+                        .get_or_insert_default()
+                        .conversation
+                        .get_or_insert_with(|| open_conversation(npc));
+                }
+            }
+        }
+        update
+    }
+
     pub(in crate::gameplay_transport) async fn resume_paid_travel(
         &self,
         actor: ExactActorRef,
@@ -107,24 +161,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> npc_command::NpcTalkOutcome {
         let session = command.game_session_id;
         let text = intent.text.trim().to_ascii_lowercase();
-        let (context, routes) = {
+        let (context, routes, previous) = {
             let runtime = self.runtime.lock().await;
-            if self.states.spell_states.lock().await.is_dead(actor) {
+            let previous = match self.states.newhaven_travel.paid_prompts.lock() {
+                Ok(mut prompts) => prompts.remove(&session),
+                Err(_) => return ordinary,
+            };
+            let conversations = &self.states.npc_conversations;
+            let chat = &self.states.chat;
+            if ordinary.conversation.is_none()
+                && let Some(prompt) = &previous
+            {
+                let update = conversations
+                    .follow(chat, &runtime, session, Some(prompt.npc))
+                    .unwrap_or_default();
+                ordinary.conversation = Some(
+                    update
+                        .conversation
+                        .unwrap_or_else(|| open_conversation(prompt.npc)),
+                );
+                ordinary.window = ordinary.window.or(update.window);
+            }
+            if ordinary.disposition != NpcIntentDisposition::Ok
+                || ordinary.unknown
+                || self.states.spell_states.lock().await.is_dead(actor)
+            {
                 return ordinary;
             }
-            let Some(context) = self.states.npc_conversations.current_npc(
-                &self.states.chat,
-                &runtime,
-                actor,
-                session,
-                intent,
-            ) else {
-                if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
-                    prompts.remove(&session);
-                }
+            let Some(context) = conversations.current_npc(chat, &runtime, actor, session, intent)
+            else {
                 return ordinary;
             };
-            let Some(book) = self.states.chat.npc_talk() else {
+            let Some(book) = chat.npc_talk() else {
                 return ordinary;
             };
             let Some(entry) = book.get(&context.2) else {
@@ -133,27 +201,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if entry.travel_routes.is_empty() {
                 return ordinary;
             }
-            (context, entry.travel_routes.clone())
+            (context, entry.travel_routes.clone(), previous)
         };
         let Some(fence) = command.item_fence else {
             return ordinary;
         };
         let now = self.owner_now().get();
-        let previous = match self.states.newhaven_travel.paid_prompts.lock() {
-            Ok(mut prompts) => prompts.remove(&session),
-            Err(_) => return ordinary,
-        };
-        // Clear Confirming when the prompt is consumed and ordinary talk has no reply.
-        if ordinary.conversation.is_none()
-            && previous
-                .as_ref()
-                .is_some_and(|prompt| prompt.npc == intent.npc_actor && prompt.context == context)
-        {
-            ordinary.conversation = Some(NpcConversation {
-                open: Some((intent.npc_actor, NpcConversationState::Open)),
-                lines: Vec::new(),
-            });
-        }
         let callback_confirmation = previous
             .as_ref()
             .is_some_and(|prompt| prompt.route.crystal_callback)
@@ -208,6 +261,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 "Do you seek a passage to {} for {fare} gold?",
                 route.keyword
             );
+            let runtime = self.runtime.lock().await;
+            if self
+                .states
+                .npc_conversations
+                .current_npc(&self.states.chat, &runtime, actor, session, intent)
+                .as_ref()
+                != Some(&context)
+            {
+                return ordinary;
+            }
             let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() else {
                 return ordinary;
             };
@@ -217,7 +280,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     npc: intent.npc_actor,
                     context,
                     fence,
-                    opened: now,
+                    opened: self.owner_now().get(),
                     route,
                     fare,
                 },

@@ -6,6 +6,7 @@ use crate::content::{NativeEntryStart, NpcDataCatalogue, npc_catalogue_preproduc
 use crate::foundation::{
     ChannelContentPin, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
 };
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::gameplay_transport::npc_talk::NpcTalkBook;
 use oteryn_protocol_oteryn::npc_service::NpcConversationState;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
@@ -369,8 +370,147 @@ async fn regional_quotes(
             assert!(!followup.inventory_changed);
             assert_eq!(receipts, 0, "a cancelled quote was still payable");
             command += 3;
+
+            let session = deps.admitted.game_session_id;
+            for exit in [
+                "no",
+                "cancel",
+                "focus loss",
+                "out of range",
+                "idle",
+                "late yes",
+            ] {
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                let quote = talk(owner, deps, npc, command, slugs[1]).await?;
+                assert_eq!(
+                    quote.conversation.and_then(|reply| reply.open),
+                    Some((npc, NpcConversationState::Confirming)),
+                );
+                command += 1;
+                let correction = match exit {
+                    "focus loss" | "out of range" => {
+                        use crate::gameplay_transport::connection::UseCommand;
+                        use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
+
+                        let fence = owner
+                            .current_quest_fence(session)
+                            .await
+                            .map_err(|_| "current fence")?
+                            .ok_or("live session")?
+                            .item_fence();
+                        let confirm = NpcTalkIntent {
+                            npc_actor: npc,
+                            text: "yes".into(),
+                        };
+                        let confirm_command = UseCommand {
+                            game_session_id: session,
+                            command_id: command,
+                            item_fence: Some(fence),
+                        };
+                        let context = owner
+                            .states
+                            .npc_conversations
+                            .current_npc(
+                                &owner.states.chat,
+                                &*deps.runtime.lock().await,
+                                deps.actor,
+                                session,
+                                &confirm,
+                            )
+                            .ok_or("quoted conversation")?;
+                        assert!(owner.has_pending_paid_confirmation(
+                            confirm_command,
+                            &confirm,
+                            &context
+                        ));
+                        if exit == "focus loss" {
+                            owner.npc_session_open(session).await;
+                        } else {
+                            // Cross NPC0-RL-07 before the next production follow tick.
+                            walk_x(deps, 1).await?;
+                        }
+                        let correction = owner
+                            .npc_follow(deps.actor, session, Some(npc))
+                            .await
+                            .and_then(|update| update.conversation);
+                        if owner.has_pending_paid_confirmation(confirm_command, &confirm, &context)
+                        {
+                            failures.push(format!("{exit}: follow kept the quote"));
+                        }
+                        if exit == "out of range" {
+                            walk_x(deps, -1).await?;
+                        }
+                        owner.clock_origin -= std::time::Duration::from_secs(1);
+                        talk(owner, deps, npc, command, "hi").await?;
+                        command += 1;
+                        correction
+                    }
+                    "idle" => {
+                        owner.clock_origin -= std::time::Duration::from_secs(31);
+                        owner
+                            .npc_follow(deps.actor, session, Some(npc))
+                            .await
+                            .and_then(|update| update.conversation)
+                    }
+                    _ => {
+                        let reply = if exit == "late yes" {
+                            owner.clock_origin -= std::time::Duration::from_secs(31);
+                            "yes"
+                        } else {
+                            exit
+                        };
+                        let outcome = talk(owner, deps, npc, command, reply).await?;
+                        command += 1;
+                        if outcome.inventory_changed {
+                            failures.push(format!("{exit}: inventory changed"));
+                        }
+                        outcome.conversation
+                    }
+                };
+                let expected = if matches!(exit, "focus loss" | "out of range") {
+                    None
+                } else {
+                    Some((npc, NpcConversationState::Open))
+                };
+                let state = correction.map(|reply| reply.open);
+                if state != Some(expected) {
+                    failures.push(format!(
+                        "{exit}: expected {expected:?}, published {state:?}"
+                    ));
+                }
+            }
+            let after = deps
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position();
+            if after != before {
+                failures.push(format!("late yes: moved from {before:?} to {after:?}"));
+            }
+            let writes: i64 = sqlx::query_scalar(
+                "SELECT (SELECT count(*) FROM game_item_fee_burns) + (SELECT count(*) FROM game_newhaven_travel_receipts)",
+            )
+            .fetch_one(pool)
+            .await?;
+            if writes != 0 {
+                failures.push(format!(
+                    "late yes: recorded {writes} debit/arrival receipts"
+                ));
+            }
+            assert!(failures.is_empty(), "{}", failures.join("\n"));
         }
         if stem == "tarak_sunken" {
+            talk(owner, deps, npc, command, slugs[0]).await?;
+            owner.clock_origin -= std::time::Duration::from_secs(31);
+            let expired = talk(owner, deps, npc, command + 1, "yes please").await?;
+            command += 2;
+            assert_eq!(
+                expired.conversation.and_then(|reply| reply.open),
+                Some((npc, NpcConversationState::Open)),
+                "the free return must expire before a phrase confirmation",
+            );
             talk(owner, deps, npc, command, slugs[0]).await?;
             talk(owner, deps, npc, command + 1, "yes please").await?;
             let receipt: Option<i64> = sqlx::query_scalar(
@@ -395,6 +535,20 @@ async fn regional_quotes(
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+    Ok(())
+}
+
+async fn walk_x(deps: &Dependencies, dx: i32) -> TestResult {
+    let mut runtime = deps.runtime.lock().await;
+    for _ in 0..6 {
+        let current = runtime.read_actor_position(deps.actor).map_err(debug)?;
+        let mut next = current.position();
+        next.x += dx;
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(current, next)
+            .map_err(debug)?;
+    }
     Ok(())
 }
 

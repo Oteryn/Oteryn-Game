@@ -111,13 +111,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         }
         let ordinary = npc_command::npc_bank_talk(self, actor, command, intent.clone()).await;
-        if ordinary.disposition != NpcIntentDisposition::Ok {
-            return ordinary;
-        }
         let ordinary = self
             .paid_travel_talk(actor, command, &intent, ordinary)
             .await;
-        if ordinary.inventory_changed || ordinary.unknown {
+        if ordinary.disposition != NpcIntentDisposition::Ok
+            || ordinary.inventory_changed
+            || ordinary.unknown
+        {
             return ordinary;
         }
         let tutorial_enabled = self.tutorial_enabled().await;
