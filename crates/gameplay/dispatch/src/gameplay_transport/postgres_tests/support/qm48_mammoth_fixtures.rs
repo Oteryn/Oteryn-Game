@@ -178,7 +178,24 @@ pub(super) async fn exercise_horn(
         }
     };
     let use_interval = std::time::Duration::from_millis(250);
+    let tile = |point: Position| crate::map::overlay::TilePos {
+        x: point.x,
+        y: point.y,
+        floor: point.floor,
+    };
+    let cue_cursor = || {
+        map.facts
+            .movement_effects_since(0)
+            .last()
+            .map_or(0, |entry| entry.0)
+    };
+    let assert_cue = |cursor, point, effect| {
+        let cues = map.facts.movement_effects_since(cursor);
+        assert_eq!(cues.len(), 1, "one cue from the successful horn action");
+        assert_eq!((cues[0].1, cues[0].2), (tile(point), effect));
+    };
     if position == BEAR {
+        let cursor = cue_cursor();
         let before = bear_health(owner, admitted).await?;
         let payload = encode_use_intent(&target()).map_err(debug)?;
         let (next, result, _) = super::item_craft_fixtures::exchange(
@@ -196,6 +213,7 @@ pub(super) async fn exercise_horn(
             "bare USE on the awake bear resolves a hit"
         );
         assert!((10..=30).contains(&(before - bear_health(owner, admitted).await?)));
+        assert_cue(cursor, horn_start(position), 3);
         tokio::time::sleep(use_interval).await;
     }
     let horn_use = || {
@@ -209,6 +227,7 @@ pub(super) async fn exercise_horn(
     };
     let payload = horn_use()?;
     let before_stun = owner.owner_now().get();
+    let cursor = cue_cursor();
     let (next, result, _) = super::item_craft_fixtures::exchange(
         owner,
         *admitted,
@@ -223,6 +242,7 @@ pub(super) async fn exercise_horn(
         UseDisposition::Committed,
         "selected horn at its donor selector"
     );
+    assert_cue(cursor, position, if position == BARREL { 13 } else { 32 });
     let appearance = || {
         let placement = map
             .overlay
@@ -256,6 +276,7 @@ pub(super) async fn exercise_horn(
         assert_eq!(result, UseDisposition::Committed);
         let due = map.facts.next_movement_decay_time().ok_or("second bear decay")?;
         tokio::time::sleep(use_interval).await;
+        let cursor = cue_cursor();
         let payload = encode_use_intent(&target()).map_err(debug)?;
         let (next, result, _) = super::item_craft_fixtures::exchange(
             owner,
@@ -271,6 +292,7 @@ pub(super) async fn exercise_horn(
             UseDisposition::Committed,
             "bare USE hugs the stunned bear"
         );
+        assert_cue(cursor, position, 33);
         assert_eq!(appearance()?, 7174);
         assert_eq!(map.facts.expire_movement_items(due), 0, "hug invalidates the stun timer");
         let snapshot = owner
@@ -357,6 +379,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    lose_ack: bool,
 ) -> TestResult {
     use oteryn_gameplay_domain::domain::condition::{ConditionType, ConditionValues, StatusKind};
     use oteryn_gameplay_foundation::foundation::condition::{
@@ -379,11 +402,11 @@ pub(super) async fn exercise(
         .digest()
         .to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
+    let target = WorldObjectTarget {
         placement,
         expected_revision: 0,
-    })
-    .map_err(debug)?;
+    };
+    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
     let apply = |now, duration_ms| -> TestResult<_> {
         Ok((
             ConditionDefinition::new(
@@ -446,6 +469,36 @@ pub(super) async fn exercise(
                 conditions.remove_type(ConditionType::Status(StatusKind::Drunk));
             }
         }
+        if lose_ack && command == 4 {
+            owner
+                .states
+                .quest_callbacks
+                .interrupt_after_commit
+                .store(true, std::sync::atomic::Ordering::Release);
+            assert!(
+                super::item_craft_fixtures::exchange(
+                    owner, *admitted, command, &payload, None
+                )
+                .await
+                .is_err(),
+                "the interrupted USE must leave its wire acknowledgement pending"
+            );
+            let map = owner.bundle_map().ok_or("map")?;
+            assert!(owner.has_pending_quest_callback(session));
+            let count: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+            )
+            .bind(KEY)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(count, 1, "the push committed before the interruption");
+            assert_eq!(map.facts.object_revision(key), 0);
+            assert_eq!(map.facts.next_movement_decay_time(), None);
+            assert!(owner.reconcile_quest_callbacks(session).await);
+            assert!(!owner.has_pending_quest_callback(session));
+            assert!(owner.reconcile_quest_callbacks(session).await);
+            break;
+        }
         let reply = super::quest_world_callbacks_fixtures::wire(
             owner,
             admitted,
@@ -479,23 +532,25 @@ pub(super) async fn exercise(
         rows,
         vec![(MISSION.into(), 2), (barbarian_mead::TRACKS[0].into(), 7)]
     );
-    let runtime = owner.runtime.lock().await;
-    owner
-        .states
-        .spell_states
-        .lock()
-        .await
-        .get_mut(&runtime, actor, session)
-        .ok_or("state")?
-        .conditions
-        .cleanse_negative();
-    drop(runtime);
-    let replay =
-        super::quest_world_callbacks_fixtures::wire(owner, admitted, 4, 2, payload).await?;
-    assert_eq!(
-        oteryn_protocol_oteryn::world_object::decode_use_result(&replay).map_err(debug)?,
-        UseDisposition::Committed
-    );
+    if !lose_ack {
+        let runtime = owner.runtime.lock().await;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .get_mut(&runtime, actor, session)
+            .ok_or("state")?
+            .conditions
+            .cleanse_negative();
+        drop(runtime);
+        let replay =
+            super::quest_world_callbacks_fixtures::wire(owner, admitted, 4, 2, payload).await?;
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(&replay).map_err(debug)?,
+            UseDisposition::Committed
+        );
+    }
     let map = owner.bundle_map().ok_or("map")?;
     assert_eq!(map.facts.object_revision(key), 1);
     assert_eq!(map.facts.expire_movement_items(owner.owner_now().get()), 0);
@@ -514,7 +569,11 @@ pub(super) async fn exercise(
     assert_eq!(map.facts.expire_movement_items(cue_due), 1);
     let effects_after = map.facts.movement_effects_since(0);
     assert_eq!(effects_after.len(), effects_before.len() + 1);
-    assert_eq!(effects_after.last().map(|&(_, p, effect)| (p, effect)), Some((position, 22)));
+    assert_eq!(
+        effects_before.last().map(|&(_, p, effect)| (p, effect)),
+        Some((position, 33))
+    );
+    assert_eq!(effects_after.last().map(|&(_, p, effect)| (p, effect)), Some((position, 33)));
     assert_eq!(map.facts.next_movement_decay_time(), None);
     Ok(())
 }

@@ -9,6 +9,45 @@ from jsonschema import Draft202012Validator, ValidationError
 
 
 class QuestRewards(unittest.TestCase):
+    def zalamon_phantom_army_callbacks(self, stage, mission, topic, keyword):
+        prefix = "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/"
+        tracks = {prefix + "questline": stage, prefix + "mission05": mission}
+        generated = json.loads(self.outputs[q.qmech_m39.SHARD])
+        chosen = json.loads(
+            (q.ROOT / "content/quests/chosen-reward-callbacks.json").read_bytes()
+        )
+        return [
+            row["key"]
+            for row in generated["callbacks"] + chosen["callbacks"]
+            if row["quest"] == "oteryn:quest.children_of_the_revolution_quest"
+            and row["npc"] == "oteryn:npc.zalamon"
+            and row["topic"] == topic
+            and keyword in row["keywords"]
+            and all(
+                gate["minimum"] <= tracks.get(gate["track"], 0) <= gate["maximum"]
+                for gate in row["storage"] + row.get("requires", [])
+            )
+        ]
+
+    def test_phantom_army_saved_report_has_one_reward_owner(self):
+        self.assertEqual(
+            self.zalamon_phantom_army_callbacks(20, 2, 0, "mission"),
+            ["oteryn:quest-reward/chosen/children/phantom-army-report"],
+        )
+
+    def test_phantom_army_partial_refuses_entry_without_battlefield_settlement(self):
+        self.assertEqual(self.zalamon_phantom_army_callbacks(18, 0, 13, "yes"), [])
+        self.assertEqual(self.zalamon_phantom_army_callbacks(19, 1, 0, "mission"), [])
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])
+        self.assertFalse(
+            any(
+                offer["npc"] == "oteryn:npc.zalamon"
+                and offer["next_topic"] == 13
+                and "mission" in offer["keywords"]
+                for offer in offers["offers"]
+            )
+        )
+
     def test_spike_offer_and_confirmation_use_the_same_level_range(self):
         offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])[
             "offers"

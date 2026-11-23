@@ -1,4 +1,5 @@
 """Qualify the Bear Cave shovel target as Crystal's walkable ground."""
+
 import argparse
 import hashlib
 import json
@@ -27,16 +28,30 @@ def outputs():
     appearance = read_appearances(raw)[593]
     bindings = [
         row["target"]
-        for row in json.loads((ROOT / "imports/crystalserver/bindings/items.json").read_bytes())["bindings"]
+        for row in json.loads(
+            (ROOT / "imports/crystalserver/bindings/items.json").read_bytes()
+        )["bindings"]
         if row["external_id"] == "593"
     ]
-    pointer = {"family": "Item", "key": "oteryn:item.tibia.i593", "revision": "definition-r1"}
-    if ("bank" not in appearance.flags or {"unpass", "unshoot"} & appearance.flags
-            or appearance.speed != 160 or appearance.automap_color != 24
-            or bindings != [pointer]):
+    pointer = {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i593",
+        "revision": "definition-r1",
+    }
+    if (
+        "bank" not in appearance.flags
+        or {"unpass", "unshoot"} & appearance.flags
+        or appearance.speed != 160
+        or appearance.automap_color != 24
+        or bindings != [pointer]
+    ):
         raise ValueError("unqualified Bear Cave ground 593")
     record = {
-        "identity": {"family": "Terrain", "key": "oteryn:terrain.tibia.i593", "revision": "definition-r1"},
+        "identity": {
+            "family": "Terrain",
+            "key": "oteryn:terrain.tibia.i593",
+            "revision": "definition-r1",
+        },
         "kind": known("ground"),
         "walkable": known(True),
         "ground_speed": known(appearance.speed),
@@ -46,15 +61,23 @@ def outputs():
         "automap": known({"shown": True, "color": appearance.automap_color}),
         "client_projection": known({"appearance_id": 593}),
         "provenance": {
-            "source": {"engine": "crystal", "repository": "zimbadev/crystalserver", "revision": REVISION},
+            "source": {
+                "engine": "crystal",
+                "repository": "zimbadev/crystalserver",
+                "revision": REVISION,
+            },
             "item_pointer": pointer,
             "source_item_id": 593,
             "route": {"owner": "Terrain", "reason": "ground_or_border"},
             "fields": {
-                field: [f"official_client:{APPEARANCES}.{fact}"] for field, fact in (
-                    ("kind", "flags.bank"), ("walkable", "flags.unpass"),
-                    ("ground_speed", "bank.waypoints"), ("blocks_projectile", "flags.unshoot"),
-                    ("automap", "flags.automap"), ("client_projection", "id"),
+                field: [f"official_client:{APPEARANCES}.{fact}"]
+                for field, fact in (
+                    ("kind", "flags.bank"),
+                    ("walkable", "flags.unpass"),
+                    ("ground_speed", "bank.waypoints"),
+                    ("blocks_projectile", "flags.unshoot"),
+                    ("automap", "flags.automap"),
+                    ("client_projection", "id"),
                 )
             },
         },

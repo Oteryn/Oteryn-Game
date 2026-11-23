@@ -57,6 +57,24 @@ fn qm48_mammoth_binds_live_drunk_action_and_source_storage() -> Result<(), Strin
 }
 
 #[test]
+fn barbarian_horn_loader_binds_donor_effects_at_the_targets() -> Result<(), String> {
+    let callbacks = super::load()?;
+    for (key, effect) in [
+        ("qm48/mammoth", 33),
+        ("barbarian-test/fill-horn", 13),
+        ("barbarian-test/stun-bear", 32),
+        ("barbarian-test/hug-bear", 33),
+    ] {
+        let key = format!("oteryn:quest-callback/{key}");
+        let callback = callbacks.iter().find(|row| row.key == key).ok_or(&key)?;
+        let magic = callback.effects.magic.as_ref().ok_or(&key)?;
+        assert_eq!(Some(magic.position), callback.selector.position, "{key}");
+        assert_eq!(magic.effect, effect, "{key}");
+    }
+    Ok(())
+}
+
+#[test]
 fn sven_links_debits_bear_and_mammoth_to_barbarian_completion() -> Result<(), String> {
     use crate::quest::{loader, reward_callbacks};
     let loaded =

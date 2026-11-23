@@ -44,7 +44,7 @@
             "y": 31028,
             "floor": -5
           },
-          "effect": 22
+          "effect": 33
         }
       },
       "offerings": [],
@@ -100,7 +100,17 @@
       "success_message": "You fill the horn with mead.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:8-11"
-      ]
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32201,
+            "y": 31154,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      }
     },
     {
       "key": "oteryn:quest-callback/barbarian-test/stun-bear",
@@ -143,7 +153,15 @@
         "reusable": true
       },
       "effects": {
-        "reset_after_ms": 5000
+        "reset_after_ms": 5000,
+        "magic": {
+          "position": {
+            "x": 32253,
+            "y": 31049,
+            "floor": -5
+          },
+          "effect": 32
+        }
       },
       "success_message": "The bear loses consciousness.",
       "sources": [
@@ -214,7 +232,15 @@
       "return_on_failure": false,
       "failure_message": null,
       "effects": {
-        "transform": 7174
+        "transform": 7174,
+        "magic": {
+          "position": {
+            "x": 32253,
+            "y": 31049,
+            "floor": -5
+          },
+          "effect": 33
+        }
       },
       "achievements": [
         "oteryn:achievement/bearhugger"

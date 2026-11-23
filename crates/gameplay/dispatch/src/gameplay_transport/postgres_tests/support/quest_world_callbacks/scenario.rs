@@ -59,7 +59,8 @@ fn scenario_case(
         || m44_lions
         || m44_amphora
         || m44_flower;
-    let qm48 = name == "qm48/mammoth";
+    let mammoth_recovery = name == "qm48/mammoth-recovery";
+    let qm48 = name == "qm48/mammoth" || mammoth_recovery;
     let barbarian_horn = matches!(name, "barbarian-test/fill-horn" | "barbarian-test/stun-bear");
     let bear_switch = name == "bear-room-stone-switch";
     let m03_use = name == super::super::qengine_m03_use_fixtures::NAME;
@@ -499,6 +500,8 @@ fn scenario_case(
             || shared_gate
         {
             "fish-napping-key"
+        } else if qm48 {
+            "qm48/mammoth"
         } else if qm47 {
             "barbarian-test-mead"
         } else {
@@ -2371,6 +2374,7 @@ fn scenario_case(
                 &mut owner,
                 &mut admitted,
                 &h,
+                mammoth_recovery,
             ))
             .await?;
         } else if name == "l6-stag-item-profile" {

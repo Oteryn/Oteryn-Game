@@ -634,7 +634,7 @@ mod tests {
         );
 
         let finish = catalogue
-            .transition("oteryn:quest-reward/l2-zalamon-finish")
+            .transition("oteryn:quest-reward/chosen/children/phantom-army-report")
             .ok_or("Phantom Army report transition")?;
         let before_arena_clear = BTreeMap::from([
             (
@@ -653,6 +653,32 @@ mod tests {
             ),
             "PARTIAL: the donor Phantom Army arena clear is required"
         );
+        let mut returned_from_battle = before_arena_clear;
+        for storage in &finish.effects {
+            let value = if storage.track.ends_with("/questline") {
+                20
+            } else {
+                2
+            };
+            returned_from_battle.insert(storage.track.clone(), value);
+        }
+        let eligible: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback.npc == "oteryn:npc.zalamon"
+                    && callback.topic == 0
+                    && callback.keywords.iter().any(|word| word == "mission")
+                    && catalogue
+                        .transition(&callback.key)
+                        .is_some_and(|transition| {
+                            catalogue
+                                .evaluate(transition, &returned_from_battle, 0)
+                                .is_ok()
+                        })
+            })
+            .map(|callback| callback.key.as_str())
+            .collect();
+        assert_eq!(eligible, [finish.key.as_str()]);
         Ok(())
     }
 

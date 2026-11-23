@@ -177,7 +177,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let QuestCause::Use(command) = cause else {
                 return UseDisposition::Rejected;
             };
-            return self.bite_awake_bear(runtime, states, actor, command);
+            return self.bite_awake_bear(runtime, states, map, actor, command);
         }
         if callback.effects.reward_door.is_some() {
             return self
@@ -1787,8 +1787,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(magic) = &callback.effects.magic {
             let position = tile(magic.position);
             map.facts.emit_movement_effect(position, magic.effect);
-            if fresh_effects
-                && let Some(delay) = callback.effects.magic_repeat_after_ms
+            // The map publication can follow a recovered durable commit.
+            // A repeat belongs to that publication, just like the immediate cue.
+            if let Some(delay) = callback.effects.magic_repeat_after_ms
                 && let Some(due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000)
                 && map
                     .facts

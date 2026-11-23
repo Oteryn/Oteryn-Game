@@ -21,6 +21,16 @@ fn qm48_mammoth_live_drunk_refusal_expiry_cleanse_commit_replay() -> TestResult 
 }
 
 #[test]
+fn qm48_mammoth_lost_ack_reconciles_the_delayed_cue_once() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("qm48-mammoth-recovery", || {
+        super::quest_world_callbacks_fixtures::scenario("qm48/mammoth-recovery", AT, false)
+    })
+}
+
+#[test]
 fn barbarian_test_fills_horn_and_hugs_only_the_stunned_source_bear() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

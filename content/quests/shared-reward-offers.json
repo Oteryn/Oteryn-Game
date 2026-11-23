@@ -7091,27 +7091,6 @@
     {
       "npc": "oteryn:npc.zalamon",
       "keywords": [
-        "mission"
-      ],
-      "topic": 0,
-      "any_topic": true,
-      "next_topic": 13,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline",
-          "minimum": 18,
-          "maximum": 18,
-          "set": 18,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Will you enter the passage to the great gate?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.zalamon",
-      "keywords": [
         "poison",
         "poizzon"
       ],

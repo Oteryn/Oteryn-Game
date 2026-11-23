@@ -13,6 +13,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         runtime: &ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
+        map: &BundleMap,
         actor: ExactActorRef,
         command: CommandRef,
     ) -> UseDisposition {
@@ -35,6 +36,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_none()
         {
             return UseDisposition::Rejected;
+        }
+        // Crystal action_horn.lua:28-31 casts CONST_ME_POFF at the bitten player.
+        if let Ok(position) = runtime.read_actor_position(actor)
+            && let Some(position) = native(position.position())
+        {
+            map.facts.emit_movement_effect(position, 3);
         }
         self.states
             .chat

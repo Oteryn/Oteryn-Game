@@ -410,35 +410,8 @@ def append(add, callbacks, offers, declarations, inputs, pin):
             "Fetch grease from the shelf in the storeroom, then arrange the symbols with the levers."
         ],
     )
-    prompt(
-        ("mission",),
-        0,
-        13,
-        18,
-        "Will you enter the passage to the great gate?",
-        any_topic=True,
-    )
-    progress(
-        "phantom-accept",
-        18,
-        19,
-        "337-345",
-        "Go through the portal and approach the gate.",
-        topic=13,
-        words=("yes",),
-        mission=[("teleport_access", 0, 0, 1), ("mission05", -1, 0, 1)],
-    )
-    progress(
-        "finish",
-        20,
-        21,
-        "143-158",
-        "Take this serpent crest for your service to the resistance.",
-        mission=[("mission05", 1, 2, 3)],
-        give=(10199, 1),
-        experience=10_000,
-        completes=True,
-    )
+    # Phantom Army is partial until its four-player battlefield settlement is
+    # wired. Keep the chosen report for saved returns from the battlefield.
 
     bone = "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit"
     warning = "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to."
