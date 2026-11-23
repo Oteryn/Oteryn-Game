@@ -38,6 +38,7 @@ pub(super) enum Extra {
     DueBeforeDeath,
     ControlLost,
     FinalDeadline,
+    BakragoreSettlement,
     CopiedDeath {
         credited: bool,
         prepared_bak: bool,
@@ -247,7 +248,7 @@ pub(super) fn scenario_with_step(
                 Extra::CopiedDeath {
                     prepared_bak: true,
                     ..
-                }
+                } | Extra::BakragoreSettlement
             );
             if prepared_bak {
                 assert!(final_boss);
@@ -679,12 +680,11 @@ pub(super) fn scenario_with_step(
                 }
                 super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
             }
-            if let Extra::CopiedDeath {
-                credited,
-                full_queue,
-                ..
-            } = extra
-            {
+            if let Some((credited, full_queue)) = match extra {
+                Extra::CopiedDeath { credited, full_queue, .. } => Some((credited, full_queue)),
+                Extra::BakragoreSettlement => Some((true, false)),
+                _ => None,
+            } {
                 drop(view);
                 super::srx3_rotten_death_fixtures::exercise(
                     &h,
@@ -696,6 +696,12 @@ pub(super) fn scenario_with_step(
                     full_queue,
                 )
                 .await?;
+                if matches!(extra, Extra::BakragoreSettlement) {
+                    super::srx3_rotten_death_fixtures::assert_bakragore_settlement_and_return(
+                        &h, &owner, &mut admitted,
+                    )
+                    .await?;
+                }
                 drop(owner);
                 drop(authority);
                 drop(seal);
