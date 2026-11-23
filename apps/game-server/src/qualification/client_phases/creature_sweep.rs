@@ -578,6 +578,14 @@ async fn death_receipt(
     .map_err(|_| "player death receipt deadline")?
 }
 
+fn observed_player_death(client: &mut DevClientSession) -> bool {
+    let events = client.take_events();
+    client.actor_vitals().is_some_and(|vitals| vitals.health == 0)
+        || events.into_iter().any(|event| {
+            matches!(event, oteryn_dev_client::SessionEvent::ActorVitals(delta) if delta.value.health == 0)
+        })
+}
+
 async fn clear_target(session: &mut Option<DevClientSession>, rows: &Rows<'_>) -> TestResult {
     if rows.attack_sent
         && let Some(client) = session.as_mut()
@@ -629,7 +637,9 @@ async fn calibrate(
     )
     .await;
     let cleanup = clear_target(session, &rows).await;
+    let died = session.as_mut().is_some_and(observed_player_death);
     let stop = match result {
+        Ok(Ok(())) if died => Some(failure("kill", "player-death", "zero health observed")),
         Ok(Ok(())) => cleanup
             .err()
             .map(|error| failure("release", "target-release", error)),
@@ -697,8 +707,10 @@ async fn sweep_species(
     )
     .await;
     let cleanup = clear_target(&mut state.session, &rows).await;
+    let wire_death = state.session.as_mut().is_some_and(observed_player_death);
     let receipt = death_receipt(clients).await;
-    let died = matches!(&result, Ok(Err(stop)) if stop.cause == "player-death")
+    let died = wire_death
+        || matches!(&result, Ok(Err(stop)) if stop.cause == "player-death")
         || receipt
             .as_ref()
             .is_ok_and(|current| current != &state.previous_death);
@@ -1109,9 +1121,7 @@ async fn hunt(
             .await
             .map_err(|error| failure("kill", "unkillable", format!("liveness:{error}")))?;
         verdict::Harness::global().progress("creature-sweep-combat");
-        if client.take_events().into_iter().any(|event| {
-            matches!(event, oteryn_dev_client::SessionEvent::ActorVitals(delta) if delta.value.health == 0)
-        }) || client.actor_vitals().is_some_and(|vitals| vitals.health == 0) {
+        if observed_player_death(client) {
             return Err(failure("kill", "player-death", "zero health observed"));
         }
         if rows.calibrating && tokio::time::Instant::now() > kill_deadline {
