@@ -189,6 +189,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return ordinary;
                 }
                 let name = self.states.chat.speaker_name(session).unwrap_or_default();
+                let window = if ungreet {
+                    self.states.npc_conversations.close_window(session, None)
+                } else {
+                    ordinary.window
+                };
                 return npc_command::NpcTalkOutcome {
                     conversation: Some(NpcConversation {
                         open: (!ungreet).then_some((intent.npc_actor, NpcConversationState::Open)),
@@ -201,6 +206,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             })
                             .collect(),
                     }),
+                    window,
                     ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Ok)
                 };
             }

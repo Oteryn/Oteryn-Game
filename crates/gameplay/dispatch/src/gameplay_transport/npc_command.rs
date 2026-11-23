@@ -321,7 +321,7 @@ impl NpcConversations {
     }
 
     /// The closed window to send when the session was shown one for an NPC it no longer talks to.
-    fn close_window(
+    pub(super) fn close_window(
         &self,
         session: GameSessionId,
         talking_to: Option<[u8; 16]>,
