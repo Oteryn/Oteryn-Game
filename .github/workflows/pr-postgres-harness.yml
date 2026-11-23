@@ -732,19 +732,22 @@ jobs:
             exit
           fi
           # Other label events and title/body edits have skipped dependencies:
-          # mirror the latest heavy-gate of a real run (one whose PostgreSQL
-          # scope job was not skipped) on this exact head, without cancelling
-          # it. A non-heavy run's success is never republished, and while a
-          # real run is pending the mirror fails and that run publishes.
+          # mirror the newest real run (its PostgreSQL scope job was not skipped)
+          # on this exact head, without cancelling it. Only that run's latest
+          # attempt counts: a heavy-gate created after its newest scope check.
+          # Until one of those has completed, the run is pending: the mirror
+          # fails and that run (and its reconcile job) publishes last.
           runs=$(gh api --paginate --slurp \
             "repos/$REPOSITORY/commits/$HEAD_SHA/check-runs?filter=all&per_page=100")
           conclusion=$(jq -r '
             def run_id: (.details_url // "") | capture("/actions/runs/(?<id>[0-9]+)/") | .id;
             [.[].check_runs[]] as $all
-            | [$all[] | select(.name == "PR early signal / PostgreSQL scope and routing" and .conclusion != "skipped") | run_id] as $real
-            | [$all[] | select(.name == "heavy-gate") | select((run_id) as $id | any($real[]; . == $id))] as $gates
-            | if any($gates[]; .status != "completed") then "pending"
-              else ([$gates[] | select(.status == "completed")] | max_by([.completed_at, .id]) | .conclusion // "none") end
+            | [$all[] | select(.name == "PR early signal / PostgreSQL scope and routing" and .conclusion != "skipped")] as $scopes
+            | if ($scopes | length) == 0 then "none" else
+                ($scopes | max_by(.id)) as $scope | ($scope | run_id) as $run
+                | [$all[] | select(.name == "heavy-gate" and .status == "completed" and .id > $scope.id and (run_id) == $run)]
+                | if length == 0 then "pending" else (max_by(.id) | .conclusion // "none") end
+              end
           ' <<< "$runs")
           if [[ "$conclusion" == 'pending' || "$conclusion" == 'none' ]]; then
             echo 'The real heavy-tests run is still running and will publish the final heavy-gate.'
@@ -829,3 +832,43 @@ jobs:
               cases = read_cases(Path(verified), optional=True)
           print(f'{sum(map(len, cases.values()))} PostgreSQL tests across {label} partitions')
           PY
+
+  # A label/edit mirror that saw the real run pending fails, and can finish after
+  # heavy_gate. This second heavy-gate republishes heavy_gate's result last; in
+  # real runs it first waits for in-flight mirror heavy-gates on the head. It
+  # always runs: a skipped heavy-gate check must never follow a failed one.
+  heavy_gate_reconcile:
+    name: heavy-gate
+    needs: [prepare, heavy_gate]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      checks: read
+    steps:
+      - name: Republish heavy-gate after in-flight mirrors
+        env:
+          GATE_RESULT: ${{ needs.heavy_gate.result }}
+          IS_REAL: ${{ needs.prepare.result != 'skipped' }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 30); do
+            [[ "$IS_REAL" == 'true' ]] || break
+            runs=$(gh api --paginate --slurp \
+              "repos/$REPOSITORY/commits/$HEAD_SHA/check-runs?filter=all&per_page=100")
+            mirrors=$(jq -r --arg own "$GITHUB_RUN_ID" '
+              def run_id: (.details_url // "") | capture("/actions/runs/(?<id>[0-9]+)/") | .id;
+              [.[].check_runs[]] as $all
+              | [$all[] | select(.name == "PR early signal / PostgreSQL scope and routing" and .conclusion != "skipped") | run_id] as $real
+              | [$all[] | select(.name == "heavy-gate" and .status != "completed")
+                  | select((run_id) as $id | $id != $own and (any($real[]; . == $id) | not))] | length
+            ' <<< "$runs")
+            [[ "$mirrors" == '0' ]] && break
+            echo "Waiting for $mirrors in-flight mirror heavy-gate check(s)"
+            sleep 10
+          done
+          echo "heavy_gate result: $GATE_RESULT"
+          test "$GATE_RESULT" = 'success'

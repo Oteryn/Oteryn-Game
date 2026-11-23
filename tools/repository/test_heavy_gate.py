@@ -505,66 +505,139 @@ class HeavyGateTests(unittest.TestCase):
         result = self.run_gate(heavy="false", labels_exit=1)
         self.assertNotEqual(result.returncode, 0)
 
+    SCOPE = "PR early signal / PostgreSQL scope and routing"
+
     @staticmethod
-    def check(run, name, status="completed", conclusion="success", completed_at=None, check_id=0):
-        return {"id": check_id, "name": name, "status": status, "conclusion": conclusion,
-                "completed_at": completed_at,
+    def check(run, name, status="completed", conclusion="success", check_id=0):
+        return {"id": check_id, "name": name, "status": status,
+                "conclusion": conclusion if status == "completed" else None,
                 "details_url": f"https://github.com/Oteryn/Oteryn-Game/actions/runs/{run}/job/{check_id}"}
 
-    def real_run(self, run, gate_status="completed", conclusion="success", completed_at=None, check_id=0):
-        return [self.check(run, "PR early signal / PostgreSQL scope and routing", check_id=check_id + 100),
-                self.check(run, "heavy-gate", gate_status, conclusion if gate_status == "completed" else None,
-                           completed_at, check_id)]
+    def attempt(self, run, scope_id, gate_status="completed", conclusion="success", real=True, gate=True):
+        """One run attempt: its scope check, then (once created) its heavy-gate."""
+        checks = [self.check(run, self.SCOPE, "completed", "success" if real else "skipped", scope_id)]
+        if gate:
+            checks.append(self.check(run, "heavy-gate", gate_status, conclusion, scope_id + 1))
+        return checks
 
-    def mirror_run(self, run, gate_status="completed", conclusion="success", completed_at=None, check_id=0):
-        return [self.check(run, "PR early signal / PostgreSQL scope and routing", conclusion="skipped",
-                           check_id=check_id + 100),
-                self.check(run, "heavy-gate", gate_status, conclusion if gate_status == "completed" else None,
-                           completed_at, check_id)]
+    def mirror(self, pages):
+        return self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
 
-    def test_mirror_uses_latest_completed_real_run_across_pages(self):
+    def test_mirror_uses_the_newest_real_run_across_pages(self):
         for conclusion in ("success", "failure", "cancelled", "neutral", "skipped", "timed_out"):
             with self.subTest(conclusion=conclusion):
                 pages = [{"check_runs": [
-                    *self.real_run(10, completed_at="2026-11-04T01:00:00Z", check_id=1),
-                    *self.mirror_run(11, gate_status="in_progress", check_id=4),
-                    self.check(12, "heavy-gate", completed_at="2026-11-04T03:00:00Z", check_id=5),
+                    *self.attempt(10, 10, conclusion="failure" if conclusion == "success" else "success"),
+                    *self.attempt(11, 40, real=False),
                 ]}, {"check_runs": [
-                    *self.real_run(13, conclusion=conclusion, completed_at="2026-11-04T02:00:00Z", check_id=3),
-                    *self.mirror_run(14, completed_at="2026-11-04T04:00:00Z", check_id=6),
+                    *self.attempt(13, 30, conclusion=conclusion),
+                    self.check(12, "heavy-gate", check_id=50),
                 ]}]
-                result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
+                result = self.mirror(pages)
                 self.assertEqual(result.returncode == 0, conclusion == "success", result.stderr)
 
     def test_mirror_never_republishes_a_non_heavy_success(self):
-        # A non-heavy run (skipped PostgreSQL scope) passed before heavy-tests was added.
-        pages = [{"check_runs": [*self.mirror_run(20, completed_at="2026-11-04T01:00:00Z", check_id=1)]}]
-        result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
+        result = self.mirror([{"check_runs": [*self.attempt(20, 1, real=False)]}])
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("still running", result.stdout)
 
-    def test_mirror_waits_for_a_pending_real_run(self):
-        # An older real success must not be republished while a newer real run is pending.
-        pages = [{"check_runs": [
-            *self.real_run(30, completed_at="2026-11-04T01:00:00Z", check_id=1),
-            *self.real_run(31, gate_status="queued", check_id=2),
-        ]}]
-        result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("still running", result.stdout)
-        # A pending real run whose scope job is still running counts as real too.
-        pages[0]["check_runs"][2]["status"] = "in_progress"
-        pages[0]["check_runs"][2]["conclusion"] = None
-        result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
-        self.assertNotEqual(result.returncode, 0)
+    def test_mirror_waits_for_the_newest_real_run(self):
+        older_success = self.attempt(30, 1)
+        cases = {
+            # The newest run's scope check exists before its heavy-gate is created.
+            "gate not created": self.attempt(31, 5, gate=False),
+            "gate running": self.attempt(31, 5, gate_status="in_progress"),
+            "scope running": [self.check(31, self.SCOPE, "in_progress", check_id=5)],
+        }
+        for name, newest in cases.items():
+            with self.subTest(name):
+                result = self.mirror([{"check_runs": [*older_success, *newest]}])
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("still running", result.stdout)
+
+    def test_mirror_ignores_a_previous_attempt_of_a_rerun(self):
+        # Attempt 1 passed; attempt 2 re-ran the scope job and has no gate yet.
+        pages = [{"check_runs": [*self.attempt(40, 1), *self.attempt(40, 5, gate=False)]}]
+        self.assertNotEqual(self.mirror(pages).returncode, 0)
+        pages = [{"check_runs": [*self.attempt(40, 1), *self.attempt(40, 5, conclusion="failure")]}]
+        self.assertNotEqual(self.mirror(pages).returncode, 0)
+        pages = [{"check_runs": [*self.attempt(40, 1, conclusion="failure"), *self.attempt(40, 5)]}]
+        self.assertEqual(self.mirror(pages).returncode, 0)
+
+    def test_mirror_uses_the_completed_gate_while_reconcile_runs(self):
+        pages = [{"check_runs": [*self.attempt(50, 1), self.check(50, "heavy-gate", "in_progress", check_id=3)]}]
+        self.assertEqual(self.mirror(pages).returncode, 0)
+        pages = [{"check_runs": [*self.attempt(50, 1, conclusion="failure"),
+                                 self.check(50, "heavy-gate", "in_progress", check_id=3)]}]
+        self.assertNotEqual(self.mirror(pages).returncode, 0)
 
     def test_mirror_fails_closed_without_completed_check_or_on_api_error(self):
-        for pages, api_exit in ((None, 0), ([{"check_runs": [*self.real_run(40, gate_status="in_progress")]}], 0),
+        for pages, api_exit in ((None, 0), ([{"check_runs": [*self.attempt(60, 1, gate_status="in_progress")]}], 0),
                                 (None, 1)):
             result = self.run_gate(real="false", pages=pages, api_exit=api_exit)
             self.assertNotEqual(result.returncode, 0)
             if api_exit == 0:
                 self.assertIn("still running", result.stdout)
+
+    def run_reconcile(self, *, gate_result="success", is_real="true", pages_seq=()):
+        script = step_script(WORKFLOW, "Republish heavy-gate after in-flight mirrors")
+        self.assertNotIn("${{", script)
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            state = Path(directory) / "calls"
+            pages_dir = Path(directory) / "pages"
+            pages_dir.mkdir()
+            for index, pages in enumerate(pages_seq):
+                (pages_dir / str(index)).write_text(json.dumps(pages))
+            gh = Path(directory) / "gh"
+            gh.write_text(
+                '#!/bin/bash\nset -eu\n'
+                'test "$*" = "api --paginate --slurp repos/Oteryn/Oteryn-Game/commits/head/check-runs?filter=all&per_page=100"\n'
+                'n=$(wc -l < "$CALLS" 2>/dev/null || echo 0)\necho x >> "$CALLS"\n'
+                'if [[ -f "$PAGES/$n" ]]; then cat "$PAGES/$n"; else cat "$PAGES/$(( $(ls "$PAGES" | wc -l) - 1 ))"; fi\n'
+            )
+            gh.chmod(0o755)
+            sleep = Path(directory) / "sleep"
+            sleep.write_text("#!/bin/bash\nexit 0\n")
+            sleep.chmod(0o755)
+            result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], env={
+                **os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
+                "GATE_RESULT": gate_result, "IS_REAL": is_real, "REPOSITORY": "Oteryn/Oteryn-Game",
+                "HEAD_SHA": "head", "GH_TOKEN": "fixture", "GITHUB_RUN_ID": "70",
+                "CALLS": str(state), "PAGES": str(pages_dir),
+            }, text=True, capture_output=True)
+            calls = len(state.read_text().splitlines()) if state.exists() else 0
+            return result, calls
+
+    def test_reconcile_republishes_the_real_result_after_in_flight_mirrors(self):
+        own = [*self.attempt(70, 1), self.check(70, "heavy-gate", "in_progress", check_id=3)]
+        busy = {"check_runs": [*own, *self.attempt(71, 10, gate_status="in_progress", real=False)]}
+        other_real = self.attempt(72, 20, gate_status="in_progress")
+        idle = {"check_runs": [*own, *self.attempt(71, 10, conclusion="failure", real=False), *other_real]}
+        for gate_result in ("success", "failure", "cancelled"):
+            with self.subTest(gate_result=gate_result):
+                result, calls = self.run_reconcile(gate_result=gate_result, pages_seq=([busy], [busy], [idle]))
+                self.assertEqual(result.returncode == 0, gate_result == "success", result.stderr)
+                self.assertEqual(calls, 3)
+                self.assertIn("Waiting for 1 in-flight mirror", result.stdout)
+        # Bounded: a mirror that never finishes does not hold the result forever.
+        result, calls = self.run_reconcile(pages_seq=([busy],))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(calls, 30)
+        # A mirror run republishes its own result at once, without the API.
+        for gate_result in ("success", "failure"):
+            result, calls = self.run_reconcile(gate_result=gate_result, is_real="false", pages_seq=([busy],))
+            self.assertEqual((result.returncode == 0, calls), (gate_result == "success", 0))
+
+    def test_reconcile_job_contract(self):
+        job = indented_yaml_mapping_block(self.text, "heavy_gate_reconcile", 2)
+        self.assertIsNotNone(job)
+        for fragment in ("    name: heavy-gate\n", "    needs: [prepare, heavy_gate]\n", "    if: always()\n",
+                         "    timeout-minutes: 10\n", "      checks: read\n",
+                         "          GATE_RESULT: ${{ needs.heavy_gate.result }}\n",
+                         "          IS_REAL: ${{ needs.prepare.result != 'skipped' }}\n"):
+            self.assertIn(fragment, job)
+        self.assertEqual(self.text.count("    name: heavy-gate\n"), 2)
+        self.assertTrue(self.text.rstrip().endswith("test \"$GATE_RESULT\" = 'success'"))
 
     def test_job_contract_and_event_classification(self):
         self.assertIsNotNone(self.job)

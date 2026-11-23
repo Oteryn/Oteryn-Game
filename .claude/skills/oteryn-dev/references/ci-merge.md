@@ -142,8 +142,12 @@ before the first lane PR, and in any case before the first promotion. To
 verify, read back the effective rules with
 `gh api repos/Oteryn/Oteryn-Game/rules/branches/staging` and confirm that
 `deletion`, `non_fast_forward`, `pull_request` (squash only) and
-`required_status_checks` (`game-gate`) are listed. Never test them with a real
-force-push or deletion.
+`required_status_checks` (`game-gate`) are listed. Then read each ruleset by
+id and check its bypass actors: `gh api repos/Oteryn/Oteryn-Game/rulesets/27896004`
+(*Protect staging integrity*) must have none, and
+`gh api repos/Oteryn/Oteryn-Game/rulesets/27896005` (*Gate staging*) exactly
+the admin repository role (`actor_id` 5, `RepositoryRole`, `always`). Never
+test them with a real force-push or deletion.
 
 - **Lane PRs go into `staging`.** Each lane works on its own short branch and
   opens its PR with base `staging`. Such a PR runs the light `game-gate`
@@ -172,10 +176,15 @@ force-push or deletion.
 - **No retargets.** Do not retarget a PR between `staging` and `main`;
   close it and open a new PR with the right base. `game-gate` has one name
   for both bases, so a retarget fails `game-gate` at once (the scope job
-  rejects any `edited` event that changed the base) and it stays red until a
-  new push qualifies the head for the new base. Other edits (title, body)
-  cancel nothing: in the harness they only mirror the `heavy-gate` of the
-  latest real heavy run on the head, and fail while one is still running.
+  rejects any `edited` event that changed the base, and its run is titled
+  `... • retargeted`). The head stays tainted until a new push: every
+  `game-gate` attempt (later edits, reruns and job retries included) checks
+  the live head and base ref against its own scope and fails on a head that
+  has a retargeted run. Other edits (title, body) cancel nothing: in the
+  harness they only mirror the `heavy-gate` of the newest real heavy run's
+  latest attempt on the head, and fail while it is still running. That run's
+  second `heavy-gate` job waits for such mirrors and republishes its result
+  last.
 - **Codex review status.** A PR into `staging` publishes the status
   `codex-review-gate (staging)`, so it never replaces the `codex-review-gate`
   of a `main` PR on the same head SHA. The `heavy-tests` exemption applies
