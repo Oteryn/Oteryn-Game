@@ -526,6 +526,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/issavi",
+    "use_authored_fare_and_premium": true,
     "keyword": "issavi",
     "price": 120,
     "premium": true,
@@ -539,6 +540,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/krailos",
+    "use_authored_fare_and_premium": true,
     "keyword": "krailos",
     "price": 60,
     "premium": true,
@@ -551,6 +553,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/thais",
+    "use_authored_fare_and_premium": true,
     "keyword": "thais",
     "price": 150,
     "premium": true,
@@ -2191,6 +2194,7 @@
   },
   {
     "key": "oteryn:service.travel.petros/issavi",
+    "use_authored_fare_and_premium": true,
     "keyword": "issavi",
     "price": 130,
     "premium": true,
@@ -2569,6 +2573,7 @@
   },
   {
     "key": "oteryn:service.travel.tarak_inner/monument_tower",
+    "crystal_callback": true,
     "keyword": "monument tower",
     "price": 50,
     "premium": false,
@@ -2582,6 +2587,7 @@
   },
   {
     "key": "oteryn:service.travel.tarak_inner/passage",
+    "crystal_callback": true,
     "keyword": "monument tower",
     "price": 50,
     "premium": false,
@@ -2595,6 +2601,7 @@
   },
   {
     "key": "oteryn:service.travel.tarak_inner/trip",
+    "crystal_callback": true,
     "keyword": "monument tower",
     "price": 50,
     "premium": false,
@@ -2608,6 +2615,7 @@
   },
   {
     "key": "oteryn:service.travel.tarak_sunken/passage",
+    "crystal_callback": true,
     "keyword": "yalahar",
     "price": 0,
     "premium": false,

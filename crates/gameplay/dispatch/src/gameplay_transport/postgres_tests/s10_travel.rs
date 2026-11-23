@@ -18,7 +18,7 @@ fn s10_travel_postgres_source_keywords_and_free_arrival() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "S10 travel PostgreSQL thread panicked")??;
     eprintln!(
@@ -28,8 +28,22 @@ fn s10_travel_postgres_source_keywords_and_free_arrival() -> TestResult {
     Ok(())
 }
 
-fn scenario() -> TestResult {
-    run(async |admin| {
+#[test]
+fn regional_travel_postgres_tarak_phrases_and_gulliver_fares() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "regional travel PostgreSQL thread panicked")??;
+    eprintln!("POSTGRES_CASE_COMPLETED regional_travel tarak_and_gulliver");
+    Ok(())
+}
+
+fn scenario(regional: bool) -> TestResult {
+    run(async move |admin| {
         reset();
         let h =
             Harness::create_with_admission_seed(admin, "s10_source_travel", true, false).await?;
@@ -43,7 +57,7 @@ fn scenario() -> TestResult {
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) = activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active content")?;
-        let bundle = world_fixture(world)?;
+        let bundle = world_fixture(world, regional)?;
         let base = pin.qualified_room().clone();
         let cells = bundle
             .movement_cells(base.movement_cells())
@@ -72,7 +86,7 @@ fn scenario() -> TestResult {
             ),
             base,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
-            4,
+            if regional { 5 } else { 4 },
         )?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
@@ -94,14 +108,19 @@ fn scenario() -> TestResult {
                 "quest-owned route escaped: {key}"
             );
         }
-        owner.states.chat.install_npc_talk(Arc::new(book));
+        let book = Arc::new(book);
+        owner.states.chat.install_npc_talk(Arc::clone(&book));
         let session = deps.admitted.game_session_id;
         owner
             .states
             .chat
             .admit(session, "Fixture Hero", owner.owner_now());
         owner.states.chat.set_npc_service(session);
-        let keys = ["a_ghostly_sage", "rapanaio_isle_of_evil", "scrutinon"];
+        let keys: &[_] = if regional {
+            &["captain_gulliver", "petros", "tarak_inner", "tarak_sunken"]
+        } else {
+            &["a_ghostly_sage", "rapanaio_isle_of_evil", "scrutinon"]
+        };
         let actors = {
             let mut runtime = deps.runtime.lock().await;
             runtime
@@ -127,6 +146,21 @@ fn scenario() -> TestResult {
         };
         super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 100)]).await?;
         assert!(owner.ensure_source_map_initialized().await);
+        if regional {
+            owner.premium_coordinator = None;
+            let actors = actors
+                .iter()
+                .map(|actor| EntityRef {
+                    identity: actor.placement_identity(),
+                    generation: actor.actor_local_generation(),
+                })
+                .collect::<Vec<_>>();
+            regional_quotes(&mut owner, &deps, &h.pool, &book, &actors).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let routes = [
             (0, "help"),
             (1, "kazordoon"),
@@ -189,7 +223,96 @@ fn scenario() -> TestResult {
     })
 }
 
-fn world_fixture(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::BundleWorld> {
+async fn regional_quotes(
+    owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    pool: &sqlx::PgPool,
+    book: &NpcTalkBook,
+    actors: &[EntityRef],
+) -> TestResult {
+    use super::npc_paid_travel_fixtures::{line, talk};
+
+    let source: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../docs/reference/content-prep/travel-content-1/source-correction-check.json"
+    ))?;
+    let source_rows = source["rows"].as_array().ok_or("travel source rows")?;
+    let mut failures = Vec::new();
+    let mut command = 100;
+    for (index, stem, slugs) in [
+        (0, "captain_gulliver", &["issavi", "thais", "krailos"][..]),
+        (1, "petros", &["issavi"][..]),
+        (2, "tarak_inner", &["monument_tower", "passage", "trip"][..]),
+        (3, "tarak_sunken", &["passage"][..]),
+    ] {
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        let npc = actors[index];
+        let entry = book.get(&format!("oteryn:npc.{stem}")).ok_or(stem)?;
+        talk(owner, deps, npc, command, "hi").await?;
+        command += 1;
+        for slug in slugs {
+            let route = entry.travel_routes.iter().find(|route| route.route.key == *slug)
+                .ok_or("regional travel route")?;
+            let key = format!("{}/{slug}", route.service);
+            if stem == "tarak_sunken" {
+                let reply = line(&talk(owner, deps, npc, command, &route.keyword).await?);
+                command += 1;
+                if reply.contains(" gold?") {
+                    failures.push(format!("{stem} quoted its bare destination: {reply}"));
+                }
+            }
+            let input = if stem.starts_with("tarak_") {
+                format!("a {} please", slug.replace('_', " "))
+            } else {
+                slug.to_string()
+            };
+            let reply = line(&talk(owner, deps, npc, command, &input).await?);
+            command += 1;
+            let expected = if route.held {
+                // PARTIAL: Petros still requires the donor cheese guard.
+                "I'm sorry but I don't sail there.".to_owned()
+            } else {
+                let fare = if stem.starts_with("tarak_") {
+                    route.route.price
+                } else {
+                    source_rows.iter().find(|row| row["key"] == key)
+                        .and_then(|row| row["donor_cost"].as_u64()).ok_or("donor fare")?
+                };
+                format!("Do you seek a passage to {} for {fare} gold?", route.keyword)
+            };
+            if reply != expected {
+                failures.push(format!("{stem} {input:?}: expected {expected:?}, got {reply:?}"));
+            }
+        }
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        if stem == "tarak_sunken" {
+            talk(owner, deps, npc, command, slugs[0]).await?;
+            talk(owner, deps, npc, command + 1, "yes please").await?;
+            let receipt: Option<i64> = sqlx::query_scalar(
+                "SELECT fare_gold_units FROM game_newhaven_travel_receipts WHERE route=$1",
+            )
+            .bind(format!("oteryn:service.travel.{stem}/{}", slugs[0]))
+            .fetch_optional(pool)
+            .await?;
+            let route = entry.travel_routes.first().ok_or("Tarak Sunken route")?;
+            let position = deps.runtime.lock().await.read_actor_position(deps.actor)
+                .map_err(debug)?.position();
+            let destination = &route.route.destination;
+            if (position.x, position.y, position.floor) != (destination.x, destination.y, destination.floor) {
+                failures.push(format!("{stem} confirmation left the actor at {position:?}"));
+            }
+            if receipt != i64::try_from(route.route.price).ok() {
+                failures.push(format!("{stem} confirmed fare: got {receipt:?}"));
+            }
+        } else {
+            talk(owner, deps, npc, command, "bye").await?;
+            command += 1;
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+    Ok(())
+}
+
+fn world_fixture(world: crate::foundation::WorldId, regional: bool) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
         self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
@@ -245,7 +368,12 @@ fn world_fixture(world: crate::foundation::WorldId) -> TestResult<crate::map::bo
         (32700, 31990, -15),
         (32834, 32275, -9),
     ];
-    for (x, y, floor) in points {
+    let regional_points: &[_] = if regional {
+        &[(3, 3, -7), (32916, 31199, -7)]
+    } else {
+        &[]
+    };
+    for (x, y, floor) in points.into_iter().chain(regional_points.iter().copied()) {
         grouped
             .entry((floor, y / 32, x / 32))
             .or_default()

@@ -24,6 +24,8 @@ pub struct TravelRoute {
     pub service: String,
     pub route: ProjectV2TravelRoute,
     pub keyword: String,
+    /// Use Crystal's MsgContains for the route key and confirmation.
+    pub crystal_callback: bool,
     pub postman: bool,
     pub carpet: bool,
     pub held: bool,
@@ -49,6 +51,10 @@ struct Correction {
     // Keep the captured source position separate from its qualified bundle arrival.
     world_arrival: Option<(i32, i32, i16)>,
     premium_override: Option<bool>,
+    #[serde(default)]
+    use_authored_fare_and_premium: bool,
+    #[serde(default)]
+    crystal_callback: bool,
     postman: bool,
     carpet: bool,
     held: bool,
@@ -116,7 +122,12 @@ pub fn resolve(
                 correction
                     .world_arrival
                     .unwrap_or((correction.x, correction.y, correction.floor));
-            let premium = correction.premium_override.unwrap_or(correction.premium);
+            let (price, premium) = template
+                .filter(|_| correction.use_authored_fare_and_premium)
+                .map_or((correction.price, correction.premium), |route| {
+                    (route.price, route.premium)
+                });
+            let premium = correction.premium_override.unwrap_or(premium);
             let mut route = template.cloned().unwrap_or(ProjectV2TravelRoute {
                 key: key.to_owned(),
                 destination: crate::content::ProjectV2TravelDestination {
@@ -125,13 +136,13 @@ pub fn resolve(
                     y,
                     floor,
                 },
-                price: correction.price,
+                price,
                 premium,
                 min_level: None,
                 required_quest_tracks: Vec::new(),
             });
             route.key = key.to_owned();
-            route.price = correction.price;
+            route.price = price;
             route.premium = premium;
             route.min_level = None;
             route.destination.x = x;
@@ -141,6 +152,7 @@ pub fn resolve(
                 service: service.to_owned(),
                 route,
                 keyword: correction.keyword.clone(),
+                crystal_callback: correction.crystal_callback,
                 postman: correction.postman,
                 carpet: correction.carpet,
                 held: correction.held,
@@ -174,6 +186,7 @@ pub fn resolve(
                     service: reference.key.clone(),
                     route: route.clone(),
                     keyword: route.key.replace('_', " "),
+                    crystal_callback: false,
                     postman: false,
                     carpet: false,
                     held: false,
@@ -481,7 +494,6 @@ mod tests {
             ("captain_bluebear", "yalahar", 200, (32_816, 31_272, 6)),
             ("captain_fearless", "yalahar", 185, (32_816, 31_272, 6)),
             ("captain_greyhound", "yalahar", 185, (32_816, 31_272, 6)),
-            ("captain_gulliver", "issavi", 120, (33_902, 31_464, 6)),
             ("captain_max", "calassa", 200, (31_911, 32_710, 6)),
             ("captain_sinbeard", "yalahar", 230, (32_816, 31_272, 6)),
             ("captain_seahorse", "oramond", 200, (33_479, 31_985, 7)),
@@ -522,6 +534,75 @@ mod tests {
         }
         Ok(())
     }
+
+    #[test]
+    fn regional_captain_routes_resolve_to_donor_fares_and_premium()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &root.join("content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            root.join("docs/reference/content-prep/travel-content-1/source-correction-check.json"),
+        )?)?;
+        let rows = source["rows"].as_array().ok_or("travel source rows")?;
+        for (npc, slug, held) in [
+            ("captain_gulliver", "issavi", false),
+            ("captain_gulliver", "krailos", true),
+            ("captain_gulliver", "thais", false),
+            ("petros", "issavi", true),
+        ] {
+            let key = format!("oteryn:npc.{npc}");
+            let entry = model
+                .npcs()
+                .iter()
+                .find(|(reference, _)| reference.key == key)
+                .map(|(_, entry)| entry)
+                .ok_or("NPC")?;
+            let route = super::resolve(&model, &key, &entry.services)
+                .into_iter()
+                .find(|candidate| candidate.route.key == slug)
+                .ok_or("route")?;
+            let route_key = format!("{}/{slug}", route.service);
+            let donor = rows
+                .iter()
+                .find(|row| row["key"] == route_key)
+                .ok_or("donor route")?;
+            assert_eq!(
+                (
+                    route.route.price,
+                    route.route.premium,
+                    route.held,
+                    route.postman
+                ),
+                (
+                    donor["donor_cost"].as_u64().ok_or("donor fare")?,
+                    donor["donor_premium"].as_bool().ok_or("donor premium")?,
+                    held,
+                    true
+                ),
+                "{route_key}"
+            );
+            let destination = &route.route.destination;
+            let x = donor["destination"]["x"].as_i64().ok_or("donor x")?;
+            let y = donor["destination"]["y"].as_i64().ok_or("donor y")?;
+            let floor = donor["destination"]["z"].as_i64().ok_or("donor floor")?;
+            assert_eq!(
+                (
+                    i64::from(destination.x),
+                    i64::from(destination.y),
+                    i64::from(destination.floor)
+                ),
+                (x, if slug == "issavi" { y + 2 } else { y }, floor),
+                "{route_key}"
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn remaining_captain_routes_preserve_unlocks_and_custom_fares()
     -> Result<(), Box<dyn std::error::Error>> {

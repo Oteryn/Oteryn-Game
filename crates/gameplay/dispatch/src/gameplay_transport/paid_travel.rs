@@ -18,6 +18,15 @@ pub(super) struct Prompt {
     fare: u64,
 }
 
+// Crystal's MsgContains rejects a match preceded by an alphanumeric byte.
+// Its Lua search rejects the entire input if any occurrence has that prefix.
+fn crystal_message_contains(text: &str, keyword: &str) -> bool {
+    let mut matches = text.match_indices(keyword).peekable();
+    matches.peek().is_some()
+        && matches
+            .all(|(start, _)| start == 0 || !text.as_bytes()[start - 1].is_ascii_alphanumeric())
+}
+
 fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalkOutcome {
     let line = match cause {
         TravelRefusal::UnavailableRoute => "I'm sorry but I don't sail there.",
@@ -135,7 +144,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(mut prompts) => prompts.remove(&session),
             Err(_) => return ordinary,
         };
-        let prompt = if text == "yes" {
+        let callback_confirmation = previous
+            .as_ref()
+            .is_some_and(|prompt| prompt.route.crystal_callback)
+            && crystal_message_contains(&text, "yes");
+        let route = routes.into_iter().find(|route| {
+            let trigger = route.route.key.replace('_', " ");
+            if route.crystal_callback {
+                crystal_message_contains(&text, &trigger)
+            } else {
+                text == route.keyword || text == trigger
+            }
+        });
+        let prompt = if text == "yes" || (route.is_none() && callback_confirmation) {
             let Some(prompt) = previous else {
                 return ordinary;
             };
@@ -144,11 +165,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             prompt
         } else {
-            // Match the complete authored destination, including spaces and apostrophes.
-            let Some(route) = routes
-                .into_iter()
-                .find(|route| text == route.keyword || text == route.route.key.replace('_', " "))
-            else {
+            let Some(route) = route else {
                 return ordinary;
             };
             let Ok(Some(current)) = self.current_quest_fence(session).await else {
