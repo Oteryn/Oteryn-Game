@@ -2,6 +2,34 @@ use super::*;
 use crate::quest::{QuestComparison, reward_callbacks};
 
 #[test]
+fn dread_lord_lever_creates_its_immovable_reward_at_the_offering_tile() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("dread-lord-lever")
+        .map_err(|error| format!("{error:?}"))?;
+    let callbacks = load_for(loaded.catalogue())?;
+    let lever = callbacks
+        .iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/dreamer-dread-lord-scroll")
+        .ok_or("Dread Lord lever")?;
+    let [offering] = lever.offerings.as_slice() else {
+        return Err("diamond offering".into());
+    };
+    assert!(
+        lever.item_reward().is_none(),
+        "7845 cannot enter a backpack"
+    );
+    assert_eq!(
+        lever.effects.item_presence,
+        Some(ItemPresence {
+            position: offering.position,
+            appearance: 7845,
+        })
+    );
+    assert_eq!(lever.effects.reset_after_ms, Some(4_000));
+    assert!(loaded.catalogue().transition(&lever.key).is_some());
+    Ok(())
+}
+
+#[test]
 fn ajax_axe_reward_loads_with_brutal_politeness() -> Result<(), String> {
     let rewards = reward_callbacks::load()?;
     let axe = rewards

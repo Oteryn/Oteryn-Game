@@ -64,9 +64,15 @@ def outputs(root=ROOT, *, identifiers=(IDENTIFIER,), shard=SHARD, note=MARKER_NO
     for identifier in identifiers:
         appearance = appearances[identifier]
         if "bank" not in appearance.flags or appearance.speed != 150:
-            raise ValueError(f"Ground {identifier} differs from the accepted appearance")
+            raise ValueError(
+                f"Ground {identifier} differs from the accepted appearance"
+            )
         record = {
-            "identity": {"family": "Terrain", "key": f"oteryn:terrain.tibia.i{identifier}", "revision": "definition-r1"},
+            "identity": {
+                "family": "Terrain",
+                "key": f"oteryn:terrain.tibia.i{identifier}",
+                "revision": "definition-r1",
+            },
             "kind": known("ground"),
             "walkable": known("unpass" not in appearance.flags),
             "ground_speed": known(appearance.speed),
@@ -114,9 +120,13 @@ def outputs(root=ROOT, *, identifiers=(IDENTIFIER,), shard=SHARD, note=MARKER_NO
     index_path = "content/world/placements/index.json"
     index = json.loads((root / index_path).read_bytes())
     for identifier in identifiers:
-        selected = [row for row in index["palette"] if row["source_item_id"] == identifier]
+        selected = [
+            row for row in index["palette"] if row["source_item_id"] == identifier
+        ]
         if len(selected) != 1:
-            raise ValueError(f"Ground {identifier} must have one stable palette position")
+            raise ValueError(
+                f"Ground {identifier} must have one stable palette position"
+            )
         selected[0].update(key=f"oteryn:terrain.tibia.i{identifier}", provisional=False)
     encode = lambda value: (
         json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)

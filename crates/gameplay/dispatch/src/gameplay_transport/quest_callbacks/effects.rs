@@ -1,7 +1,10 @@
 use super::*;
 use crate::map::facts::QuestCallbackProjection;
 use crate::map::view::EntryFacts;
-use oteryn_gameplay_quests::quest::world_callbacks::Facing;
+use oteryn_gameplay_content::content::ReferenceItemField;
+use oteryn_gameplay_content::content::native_gameplay::NativeItemDestination;
+use oteryn_gameplay_quests::quest::world_callbacks::{Facing, ItemPresence};
+use oteryn_protocol_oteryn::world_map::MapDefinition;
 
 pub(super) fn facing(direction: Facing) -> crate::foundation::MovementFacing {
     use crate::foundation::MovementFacing as F;
@@ -14,6 +17,39 @@ pub(super) fn facing(direction: Facing) -> crate::foundation::MovementFacing {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    fn dreamer_lava_facts(&self, presence: &ItemPresence) -> Option<EntryFacts> {
+        let native = self.active_generation?.native_gameplay()?;
+        let profile = native
+            .item_policy_for_source_id(u32::from(presence.appearance))?
+            .record();
+        let ReferenceItemField::Known(physical) = &profile.semantics.physical else {
+            return None;
+        };
+        if !profile.admission.materializable
+            || profile.admission.legal_destinations != [NativeItemDestination::Ground]
+            || physical.movable != ReferenceItemField::Known(false)
+            || physical.pickupable != ReferenceItemField::Known(false)
+            || profile.attributes.blocks_movement != Some(false)
+        {
+            return None;
+        }
+        let definition = &profile.production_definition;
+        Some(EntryFacts {
+            definition: MapDefinition::Item(native.item_index()?.definition_ref(
+                &definition.family,
+                &definition.production_key,
+                &definition.revision_ref,
+            )?),
+            terrain_kind: None,
+            appearance_id: presence.appearance,
+            blocks_projectile: profile.attributes.blocks_projectile?,
+            pickupable: false,
+            bound: true,
+            count: 1,
+            sub_type: 0,
+        })
+    }
+
     pub(super) fn prepare_quest_projection(
         &self,
         map: &BundleMap,
@@ -26,15 +62,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(presence) = &callback.effects.item_presence {
             let pos = tile(presence.position);
-            let facts = map
-                .facts
-                .movement_item_facts(presence.appearance)
-                .ok_or(UseDisposition::Rejected)?;
-            // Initially admit known walkable ladders; projections cannot mint portable value
-            // or introduce collision without an owning collision catalogue.
+            let facts = if callback.has_dreamer_lava_projection() {
+                self.dreamer_lava_facts(presence)
+            } else {
+                map.facts
+                    .movement_item_facts(presence.appearance)
+                    .filter(|facts| {
+                        !facts.pickupable
+                            && crate::map::floor::is_ladder_appearance(facts.appearance_id)
+                    })
+            }
+            .ok_or(UseDisposition::Rejected)?;
             if map.facts.house_tile(pos)
-                || facts.pickupable
-                || !crate::map::floor::is_ladder_appearance(facts.appearance_id)
                 || map.overlay.base().tile(pos.x, pos.y, pos.floor).is_none()
             {
                 return Err(UseDisposition::Rejected);

@@ -247,9 +247,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
-            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                due,
-                restore: before,
+            use crate::map::facts::QuestCallbackProjection;
+            projection = Some(match projection {
+                Some(QuestCallbackProjection::ItemPresence { position, entry }) => {
+                    QuestCallbackProjection::TimedItemPresence {
+                        due,
+                        restore: before,
+                        position,
+                        entry,
+                    }
+                }
+                _ => QuestCallbackProjection::TimedTransform {
+                    due,
+                    restore: before,
+                },
             });
         }
         if super::amphoras::is_strike(callback) {
@@ -1475,6 +1486,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 match projection.as_mut() {
                     Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                        due,
+                        ..
+                    })
+                    | Some(crate::map::facts::QuestCallbackProjection::TimedItemPresence {
                         due,
                         ..
                     })

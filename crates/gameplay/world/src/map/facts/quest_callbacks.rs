@@ -77,6 +77,13 @@ pub enum QuestCallbackProjection {
         due: u64,
         restore: EntryFacts,
     },
+    /// Reset the source lever while leaving its immovable projection in place.
+    TimedItemPresence {
+        due: u64,
+        restore: EntryFacts,
+        position: TilePos,
+        entry: EntryFacts,
+    },
     /// The last strike starts one restoration deadline for all four amphoras.
     TimedAmphoras {
         due: u64,
@@ -234,6 +241,30 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
+            QuestCallbackProjection::TimedItemPresence {
+                due,
+                restore,
+                position,
+                entry,
+            } => {
+                return !close
+                    && self.project(
+                        owner,
+                        &QuestCallbackProjection::ItemPresence {
+                            position: *position,
+                            entry: *entry,
+                        },
+                        false,
+                    )
+                    && self.project(
+                        owner,
+                        &QuestCallbackProjection::TimedTransform {
+                            due: *due,
+                            restore: *restore,
+                        },
+                        false,
+                    );
+            }
             QuestCallbackProjection::TimedEntrance {
                 due,
                 restore,
@@ -1865,6 +1896,7 @@ impl BundleFacts {
                 }
                 QuestCallbackProjection::ReleaseMerchant { position }
                 | QuestCallbackProjection::ItemPresence { position, .. }
+                | QuestCallbackProjection::TimedItemPresence { position, .. }
                 | QuestCallbackProjection::ItemCycle { position, .. } => {
                     states.position_reserved(*position)
                 }

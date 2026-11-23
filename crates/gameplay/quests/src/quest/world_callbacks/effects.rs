@@ -672,7 +672,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || callback.actor_kind != ActorKind::Player
                 || (effects.transform.is_none() && callback.lever.is_none())
                 || effects.portals.is_some()
-                || effects.item_presence.is_some()
+                || (effects.item_presence.is_some() && !callback.has_dreamer_lava_projection())
                 || effects.item_cycle.is_some()
                 || effects.encounter.is_some()
                 || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())

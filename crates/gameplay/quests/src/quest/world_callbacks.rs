@@ -549,6 +549,20 @@ pub struct Callback {
 }
 
 impl Callback {
+    /// The source lever leaves immovable lava at the diamond offering.
+    pub fn has_dreamer_lava_projection(&self) -> bool {
+        self.key == "oteryn:quest-callback/dreamer-dread-lord-scroll"
+            && self.requires_world_admission
+            && !self.reversible
+            && self.item_reward().is_none()
+            && match (self.offerings.as_slice(), &self.effects.item_presence) {
+                ([offering], Some(presence)) => {
+                    presence.position == offering.position && presence.appearance == 7845
+                }
+                _ => false,
+            }
+    }
+
     pub fn operations(&self) -> impl Iterator<Item = &super::reward_callbacks::StateOperation> {
         self.state_ops.iter().chain(&self.state_operations)
     }

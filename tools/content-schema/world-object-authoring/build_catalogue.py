@@ -540,8 +540,8 @@ def official_shards():
 
 def qualified_shards():
     import activity_static
-    import feroxa_static
     import blood_vestibule_ground
+    import feroxa_static
 
     return {
         path

@@ -39,6 +39,7 @@ fn scenario_case(
         "lions-rock-strength-first" | "lions-rock-beauty" | "lions-rock-tears"
     );
     let m07_lion = name.starts_with("m07/lion-");
+    let dread_lord = name == "dreamer-dread-lord-scroll";
     let m07_dreamer = name.starts_with("m07/dreamer-lever-");
     let m49 = name.starts_with("m49-");
     let qm03 = name.starts_with("qm03/");
@@ -97,6 +98,7 @@ fn scenario_case(
         || m07_lion
         || lion_trial
         || m07_dreamer
+        || dread_lord
         || qready_workbench
         || qready_craft
         || m03_pits
@@ -155,6 +157,8 @@ fn scenario_case(
         })
     } else if m07_lion {
         super::super::m07_lion_offerings_fixtures::start(name)
+    } else if dread_lord {
+        super::super::m07_dreamer_levers_fixtures::DREAD_LORD_START
     } else if m07_dreamer {
         Position {
             x: 32762,
@@ -1262,6 +1266,10 @@ fn scenario_case(
                     .strip_prefix("oteryn:quest-callback/")
                     .ok_or("Lion callback key")?,
             )?
+        } else if dread_lord {
+            super::super::m07_dreamer_levers_fixtures::dread_lord_world(
+                generation.native_gameplay().ok_or("native Dreamer policies")?,
+            )?
         } else if m07_dreamer {
             super::super::m07_dreamer_levers_fixtures::world(
                 generation
@@ -2069,6 +2077,15 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 fence,
+                &callback,
+            ))
+            .await?;
+        } else if dread_lord {
+            Box::pin(super::super::m07_dreamer_levers_fixtures::exercise_dread_lord(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence.item_fence(),
                 &callback,
             ))
             .await?;

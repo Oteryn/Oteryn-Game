@@ -90,3 +90,85 @@ pub(super) async fn exercise(
 async fn counts(harness:&Harness)->TestResult<(i64,i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_receipts),(SELECT count(*) FROM game_quest_callback_consumptions)").fetch_one(&harness.pool).await?)
 }
+
+pub(super) const DREAD_LORD_LEVER: Position = Position { x: 32781, y: 32225, floor: -14 };
+pub(super) const DREAD_LORD_START: Position = Position { x: 32782, y: 32226, floor: -14 };
+
+pub(super) fn dread_lord_world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
+    use super::l6_world_pickups_fixtures::{NativeCrop, native_crop};
+    native_crop(native, NativeCrop {
+        bytes: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content/world/placements/region-z14-x128-y125.b3")),
+        region: (14, 128, 125),
+        bounds: (32781, 32225, 32783, 32227),
+        start: (DREAD_LORD_START.x, DREAD_LORD_START.y),
+        expected: vec![],
+    })
+}
+
+pub(super) async fn exercise_dread_lord(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    harness: &Harness,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    callback: &Callback,
+) -> TestResult {
+    use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
+    use std::sync::Arc;
+
+    let [offering] = callback.offerings.as_slice() else { return Err("diamond offering".into()) };
+    let [rank, _claim] = callback.storage.as_slice() else { return Err("rank and claim guards".into()) };
+    let [resting_lever, _active_lever] = callback.lever.ok_or("source lever")?;
+    let position = crate::map::overlay::TilePos { x: offering.position.x, y: offering.position.y, floor: offering.position.floor };
+    let before = counts(harness).await?;
+    super::quest_world_callbacks_fixtures::offering(owner, fence, offering, 90001).await?;
+    async fn pull(
+        owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+        admitted: &mut AdmittedSession,
+        appearance: u16,
+    ) -> TestResult<UseDisposition> {
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        let target = super::questpc7_hoist_story_fixtures::target(owner, DREAD_LORD_LEVER, appearance)?;
+        let command = admitted.continuity.next_command_id;
+        let reply = super::quest_world_callbacks_fixtures::wire(owner, admitted, command, 2, target).await?;
+        oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
+    }
+    assert_eq!(pull(owner, admitted, resting_lever).await?, UseDisposition::Rejected);
+    assert_eq!(counts(harness).await?, before);
+
+    // A returning Dread Lord supplies the rank prerequisite. USE, offering
+    // consumption, claim and world projection all go through their real owners.
+    let transition = "oteryn:quest-transition/fixture/dread-lord-rank";
+    let catalogue = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?.clone()
+        .with_fixture_transition(QuestTransition {
+            key: transition.into(),
+            quest: callback.quest.clone(),
+            effects: vec![QuestEffect {
+                track: rank.track.clone(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Set(rank.minimum),
+            }],
+            completes: false,
+            experience: None,
+            world_change: None,
+        }).map_err(debug)?;
+    owner.quest_catalogue = Some(Arc::new(catalogue));
+    super::qengine_outfit_stories_fixtures::commit_fixture(owner, admitted, transition, 90002).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    assert_eq!(pull(owner, admitted, resting_lever).await?, UseDisposition::Committed);
+
+    let map = owner.bundle_map().ok_or("map")?;
+    let projected = map.facts.movement_items(position);
+    let [lava] = projected.as_slice() else { return Err("exactly one projected object".into()) };
+    assert_eq!(lava.facts.appearance_id, 7845);
+    assert!(!lava.facts.pickupable);
+    let due = map.facts.next_movement_decay_time().ok_or("lever deadline")?;
+    assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(due), 1);
+    assert_eq!(map.facts.movement_items(position), projected);
+    let after = counts(harness).await?;
+    assert_eq!(after.1, before.1 + 1);
+    assert_eq!(pull(owner, admitted, resting_lever).await?, UseDisposition::Rejected);
+    assert_eq!(counts(harness).await?, after);
+    eprintln!("POSTGRES_CASE_COMPLETED dread-lord-lever");
+    Ok(())
+}
