@@ -218,6 +218,12 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
                 "content-1",
             )?;
         let generation = controller.active().ok_or("active generation")?;
+        let start = if name == "ghoul-room-well" {
+            // The source draw-well piece west of the target blocks movement.
+            Position { y: trigger.y - 1, ..trigger }
+        } else {
+            Position { x: trigger.x - 1, ..trigger }
+        };
         let world = if name == "ghoul-room-well" {
             use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene};
             assert_eq!(callback.selector.action, Some(1000));
@@ -226,8 +232,8 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
                 NativeCrop {
                     bytes: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content/world/placements/region-z13-x126-y125.b3")),
                     region: (13, 126, 125),
-                    bounds: (32507, 32176, 32509, 32177),
-                    start: (32507, 32176),
+                    bounds: (32507, 32175, 32509, 32177),
+                    start: (start.x, start.y),
                     expected: vec![ExpectedTile {
                         position: (32508, 32176),
                         ids: vec![409, 1931],
@@ -249,10 +255,7 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
-        let origin = local(Position {
-            x: trigger.x - 1,
-            ..trigger
-        });
+        let origin = local(start);
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,

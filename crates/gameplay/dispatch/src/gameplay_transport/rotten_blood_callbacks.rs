@@ -576,10 +576,13 @@ fn draw(
     if bound == 0 {
         return Err(());
     }
+    let seed = native.source_digest();
+    #[cfg(test)]
+    let seed = super::monster_profile_cycle::native_ai_seed_for_test(seed);
     let root = GameplayDecisionRoot::from_bytes(
         Sha256::new()
             .chain_update(b"srx3:rotten:source:v1")
-            .chain_update(native.source_digest())
+            .chain_update(seed)
             .chain_update(actor.placement_identity())
             .finalize()
             .into(),
