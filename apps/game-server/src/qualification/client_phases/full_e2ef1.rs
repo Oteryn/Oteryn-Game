@@ -32,7 +32,7 @@ pub(super) async fn provision_fixture(
     index: usize,
     expected_level: u32,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    original::provision_at_level(client, clients, index, expected_level).await
+    original::provision_profile(client, clients, index, expected_level, "knight").await
 }
 
 pub(super) async fn provision(

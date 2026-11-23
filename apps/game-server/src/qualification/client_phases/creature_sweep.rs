@@ -4,22 +4,23 @@
 //!
 //! Select with `NODE_BOOT_E2E_ONLY=creature_sweep` (never part of the default run).
 //! `OTERYN_E2E_CREATURE_BATCH=start:len` selects a slice of the key-sorted species list of
-//! `content/creatures/definitions` (default `0:3`; anything else is an error).
+//! `content/creatures/definitions` (default `0:3`). Use `plan` to print the ranges for parallel jobs.
 //!
 //! Spawn path: `tools/qualification/node_boot/provision.py --spawn` over `NODE_BOOT_CONTROL_SOCKET`
 //! (`sudo -n python3`, as `provision.rs` runs the fixture), answered by the node's uid-0 `spawn`
 //! control route (`qualification_wild_spawn.rs`, feature `qualification-spawn`).
 //!
-//! One shared session serves the whole sweep and restores low health using the classed build. A creature that cannot be killed within the bound
-//! gets `kill FAIL cause=deadline`; the sweep releases the target and moves on.
+//! The sweep calibrates on a Cyclops before checking the batch. One shared
+//! session carries the classed build between fights. Each species has a
+//! 60-second budget including target release and recovery after a player death.
 //!
 //! Rows per species: `CS.<key>.spawn|kill|xp|corpse|loot|full`. `spawn` carries the node answer, or
 //! the rejected token with cause=precondition. A FAIL row makes `run` return Err, which `journeys`
 //! propagates with `?`, so the node-boot stage exits non-zero.
 //! XP oracle: the authored `experience` through the server's own
 //! `crates/gameplay/characters/src/hunting_experience.rs:13 hunting_experience` (called from
-//! `crates/gameplay/durability/src/durability/party_kill_xp.rs:369`), with no prey, the observed daily boost, full
-//! stamina and no premium for a solo level-100 kill (`animus_mastery_experience` adds nothing without
+//! `crates/gameplay/durability/src/durability/party_kill_xp.rs:369`), with no prey, the observed daily boost, receipt
+//! stamina and no premium for a solo kill (`animus_mastery_experience` adds nothing without
 //! mastery, `crates/gameplay/combat/src/combat/death_reward.rs:939`).
 //! Loot oracle: the authored loot table. `crates/gameplay/items/src/loot_plan.rs:370 roll_entries`
 //! draws each entry independently with a 95..105% chance factor (`loot_factor_percent`), so an empty
@@ -39,10 +40,41 @@ const BATCH_DEFAULT: (usize, usize) = (0, 3);
 const STEPS: [&str; 5] = ["spawn", "kill", "xp", "corpse", "loot"];
 const SWEEP_LEVEL: u32 = 100;
 const SWEEP_CHARACTER: usize = 0;
-/// A full stamina bar in minutes (`composed_admission/vitals.rs:191`); no hunting time passes first.
-const FULL_STAMINA_MINUTES: i32 = 2520;
 const VISIBLE_SECONDS: u64 = 30;
-const KILL_SECONDS: u64 = 150;
+const SPECIES_SECONDS: u64 = 60;
+const CALIBRATION_SECONDS: u64 = 10;
+const CLEANUP_SECONDS: u64 = 5;
+const RECOVERY_SECONDS: u64 = 15;
+const LOGOUT_SECONDS: u64 = 930;
+const JOB_SECONDS: u64 = 45 * 60;
+const JOB_OVERHEAD_SECONDS: u64 = 90;
+const BATCH_SIZE: usize =
+    ((JOB_SECONDS - LOGOUT_SECONDS - JOB_OVERHEAD_SECONDS) / SPECIES_SECONDS) as usize;
+const CYCLOPS: &str = "oteryn:creature.cyclops";
+
+fn split_batches<T>(sorted: &[T]) -> impl Iterator<Item = (usize, &[T])> {
+    sorted
+        .chunks(BATCH_SIZE)
+        .enumerate()
+        .map(|(index, chunk)| (index * BATCH_SIZE, chunk))
+}
+
+fn select_batch<T>(sorted: &[T], start: usize, len: usize) -> TestResult<&[T]> {
+    if start >= sorted.len() {
+        return Err(format!(
+            "{BATCH_VARIABLE} start {start} is beyond the {} species",
+            sorted.len()
+        )
+        .into());
+    }
+    let selected = &sorted[start..start.saturating_add(len).min(sorted.len())];
+    if selected.len() > BATCH_SIZE {
+        return Err(
+            format!("{BATCH_VARIABLE} selects more than {BATCH_SIZE} species; use plan").into(),
+        );
+    }
+    Ok(selected)
+}
 
 /// `start:len` with plain decimal numbers and `len > 0`; `None` runs the default slice.
 fn creature_batch(value: Option<&str>) -> TestResult<(usize, usize)> {
@@ -62,14 +94,6 @@ fn creature_batch(value: Option<&str>) -> TestResult<(usize, usize)> {
         _ => Err(
             format!("invalid {BATCH_VARIABLE}={text:?}: expected start:len with len > 0").into(),
         ),
-    }
-}
-
-fn batch_from_env() -> TestResult<(usize, usize)> {
-    match std::env::var(BATCH_VARIABLE) {
-        Ok(text) => creature_batch(Some(&text)),
-        Err(std::env::VarError::NotPresent) => creature_batch(None),
-        Err(error) => Err(format!("invalid {BATCH_VARIABLE}: {error}").into()),
     }
 }
 
@@ -104,6 +128,10 @@ struct Rows<'a> {
     emitted: [bool; 5],
     lap: std::time::Instant,
     counts: Tally,
+    kill: Option<String>,
+    combat_seconds: Option<f64>,
+    attack_sent: bool,
+    calibrating: bool,
 }
 
 impl<'a> Rows<'a> {
@@ -113,6 +141,10 @@ impl<'a> Rows<'a> {
             emitted: [false; 5],
             lap: std::time::Instant::now(),
             counts: Tally::default(),
+            kill: None,
+            combat_seconds: None,
+            attack_sent: false,
+            calibrating: false,
         }
     }
 
@@ -146,7 +178,7 @@ impl<'a> Rows<'a> {
     /// A step that cannot run because an earlier one failed is a FAIL, never a skip.
     fn block_rest(&mut self, root: &str) {
         for (index, step) in STEPS.iter().enumerate() {
-            if !self.emitted[index] {
+            if !self.emitted[index] && (*step != "kill" || self.kill.is_none()) {
                 self.emit(step, "FAIL", &format!("blocked-by-{root}"), Some("blocked"));
             }
         }
@@ -197,6 +229,7 @@ fn failure(step: &'static str, cause: &'static str, detail: impl std::fmt::Displ
     }
 }
 
+#[derive(Clone)]
 struct Definition {
     name: String,
     experience: u64,
@@ -309,15 +342,16 @@ fn loot_tables(root: &Path) -> TestResult<BTreeMap<String, Vec<LootEntry>>> {
 
 /// `plan` limits its box to 160 tiles and two floors around the start, but the authored spawns can
 /// lie beyond it, so this plans over the same production collision facts (`destination`) across
-/// the whole map. Err carries every tile the search reached.
-fn far_route(
+/// the whole map. Yield to the species watchdog during large searches.
+async fn far_route(
     world: &BundleWorld,
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
-) -> Result<Vec<StepDirection>, Vec<TilePos>> {
+) -> Result<Vec<StepDirection>, usize> {
     let mut queue = std::collections::VecDeque::from([from]);
     let mut parents = std::collections::BTreeMap::from([(from, None)]);
     while let Some(at) = queue.pop_front() {
+        tokio::task::consume_budget().await;
         if goal(at) {
             let mut path = Vec::new();
             let mut cursor = at;
@@ -344,7 +378,7 @@ fn far_route(
             queue.push_back(next);
         }
     }
-    Err(parents.into_keys().collect())
+    Err(parents.len())
 }
 
 fn item_ref(
@@ -364,7 +398,11 @@ pub(super) async fn run(
         evidence("e2e_groups creature_sweep=skipped reason=opt_in_with_NODE_BOOT_E2E_ONLY");
         return Ok(());
     }
-    let (start, len) = batch_from_env()?;
+    let batch = match std::env::var(BATCH_VARIABLE) {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(error) => return Err(format!("invalid {BATCH_VARIABLE}: {error}").into()),
+    };
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     verdict::Harness::global().progress("creature-sweep-census");
     let definitions = definitions(&root)?;
@@ -384,24 +422,61 @@ pub(super) async fn run(
             listed.join(",")
         ));
     }
-    if start >= keys.len() {
-        return Err(format!(
-            "{BATCH_VARIABLE} start {start} is beyond the {} species",
-            keys.len()
-        )
-        .into());
+    if batch.as_deref() == Some("plan") {
+        evidence(&format!(
+            "creature_sweep plan batches={} size={BATCH_SIZE}",
+            split_batches(&keys).count()
+        ));
+        for (start, chunk) in split_batches(&keys) {
+            evidence(&format!(
+                "creature_sweep plan batch={start}:{}",
+                chunk.len()
+            ));
+        }
+        return Ok(());
     }
-    let end = start.saturating_add(len).min(keys.len());
-    evidence(&format!(
-        "creature_sweep batch start={start} len={len} selected={}",
-        end - start
-    ));
+    let (start, len) = creature_batch(batch.as_deref())?;
+    let batch = select_batch(&keys, start, len)?;
     let tables = loot_tables(&root)?;
     let items = provisioning::item_index()?;
-    let mut tally = Tally::default();
+    let mut state = SweepState::default();
     let mut seconds = Vec::new();
-    let mut session: Option<DevClientSession> = None;
-    for key in &keys[start..end] {
+    let mut species_failed = 0;
+    let setup = async {
+        calibrate(
+            clients,
+            world,
+            &items,
+            rewards,
+            &definitions,
+            &mut state.session,
+        )
+        .await?;
+        state.previous_death = death_receipt(clients).await?;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    }
+    .await;
+    if let Err(error) = setup {
+        if let Some(mut client) = state.session.take()
+            && let Err(cleanup) = release_bounded(&mut client).await
+        {
+            report_release_failure(cleanup.as_ref());
+        }
+        return Err(error);
+    }
+    evidence(&format!(
+        "creature_sweep batch start={start} len={len} selected={}",
+        batch.len()
+    ));
+    for key in batch {
+        if state.blocked {
+            state.tally.skipped += 1;
+            evidence(&format!(
+                "e2e_all scenario=CS.{}.full status=SKIPPED seconds=0.000 evidence=block-rest cause=build-unrestorable",
+                token(key.strip_prefix("oteryn:creature.").unwrap_or(key))
+            ));
+            continue;
+        }
         let (definition, table) = &definitions[key.as_str()];
         let loot = match table {
             None => LootBinding::None,
@@ -434,42 +509,162 @@ pub(super) async fn run(
         let scenario: &'static str =
             Box::leak(format!("CS.{}.full", species.short).into_boxed_str());
         let started = std::time::Instant::now();
+        let before = state.tally.pass + state.tally.fail;
+        let failures = state.tally.fail;
         verdict::indexed(
             scenario,
             Box::pin(sweep_species(
-                clients,
-                world,
-                &items,
-                rewards,
-                &species,
-                &mut session,
-                &mut tally,
+                clients, world, &items, rewards, &species, &mut state,
             )),
         )
         .await;
+        if state.tally.pass + state.tally.fail == before {
+            // The outer Watch cancelled the species before it recorded a verdict.
+            state.session = None;
+            state.tally.fail += 1;
+        }
+        species_failed += usize::from(state.tally.fail > failures);
         seconds.push(started.elapsed().as_secs_f64());
     }
-    if let Some(mut client) = session.take()
-        && let Err(error) = release(&mut client).await
+    if let Some(mut client) = state.session.take()
+        && let Err(error) = release_bounded(&mut client).await
     {
-        tally.fail += 1;
-        evidence(&format!(
-            "creature_sweep release_failed error={}",
-            token(&error.to_string())
-        ));
+        state.tally.fail += 1;
+        report_release_failure(error.as_ref());
     }
+    let tally = state.tally;
     let mean = seconds.iter().sum::<f64>() / seconds.len().max(1) as f64;
     evidence(&format!(
-        "creature_sweep summary species={} rows_pass={} rows_fail={} rows_skipped={} mean_seconds_per_creature={mean:.3}",
-        seconds.len(),
+        "creature_sweep summary species={} pass={} fail={species_failed} skipped={} rows_pass={} rows_fail={} mean_seconds_per_creature={mean:.3}",
+        batch.len(),
+        seconds.len() - species_failed,
+        tally.skipped,
         tally.pass,
-        tally.fail,
-        tally.skipped
+        tally.fail
     ));
     if tally.fail > 0 {
         return Err(format!(
             "creature sweep: {} FAIL rows (see the CS.* rows above)",
             tally.fail
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[derive(Default)]
+struct SweepState {
+    session: Option<DevClientSession>,
+    tally: Tally,
+    previous_death: Option<client_death::DeathReceipt>,
+    blocked: bool,
+}
+
+fn report_release_failure(error: &dyn std::error::Error) {
+    evidence(&format!(
+        "creature_sweep release_failed error={}",
+        token(&error.to_string())
+    ));
+}
+
+async fn death_receipt(
+    clients: &SeamClients<'_>,
+) -> TestResult<Option<client_death::DeathReceipt>> {
+    tokio::time::timeout(
+        Duration::from_secs(CLEANUP_SECONDS),
+        client_death::latest_receipt(clients, SWEEP_CHARACTER),
+    )
+    .await
+    .map_err(|_| "player death receipt deadline")?
+}
+
+async fn clear_target(session: &mut Option<DevClientSession>, rows: &Rows<'_>) -> TestResult {
+    if rows.attack_sent
+        && let Some(client) = session.as_mut()
+    {
+        let reply = tokio::time::timeout(
+            Duration::from_secs(CLEANUP_SECONDS),
+            client.session_mut().attack_target(None),
+        )
+        .await??;
+        if reply.status != CommandStatus::Accepted
+            || reply.disposition != attack::AttackIntentDisposition::Ok
+        {
+            return Err(format!("clear attack target refused: {reply:?}").into());
+        }
+    }
+    Ok(())
+}
+
+async fn release_bounded(client: &mut DevClientSession) -> TestResult {
+    tokio::time::timeout(Duration::from_secs(LOGOUT_SECONDS), release(client))
+        .await
+        .map_err(|_| "creature sweep logout deadline")?
+}
+
+async fn calibrate(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    items: &crate::content::item_ref::ItemDefinitionIndex,
+    rewards: &CreatureRewardTable,
+    definitions: &BTreeMap<String, (Definition, Option<String>)>,
+    session: &mut Option<DevClientSession>,
+) -> TestResult {
+    let started = std::time::Instant::now();
+    let mut rows = Rows::new("calibration");
+    rows.calibrating = true;
+    let species = Species {
+        short: "calibration".into(),
+        definition: definitions
+            .get(CYCLOPS)
+            .map(|(definition, _)| definition.clone()),
+        key: CYCLOPS.into(),
+        loot: LootBinding::None,
+    };
+    let result = tokio::time::timeout(
+        Duration::from_secs(SPECIES_SECONDS),
+        Box::pin(hunt(
+            clients, world, items, rewards, &species, session, &mut rows,
+        )),
+    )
+    .await;
+    let cleanup = clear_target(session, &rows).await;
+    let stop = match result {
+        Ok(Ok(())) => cleanup
+            .err()
+            .map(|error| failure("release", "target-release", error)),
+        Ok(Err(stop)) => Some(stop),
+        Err(_) => Some(failure("kill", "deadline", "calibration wall-time expired")),
+    };
+    let seconds = rows
+        .combat_seconds
+        .unwrap_or_else(|| started.elapsed().as_secs_f64());
+    let stop = stop.or_else(|| {
+        (!rows
+            .combat_seconds
+            .is_some_and(|seconds| seconds <= CALIBRATION_SECONDS as f64))
+        .then(|| {
+            failure(
+                "kill",
+                "cyclops-dps",
+                format!("no confirmed kill within {CALIBRATION_SECONDS}s"),
+            )
+        })
+    });
+    let (status, detail) = match &stop {
+        Some(stop) => (
+            "FAIL",
+            format!(" cause={} evidence={}", stop.cause, token(&stop.detail)),
+        ),
+        None => ("PASS", String::new()),
+    };
+    evidence(&format!(
+        "creature_sweep calibration species=cyclops status={status} seconds={seconds:.3}{detail}"
+    ));
+    if let Some(stop) = stop {
+        return Err(format!(
+            "creature_sweep calibration FAIL cause={}: {}",
+            stop.cause, stop.detail
         )
         .into());
     }
@@ -482,20 +677,135 @@ async fn sweep_species(
     items: &crate::content::item_ref::ItemDefinitionIndex,
     rewards: &CreatureRewardTable,
     species: &Species,
-    session: &mut Option<DevClientSession>,
-    tally: &mut Tally,
+    state: &mut SweepState,
 ) -> TestResult {
     let started = std::time::Instant::now();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(SPECIES_SECONDS);
+    verdict::Harness::global().bounded_wait(deadline, "creature-sweep-species");
     let mut rows = Rows::new(&species.short);
-    if let Err(stop) = Box::pin(hunt(
-        clients, world, items, rewards, species, session, &mut rows,
-    ))
-    .await
-    {
-        rows.fail(stop.step, stop.cause, &stop.detail);
-        rows.block_rest(stop.step);
+    let result = tokio::time::timeout_at(
+        deadline - Duration::from_secs(2 * CLEANUP_SECONDS + RECOVERY_SECONDS),
+        Box::pin(hunt(
+            clients,
+            world,
+            items,
+            rewards,
+            species,
+            &mut state.session,
+            &mut rows,
+        )),
+    )
+    .await;
+    let cleanup = clear_target(&mut state.session, &rows).await;
+    let receipt = death_receipt(clients).await;
+    let died = matches!(&result, Ok(Err(stop)) if stop.cause == "player-death")
+        || receipt
+            .as_ref()
+            .is_ok_and(|current| current != &state.previous_death);
+    if died {
+        rows.kill = None;
+        rows.fail("kill", "player-death", "player died during species sweep");
+        rows.block_rest("kill");
+        let restored = tokio::time::timeout_at(deadline, async {
+            let mut receipt = receipt?;
+            while receipt == state.previous_death {
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                receipt = death_receipt(clients).await?;
+            }
+            state.previous_death = receipt;
+            recover_player(clients, world, &mut state.session).await
+        })
+        .await;
+        if !matches!(restored, Ok(Ok(()))) {
+            state.blocked = true;
+            evidence(&format!(
+                "creature_sweep recovery status=FAIL cause=build-unrestorable detail={}",
+                token(&format!("{restored:?}"))
+            ));
+        }
+    } else {
+        if let Some(detail) = rows.kill.take() {
+            rows.pass("kill", &detail);
+        }
+        let stop = match result {
+            Ok(Ok(())) => None,
+            Ok(Err(stop)) => Some(stop),
+            Err(_) => {
+                let step = STEPS
+                    .iter()
+                    .zip(rows.emitted)
+                    .find(|(_, done)| !done)
+                    .map_or("loot", |(step, _)| *step);
+                Some(failure(
+                    step,
+                    "deadline",
+                    format!("species budget {SPECIES_SECONDS}s"),
+                ))
+            }
+        };
+        if let Some(stop) = stop {
+            rows.fail(stop.step, stop.cause, &stop.detail);
+            rows.block_rest(stop.step);
+        }
+        if let Err(error) = cleanup {
+            state.session = None;
+            rows.fail("release", "target-release", &error.to_string());
+        }
+        if let Err(error) = receipt {
+            state.blocked = true;
+            rows.fail("recovery", "build-unrestorable", &error.to_string());
+        }
     }
-    rows.finish(started, tally, evidence)
+    rows.finish(started, &mut state.tally, evidence)
+}
+
+/// Let the server settle a temple respawn. If it keeps the old actor dead,
+/// leave through ordinary logout and let the next admission consume the respawn.
+async fn recover_player(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    session: &mut Option<DevClientSession>,
+) -> TestResult {
+    let full = |client: &DevClientSession| {
+        client.actor_vitals().is_some_and(|vitals| {
+            vitals.health == vitals.max_health
+                && vitals.mana == vitals.max_mana
+                && vitals.health > 0
+                && vitals.mana > 0
+        })
+    };
+    if let Some(client) = session.as_mut() {
+        let temple = tokio::time::timeout(Duration::from_secs(3), async {
+            loop {
+                client.service_liveness(Duration::from_millis(100)).await?;
+                client.take_events();
+                if full(client) {
+                    break;
+                }
+            }
+            Ok::<(), oteryn_dev_client::DevClientError>(())
+        })
+        .await;
+        match temple {
+            Ok(Ok(())) => {}
+            Ok(Err(_)) => *session = None,
+            Err(_) => {
+                let (result, reply, _, _) = logout_retrying_busy(client).await?;
+                if result != Some(LogoutResult::Accepted) {
+                    return Err(format!("death recovery logout refused: {reply}").into());
+                }
+                *session = None;
+            }
+        }
+    }
+    if session.is_none() {
+        *session = Some(connect_character(clients, 0x80, SWEEP_CHARACTER).await?);
+    }
+    let client = session.as_ref().ok_or("sweep recovery session absent")?;
+    if !full(client) {
+        return Err("temple or fresh admission did not restore full health and mana".into());
+    }
+    ready(clients, world, session).await
 }
 
 /// The sweep owns a dedicated classed Character and carries its progression between hunts.
@@ -515,11 +825,7 @@ async fn ready(
 
 async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
     use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
-    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
-    let words = match profile.as_str() {
-        "knight" | "explorer" => "exura infir ico",
-        _ => "exura infir",
-    };
+    let words = "exura infir ico";
     let mut spell_index = None;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
     tokio::time::timeout_at(deadline, async {
@@ -581,11 +887,10 @@ async fn leave_protection_zone(client: &mut DevClientSession, world: &BundleWorl
         return Ok(());
     }
     verdict::Harness::global().progress("creature-sweep-route");
-    let path = far_route(world, from, roomy).map_err(|reachable| {
+    let path = far_route(world, from, roomy).await.map_err(|reachable| {
         format!(
-            "no open ground from {} ({} tiles reachable)",
-            at(from),
-            reachable.len()
+            "no open ground from {} ({reachable} tiles reachable)",
+            at(from)
         )
     })?;
     walk(client, world, &path).await
@@ -731,10 +1036,12 @@ async fn hunt(
     };
     let here = tile(client.world_spatial().actor_position)
         .map_err(|error| failure("spawn", "protocol", error))?;
-    rows.pass(
-        "spawn",
-        &format!("answer:{answer};name:{name};player:{}", at(here)),
-    );
+    if !rows.calibrating {
+        rows.pass(
+            "spawn",
+            &format!("answer:{answer};name:{name};player:{}", at(here)),
+        );
+    }
 
     // Kill: attack in chase mode until that exact entity is gone, with damage observed.
     let modes = attack::FightModes {
@@ -779,6 +1086,8 @@ async fn hunt(
     };
     let mut damaged = false;
     client.take_events();
+    let combat_started = tokio::time::Instant::now();
+    rows.attack_sent = true;
     let attacked = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -793,15 +1102,21 @@ async fn hunt(
             format!("attack refused:{attacked:?}"),
         ));
     }
-    let combat_started = tokio::time::Instant::now();
-    let kill_deadline = combat_started + Duration::from_secs(KILL_SECONDS);
+    let kill_deadline = combat_started + Duration::from_secs(CALIBRATION_SECONDS);
     let gone = loop {
         client
             .service_liveness(Duration::from_millis(50))
             .await
             .map_err(|error| failure("kill", "unkillable", format!("liveness:{error}")))?;
         verdict::Harness::global().progress("creature-sweep-combat");
-        client.take_events();
+        if client.take_events().into_iter().any(|event| {
+            matches!(event, oteryn_dev_client::SessionEvent::ActorVitals(delta) if delta.value.health == 0)
+        }) || client.actor_vitals().is_some_and(|vitals| vitals.health == 0) {
+            return Err(failure("kill", "player-death", "zero health observed"));
+        }
+        if rows.calibrating && tokio::time::Instant::now() > kill_deadline {
+            break false;
+        }
         match client
             .world_entities()
             .and_then(|entities| entities.get(&target.entity))
@@ -817,22 +1132,20 @@ async fn hunt(
                 }
             }
         }
-        if tokio::time::Instant::now() >= kill_deadline {
-            break false;
-        }
     };
+    let seconds = combat_started.elapsed().as_secs_f64();
+    rows.combat_seconds = Some(seconds);
     let player = client.world_spatial().actor_position;
     let death_distance = last_position
         .x
         .abs_diff(player.x)
         .max(last_position.y.abs_diff(player.y));
     if !gone {
-        let _ = client.session_mut().attack_target(None).await;
         return Err(failure(
             "kill",
-            "deadline",
+            "cyclops-dps",
             format!(
-                "no death within {KILL_SECONDS}s;damage_observed={damaged};health_percent={last_health};last_position={last_position:?};player={player:?};vitals={:?}",
+                "no death within {CALIBRATION_SECONDS}s;damage_observed={damaged};health_percent={last_health};last_position={last_position:?};player={player:?};vitals={:?}",
                 client.actor_vitals()
             ),
         ));
@@ -873,14 +1186,12 @@ async fn hunt(
         ..
     } = receipt.map_err(|error| failure("kill", "unconfirmed_death", error))?;
     let corpse_identity = dead.corpse_identity();
-    rows.pass(
-        "kill",
-        &format!(
-            "seconds:{:.1};death_receipt:matched;damage_observed:{damaged};death_tile:{last_position:?}",
-            combat_started.elapsed().as_secs_f64()
-        ),
-    );
-    let _ = client.session_mut().attack_target(None).await;
+    if rows.calibrating {
+        return Ok(());
+    }
+    rows.kill = Some(format!(
+        "seconds:{seconds:.1};death_receipt:matched;damage_observed:{damaged};death_tile:{last_position:?}"
+    ));
 
     // Corpse: a new corpse appears at the death tile.
     let corpse_deadline = tokio::time::Instant::now() + Duration::from_secs(8);
@@ -905,22 +1216,7 @@ async fn hunt(
     // XP: the gain equals the server's value for the authored experience.
     let pool = client_daily_boost::boosted_xp(definition.experience, &species.key, &selection)
         .map_err(|error| failure("xp", "content", error))?;
-    let expected = oteryn_gameplay_characters::hunting_experience::hunting_experience(
-        i64::try_from(pool).map_err(|error| failure("xp", "content", error))?,
-        0,
-        0,
-        FULL_STAMINA_MINUTES,
-        false,
-        level,
-    )
-    .map_err(|_| {
-        failure(
-            "xp",
-            "content",
-            "hunting_experience rejected the authored value",
-        )
-    })?;
-    let expected = u64::try_from(expected).map_err(|error| failure("xp", "content", error))?;
+    let expected = expected_xp(pool, death_stamina, level)?;
     let xp_deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     let gained = loop {
         let (xp, _, _) = read_stats(client)
@@ -1018,6 +1314,25 @@ async fn hunt(
         }
     }
     Ok(())
+}
+
+fn expected_xp(pool: u64, stamina: u16, level: u32) -> Result<u64, Failure> {
+    let expected = oteryn_gameplay_characters::hunting_experience::hunting_experience(
+        i64::try_from(pool).map_err(|error| failure("xp", "content", error))?,
+        0,
+        0,
+        i32::from(stamina),
+        false,
+        level,
+    )
+    .map_err(|_| {
+        failure(
+            "xp",
+            "content",
+            "hunting_experience rejected the authored value",
+        )
+    })?;
+    u64::try_from(expected).map_err(|error| failure("xp", "content", error))
 }
 
 #[derive(Clone, Copy)]
@@ -1324,47 +1639,41 @@ async fn prepare_player(
     clients: &SeamClients<'_>,
     session: &mut Option<DevClientSession>,
 ) -> TestResult {
-    let client = session.as_mut().ok_or("session absent")?;
-    let (_, level, vocation) = read_stats(client).await?;
-    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
-    let expected = character::vocation_id(if profile == "explorer" {
-        "knight"
-    } else {
-        &profile
-    });
-    let classed = vocation.is_some() && vocation == expected;
+    let expected = character::vocation_id("knight");
     let items = provisioning::item_index()?;
     let axe = provisioning::item_reference(&items, 3276)?;
     let rope = provisioning::item_reference(&items, 3003)?;
     let shovel = provisioning::item_reference(&items, 3457)?;
-    let supplied = client.inventory().is_some_and(|inventory| {
-        inventory.main_backpack.is_some()
-            && inventory
-                .equipment
-                .iter()
-                .any(|slot| slot.item.item_definition_ref == axe && slot.item.count.get() == 1)
-            && [rope, shovel].iter().all(|reference| {
-                inventory
-                    .entries
+    for verify in [false, true] {
+        let client = session.as_mut().ok_or("session absent")?;
+        let (_, level, vocation) = read_stats(client).await?;
+        let classed = vocation.is_some() && vocation == expected;
+        let supplied = client.inventory().is_some_and(|inventory| {
+            inventory.main_backpack.is_some()
+                && inventory
+                    .equipment
                     .iter()
-                    .chain(inventory.equipment.iter().map(|slot| &slot.item))
-                    .any(|item| item.item_definition_ref == *reference && item.count.get() == 1)
-            })
-    });
-    if fixture_ready(level, classed, supplied) {
-        return Ok(());
+                    .any(|slot| slot.item.item_definition_ref == axe && slot.item.count.get() == 1)
+                && [rope, shovel].iter().all(|reference| {
+                    inventory
+                        .entries
+                        .iter()
+                        .chain(inventory.equipment.iter().map(|slot| &slot.item))
+                        .any(|item| item.item_definition_ref == *reference && item.count.get() == 1)
+                })
+        });
+        if fixture_ready(level, classed, supplied) {
+            return Ok(());
+        }
+        if verify {
+            break;
+        }
+        let fresh = session.take().ok_or("session absent")?;
+        *session = Some(
+            provisioning::provision_fixture(fresh, clients, SWEEP_CHARACTER, SWEEP_LEVEL).await?,
+        );
     }
-    let fresh = session.take().ok_or("session absent")?;
-    *session = Some(
-        provisioning::provision_fixture(
-            fresh,
-            clients,
-            SWEEP_CHARACTER,
-            if classed { level } else { SWEEP_LEVEL },
-        )
-        .await?,
-    );
-    Ok(())
+    Err("classed sweep fixture missing equipped axe or supplies".into())
 }
 
 /// Experience and level from the Cyclopedia GeneralStats tab (the same panel MP09 reads).
@@ -1398,7 +1707,6 @@ async fn read_stats(client: &mut DevClientSession) -> TestResult<(u64, u32, Opti
 
 /// Logout with the combat lock honoured: wait it out with keep-alive Turns, never clear it.
 async fn release(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(930);
     let mut activity_due = tokio::time::Instant::now();
     loop {
         verdict::Harness::global().progress("creature-sweep-logout");
@@ -1406,9 +1714,6 @@ async fn release(client: &mut DevClientSession) -> TestResult {
         match result {
             Some(LogoutResult::Accepted) => return Ok(()),
             Some(LogoutResult::InFight { .. }) => {
-                if tokio::time::Instant::now() >= deadline {
-                    return Err("logout combat lock outlasted 930s".into());
-                }
                 client.service_liveness(Duration::from_millis(50)).await?;
                 client.take_events();
                 if tokio::time::Instant::now() >= activity_due {
@@ -1442,6 +1747,41 @@ mod evidence_tests {
     use super::*;
     use oteryn_dev_client::{EntityRef, WorldSpatialEntity};
     use oteryn_protocol_oteryn::{entity_names::EntityDisplayName, world_spatial::ActorPosition};
+
+    #[test]
+    fn creature_sweep_plan_covers_sorted_species_within_job_budget() -> TestResult {
+        let sorted: Vec<_> = (0..1865).collect();
+        let batches: Vec<_> = split_batches(&sorted).collect();
+        assert_eq!(batches.len(), 67);
+        assert_eq!(
+            batches.last().map(|(start, chunk)| (*start, chunk.len())),
+            Some((1848, 17))
+        );
+        let mut seen = Vec::new();
+        for (start, chunk) in batches {
+            assert!(
+                chunk.len() as u64 * SPECIES_SECONDS + LOGOUT_SECONDS + JOB_OVERHEAD_SECONDS
+                    <= JOB_SECONDS
+            );
+            assert_eq!(select_batch(&sorted, start, chunk.len())?, chunk);
+            seen.extend_from_slice(chunk);
+        }
+        assert_eq!(seen, sorted);
+        assert_eq!(select_batch(&sorted, 1864, usize::MAX)?, &[1864]);
+        assert!(select_batch(&sorted, 1865, 1).is_err());
+        assert!(select_batch(&sorted, 0, BATCH_SIZE + 1).is_err());
+        assert!(creature_batch(Some("0:0")).is_err());
+        assert_eq!(creature_batch(Some("28:17"))?, (28, 17));
+        Ok(())
+    }
+
+    #[test]
+    fn creature_sweep_xp_uses_receipt_stamina() {
+        assert_eq!(expected_xp(100, 2520, 100).ok(), Some(100));
+        assert_eq!(expected_xp(100, 600, 100).ok(), Some(50));
+        assert_eq!(expected_xp(100, 0, 100).ok(), Some(0));
+        assert!(expected_xp(u64::MAX, 2520, 100).is_err());
+    }
 
     #[tokio::test]
     async fn qualification_daily_query_discards_failed_session() -> TestResult {
