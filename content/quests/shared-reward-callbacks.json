@@ -143,6 +143,18 @@
       ]
     },
     {
+      "key": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_bone_master.lua:sha256:65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_dream_master.lua:sha256:eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/door",
       "quest": "oteryn:quest.brotherhood_outfits_quest",
       "initial": 0,
@@ -914,7 +926,20 @@
           "maximum": 0
         }
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.dreamer_s_challenge_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+              "minimum": -1,
+              "maximum": 1,
+              "set": 1
+            }
+          ]
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l10-brotherhood-leader",
@@ -942,7 +967,13 @@
       "give": {
         "item": "oteryn:item.tibia.i770",
         "count": 1,
-        "contents": []
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i6432",
+            "count": 1
+          }
+        ]
       },
       "outfit": null,
       "achievement": "oteryn:achievement/skull_and_bones",
@@ -1362,7 +1393,20 @@
           "maximum": 0
         }
       ],
-      "requires_premium": true
+      "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.dreamer_s_challenge_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/knightwatch_tower_door",
+              "minimum": -1,
+              "maximum": 1,
+              "set": 1
+            }
+          ]
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l10-nightmare-leader",
@@ -1390,7 +1434,13 @@
       "give": {
         "item": "oteryn:item.tibia.i770",
         "count": 1,
-        "contents": []
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i6390",
+            "count": 1
+          }
+        ]
       },
       "outfit": null,
       "achievement": "oteryn:achievement/nightmare_walker",

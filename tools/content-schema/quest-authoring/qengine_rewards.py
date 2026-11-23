@@ -1035,9 +1035,16 @@ def build():
     offers[-1]['reply'] = ['A creature escaped from my book. Will you track it down?']
 
     # Distinct order ranks choose the shared three documents' actual USE branch.
+    parent_quest = 'oteryn:quest.dreamer_s_challenge_quest'
     parent='oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4'
-    declarations.append({'key':parent,'quest':'oteryn:quest.dreamer_s_challenge_quest','initial':0,
+    declarations.append({'key':parent,'quest':parent_quest,'initial':0,
         'min':0,'max':1,'writable':False,'sources':['owner:chosen-Dreamers-Challenge-terminal-puzzle-s4:read-only']})
+    bindings = json.loads((ROOT / 'tools/content-schema/world-authoring/samples/quest-door-bindings.json').read_bytes())
+    (tower_track,) = {binding['track'] for binding in bindings['bindings'] if binding['action'] == 41014}
+    # Both orders write the same door permit under their shared prerequisite quest.
+    tower_permit = {'key': tower_track, 'quest': parent_quest, 'initial': -1,
+        'min': -1, 'max': 1, 'writable': True, 'sources': []}
+    declarations.append(tower_permit)
     for family,npc,opposite,join_achievement,final_achievement in [
             ('brotherhood','the_bone_master','nightmare','bone_brother','skull_and_bones'),
             ('nightmare','the_dream_master','brotherhood','nightmare_knight','nightmare_walker')]:
@@ -1045,12 +1052,38 @@ def build():
         rank=prefix+'u7_9/'+family+'_outfits/outfits'
         other=prefix+'u7_9/'+opposite+'_outfits/outfits'
         requirements=[requirement(parent,1),requirement(other,0)]
+        path = f"data-global/npc/{npc}.lua"
+        donor = inputs[path].decode()
         for stage,before,after,item,count,topic,achievement in [
                 ('join',0,1,768,0,2,join_achievement),('officer',1,2,769,500,3,None),('leader',2,3,770,1000,4,final_achievement)]:
             guard=[storage(rank,before,after)]
             add('l10-'+family+'-'+stage,quest,npc,['yes'],guard,take=[] if count==0 else [(6499,count)],
                 give=(item,1),topic=topic,requires=requirements,achievement='oteryn:achievement/'+achievement if achievement else None)
             callbacks[-1]['requires_premium']=True
+            if stage in ('join', 'leader'):
+                branch = re.search(
+                    rf'getTopic\(playerId\) == {topic} then(.*?)elseif npcHandler:getTopic',
+                    donor, re.DOTALL,
+                )
+                if branch is None:
+                    raise ValueError(f'missing {npc} {stage} confirmation')
+                if stage == 'join':
+                    permit = re.search(r'NightmareOutfits\.KnightwatchTowerDoor, (1)\)', branch[1])
+                    if permit is None:
+                        raise ValueError(f'missing {npc} Knightwatch permit')
+                    callbacks[-1]['participants'] = [{
+                        'quest': parent_quest,
+                        'storage': [storage(tower_track, -1, int(permit[1]), maximum=1)],
+                    }]
+                    tower_permit['sources'].extend(callbacks[-1]['sources'])
+                else:
+                    document, *additional = re.findall(r'player:addItem\((\d+), (\d+)\)', branch[1])
+                    if tuple(map(int, document)) != (item, 1) or len(additional) != 1:
+                        raise ValueError(f'unexpected {npc} leader gifts')
+                    callbacks[-1]['give']['additional'] = [
+                        {'item': f'oteryn:item.tibia.i{gift}', 'count': int(quantity)}
+                        for gift, quantity in additional
+                    ]
             source_offer(npc,['join'] if stage=='join' else ['advancement','demonic','essence'],0,1 if stage=='join' else topic,
                 [storage(rank,before,before,preserve=True)])
             offers[-1]['requires']=requirements
@@ -1071,8 +1104,6 @@ def build():
             offers[-1].update(requires=requirements,
                 reply=['Did you bring 1500 demonic essences to advance to Dread Lord?'])
         else:
-            path = f"data-global/npc/{npc}.lua"
-            donor = inputs[path].decode()
             offer = re.search(
                 r'NightmareOutfits.Outfits\) == 3 then\s+npcHandler:say\("([^"]+)"[^\n]+\s+'
                 r"npcHandler:setTopic\(playerId, (\d+)\)",

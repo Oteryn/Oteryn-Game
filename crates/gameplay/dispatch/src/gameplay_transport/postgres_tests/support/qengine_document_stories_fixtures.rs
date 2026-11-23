@@ -39,6 +39,7 @@ pub(super) async fn exercise(
     }
     use super::fixture::debug;
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+    use oteryn_gameplay_quests::quest::reward_callbacks::participant_key;
     use oteryn_gameplay_quests::quest::{
         QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
     };
@@ -57,20 +58,28 @@ pub(super) async fn exercise(
     let mut tracks = BTreeMap::new();
     let mut transitions = vec![];
     for callback in &callbacks {
-        transitions.push(
-            canonical
-                .transition(&callback.key)
-                .cloned()
-                .ok_or("source transition")?,
+        let keys = std::iter::once(callback.key.clone()).chain(
+            callback
+                .participants
+                .iter()
+                .enumerate()
+                .map(|(index, _)| participant_key(&callback.key, index)),
         );
-        for state in &callback.storage {
-            tracks.insert(
-                state.track.clone(),
-                canonical
-                    .track(&state.track)
-                    .cloned()
-                    .ok_or("source track")?,
-            );
+        for key in keys {
+            let transition = canonical
+                .transition(&key)
+                .cloned()
+                .ok_or("source transition")?;
+            for effect in &transition.effects {
+                tracks.insert(
+                    effect.track.clone(),
+                    canonical
+                        .track(&effect.track)
+                        .cloned()
+                        .ok_or("source track")?,
+                );
+            }
+            transitions.push(transition);
         }
         for required in &callback.requires {
             tracks.insert(
@@ -183,6 +192,19 @@ pub(super) async fn exercise(
         after, before,
         "absent independent parent cannot create documents"
     );
+    let session_id = admitted.game_session_id;
+    let tower_open = |owner: &ComposedFreshAdmission<'_, '_, '_>| {
+        owner.states.quest_sessions.lock().map_err(debug).map(|sessions| {
+            sessions
+                .get(&session_id)
+                .and_then(|session| session.copy.as_ref())
+                .is_some_and(|copy| copy.meets_door_storage(41014))
+        })
+    };
+    assert!(
+        !tower_open(owner)?,
+        "the refused join cannot unlock Knightwatch Tower"
+    );
     super::qengine_outfit_stories_fixtures::commit_fixture(owner, admitted, parent_key, 9700).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -252,6 +274,13 @@ pub(super) async fn exercise(
             held_essences - i64::from(price),
             "exact source essences consumed, retain supplied surplus"
         );
+        if stage == "join" {
+            owner.refresh_quest_session(session_id, false).await;
+            assert!(
+                tower_open(owner)?,
+                "joining opens both Knightwatch Tower entrances through durable storage"
+            );
+        }
         let replay = super::quest_world_callbacks_fixtures::wire(
             owner,
             admitted,
@@ -276,6 +305,27 @@ pub(super) async fn exercise(
             1,
             "NPC replay cannot duplicate document"
         );
+        if stage == "leader" {
+            let [gift] = callback
+                .give
+                .as_ref()
+                .ok_or("leader reward")?
+                .additional
+                .as_slice()
+            else {
+                return Err("leader exchange must grant the separate donor reward".into());
+            };
+            let gift_id = gift
+                .item
+                .strip_prefix("oteryn:item.tibia.i")
+                .ok_or("leader gift id")?
+                .parse()?;
+            assert_eq!(
+                super::qengine_voucher_stories_fixtures::quantity(h, gift_id).await?,
+                i64::from(gift.count),
+                "leader exchange and replay grant the extra reward exactly once"
+            );
+        }
         if family == "nightmare" {
             super::qengine_voucher_stories_fixtures::use_native(
                 owner,
