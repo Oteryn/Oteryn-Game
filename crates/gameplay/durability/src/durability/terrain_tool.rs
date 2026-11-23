@@ -40,6 +40,17 @@ pub fn voice_experience_occurrence(
     ExperienceRewardOccurrence::from_bytes(bytes).map_err(|_| DurabilityError::InvalidStoredState)
 }
 
+/// Crystal Global register_actions.lua:111-116 and items.xml:7640-7648.
+pub const fn wooden_bar_remains(before: u32) -> Option<(u32, u32)> {
+    match before {
+        2291 | 2292 => Some((3146, 2296)),
+        2293..=2296 => Some((3145, 2295)),
+        _ => None,
+    }
+}
+
+pub const WOODEN_BAR_DECAY_MS: i64 = 120_000;
+
 #[derive(Debug, Clone)]
 pub struct TerrainMutation {
     pub tool: [u8; 16],
@@ -80,7 +91,7 @@ pub struct TerrainState {
 
 impl DurabilityRoot {
     /// Exact replay is checked before handles; fresh writes recheck the current equipment fence
-    /// and carried custody under the same transaction as the terrain CAS and command receipt.
+    /// and tool custody under the same transaction as the terrain CAS and command receipt.
     #[allow(clippy::too_many_arguments)]
     pub async fn apply_terrain_tool(
         &self,
@@ -154,10 +165,14 @@ impl DurabilityRoot {
             if assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), scope.content_generation).await.is_err() {
                 return Ok(Some(UseDisposition::Rejected));
             }
-            // The equipment guard holds the Character root lock. Only a live leaf in the
-            // main backpack tree is a tool; equipment, Ground and another Character are refused.
-            let tool: Option<(String, String)> = sqlx::query_as("WITH RECURSIVE carried AS (SELECT e.item_instance_id,1 AS depth FROM game_item_container_entries e JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid UNION ALL SELECT e.item_instance_id,c.depth+1 FROM carried c JOIN game_item_nested_entries e ON e.parent_item_instance_id=c.item_instance_id WHERE c.depth<8) SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_instances i WHERE i.item_instance_id=encode($3,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 AND i.definition_family='Item' AND NOT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id) AND i.item_instance_id IN (SELECT item_instance_id FROM carried LIMIT 501) FOR UPDATE OF i")
-                .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(mutation.tool.as_slice()).fetch_optional(&mut **tx).await?;
+            // The equipment guard holds the Character root lock. Only the authored bar
+            // break plan can use equipment, and the exact Item still has to be a live
+            // leaf in this Character's equipment or carried tree.
+            let allow_equipped = wooden_bar_remains(mutation.before).is_some_and(|(debris, restored)| {
+                mutation.after == debris && mutation.decay == [(restored, WOODEN_BAR_DECAY_MS)]
+            });
+            let tool: Option<(String, String)> = sqlx::query_as("WITH RECURSIVE carried AS (SELECT e.item_instance_id,1 AS depth FROM game_item_container_entries e JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid UNION ALL SELECT e.item_instance_id,c.depth+1 FROM carried c JOIN game_item_nested_entries e ON e.parent_item_instance_id=c.item_instance_id WHERE c.depth<8) SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_instances i WHERE i.item_instance_id=encode($3,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 AND i.definition_family='Item' AND NOT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id) AND (i.item_instance_id IN (SELECT item_instance_id FROM carried LIMIT 501) OR ($4 AND EXISTS(SELECT 1 FROM game_character_equipment_slots equipment WHERE equipment.character_id=encode($1,'hex')::uuid AND equipment.world_id=i.world_id AND equipment.item_instance_id=i.item_instance_id))) FOR UPDATE OF i")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(mutation.tool.as_slice()).bind(allow_equipped).fetch_optional(&mut **tx).await?;
             if tool.as_ref().map(|(key, revision)| (key.as_str(), revision.as_str())) != Some((mutation.tool_key.as_str(), mutation.tool_revision.as_str())) { return Ok(Some(UseDisposition::StaleState)); }
             let mut voice_period = None;
             if mutation.tool_key == "oteryn:item.tibia.i12077" {

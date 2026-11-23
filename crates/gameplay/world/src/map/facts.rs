@@ -33,9 +33,11 @@ use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
 use oteryn_world_bundle::bundle::{Family, Manifest, PaletteEntry, Sector, TerrainKind};
 use oteryn_world_bundle::sector::Attrs;
 mod source_bindings;
+mod wooden_bars;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
+pub use wooden_bars::{WoodenBarCollision, wooden_bar_collision};
 
 #[cfg(test)]
 mod seal_paint_tests;
@@ -189,7 +191,7 @@ pub struct BundleFacts {
     house_doors: Vec<(TilePos, u32, u8)>,
     doors: DoorBook,
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
-    rotations: Mutex<Arc<RotationStates>>,
+    rotations: Arc<Mutex<Arc<RotationStates>>>,
     callbacks: Arc<Mutex<Arc<CallbackStates>>>,
     monster_steps: Mutex<VecDeque<MonsterStep>>,
 }
@@ -305,7 +307,7 @@ impl BundleFacts {
                 .copied()
                 .collect(),
             doors: self.doors.activity_copy(inside),
-            rotations: Mutex::new(Arc::new(BTreeMap::new())),
+            rotations: Arc::default(),
             callbacks: Arc::new(Mutex::new(Arc::new(CallbackStates::default()))),
             monster_steps: Mutex::new(VecDeque::new()),
         }
@@ -420,7 +422,7 @@ impl BundleFacts {
             houses: Vec::new(),
             house_doors: Vec::new(),
             doors: DoorBook::default(),
-            rotations: Mutex::default(),
+            rotations: Arc::default(),
             callbacks: Arc::default(),
             monster_steps: Mutex::default(),
         })

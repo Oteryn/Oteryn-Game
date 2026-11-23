@@ -85,23 +85,39 @@ pub(super) struct FeroxaMapPhase {
     footprint: usize,
 }
 
-pub(super) struct PhaseTiles(Arc<Mutex<Arc<CallbackStates>>>);
+pub(super) struct PhaseTiles {
+    callbacks: Arc<Mutex<Arc<CallbackStates>>>,
+    rotations: Arc<Mutex<Arc<RotationStates>>>,
+}
 impl BundleTilePhases for PhaseTiles {
     fn lookup(
         &self,
         cell: LogicalCell,
     ) -> Result<Option<QualifiedSpellTile>, SpellTileLookupError> {
         let pos = tile_pos(cell).ok_or(SpellTileLookupError::Absent)?;
-        self.0
+        let states = self
+            .callbacks
             .lock()
-            .map_err(|_| SpellTileLookupError::Unknown)?
-            .phase_spell(pos)
+            .map(|states| Arc::clone(&states))
+            .map_err(|_| SpellTileLookupError::Unknown)?;
+        let tile = states.phase_spell(pos)?;
+        if tile.is_some() || !states.wooden_bar_spell_tiles.contains_key(&pos) {
+            return Ok(tile);
+        }
+        let rotations = self
+            .rotations
+            .lock()
+            .map_err(|_| SpellTileLookupError::Unknown)?;
+        states.wooden_bar_spell(pos, &rotations)
     }
 }
 
 impl BundleFacts {
     pub(crate) fn phase_spell_owner(&self) -> Arc<dyn BundleTilePhases> {
-        Arc::new(PhaseTiles(Arc::clone(&self.callbacks)))
+        Arc::new(PhaseTiles {
+            callbacks: Arc::clone(&self.callbacks),
+            rotations: Arc::clone(&self.rotations),
+        })
     }
 
     /// Called under the current Channel owner after its fenced World phase read.

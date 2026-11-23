@@ -2,10 +2,11 @@
 use super::*;
 use crate::content::{ReferenceItemField, native_gameplay::NativeGameplayState};
 use crate::durability::item_decay_retire::CorpseDecayFence;
-use crate::durability::terrain_tool::{TerrainMutation, TerrainScope};
-use crate::gameplay_transport::house_furnishing::{
-    destroy_remains, destroy_roll_succeeds, is_destroy_weapon,
+use crate::durability::terrain_tool::{
+    TerrainMutation, TerrainScope, WOODEN_BAR_DECAY_MS, wooden_bar_remains,
 };
+use crate::gameplay_transport::house_furnishing::{destroy_roll_succeeds, is_destroy_weapon};
+use crate::map::facts::wooden_bar_collision;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_world::terrain_tools;
 
@@ -179,18 +180,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
-        let Some(entry) = inventory
+        let carried = inventory
             .backpack
             .iter()
             .flat_map(|b| &b.entries)
             .chain(inventory.nested.iter().map(|(_, e)| e))
-            .find(|e| Some(e.item.item_instance_id) == tool)
-        else {
+            .map(|entry| &entry.item)
+            .find(|item| Some(item.item_instance_id) == tool);
+        let Some(item) = carried.or_else(|| {
+            inventory
+                .equipment
+                .iter()
+                .find(|item| Some(item.item_instance_id) == tool)
+        }) else {
             return Ok(None);
         };
-        let definition = &entry.item.definition;
-        let terrain_tool =
-            terrain_tools::TerrainTool::from_production_key(&definition.production_key).is_some();
+        let definition = &item.definition;
+        let terrain_tool = carried.is_some()
+            && terrain_tools::TerrainTool::from_production_key(&definition.production_key)
+                .is_some();
         let destroy_attack = intent
             .use_with_map_item
             .as_ref()
@@ -293,8 +301,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
-            let break_attack = destroy_attack.filter(|_| matches!(state, 2295 | 2296));
-            if !terrain_tool && break_attack.is_none() {
+            let furniture_break = destroy_attack.zip(wooden_bar_remains(state));
+            if !terrain_tool && furniture_break.is_none() {
                 return Ok(None);
             }
             if too_far {
@@ -391,48 +399,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let mut placement = at.map.overlay.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
-            let (after, decay, yield_item) = if let Some(attack) = break_attack {
-                if before.bound
-                    || action.is_some()
-                    || at.map.facts.action_at(key).is_some()
-                    || u32::from(before.appearance_id) != state
-                {
-                    return Ok(Some(outcome(UseDisposition::NothingToUse)));
-                }
-                // Global register_actions.lua maps both placements to 3145. The
-                // donor items.xml makes those remains decay to 2295 after 120s.
-                let remains = destroy_remains(2295).ok_or(())?;
-                if !destroy_roll_succeeds(
-                    world_destroy_roll(scope.content_generation, command, &placement)?,
-                    attack,
-                ) {
-                    at.map.facts.emit_movement_effect(pos, 3);
-                    return Ok(Some(outcome(UseDisposition::Committed)));
-                }
-                (
-                    remains.item_id,
-                    vec![(remains.decay_target, i64::from(remains.duration_ms))],
-                    None,
-                )
-            } else {
-                let catalogue = terrain_tools::crystal_core_bindings();
-                let Some(plan) = terrain_tools::dispatch(
-                    &catalogue,
-                    &definition.production_key,
-                    state,
-                    action,
-                    0,
-                ) else {
-                    return Ok(Some(outcome(UseDisposition::NothingToUse)));
+            let (after, decay, yield_item) =
+                if let Some((attack, (debris, restored))) = furniture_break {
+                    if before.bound
+                        || action.is_some()
+                        || at.map.facts.action_at(key).is_some()
+                        || u32::from(before.appearance_id) != state
+                        || [debris, restored].into_iter().any(|id| {
+                            u16::try_from(id)
+                                .ok()
+                                .and_then(wooden_bar_collision)
+                                .is_none()
+                        })
+                    {
+                        return Ok(Some(outcome(UseDisposition::NothingToUse)));
+                    }
+                    if !destroy_roll_succeeds(
+                        world_destroy_roll(scope.content_generation, command, &placement)?,
+                        attack,
+                    ) {
+                        at.map.facts.emit_movement_effect(pos, 3);
+                        return Ok(Some(outcome(UseDisposition::Committed)));
+                    }
+                    (debris, vec![(restored, WOODEN_BAR_DECAY_MS)], None)
+                } else {
+                    let catalogue = terrain_tools::crystal_core_bindings();
+                    let Some(plan) = terrain_tools::dispatch(
+                        &catalogue,
+                        &definition.production_key,
+                        state,
+                        action,
+                        0,
+                    ) else {
+                        return Ok(Some(outcome(UseDisposition::NothingToUse)));
+                    };
+                    let decay = plan
+                        .binding
+                        .decay
+                        .iter()
+                        .map(|s| Ok((s.state, i64::try_from(s.after.as_millis()).map_err(|_| ())?)))
+                        .collect::<Result<_, ()>>()?;
+                    (plan.binding.transformed, decay, plan.binding.yield_item)
                 };
-                let decay = plan
-                    .binding
-                    .decay
-                    .iter()
-                    .map(|s| Ok((s.state, i64::try_from(s.after.as_millis()).map_err(|_| ())?)))
-                    .collect::<Result<_, ()>>()?;
-                (plan.binding.transformed, decay, plan.binding.yield_item)
-            };
             for state in std::iter::once(after).chain(decay.iter().map(|&(state, _)| state)) {
                 let key = format!("oteryn:item.tibia.i{state}");
                 if index
@@ -444,7 +452,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             (
                 TerrainMutation {
-                    tool: entry.item.item_instance_id,
+                    tool: item.item_instance_id,
                     tool_key: definition.production_key.clone(),
                     tool_revision: definition.revision_ref.clone(),
                     placement,
@@ -454,7 +462,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     decay,
                 },
                 yield_item,
-                break_attack.map(|_| pos),
+                furniture_break.map(|_| pos),
             )
         };
         let soil = mutation
@@ -741,43 +749,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .unwrap_or(entry.facts.blocks_projectile),
                 ..entry.facts
             };
-            if matches!(row.item, 2295 | 3145)
-                && matches!(entry.facts.appearance_id, 2295 | 2296 | 3145)
+            if matches!(row.item, 2295 | 2296 | 3145 | 3146)
+                && matches!(entry.facts.appearance_id, 2291..=2296 | 3145 | 3146)
             {
-                let current = facts.object_revision(key);
-                if current >= revision {
-                    continue;
-                }
-                let before = entry.facts;
-                let intact = row.item == 2295;
-                // Both intact items are wall Terrain. The unplaced WorldObject
-                // debris is passable even though it has no native Item profile.
-                let after = view::EntryFacts {
-                    terrain_kind: intact.then_some(oteryn_world_bundle::bundle::TerrainKind::Wall),
-                    blocks_projectile: intact,
-                    ..after
-                };
-                if map.facts.terrain_tool_action(key) != Some(None) || before.bound {
-                    return;
-                }
-                // A fresh Channel can first observe a row after its deadline. Keep
-                // the current appearance until applying that exact revision and collision.
-                if revision - 1 > current
-                    && !map
-                        .facts
-                        .install_gathering_state(key, revision - 1, before, Some(before))
-                {
-                    return;
-                }
-                if !map.facts.apply_quest_callback(
-                    key,
-                    revision - 1,
-                    after,
-                    &[],
-                    &[(key, after, !intact)],
-                    false,
-                    None,
-                ) {
+                if !map.install_wooden_bar_state(key, revision, after) {
                     return;
                 }
                 continue;
