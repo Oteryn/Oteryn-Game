@@ -14,6 +14,31 @@ pub struct SourceSceneItemMove {
     pub mint: Option<MapItemMintCandidate>,
 }
 
+#[cfg(feature = "test-support")]
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum SourceSceneFault {
+    LoseAcknowledgment,
+    ReceiptUnavailable,
+    Resolved,
+}
+
+#[cfg(feature = "test-support")]
+tokio::task_local! {
+    static SOURCE_SCENE_FAULT: std::cell::Cell<SourceSceneFault>;
+}
+
+#[cfg(feature = "test-support")]
+impl SourceSceneItemMove {
+    /// Drop one real COMMIT acknowledgment and make the first recovery read unavailable.
+    pub async fn with_lost_ack_and_unavailable_read<T>(
+        operation: impl std::future::Future<Output = T>,
+    ) -> T {
+        SOURCE_SCENE_FAULT
+            .scope(std::cell::Cell::new(SourceSceneFault::LoseAcknowledgment), operation)
+            .await
+    }
+}
+
 impl DurabilityRoot {
     #[allow(clippy::too_many_arguments, reason = "the batch uses the existing fenced item loop and map MINT owners")]
     pub async fn commit_source_scene_item_moves<C: ItemLoopContent>(
@@ -51,10 +76,11 @@ impl DurabilityRoot {
             return Ok(Err(LoopMoveRefusal::Rejected));
         };
         let (last_command, last_request) = (last.command, last.request.clone());
-        let mut context = (permit, content);
+        let mut context = (permit, content, false);
         let result = self.try_issue_semantic_pass()?
             .run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
-                let (permit, content) = *context;
+                let (permit, content, commit_started) = context;
+                let (permit, content) = (*permit, *content);
                 let mut tx = super::super::db::begin_type2_transaction(holder, deadline).await?;
                 let attempt: LoopResult<()> = async {
                     for SourceSceneItemMove { command, mut request, mint } in moves {
@@ -88,20 +114,57 @@ impl DurabilityRoot {
                 }.await;
                 match attempt {
                     Ok(()) => {
+                        *commit_started = true;
                         tx.commit(deadline).await?;
                         Ok(Ok(()))
                     }
                     Err(error) => loop_error(error).map(Err),
                 }
             })).await;
-        match result {
-            Err(error) => match self.reconcile_item_loop_move(
-                recovery, fence.character_id, last_command, last_request,
+        #[cfg(feature = "test-support")]
+        let result = if matches!(result, Ok(Ok(())))
+            && SOURCE_SCENE_FAULT.try_with(|fault| {
+                fault.replace(SourceSceneFault::ReceiptUnavailable) == SourceSceneFault::LoseAcknowledgment
+            }).unwrap_or(false)
+        {
+            Err(DurabilityError::CommitOutcomeUnknown)
+        } else {
+            result
+        };
+        let Err(error) = result else {
+            return result;
+        };
+        let unresolved = context.2
+            && !matches!(error, DurabilityError::CommitRejected | DurabilityError::CommitTransactionTimeout);
+        loop {
+            match self.reconcile_source_scene_move(
+                recovery, fence.character_id, last_command, last_request.clone(),
             ).await {
-                Ok(Some(Ok(_))) => Ok(Ok(())),
-                _ => Err(error),
-            },
-            result => result,
+                Ok(Some(Ok(_))) => return Ok(Ok(())),
+                Ok(_) => return Err(error),
+                Err(_) if unresolved => {
+                    // The staged scene must stay reserved. A failed read proves
+                    // neither commit nor rollback. Retry only the receipt lookup.
+                    tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+                }
+                Err(_) => return Err(error),
+            }
         }
+    }
+
+    async fn reconcile_source_scene_move(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        command: CommandRef,
+        request: LoopMoveRequest,
+    ) -> Result<Option<Result<LoopMoveReceipt, LoopMoveRefusal>>, DurabilityError> {
+        #[cfg(feature = "test-support")]
+        if SOURCE_SCENE_FAULT.try_with(|fault| {
+            fault.replace(SourceSceneFault::Resolved) == SourceSceneFault::ReceiptUnavailable
+        }).unwrap_or(false) {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        self.reconcile_item_loop_move(recovery, character, command, request).await
     }
 }

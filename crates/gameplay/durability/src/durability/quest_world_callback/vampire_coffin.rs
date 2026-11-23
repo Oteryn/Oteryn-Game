@@ -37,9 +37,8 @@ impl DurabilityRoot {
             .map_err(Into::into)
     }
 
-    /// Serialize delivery under the Character lock. The recovery row is removed
-    /// only when the already-admitted encounter has been published. An unknown
-    /// cleanup commit cannot prevent that publication.
+    /// Bind the already-admitted payment to the exact staged Count before
+    /// publishing its actor. Only the canonical death transaction clears it.
     #[allow(
         clippy::too_many_arguments,
         reason = "the publication uses the same current item fence as payment"
@@ -53,6 +52,7 @@ impl DurabilityRoot {
         command: CommandRef,
         content: [u8; 32],
         kind: VampireCoffinKind,
+        death: [u8; 16],
         publish: impl FnOnce() + Send,
     ) -> Result<bool, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
@@ -60,7 +60,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run_with_context(&mut Some(publish), move |holder, deadline, publish| Box::pin(async move {
+        let binding = self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_current_equipment_in_transaction(
                 &mut tx, &recovery, &node, &fence, Some(command), content,
@@ -68,16 +68,20 @@ impl DurabilityRoot {
             if pending_encounter(&mut tx, fence.character_id).await? != Some(kind) {
                 return Ok(false);
             }
-            let deleted = sqlx::query("DELETE FROM game_pending_vampire_coffin_payments WHERE character_id=encode($1,'hex')::uuid")
+            let bound = sqlx::query("UPDATE game_pending_vampire_coffin_payments SET death_id=encode($2,'hex')::uuid WHERE character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice())
+                .bind(death.as_slice())
                 .execute(&mut *tx).await?;
-            if deleted.rows_affected() != 1 {
+            if bound.rows_affected() != 1 {
                 return Ok(false);
             }
-            publish.take().ok_or(DurabilityError::InvalidStoredState)?();
             commit_semantic_transaction(tx, deadline).await?;
             Ok(true)
-        })).await
+        })).await?;
+        if binding {
+            publish();
+        }
+        Ok(binding)
     }
 }
 

@@ -109,14 +109,18 @@ pub(super) async fn exercise(
             placement: placement.clone(),
             expected_revision: world.facts().object_revision(key),
         };
-        let result = fixture::wire(
+        let use_lever = fixture::wire(
             owner,
             admitted,
             command,
             2,
             encode_use_intent(&target).map_err(debug)?,
-        )
-        .await?;
+        );
+        let result = if command == 2 && variant == "lost_ack" {
+            crate::durability::item_loop_move::SourceSceneItemMove::with_lost_ack_and_unavailable_read(use_lever).await?
+        } else {
+            use_lever.await?
+        };
         if command == 2 && matches!(variant, "exhausted" | "capacity") {
             let drops = owner.root.read_item_loop_ground_for_scope(fence.runtime_scope)
                 .await.map_err(debug)?;

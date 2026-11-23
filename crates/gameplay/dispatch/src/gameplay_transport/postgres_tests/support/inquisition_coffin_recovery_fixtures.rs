@@ -35,7 +35,8 @@ pub(super) async fn exercise(
 ) -> TestResult {
     let ordinary_restart = variant == "ordinary_restart";
     let lost_ack = variant == "lost_delivery_ack";
-    let delivered_case = variant == "delivered";
+    let restart_published = variant == "published_restart";
+    let delivered_case = variant == "delivered" || restart_published;
     let native = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
@@ -156,7 +157,24 @@ pub(super) async fn exercise(
     );
     drop(runtime);
     if delivered_case {
-        defeat_count(owner, admitted, creatures[0].actor).await?;
+        assert!(owner.root.read_pending_vampire_coffin(owner.character, fence.character_id)
+            .await.map_err(debug)?.is_some(),
+            "publishing a live Count must leave its payment recoverable");
+        let count = if restart_published {
+            // Lose the published Count while keeping the committed Character state.
+            owner.runtime.lock().await.remove_encounter_actor(creatures[0].actor).map_err(debug)?;
+            return_to_coffin(owner, admitted, weakened).await?;
+            owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+            assert_eq!(use_coffin(owner, admitted, weakened, 63).await?, UseDisposition::Committed);
+            let replacement = owner.runtime.lock().await.visible_entities().creatures;
+            assert_eq!(replacement.len(), 1);
+            assert_ne!(replacement[0].actor, creatures[0].actor);
+            replacement[0].actor
+        } else {
+            creatures[0].actor
+        };
+        defeat_count(owner, admitted, count).await?;
+        return_to_coffin(owner, admitted, weakened).await?;
         let catalogue = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
         let hand_in = oteryn_gameplay_quests::quest::reward_callbacks::offered_for(catalogue)?
             .into_iter()
@@ -192,7 +210,7 @@ pub(super) async fn exercise(
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))
             .ok_or("clock")?;
-        let result = use_coffin(owner, admitted, weakened, 63).await?;
+        let result = use_coffin(owner, admitted, weakened, 64).await?;
         assert_eq!(
             result,
             UseDisposition::Rejected,
@@ -213,7 +231,7 @@ pub(super) async fn exercise(
             .checked_sub(std::time::Duration::from_secs(2))
             .ok_or("clock")?;
         assert_eq!(
-            use_coffin(owner, admitted, weakened, 64).await?,
+            use_coffin(owner, admitted, weakened, 65).await?,
             UseDisposition::Rejected,
             "fresh garlic cannot buy another Count after stage 8"
         );
@@ -341,6 +359,17 @@ async fn defeat_count(
         DrainOutcome::Drained
     );
 
+    Ok(())
+}
+
+async fn return_to_coffin(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    callback: &Callback,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("coffin actor")?;
+    let session = admitted.game_session_id;
+    let staging = callback.effects.encounter.as_ref().and_then(|encounter| encounter.players.first()).ok_or("coffin staging")?.from;
     let mut runtime = owner.runtime.lock().await;
     let expected = runtime.read_actor_position(actor).map_err(debug)?;
     let map = owner.bundle_map().ok_or("coffin map")?;
@@ -351,7 +380,7 @@ async fn defeat_count(
         actor,
         session,
         expected,
-        fixture::local(staging(RESTART)?),
+        fixture::local(staging),
         false,
         &doors,
     )

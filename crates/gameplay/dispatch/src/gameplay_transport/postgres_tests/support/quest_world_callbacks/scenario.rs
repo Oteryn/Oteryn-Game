@@ -26,6 +26,7 @@ fn scenario_case(
     let (name, variant) = name.split_once('#').unwrap_or((name, ""));
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let sarina_vine = name.starts_with("thieves-guild-sarina-vine-");
     let vampire_coffin = super::super::inquisition_coffin_recovery_fixtures::matches(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
@@ -736,6 +737,9 @@ fn scenario_case(
         )?
     } else if name == "authored-tinder-box" {
         super::super::quest_callbacks_fixtures::source_world((32085, 31025, -1), 0, 4285, 0)?
+    } else if sarina_vine {
+        let selector = callback.selector.native.as_ref().ok_or("vine selector")?;
+        super::world_cells(&callback, trigger, selector.appearance, selector.ordinal, &[], &[], None, &[])?
     } else if name == super::super::serpentine_tower_fixtures::NAME {
         super::super::serpentine_tower_fixtures::world(&callback)?
     } else if name == "mintwallin-cyclops-scene" {
@@ -3018,6 +3022,47 @@ fn scenario_case(
                 ),
             )
             .await?;
+        } else if sarina_vine {
+            use crate::map::view::MapFacts;
+            let actor = admitted.runtime_actor.ok_or("vine actor")?;
+            let session = admitted.game_session_id;
+            let selector = callback.selector.native.as_ref().ok_or("vine selector")?;
+            let key = crate::map::view::placement_key(
+                crate::map::overlay::TilePos { x: trigger.x, y: trigger.y, floor: trigger.floor },
+                selector.ordinal,
+            ).ok_or("vine placement")?;
+            let mut placement = world.base().digest().to_vec();
+            placement.extend_from_slice(&key.to_be_bytes());
+            let target = WorldObjectTarget {
+                placement,
+                expected_revision: world.facts().object_revision(key),
+            };
+            let map = owner.bundle_map().ok_or("vine map")?;
+            let before = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+            crate::gameplay_transport::pvp_live::lock_mut(
+                &mut *owner.states.spell_states.lock().await, actor, session,
+            ).on_aggression(owner.owner_now());
+            let command = crate::gameplay_transport::connection::UseCommand {
+                game_session_id: session,
+                command_id: 61,
+                item_fence: None,
+            };
+            let disposition = owner.use_quest_callback(actor, command, map, &target)
+                .await.ok_or("vine dispatch")?.disposition;
+            assert_eq!(disposition, UseDisposition::PzBlocked);
+            assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?, before);
+
+            owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(61))
+                .ok_or("expire vine lock")?;
+            let disposition = owner.use_quest_callback(
+                actor, crate::gameplay_transport::connection::UseCommand { command_id: 62, ..command },
+                owner.bundle_map().ok_or("vine map")?, &target,
+            ).await.ok_or("unlocked vine dispatch")?.disposition;
+            assert_eq!(disposition, UseDisposition::Committed);
+            assert_eq!(
+                owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+                local(callback.teleport.ok_or("vine landing")?),
+            );
         } else if vampire_coffin {
             Box::pin(super::super::inquisition_coffin_recovery_fixtures::exercise(
                 &mut owner,
