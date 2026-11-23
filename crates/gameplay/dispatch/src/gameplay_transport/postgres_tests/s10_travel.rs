@@ -585,7 +585,35 @@ async fn regional_quotes(
             assert!(failures.is_empty(), "{}", failures.join("\n"));
         }
         if stem == "tarak_sunken" {
+            use oteryn_protocol_oteryn::npc_service::TRAVEL_CONFIRMATION_TIMEOUT_SECONDS;
+            use std::sync::atomic::Ordering;
+
+            let clock = &owner.states.test_owner_time;
+            let timeout = u64::from(TRAVEL_CONFIRMATION_TIMEOUT_SECONDS) * 1_000_000;
+            // The test clock stores semantic microseconds plus one.
+            let opened = owner.owner_now().get();
+            clock.store(opened + 1, Ordering::Relaxed);
+            let quote = talk(owner, deps, npc, command, slugs[0]).await?;
+            assert_eq!(
+                quote.conversation.and_then(|reply| reply.open),
+                Some((npc, NpcConversationState::Confirming))
+            );
+            let late = opened + timeout + 1;
+            clock.store(late + 1, Ordering::Relaxed);
+            let refused = talk(owner, deps, npc, command + 1, "yes").await?;
+            assert!(!refused.inventory_changed, "paid travel at 30 s + 1 tick");
+            assert_eq!(
+                refused.conversation.and_then(|reply| reply.open),
+                Some((npc, NpcConversationState::Open))
+            );
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
+                .fetch_one(pool)
+                .await?;
+            assert_eq!(receipts, 0, "travel receipts at 30 s + 1 tick");
+            command += 2;
+
             talk(owner, deps, npc, command, slugs[0]).await?;
+            clock.store(late + timeout + 1, Ordering::Relaxed);
             talk(owner, deps, npc, command + 1, "yes please").await?;
             let receipt: Option<i64> = sqlx::query_scalar(
                 "SELECT fare_gold_units FROM game_newhaven_travel_receipts WHERE route=$1",
@@ -601,7 +629,7 @@ async fn regional_quotes(
                 failures.push(format!("{stem} confirmation left the actor at {position:?}"));
             }
             if receipt != i64::try_from(route.route.price).ok() {
-                failures.push(format!("{stem} confirmed fare: got {receipt:?}"));
+                failures.push(format!("{stem} confirmed fare at 30 s: got {receipt:?}"));
             }
         } else {
             talk(owner, deps, npc, command, "bye").await?;

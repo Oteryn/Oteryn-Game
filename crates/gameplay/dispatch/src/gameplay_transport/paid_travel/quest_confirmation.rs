@@ -5,7 +5,7 @@ use oteryn_protocol_oteryn::npc_service::TRAVEL_CONFIRMATION_TIMEOUT_SECONDS;
 impl Prompt {
     pub(super) fn is_live(&self, now: u64) -> bool {
         now.checked_sub(self.opened)
-            .is_some_and(|age| age < u64::from(TRAVEL_CONFIRMATION_TIMEOUT_SECONDS) * 1_000_000)
+            .is_some_and(|age| age <= u64::from(TRAVEL_CONFIRMATION_TIMEOUT_SECONDS) * 1_000_000)
     }
 
     pub(super) fn matches_confirmation(
