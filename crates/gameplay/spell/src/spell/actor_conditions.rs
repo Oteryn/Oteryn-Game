@@ -1921,6 +1921,7 @@ impl OwnedSkillAdjustments {
     }
 
     fn adjust(
+        level: u32,
         base: u32,
         native: i32,
         modifier: Option<oteryn_gameplay_domain::domain::condition::attributes::AttributeModifier>,
@@ -1936,17 +1937,27 @@ impl OwnedSkillAdjustments {
                 i128::from(base) * (i128::from(percent) - 100) / 100
             }
         };
-        u32::try_from((i128::from(base) + i128::from(native) + source).max(0)).ok()
+        u32::try_from((i128::from(level) + i128::from(native) + source).max(0)).ok()
     }
     pub fn adjust_magic_level(self, base: u32) -> Option<u32> {
-        Self::adjust(base, self.native.magic_level, self.source.magic_points)?
-            .checked_add(self.wheel_magic)
+        Self::adjust(
+            base,
+            base,
+            self.native.magic_level,
+            self.source.magic_points,
+        )?
+        .checked_add(self.wheel_magic)
     }
     pub fn adjust_shielding(self, base: u32) -> Option<u32> {
-        Self::adjust(base, self.native.shielding, self.source.shielding)?
+        Self::adjust(base, base, self.native.shielding, self.source.shielding)?
             .checked_add(self.wheel_skills[5])
     }
     pub fn adjust_skill(self, base: u32, index: usize) -> Option<u32> {
+        self.adjust_projected_skill(base, base, index)
+    }
+
+    /// Apply the condition and stance deltas derived from training to the effective level.
+    pub(super) fn adjust_projected_skill(self, level: u32, base: u32, index: usize) -> Option<u32> {
         let (native, modifier) = match index {
             0 => (self.native.fist, None),
             1..=3 => (self.native.melee, self.source.melee),
@@ -1955,8 +1966,8 @@ impl OwnedSkillAdjustments {
             6 => (0, self.source.fishing),
             _ => return None,
         };
-        let value =
-            Self::adjust(base, native, modifier)?.checked_add(*self.wheel_skills.get(index)?)?;
+        let value = Self::adjust(level, base, native, modifier)?
+            .checked_add(*self.wheel_skills.get(index)?)?;
         if index == 0 {
             value.checked_add(base.checked_mul(self.justice_percent)? / 100)
         } else {
@@ -2146,11 +2157,11 @@ mod source_attribute_projection_tests {
         assert_eq!(state.owned_effective_magic_level(0), Ok(0));
         let before = state.clone();
         assert_eq!(
-            OwnedSkillAdjustments::adjust(u32::MAX, 0, Some(M::Add(1))),
+            OwnedSkillAdjustments::adjust(u32::MAX, u32::MAX, 0, Some(M::Add(1))),
             None
         );
         assert_eq!(
-            OwnedSkillAdjustments::adjust(10, 0, Some(M::PercentOfBase(101))),
+            OwnedSkillAdjustments::adjust(10, 10, 0, Some(M::PercentOfBase(101))),
             None
         );
         assert_eq!(state, before);

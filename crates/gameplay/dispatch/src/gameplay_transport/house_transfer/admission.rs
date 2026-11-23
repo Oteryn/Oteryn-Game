@@ -327,6 +327,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         crate::gameplay_transport::item_use::gourmet::restore_house(
             self,
+            &retry,
             &admitted,
             &saved.position.record,
             true,

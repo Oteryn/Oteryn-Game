@@ -409,8 +409,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()?;
         if intent.exit {
-            self.initialize_transferred_channel(&next, &saved_position)
+            let budget = super::AdmissionRetryBudget::for_command(self.root);
+            self.initialize_transferred_channel(&budget, &next, &saved_position)
                 .await?;
+            if let Some(fence) = next.item_fence {
+                let _ = budget
+                    .retry_unavailable(async || {
+                        Box::pin(self.refresh_combat_loyalty(
+                            &_lane,
+                            actor,
+                            next.game_session_id,
+                            Some(fence),
+                        ))
+                        .await
+                    })
+                    .await;
+            }
         }
         if !intent.exit {
             super::hireling::recall_lost_houses(self).await?;
@@ -908,7 +922,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if recovered.ack.house.is_none() {
             self.carry_recovered_house_session_views(recovered.source, &admitted)
                 .await?;
-            self.initialize_transferred_channel(&admitted, &recovered.placement.record)
+            self.initialize_transferred_channel(budget, &admitted, &recovered.placement.record)
                 .await
                 .ok_or(Unavailable)?;
             let has_progression = self
@@ -932,7 +946,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if recovered.ack.house.is_some() {
             self.admit_premium(account, admitted.game_session_id);
-            super::item_use::gourmet::restore_house(self, &admitted, &stored.record, false)
+            super::item_use::gourmet::restore_house(self, budget, &admitted, &stored.record, false)
                 .await
                 .ok_or(Unavailable)?;
             self.restore_house_admission_views(&admitted, Some(recovered.source))
@@ -977,6 +991,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 impl ComposedFreshAdmission<'_, '_, '_> {
     async fn initialize_transferred_channel(
         &self,
+        budget: &super::AdmissionRetryBudget<'_>,
         admitted: &AdmittedSession,
         saved: &LastPositionRecord,
     ) -> Option<()> {
@@ -994,7 +1009,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(());
             }
         }
-        let character = admitted.item_fence?.character_id;
+        let fence = admitted.item_fence?;
+        let character = fence.character_id;
         let (facts, revision) = match super::spell_character_facts::load_character_cast_facts(
             self.root,
             self.character,
@@ -1013,9 +1029,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             super::spell_character_facts::CastFactsLoad::Unavailable => return None,
         };
         let monk = self.load_monk_state(character).await?;
-        let build = self
-            .root
-            .read_character_build_state(self.character, character)
+        let combat_build = self
+            .load_admission_combat_build(budget, fence, None)
             .await
             .ok()?;
         let stamina = self
@@ -1091,20 +1106,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.game_session_id,
             &stance,
             self.spells,
-        ) || !states.load_owned_build(&runtime, actor, admitted.game_session_id, &build)
-        {
+        ) {
             return None;
         }
-        if let Some(formula) = self
-            .active_generation
-            .and_then(|a| a.native_gameplay())
-            .and_then(|n| n.training_formula())
-        {
-            states
-                .get_mut(&runtime, actor, admitted.game_session_id)?
-                .enable_owned_training(&build, formula)
-                .ok()?;
-        }
+        combat_build.install(states.get_mut(&runtime, actor, admitted.game_session_id)?)?;
         states.load_stamina(&runtime, actor, admitted.game_session_id, stamina);
         drop(states);
         self.install_admission_suppressions(&runtime, actor, admitted.game_session_id, effects)

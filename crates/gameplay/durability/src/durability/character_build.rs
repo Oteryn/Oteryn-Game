@@ -74,6 +74,13 @@ pub struct DurableBuildState {
     skills: [(u16, u64); 7],
 }
 
+/// The current Platform-owned loyalty row, or revision zero if none exists.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CombatLoyaltyProjection {
+    pub points: u32,
+    pub platform_revision: u64,
+}
+
 /// The persisted progression and revision context for a complete skills display.
 #[derive(Debug, Clone)]
 pub struct SkillDisplayProgression {
