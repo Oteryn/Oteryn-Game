@@ -941,6 +941,53 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn behemoth_corpse_gold_fits_the_pickup_stack_limit() -> Result<(), Box<dyn std::error::Error>>
+    {
+        use oteryn_gameplay_content::content::creature_reward::{
+            CreatureRewardTable, LootTablesSection,
+        };
+        use oteryn_gameplay_domain::domain::currency::Coin;
+
+        let profiles = serde_json::from_slice(include_bytes!(
+            "../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &profiles,
+        )?;
+        let rewards = CreatureRewardTable::from_pin(&profiles, Some(&section));
+        let reward = rewards
+            .row("oteryn:creature.behemoth")
+            .map_err(|reason| reason.as_str())?;
+        let reference = reward.loot_table_ref.as_ref().ok_or("missing loot table")?;
+        let death = death_key(1);
+        let mut unsplit = reward.loot_table.clone();
+        let gold = unsplit
+            .entries
+            .iter_mut()
+            .find(|entry| entry.item.production_key == Coin::Gold.production_key())
+            .ok_or("missing gold entry")?;
+        gold.details.corpse_stack_maximum = None;
+        let gold_quantities = |table| {
+            plan_creature_loot(death, reference, table).map(|plan| {
+                plan.entries
+                    .into_iter()
+                    .filter(|entry| entry.item.production_key == Coin::Gold.production_key())
+                    .map(|entry| entry.quantity)
+                    .collect::<Vec<_>>()
+            })
+        };
+        let total = gold_quantities(&unsplit)?.into_iter().sum::<u32>();
+        let maximum = GAMEITEM01_STACK_QUANTITY_MAX;
+        assert!((maximum + 1..=2 * maximum).contains(&total));
+        assert_eq!(
+            gold_quantities(&reward.loot_table)?,
+            [maximum, total - maximum]
+        );
+        Ok(())
+    }
+
     fn rat_loot_table() -> LootTableDefinition {
         LootTableDefinition {
             algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
