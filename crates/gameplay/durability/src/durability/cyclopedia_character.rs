@@ -40,14 +40,19 @@ const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level
 /// Deaths in the history window, newest first. `killer` is the captured final blow (ordinal 0
 /// when its kind matches the death classification), and `most_damage` is the captured top damage
 /// dealer. Unjustified points and guild war frags supply the name-ordered PvP cause list.
-const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before, \
+const DEATHS_SQL: &str = "WITH page AS MATERIALIZED ( \
+ SELECT death_occurrence_id,committed_at,level_before \
+ FROM game_character_death_receipts \
+ WHERE character_id=encode($1,'hex')::uuid AND committed_at BETWEEN $2 AND $3 \
+ ORDER BY committed_at DESC,death_occurrence_id DESC OFFSET $4 LIMIT $5 \
+ ) SELECT d.committed_at,d.level_before, \
  COALESCE(k.name,'') AS killer, COALESCE(m.name,'') AS most_damage, \
  COALESCE(k.ordinal=m.ordinal OR k.character_id=m.character_id,false) AS same_source, \
  COALESCE(ledger.killers,ARRAY[]::text[]) AS killers, \
  COALESCE(ledger.has_killer,false) AS killer_in_ledger, \
  COALESCE(ledger.has_most_damage,false) AS most_damage_in_ledger, \
  EXISTS(SELECT 1 FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id) AS unjustified \
- FROM game_character_death_receipts d \
+ FROM page d \
  LEFT JOIN game_public_death_classifications c ON c.death_occurrence_id=d.death_occurrence_id \
  LEFT JOIN game_public_death_killers k ON k.death_occurrence_id=c.death_occurrence_id AND k.ordinal=0 \
    AND ((k.kind='creature' AND c.killer_key=k.creature_key) OR (k.kind='player' AND c.killer_key='player')) \
@@ -59,7 +64,7 @@ const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before, \
      UNION SELECT f.killer_character_id FROM game_guild_war_frags f WHERE f.death_occurrence_id=d.death_occurrence_id) p \
    JOIN game_character_roots r ON r.character_id=p.character_id \
  ) ledger ON true \
- WHERE d.character_id=encode($1,'hex')::uuid AND d.committed_at BETWEEN $2 AND $3 ORDER BY d.committed_at DESC,d.death_occurrence_id DESC OFFSET $4 LIMIT $5";
+ ORDER BY d.committed_at DESC,d.death_occurrence_id DESC";
 
 /// PvP kills in the history window, newest first. A guild war frag wins over unjustified
 /// points for the same death (Crystal reports one status per kill).
