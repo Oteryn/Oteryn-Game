@@ -1,0 +1,29 @@
+{
+  "source_head": "e2823da47991c1bdfe67388626a2d40edf84d50e",
+  "source_test": "tools/content-migration/test_coin_converter_profiles.py",
+  "source_producer": "tools/content-migration/coin_converter_profiles.py",
+  "producer_original_ids": [
+    23722,
+    25719,
+    28525,
+    28526
+  ],
+  "test_oracle": "for number in sorted(converters.IDS): assert properties of existing native row",
+  "mutation_method": "set producer IDS={23722} at runtime inside one fresh Python interpreter; no file edits, restore original binding finally",
+  "mutated_ids": [
+    23722
+  ],
+  "observed_test_count": 1,
+  "observed_result": "PASS",
+  "observed_exit_semantics": "unittest result.wasSuccessful()==true",
+  "expected_independent_literal_set": [
+    23722,
+    25719,
+    28525,
+    28526
+  ],
+  "independent_set_check_on_mutation": "REJECTS",
+  "disposition": "REWRITE existing test to assert literal set before current per-item checks",
+  "production_data_changed": false,
+  "limitation": "proves masking on producer enum mutation; not proof of a missing production profile"
+}
