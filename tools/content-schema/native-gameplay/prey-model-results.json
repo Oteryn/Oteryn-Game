@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "af00196a0ba01fe32439f0a6db80ae969879530ba28d778b6451a0e74049c73a",
+  "input_sha256": "710b5dd532b21d0992cb2202dab78ae81fd54b5d7e06bd32d07debd3790df7a1",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2317,7 +2317,6 @@
     "oteryn:creature.ogre_shaman",
     "oteryn:creature.omnivora",
     "oteryn:creature.oozing_corpus",
-    "oteryn:creature.orc",
     "oteryn:creature.orc_berserker",
     "oteryn:creature.orc_cult_fanatic",
     "oteryn:creature.orc_cult_inquisitor",
@@ -2987,7 +2986,6 @@
     "oteryn:creature.ogre_shaman",
     "oteryn:creature.omnivora",
     "oteryn:creature.oozing_corpus",
-    "oteryn:creature.orc",
     "oteryn:creature.orc_berserker",
     "oteryn:creature.orc_cult_fanatic",
     "oteryn:creature.orc_cult_inquisitor",

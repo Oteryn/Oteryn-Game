@@ -17,18 +17,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        418,
-        "f531f82a5f7352a12ef6070c5e1c1c16acb0259d0d432e68864ce948ecbcd15b",
+        388,
+        "6688fbd76531d15ca488581c44feda35391b39c8b600424c19d63e74cde47ee1",
     ),
     (
         "definitions/declarations.json",
-        27_760_785,
-        "7e290b771aa69d2d7f4ae70a2b7e40a7ebbff06f8afa3cab1e3e6d6e62c96b47",
+        27_763_197,
+        "2dd9120ec7070d036c78be38670a6ee3682d152390094b004f7c9a75890cd86e",
     ),
     (
         "definitions/reference.json",
-        27_390_893,
-        "a375a7c94187351a674a9e5b6eeca22ffd2a40a420167f0757f8a92b8b7dd83a",
+        27_393_401,
+        "3589a851e7b40b38f64b0c276774f0d244279a331c6662e90f07efd2c74e9721",
     ),
     (
         "editor/author.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1957,
-        "13b5b70d473b1be794045234dabcf60cbf78974dd9f1c9527b69133621a654bc",
+        1947,
+        "ead4b5529aee658ff5f38829f0a9c99a1de3a3fd69b5f1c61e8e416ce245f20a",
     ),
     (
         "presentations/bindings.json",
@@ -47,18 +47,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        408,
-        "9025eb3943522af3380c32524eb19d76e8257527755304a3e101096d61fe99c4",
+        398,
+        "ed579c159f2ae174e42af629e578faa29a99145883a803f674cc1a61f159f39a",
     ),
     (
         "provenance/imports.json",
-        6_774_564,
-        "96adebd34de3ccddc1563569c26528c9fe21c2c302774daeda5977feb4697c5c",
+        6_775_215,
+        "ea2e3733e17f6c1af8aa5f226d3370f303af6e07c0c40e684d52f7ed06603d6e",
     ),
     (
         "provenance/sources.json",
-        1_668_021,
-        "58d8ce37b1c537184c990fd091c16908bd7c69dd5435ef3da0c553466019feab",
+        1_668_695,
+        "b72df3748948e5a1fdcde153eaa11b3142239f9d0ffb9ea36e7e98f3d79b651d",
     ),
     (
         "worlds/world.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "c9c082fe0655d425a53391448a11ac167e4d38997e7579550059825711af4ce6";
+const TREE_SHA256: &str = "bcceb84c85b9c4601f440ab68b9cffb623755e7e2752c6074baf106e52137d9d";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -153,9 +153,9 @@ const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
 /// Full generated population, including qualified source proxies and Wiki metadata.
-const CREATURES: usize = 1_865;
-const CREATURE_RECORDS: usize = 26_211;
-const CREATURE_PROFILES: usize = 25_068;
+const CREATURES: usize = 1_866;
+const CREATURE_RECORDS: usize = 26_215;
+const CREATURE_PROFILES: usize = 25_071;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2_564;
@@ -189,7 +189,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 31,
+        max_import_records: 32,
         max_reimport_states: 404,
     }
 }
@@ -402,12 +402,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(
-        project.project_revision(),
-        "seasonal-cake-creature-20261107-r1"
-    );
+    assert_eq!(project.project_revision(), "orc-sam-backpack-raid-r1");
     // Thaian adds the 37th separately qualified batch; the historical cohort remains 25.
-    assert_eq!(project.imports().len(), 37);
+    assert_eq!(project.imports().len(), 38);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -1236,7 +1233,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 31);
+    assert_eq!(v2.sources.len(), 32);
     let source_for = |batch: &str| {
         v2.sources
             .iter()
@@ -1631,11 +1628,44 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "crystalserver-creature-1530:201189f871d23597b82caf88fd611454a2ddefb8"
     );
     assert_eq!(cake_source.sha256, world_project_sha256(cake_bytes));
+    // Orc Sam is a separately captured raid Creature with its own source revision.
+    let orc_sam_bytes = include_bytes!(
+        "../../../tools/content-schema/native-gameplay/orc-sam-backpack-admission.json"
+    );
+    let orc_sam_packet: serde_json::Value =
+        serde_json::from_slice(orc_sam_bytes).expect("Orc Sam source capture");
+    let orc_sam_source = source_for("monster-full-mechanics-orc-sam-backpack-201189f8");
+    let orc_sam_binding = ProjectV2SourceIdentityBinding {
+        source_key: "oteryn:source.crystalserver".into(),
+        source_revision: format!(
+            "crystalserver-raid-creature-1530:{}",
+            orc_sam_packet["source"]["revision"]
+                .as_str()
+                .expect("Orc Sam donor revision")
+        ),
+        identity_namespace: "crystalserver/monster-file".into(),
+        external_id: orc_sam_packet["source"]["path"]
+            .as_str()
+            .expect("Orc Sam donor path")
+            .into(),
+        target: serde_json::from_value(orc_sam_packet["records"][0]["identity"].clone())
+            .expect("Orc Sam Creature identity"),
+        disposition: ProjectV2SourceIdentityDisposition::Exact,
+    };
+    assert_eq!(orc_sam_binding.target.family, ProjectV2Family::Creature);
+    assert_eq!(
+        orc_sam_binding.target.key,
+        "oteryn:creature.orc_sam_backpack"
+    );
+    assert_eq!(orc_sam_source.key, orc_sam_binding.source_key);
+    assert_eq!(orc_sam_source.revision, orc_sam_binding.source_revision);
+    assert_eq!(orc_sam_source.sha256, world_project_sha256(orc_sam_bytes));
     let mut creature_files = BTreeSet::new();
     let mut d44_wiki_bindings = 0;
     let mut thaian_wiki_bindings = 0;
     let mut npc_bindings = 0;
     let mut crystal_creatures = 0;
+    let mut orc_sam_bindings = 0;
     let mut encounter_bindings = 0;
     let extra_item_bindings: serde_json::Value = serde_json::from_str(r#"[{"source_key":"oteryn:source.canary","source_revision":"portal25051-semantics:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"25051","target":{"family":"Item","key":"oteryn:item.tibia.i25051","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35107","target":{"family":"Item","key":"oteryn:item.tibia.i35107","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35109","target":{"family":"Item","key":"oteryn:item.tibia.i35109","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35110","target":{"family":"Item","key":"oteryn:item.tibia.i35110","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35112","target":{"family":"Item","key":"oteryn:item.tibia.i35112","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35119","target":{"family":"Item","key":"oteryn:item.tibia.i35119","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35120","target":{"family":"Item","key":"oteryn:item.tibia.i35120","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35122","target":{"family":"Item","key":"oteryn:item.tibia.i35122","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35126","target":{"family":"Item","key":"oteryn:item.tibia.i35126","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35510","target":{"family":"Item","key":"oteryn:item.tibia.i35510","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35511","target":{"family":"Item","key":"oteryn:item.tibia.i35511","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"portal25051-semantics:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"25051","target":{"family":"Item","key":"oteryn:item.tibia.i25051","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35107","target":{"family":"Item","key":"oteryn:item.tibia.i35107","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35109","target":{"family":"Item","key":"oteryn:item.tibia.i35109","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35110","target":{"family":"Item","key":"oteryn:item.tibia.i35110","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35112","target":{"family":"Item","key":"oteryn:item.tibia.i35112","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35119","target":{"family":"Item","key":"oteryn:item.tibia.i35119","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35120","target":{"family":"Item","key":"oteryn:item.tibia.i35120","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35122","target":{"family":"Item","key":"oteryn:item.tibia.i35122","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35126","target":{"family":"Item","key":"oteryn:item.tibia.i35126","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35510","target":{"family":"Item","key":"oteryn:item.tibia.i35510","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35511","target":{"family":"Item","key":"oteryn:item.tibia.i35511","revision":"definition-r1"},"disposition":"EXACT"}]"#).expect("qualified source Item witnesses");
     let mut extra_item_count = 0;
@@ -1688,6 +1718,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             assert_eq!(binding.target.family, ProjectV2Family::Creature);
             assert_eq!(binding.target.key, "oteryn:creature.cake_golem");
             assert!(creature_files.insert(&binding.external_id));
+            continue;
+        }
+        if binding.target == orc_sam_binding.target {
+            assert_eq!(binding, &orc_sam_binding);
+            assert!(creature_files.insert(&binding.external_id));
+            orc_sam_bindings += 1;
             continue;
         }
         if binding.target.family == ProjectV2Family::Creature {
@@ -1841,6 +1877,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(crystal_encounter_count, 4);
     assert_eq!(extra_item_count, 22);
     assert_eq!(crystal_creatures, 196);
+    assert_eq!(orc_sam_bindings, 1);
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
     assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));

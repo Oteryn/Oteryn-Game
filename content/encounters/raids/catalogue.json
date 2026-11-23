@@ -48449,15 +48449,13 @@
       "wiki_sources": []
     },
     {
-      "active": false,
+      "active": true,
       "boss_names": [],
       "end": {
         "despawn_after_ms": null,
         "kind": "until_reset"
       },
-      "inactive_reasons": [
-        "creature_unbound:Orc Sam Backpack"
-      ],
+      "inactive_reasons": [],
       "key": "raid:venore.orcsambackpack",
       "kind": "area",
       "name": "venore.orcsambackpack",
@@ -50640,7 +50638,7 @@
   "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
   "totals": {
     "area": {
-      "active": 34,
+      "active": 35,
       "total": 102
     },
     "boss": {

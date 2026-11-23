@@ -24,13 +24,10 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
         NpcDataCatalogue::from_project(project, npc_catalogue_preproduction_limits().project)
             .expect("data import");
     // The source tree digest is refreshed by regenerate_content.py with the package pins.
-    assert_eq!(
-        catalogue.project_revision(),
-        "seasonal-cake-creature-20261107-r1"
-    );
+    assert_eq!(catalogue.project_revision(), "orc-sam-backpack-raid-r1");
     assert_eq!(
         catalogue.source_tree_digest(),
-        "c9c082fe0655d425a53391448a11ac167e4d38997e7579550059825711af4ce6"
+        "bcceb84c85b9c4601f440ab68b9cffb623755e7e2752c6074baf106e52137d9d"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);
