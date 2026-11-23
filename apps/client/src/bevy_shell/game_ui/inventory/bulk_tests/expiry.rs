@@ -46,6 +46,21 @@ fn visible_container_expiry_uses_the_bound_inspection_reply() -> Result {
         .expiry_unused = true;
     app.update();
     assert!(label(&mut app));
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_secs(2),
+    ));
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .any(|(text, parent)| text.0 == "0m 59s"
+                && app
+                    .world()
+                    .get::<Slot>(parent.parent())
+                    .and_then(|slot| slot.item)
+                    .is_some_and(|item| item.handle == inspect.target))
+    );
     Ok(())
 }
 
@@ -97,6 +112,14 @@ fn equipped_item_expiry_reads_charges_without_inspecting_bag_contents() -> Resul
                     .get::<Slot>(parent.parent())
                     .and_then(|slot| slot.item)
                     .is_some_and(|item| item.handle == inspect.target))
+    );
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_secs(61),
+    ));
+    app.update();
+    assert!(
+        property_command(&mut commands).is_err(),
+        "unchanged item was inspected again"
     );
     Ok(())
 }

@@ -88,10 +88,16 @@ impl Mailbox {
             if let SessionEvent::ServerSaveCountdown(delta) = event {
                 let duration =
                     std::time::Duration::from_secs(u64::from(delta.value.minutes_remaining) * 60);
-                self.reward_reset = received_at
-                    .into_std()
-                    .checked_add(duration)
-                    .map(|deadline| (delta.value.ending_epoch, deadline));
+                // The server rounds the remaining interval up to a whole minute.
+                // Repeated notices for this epoch can tighten its upper bound.
+                let epoch = delta.value.ending_epoch;
+                if let Some(bound) = received_at.into_std().checked_add(duration) {
+                    let upper = self
+                        .reward_reset
+                        .filter(|(previous, _)| *previous == epoch)
+                        .map_or(bound, |(_, previous)| previous.min(bound));
+                    self.reward_reset = Some((epoch, upper));
+                }
             }
             if let SessionEvent::GatedSnapshotReplaced(delta) = event
                 && delta.value.domain_id == 1

@@ -10,7 +10,7 @@ pub(in crate::play) use hotkeys::native_key;
 pub use item_actions::ItemUseMode;
 #[cfg(test)]
 pub(in crate::play) use item_actions::editor_items;
-pub(in crate::play) use item_actions::{carried_items, item_source, item_target, visible_items};
+pub(in crate::play) use item_actions::{carried_items, item_source, item_target};
 #[path = "amount.rs"]
 mod amount;
 #[path = "layout.rs"]
@@ -424,7 +424,6 @@ impl PlayView {
         crate::play::mailbox::lock(&link.mailbox).bar_actions.cursor = cursor;
     }
 }
-
 
 impl PlayView {
     pub fn clear_bar_pointer(&mut self, link: &crate::play::PlayLink) {
