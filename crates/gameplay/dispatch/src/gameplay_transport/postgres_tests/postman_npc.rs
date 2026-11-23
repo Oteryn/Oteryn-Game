@@ -50,11 +50,11 @@ fn crystal_kevin_postgres_requires_the_full_tour_briefing_and_takes_all_bones() 
                 .await
                 .initialize_first_entry_position(deps.actor)
                 .map_err(debug)?;
-            let [kevin] = super::classic_quests_fixtures::install_with_offsets(
+            let [kevin, olrik] = super::classic_quests_fixtures::install_with_offsets(
                 &owner,
                 &deps.admitted,
-                ["oteryn:npc.kevin"],
-                Some([(1, 0)]),
+                ["oteryn:npc.kevin", "oteryn:npc.olrik"],
+                Some([(1, 0), (0, 1)]),
             )
             .await?;
             owner
@@ -102,6 +102,7 @@ fn crystal_kevin_postgres_requires_the_full_tour_briefing_and_takes_all_bones() 
                     ("oteryn:item.tibia.i3115", 1),
                     ("oteryn:item.tibia.i3116", 100),
                     ("oteryn:item.tibia.i3116", 1),
+                    ("oteryn:item.tibia.i3031", 2),
                 ],
             )
             .await?;
@@ -140,6 +141,36 @@ fn crystal_kevin_postgres_requires_the_full_tour_briefing_and_takes_all_bones() 
                     ("oteryn:item.tibia.i3116".to_owned(), 101),
                 ]
             );
+            let mission07 = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07";
+            super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                &h,
+                &owner,
+                &deps.admitted,
+                &[(mission07.into(), 5)],
+                94,
+            )
+            .await?;
+            sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
+                .execute(&h.pool)
+                .await?;
+            super::guild_bank_fixtures::bank_seed::balance(&h, id(40), id(41), 3, 180).await?;
+            owner
+                .refresh_quest_session(deps.admitted.game_session_id, true)
+                .await;
+            super::classic_quests_fixtures::talk(&mut owner, &deps.admitted, kevin, 95, "bye")
+                .await?;
+            for (command, text) in [(96, "hi"), (97, "measurements"), (98, "yes")] {
+                super::classic_quests_fixtures::talk(&mut owner, &deps.admitted, olrik, command, text)
+                    .await?;
+            }
+            let wager: (i64, i64, i64) = sqlx::query_as(
+                "SELECT fee_gold_units,burned_gold_units,bank_debit_gold_units
+                   FROM game_item_fee_burns
+                  WHERE purchase_service_key='oteryn:quest-npc/postman/olrik/roll'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(wager, (5, 2, 3));
             drop(owner);
             drop(authority);
             drop(seal);

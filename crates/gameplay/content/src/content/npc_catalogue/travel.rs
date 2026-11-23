@@ -564,6 +564,27 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn postman_tour_routes_accept_free_accounts() -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        let mut routes = Vec::new();
+        for (key, npc) in model.npcs() {
+            for route in super::resolve(&model, &key.key, &npc.services) {
+                if let Some(stage) = route.postman_tour_stage() {
+                    routes.push((stage, route.route.premium));
+                }
+            }
+        }
+        routes.sort_unstable();
+        assert_eq!(routes, [(1, false), (2, false), (3, false), (4, false)]);
+        Ok(())
+    }
+
+    #[test]
     fn remaining_captain_routes_preserve_unlocks_and_custom_fares()
     -> Result<(), Box<dyn std::error::Error>> {
         let rows: Vec<super::Correction> = serde_json::from_str(revision_material())?;

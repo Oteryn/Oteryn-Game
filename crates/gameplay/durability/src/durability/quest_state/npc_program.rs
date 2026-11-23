@@ -17,6 +17,11 @@ mod rewards;
 pub mod teleport;
 pub use inventory::{NpcProgramInventory, inventory_prefetch_required, requires_current_inventory};
 
+pub(in crate::durability) fn valid_quest_fee_key(key: &str, gold: u64, include_bank: bool) -> bool {
+    (key.starts_with("oteryn:quest-reward/") && key.len() <= 128)
+        || (key == postman_olrik::ROLL && gold == postman_olrik::WAGER && include_bank)
+}
+
 /// Advisory for preview; the receipt owner reloads every fact under the Character fence.
 #[derive(Clone, Debug, Default)]
 pub struct NpcEligibility {
@@ -461,8 +466,11 @@ impl DurabilityRoot {
             let plain_keys = source.outfit_exchange_keys(&request.npc).or_else(|| source.item_exchange_keys(&request.npc));
             let generic_items = !cooking_items && !father_items && !marlin_items && plain_keys.is_some();
             let equipped_storage = source.equipped_storage_requirements(&request.npc).is_some();
+            let olrik = request.npc == postman_olrik::NPC;
             let inventory_owned = cooking_items || father_items || marlin_items || generic_items || equipped_storage;
-            let inventory = if cooking_items {
+            let inventory = if olrik {
+                Some(postman_olrik::inventory(&mut tx, fence).await?)
+            } else if cooking_items {
                 let keys = hot_cuisine_m42::keys().map_err(|_| DurabilityError::InvalidStoredState)?;
                 Some(fathers_burden::inventory_for(&mut tx, fence, &keys).await?)
             } else if equipped_storage {
@@ -553,7 +561,8 @@ impl DurabilityRoot {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && (!plan.track_changes.is_empty() || plan.completes)=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
-            if request.transition_key == postman_olrik::ROLL {
+            let olrik_roll = request.transition_key == postman_olrik::ROLL;
+            if olrik_roll {
                 let face: i16 = sqlx::query_scalar("SELECT (1 + floor(random() * 6))::smallint")
                     .fetch_one(&mut **tx).await?;
                 postman_olrik::resolve(&mut plan, face)?;
@@ -582,7 +591,7 @@ impl DurabilityRoot {
                     .bind(id).fetch_one(&mut **tx).await?;
                 if pending >= QUESTGATE0_RL_10 as i64 { return Ok(Ok(refused(QuestRefusal::CapacityExceeded))); }
             }
-            let item_action = father_items || marlin_items || ((cooking_items || generic_items) && items::changes_items(&plan));
+            let item_action = olrik_roll || father_items || marlin_items || ((cooking_items || generic_items) && items::changes_items(&plan));
             let quest=&plan.quest;
             let hash=catalogue.definition_hash(quest).ok_or(DurabilityError::InvalidStoredState)?;
             let stored_state=sqlx::query("SELECT pinned_content_revision,definition_hash,completed_character_revision IS NOT NULL AS completed FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE").bind(id).bind(quest).fetch_optional(&mut **tx).await?;
@@ -614,7 +623,9 @@ impl DurabilityRoot {
                     Err(super::super::character_equipment::EquipmentError::Durability(error)) => return Err(error),
                     Err(super::super::character_equipment::EquipmentError::Database(error)) => return Err(error.into()),
                 }
-                let applied = if marlin_items {
+                let applied = if olrik_roll {
+                    postman_olrik::charge(&mut tx, fence, &request, &plan, *content).await?
+                } else if marlin_items {
                     marlin_trophy::apply(&mut tx, fence, &request, &plan, *content, &node).await?
                 } else if cooking_items || generic_items {
                     items::apply(&mut tx, fence, &request, &plan, *content, &node, permit).await?

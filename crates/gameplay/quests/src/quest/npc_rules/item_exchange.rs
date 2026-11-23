@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 
 impl NpcRuleCatalog {
     /// A source NPC may require eight plain item types and grant twenty types.
-    /// Outfit effects use the shared appearance participant; money and optional removals stay closed.
+    /// Outfit effects and the fixed Olrik wager use their dedicated durable participants.
     pub fn item_exchange_keys(&self, npc: &str) -> Option<Vec<String>> {
         let mut keys = BTreeSet::new();
         let mut items = false;
@@ -35,6 +35,10 @@ impl NpcRuleCatalog {
                         // An item can qualify a topic without being consumed.
                         items |= npc == "oteryn:npc.noodles";
                     }
+                    NpcRuleGuard::Money {
+                        amount: 5,
+                        include_bank: true,
+                    } if rule.key == "oteryn:quest-npc/postman/olrik/roll" => {}
                     NpcRuleGuard::ItemTotal {
                         items: ingredients, ..
                     } => {
@@ -64,6 +68,12 @@ impl NpcRuleCatalog {
                         optional: false,
                     } => {
                         keys.insert(item.clone());
+                        items = true;
+                    }
+                    NpcRuleEffect::TakeMoney {
+                        amount: 5,
+                        include_bank: true,
+                    } if rule.key == "oteryn:quest-npc/postman/olrik/roll" => {
                         items = true;
                     }
                     NpcRuleEffect::TakeAllItems { items: ingredients } => {
@@ -103,6 +113,7 @@ impl NpcRuleCatalog {
                     )
                 })
                 .collect(),
+            money: if npc == "oteryn:npc.olrik" { 5 } else { 0 },
             ..NpcInventorySnapshot::default()
         })
     }

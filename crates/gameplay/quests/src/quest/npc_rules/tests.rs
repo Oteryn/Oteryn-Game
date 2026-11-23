@@ -946,7 +946,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     let postman = runtime
         .program("oteryn:quest.the_postman_missions_quest")
         .ok_or("Postman programme")?;
-    assert_eq!(postman.document.tracks.len(), 17);
+    assert_eq!(postman.document.tracks.len(), 18);
     assert!(
         postman
             .document

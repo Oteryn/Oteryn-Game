@@ -3839,17 +3839,16 @@
           "value": 0
         },
         {
-          "kind": "item",
-          "item": "oteryn:item.tibia.i3031",
-          "count": 5,
-          "op": "ge"
+          "kind": "money",
+          "amount": 5,
+          "include_bank": true
         }
       ],
       "effects": [
         {
-          "kind": "take_item",
-          "item": "oteryn:item.tibia.i3031",
-          "count": 5
+          "kind": "take_money",
+          "amount": 5,
+          "include_bank": true
         },
         {
           "kind": "add",

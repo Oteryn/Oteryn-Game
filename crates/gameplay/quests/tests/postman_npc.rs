@@ -448,11 +448,6 @@ fn postman_olrik_is_admitted_to_supply_the_fifth_measurement() -> Result<(), Str
         .ok_or("Olrik has no admitted programme")?;
     let stage = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07";
     let tracks = BTreeMap::from([(stage.into(), 5)]);
-    // PARTIAL: this NPC participant has no bank-debit admission.
-    let bank_only = NpcInventorySnapshot {
-        bank: 5,
-        ..Default::default()
-    };
     let outfits = BTreeMap::new();
     let mut input = NpcRuleInput {
         npc,
@@ -461,7 +456,7 @@ fn postman_olrik_is_admitted_to_supply_the_fifth_measurement() -> Result<(), Str
         player_name: None,
         topic: 0,
         tracks: &tracks,
-        inventory: &bank_only,
+        inventory: &NpcInventorySnapshot::default(),
         now_epoch_seconds: 0,
         calendar_month: 1,
         premium_current: false,
@@ -482,26 +477,56 @@ fn postman_olrik_is_admitted_to_supply_the_fifth_measurement() -> Result<(), Str
             .map_err(|e| e.to_string())?
             .is_none()
     );
-    let mut inventory = NpcInventorySnapshot::default();
-    inventory.items.insert(
-        NpcItemKey {
-            item: "oteryn:item.tibia.i3031".into(),
-            subtype: None,
-        },
-        5,
-    );
-    let input = NpcRuleInput {
-        inventory: &inventory,
-        ..input
-    };
-    let win = source
-        .plan_item_exchange(&input)
-        .map_err(|e| e.to_string())?
-        .ok_or("paid dice plan")?;
-    assert!(
-        win.track_changes
-            .iter()
-            .any(|change| change.key == stage && change.before == 5 && change.after == 6)
-    );
+    for (label, money, bank, item) in [
+        (
+            "platinum coin",
+            100,
+            0,
+            Some(("oteryn:item.tibia.i3035", 1)),
+        ),
+        ("bank only", 0, 5, None),
+        ("mixed", 2, 3, Some(("oteryn:item.tibia.i3031", 2))),
+        ("gold coins", 5, 0, Some(("oteryn:item.tibia.i3031", 5))),
+    ] {
+        let inventory = NpcInventorySnapshot {
+            money,
+            bank,
+            items: item
+                .into_iter()
+                .map(|(item, count)| {
+                    (
+                        NpcItemKey {
+                            item: item.into(),
+                            subtype: None,
+                        },
+                        count,
+                    )
+                })
+                .collect(),
+            ..Default::default()
+        };
+        let roll = source
+            .plan_item_exchange(&NpcRuleInput {
+                inventory: &inventory,
+                ..input
+            })
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| format!("wager refused with {label}"))?;
+        assert_eq!(
+            roll.inventory_after.money,
+            money.saturating_sub(5),
+            "{label}"
+        );
+        assert_eq!(
+            roll.inventory_after.bank,
+            bank - 5_u64.saturating_sub(money),
+            "{label}"
+        );
+        assert!(
+            roll.track_changes
+                .iter()
+                .any(|change| change.key == stage && change.before == 5 && change.after == 6)
+        );
+    }
     Ok(())
 }

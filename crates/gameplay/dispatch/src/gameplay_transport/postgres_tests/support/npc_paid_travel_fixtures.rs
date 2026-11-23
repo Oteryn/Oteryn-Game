@@ -880,6 +880,9 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
         }
         let all_passages = S10T_PASSAGES.iter().chain(POSTMAN_TOUR.iter().filter(|_| !reward_fixture));
         for (index, (captain, destination, fare, tile)) in all_passages.enumerate() {
+            if index == S10T_PASSAGES.len() {
+                owner.premium_coordinator = Some(&free);
+            }
             sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
             let captain_key = format!("oteryn:npc.{captain}");
             let npc = at_start(captain).await?;
@@ -1027,7 +1030,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                 .map_err(|_| "S10T replay fence")?
                 .ok_or("S10T replay session")?;
             assert_eq!(owner.revision_sequencer.acquire(current.character_id).await.commit_npc_travel(
-                &h.root, &authority, &h.node, current, request, &coordinator,
+                &h.root, &authority, &h.node, current, request, &owner.premium_coordinator,
             ).await.map_err(debug)?.map_err(debug)?,None);
             assert_eq!(gold(&h).await?, before - fare);
             let after: i64 =
