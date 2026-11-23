@@ -140,6 +140,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(controller) = admitted.controller {
             self.admit_premium(controller.account_id, admitted.game_session_id);
         }
+        if let Some(actor) = admitted.runtime_actor
+            && let Some(fence) = admitted.item_fence
+            && self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .and_then(|native| native.training_formula())
+                .is_some()
+            && let Some(permit) = self.spell_lane_permit().await
+        {
+            let budget = AdmissionRetryBudget::for_command(self.root);
+            let _ = budget
+                .retry_unavailable(async || {
+                    Box::pin(self.refresh_combat_loyalty(
+                        &permit,
+                        actor,
+                        admitted.game_session_id,
+                        Some(fence),
+                    ))
+                    .await
+                })
+                .await;
+        }
         // Native House recovery already restored its views and retained clocks.
         if recovered_house_transfer {
             return;

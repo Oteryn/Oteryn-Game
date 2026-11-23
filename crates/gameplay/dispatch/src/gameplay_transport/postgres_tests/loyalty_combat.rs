@@ -19,10 +19,18 @@ fn loyalty_combat_projects_weapon_and_shielding_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e_fixtures::scenario_thread::run("loyalty-combat", scenario)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("loyalty-combat", || scenario(false))
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn loyalty_combat_refreshes_platform_corrections_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("loyalty-correction", || scenario(true))
+}
+
+fn scenario(check_correction: bool) -> TestResult {
     run(async |admin| {
         let started = std::time::Instant::now();
         let h = Harness::create_with_admission_seed(admin, "loyalty_combat", true, false).await?;
@@ -159,6 +167,32 @@ fn scenario() -> TestResult {
                 ),
                 "combat skills with {points} loyalty points"
             );
+            drop(attack_states);
+            drop(states);
+            drop(runtime);
+            if check_correction && points == 3600 {
+                let applied: i16 = sqlx::query_scalar(
+                    "SELECT game_account_loyalty_project_points(encode($1,'hex')::uuid,0,0,3)",
+                )
+                .bind(id(40).as_slice())
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(applied, 1);
+                Box::pin(owner.tick_timed_items()).await;
+                let runtime = deps.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let state = states
+                    .get(&runtime, deps.actor, deps.admitted.game_session_id)
+                    .ok_or("combat actor after correction")?;
+                assert_eq!(
+                    state.swing_skills(2, owner.owner_now().get()),
+                    Some(Some(SwingSkills {
+                        attack: 100,
+                        shielding: 100
+                    })),
+                    "the next combat cadence applies a newer Platform revision of zero",
+                );
+            }
         }
         assert_eq!(
             read_build().await?,

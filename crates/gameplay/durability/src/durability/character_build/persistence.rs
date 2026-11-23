@@ -151,6 +151,55 @@ impl DurabilityRoot {
         command: crate::foundation::CommandRef,
         content_digest: [u8; 32],
     ) -> Result<(DurableBuildState, u32, Option<SkillDisplayProgression>)> {
+        let (build, loyalty, progression) = self
+            .read_fenced_skill_state(authority, node, fence, command, content_digest, None)
+            .await?;
+        Ok((build, loyalty.points, progression))
+    }
+
+    /// The committed build and Platform revision used by combat admission and refresh.
+    /// Named House residents prove the origin Channel pin and current House custody.
+    pub async fn read_combat_loyalty_build(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &super::item_transfer::CurrentCharacterItemFence,
+        content_digest: [u8; 32],
+        house_origin: Option<crate::foundation::ChannelId>,
+    ) -> Result<(DurableBuildState, CombatLoyaltyProjection)> {
+        // The scope fence needs the session identity. The read consumes no command.
+        let command_id = crate::foundation::CommandId::new(1)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let command = crate::foundation::CommandRef::new(fence.game_session_id, command_id);
+        let (build, loyalty, _) = self
+            .read_fenced_skill_state(
+                authority,
+                node,
+                fence,
+                command,
+                content_digest,
+                house_origin,
+            )
+            .await?;
+        Ok((build, loyalty))
+    }
+
+    async fn read_fenced_skill_state(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &super::item_transfer::CurrentCharacterItemFence,
+        command: crate::foundation::CommandRef,
+        content_digest: [u8; 32],
+        house_origin: Option<crate::foundation::ChannelId>,
+    ) -> Result<(
+        DurableBuildState,
+        CombatLoyaltyProjection,
+        Option<SkillDisplayProgression>,
+    )> {
+        use super::character_equipment::{
+            EquipmentError, HouseEquipmentAccess, assert_house_equipment_content,
+        };
         if content_digest == [0; 32] {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
@@ -165,8 +214,17 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    let current = match fence.runtime_scope {
-                        RuntimeScopeRefV1::Channel { world_id, channel_id } => {
+                    let current = match (fence.runtime_scope, house_origin) {
+                        (RuntimeScopeRefV1::Instance { .. }, Some(origin)) => {
+                            match assert_house_equipment_content(&mut tx, &node, &fence, *origin.as_bytes(), content_digest, HouseEquipmentAccess::Service).await {
+                                Ok(()) => true,
+                                Err(EquipmentError::Rejected(_)) => false,
+                                Err(EquipmentError::Durability(error)) => return Err(error),
+                                Err(EquipmentError::Database(error)) => return Err(error.into()),
+                            }
+                        }
+                        (RuntimeScopeRefV1::Channel { .. }, Some(_)) => false,
+                        (RuntimeScopeRefV1::Channel { world_id, channel_id }, None) => {
                             // Same lock order as the existing equipment read; activation
                             // cannot advance between its proof and the projection read.
                             sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:content-activation:' || encode($1::bytea, 'hex')::uuid::text || ':' || encode($2::bytea, 'hex')::uuid::text, 0))")
@@ -184,7 +242,7 @@ impl DurabilityRoot {
                                 .fetch_optional(&mut *tx).await?;
                             digest.as_deref() == Some(content_digest.as_slice())
                         }
-                        RuntimeScopeRefV1::Instance { .. } => {
+                        (RuntimeScopeRefV1::Instance { .. }, None) => {
                             // Private activities use their own assignment and immutable
                             // content binding; an origin Channel never grants authority.
                             super::item_transfer::assert_activity_item_content(
@@ -197,7 +255,7 @@ impl DurabilityRoot {
                     }
                     let row = sqlx::query(concat!(
                         "SELECT b.vocation, ", family_columns!("b.", ""),
-                        ", COALESCE(l.loyalty_points,0)::bigint AS loyalty_points, p.level, p.total_experience, p.profile_revision, p.ruleset_revision, p.content_revision ",
+                        ", COALESCE(l.loyalty_points,0)::bigint AS loyalty_points, COALESCE(l.platform_revision,0)::bigint AS platform_revision, p.level, p.total_experience, p.profile_revision, p.ruleset_revision, p.content_revision ",
                         "FROM game_character_roots r ",
                         "LEFT JOIN game_character_build_state b USING(character_id) ",
                         "LEFT JOIN game_account_loyalty_projections l ON l.account_id=r.account_id ",
@@ -211,6 +269,9 @@ impl DurabilityRoot {
                     };
                     let points = u32::try_from(row.try_get::<i64, _>("loyalty_points")?)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let platform_revision = u64::try_from(row.try_get::<i64, _>("platform_revision")?)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let loyalty = CombatLoyaltyProjection { points, platform_revision };
                     let progression = row.try_get::<Option<i64>, _>("level")?.map(|level| {
                         Ok::<_, DurabilityError>(SkillDisplayProgression {
                             level: u32::try_from(level).map_err(|_| DurabilityError::InvalidStoredState)?,
@@ -221,7 +282,7 @@ impl DurabilityRoot {
                         })
                     }).transpose()?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok((build, points, progression)))
+                    Ok(Ok((build, loyalty, progression)))
                 })
             })
             .await?

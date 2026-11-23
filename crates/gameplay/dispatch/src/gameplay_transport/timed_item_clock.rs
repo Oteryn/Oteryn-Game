@@ -169,12 +169,19 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         if house && !(index - 2).is_multiple_of(2) {
                             return;
                         }
-                        let Some(_permit) = self.spell_lane_permit().await else {
+                        let Some(permit) = self.spell_lane_permit().await else {
                             return;
                         };
                         if (index - 2).is_multiple_of(2) {
-                            let checkpoint = self.checkpoint_timed_equipment(actor, session, false);
-                            self.root.with_periodic_lock_budget(checkpoint).await;
+                            self.root
+                                .with_periodic_lock_budget(async {
+                                    let _ = Box::pin(
+                                        self.refresh_combat_loyalty(&permit, actor, session, None),
+                                    )
+                                    .await;
+                                    self.checkpoint_timed_equipment(actor, session, false).await
+                                })
+                                .await;
                         } else {
                             self.root
                                 .with_periodic_lock_budget(self.drain_quest_timers(actor, session))

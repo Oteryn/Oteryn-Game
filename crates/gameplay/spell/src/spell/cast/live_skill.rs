@@ -3,10 +3,9 @@
 use std::sync::Arc;
 
 use oteryn_gameplay_progression::loyalty;
-use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;
 
 use super::PlayerSpellState;
-use crate::spell::actor_conditions::OwnedSkillAdjustments;
+use crate::durability::character_build::CombatLoyaltyProjection;
 use crate::spell::mana_training::CompiledTrainingFormula;
 
 /// The shielding skill's index in the seven owned skills.
@@ -22,26 +21,37 @@ pub struct SwingSkills {
 /// The account projection and training curve captured at fenced admission.
 #[derive(Debug)]
 pub(super) struct CombatLoyalty {
-    points: u32,
+    projection: CombatLoyaltyProjection,
     formula: CompiledTrainingFormula,
 }
 
 impl PartialEq for CombatLoyalty {
     fn eq(&self, other: &Self) -> bool {
-        self.points == other.points && self.formula.digest == other.formula.digest
+        self.projection == other.projection && self.formula.digest == other.formula.digest
     }
 }
 impl Eq for CombatLoyalty {}
 
 impl PlayerSpellState {
-    /// Install the account projection read with the admitted Character's build.
-    pub fn set_combat_loyalty(&mut self, points: u32, formula: &CompiledTrainingFormula) {
-        self.combat_loyalty = (loyalty::bonus_percent(points) != 0).then(|| {
-            Arc::new(CombatLoyalty {
-                points,
-                formula: formula.clone(),
+    /// Install a current account projection. A newer zero value clears the combat bonus.
+    pub fn set_combat_loyalty(
+        &mut self,
+        projection: CombatLoyaltyProjection,
+        formula: &CompiledTrainingFormula,
+    ) {
+        if projection.platform_revision == 0
+            || self.combat_loyalty.as_ref().is_some_and(|current| {
+                current.projection.platform_revision > projection.platform_revision
+                    || (current.projection.platform_revision == projection.platform_revision
+                        && current.formula.digest == formula.digest)
             })
-        });
+        {
+            return;
+        }
+        self.combat_loyalty = Some(Arc::new(CombatLoyalty {
+            projection,
+            formula: formula.clone(),
+        }));
     }
 
     fn loyalty_skill(&self, index: usize, base: u16) -> u32 {
@@ -57,36 +67,16 @@ impl PlayerSpellState {
             index + 1,
             level,
             tries,
-            loyalty.points,
+            loyalty.projection.points,
         ))
-    }
-
-    fn adjusted_loyalty_skill(
-        &self,
-        adjustments: OwnedSkillAdjustments,
-        index: usize,
-        base: u16,
-        now_us: u64,
-    ) -> Option<u32> {
-        let level = self.loyalty_skill(index, base);
-        let base = u32::from(base);
-        if index == 0 && level != base && self.stance == Some(StandardStance::Justice) {
-            // Crystal player.cpp:7460-7464 adds Justice from the trained fist level.
-            // Replace only the condition-adjusted fist portion of the existing result.
-            let native = self.conditions.skill_adjustments(now_us)?;
-            return adjustments
-                .adjust_skill(base, index)?
-                .checked_sub(native.adjust_skill(base, index)?)?
-                .checked_add(native.adjust_skill(level, index)?);
-        }
-        adjustments.adjust_skill(level, index)
     }
 
     /// One committed skill with loyalty and current condition adjustments applied.
     pub fn live_skill(&self, index: usize, now_us: u64) -> Option<u32> {
         let owned = self.owned_skills?;
         let adjustments = self.owned_skill_adjustments(now_us).ok()?;
-        self.adjusted_loyalty_skill(adjustments, index, *owned.get(index)?, now_us)
+        let base = *owned.get(index)?;
+        adjustments.adjust_projected_skill(self.loyalty_skill(index, base), u32::from(base), index)
     }
 
     /// The live swing skills at `now_us`: the committed skills with loyalty applied before
@@ -99,16 +89,19 @@ impl PlayerSpellState {
             return Some(None);
         };
         let adjustments = self.owned_skill_adjustments(now_us).ok()?;
-        let attack = self.adjusted_loyalty_skill(
-            adjustments,
-            attack_index,
-            *owned.get(attack_index)?,
-            now_us,
-        )?;
+        let skill = |index| {
+            let base = *owned.get(index)?;
+            adjustments.adjust_projected_skill(
+                self.loyalty_skill(index, base),
+                u32::from(base),
+                index,
+            )
+        };
+        let attack = skill(attack_index)?;
         let shielding = if attack_index == SHIELDING {
             attack
         } else {
-            self.adjusted_loyalty_skill(adjustments, SHIELDING, owned[SHIELDING], now_us)?
+            skill(SHIELDING)?
         };
         Some(Some(SwingSkills { attack, shielding }))
     }
@@ -120,6 +113,7 @@ mod tests {
     use super::*;
     use crate::spell::Vocation;
     use crate::spell::cast::CharacterCastFacts;
+    use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;
 
     fn state(vocation: Vocation) -> PlayerSpellState {
         PlayerSpellState::new(
@@ -169,7 +163,7 @@ mod tests {
     }
 
     #[test]
-    fn loyalty_uses_committed_tries_before_condition_percentages() {
+    fn loyalty_uses_trained_skill_for_condition_percentages() {
         use crate::durability::character_build::{BuildFormula, DurableBuildState};
         use oteryn_gameplay_domain::domain::condition::ConditionValues;
         use oteryn_gameplay_domain::domain::condition::attributes::{
@@ -186,7 +180,13 @@ mod tests {
         let build = DurableBuildState::new("paladin", (0, 0), [(100, 0); 7]).unwrap();
         state.load_owned_build(&build).unwrap();
         state.enable_owned_training(&build, &formula).unwrap();
-        state.set_combat_loyalty(3_600, &formula);
+        state.set_combat_loyalty(
+            CombatLoyaltyProjection {
+                points: 3_600,
+                platform_revision: 1,
+            },
+            &formula,
+        );
 
         let pending = formula.required("paladin", 3, 101).unwrap() - 1;
         assert!(
@@ -204,7 +204,7 @@ mod tests {
             1,
             ConditionValues::SourceAttributes {
                 modifiers: AttributeModifiers {
-                    melee: Some(AttributeModifier::PercentOfBase(50)),
+                    melee: Some(AttributeModifier::PercentOfBase(25)),
                     ..Default::default()
                 },
                 duration_ms: 1_000,
@@ -225,7 +225,7 @@ mod tests {
             .conditions
             .apply(&definition, None, ConditionSourceKind::SelfUse, &[], &facts)
             .unwrap();
-        assert_eq!(state.swing_skills(2, 0).unwrap().unwrap().attack, 51);
+        assert_eq!(state.swing_skills(2, 0).unwrap().unwrap().attack, 27);
     }
 
     #[test]
@@ -239,10 +239,43 @@ mod tests {
         let build = DurableBuildState::new("monk", (0, 0), skills).unwrap();
         state.load_owned_build(&build).unwrap();
         state.enable_owned_training(&build, &formula).unwrap();
-        state.set_combat_loyalty(3_600, &formula);
+        state.set_combat_loyalty(
+            CombatLoyaltyProjection {
+                points: 3_600,
+                platform_revision: 1,
+            },
+            &formula,
+        );
         assert_eq!(state.live_skill(0, 0), Some(114));
 
         state.stance = Some(StandardStance::Justice);
         assert_eq!(state.swing_skills(0, 0).unwrap().unwrap().attack, 122);
+    }
+
+    #[test]
+    fn a_newer_zero_revision_clears_loyalty_and_cannot_be_overwritten_by_a_stale_read() {
+        use crate::durability::character_build::DurableBuildState;
+
+        let formula = formula();
+        let mut state = state(Vocation::Paladin);
+        let build = DurableBuildState::new("paladin", (0, 0), [(100, 0); 7]).unwrap();
+        state.load_owned_build(&build).unwrap();
+        state.enable_owned_training(&build, &formula).unwrap();
+        let original = CombatLoyaltyProjection {
+            points: 3_600,
+            platform_revision: 1,
+        };
+        state.set_combat_loyalty(original, &formula);
+        assert_eq!(state.live_skill(2, 0), Some(102));
+
+        state.set_combat_loyalty(
+            CombatLoyaltyProjection {
+                points: 0,
+                platform_revision: 2,
+            },
+            &formula,
+        );
+        state.set_combat_loyalty(original, &formula);
+        assert_eq!(state.live_skill(2, 0), Some(100));
     }
 }

@@ -9,6 +9,7 @@ use crate::gameplay_transport::spell_character_facts::{self, CastFactsLoad};
 /// Acquiring another permit here would deadlock that same owner lane.
 pub(in crate::gameplay_transport) async fn restore_house(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
+    budget: &crate::gameplay_transport::AdmissionRetryBudget<'_>,
     admitted: &AdmittedSession,
     saved: &LastPositionRecord,
     fresh: bool,
@@ -48,9 +49,8 @@ pub(in crate::gameplay_transport) async fn restore_house(
         CastFactsLoad::Unavailable => return None,
     };
     let monk = owner.load_monk_state(character).await?;
-    let build = owner
-        .root
-        .read_character_build_state(owner.character, character)
+    let combat_build = owner
+        .load_admission_combat_build(budget, fence, Some(owner.channel_id))
         .await
         .ok()?;
     let learned = owner
@@ -123,15 +123,8 @@ pub(in crate::gameplay_transport) async fn restore_house(
     if let Some(rest) = saved.rest {
         prepared.restore_bed_rest(rest, now.get())?;
     }
-    prepared.load_owned_build(&build).ok()?;
     prepared.load_owned_stance(&stance, owner.spells).ok()?;
-    if let Some(formula) = owner
-        .active_generation
-        .and_then(|a| a.native_gameplay())
-        .and_then(|native| native.training_formula())
-    {
-        prepared.enable_owned_training(&build, formula).ok()?;
-    }
+    combat_build.install(&mut prepared)?;
     crate::gameplay_transport::condition_persistence::restore(
         &mut prepared,
         restored_conditions.as_ref(),

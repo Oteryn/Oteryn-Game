@@ -678,6 +678,19 @@ async fn case(h: &Harness, check_imbuements: bool) -> TestResult {
         .await
         .map_err(debug)?;
     assert!(equipment.items.is_empty());
+    if !check_imbuements {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_character_build_state (character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES (encode($1,'hex')::uuid,'paladin',0,0,10,0,10,0,100,0,10,0,10,0,100,0,10,0,2,encode($2,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_account_loyalty_projections(account_id,loyalty_points,platform_revision) VALUES (encode($1,'hex')::uuid,3600,1)")
+            .bind(id(40).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
     let source = admitted;
     let mut unsupported = source;
     unsupported.continuity.selected_capabilities =
@@ -895,6 +908,25 @@ async fn case(h: &Harness, check_imbuements: bool) -> TestResult {
             .map_err(debug)?
             .is_empty()
     );
+    let house_skills = if check_imbuements {
+        None
+    } else {
+        let runtime = restarted.runtime.lock().await;
+        restarted
+            .states
+            .spell_states
+            .lock()
+            .await
+            .house_state_mut(
+                &runtime,
+                recovered_actor,
+                recovered.game_session_id,
+                recovered.item_fence.ok_or("House fence")?,
+            )
+            .ok_or("restored House spell state")?
+            .swing_skills(2, restarted.owner_now().get())
+            .flatten()
+    };
     let (used, status, _) = drive(&restarted, recovered, false).await?;
     assert_eq!(status, CommandStatus::Rejected);
     let later_token = RecoverySource::token(9)?;
@@ -955,6 +987,30 @@ async fn case(h: &Harness, check_imbuements: bool) -> TestResult {
             floor: 7
         }
     );
+    if !check_imbuements {
+        let channel_skills = restarted
+            .states
+            .spell_states
+            .lock()
+            .await
+            .get(
+                &runtime,
+                after.runtime_actor.ok_or("outside actor")?,
+                after.game_session_id,
+            )
+            .ok_or("cold Channel spell state")?
+            .swing_skills(2, restarted.owner_now().get())
+            .flatten();
+        let expected = Some(crate::spell::cast::SwingSkills {
+            attack: 102,
+            shielding: 104,
+        });
+        assert_eq!(
+            (house_skills, channel_skills),
+            (expected, expected),
+            "both cold restore paths install fenced combat loyalty"
+        );
+    }
     drop(runtime);
     let rows: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_house_transfer_receipts WHERE state=2")
