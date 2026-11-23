@@ -453,9 +453,13 @@ fn loot_deadline() -> Instant {
     deadline
 }
 
-fn verify_corpse_retirement_timing(step: &mut &'static str) -> TestResult {
+fn verify_corpse_retirement_timing(
+    step: &mut &'static str,
+    leave_sequence: u64,
+    stale_use: UseDisposition,
+) -> TestResult {
     *step = "verify-server-corpse-retirement-timing";
-    Err("SERVER-GAP missing server timestamps for rat corpse materialization and retirement; 60s fallback at 1357_instance_corpse_mint.sql:164; enter/leave projection at world_spatial_entities.rs:188".into())
+    Err(format!("SERVER-GAP missing server timestamps for rat corpse materialization and retirement; leave-sequence={leave_sequence}; stale-use={stale_use:?}; 60s fallback at 1357_instance_corpse_mint.sql:164; enter/leave projection at world_spatial_entities.rs:188").into())
 }
 
 async fn decay(
@@ -475,15 +479,24 @@ async fn decay(
     *step = "observe-decay";
     let deadline = Instant::now() + Duration::from_secs(75);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    loop {
+    let leave_sequence = loop {
         let position = live.world_spatial().actor_position;
         if position != stationary {
             return Err(format!("actor left the decay observation cell;expected={stationary:?};observed={position:?}").into());
         }
-        if live.take_events().into_iter().any(|event| matches!(event,
-            SessionEvent::WorldSpatialEntities(delta) if delta.value.leave.contains(&corpse.entity.entity)
-        )) {
-            break;
+        if let Some(sequence) = live
+            .take_events()
+            .into_iter()
+            .find_map(|event| match event {
+                SessionEvent::WorldSpatialEntities(delta)
+                    if delta.value.leave.contains(&corpse.entity.entity) =>
+                {
+                    Some(delta.server_sequence)
+                }
+                _ => None,
+            })
+        {
+            break sequence;
         }
         if Instant::now() >= deadline {
             return Err(format!(
@@ -493,7 +506,7 @@ async fn decay(
             .into());
         }
         live.service_liveness(Duration::from_millis(100)).await?;
-    }
+    };
     *step = "retired-loot-unavailable";
     let stale_use = live.use_item(corpse.handle).await?;
     if stale_use.status != CommandStatus::Accepted
@@ -540,7 +553,7 @@ async fn decay(
         )
         .into());
     }
-    verify_corpse_retirement_timing(step)
+    verify_corpse_retirement_timing(step, leave_sequence, stale_use.disposition)
 }
 
 fn request(action: Action) -> loot::QuickLootRequest {
@@ -747,6 +760,38 @@ async fn loot_policy(
     let mut corpse = hunt
         .lootable(live, step, "loot-all", "loot-all", loot_deadline())
         .await?;
+    *step = "manual-click";
+    let before = quantities(live)?;
+    let (status, reply) = quick(
+        live,
+        loot::QuickLootRequest {
+            corpse: Some(corpse.entity.entity.identity),
+            ..request(Action::Click)
+        },
+    )
+    .await?;
+    let refreshed = live.use_item(corpse.handle).await?;
+    if refreshed.status != CommandStatus::Accepted
+        || refreshed.disposition != UseDisposition::Committed
+    {
+        return Err(format!("Click corpse readback refused: {refreshed:?}").into());
+    }
+    settle(live, |live| {
+        Ok(live.open_container().is_some_and(|view| {
+            view.container_handle == Some(corpse.handle) && view.entries == corpse.entries
+        }))
+    })
+    .await?;
+    if status != CommandStatus::Accepted || !reply.items.is_empty() || quantities(live)? != before {
+        return Err(format!(
+            "negative Click changed custody or did not return an empty result: {status:?}/{reply:?}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "I07 negative Click spatial={:?} status={status:?} reply={reply:?}",
+        corpse.entity.entity.identity
+    ));
     *step = "accept-skip-filters";
     filter(live, Action::FilterClear, Filter::Skip, None).await?;
     let refs: std::collections::BTreeSet<_> = corpse
@@ -1187,20 +1232,26 @@ pub(super) async fn run(
     result(I07, started, "", Some(("manual-click", &observed, &cause)));
 
     let mut client = client.ok_or("E2EF3 connection closed during fresh admission")?;
-    // The shared journey's next route starts in town. A failed row still hands
-    // back its live client if the return route itself is refused.
-    let _ = travel(&mut client, world, |at| at == TOWN).await;
+    travel(&mut client, world, |at| at == TOWN)
+        .await
+        .map_err(|error| format!("I07 return to town: {error}"))?;
+    if tile(client.world_spatial().actor_position)? != TOWN {
+        return Err("I07 return did not reach town".into());
+    }
     Ok(client)
 }
 
 #[test]
 fn rat_retirement_requires_server_timestamps() {
     let mut step = "relogin-retirement";
-    let result = verify_corpse_retirement_timing(&mut step);
+    let result = verify_corpse_retirement_timing(&mut step, 17, UseDisposition::StaleState);
     assert_eq!(step, "verify-server-corpse-retirement-timing");
     assert!(result.is_err_and(|error| {
         let error = error.to_string();
-        error.contains("missing server timestamps") && error.contains("60s fallback")
+        error.contains("missing server timestamps")
+            && error.contains("leave-sequence=17")
+            && error.contains("stale-use=StaleState")
+            && error.contains("60s fallback")
     }));
 }
 

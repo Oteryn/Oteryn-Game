@@ -154,8 +154,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let catalogue = self.prey_catalogue().ok_or(Error::InvalidInput)?;
         let expected = admitted.item_fence.ok_or(Error::AuthorityRejected)?;
         let mut slot = self.revision_sequencer.acquire(expected.character_id).await;
-        let fence = super::character_gameplay_fence::current(self, admitted.game_session_id, true)
+        let fence = super::character_gameplay_fence::current_once(self, admitted.game_session_id, true)
             .await
+            .map_err(|error| match error {
+                DurabilityError::RootUnavailable => Error::Unavailable(error),
+                _ => Error::AuthorityRejected,
+            })?
             .ok_or(Error::AuthorityRejected)?;
         if fence.connection_generation != expected.connection_generation
             || fence.character_lease_generation != expected.character_lease_generation
@@ -245,47 +249,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn prepare_admission_prey(
         &self,
         admitted: AdmittedSession,
-    ) -> Result<Option<(wire::Reply, [bool; 3])>, ()> {
+        budget: Option<&super::AdmissionRetryBudget<'_>>,
+    ) -> Result<Option<(wire::Reply, [bool; 3])>, super::AdmissionRefusal> {
         if self.prey_catalogue().is_none() {
             return Ok(None);
         }
-        // Each admission may initialize newly unlocked slots. Existing typed rows are never
-        // redrawn; their unique Character+slot key serializes retry and concurrent admission.
+        // Each admission may initialize newly unlocked slots. Keep the occurrence
+        // across holder retries so a completed initialization is never redrawn.
         let Some(mut occurrence) = super::SecureIdentifiers::random::<16>() else {
-            return Err(());
+            return Err(super::AdmissionRefusal::Rejected);
         };
         occurrence[6] = (occurrence[6] & 15) | 0x70;
         occurrence[8] = (occurrence[8] & 63) | 0x80;
-        if self
-            .prey_commit(admitted, occurrence, PreyMutation::Initialize)
-            .await
-            .is_err()
-        {
-            return Err(());
-        }
-        // A receipt replay returns its original bytes; admission needs the current projection.
-        let Ok((reply, permanent)) = self
-            .prey_commit(
-                admitted,
-                occurrence,
-                PreyMutation::Command(wire::Request::Query),
-            )
-            .await
-        else {
-            return Err(());
+        let run = async |mutation| {
+            self.prey_commit(admitted, occurrence, mutation)
+                .await
+                .map_err(super::post_entry_progression_refusal)
         };
-        Ok(Some((reply, permanent)))
+        // A receipt replay returns its original bytes; admission needs the current projection.
+        let query = || PreyMutation::Command(wire::Request::Query);
+        let prepared = if let Some(budget) = budget {
+            budget.retry_unavailable(async || run(PreyMutation::Initialize).await).await?;
+            budget.retry_unavailable(async || run(query()).await).await?
+        } else {
+            run(PreyMutation::Initialize).await?;
+            run(query()).await?
+        };
+        Ok(Some(prepared))
     }
 
+    #[cfg(test)]
     pub(super) async fn admit_prey(&self, admitted: AdmittedSession) -> bool {
-        let Ok(prepared) = self.prepare_admission_prey(admitted).await else {
-            return false;
-        };
+        self.admit_prey_with_budget(admitted, None).await.is_ok()
+    }
+
+    pub(super) async fn admit_prey_with_budget(
+        &self,
+        admitted: AdmittedSession,
+        budget: Option<&super::AdmissionRetryBudget<'_>>,
+    ) -> Result<(), super::AdmissionRefusal> {
+        let prepared = self.prepare_admission_prey(admitted, budget).await?;
         let Some((reply, permanent)) = prepared else {
-            return true;
+            return Ok(());
         };
         if let Some(actor) = admitted.runtime_actor {
-            let Some(catalogue) = self.prey_catalogue() else { return false; };
+            let Some(catalogue) = self.prey_catalogue() else { return Err(super::AdmissionRefusal::Rejected); };
             let runtime = self.runtime.lock().await;
             self.states.spell_states.lock().await.load_prey(
                 &runtime,
@@ -296,7 +304,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 catalogue.rules().defense_mode,
             );
         }
-        true
+        Ok(())
     }
 }
 macro_rules! authority_methods {
