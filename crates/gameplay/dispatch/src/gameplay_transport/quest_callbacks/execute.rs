@@ -549,6 +549,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
+        // The lowered N4 bindings preserve the exact Crystal mechanism source.
+        // Its default teleportTo call uses FLAG_NOLIMIT and derives arrival facing.
+        let yalahar_mechanism = callback.key.as_str()
+            .strip_prefix("oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-")
+            .and_then(|uid| uid.parse::<u16>().ok())
+            .filter(|uid| matches!(*uid, 1018 | 1019 | 3091..=3102))
+            .filter(|_| callback.trigger == Trigger::Use
+                && callback.effects.teleport_departure_effect
+                && callback.remote_teleport.is_none()
+                && callback.sources.iter().any(|source| source.starts_with(
+                    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:"
+                )));
         let mut destination = callback.teleport;
         if let Some(remote) = &callback.remote_teleport {
             let p = tile(remote.position);
@@ -600,6 +612,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(3) => Some(MovementFacing::West),
             Some(_) => return UseDisposition::Rejected,
         };
+        use crate::map::floor::QuestTeleportPolicy;
+        let default_policy = if callback.effects.scripted_teleport {
+            QuestTeleportPolicy::Scripted
+        } else {
+            QuestTeleportPolicy::Strict
+        };
         let teleport = if let Some(recipe) =
             oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key)
         {
@@ -611,7 +629,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let prepare = |to| {
-                crate::map::floor::prepare_scripted_quest_teleport_facing(
+                crate::map::floor::prepare_quest_teleport_with_policy(
                     runtime,
                     self.movement_cells(),
                     actor,
@@ -621,7 +639,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     blocked,
                     &closed,
                     facing.or(callback.effects.facing.map(super::effects::facing)),
-                    callback.effects.scripted_teleport,
+                    default_policy,
                 )
                 .ok()
             };
@@ -725,8 +743,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         } else {
+            let policy = if yalahar_mechanism.is_some() {
+                QuestTeleportPolicy::SourceNoLimit
+            } else {
+                default_policy
+            };
             match destination {
-                Some(to) => match crate::map::floor::prepare_scripted_quest_teleport_facing(
+                Some(to) => match crate::map::floor::prepare_quest_teleport_with_policy(
                     runtime,
                     self.movement_cells(),
                     actor,
@@ -736,7 +759,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     blocked,
                     &closed,
                     facing.or(callback.effects.facing.map(super::effects::facing)),
-                    callback.effects.scripted_teleport,
+                    policy,
                 ) {
                     Ok(proof) => Some(proof),
                     Err(_) => return UseDisposition::NotPossible,
@@ -1541,11 +1564,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && scene_moves.is_none();
             // These source mechanisms only move the player. Both uses of a
             // projected revision must leave the shared scenery unchanged.
-            let public_yalahar_travel = matches!(
-                callback.key.as_str(),
-                "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1018"
-                    | "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1019"
-            );
+            let public_yalahar_travel = matches!(yalahar_mechanism, Some(1018 | 1019));
             let apply_scene = || {
                 map.facts.apply_quest_callback(
                     key,

@@ -97,7 +97,7 @@ pub(super) async fn move_map_item(
         return stale;
     };
     let nested = at.map.facts.captured_map_item(placement_key);
-    let (reference, quantity, key_number) = if let Some(node) = &nested {
+    let (reference, quantity, key_number, historical_fixture) = if let Some(node) = &nested {
         let attrs = &node.attrs;
         if at.map.facts.house_id(pos).is_some()
             || !node.facts.pickupable
@@ -115,7 +115,7 @@ pub(super) async fn move_map_item(
         let MapDefinition::Item(reference) = node.facts.definition else {
             return stale;
         };
-        (reference, node.facts.count, attrs.action)
+        (reference, node.facts.count, attrs.action, false)
     } else {
         let Some(id) = tile
             .ids()
@@ -156,10 +156,19 @@ pub(super) async fn move_map_item(
                     Err(reason)
                 }
             });
-        let Ok(entry) = entry else {
-            return stale;
-        };
-        (reference, entry.quantity, None)
+        match entry {
+            Ok(entry) => (reference, entry.quantity, None, false),
+            Err(_) => {
+                let Some(entry) = at
+                    .map
+                    .facts
+                    .historical_reward_fixture_entry(pos, ordinal, id)
+                else {
+                    return stale;
+                };
+                (reference, entry.quantity, None, true)
+            }
+        }
     };
     let Some(definition) = crate::gameplay_transport::item_look::typed_definition(index, reference)
     else {
@@ -206,6 +215,20 @@ pub(super) async fn move_map_item(
     if plan_map_item_mint_request(&mint, false).is_err() {
         return stale;
     }
+    // Fixed reward fixtures can finish only the transfer of an exact pre-upgrade mint.
+    let historical_mint = if historical_fixture {
+        match admission
+            .root
+            .read_map_item_mint_receipt(admission.character, &fence, &mint)
+            .await
+        {
+            Ok(Some(receipt)) => Some(receipt),
+            Ok(None) => return stale,
+            Err(error) => return mint_error(error),
+        }
+    } else {
+        None
+    };
     let Some(ground) = loop_ground(admission, base, Some(index)).await else {
         return LoopMoveResult::Unknown;
     };
@@ -227,7 +250,7 @@ pub(super) async fn move_map_item(
             .tile(pos)
             .is_some_and(|tile| tile.is_hidden(ordinal));
     // A crash-retry is the sole exception to the hidden-origin gate. This probe writes nothing.
-    if hidden {
+    if hidden && !historical_fixture {
         match admission
             .root
             .read_map_item_mint_receipt(admission.character, &fence, &mint)
@@ -276,109 +299,115 @@ pub(super) async fn move_map_item(
         Ok(Err(reason)) => return refused(reason),
         Err(_) => return LoopMoveResult::Unknown,
     }
-    // Use the existing overlay budget admission against every currently hidden origin.
-    let mut overlay = ChannelOverlay::new(base.clone(), admission.world_id, admission.channel_id);
-    let taken: Vec<_> = ground
-        .overlay()
-        .tiles()
-        .flat_map(|(pos, tile)| {
-            (0..64)
-                .filter(move |ordinal| tile.is_hidden(*ordinal))
-                .filter_map(move |ordinal| view::placement_key(pos, ordinal))
-        })
-        .collect();
-    if pickup::rehide_taken_origins(&mut overlay, &taken).is_err() {
-        return LoopMoveResult::Unknown;
-    }
-    if nested.is_none()
-        && !hidden
-        && pickup::hide_origin_at_freeze(&mut overlay, placement_key).is_err()
-    {
-        return refused(LoopMoveRefusal::NoRoom);
-    }
-    pending_origin(ground_cache, placement_key, Some(mint.command));
-    let mut candidate = match admission
-        .root
-        .freeze_map_item_mint(admission.character, admission.holder, fence, mint)
-        .await
-    {
-        Ok(candidate) => candidate,
-        Err(error @ MapItemMintError::Unavailable(_)) => return mint_error(error),
-        Err(error) => {
-            pending_origin(ground_cache, placement_key, None);
-            return mint_error(error);
-        }
-    };
-    let committed = if hidden {
-        admission
-            .root
-            .reconcile_map_item_mint(admission.character, &mut candidate)
-            .await
+    let mint_command = mint.command;
+    let minted = if let Some(receipt) = historical_mint {
+        receipt
     } else {
-        match admission
+        // Use the existing overlay budget admission against every currently hidden origin.
+        let mut overlay =
+            ChannelOverlay::new(base.clone(), admission.world_id, admission.channel_id);
+        let taken: Vec<_> = ground
+            .overlay()
+            .tiles()
+            .flat_map(|(pos, tile)| {
+                (0..64)
+                    .filter(move |ordinal| tile.is_hidden(*ordinal))
+                    .filter_map(move |ordinal| view::placement_key(pos, ordinal))
+            })
+            .collect();
+        if pickup::rehide_taken_origins(&mut overlay, &taken).is_err() {
+            return LoopMoveResult::Unknown;
+        }
+        if nested.is_none()
+            && !hidden
+            && pickup::hide_origin_at_freeze(&mut overlay, placement_key).is_err()
+        {
+            return refused(LoopMoveRefusal::NoRoom);
+        }
+        pending_origin(ground_cache, placement_key, Some(mint.command));
+        let mut candidate = match admission
             .root
-            .commit_map_item_mint(
-                permit,
-                admission.character,
-                admission.holder,
-                fence,
-                &mut candidate,
-            )
+            .freeze_map_item_mint(admission.character, admission.holder, fence, mint)
             .await
         {
-            Ok(
-                MapItemMintOutcome::Committed(minted)
-                | MapItemMintOutcome::AlreadyCommitted(minted),
-            ) => Ok(Some(minted)),
-            // An uncertain commit keeps the origin hidden until reconciliation proves its state.
-            Err(MapItemMintError::Unavailable(_)) => {
-                admission
-                    .root
-                    .reconcile_map_item_mint(admission.character, &mut candidate)
-                    .await
+            Ok(candidate) => candidate,
+            Err(error @ MapItemMintError::Unavailable(_)) => return mint_error(error),
+            Err(error) => {
+                pending_origin(ground_cache, placement_key, None);
+                return mint_error(error);
             }
-            Err(
-                error @ (MapItemMintError::InvalidInput
-                | MapItemMintError::AuthorityRejected
-                | MapItemMintError::Refused(_)
-                | MapItemMintError::ConflictingCause
-                | MapItemMintError::ConflictingCandidate),
-            ) => {
-                // A semantic refusal proves this attempt did not MINT. A durable receipt
-                // belonging to another command is still re-hidden by the invalidated reader.
+        };
+        let committed = if hidden {
+            admission
+                .root
+                .reconcile_map_item_mint(admission.character, &mut candidate)
+                .await
+        } else {
+            match admission
+                .root
+                .commit_map_item_mint(
+                    permit,
+                    admission.character,
+                    admission.holder,
+                    fence,
+                    &mut candidate,
+                )
+                .await
+            {
+                Ok(
+                    MapItemMintOutcome::Committed(minted)
+                    | MapItemMintOutcome::AlreadyCommitted(minted),
+                ) => Ok(Some(minted)),
+                // An uncertain commit keeps the origin hidden until reconciliation proves its state.
+                Err(MapItemMintError::Unavailable(_)) => {
+                    admission
+                        .root
+                        .reconcile_map_item_mint(admission.character, &mut candidate)
+                        .await
+                }
+                Err(
+                    error @ (MapItemMintError::InvalidInput
+                    | MapItemMintError::AuthorityRejected
+                    | MapItemMintError::Refused(_)
+                    | MapItemMintError::ConflictingCause
+                    | MapItemMintError::ConflictingCandidate),
+                ) => {
+                    // A semantic refusal proves this attempt did not MINT. A durable receipt
+                    // belonging to another command is still re-hidden by the invalidated reader.
+                    let _ = pickup::settle_origin(
+                        &mut overlay,
+                        placement_key,
+                        MintResolution::ProvenNotCommitted,
+                    );
+                    pending_origin(ground_cache, placement_key, None);
+                    return mint_error(error);
+                }
+                Err(error @ MapItemMintError::CapacityExceeded) => Err(error),
+            }
+        };
+        match committed {
+            Ok(Some(minted)) => {
+                let _ = pickup::settle_origin(
+                    &mut overlay,
+                    placement_key,
+                    MintResolution::Committed(&minted),
+                );
+                pending_origin(ground_cache, placement_key, None);
+                minted
+            }
+            Ok(None) => {
                 let _ = pickup::settle_origin(
                     &mut overlay,
                     placement_key,
                     MintResolution::ProvenNotCommitted,
                 );
                 pending_origin(ground_cache, placement_key, None);
+                return LoopMoveResult::Unknown;
+            }
+            Err(error) => {
+                let _ = pickup::settle_origin(&mut overlay, placement_key, MintResolution::Unknown);
                 return mint_error(error);
             }
-            Err(error @ MapItemMintError::CapacityExceeded) => Err(error),
-        }
-    };
-    let minted = match committed {
-        Ok(Some(minted)) => {
-            let _ = pickup::settle_origin(
-                &mut overlay,
-                placement_key,
-                MintResolution::Committed(&minted),
-            );
-            pending_origin(ground_cache, placement_key, None);
-            minted
-        }
-        Ok(None) => {
-            let _ = pickup::settle_origin(
-                &mut overlay,
-                placement_key,
-                MintResolution::ProvenNotCommitted,
-            );
-            pending_origin(ground_cache, placement_key, None);
-            return LoopMoveResult::Unknown;
-        }
-        Err(error) => {
-            let _ = pickup::settle_origin(&mut overlay, placement_key, MintResolution::Unknown);
-            return mint_error(error);
         }
     };
     // The invalidated read proves this exact instance is still on its own tile, even on retry.
@@ -413,7 +442,7 @@ pub(super) async fn move_map_item(
                     admission.character,
                     admission.holder,
                     &fence,
-                    candidate.request().command,
+                    mint_command,
                     &weights,
                     pickup,
                     slot,
@@ -428,7 +457,7 @@ pub(super) async fn move_map_item(
                     admission.character,
                     admission.holder,
                     &fence,
-                    candidate.request().command,
+                    mint_command,
                     &weights,
                     pickup,
                 )
