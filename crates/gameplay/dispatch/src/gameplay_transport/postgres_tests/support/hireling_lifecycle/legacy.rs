@@ -31,7 +31,9 @@ pub(super) async fn upgrade(h: &Harness, current: CurrentCharacterItemFence)
     let session: String = sqlx::query_scalar(
         "SELECT row_to_json(s)::text FROM game_durability_reconnect_sessions s WHERE game_session_id=encode($1,'hex')::uuid",
     ).bind(current.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-    let name = oteryn_test_support::postgres::database_name("hireling_0405_upgrade");
+    let suffix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?.as_nanos();
+    let name = format!("hireling_0405_upgrade_{suffix}");
     let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
     admin.execute(sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))).await?;
     let url = format!("{}/{}", admin_url.strip_suffix("/postgres").ok_or("admin URL")?, name);

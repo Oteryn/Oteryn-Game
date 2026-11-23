@@ -1,7 +1,9 @@
 //! Recovery owns database/process orchestration; authority_matrix remains the
 //! single independent source and invariant/operator registry.
 use super::authority_matrix::*;
-use super::durability::{AdmissionReconnectJournal, AdmissionReconnectJournalV2, DurabilityError};
+use super::durability::{
+    AdmissionReconnectJournal, AdmissionReconnectJournalV2, DurabilityError, MigrationExecutor,
+};
 use super::{postgres, postgres_e2e_is_configured};
 use oteryn_game_server::foundation::*;
 use sqlx::{Connection, PgConnection};
@@ -22,9 +24,13 @@ where
         .build()?
         .block_on(async {
             let started = Instant::now();
-            let db = postgres::IsolatedPostgres::create_migrated(name).await?;
+            let db = postgres::IsolatedPostgres::create(name).await?;
             let result = async {
                 let url = db.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
                 run(url).await
             }
             .await;
