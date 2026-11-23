@@ -58,8 +58,9 @@ use sqlx::postgres::PgConnection;
 use sqlx::{Connection, Executor};
 use std::collections::BTreeMap;
 use std::future::Future;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::task::Poll;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, SystemTimeError, UNIX_EPOCH};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -111,6 +112,56 @@ struct Database {
     url: String,
 }
 
+fn test_database_name(tag: &str) -> Result<String, SystemTimeError> {
+    const MAX_IDENTIFIER_BYTES: usize = 63;
+    const PREFIX: &str = "crs_";
+    static DATABASE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+    let process = std::process::id();
+    let sequence = DATABASE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+    let nanos = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
+    let suffix = format!("_{process:x}_{sequence:x}_{nanos:x}");
+
+    // Reserve room for the entire suffix before adding the descriptive tag.
+    let tag: String = tag
+        .bytes()
+        .take(MAX_IDENTIFIER_BYTES - PREFIX.len() - suffix.len())
+        .map(|byte| match byte.to_ascii_lowercase() {
+            byte @ (b'a'..=b'z' | b'0'..=b'9') => char::from(byte),
+            _ => '_',
+        })
+        .collect();
+    Ok(format!("{PREFIX}{tag}{suffix}"))
+}
+
+#[test]
+fn test_database_names_stay_unique_within_postgres_identifier_limit() -> TestResult {
+    let tag = "quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal";
+    let names = std::thread::scope(|scope| {
+        let threads: Vec<_> = (0..8)
+            .map(|_| {
+                scope.spawn(|| {
+                    (0..128)
+                        .map(|_| test_database_name(tag))
+                        .collect::<Result<Vec<_>, _>>()
+                })
+            })
+            .collect();
+        let mut names = Vec::new();
+        for thread in threads {
+            names.extend(thread.join().map_err(debug)??);
+        }
+        Ok::<_, Box<dyn std::error::Error>>(names)
+    })?;
+    let postgres_names: std::collections::BTreeSet<_> = names
+        .iter()
+        .map(|name| &name[..name.len().min(63)])
+        .collect();
+    assert_eq!(postgres_names.len(), names.len());
+    assert!(names.iter().all(|name| name.len() <= 63));
+    Ok(())
+}
+
 impl Database {
     async fn create(admin_url: String, name: &str) -> TestResult<Self> {
         Self::create_from(admin_url, name, None).await
@@ -132,10 +183,7 @@ impl Database {
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }
-        let suffix = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos();
-        let name = format!("crs_{name}_{suffix}");
+        let name = test_database_name(name)?;
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut admin)
