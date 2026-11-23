@@ -22,7 +22,7 @@ struct Control {
     selection: Option<usize>,
 }
 #[derive(Resource, Default)]
-struct HouseWindow {
+pub(in crate::bevy_shell::game_ui) struct HouseWindow {
     generation: Option<u64>,
     open: bool,
     root: Option<Entity>,
@@ -35,7 +35,23 @@ struct HouseWindow {
     review: Option<oteryn_client_ui::house::sale::Confirmation>,
     feedback: String,
     map: bool,
+    guildhalls: Option<bool>,
+    rented: Option<bool>,
+    order: Option<oteryn_client_ui::house::HouseOrder>,
 }
+impl HouseWindow {
+    pub(in crate::bevy_shell::game_ui) fn is_open(&self, generation: u64) -> bool {
+        self.open && self.generation == Some(generation)
+    }
+    pub(in crate::bevy_shell::game_ui) fn navigate(&mut self, open: bool, generation: u64) {
+        self.open = open;
+        self.generation = Some(generation);
+        self.request = None;
+        self.review = None;
+        self.map = false;
+    }
+}
+
 /// Closes the entrance map without closing the house window.
 const CLOSE_MAP: usize = 31;
 
@@ -105,11 +121,10 @@ fn project(
         .play
         .as_ref()
         .map(|play| play.link.house_ownership_panel().model);
-    let projected = owner
-        .play
-        .as_ref()
-        .filter(|_| state.open)
-        .map(|play| play.link.house_panel());
+    let projected = owner.play.as_ref().filter(|_| state.open).map(|play| {
+        play.link.house_browse_all(false);
+        play.link.house_panel()
+    });
     if let Some(panel) = &projected
         && !state.redraw
         && state.activity_revision == panel.activity_revision
@@ -193,7 +208,12 @@ fn project(
         state.review = None;
         state.map = false;
     }
-    let mut message = oteryn_client_ui::house::panel_text(&panel.model);
+    let mut message = oteryn_client_ui::house::browser_text(
+        &panel.model,
+        state.guildhalls,
+        state.rented,
+        state.order,
+    );
     if let Some(model) = &ownership {
         message.push_str("\nOwnership / incoming transfers:\n");
         if let Some(data) = model.data() {
@@ -218,7 +238,8 @@ fn project(
         &panel.model,
         &message,
     );
-    let houses = oteryn_client_ui::house::map_houses(&panel.model);
+    let houses =
+        oteryn_client_ui::house::filtered_map_houses(&panel.model, state.guildhalls, state.rented);
     state.map &= !houses.is_empty();
     if state.map {
         entrance_map(&mut commands, &skin, owner.generation(), root, &houses);
@@ -302,6 +323,21 @@ fn finish(
         state.redraw = true;
         return;
     }
+    if (32..=39).contains(&selection) {
+        play.link.house_browse_all(true);
+        match selection {
+            32 => state.guildhalls = Some(true),
+            33 => state.guildhalls = Some(false),
+            34 => state.guildhalls = None,
+            35 => state.rented = Some(true),
+            36 => state.rented = Some(false),
+            37 => state.rented = None,
+            38 => state.order = Some(oteryn_client_ui::house::HouseOrder::Name),
+            _ => state.order = Some(oteryn_client_ui::house::HouseOrder::Area),
+        }
+        state.redraw = true;
+        return;
+    }
     if selection >= 20 {
         if state.ownership.as_ref() != Some(&play.link.house_ownership_panel().model) {
             state.review = None;
@@ -358,6 +394,22 @@ fn finish(
         }
         state.redraw = true;
     } else {
+        if (2..=13).contains(&selection)
+            && (state.guildhalls.is_some() || state.rented.is_some())
+            && !values[2]
+                .trim()
+                .parse::<usize>()
+                .ok()
+                .and_then(|n| n.checked_sub(1))
+                .and_then(|n| model.page.rows.get(n))
+                .is_some_and(|row| {
+                    oteryn_client_ui::house::matches_filters(row, state.guildhalls, state.rented)
+                })
+        {
+            state.feedback = "Select a house shown by the current filters".into();
+            state.redraw = true;
+            return;
+        }
         if submit(
             &play.link,
             state.activity_revision,
@@ -366,6 +418,11 @@ fn finish(
             values,
             selection,
         ) {
+            if selection == 0
+                && (state.order.is_some() || state.guildhalls.is_some() || state.rented.is_some())
+            {
+                play.link.house_browse_all(true);
+            }
             state.model = None;
         }
         state.review = None;
@@ -382,185 +439,9 @@ pub(super) fn submit(
     link.house_submit(revision, expected, expected_fields, fields, selection)
 }
 
-pub(super) fn build(
-    commands: &mut Commands,
-    skin: &Skins,
-    generation: u64,
-    fields: &[String; 7],
-    retained: [Option<Entity>; 7],
-    model: &Panel,
-    message: &str,
-) -> Entity {
-    let root = commands
-        .spawn((
-            GameModal,
-            crate::bevy_shell::ui::window_layout::WindowLayer("houses"),
-            GlobalZIndex(165),
-            TabGroup {
-                order: 3,
-                modal: true,
-            },
-            Node {
-                position_type: PositionType::Absolute,
-                width: percent(100.),
-                height: percent(100.),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
-        ))
-        .id();
-    let panel = commands
-        .spawn((
-            crate::bevy_shell::window_drag::DraggableDialog,
-            source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
-            Node {
-                width: px(540.),
-                max_width: percent(96.),
-                max_height: percent(94.),
-                padding: UiRect {
-                    top: px(24.),
-                    bottom: px(10.),
-                    left: px(12.),
-                    right: px(12.),
-                },
-                flex_direction: FlexDirection::Column,
-                row_gap: px(5.),
-                ..default()
-            },
-        ))
-        .id();
-    commands.entity(root).add_child(panel);
-    let title = model.page.rows.get(model.index).map_or_else(
-        || "Houses — Browser, Auctions and Transfers".to_owned(),
-        |row| {
-            let name = if row.name.is_empty() {
-                &row.house
-            } else {
-                &row.name
-            };
-            format!("Edit House List — {name}")
-        },
-    );
-    source::dialog_caption(commands, panel, &title, skin.font.clone());
-    let content = commands
-        .spawn((
-            ScrollArea,
-            Node {
-                width: percent(100.),
-                min_height: px(0.),
-                flex_shrink: 1.,
-                overflow: Overflow::scroll_y(),
-                flex_direction: FlexDirection::Column,
-                row_gap: px(5.),
-                ..default()
-            },
-        ))
-        .id();
-    commands.entity(panel).add_child(content);
-    label(commands, skin, content, message);
-    for (index, prompt) in [
-        (0, "World UUID"),
-        (1, "Town key"),
-        (2, "House row (1 onwards)"),
-        (3, "Maximum auction bid / transfer price (gold)"),
-        (4, "Enter one member UUID per line."),
-        (
-            5,
-            "Door: x y floor / transfer date: YYYY-MM-DD HH:MM:SS UTC",
-        ),
-        (6, "Type CONFIRM for changes"),
-    ] {
-        label(commands, skin, content, prompt);
-        if index == 4 {
-            label(
-                commands,
-                skin,
-                content,
-                "Names cannot be resolved by this server for access lists; an empty list removes all members. For transfers, enter the recipient character name here.",
-            );
-        }
-        if let Some(field) = retained[index] {
-            commands.entity(content).add_child(field);
-            continue;
-        }
-        let mut editable = EditableText::new(&fields[index]);
-        editable.allow_newlines = index == 4;
-        editable.max_characters = Some(8192);
-        editable.visible_lines = Some(if index == 4 { 4. } else { 1. });
-        let field = commands
-            .spawn((
-                Field(index),
-                TextInput,
-                editable,
-                TabIndex(index as i32),
-                source::font(skin.font.clone(), false),
-                TextColor(source::TEXT_COLOR),
-                TextLayout::default(),
-                TextCursorStyle::default(),
-                Node {
-                    width: percent(100.),
-                    min_height: px(26.),
-                    padding: px(4.).all(),
-                    ..default()
-                },
-                BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
-            ))
-            .id();
-        commands.entity(content).add_child(field);
-    }
-    let footer = commands
-        .spawn(Node {
-            flex_wrap: FlexWrap::Wrap,
-            column_gap: px(5.),
-            row_gap: px(5.),
-            ..default()
-        })
-        .id();
-    commands.entity(panel).add_child(footer);
-    for (selection, caption) in [
-        (Some(0), "Query"),
-        (Some(1), "Next"),
-        (Some(2), "Bid"),
-        (Some(10), "Show entrance map"),
-        (Some(20), "Owned / incoming"),
-        (Some(30), "Previous owned"),
-        (Some(29), "Next owned"),
-        (Some(21), "Review move-out"),
-        (Some(22), "Review cancel move-out"),
-        (Some(23), "Review transfer"),
-        (Some(24), "Review cancel transfer"),
-        (Some(25), "Review accept transfer"),
-        (Some(26), "Review reject transfer"),
-        (Some(27), "Confirm reviewed action"),
-        (Some(28), "Cancel review"),
-        (Some(11), "Load guests"),
-        (Some(12), "Load subowners"),
-        (Some(13), "Load door"),
-        (Some(3), "Save guests"),
-        (Some(4), "Save subowners"),
-        (Some(5), "Save door"),
-        (None, "Close"),
-    ] {
-        let button = commands
-            .spawn((
-                source::button(skin.buttons.clone(), 120.),
-                Control {
-                    generation,
-                    root,
-                    selection,
-                },
-            ))
-            .observe(activate)
-            .id();
-        let text = commands
-            .spawn(source::button_caption(caption, skin.font.clone()))
-            .id();
-        commands.entity(button).add_child(text);
-        commands.entity(footer).add_child(button);
-    }
-    root
-}
+#[path = "houses_widgets.rs"]
+mod widgets;
+pub(super) use widgets::build;
 fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) {
     let entity = commands
         .spawn(source::text(text, source::font(skin.font.clone(), false)))

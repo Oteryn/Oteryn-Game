@@ -54,3 +54,13 @@ impl PlayLink {
         }
     }
 }
+
+#[cfg(bevy_shell)]
+impl crate::play::PlayView {
+    pub(crate) fn battle_guild_mark(
+        &self,
+        entity: oteryn_session::EntityRef,
+    ) -> Option<oteryn_session::guild_emblem::Emblem> {
+        oteryn_client_ui::guild_emblem::emblem_of(&self.guild_emblems, entity)
+    }
+}

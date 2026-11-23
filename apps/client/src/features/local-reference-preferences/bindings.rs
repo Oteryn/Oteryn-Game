@@ -154,8 +154,8 @@ impl ReferencePreferences {
         self.validate_custom_chords(&self.keybindings, &self.secondary_keybindings)?;
         for (name, preset) in &self.hotkey_contexts.presets {
             for (chat_on, bindings) in [(true, &preset.chat_on), (false, &preset.chat_off)] {
-                validate_map(&bindings.primary)?;
-                validate_map(&bindings.secondary)?;
+                validate_map(&bindings.primary, false)?;
+                validate_map(&bindings.secondary, true)?;
                 let (primary, secondary) = if name == &self.hotkey_contexts.selected
                     && chat_on == self.hotkey_contexts.chat_on
                 {

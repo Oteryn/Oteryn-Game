@@ -16,91 +16,30 @@ pub(in super::super) struct ScreenshotRuntime {
     last_pvp_query: Option<Instant>,
     incoming_situations: Option<usize>,
     last_pvp_observation: Option<Instant>,
+    last_bestiary_query: Option<Instant>,
     previous: Option<Signals>,
-    bestiary: BestiaryCapture,
+    queried_kills: Option<u64>,
+    stages_at_request: Option<oteryn_client_ui::charm_progression::BestiaryStages>,
     automatic_pending: bool,
     game_only: Option<bool>,
 }
-#[derive(Default)]
-struct BestiaryCapture {
-    stages: Option<std::collections::BTreeMap<u32, u8>>,
-    queried_kills: Option<u64>,
-    last_request: Option<Instant>,
-    awaiting: bool,
-    reply_revision: u64,
-}
-impl BestiaryCapture {
-    fn observe(&mut self, now: Instant, link: &PlayLink, kills: u64) -> (bool, bool, bool) {
-        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
-        let kill_feed = mailbox.analyser.selected;
-        let panel = &mailbox.properties.charm_progression;
-        if !panel.selected || panel.pending {
-            return (panel.selected && self.stages.is_some(), false, false);
-        }
-        let mut unlocked = false;
-        let mut completed = false;
-        // A retained panel reply can predate the moment this option was enabled.
-        if self.last_request.is_none() {
-            self.reply_revision = panel.reply_revision;
-        }
-        if self.reply_revision != panel.reply_revision {
-            self.reply_revision = panel.reply_revision;
-            if let Some(reply) = &panel.reply {
-                let stages = reply
-                    .bestiary
-                    .iter()
-                    .map(|r| (r.race.get(), r.unlocked_stage()))
-                    .collect::<std::collections::BTreeMap<_, _>>();
-                if let Some(old) = &self.stages {
-                    for (&race, &stage) in &stages {
-                        if stage > old.get(&race).copied().unwrap_or(0) {
-                            completed |= stage == 3;
-                            unlocked |= stage < 3;
-                        }
-                    }
-                }
-                self.stages = Some(stages);
-            }
-        } else if self.awaiting {
-            // The owner retains the previous good reply on a refusal.
-            self.queried_kills = None;
-        }
-        self.awaiting = false;
-        let refresh = self.queried_kills != Some(kills)
-            || (!kill_feed
-                && self
-                    .last_request
-                    .is_none_or(|at| now.saturating_duration_since(at) >= Duration::from_secs(5)));
-        if refresh
-            && self
-                .last_request
-                .is_none_or(|last| now.saturating_duration_since(last) >= Duration::from_secs(2))
-        {
-            crate::play::feature_0067_bestiary_charm_progression::input::submit(
-                &mut mailbox,
-                &link.commands,
-                oteryn_client_ui::charm_progression::Intent::Query,
-            );
-            self.queried_kills = Some(kills);
-            self.last_request = Some(now);
-            self.awaiting = true;
-        }
-        (self.stages.is_some(), unlocked, completed)
-    }
-}
 struct Signals {
     events: super::CaptureObservations,
+    bestiary: Option<oteryn_client_ui::charm_progression::BestiaryStages>,
+    combat: crate::screenshots::CombatCaptureFacts,
     deaths: u64,
     achievement: Option<u32>,
     level: Option<u32>,
     skills: Option<[u16; 8]>,
 }
 impl Signals {
-    fn read(link: &PlayLink) -> Self {
+    fn read(link: &PlayLink, bestiary: bool) -> Self {
         let panel = link.skill_progress_panel();
         let facts = link.screenshot_facts();
         Self {
             events: link.capture_observations(),
+            bestiary: bestiary.then(|| link.capture_bestiary_stages()).flatten(),
+            combat: link.combat_capture_facts(),
             deaths: facts.deaths,
             achievement: facts.achievement,
             level: panel.complete.map(|s| s.level),
@@ -132,23 +71,6 @@ impl ScreenshotBatch {
 }
 
 impl SettingsState {
-    fn observe_impact_records(&mut self, maxima: [u32; 2]) {
-        #[cfg(bevy_shell)]
-        if self.preference_transfer_pending() {
-            return;
-        }
-        let previous = self.preferences.impact_records;
-        if maxima.iter().zip(previous).all(|(new, old)| *new <= old) {
-            return;
-        }
-        let mut preferences = self.preferences.clone();
-        let options = &preferences.screenshots;
-        self.screenshot_runtime.automatic_pending |= !options.automatic_disabled
-            && ((options.on_record_damage && maxima[0] > previous[0])
-                || (options.on_record_healing && maxima[1] > previous[1]));
-        preferences.impact_records = [maxima[0].max(previous[0]), maxima[1].max(previous[1])];
-        self.apply(preferences);
-    }
     pub fn cancel_screenshot(&mut self) {
         self.screenshot_runtime.automatic_pending = false;
         self.screenshot_requested = false;
@@ -195,21 +117,61 @@ impl SettingsState {
         link: Option<&PlayLink>,
     ) -> CaptureAction {
         let preferences = self.preferences.screenshots.effective();
-        let runtime = &mut self.screenshot_runtime;
-        if link.is_none() || runtime.game_only != Some(preferences.game_only) {
-            *runtime = ScreenshotRuntime::default();
-            runtime.game_only = Some(preferences.game_only);
-        }
-        if let Some(link) = link
-            && self.character_scope().is_some()
-        {
-            self.observe_impact_records(link.capture_observations().impact);
-        }
+        let signals = link.map(|link| {
+            if preferences.automatic_disabled
+                || !(preferences.on_bestiary_complete || preferences.on_bestiary_unlock)
+            {
+                link.invalidate_capture_bestiary();
+                self.screenshot_runtime.last_bestiary_query = None;
+                self.screenshot_runtime.queried_kills = None;
+                self.screenshot_runtime.stages_at_request = None;
+            }
+            Signals::read(
+                link,
+                !preferences.automatic_disabled
+                    && (preferences.on_bestiary_complete || preferences.on_bestiary_unlock),
+            )
+        });
+        let records = signals.as_ref().map_or([false; 2], |s| {
+            let old = self
+                .screenshot_runtime
+                .previous
+                .as_ref()
+                .map(|p| p.combat)
+                .unwrap_or_default();
+            self.observe_impact_records(s.combat, old)
+        });
         let runtime = &mut self.screenshot_runtime;
         if preferences.automatic_disabled {
             runtime.automatic_pending = false;
         }
-        if let Some(link) = link {
+        if link.is_none() || runtime.game_only != Some(preferences.game_only) {
+            *runtime = ScreenshotRuntime::default();
+            runtime.game_only = Some(preferences.game_only);
+        }
+        if let (Some(link), Some(signals)) = (link, signals) {
+            let bestiary = !preferences.automatic_disabled
+                && (preferences.on_bestiary_complete || preferences.on_bestiary_unlock);
+            let killed = runtime.queried_kills != Some(signals.events.credited_kills);
+            // Each accepted reply publishes a new Arc even when no stage changed.
+            // A refused query leaves the previous snapshot intact and still needs a retry.
+            let unanswered = runtime
+                .stages_at_request
+                .as_ref()
+                .zip(signals.bestiary.as_ref())
+                .is_some_and(|(requested, latest)| Arc::ptr_eq(requested, latest));
+            let interval = Duration::from_secs(if killed || unanswered { 2 } else { 4 });
+            if bestiary
+                && (killed || unanswered || !signals.events.kill_feed || signals.bestiary.is_none())
+                && runtime
+                    .last_bestiary_query
+                    .is_none_or(|at| now.saturating_duration_since(at) >= interval)
+                && link.refresh_capture_bestiary()
+            {
+                runtime.queried_kills = Some(signals.events.credited_kills);
+                runtime.stages_at_request.clone_from(&signals.bestiary);
+                runtime.last_bestiary_query = Some(now);
+            }
             if preferences.on_player_attacking && !preferences.automatic_disabled {
                 let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
                 let panel = &mailbox.properties.party_skull;
@@ -248,19 +210,7 @@ impl SettingsState {
                 now,
             );
             runtime.automatic_pending |= boss_advanced;
-            let signals = Signals::read(link);
-            let (full, unlocked, completed) = if !preferences.automatic_disabled
-                && (preferences.on_bestiary_unlock || preferences.on_bestiary_complete)
-            {
-                runtime
-                    .bestiary
-                    .observe(now, link, signals.events.credited_kills)
-            } else {
-                runtime.bestiary = BestiaryCapture::default();
-                (false, false, false)
-            };
-            runtime.automatic_pending |= (preferences.on_bestiary_unlock && unlocked)
-                || (preferences.on_bestiary_complete && completed);
+            let full = signals.bestiary.is_some();
             if !preferences.automatic_disabled
                 && let Some(previous) = &runtime.previous
             {
@@ -293,7 +243,31 @@ impl SettingsState {
                         && previous.events.low_health != signals.events.low_health)
                     || (preferences.on_level && level)
                     || (preferences.on_skill && skill)
-                    || (preferences.on_achievement && achievement);
+                    || (preferences.on_achievement && achievement)
+                    || previous
+                        .bestiary
+                        .as_ref()
+                        .zip(signals.bestiary.as_ref())
+                        .is_some_and(|(old, current)| {
+                            !Arc::ptr_eq(old, current)
+                                && current.iter().any(|(race, stage)| {
+                                    let last = old
+                                        .binary_search_by_key(race, |(id, _)| *id)
+                                        .map_or(0, |index| old[index].1);
+                                    *stage > last
+                                        && if *stage == 3 {
+                                            preferences.on_bestiary_complete
+                                        } else {
+                                            preferences.on_bestiary_unlock
+                                        }
+                                })
+                        })
+                    || (preferences.reward_chest
+                        && signals.combat.reward_collections > previous.combat.reward_collections)
+                    || (preferences.on_record_damage && records[0])
+                    || (preferences.on_record_healing && records[1])
+                    || (preferences.on_player_attacking
+                        && signals.combat.player_hits > previous.combat.player_hits);
             }
             runtime.previous = Some(signals);
             if !preferences.automatic_disabled

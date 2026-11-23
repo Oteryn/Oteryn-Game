@@ -111,7 +111,12 @@ pub(super) fn project(
             widgets::page(
                 &mut commands,
                 parent,
-                (state.page, state.binding, help.as_ref()),
+                (
+                    state.page,
+                    state.binding,
+                    state.search.as_str(),
+                    help.as_ref(),
+                ),
                 &skins,
                 &checks,
                 draft,

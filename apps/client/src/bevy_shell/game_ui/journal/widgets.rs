@@ -61,6 +61,16 @@ pub(super) fn build(
         },
         skin.font.clone(),
     );
+    if key.tab == Tab::Spells {
+        use crate::bevy_shell::game_ui::cyclopedia_navigation::{Subject, bar};
+        bar(
+            commands,
+            skin,
+            root,
+            key.generation,
+            Subject::MagicalArchive,
+        );
+    }
     let tabs = row(commands, root);
     action(commands, skin, tabs, key, Kind::Quests, "Quest Log", 100.);
     action(commands, skin, tabs, key, Kind::Spells, "Spells", 100.);

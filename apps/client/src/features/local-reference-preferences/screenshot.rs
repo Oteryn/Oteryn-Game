@@ -98,19 +98,15 @@ impl Pixels {
 
 #[derive(Debug, Clone, Copy, Default)]
 pub(crate) struct CaptureObservations {
-    impact: [u32; 2],
     tracked_loot: u64,
     pub(in crate::play) tracker: [u64; 3],
     credited_kills: u64,
+    kill_feed: bool,
     low_health: u64,
     was_low: Option<bool>,
 }
 impl crate::play::mailbox::Mailbox {
-    pub(in crate::play) fn observe_capture_event(
-        &mut self,
-        event: &oteryn_session::SessionEvent,
-    ) {
-        use oteryn_session::analyser_transport::AnalyserImpact;
+    pub(in crate::play) fn observe_capture_event(&mut self, event: &oteryn_session::SessionEvent) {
         use oteryn_session::{SessionEvent, analyser_transport::AnalyserFact};
         let mut observe = |fact: &AnalyserFact| {
             #[cfg(bevy_shell)]
@@ -131,14 +127,6 @@ impl crate::play::mailbox::Mailbox {
             if matches!(fact, AnalyserFact::Kill { .. }) {
                 self.capture_observations.credited_kills =
                     self.capture_observations.credited_kills.wrapping_add(1);
-            }
-            if let AnalyserFact::Impact(impact) = fact {
-                let (index, value) = match impact {
-                    AnalyserImpact::Damage { value, .. } => (0, value),
-                    AnalyserImpact::Healing(value) => (1, value),
-                };
-                self.capture_observations.impact[index] =
-                    self.capture_observations.impact[index].max(value.get());
             }
         };
         match event {
@@ -162,7 +150,11 @@ impl crate::play::mailbox::Mailbox {
 }
 impl crate::play::PlayLink {
     fn capture_observations(&self) -> CaptureObservations {
-        crate::play::mailbox::lock(&self.mailbox).capture_observations
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        CaptureObservations {
+            kill_feed: mailbox.analyser.selected,
+            ..mailbox.capture_observations
+        }
     }
 }
 pub(crate) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {

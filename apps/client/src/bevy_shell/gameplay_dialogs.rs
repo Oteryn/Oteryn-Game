@@ -22,7 +22,12 @@ struct Request {
     generation: u64,
     content: Content,
 }
-type AttackChoice = (TileCoord, (oteryn_session::EntityRef, bool));
+struct AttackChoice {
+    position: oteryn_session::ActorPosition,
+    target: oteryn_session::EntityRef,
+    attacking: bool,
+    from_row: bool,
+}
 
 enum Content {
     Logout,
@@ -123,6 +128,9 @@ impl HostOwner {
         }
     }
     pub(super) fn request_world_context(&mut self, tile: TileCoord) {
+        self.open_world_context(tile, false);
+    }
+    fn open_world_context(&mut self, tile: TileCoord, from_row: bool) {
         let menu = self
             .play
             .as_ref()
@@ -158,21 +166,22 @@ impl HostOwner {
             .play
             .as_ref()
             .and_then(|play| play.view.party_context_target(tile)?.1);
-        let attack = self
-            .play
-            .as_ref()
-            .filter(|_| {
-                menu.as_ref().is_some_and(|menu| {
-                    matches!(
-                        menu.target,
-                        oteryn_client_ui::world_interaction::menu::Target::Creature(_)
-                    )
-                })
-            })
-            .and_then(|play| play.view.attack_target(tile, &play.link))
-            .map(|target| Box::new((tile, target)));
+        let attack = self.play.as_ref().and_then(|play| {
+            use oteryn_client_ui::world_interaction::menu::Target;
+            let Target::Creature(target) = play.view.world_context_target(tile)? else {
+                return None;
+            };
+            let (position, attacking) = play.view.row_attack_target(target, &play.link)?;
+            Some(Box::new(AttackChoice {
+                position,
+                target,
+                attacking,
+                from_row,
+            }))
+        });
         if self.phase == Phase::Playing
-            && (menu.is_some()
+            && (attack.is_some()
+                || menu.is_some()
                 || npc.is_some()
                 || party.is_some()
                 || report.is_some()
@@ -197,32 +206,44 @@ impl HostOwner {
         }
     }
     pub(super) fn request_creature_context(&mut self, target: oteryn_session::EntityRef) {
-        let unambiguous = self.play.as_ref().and_then(|play| {
-            let row = play
-                .link
-                .filtered_battle_rows(play.link.active_battle_list())
-                .into_iter()
-                .find(|row| row.entity == target)?;
-            let tile = TileCoord::new(row.position.x, row.position.y);
-            let menu = play.view.world_context(tile, &play.link)?;
-            (menu.target == oteryn_client_ui::world_interaction::menu::Target::Creature(target))
-                .then_some(tile)
-        });
-        if let Some(tile) = unambiguous {
-            self.request_world_context(tile);
+        use oteryn_client_ui::world_interaction::menu::Target;
+        if self.phase != Phase::Playing {
             return;
         }
-        let menu = self
-            .play
-            .as_ref()
-            .and_then(|play| play.view.creature_context(target, &play.link));
-        if self.phase == Phase::Playing
-            && let Some(menu) = menu
-        {
+        let Some(play) = self.play.as_ref() else {
+            return;
+        };
+        let row = play
+            .link
+            .battle_panel()
+            .visible_actors
+            .into_iter()
+            .find(|row| row.entity == target);
+        let Some(row) = row else {
+            return;
+        };
+        let tile = TileCoord::new(row.position.x, row.position.y);
+        if play.view.world_context_target(tile) == Some(Target::Creature(target)) {
+            self.open_world_context(tile, true);
+            return;
+        }
+        let attack =
+            play.view
+                .row_attack_target(target, &play.link)
+                .map(|(position, attacking)| {
+                    Box::new(AttackChoice {
+                        position,
+                        target,
+                        attacking,
+                        from_row: true,
+                    })
+                });
+        let menu = play.view.creature_context(target, &play.link).map(Box::new);
+        if menu.is_some() || attack.is_some() {
             self.dialogs.open(
                 self.generation(),
                 Content::Context {
-                    menu: Some(Box::new(menu)),
+                    menu,
                     party: None,
                     inspection: None,
                     report: None,
@@ -230,7 +251,7 @@ impl HostOwner {
                     browse: None,
                     npc: None,
                     player: None,
-                    attack: None,
+                    attack,
                 },
             );
         }
@@ -323,15 +344,26 @@ impl HostOwner {
                 },
                 Choice::Attack,
             ) => self.play.as_ref().is_some_and(|play| {
-                let (tile, (target, attacking)) = *attack;
+                use oteryn_client_ui::world_interaction::menu::Target;
+                let AttackChoice {
+                    position,
+                    target,
+                    attacking,
+                    from_row,
+                } = *attack;
+                let tile = TileCoord::new(position.x, position.y);
                 if play.view.gameplay_input_blocked(&play.link)
-                    || play.view.attack_target(tile, &play.link) != Some((target, attacking))
+                    || (!from_row
+                        && play.view.world_context_target(tile) != Some(Target::Creature(target)))
+                    || play.view.row_attack_target(target, &play.link)
+                        != Some((position, attacking))
                 {
                     return false;
                 }
                 #[cfg(test)]
                 tests::publish_after_attack_validation();
-                play.link.request_context_combat(target, attacking)
+                play.link
+                    .request_positioned_combat(target, attacking, Some(position))
             }),
             (
                 Content::Context {
