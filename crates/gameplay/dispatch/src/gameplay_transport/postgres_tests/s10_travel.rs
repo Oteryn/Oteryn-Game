@@ -66,23 +66,27 @@ fn scenario(regional: bool) -> TestResult {
         .map_err(debug)?;
         let model = catalogue.service_model_for_project().map_err(debug)?;
         let book = NpcTalkBook::from_model(&model);
-        let inner_destination = if regional {
-            let entry = book.get("oteryn:npc.tarak_inner").ok_or("Tarak Inner")?;
-            let route = entry
-                .travel_routes
-                .iter()
-                .find(|route| route.route.key == "passage")
-                .ok_or("Tarak Inner passage")?;
-            let target = &route.route.destination;
-            Some((
-                u16::try_from(target.x)?,
-                u16::try_from(target.y)?,
-                -i8::try_from(target.floor)?,
-            ))
-        } else {
-            None
-        };
-        let bundle = world_fixture(world, regional, inner_destination)?;
+        let mut destinations = Vec::new();
+        if regional {
+            for (npc, key) in [
+                ("oteryn:npc.tarak_inner", "passage"),
+                ("oteryn:npc.captain_gulliver", "thais"),
+            ] {
+                let entry = book.get(npc).ok_or(npc)?;
+                let route = entry
+                    .travel_routes
+                    .iter()
+                    .find(|route| route.route.key == key)
+                    .ok_or(key)?;
+                let target = &route.route.destination;
+                destinations.push((
+                    u16::try_from(target.x)?,
+                    u16::try_from(target.y)?,
+                    -i8::try_from(target.floor)?,
+                ));
+            }
+        }
+        let bundle = world_fixture(world, regional, destinations)?;
         let base = pin.qualified_room().clone();
         let cells = bundle
             .movement_cells(base.movement_cells())
@@ -161,7 +165,12 @@ fn scenario(regional: bool) -> TestResult {
                 .map_err(debug)?
                 .actors
         };
-        super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 100)]).await?;
+        let coins: &[_] = if regional {
+            &[("oteryn:item.tibia.i3031", 100), ("oteryn:item.tibia.i3035", 2)]
+        } else {
+            &[("oteryn:item.tibia.i3031", 100)]
+        };
+        super::item_look_fixtures::seed_main_backpack(&h, coins).await?;
         assert!(owner.ensure_source_map_initialized().await);
         if regional {
             owner.premium_coordinator = None;
@@ -327,6 +336,81 @@ async fn regional_quotes(
             }
         }
         owner.clock_origin -= std::time::Duration::from_secs(1);
+        if stem == "captain_gulliver" {
+            use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+            let session = deps.admitted.game_session_id;
+            let quote = talk(owner, deps, npc, command, "thais").await?;
+            assert_eq!(
+                quote.conversation.and_then(|c| c.open),
+                Some((npc, NpcConversationState::Confirming))
+            );
+            owner.clock_origin -= std::time::Duration::from_secs(29);
+            assert!(
+                owner
+                    .npc_follow(deps.actor, session, Some(npc))
+                    .await
+                    .is_none()
+            );
+            owner.clock_origin -= std::time::Duration::from_secs(2);
+            let expired = owner.npc_follow(deps.actor, session, Some(npc)).await;
+            let expired_state = expired
+                .and_then(|update| update.conversation)
+                .and_then(|reply| reply.open);
+            if expired_state != Some((npc, NpcConversationState::Open)) {
+                failures.push(format!("{stem}: idle quote still published after expiry, follow state {expired_state:?}"));
+            }
+            assert!(
+                owner
+                    .npc_follow(deps.actor, session, Some(npc))
+                    .await
+                    .is_none()
+            );
+            command += 1;
+        }
+        if let Some((destination, confirmation)) = match stem {
+            "captain_gulliver" => Some(("thais", "yes")),
+            "tarak_sunken" => Some(("passage", "yes please")),
+            _ => None,
+        } {
+            let quote = talk(owner, deps, npc, command, destination).await?;
+            assert_eq!(
+                quote.conversation.and_then(|c| c.open),
+                Some((npc, NpcConversationState::Confirming))
+            );
+            let before = deps
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position();
+            owner.clock_origin -= std::time::Duration::from_secs(31);
+            let late = talk(owner, deps, npc, command + 1, confirmation).await?;
+            let after = deps
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position();
+            let receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
+                    .fetch_one(pool)
+                    .await?;
+            let state = late.conversation.and_then(|c| c.open);
+            if late.inventory_changed
+                || before != after
+                || receipts != 0
+                || state != Some((npc, NpcConversationState::Open))
+            {
+                failures.push(format!(
+                    "{stem} accepted {confirmation:?} at 31s: inventory_changed={}, before={before:?}, after={after:?}, receipts={receipts}, state={state:?}",
+                    late.inventory_changed
+                ));
+            }
+            assert!(failures.is_empty(), "{}", failures.join("\n"));
+            command += 2;
+        }
         if stem == "tarak_inner" {
             talk(owner, deps, npc, command, "passage").await?;
             let before = deps
@@ -401,7 +485,7 @@ async fn regional_quotes(
 fn world_fixture(
     world: crate::foundation::WorldId,
     regional: bool,
-    inner_destination: Option<(u16, u16, i8)>,
+    destinations: Vec<(u16, u16, i8)>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
@@ -466,7 +550,7 @@ fn world_fixture(
     for (x, y, floor) in points
         .into_iter()
         .chain(regional_points.iter().copied())
-        .chain(inner_destination)
+        .chain(destinations)
     {
         grouped
             .entry((floor, y / 32, x / 32))

@@ -9,11 +9,7 @@ impl Prompt {
         fence: crate::durability::item_transfer::CurrentCharacterItemFence,
         now: u64,
     ) -> bool {
-        self.npc == npc
-            && self.context == *context
-            && self.fence == fence
-            && now >= self.opened
-            && now - self.opened < 60_000_000
+        self.npc == npc && self.context == *context && self.fence == fence && self.is_live(now)
     }
 }
 

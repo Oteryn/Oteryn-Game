@@ -4,7 +4,9 @@ use crate::content::npc_catalogue::travel::TravelRoute;
 use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
 use crate::durability::npc_travel::{PaidTravelRequest, TravelRefusal};
 use crate::map::view::MapFacts;
-use oteryn_protocol_oteryn::npc_service::{NpcConversation, NpcConversationState};
+use oteryn_protocol_oteryn::npc_service::{
+    NpcConversation, NpcConversationState, TRAVEL_CONFIRMATION_TIMEOUT_SECONDS,
+};
 
 #[path = "paid_travel/quest_confirmation.rs"]
 mod quest_confirmation;
@@ -17,6 +19,13 @@ pub(super) struct Prompt {
     opened: u64,
     route: TravelRoute,
     fare: u64,
+}
+
+impl Prompt {
+    fn is_live(&self, now: u64) -> bool {
+        now.checked_sub(self.opened)
+            .is_some_and(|age| age < u64::from(TRAVEL_CONFIRMATION_TIMEOUT_SECONDS) * 1_000_000)
+    }
 }
 
 fn contains_whole_keyword(text: &str, keyword: &str) -> bool {
@@ -48,6 +57,17 @@ fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalk
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) fn expire_paid_travel_quote(
+        &self,
+        session: GameSessionId,
+    ) -> Option<EntityRef> {
+        let mut prompts = self.states.newhaven_travel.paid_prompts.lock().ok()?;
+        if prompts.get(&session)?.is_live(self.owner_now().get()) {
+            return None;
+        }
+        prompts.remove(&session).map(|prompt| prompt.npc)
+    }
+
     pub(in crate::gameplay_transport) async fn resume_paid_travel(
         &self,
         actor: ExactActorRef,
