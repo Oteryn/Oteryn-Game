@@ -111,6 +111,7 @@ enum ChatLineKind {
   CHAT_LINE_KIND_PRIVATE_CHANNEL = 6; // capability 80: fields 4, 7, 11 only
   CHAT_LINE_KIND_PARTY = 7; // capability 240: fields 4, 7 only
   CHAT_LINE_KIND_CHANNEL_NOTICE = 8; // capability 495: fields 4, 11, 14 only (WU26)
+  CHAT_LINE_KIND_SYSTEM = 9; // capability 617 (requires 7): field 7 only, plus field 13 if selected
 }
 
 // WU26 capability 495, field 14 of line kind 8.
@@ -147,6 +148,11 @@ message ChatLineV1 {
   uint64 line_sequence = 13; // capability 496, every kind; never 0, strictly increasing per GameSession
   ChatChannelNoticeKind notice_kind = 14; // capability 495, kind 8 only
 }
+
+// System feedback is local to the recipient and created by the Game owner.
+// Client chat intents and relays cannot originate this kind. Without capability 617,
+// feedback retains kind 2, speaker_name "Game", and identical text. A private
+// line remains private for selected clients, regardless of its displayed speaker.
 
 // WU26, owner programme 2026-11-11: Tibia Global chat channels. Four capabilities, each
 // selected alone; without selection every ChatLineV1 and ChatChannelListV1 byte is unchanged.

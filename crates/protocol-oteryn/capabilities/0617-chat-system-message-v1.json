@@ -1,0 +1,17 @@
+{
+  "id": 617,
+  "name": "CHAT_SYSTEM_MESSAGE_V1",
+  "constant": "chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1",
+  "requires": [
+    7
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

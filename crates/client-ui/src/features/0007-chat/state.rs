@@ -445,7 +445,7 @@ impl CommunicationLists {
             | ChatLine::Party { speaker_name, .. } => self.allows(speaker_name),
             ChatLine::Guild(line) => self.allows(&line.speaker_name),
             ChatLine::PrivateChannel(line) => self.allows(&line.speaker_name),
-            ChatLine::Dropped => true,
+            ChatLine::System { .. } | ChatLine::Dropped => true,
         }
     }
 }

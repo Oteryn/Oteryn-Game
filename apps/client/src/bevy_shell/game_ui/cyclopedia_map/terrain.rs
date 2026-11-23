@@ -149,8 +149,9 @@ impl Terrain {
             return Err("No map artwork for this area and floor".into());
         }
         let mut pixels = vec![0; 640 * 480 * 4];
+        let mut layer = new_floor_layer(pixels.len());
         for floor in chunks.chunk_by(|a, b| a.0 == b.0) {
-            let mut layer = vec![0u8; pixels.len()];
+            layer.fill(0);
             for &(std::cmp::Reverse(_), std::cmp::Reverse(lod), x, y, name) in floor {
                 let data = store.map_chunk(name).map_err(|e| e.to_string())?;
                 let span = 16 * lod;
@@ -215,4 +216,36 @@ impl Terrain {
             self.surface,
         ))
     }
+}
+
+fn new_floor_layer(bytes: usize) -> Vec<u8> {
+    #[cfg(test)]
+    FLOOR_LAYERS.set(FLOOR_LAYERS.get() + 1);
+    vec![0; bytes]
+}
+
+#[cfg(test)]
+std::thread_local! {
+    static FLOOR_LAYERS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[test]
+fn stacked_satellite_floors_share_one_layer() -> Result<(), Box<dyn std::error::Error>> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let store = AssetStore::open_pinned(
+        &root.join("content/assets/files"),
+        &root.join(MANIFEST_PATH),
+        MANIFEST_SHA256,
+    )?;
+    FLOOR_LAYERS.set(0);
+    let (_, satellite) = Terrain {
+        bounds: [31872, 30976, 31935, 31039],
+        floor: 0,
+        surface: true,
+        opacity: 50,
+    }
+    .image(&store)?;
+    assert!(satellite);
+    assert_eq!(FLOOR_LAYERS.get(), 1);
+    Ok(())
 }

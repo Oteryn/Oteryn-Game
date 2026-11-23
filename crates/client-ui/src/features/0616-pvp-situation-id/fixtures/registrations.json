@@ -1,0 +1,18 @@
+[
+  {
+    "mechanic": "0616-pvp-situation-id",
+    "kind": "handlers",
+    "id": "0616-pvp-situation-id-observe",
+    "status": "unsupported",
+    "commands": [],
+    "direction": "server_to_client",
+    "reason": "The PvP client lane will opt in and track the lifetime of each situation identity.",
+    "not_applicable": {
+      "state": "The native client leaves this capability unselected.",
+      "protocol": "Selected independently through capability negotiation.",
+      "view": "The PvP client lane will opt in and track the lifetime of each situation identity.",
+      "input": "This extension adds no new client input.",
+      "settings": "No new setting is defined by the wire extension."
+    }
+  }
+]
