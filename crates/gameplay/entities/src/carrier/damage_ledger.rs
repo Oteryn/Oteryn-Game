@@ -857,7 +857,7 @@ impl ChannelActorCarrier {
         // Resolve Crystal's onHealthChange callback after replay, from the real HP slot.
         // The receipt retains the original request: retrying at a new HP fraction cannot
         // change the already committed hit or its damage attribution.
-        let (effective_damage, arbaziloth_shields) = match &self.slots[index] {
+        let (effective_damage, arbaziloth_shields, mimar_protected) = match &self.slots[index] {
             Slot::CreatureOccupied { spell_combat, .. } => {
                 let damage = if health_change_resolved {
                     // Periodic owner turns have already resolved each tick against its current HP.
@@ -879,7 +879,14 @@ impl ChannelActorCarrier {
                     }
                     None => damage,
                 };
-                (damage, shields)
+                let mimar_protected = spell_combat
+                    .mimar_shield
+                    .is_some_and(|shield| !shield.vulnerable(now_ms));
+                (
+                    if mimar_protected { 0 } else { damage },
+                    shields,
+                    mimar_protected,
+                )
             }
             _ => return Err(CarrierError::NotCreature),
         };
@@ -889,7 +896,7 @@ impl ChannelActorCarrier {
         let mut prepared_w01_conditions = None;
         // Source prepareDeath can cancel the complete hit while healing or
         // transforming HP. This fact is independent of before/after HP deltas.
-        let mut source_damage_canceled = false;
+        let mut source_damage_canceled = mimar_protected;
         if !health_change_resolved
             && let Slot::CreatureOccupied {
             spell_combat,

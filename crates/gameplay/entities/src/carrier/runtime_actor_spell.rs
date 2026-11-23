@@ -112,6 +112,7 @@ pub struct ActorCombatState {
     pub echo: Option<oteryn_gameplay_domain::domain::echo_warden::EchoVariant>,
     pub soulpit: Option<super::soulpit::SoulpitCreatureTag>,
     pub(super) arbaziloth_shields: Option<super::arbaziloth::ShieldSequence>,
+    pub(super) mimar_shield: Option<super::mimar::MimarShield>,
     /// Additive source reflection on the exact Soul War monster incarnation.
     pub soul_war_reflection: u32,
     /// Source Hatred empowerment on this exact Instance boss incarnation.
@@ -146,6 +147,7 @@ impl ActorCombatState {
     pub(super) fn reset_for_scope_handoff(&mut self) {
         self.reentry = None;
         self.arbaziloth_shields = None;
+        self.mimar_shield = None;
         self.pending_owner = None;
         self.pending_source = None;
         self.party = super::runtime_actor_party::PartyActorState::default();

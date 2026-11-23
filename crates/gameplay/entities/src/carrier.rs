@@ -128,6 +128,7 @@ mod fixtures;
 mod forge_creature;
 mod hazard;
 
+pub mod mimar;
 #[path = "carrier/monster_summon_admission.rs"]
 mod monster_summon_admission;
 

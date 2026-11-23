@@ -332,6 +332,15 @@ async fn read_definition(
     let Some(row) = row else {
         return Ok(None);
     };
+    let creature_key: String = row.try_get("boss_creature_key")?;
+    // W16: the generic room row cannot certify the first fight's lever,
+    // cannon and portal bindings or its per-character quest predicate.
+    // Refuse here for both the lever preview and the transactional admission.
+    if key == "oteryn:boss.mimar_haffar"
+        || creature_key == oteryn_gameplay_entities::carrier::mimar::BOSS
+    {
+        return Ok(None);
+    }
     let Some(template_revision) = row.try_get::<Option<String>, _>("template_revision")? else {
         return Ok(None);
     };
@@ -373,7 +382,7 @@ async fn read_definition(
     };
     Ok(Some(BossRoomDefinition {
         boss_key: row.try_get("boss_key")?,
-        boss_creature_key: row.try_get("boss_creature_key")?,
+        boss_creature_key: creature_key,
         content_revision: row.try_get("content_revision")?,
         room_template_key: row.try_get("room_template_key")?,
         template_revision,

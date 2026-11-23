@@ -585,3 +585,229 @@ fn arbaziloth_replacement_retries_refused_placement() {
     runtime.remove_encounter_actor(actors[0]).unwrap();
     assert!(!next.is_current(&runtime));
 }
+
+#[test]
+fn w16_mimar_two_cannons_cycle_exact_native_boss_and_preserve_health() {
+    use mimar::{BOSS, Cannon, MimarEncounter};
+    use oteryn_gameplay_entities::carrier::{ActorState, LocalPosition};
+    use oteryn_gameplay_entities::*;
+
+    let world = WorldId::decode(&uuid(1)).unwrap();
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&uuid(2)).unwrap(),
+        NodeId::decode(&uuid(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        32,
+        ChannelContentPin::test(world),
+    )
+    .unwrap();
+    let session = GameSessionId::decode(&uuid(4)).unwrap();
+    let reservation = runtime.reserve_fresh_session(session).unwrap();
+    let player = runtime.commit_fresh_session(reservation).unwrap();
+    let party = [(player, session)];
+    // Native phase fixture space, independent of the unqualified Mimar room.
+    let position = LocalPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let spawn = |runtime: &mut ChannelRuntimeV1, identity, health| {
+        ExactActorRef(
+            runtime
+                .admit_encounter_fixture_actor(ActorState(0), identity, health, Some(position))
+                .unwrap(),
+        )
+    };
+    let boss = spawn(&mut runtime, BOSS, 50_000);
+    let rematch = spawn(&mut runtime, "oteryn:creature.mimar_haffar_final", 65_000);
+    assert!(MimarEncounter::bind(&mut runtime, &party, rematch, 0).is_err());
+    let mut fight = MimarEncounter::bind(&mut runtime, &party, boss, 0).unwrap();
+    assert!(MimarEncounter::bind(&mut runtime, &party, boss, 0).is_err());
+    let hit = |runtime: &mut ChannelRuntimeV1, now, occurrence: &[u8], damage| {
+        let binding = [occurrence, b"\0w16"].concat();
+        runtime
+            .borrow_exact_actor_commit_at(now)
+            .commit_damage(
+                boss,
+                OwnerDamageCommand {
+                    target: BOSS.as_bytes(),
+                    occurrence,
+                    binding: &binding,
+                    damage,
+                },
+            )
+            .unwrap()
+    };
+    assert!(runtime.native_callback_movement_locked(boss).unwrap());
+    assert_eq!(
+        hit(&mut runtime, 1, b"shielded", 100_000).health_after,
+        50_000
+    );
+    assert!(
+        !fight
+            .load_cannon(&mut runtime, party[0], Cannon::Southwest, 2, |_| false)
+            .unwrap()
+    );
+    let mut spent = 0;
+    let mut consume = |key: &str| {
+        assert_eq!(key, "oteryn:item.tibia.i54267");
+        spent += 1;
+        true
+    };
+    for (cycle, start) in [10, 50_000].into_iter().enumerate() {
+        let expected_hp = 50_000 - cycle as i64 * 1_000;
+        for _ in 0..10 {
+            assert!(
+                fight
+                    .load_cannon(
+                        &mut runtime,
+                        party[0],
+                        Cannon::Southwest,
+                        start,
+                        &mut consume
+                    )
+                    .unwrap()
+            );
+        }
+        assert!(
+            !fight
+                .load_cannon(
+                    &mut runtime,
+                    party[0],
+                    Cannon::Southwest,
+                    start,
+                    &mut consume
+                )
+                .unwrap()
+        );
+        assert!(runtime.native_callback_movement_locked(boss).unwrap());
+        for _ in 0..9 {
+            assert!(
+                fight
+                    .load_cannon(
+                        &mut runtime,
+                        party[0],
+                        Cannon::Southeast,
+                        start,
+                        &mut consume
+                    )
+                    .unwrap()
+            );
+        }
+        let one_short = format!("one-short-{cycle}");
+        assert_eq!(
+            hit(&mut runtime, start, one_short.as_bytes(), 100_000).health_after,
+            expected_hp
+        );
+        assert!(
+            fight
+                .load_cannon(
+                    &mut runtime,
+                    party[0],
+                    Cannon::Southeast,
+                    start,
+                    &mut consume
+                )
+                .unwrap()
+        );
+        assert!(!runtime.native_callback_movement_locked(boss).unwrap());
+        assert!(!hit(&mut runtime, start, one_short.as_bytes(), 100_000).applied);
+        assert!(
+            !fight
+                .load_cannon(
+                    &mut runtime,
+                    party[0],
+                    Cannon::Southwest,
+                    start,
+                    &mut consume
+                )
+                .unwrap()
+        );
+
+        let open = format!("open-{cycle}");
+        let end = start + 45_000;
+        assert_eq!(
+            hit(&mut runtime, end - 1, open.as_bytes(), 1_000).health_after,
+            expected_hp - 1_000
+        );
+
+        let before = runtime.read_actor_position(boss).unwrap();
+        let center = before.position();
+        let moved = MovementLocalPosition {
+            x: center.x + 1,
+            ..center
+        };
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(boss, before, moved)
+            .unwrap();
+        let expired = format!("expired-{cycle}");
+        assert_eq!(
+            hit(&mut runtime, end, expired.as_bytes(), 100_000).health_after,
+            expected_hp - 1_000
+        );
+        assert!(fight.advance(&mut runtime, end, |_, _| false).is_err());
+        assert!(runtime.native_callback_movement_locked(boss).unwrap());
+        assert_eq!(runtime.read_actor_position(boss).unwrap().position(), moved);
+        fight
+            .advance(&mut runtime, end + 1, |_, at| at == center)
+            .unwrap();
+        assert_eq!(
+            runtime.read_actor_position(boss).unwrap().position(),
+            center
+        );
+        let reclosed = format!("reclosed-{cycle}");
+        assert_eq!(
+            hit(&mut runtime, end + 1, reclosed.as_bytes(), 100_000).health_after,
+            expected_hp - 1_000
+        );
+    }
+    assert_eq!(spent, 40);
+
+    // A third load can settle only the same exact native death, once.
+    for cannon in [Cannon::Southwest, Cannon::Southeast] {
+        for _ in 0..10 {
+            assert!(
+                fight
+                    .load_cannon(&mut runtime, party[0], cannon, 100_000, |_| true)
+                    .unwrap()
+            );
+        }
+    }
+    assert_eq!(
+        hit(&mut runtime, 100_001, b"lethal", 48_000).health_after,
+        0
+    );
+    assert!(fight.projected_death(&mut runtime, boss).is_err());
+    let mut death = runtime.borrow_combat_death();
+    let receipt = death.committed_lethal_receipt(boss).unwrap();
+    death.project_committed_lethal(receipt).unwrap();
+    assert!(fight.projected_death(&mut runtime, boss).unwrap());
+    assert!(!fight.projected_death(&mut runtime, boss).unwrap());
+    assert_eq!(fight.victors(&runtime).unwrap(), Some(party.as_slice()));
+
+    let fresh = spawn(&mut runtime, BOSS, 50_000);
+    let fresh_fight = MimarEncounter::bind(&mut runtime, &party, fresh, 100_000).unwrap();
+    assert!(runtime.native_callback_movement_locked(fresh).unwrap());
+    fresh_fight
+        .advance(&mut runtime, 999_999, |_, _| true)
+        .unwrap();
+    assert!(runtime.contains_live_creature(fresh));
+    assert!(
+        !fresh_fight
+            .load_cannon(&mut runtime, party[0], Cannon::Southwest, 1_000_000, |_| {
+                true
+            })
+            .unwrap()
+    );
+    fresh_fight
+        .advance(&mut runtime, 1_000_000, |_, _| true)
+        .unwrap();
+    assert!(!runtime.contains_live_creature(fresh));
+    assert!(fresh_fight.victors(&runtime).unwrap().is_none());
+    assert!(runtime.contains_live_creature(rematch));
+}

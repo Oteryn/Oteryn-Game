@@ -10,6 +10,7 @@ pub mod arbaziloth;
 pub mod court_warlock;
 pub mod cults;
 pub mod gates;
+pub mod mimar;
 #[cfg(test)]
 mod tests;
 

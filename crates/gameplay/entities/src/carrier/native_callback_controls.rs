@@ -12,7 +12,10 @@ impl ChannelRuntimeV1 {
                 health,
                 spell_combat,
                 ..
-            } if *health > 0 => Ok(spell_combat.native_callback_move_locked),
+            } if *health > 0 => Ok(spell_combat.native_callback_move_locked
+                || spell_combat
+                    .mimar_shield
+                    .is_some_and(|shield| shield.movement_locked())),
             _ => Err(CarrierError::NotCreature),
         }
     }
