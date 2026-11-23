@@ -403,6 +403,7 @@ fn lower_loot_entries(
                 corpse_stack_maximum: facts.stack_maximum,
                 subtype: entry.subtype,
                 unique: entry.unique,
+                direct_corpse_drop: false,
                 creature_product: facts.creature_product,
                 gut_bonus_hundredths: 0,
                 rated_probability_ppm: None,
@@ -662,10 +663,11 @@ impl CreatureRewardTable {
                 item: facts.item.lower(),
                 min_count: 1,
                 max_count: 1,
-                probability_ppm: Some(1_000_000),
+                probability_ppm: None,
                 details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
                     stackable: facts.stackable,
                     corpse_stack_maximum: facts.stack_maximum,
+                    direct_corpse_drop: true,
                     ..Default::default()
                 },
             });

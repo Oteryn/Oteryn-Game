@@ -364,12 +364,11 @@ impl RollState {
         let (maximum, stackable) =
             stack_maximum(stack).map_err(|_| LootPlanError::InvalidQuantityRange)?;
         let quantity = match entry.details.charges {
-            _ if entry.details.container_capacity.is_some() => 1,
-            Some(charges) if stackable => charges,
-            Some(_) => 1,
+            _ if !stackable || entry.details.container_capacity.is_some() => 1,
+            Some(charges) => charges,
             None => quantity_in_range(chance, entry.min_count, entry.max_count),
         };
-        if quantity == 0 {
+        if quantity == 0 || (entry.details.direct_corpse_drop && quantity > maximum) {
             return Err(LootPlanError::InvalidQuantityRange);
         }
         for stack_index in 0..quantity.div_ceil(maximum) {
@@ -409,6 +408,12 @@ fn roll_entries(
     for entry in source {
         let draw_ordinal = state.ordinal;
         state.ordinal += 1;
+        if entry.details.direct_corpse_drop {
+            if roll == 0 {
+                state.push_instances(entry, 0, draw_ordinal, parent, &mut placement_ordinal)?;
+            }
+            continue;
+        }
         let probability = entry
             .probability_ppm
             .ok_or(LootPlanError::InvalidProbability)?;
@@ -569,6 +574,18 @@ fn is_global_event_loot_table(loot_table_ref: &LootDefinitionRef) -> bool {
 fn validate_entry_shape(entry: &LootTableEntry) -> Result<(), LootPlanError> {
     if entry.min_count == 0 || entry.max_count < entry.min_count {
         return Err(LootPlanError::InvalidQuantityRange);
+    }
+    if entry.details.direct_corpse_drop {
+        return if entry.min_count == entry.max_count
+            && entry.details.stackable
+            && entry.details.charges.is_none()
+            && entry.details.container_capacity.is_none()
+            && entry.details.children.is_empty()
+        {
+            Ok(())
+        } else {
+            Err(LootPlanError::InvalidQuantityRange)
+        };
     }
     match entry.probability_ppm {
         Some(value) if value <= LOOT_PROBABILITY_PPM_SCALE => Ok(()),
@@ -753,6 +770,106 @@ mod tests {
         )
     }
 
+    fn ordinary_stack_count(
+        death: LootPlanDeathKey,
+        reference: &LootDefinitionRef,
+        ordinal: u32,
+        source: &LootTableEntry,
+        probability: u32,
+    ) -> u32 {
+        let chance = deterministic_draw(death, reference, ordinal, DrawKind::Chance);
+        let factor = loot_factor_percent(deterministic_draw(
+            death,
+            reference,
+            ordinal,
+            DrawKind::Factor,
+        ));
+        if factored_success(chance, probability, factor, 0) {
+            quantity_in_range(chance, source.min_count, source.max_count)
+        } else {
+            0
+        }
+    }
+
+    #[test]
+    fn committed_fiendish_sliver_survives_a_missed_loot_draw()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::creature_reward::{
+            CreatureRewardTable, LootTablesSection,
+        };
+        use oteryn_gameplay_domain::domain::forge_creature::slivers;
+
+        let profiles = serde_json::from_slice(include_bytes!(
+            "../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &profiles,
+        )?;
+        let rewards = CreatureRewardTable::from_pin(&profiles, Some(&section));
+        let rat = rewards
+            .row("oteryn:creature.rat")
+            .map_err(|error| error.as_str())?;
+        let reference = rat
+            .loot_table_ref
+            .as_ref()
+            .ok_or("missing rat loot table")?;
+        let mut table = rat.loot_table.clone();
+        let ordinal = u32::try_from(table.entries.len())?;
+        let deaths = || {
+            (1..=4096).map(|generation| LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, generation))
+        };
+        let factor =
+            |death, kind| loot_factor_percent(deterministic_draw(death, reference, ordinal, kind));
+        let succeeds = |death, kind, factor| {
+            factored_success(
+                deterministic_draw(death, reference, ordinal, kind),
+                LOOT_PROBABILITY_PPM_SCALE,
+                factor,
+                0,
+            )
+        };
+        let miss = deaths()
+            .find(|&death| {
+                let factor = factor(death, DrawKind::Factor);
+                factor == 95 && !succeeds(death, DrawKind::Chance, factor)
+            })
+            .ok_or("missing low-factor miss witness")?;
+        let double = deaths()
+            .find(|&death| {
+                succeeds(death, DrawKind::Chance, factor(death, DrawKind::Factor))
+                    && succeeds(
+                        death,
+                        DrawKind::BoostedChance(1),
+                        factor(death, DrawKind::BoostedFactor(1)),
+                    )
+            })
+            .ok_or("missing Double Loot duplicate witness")?;
+        let sliver = rewards.forge_sliver().ok_or("missing admitted sliver")?;
+        let count = u32::from(slivers(2));
+        table.entries.push(LootTableEntry {
+            min_count: count,
+            max_count: count,
+            ..sliver.clone()
+        });
+        let sliver_quantities = |plan: LootPlan| {
+            plan.entries
+                .into_iter()
+                .filter(|entry| entry.item == sliver.item)
+                .map(|entry| entry.quantity)
+                .collect::<Vec<_>>()
+        };
+        let missed = sliver_quantities(plan_creature_loot(miss, reference, &table)?);
+        // Match the scheduled-rate path applying Double Loot to the complete ordinary table.
+        table.algorithm = LootSelectionAlgorithm::DailyBoosted {
+            extra_rolls: 1,
+            boosted_entries: table.entries.len(),
+        };
+        let doubled = sliver_quantities(plan_creature_loot(double, reference, &table)?);
+        assert_eq!((missed, doubled), (vec![count], vec![count]));
+        Ok(())
+    }
+
     #[test]
     fn clomp_loot_keeps_the_committed_roll_in_collectable_stacks()
     -> Result<(), Box<dyn std::error::Error>> {
@@ -785,16 +902,9 @@ mod tests {
             let (death, total) = (0..=u8::MAX)
                 .map(death_key)
                 .find_map(|death| {
-                    let chance = deterministic_draw(death, reference, ordinal, DrawKind::Chance);
-                    let factor = loot_factor_percent(deterministic_draw(
-                        death,
-                        reference,
-                        ordinal,
-                        DrawKind::Factor,
-                    ));
-                    let total = quantity_in_range(chance, source.min_count, source.max_count);
-                    (total > limit && factored_success(chance, probability, factor, 0))
-                        .then_some((death, total))
+                    let total =
+                        ordinary_stack_count(death, reference, ordinal, source, probability);
+                    (total > limit).then_some((death, total))
                 })
                 .ok_or("no successful oversized gold roll")?;
             let plan = plan_creature_loot(death, reference, &reward.loot_table)?;
@@ -907,20 +1017,22 @@ mod tests {
                 placement_ordinal: position.placement_ordinal,
             });
         }
-        let mut unsplit = reward.loot_table.clone();
-        let source = unsplit
-            .entries
-            .iter_mut()
-            .find(|entry| entry.item.production_key == gold)
-            .ok_or("missing gold entry")?;
-        assert!(source.details.charges.is_none());
-        source.details.stackable = false;
-        let total = plan_creature_loot(death, reference, &unsplit)?
+        let (ordinal, source) = reward
+            .loot_table
             .entries
             .iter()
-            .filter(|entry| entry.parent.is_none() && entry.item.production_key == gold)
-            .map(|entry| entry.quantity)
-            .sum::<u32>();
+            .enumerate()
+            .find(|(_, entry)| entry.item.production_key == gold)
+            .ok_or("missing gold entry")?;
+        assert!(source.details.stackable && source.details.charges.is_none());
+        let probability = source.probability_ppm.ok_or("missing gold probability")?;
+        let total = ordinary_stack_count(
+            death,
+            reference,
+            u32::try_from(ordinal)?,
+            source,
+            probability,
+        );
         let maximum = GAMEITEM01_STACK_QUANTITY_MAX;
         assert!((maximum + 1..=2 * maximum).contains(&total));
         assert_eq!(
@@ -1025,20 +1137,21 @@ mod tests {
         for creature in ["oteryn:creature.animated_clomp", "oteryn:creature.clomp"] {
             let reward = rewards.row(creature).map_err(NoSettlementReason::as_str)?;
             let reference = reward.loot_table_ref.as_ref().ok_or("missing loot table")?;
-            let mut unsplit = reward.loot_table.clone();
-            let source = unsplit
+            let (ordinal, source) = reward
+                .loot_table
                 .entries
-                .iter_mut()
-                .find(|entry| entry.item.production_key == gold)
+                .iter()
+                .enumerate()
+                .find(|(_, entry)| entry.item.production_key == gold)
                 .ok_or("missing gold roll")?;
+            assert!(source.details.stackable && source.details.charges.is_none());
+            let ordinal = u32::try_from(ordinal)?;
+            let probability = source.probability_ppm.ok_or("missing gold probability")?;
             let source_maximum = source.max_count;
-            // Gold has no charges, so disabling stacks here leaves the raw source roll.
-            assert!(source.details.charges.is_none());
-            source.details.stackable = false;
             let mut largest = 0;
             for seed in 0..=u8::MAX {
                 let death = death_key(seed);
-                let expected = plan_creature_loot(death, reference, &unsplit)?;
+                let expected = ordinary_stack_count(death, reference, ordinal, source, probability);
                 let plan = plan_creature_loot(death, reference, &reward.loot_table)?;
                 let gold_stacks: Vec<_> = plan
                     .entries
@@ -1046,16 +1159,7 @@ mod tests {
                     .filter(|entry| entry.item.production_key == gold)
                     .collect();
                 let total: u32 = gold_stacks.iter().map(|entry| entry.quantity).sum();
-                assert_eq!(
-                    total,
-                    expected
-                        .entries
-                        .iter()
-                        .filter(|entry| entry.item.production_key == gold)
-                        .map(|entry| entry.quantity)
-                        .sum::<u32>(),
-                    "{creature}, seed {seed}"
-                );
+                assert_eq!(total, expected, "{creature}, seed {seed}");
                 assert_eq!(
                     plan,
                     plan_creature_loot(death, reference, &reward.loot_table)?
@@ -2135,7 +2239,7 @@ mod admitted_loot_tests {
             };
             let personal = rewards.reward_boss_corpse(creature).is_some();
             coverage[usize::from(personal)] += 1;
-            // Any admitted ordinary creature can carry the separately appended Fiendish roll.
+            // The Fiendish award uses the same stack and pickup policy as ordinary loot.
             let fiendish = (creature == "oteryn:creature.rat").then_some(&slivers);
             for entry in yields(&row.loot_table.entries).chain(fiendish) {
                 if entry.probability_ppm == Some(0)
@@ -2167,13 +2271,12 @@ mod admitted_loot_tests {
                         )
                 });
                 let expected = match entry.details.charges {
-                    _ if entry.details.container_capacity.is_some() => 1,
-                    Some(charges) if stackable => charges,
-                    Some(_) => 1,
+                    _ if !stackable || entry.details.container_capacity.is_some() => 1,
+                    Some(charges) => charges,
                     None => entry.max_count,
                 };
-                // Force a successful maximum roll in isolation so independent table
-                // rolls cannot exhaust a corpse or suppress another unique drop.
+                // Isolate each yield at its maximum so other entries cannot exhaust
+                // a corpse or suppress a unique drop.
                 let mut source = entry.clone();
                 source.min_count = source.max_count;
                 source.probability_ppm = Some(1_000_000);

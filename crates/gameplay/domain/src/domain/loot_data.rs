@@ -44,7 +44,6 @@ impl LootDefinitionRef {
 pub enum LootSelectionAlgorithm {
     IndependentBernoulliPpm,
     /// Daily boost: up to three additional independent rolls of the original entries.
-    /// Appended Forge drops are outside `boosted_entries` and roll once.
     DailyBoosted {
         extra_rolls: u8,
         boosted_entries: usize,
@@ -77,6 +76,8 @@ pub struct LootEntryDetails {
     pub corpse_stack_maximum: Option<std::num::NonZeroU32>,
     pub subtype: Option<u16>,
     pub unique: bool,
+    /// An already selected corpse stack with a fixed count, such as Fiendish slivers.
+    pub direct_corpse_drop: bool,
     /// A Global creature product (client market category "Creature Products").
     pub creature_product: bool,
     /// The loot owner's Gut Charm bonus on this creature product, in hundredths of a percent;

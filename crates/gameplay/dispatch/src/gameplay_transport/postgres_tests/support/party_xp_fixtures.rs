@@ -76,6 +76,8 @@ pub(super) enum Case {
     CakeWorldBonusExpired,
     CakeKillBeforeActivation,
     CakeKillBeforeExpiry,
+    ForgeSliverLowLootRate,
+    ForgeSliverDoubleLoot,
 }
 
 impl Case {
@@ -92,6 +94,8 @@ impl Case {
                 | Self::ForgeRollback
                 | Self::ForgeFar
                 | Self::ForgeForeign
+                | Self::ForgeSliverLowLootRate
+                | Self::ForgeSliverDoubleLoot
         )
     }
     /// Cases that settle a shared kill need the second member's committed activity. Its
@@ -170,6 +174,21 @@ async fn scenario(
     controller: &crate::content::ContentActivationController,
     pin: &crate::content::NativeEntryContentPin,
 ) -> TestResult {
+    let _sliver_event = match case {
+        Case::ForgeSliverLowLootRate => Some(1),
+        Case::ForgeSliverDoubleLoot => Some(200),
+        _ => None,
+    }
+    .map(|rate| {
+        use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
+        let schedule = Schedule::parse(&format!(
+            r#"{{"events":[{{"name":"sliver-test","startdate":"01/01/2030","enddate":"01/02/2030",
+            "ingame":{{"lootrate":{rate}}}}}]}}"#,
+        ))
+        .map_err(debug)?;
+        Ok::<_, String>(test_clock::set(schedule, 1_893_456_000))
+    })
+    .transpose()?;
     let cake_world_bonus = matches!(case, Case::CakeWorldBonus | Case::CakeWorldBonusExpired);
     let cake_kill_before_activation = matches!(case, Case::CakeKillBeforeActivation);
     let cake_kill_before_expiry = matches!(case, Case::CakeKillBeforeExpiry);

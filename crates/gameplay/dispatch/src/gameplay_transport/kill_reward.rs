@@ -140,6 +140,8 @@ pub struct PendingKillSettlement {
     /// re-evaluate a later Premium state or attribute this kill to a successor.
     pub(super) prey_checkpoint: Option<crate::durability::prey::PreyCheckpoint>,
     pub(super) forge: Option<ForgeDeath>,
+    /// Frozen at death and added after ordinary loot modifiers.
+    fiendish_sliver: Option<crate::combat::LootTableEntry>,
     /// Frozen callback facts survive corpse replay and actor-slot reuse.
     pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
     pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
@@ -266,6 +268,7 @@ impl PendingKillSettlement {
             world_change: None,
             prey_checkpoint: None,
             forge: None,
+            fiendish_sliver: None,
             echo: None,
             callback_loot: Vec::new(),
             tutorial_loot: Arc::default(),
@@ -1570,7 +1573,9 @@ impl KillSettlementQueue {
                 // loot (`data/libs/functions/monstertype.lua:89-100`), after this admission
                 // point; capacity therefore has to cover every direct and nested candidate.
                 mints
-                    .checked_add(entry.callback_loot.len())
+                    .checked_add(
+                        entry.callback_loot.len() + usize::from(entry.fiendish_sliver.is_some()),
+                    )
                     .and_then(|mints| {
                         mints.checked_add(
                             usize::from(entry.creature == "oteryn:creature.the_corruptor") * 3,
@@ -2216,6 +2221,7 @@ pub fn record_creature_kill(
                             world_change,
                             prey_checkpoint,
                             forge: None,
+                            fiendish_sliver: None,
                             echo,
                             callback_loot: Vec::new(),
                             tutorial_loot: Arc::default(),
@@ -2383,24 +2389,26 @@ pub fn record_creature_kill(
             }
         }
     }
-    if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _difficulty)) = forge_kind
-    {
+    let fiendish_sliver = if !top.is_gone()
+        && personal_reward_row.is_none()
+        && row.corpse_item.is_some()
+        && matches!(
+            forge_kind,
+            Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _))
+        ) {
         let Some(sliver) = sink.rewards.forge_sliver() else {
             refuse("forge_sliver_inadmissible", &creature);
             return;
         };
         let count = u32::from(crate::domain::forge_creature::slivers(facts.occurrence[14]));
-        if count > 0 {
-            Arc::make_mut(&mut row)
-                .loot_table
-                .entries
-                .push(crate::combat::LootTableEntry {
-                    min_count: count,
-                    max_count: count,
-                    ..sliver.clone()
-                });
-        }
-    }
+        Some(crate::combat::LootTableEntry {
+            min_count: count,
+            max_count: count,
+            ..sliver.clone()
+        })
+    } else {
+        None
+    };
     if let Some((kind, _)) = forge_kind {
         let Some(amount) = kind.experience(row.xp_amount.get()) else {
             refuse("forge_xp_overflow", &creature);
@@ -2447,8 +2455,7 @@ pub fn record_creature_kill(
         )
     });
     let percent = sink.queue.prey_at_death(runtime, target, percent);
-    // One independent trigger plus two <=7-entry rolls stay within PREY-0 R4's
-    // 29 draws; a forge sliver adds two more, still below the existing 32 ceiling.
+    // One independent trigger plus two <=7-entry rolls stay within PREY-0 R4's 29 draws.
     let base = sink
         .rewards
         .row(&creature)
@@ -2603,6 +2610,7 @@ pub fn record_creature_kill(
         boss_reward,
         activity_death,
         forge,
+        fiendish_sliver,
         echo,
         callback_loot,
         tutorial_loot: Arc::default(),
@@ -3586,6 +3594,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .and_then(|reference| plan_creature_loot(seed, reference, table).ok())
                 .map_or(0, |plan| plan.entries.len())
                 + entry.callback_loot.len()
+                + usize::from(entry.fiendish_sliver.is_some())
         };
         let (before, after) = (count(loot_table), count(&extended));
         let extra = after.saturating_sub(before);
@@ -4073,6 +4082,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             }
         }
         super::quest_death_loot::append(&mut loot_table, &entry);
+        // Crystal monster.cpp:2526-2540 inserts a selected stack directly into the corpse.
+        if row.corpse_item.is_some()
+            && let Some(sliver) = &entry.fiendish_sliver
+        {
+            loot_table.entries.push(sliver.clone());
+        }
         // Ordinary stamina/event/duplex transforms must never remove or multiply
         // the one-shot tutorial reward. Its arm is consumed by the atomic MINT.
         let Ok((loot_table, tutorial_corruptor)) = admission
