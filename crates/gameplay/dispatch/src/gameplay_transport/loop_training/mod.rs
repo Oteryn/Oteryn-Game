@@ -747,9 +747,15 @@ mod tests {
             super::with_training_offer(BUNDLE_WORLD_OFFERED_CAPABILITIES),
             true,
         );
-        let requirements =
-            BoundRequiredCapabilities::for_channel_boot(&[], scope, 1, "policy-1", offers)
-                .map_err(|error| format!("{error:?}"))?;
+        // Declare the mandatory Bundle World capabilities so admission reaches negotiation.
+        let requirements = BoundRequiredCapabilities::for_channel_boot(
+            &[11, 18, 30],
+            scope,
+            1,
+            "policy-1",
+            offers,
+        )
+        .map_err(|error| format!("{error:?}"))?;
         let supported: Vec<u32> = offers.iter().map(|offer| offer.id).collect();
         let authenticated = requirements
             .authenticate_support(&supported)

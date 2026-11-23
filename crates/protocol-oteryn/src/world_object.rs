@@ -652,9 +652,10 @@ pub fn encode_use_reward_result(occurrence: [u8; 16]) -> Result<Vec<u8>, WorldOb
     Ok(bytes)
 }
 
-pub fn decode_use_reward_result(
-    payload: &[u8],
-) -> Result<(UseDisposition, Option<u8>, Option<[u8; 16]>), WorldObjectError> {
+/// Decoded disposition, optional gate message ID, and optional reward occurrence ID.
+pub type UseRewardResult = (UseDisposition, Option<u8>, Option<[u8; 16]>);
+
+pub fn decode_use_reward_result(payload: &[u8]) -> Result<UseRewardResult, WorldObjectError> {
     if let [0x08, 0x01, 0x22, 16, occurrence @ ..] = payload {
         let occurrence: [u8; 16] = occurrence
             .try_into()
