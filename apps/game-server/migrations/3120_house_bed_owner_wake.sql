@@ -44,6 +44,10 @@ BEGIN
           AND a.presence_character_id=p_character AND a.holder_game_session_id=p_session
         FOR UPDATE OF s FOR SHARE OF c,a;
     IF NOT FOUND THEN RETURN 'stale'; END IF;
+    -- Platform locks this session before publishing its durable revocation.
+    IF game_security_session_revoked(p_session) IS DISTINCT FROM FALSE THEN
+        RETURN 'stale';
+    END IF;
     IF NOT game_item_action_house_current(p_session,p_character,p_generation,p_lease,p_scope,
                                            p_node,p_registration,p_world,p_house) THEN
         RETURN 'stale';
@@ -95,3 +99,25 @@ REVOKE ALL ON FUNCTION game_house_bed_use(UUID,UUID,UUID,TEXT,NUMERIC,NUMERIC,NU
     BYTEA,NUMERIC,INTEGER,INTEGER,INTEGER,UUID,NUMERIC) FROM PUBLIC, oteryn_game_runtime, oteryn_game_control;
 GRANT EXECUTE ON FUNCTION game_house_bed_use(UUID,UUID,UUID,TEXT,NUMERIC,NUMERIC,NUMERIC,
     BYTEA,NUMERIC,INTEGER,INTEGER,INTEGER,UUID,NUMERIC) TO oteryn_game_runtime;
+
+-- Loss publication has acquired the same session lock as the writer. Read the
+-- original transport's immutable receipt without requiring current custody.
+CREATE FUNCTION game_house_bed_use_receipt(
+    p_session UUID, p_character UUID, p_generation NUMERIC,
+    p_lease NUMERIC, p_scope NUMERIC, p_transport BYTEA, p_command NUMERIC
+) RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER AS $$
+    SELECT r.outcome FROM game_house_bed_use_receipts r
+    WHERE r.game_session_id=p_session AND r.command_id=p_command
+      AND r.binding->0=to_jsonb(p_character)
+      AND r.binding->3=to_jsonb(p_generation)
+      AND r.binding->4=to_jsonb(p_lease)
+      AND r.binding->5=to_jsonb(p_scope)
+      AND r.binding->6=to_jsonb(encode(p_transport,'hex'))
+$$;
+DO $$ BEGIN
+    EXECUTE format('ALTER FUNCTION game_house_bed_use_receipt(UUID,UUID,NUMERIC,NUMERIC,NUMERIC,BYTEA,NUMERIC) SET search_path = pg_catalog, %I, pg_temp', current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_house_bed_use_receipt(UUID,UUID,NUMERIC,NUMERIC,NUMERIC,BYTEA,NUMERIC)
+    FROM PUBLIC, oteryn_game_runtime, oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_house_bed_use_receipt(UUID,UUID,NUMERIC,NUMERIC,NUMERIC,BYTEA,NUMERIC)
+    TO oteryn_game_runtime;

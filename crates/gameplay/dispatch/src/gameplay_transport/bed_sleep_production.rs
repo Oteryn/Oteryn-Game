@@ -201,31 +201,92 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         context: HouseActionContext,
         head: LogicalCell,
+        budget: &AdmissionRetryBudget<'_>,
     ) -> Result<BedUseOutcome, crate::durability::DurabilityError> {
         let Some(controller) = admitted.controller else {
             return Ok(BedUseOutcome::Denied);
         };
-        // Crystal 201189f bed.cpp:102-123 applies Premium before USE.
-        if !self
-            .session_premium_gate(admitted.game_session_id)
-            .await
-            .premium_current()
-        {
+        let Ok(command) = crate::foundation::CommandId::new(command_id) else {
             return Ok(BedUseOutcome::Denied);
+        };
+        self.states
+            .command_ingress
+            .mark_bed_use(crate::foundation::CommandRef::new(
+                admitted.game_session_id,
+                command,
+            ));
+        let request = BedUseRequest {
+            context,
+            origin_channel: admitted.channel_id,
+            transport: controller.transport,
+            command_id,
+            head,
+        };
+        loop {
+            let decision = self
+                .root
+                .use_house_bed(
+                    self.character,
+                    self.holder,
+                    request.clone(),
+                    budget.deadline.into_std(),
+                )
+                .await?;
+            if !matches!(decision, BedUseOutcome::CheckoutUnavailable)
+                || !budget
+                    .retries_unavailable(connection::AdmissionRefusal::Unavailable)
+                    .await
+            {
+                return Ok(decision);
+            }
         }
-        self.root
-            .use_house_bed(
-                self.character,
-                self.holder,
-                BedUseRequest {
-                    context,
-                    origin_channel: admitted.channel_id,
-                    transport: controller.transport,
-                    command_id,
-                    head,
-                },
-            )
-            .await
+    }
+
+    pub(super) async fn reconcile_bed_use(
+        &self,
+        lost: &connection::AdmittedSession,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> Result<(), connection::AdmissionRefusal> {
+        use connection::AdmissionRefusal;
+        use oteryn_protocol_oteryn::world_object::UseDisposition;
+        let Some(command) = self.states.command_ingress.pending_bed_use(lost) else {
+            return Ok(());
+        };
+        let (Some(fence), Some(controller)) = (lost.item_fence, lost.controller) else {
+            return Err(AdmissionRefusal::Rejected);
+        };
+        let receipt = budget
+            .retry_unavailable(async || {
+                self.root
+                    .read_house_bed_use_receipt(
+                        fence,
+                        controller.transport,
+                        command.command_id(),
+                        budget.deadline.into_std(),
+                    )
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)
+            })
+            .await?;
+        let disposition = match receipt {
+            Some(BedUseOutcome::Woken) => UseDisposition::BedWoken,
+            Some(BedUseOutcome::Occupied) => UseDisposition::BedOccupied,
+            // Modal selections belong to the lost connection and cannot be restored.
+            Some(BedUseOutcome::Vacant) => UseDisposition::Rejected,
+            None => return Ok(()),
+            Some(
+                BedUseOutcome::Denied
+                | BedUseOutcome::Stale
+                | BedUseOutcome::CheckoutUnavailable
+                | BedUseOutcome::RolledBack,
+            ) => {
+                return Err(AdmissionRefusal::Unavailable);
+            }
+        };
+        self.states
+            .command_ingress
+            .complete_item_use(command, disposition)
+            .ok_or(AdmissionRefusal::Unavailable)
     }
 
     /// Resolve a fixed, reachable pair before the owner decides the USE.

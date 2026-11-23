@@ -242,6 +242,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !super::hireling::recover_pending_lamp_ingress(self, &lost).await {
             return Err(Unavailable);
         }
+        Box::pin(self.reconcile_bed_use(&lost, retry)).await?;
         self.states
             .command_ingress
             .recover_trade_continuity(&mut lost)

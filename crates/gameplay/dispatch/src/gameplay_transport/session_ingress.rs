@@ -47,6 +47,7 @@ struct PendingDelivery {
     selected: SelectedCapabilities,
     proven_native: Option<ProvenNativeReply>,
     buffered_step: bool,
+    bed_use: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -271,6 +272,40 @@ impl SessionCommands {
         }
         let payload = oteryn_protocol_oteryn::world_object::encode_use_result(disposition).ok()?;
         self.complete_reconciled(command, false, &payload)
+    }
+
+    /// Remember the family of the native operation before it can write a receipt.
+    pub(super) fn mark_bed_use(&self, command: crate::foundation::CommandRef) {
+        if let Ok(commands) = self.0.lock()
+            && let Some(entry) = commands.get(&command.game_session_id())
+            && let Ok(mut state) = entry.lock()
+            && state.active
+            && let Some(pending) = state.pending_delivery.as_mut()
+            && pending.command == command.command_id().get()
+        {
+            pending.bed_use = true;
+        }
+    }
+
+    /// Recover the exact inactive reservation from the lost transport.
+    pub(super) fn pending_bed_use(
+        &self,
+        lost: &AdmittedSession,
+    ) -> Option<crate::foundation::CommandRef> {
+        let commands = self.0.lock().ok()?;
+        let state = commands.get(&lost.game_session_id)?.lock().ok()?;
+        let pending = state.pending_delivery?;
+        if state.active
+            || !pending.bed_use
+            || pending.generation != lost.continuity.connection_generation
+            || state.ingress.outstanding() != 1
+        {
+            return None;
+        }
+        Some(crate::foundation::CommandRef::new(
+            lost.game_session_id,
+            CommandId::new(pending.command).ok()?,
+        ))
     }
 
     /// A native USE without a gate message has a proven durable outcome. The
@@ -507,6 +542,7 @@ impl SessionCommandStream {
                     selected: self.selected,
                     proven_native: None,
                     buffered_step: false,
+                    bed_use: false,
                 });
                 state.reconciled_sequence = None;
                 Ok(CommandAction::Execute)

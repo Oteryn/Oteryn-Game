@@ -110,7 +110,7 @@ pub(super) enum Case {
     PositionAcl,
     PositionOccupied,
     BedRest,
-    BedOwnerWake,
+    BedOwnerWake(super::bed_owner_wake_fixtures::Case),
     CakeHouseRegeneration,
 }
 
@@ -139,7 +139,7 @@ pub(super) fn run_case_with_admin(case: Case, admin: String) -> TestResult {
             run(async move |_| {
                 // The fresh-relog composition case obtains its progression from the
                 // actual native admission owner, not the generic level-50 row seed.
-                let initialized = !matches!(case, Case::PositionRelog | Case::BedRest | Case::BedOwnerWake);
+                let initialized = !matches!(case, Case::PositionRelog | Case::BedRest | Case::BedOwnerWake(_));
                 let h = Harness::create_with_admission_seed(
                     admin,
                     "hireling_lifecycle",
@@ -183,7 +183,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     // This scenario boots its genuine bounded BundleWorld separately.
     input.source_world = None;
-    if matches!(case, Case::BedRest | Case::BedOwnerWake) {
+    if matches!(case, Case::BedRest | Case::BedOwnerWake(_)) {
         super::bed_sleep_fixture::bed_profiles(&input)?;
     }
     if matches!(
@@ -194,7 +194,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::PositionAcl
             | Case::PositionOccupied
             | Case::BedRest
-            | Case::BedOwnerWake
+            | Case::BedOwnerWake(_)
     ) {
         // Use the same qualified training fixture as the existing native
         // death/relog tests: source formula bytes are unchanged, while its
@@ -230,7 +230,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         generation.identity().server_artifact_digest(),
         "fixture movement and Item facts must share one qualified native generation"
     );
-    let bed_index = if matches!(case, Case::BedRest | Case::BedOwnerWake) {
+    let bed_index = if matches!(case, Case::BedRest | Case::BedOwnerWake(_)) {
         generation.native_gameplay().and_then(|n| n.item_index())
     } else {
         None
@@ -294,7 +294,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         (32309, 32805, 7),
     );
     let deps = Dependencies::with_content(pin, room, base.spells)?;
-    let bed_premium = if matches!(case, Case::BedRest | Case::BedOwnerWake) {
+    let bed_premium = if matches!(case, Case::BedRest | Case::BedOwnerWake(_)) {
         let (consumer, clock, activation, _) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
         h.root
@@ -397,7 +397,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // Bed USE and its modal must belong to the same boot offer that the real
     // House handoff authenticates. Keep the other service fixtures unchanged.
     static BED_OFFERS: std::sync::OnceLock<Vec<OfferedCapability>> = std::sync::OnceLock::new();
-    let boot_offers = if matches!(case, Case::BedRest | Case::BedOwnerWake) {
+    let boot_offers = if matches!(case, Case::BedRest | Case::BedOwnerWake(_)) {
         BED_OFFERS
             .get_or_init(|| {
                 owner
@@ -414,7 +414,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     } else {
         OFFERS
     };
-    let declared: &[u32] = if matches!(case, Case::BedRest | Case::BedOwnerWake) {
+    let declared: &[u32] = if matches!(case, Case::BedRest | Case::BedOwnerWake(_)) {
         &[11, 18]
     } else {
         &[]
@@ -435,7 +435,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     ).map_err(debug)?;
 
     deps.initialize(&owner).await;
-    if matches!(case, Case::BedRest | Case::BedOwnerWake) {
+    if matches!(case, Case::BedRest | Case::BedOwnerWake(_)) {
         owner.admit_premium(id(40), deps.admitted.game_session_id);
     }
     {
@@ -532,12 +532,12 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::PositionAcl
             | Case::PositionOccupied
             | Case::BedRest
-            | Case::BedOwnerWake
+            | Case::BedOwnerWake(_)
     ) {
         // This source is really positioned in its Channel. Use the ordinary
         // native login settlement and runtime install before the House handoff.
         // Other service fixtures deliberately retain their revision-one seed.
-        if matches!(case, Case::PositionRelog | Case::BedRest | Case::BedOwnerWake) {
+        if matches!(case, Case::PositionRelog | Case::BedRest | Case::BedOwnerWake(_)) {
             owner.admit_progression_session(&mut admitted).await;
             assert!(
                 owner
@@ -556,15 +556,18 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // As in the existing Store PostgreSQL fixture, capability154 is offered
     // only by this test producer. It is selected in the genuine source session
     // against the same boot offer already bound above, before the native handoff.
-    let offers = if matches!(case, Case::Store | Case::BedRest | Case::BedOwnerWake) {
+    let offers = if matches!(case, Case::Store | Case::BedRest | Case::BedOwnerWake(_)) {
         boot_offers
     } else {
         owner.offered_capabilities()
     };
     let mut supported = vec![3, 4, 6, 15, 21, 37, 49, 51, 62, 86, 154, 165, 207, 250];
-    if matches!(case, Case::BedRest | Case::BedOwnerWake) {
+    if matches!(case, Case::BedRest | Case::BedOwnerWake(_)) {
         supported.retain(|id| ![165, 250].contains(id));
-        supported.extend([11, 18, 92, 450]);
+        supported.extend([11, 18, 92]);
+        if !matches!(case, Case::BedOwnerWake(super::bed_owner_wake_fixtures::Case::WorldOnly)) {
+            supported.push(450);
+        }
     }
     admitted.continuity.selected_capabilities =
         if matches!(case, Case::EssenceUse | Case::EssenceCue) {
@@ -592,11 +595,15 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         source_selection,
         "the source selection must authenticate against its actual boot offer before House transfer"
     );
-    if matches!(case, Case::BedRest | Case::BedOwnerWake) {
+    if matches!(case, Case::BedRest | Case::BedOwnerWake(_)) {
         assert!(
-            [11, 18, 92, 450]
+            [11, 18, 92]
                 .iter()
                 .all(|id| source_selection.contains(*id))
+        );
+        assert_eq!(
+            source_selection.contains(450),
+            !matches!(case, Case::BedOwnerWake(super::bed_owner_wake_fixtures::Case::WorldOnly))
         );
         assert!(
             !source_selection.contains(165) && !source_selection.contains(250),
@@ -643,8 +650,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             h, &owner, admitted, deps.actor,
         ).await;
     }
-    if matches!(case, Case::BedOwnerWake) {
-        return super::bed_owner_wake_fixtures::scenario(h, &owner, admitted).await;
+    if let Case::BedOwnerWake(case) = case {
+        if matches!(case, super::bed_owner_wake_fixtures::Case::NonPremium) {
+            owner.premium_coordinator = None;
+        }
+        return super::bed_owner_wake_fixtures::scenario(h, &owner, admitted, case).await;
     }
     if matches!(case, Case::BedRest) {
         return super::bed_sleep_dispatch_fixtures::production_rest(h, &owner, admitted, deps.actor).await;
@@ -1561,4 +1571,11 @@ fn hireling_bundle(
         },
     )
     .map_err(debug)
+}
+
+pub(super) async fn bed_owner_resume(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    prior: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult<crate::gameplay_transport::connection::AdmittedSession> {
+    position::resume(owner, prior, prior.game_session_id, 7, 10).await
 }
