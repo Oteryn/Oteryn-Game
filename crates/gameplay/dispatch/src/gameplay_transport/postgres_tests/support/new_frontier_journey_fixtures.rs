@@ -158,7 +158,8 @@ async fn use_object(
     let target = object_target(owner, tiles(p), ordinal)?;
     assert_eq!(
         use_target(owner, a, a.continuity.next_command_id, &target).await?,
-        expected
+        expected,
+        "USE at {p:?} with ordinal {ordinal}"
     );
     Ok(())
 }
@@ -423,7 +424,8 @@ pub(super) async fn exercise(
     for item in [7439, 7440, 7443] {
         assert_eq!(carried(h, item).await?, 1);
     }
-    use_object(owner, a, POTIONS, 1, UseRejected).await?;
+    // The physical chest reports NothingToUse for an already claimed reward.
+    use_object(owner, a, POTIONS, 1, UseDisposition::NothingToUse).await?;
     move_potion(owner, a, h).await?;
     for item in [7439, 7440, 7443] {
         assert_eq!(carried(h, item).await?, 1);
@@ -772,7 +774,7 @@ async fn move_potion(
     use crate::gameplay_transport::item_view::ItemKey;
     let (potion, bag): (Vec<u8>, Vec<u8>) = sqlx::query_as(
         "SELECT uuid_send(child.item_instance_id), uuid_send(parent.item_instance_id) \
-         FROM game_item_container_entries e JOIN game_item_instances child USING(item_instance_id) \
+         FROM game_item_nested_entries e JOIN game_item_instances child USING(item_instance_id) \
          JOIN game_item_instances parent ON parent.item_instance_id=e.parent_item_instance_id \
          WHERE child.definition_production_key='oteryn:item.tibia.i7439' \
            AND parent.definition_production_key='oteryn:item.tibia.i2854' AND child.lifecycle=1",
@@ -781,7 +783,7 @@ async fn move_potion(
     .await?;
     let children = || {
         sqlx::query_scalar::<_, i64>(
-        "SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
+        "SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
         .bind(&bag).fetch_one(&h.pool)
     };
     assert_eq!(
