@@ -14,11 +14,29 @@ pub struct ScreenshotPreferences {
     pub directory: String,
     pub folder: String,
     pub backlog_frames: u8,
+    #[serde(alias = "bestiary_unlock")]
+    pub on_bestiary_unlock: bool,
+    #[serde(alias = "bestiary_complete")]
+    pub on_bestiary_complete: bool,
+    #[serde(alias = "boss_defeat")]
+    pub on_boss_defeat: bool,
+    #[serde(alias = "pvp_attack")]
+    pub on_player_attacking: bool,
+    #[serde(alias = "damage_record")]
+    pub on_record_damage: bool,
+    #[serde(alias = "healing_record")]
+    pub on_record_healing: bool,
+    #[serde(alias = "tracked_loot")]
+    pub on_valuable_loot: bool,
+    #[serde(alias = "low_health")]
+    pub on_low_health: bool,
     pub on_skill: bool,
     pub game_only: bool,
     pub backlog_seconds: u8,
     pub on_level: bool,
     pub on_death: bool,
+    pub automatic_disabled: bool,
+    pub reward_chest: bool,
     pub on_achievement: bool,
 }
 impl ScreenshotPreferences {
@@ -61,9 +79,9 @@ impl ScreenshotPreferences {
             && (effective.directory.is_empty() || Path::new(&effective.directory).is_absolute())
     }
     pub fn apply_policy(&self, capture: &mut CaptureController) {
-        capture.policy.level = self.on_level;
-        capture.policy.death = self.on_death;
-        capture.policy.achievement = self.on_achievement;
+        capture.policy.level = !self.automatic_disabled && self.on_level;
+        capture.policy.death = !self.automatic_disabled && self.on_death;
+        capture.policy.achievement = !self.automatic_disabled && self.on_achievement;
     }
     /// Uses the same configured or platform screenshot destination as F12.
     pub fn save_frame(
@@ -141,8 +159,7 @@ mod audit_tests {
                     height: 1,
                 },
             };
-            let result =
-                preferences.save_frame(&mut CaptureController::default(), fixture, frame);
+            let result = preferences.save_frame(&mut CaptureController::default(), fixture, frame);
             assert!(result.is_err_and(|error| error.kind() == io::ErrorKind::InvalidInput));
             assert!(!Path::new(folder).exists());
             Ok(())

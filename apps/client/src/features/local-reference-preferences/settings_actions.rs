@@ -77,6 +77,39 @@ impl SettingsState {
                     .any(|key| key == oteryn_client_ui::condition_status::icon_key(*icon))
             })
             .collect();
+        #[cfg(bevy_shell)]
+        let scope_ready = !self.preference_transfer_pending();
+        #[cfg(not(bevy_shell))]
+        let scope_ready = true;
+        if scope_ready {
+            link.sync_inspection_permission(
+                &mut mailbox.discovery.inspection,
+                self.preferences.gameplay.allow_inspection,
+            );
+        }
+        mailbox.chat.console.filters.auto_private_tabs = self.preferences.console.auto_private_tabs;
+        mailbox.chat.console.filters.join_leave = self.preferences.console.join_leave;
+        if mailbox.local_preferences.console.events != self.preferences.console.events {
+            mailbox.chat.console.filters.events = self.preferences.console.events;
+        }
+        if mailbox.local_preferences.console.information != self.preferences.console.information {
+            mailbox.chat.console.filters.information = self.preferences.console.information;
+        }
+        let levels_changed =
+            mailbox.local_preferences.console.levels != self.preferences.console.levels;
+        if levels_changed {
+            mailbox.chat.console.display.levels = self.preferences.console.levels;
+        }
+        link.refresh_console_levels(&mut mailbox, levels_changed);
+        if mailbox.local_preferences.console.seconds != self.preferences.console.seconds {
+            mailbox.chat.console.display.seconds = self.preferences.console.seconds;
+        }
+        if mailbox.local_preferences.console.status != self.preferences.console.status {
+            mailbox.chat.console.filters.status = self.preferences.console.status;
+        }
+        if mailbox.local_preferences.console.timestamps != self.preferences.console.timestamps {
+            mailbox.chat.console.display.time = self.preferences.console.timestamps;
+        }
         if mailbox.local_preferences.console_font_px != self.preferences.console_font_px {
             mailbox.chat.console.display.font_px = self.preferences.console_font_px;
         }
@@ -205,6 +238,9 @@ impl SettingsState {
             custom_choices_refreshed: None,
             pending_chat_mode: None,
             chat_mode_seen: None,
+            restoring_rooms: [false; 8],
+            unconfirmed_rooms: [false; 8],
+            restore_guild_channel: false,
             chat_context: None,
             help_report_pending: false,
             control_input: super::super::controls::ControlInput::default(),
@@ -283,9 +319,13 @@ impl SettingsState {
                 _ => super::super::RotationModifier::Control,
             };
         }
-        controls.keyboard_delay_ms = controls
-            .keyboard_delay_ms
-            .max(self.preferences.keyboard_delay_ms);
+        controls.keyboard_delay_ms = if controls.default_delay {
+            0
+        } else {
+            controls
+                .keyboard_delay_ms
+                .max(self.preferences.keyboard_delay_ms)
+        };
         self.control_input.route(&controls, events, chat_open, now)
     }
 
@@ -351,6 +391,7 @@ impl SettingsState {
                     ..
                 } => {
                     if *repeat
+                        && !self.preferences.controls.default_delay
                         && self.last_key.get(code).is_some_and(|last| {
                             now.duration_since(*last).as_millis()
                                 < u128::from(self.preferences.keyboard_delay_ms)
@@ -380,7 +421,52 @@ impl SettingsState {
         }
     }
 
+    pub(in crate::play) fn observe_impact_records(
+        &mut self,
+        facts: crate::screenshots::CombatCaptureFacts,
+        previous: crate::screenshots::CombatCaptureFacts,
+    ) -> [bool; 2] {
+        let reset = facts.record_resets != previous.record_resets;
+        let observed = [facts.damage_record, facts.healing_record];
+        let prior = if reset {
+            [0; 2]
+        } else if self.character.is_some() {
+            self.preferences.impact_records
+        } else {
+            [previous.damage_record, previous.healing_record]
+        };
+        let improved = [observed[0] > prior[0], observed[1] > prior[1]];
+        let records = [prior[0].max(observed[0]), prior[1].max(observed[1])];
+        #[cfg(bevy_shell)]
+        if self.preference_transfer_pending() {
+            return [false; 2];
+        }
+        if self.character.is_some()
+            && (records != self.preferences.impact_records
+                || self
+                    .store
+                    .as_ref()
+                    .is_some_and(|store| store.preferences().impact_records != records))
+        {
+            self.preferences.impact_records = records;
+            if let Some(store) = &mut self.store {
+                #[cfg(bevy_shell)]
+                let result = store.save_impact_records(
+                    self.preferences.clone(),
+                    self.background_preferences,
+                );
+                #[cfg(not(bevy_shell))]
+                let result = store.apply(self.preferences.clone());
+                if let Err(error) = result {
+                    self.feedback = format!("Could not save impact records: {error}");
+                }
+            }
+        }
+        improved
+    }
+
     pub fn apply(&mut self, mut preferences: ReferencePreferences) {
+        preferences.impact_records = self.preferences.impact_records;
         if let Err(error) = preferences.validate() {
             self.feedback = error.to_string();
             return;

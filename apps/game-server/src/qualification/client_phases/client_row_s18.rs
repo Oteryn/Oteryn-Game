@@ -15,7 +15,7 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
-async fn speak(
+pub(super) async fn speak(
     client: &mut DevClientSession,
     mode: ChatSpeechMode,
     text: &str,

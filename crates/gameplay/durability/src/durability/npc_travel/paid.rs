@@ -96,20 +96,29 @@ async fn quote(
         ("oteryn:service.travel.junkar_thais", "robsons_isle") => &["steamship", "awash"],
         ("oteryn:service.travel.junkar_thais" | "oteryn:service.travel.junkar_robsons", "mines") => &["awash"],
         _ => &[],
-    } {
+    }
+    .iter()
+    .copied()
+    .chain(route.world_changes.iter().map(String::as_str))
+    {
         if !crate::durability::world_event::change_active(tx, world, gate).await? {
             return Ok(Err(TravelRefusal::UnavailableRoute));
         }
     }
-    if let Some(change) = &route.world_change
-        && !crate::durability::world_event::change_active(
-            tx,
-            fence.runtime_scope.world_id(),
-            change,
+    if let Some(callback) = &route.partial_quest_callback {
+        // Only the donor stage that needs quest settlement is unavailable.
+        let needs_settlement: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks
+              WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=$3)",
         )
-        .await?
-    {
-        return Ok(Err(TravelRefusal::UnavailableRoute));
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(&callback.track)
+        .bind(callback.stage)
+        .fetch_one(&mut ***tx)
+        .await?;
+        if needs_settlement {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
     }
     if route.yalahar_gate || route.yalahar_town_gate.is_some() {
         let town = route.yalahar_town_gate.as_deref().unwrap_or("ab_dendriel");
@@ -257,10 +266,17 @@ impl DurabilityRoot {
             {return Ok(Err(CharacterProgressionError::InvalidInput));}
             let mut hash = Sha256::new();
             hash.update(b"oteryn:paid-travel-binding:v1");
-            if let Some(change) = &route.world_change {
+            for change in &route.world_changes {
                 hash.update(b"world-change");
                 hash.update((change.len() as u64).to_be_bytes());
                 hash.update(change.as_bytes());
+            }
+            if let Some(callback) = &route.partial_quest_callback {
+                hash.update(b"partial-quest-callback:v1");
+                hash.update((callback.track.len() as u64).to_be_bytes());
+                hash.update(callback.track.as_bytes());
+                hash.update(callback.stage.to_be_bytes());
+                hash.update(callback.next_stage.to_be_bytes());
             }
             for text in [&route.service, &route.route.key, &route.keyword, &route.route.destination.coordinate_frame] {
                 hash.update((text.len() as u64).to_be_bytes());

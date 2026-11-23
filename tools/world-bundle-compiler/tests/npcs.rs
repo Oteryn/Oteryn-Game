@@ -664,3 +664,6 @@ mod qb_barbarian_npcs;
 
 #[path = "npcs/qb_outfit_npcs.rs"]
 mod qb_outfit_npcs;
+
+#[path = "npcs/travel_origins.rs"]
+mod travel_origins;

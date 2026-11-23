@@ -46,6 +46,9 @@ impl Row {
             Ok(()) => ("FAIL", Some(format!("step-{}:journey-ended-before-lifecycle", self.step + 1))),
             Err(error) => ("FAIL", Some(format!("step-{}:{error}", self.step + 1).replace(' ', "_"))),
         };
+        if let Some(gap) = &detail {
+            evidence(&format!("W15A_GAP {gap}"));
+        }
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W15a.full status={status} seconds={:.3}{}",
             self.started.elapsed().as_secs_f64(),
@@ -104,6 +107,11 @@ fn listed(log: &wire::QuestLog) -> TestResult<Vec<wire::QuestListEntry>> {
         Some(wire::QuestLogView::List(entries)) if !entries.is_empty() => Ok(entries.clone()),
         other => Err(format!("list-delta={other:?}").into()),
     }
+}
+
+fn started_quest(before: &[wire::QuestListEntry], after: &[wire::QuestListEntry]) -> TestResult<u32> {
+    Ok(after.iter().find(|entry| before.iter().all(|old| old.quest_index != entry.quest_index))
+        .ok_or("mission-start-produced-no-new-quest-index")?.quest_index)
 }
 
 fn line(log: &wire::QuestLog, index: u32) -> TestResult<wire::QuestLine> {
@@ -196,8 +204,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     settle_rate(&mut client).await?;
     let started_list = listed(&query(&mut client, &wire::QuestLogQuery::List).await?)?;
-    let started_index = started_list.iter().find(|entry| !initial_list.contains(entry))
-        .or_else(|| started_list.first()).ok_or("mission-start-produced-empty-list")?.quest_index;
+    let started_index = started_quest(&initial_list, &started_list)?;
     settle_rate(&mut client).await?;
     let before = line(&query(&mut client, &wire::QuestLogQuery::Quest { quest_index: started_index }).await?, started_index)?;
     row.pass(3, &before);
@@ -222,11 +229,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     settle_rate(&mut client).await?;
     let changed_list = listed(&query(&mut client, &wire::QuestLogQuery::List).await?)?;
-    let changed_index = changed_list.iter().find(|entry| !started_list.contains(entry))
-        .map(|entry| entry.quest_index).unwrap_or(started_index);
+    let changed_index = started_index;
+    if changed_list.iter().all(|entry| entry.quest_index != changed_index) {
+        return Err(format!("mission-progress-removed-quest={changed_index}").into());
+    }
     settle_rate(&mut client).await?;
     let changed = line(&query(&mut client, &wire::QuestLogQuery::Quest { quest_index: changed_index }).await?, changed_index)?;
-    if changed_index == started_index && changed == before {
+    if changed == before {
         return Err(format!("mission-command-accepted-but-missing-delta:before={before:?}:after={changed:?}").into());
     }
     settle_rate(&mut client).await?;
@@ -260,6 +269,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn journey_regression_requires_a_new_quest_index() {
+        let old = wire::QuestListEntry { quest_index: 1, completed: false };
+        let changed = wire::QuestListEntry { completed: true, ..old };
+        assert!(started_quest(&[old], &[old]).is_err());
+        assert!(started_quest(&[old], &[changed]).is_err());
+    }
 
     #[test]
     fn list_requires_a_real_nonempty_list_view() {

@@ -2872,6 +2872,63 @@ pub mod tests {
     }
 
     #[test]
+    fn map_door_plain_gate_preserves_authored_collision() -> Result<(), Box<dyn Error>> {
+        use crate::map::door::{AuthoredClosedDoor, DoorUse};
+        use crate::map::view::MapFacts;
+
+        let (bytes, load) = bundle_with_items("oteryn:item.tibia.i2179", "oteryn:item.tibia.i1000");
+        let world = boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| match key {
+                "oteryn:item.tibia.i2179" | "oteryn:item.tibia.i2180" => {
+                    let closed = key.ends_with("2179");
+                    Some(ItemDefinition {
+                        reference: std::num::NonZeroU32::new(if closed { 1 } else { 2180 })?,
+                        solid: Some(closed),
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: true,
+                    })
+                }
+                _ => door_items(key),
+            },
+        )?;
+        let doors = world.facts().doors();
+        let key = door_key();
+        assert_eq!(doors.authored_closed(key), Some(AuthoredClosedDoor::Plain));
+        let closed = world
+            .facts()
+            .base_entry(DOOR_AT, 1, 0)
+            .ok_or("closed gate")?;
+        assert!(!closed.blocks_projectile && !world.enterable(DOOR_AT));
+
+        assert_eq!(
+            doors.toggle(key, 0, false, 1, false),
+            Some(DoorUse::Toggled {
+                revision: 1,
+                open: true
+            })
+        );
+        assert_eq!(
+            doors.toggle(key, 1, true, 1, false),
+            Some(DoorUse::Occupied)
+        );
+        assert!(world.enterable(DOOR_AT));
+        assert_eq!(
+            doors.toggle(key, 1, false, 1, false),
+            Some(DoorUse::Toggled {
+                revision: 2,
+                open: false
+            })
+        );
+        assert!(!world.enterable(DOOR_AT));
+        Ok(())
+    }
+
+    #[test]
     fn map_door_an_unqualified_closed_item_keeps_the_door_sealed() -> Result<(), Box<dyn Error>> {
         // The closed item must block both movement and projectiles.
         for (solid, shoots) in [

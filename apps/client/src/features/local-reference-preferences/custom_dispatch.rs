@@ -1,7 +1,7 @@
 //! Custom actions use the same live session callers as inventory, chat and cooldown panels.
 use super::{CustomAction, ObjectTarget};
 use crate::combat_input::PlayCommand;
-use crate::play::feature_local_spell_action_bar::view::{item_source, item_target, visible_items};
+use crate::play::feature_local_spell_action_bar::view::{carried_items, item_source, item_target, visible_items};
 use crate::play::{PlayLink, PlayView, mailbox::lock};
 use oteryn_client_runtime::world_interaction::{Action, Command, Selection, Target};
 
@@ -152,10 +152,29 @@ impl PlayLink {
     }
 
     pub fn custom_hotkey_action(&self, _view: &PlayView, action: &CustomAction) -> bool {
+        let dispatched = self.dispatch_custom_action(_view, action);
+        #[cfg(bevy_shell)]
+        if dispatched {
+            let label = match action {
+                CustomAction::Unassigned => return false,
+                CustomAction::Special { action } => format!("Hotkey: {}", action.label()),
+                CustomAction::ActionBar { slot } => format!("Hotkey: action bar slot {slot}"),
+                CustomAction::Object { definition, .. } => format!("Hotkey: use item {definition}"),
+                CustomAction::PassiveStatus { .. } | CustomAction::Passive { .. } => "Hotkey: track ability".into(),
+                CustomAction::Utility { .. } => "Hotkey: utility action".into(),
+                CustomAction::Text { send, .. } => if *send { "Hotkey: send text" } else { "Hotkey: edit text" }.into(),
+            };
+            lock(&self.mailbox).window_notice(crate::play::feature_local_text_messages::view::NoticeKind::Hotkey, label);
+        }
+        dispatched
+    }
+    fn dispatch_custom_action(&self, _view: &PlayView, action: &CustomAction) -> bool {
         if !action.valid() {
             return false;
         }
         match action {
+            CustomAction::Unassigned => false,
+            CustomAction::Special { action } => action.execute(&mut lock(&self.mailbox), &self.commands),
             CustomAction::PassiveStatus { ability } => {
                 let mut mailbox = lock(&self.mailbox);
                 if mailbox.quest_shutdown || mailbox.custom_hotkeys_ended {
@@ -272,7 +291,14 @@ impl PlayLink {
                 let Some(definition_id) = std::num::NonZeroU32::new(*definition) else {
                     return false;
                 };
-                let Some(item) = item_source(&mailbox, definition_id, Some(*sub_type)) else {
+                let item = if *target == ObjectTarget::CursorPosition {
+                    carried_items(&mailbox).into_iter()
+                        .filter(|item| item.item_definition_ref == definition_id && item.sub_type == *sub_type)
+                        .min_by_key(|item| (item.count, item.handle))
+                } else {
+                    item_source(&mailbox, definition_id, Some(*sub_type))
+                };
+                let Some(item) = item else {
                     mailbox.custom_hotkey_feedback =
                         Some("Custom hotkey: item is no longer visible in inventory or an open container".into());
                     return false;
@@ -294,6 +320,15 @@ impl PlayLink {
                 };
                 let target = match &target_mode {
                     ObjectTarget::Use => Target::Item(item.handle),
+                    ObjectTarget::CursorPosition => {
+                        let Some((target, cursor)) = mailbox.bar_actions.cursor.clone() else {
+                            mailbox.custom_hotkey_feedback =
+                                Some("Cursor is outside the game window or battle list".into());
+                            return false;
+                        };
+                        selection = Some(cursor);
+                        target
+                    }
                     ObjectTarget::Cursor => {
                         let rune = mailbox
                             .spell_catalog

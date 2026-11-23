@@ -28,8 +28,10 @@ impl Stepper for Peer {
             4,
             0,
             0,
-            if request.operation == vip::Operation::Add { "" } else if self.added {
-                r#"{"entries":[{"entry":1,"name":"Alice","description":"","confirmed":false}],"groups":[],"consents":[]}"#
+            if request.operation == vip::Operation::Add { "" } else if request.number == 1 {
+                r#"{"entries":[{"entry":2,"name":"Bob"}],"next_entry":0}"#
+            } else if self.added {
+                r#"{"entries":[{"entry":1,"name":"Alice","description":"","confirmed":false}],"groups":[],"consents":[],"next_entry":1}"#
             } else { r#"{"entries":[],"groups":[],"consents":[]}"# },
         )
         .map_err(|_| SessionError::SessionUnusable)?;
@@ -265,4 +267,96 @@ impl crate::play::Outbox {
             },
         });
     }
+}
+
+#[test]
+fn vip_filter_fetches_remaining_names_without_switching_the_displayed_page()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+            runtime.block_on(async {
+                use crate::play::{play_channel, run_session};
+                let (link, incoming, outbox) = play_channel();
+                let task = tokio::spawn(run_session(Peer { added: true }, incoming, outbox));
+                tokio::time::timeout(Duration::from_secs(3), async {
+                    while !link.vip_panel().selected {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await?;
+                link.chat_lists_open(None);
+                let form = crate::play::FeatureForm::all()
+                    .iter()
+                    .copied()
+                    .find(|f| f.title(&link) == "Communication lists")
+                    .ok_or("form")?;
+                let toggle = link
+                    .feature_form_view(form)
+                    .buttons
+                    .iter()
+                    .position(|label| *label == "Allow VIP speakers")
+                    .ok_or("VIP switch")?;
+                link.feature_form_submit(form, toggle, vec![]);
+                tokio::time::timeout(Duration::from_secs(3), async {
+                    while !link
+                        .chat_panel()
+                        .console
+                        .communication
+                        .vip_names
+                        .contains("bob")
+                    {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await?;
+                assert!(
+                    link.vip_panel()
+                        .view
+                        .as_deref()
+                        .is_some_and(|view| view.contains("Alice") && !view.contains("Bob"))
+                );
+                drop(link);
+                task.await?;
+                Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "VIP filter thread failed")?
+}
+
+#[tokio::test]
+async fn rv3404_vip_membership_and_page_are_published_together() -> Result<(), SessionError> {
+    let (link, _, outbox) = crate::play::play_channel();
+    crate::play::mailbox::lock(&outbox.0)
+        .chat
+        .console
+        .communication
+        .allow_vips = true;
+    let query = VipCommand::new(&vip::Request {
+        operation: vip::Operation::Query,
+        number: 0,
+        text: String::new(),
+        icon: 0,
+        notify: false,
+        groups: vec![],
+    })
+    .ok_or(SessionError::SessionUnusable)?;
+    crate::play::feature_0043_vip::protocol::send_vip(&mut Peer { added: true }, &outbox, &query)
+        .await?;
+    assert!(
+        link.chat_panel()
+            .console
+            .communication
+            .vip_names
+            .contains("bob")
+    );
+    assert!(
+        link.vip_panel()
+            .view
+            .as_ref()
+            .is_some_and(|page| page.contains("Alice"))
+    );
+    Ok(())
 }

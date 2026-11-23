@@ -26,8 +26,8 @@ impl PreviewAssets {
         let index = AppearanceIndex::load(&store, &catalog).map_err(|error| error.to_string())?;
         let metadata = mount_binding::load(root).ok();
         let (cosmetics_digest, mounts) = metadata
-            .map_or((None, BTreeMap::new()), |(digest, mounts)| {
-                (Some(digest), mounts)
+            .map_or((None, BTreeMap::new()), |metadata| {
+                (Some(metadata.digest), metadata.mounts)
             });
         Ok(Self {
             index,

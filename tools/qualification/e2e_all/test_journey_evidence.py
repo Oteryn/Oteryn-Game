@@ -1,4 +1,5 @@
 """Focused guards for reviewed G16/M10/G33 evidence ownership and coverage."""
+import re
 import unittest
 from pathlib import Path
 from report import results
@@ -21,10 +22,21 @@ class JourneyEvidenceTests(unittest.TestCase):
 
     def test_m10_bounded_drowning_does_not_qualify_whole_matrix_row(self):
         source = (PHASES / 'full_row_m10.rs').read_text()
+        self.assertIn('scenario=M10.full status=FAIL', source)
+        self.assertEqual(source.count('scenario=M10.full status='), 1)
         self.assertNotIn('if pass { "PASS" } else { "FAIL" }', source)
-        self.assertIn('unproven-swimming-traps-special-movement', source)
-        self.assertIn('observed-five-native-drowning-steps', source)
-        self.assertRegex(source, r'row\.pass\(\s*5,')
+        self.assertIn('M10_GAP {gap}', source)
+        self.assertIn('step=swimming-look-type missing=served-look-type-267', source)
+        self.assertIn('gap_detail(self.step, self.error.as_deref())', source)
+        journey = source.split('async fn journey(', 1)[1].split('#[cfg(test)]', 1)[0]
+        self.assertEqual(re.findall(r'row\.pass\(\s*(\d+),', journey), list('12345678'))
+        self.assertEqual(journey.count('if damage != 20'), 2)
+        self.assertIn('refused.world_spatial_delta.is_some()', journey)
+        self.assertIn('drown ActorVitals damage continued after dry exit', journey)
+        self.assertIn('v.health != saved_vitals.health', journey)
+        self.assertIn('surface_swimming(&mut client, world).await?', journey)
+        self.assertIn('&SPIKES, "spike").await?', journey)
+        self.assertIn('&PRESSURE, "pressure-tile").await?', journey)
 
     def test_g33_reads_active_epoch_decision_without_process_calendar(self):
         source = (PHASES / 'full_row_g33.rs').read_text()

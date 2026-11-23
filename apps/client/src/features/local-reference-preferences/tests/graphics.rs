@@ -166,3 +166,18 @@ fn graphics_preferences_reach_live_scene_lighting_and_gpu_floor_separation()
     std::fs::remove_file(path)?;
     Ok(())
 }
+
+#[test]
+fn fit_game_window_mode_recalculates_tiles_after_resize() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    let mut prefs = play.preferences().clone();
+    let mut saved = serde_json::to_value(prefs.graphics)?;
+    saved["fit_viewport"] = true.into();
+    prefs.graphics = serde_json::from_value(saved)?;
+    play.set_preferences(prefs)?;
+    for side in [64,80] {
+        play.set_world_viewport([side * crate::scene::SCENE_COLUMNS, side * crate::scene::SCENE_ROWS])?;
+        assert_eq!(play.scene().view().tile_px(),side);
+    }
+    Ok(())
+}

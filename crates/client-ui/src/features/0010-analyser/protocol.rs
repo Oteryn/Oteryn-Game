@@ -16,6 +16,13 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
         report.swap(panel);
     }
     panel.reports = reports;
+    for fact in facts {
+        if let AnalyserFact::KillLoot { corpse_items, .. } = fact {
+            for item in corpse_items {
+                super::tracking::check_value(panel, item.item_type.get(), panel.auto_track_value);
+            }
+        }
+    }
     apply_facts(panel, facts, seconds);
 }
 fn apply_facts(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
@@ -37,7 +44,9 @@ fn apply_facts(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 panel.gained_xp = panel.gained_xp.saturating_add(*gained);
             }
             AnalyserFact::KillLoot {
-                corpse_items, gold, ..
+                corpse_items,
+                gold,
+                race,
             } => {
                 panel.gold = panel.gold.saturating_add(*gold);
                 panel.gold_chart.add(seconds, *gold);
@@ -47,6 +56,7 @@ fn apply_facts(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                         item.item_type.get(),
                         u64::from(item.count.get()),
                         seconds,
+                        *race,
                     );
                     if !super::state::items::record_item(
                         &mut panel.loot,
@@ -75,6 +85,7 @@ fn apply_facts(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
             }
             AnalyserFact::Impact(AnalyserImpact::Damage { value, element }) => {
                 let value = u64::from(value.get());
+                panel.impact_high[0] = panel.impact_high[0].max(value);
                 panel.damage = panel.damage.saturating_add(value);
                 panel.damage_chart.add(seconds, value);
                 panel.recent[0].add(seconds, value);
@@ -83,6 +94,7 @@ fn apply_facts(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
             }
             AnalyserFact::Impact(AnalyserImpact::Healing(value)) => {
                 let value = u64::from(value.get());
+                panel.impact_high[1] = panel.impact_high[1].max(value);
                 panel.healing = panel.healing.saturating_add(value);
                 panel.healing_chart.add(seconds, value);
                 panel.recent[1].add(seconds, value);
@@ -123,6 +135,7 @@ pub fn reset(panel: &mut Panel) {
         // Party counters use server connection intervals, independent of this local reset.
         party: std::mem::take(&mut panel.party),
         party_adjustments: std::mem::take(&mut panel.party_adjustments),
+        party_split_error: panel.party_split_error,
         party_import: panel.party_import.take(),
         party_pending: panel.party_pending,
         party_feedback: panel.party_feedback,
@@ -133,7 +146,13 @@ pub fn reset(panel: &mut Panel) {
         task_feedback: panel.task_feedback,
         loot_tracked: std::mem::take(&mut panel.loot_tracked),
         loot_only_tracked: panel.loot_only_tracked,
+        auto_track_value: panel.auto_track_value,
+        auto_tracked: std::mem::take(&mut panel.auto_tracked),
+        display: std::mem::take(&mut panel.display),
+        impact_high: panel.impact_high,
+        high_revision: panel.high_revision,
         export_path: std::mem::take(&mut panel.export_path),
+        loot_sources: std::mem::take(&mut panel.loot_sources),
         loot_prices: std::mem::take(&mut panel.loot_prices),
         supply_prices: std::mem::take(&mut panel.supply_prices),
         item_info: std::mem::take(&mut panel.item_info),
@@ -153,6 +172,9 @@ pub fn recover(panel: &mut Panel) {
         open_tools: panel.open_tools.clone(),
         selected: panel.selected,
         open: panel.open,
+        impact_high: panel.impact_high,
+        high_revision: panel.high_revision,
+        display: std::mem::take(&mut panel.display),
         feedback: Some(tr!(
             "Server state replaced; a fresh measurement interval and item settings were started"
         )),
@@ -225,7 +247,11 @@ pub fn catalogue_result(
         && rows.iter().map(|row| row.item_type).eq(requested)
     {
         for row in rows {
-            panel.item_info.insert(row.item_type, row);
+            let item = row.item_type;
+            panel.item_info.insert(item, row);
+            if let Some(threshold) = panel.pending_drop_values.remove(&item) {
+                super::tracking::check_value(panel, item, threshold);
+            }
         }
         panel.feedback = Some(tr!(
             "Item identities received; resolve again if more items remain"
@@ -243,6 +269,24 @@ pub fn party_request(
     panel: &mut Panel,
 ) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
     super::party::request(panel)
+}
+
+/// Begin one personal interval across the hunting tools, retaining tracker selections and prices.
+pub fn start_hunt(panel: &mut Panel) {
+    let gained = panel
+        .reports
+        .get(super::Tool::Xp.key())
+        .map_or(panel.gained_xp, |report| report.gained_xp);
+    panel.goal_xp = panel.goal_xp.map(|goal| goal.saturating_sub(gained));
+    panel.pending_drop_values.clear();
+    panel
+        .loot_tracked
+        .retain(|item| !panel.auto_tracked.contains(item));
+    panel.auto_tracked.clear();
+    panel.reports.clear();
+    super::state::Report::default().swap(panel);
+    panel.reset_at.fill(panel.clock.seconds());
+    panel.feedback = None;
 }
 
 /// Reset the selected report while retaining measurements belonging to other tools.
@@ -283,6 +327,7 @@ pub fn reset_tool(panel: &mut Panel) {
             panel.boss_drops_truncated = false;
         }
         Tool::Party => {
+            panel.party_split_error = None;
             panel.party_import = None;
             panel.party_feedback =
                 Some("Party measurements are server-owned; refresh to read the current interval");

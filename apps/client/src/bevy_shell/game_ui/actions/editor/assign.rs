@@ -28,6 +28,8 @@ fn multi_message(actions: &[BarAction]) -> String {
 
 fn action_label(action: &BarAction) -> String {
     match action {
+        BarAction::ToggleContainer { definition } => format!("Toggle container #{definition}"),
+        BarAction::Special { action } => action.label().into(),
         BarAction::Spell { name, .. } => name.clone(),
         BarAction::Use { definition, .. } => {
             lfmt!("Use object {definition}", definition = definition)
@@ -207,6 +209,13 @@ pub(super) fn apply(
                 send_automatically: matches!(action, Edit::Text),
             },
         ),
+        Edit::ToggleContainer => {
+            let Some(BarAction::Use { definition, .. }) = object_action(Edit::Use, values) else {
+                return REFUSED.into();
+            };
+            link.assign_bar_action(slot, BarAction::ToggleContainer { definition })
+        }
+        Edit::Special(action) => link.assign_bar_action(slot, BarAction::Special { action }),
         Edit::Instinct | Edit::Harmony | Edit::Serene => link.assign_bar_action(
             slot,
             BarAction::Passive {

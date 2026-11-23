@@ -83,6 +83,21 @@ pub(super) fn apply(panel: &mut Panel, reply: &mut Reply) -> Result<(), &'static
             panel.catalogue_definition = reference.to_string();
         }
         Some(Request::Catalogue(reference)) => {
+            let [item] = reply.items.as_slice() else {
+                return Err("Invalid catalogue detail reply");
+            };
+            if item.definition_ref != reference {
+                return Err("Mismatched catalogue item");
+            }
+            panel
+                .inspected_items
+                .retain(|seen| seen.definition_ref != reference);
+            if panel.inspected_items.len()
+                == oteryn_client_runtime::weapon_proficiency::PROFICIENCY_CATALOGUE_PAGE_SIZE
+            {
+                panel.inspected_items.pop_front();
+            }
+            panel.inspected_items.push_back(item.clone());
             panel.catalogue_definition = reference.to_string();
             panel.catalogue_drop_next = None;
         }

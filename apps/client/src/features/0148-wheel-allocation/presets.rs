@@ -1,3 +1,5 @@
+#[path = "tibia_codes.rs"]
+mod tibia_codes;
 use crate::combat_input::PlayCommand;
 use crate::play::{
     PlayLink,
@@ -55,7 +57,7 @@ fn submit_panel(
         match action {
             0 => {
                 let book = update_book(path, |book| {
-                    book.insert(&panel.preset_fields[0], &panel.build_code())?;
+                    book.insert(&panel.preset_fields[0], &panel.named_build_code())?;
                     Ok(())
                 })?;
                 panel.preset_fields[0] = panel.preset_fields[0].trim().into();
@@ -64,16 +66,14 @@ fn submit_panel(
             1 => {
                 let code = panel
                     .preset_book
-                    .0
-                    .get(panel.preset_fields[0].trim())
-                    .ok_or(tr!("Select a saved preset name"))?
-                    .clone();
-                panel.import_build(&code)?;
+                    .named_code(panel.preset_fields[0].trim())
+                    .ok_or(tr!("Select a saved preset name"))?;
+                panel.load_named_build(&code)?;
                 panel.diagram.reset_requested = false;
             }
             2 => {
                 let book = update_book(path, |book| {
-                    if book.0.remove(panel.preset_fields[0].trim()).is_none() {
+                    if book.remove(panel.preset_fields[0].trim()).is_none() {
                         return Err(tr!("Select a saved preset name"));
                     }
                     Ok(())
@@ -87,19 +87,25 @@ fn submit_panel(
                     panel.build_code().replacen("OW1:", "oteryn://wheel/v1/", 1)
             }
             5 => {
-                panel.import_build(&panel.preset_fields[1].clone())?;
+                let code = panel.preset_fields[1].trim().to_owned();
+                if ["K0", "S0", "M0", "D0", "P0"]
+                    .iter()
+                    .any(|p| code.starts_with(p))
+                {
+                    tibia_codes::import(panel, &code)?;
+                } else {
+                    panel.import_build(&code)?;
+                }
                 panel.diagram.reset_requested = false;
             }
+            7 => panel.preset_fields[1] = tibia_codes::export(panel)?,
             6 => {
                 let name = panel.preset_fields[0].trim();
                 let book = update_book(path, |book| {
                     if name != selected && book.0.contains_key(name) {
                         return Err("A preset with that name already exists");
                     }
-                    let code = book
-                        .0
-                        .remove(selected)
-                        .ok_or("Select a saved preset name")?;
+                    let code = book.remove(selected).ok_or("Select a saved preset name")?;
                     book.insert(name, &code)?;
                     Ok(())
                 })?;
@@ -128,12 +134,7 @@ fn update_book(
     let mut book = match PresetBook::load(path) {
         // The book API returns display text. These errors represent I/O or a future schema.
         Err(message)
-            if [
-                tr!("Cannot inspect presets"),
-                tr!("Cannot read presets"),
-
-            ]
-            .contains(&message) =>
+            if [tr!("Cannot inspect presets"), tr!("Cannot read presets")].contains(&message) =>
         {
             return Err(message);
         }
@@ -154,8 +155,7 @@ fn update_book(
         Ok(book) => book,
     };
     edit(&mut book)?;
-    let bytes = serde_json::to_vec_pretty(&serde_json::json!({"version": 1, "presets": book.0}))
-        .map_err(|_| error())?;
+    let bytes = book.encoded()?;
     crate::atomic_file::replace(path, &bytes, true).map_err(|_| error())?;
     Ok(book)
 }
@@ -303,8 +303,7 @@ mod management_tests {
     }
 
     #[test]
-    fn c2d_versionless_wheel_book_is_recovered_on_save()
-    -> Result<(), Box<dyn std::error::Error>> {
+    fn c2d_versionless_wheel_book_is_recovered_on_save() -> Result<(), Box<dyn std::error::Error>> {
         let root = tempfile::tempdir()?;
         let path = root.path().join("wheel.json");
         std::fs::write(&path, b"{}")?;
@@ -313,7 +312,10 @@ mod management_tests {
         mailbox.wheel.preset_fields[0] = "Recovered".into();
         submit_at(&mut mailbox, 0, "", &path);
         assert!(PresetBook::load(&path).is_ok_and(|book| book.0.contains_key("Recovered")));
-        assert_eq!(std::fs::read(path.with_added_extension("malformed"))?, b"{}");
+        assert_eq!(
+            std::fs::read(path.with_added_extension("malformed"))?,
+            b"{}"
+        );
         Ok(())
     }
 

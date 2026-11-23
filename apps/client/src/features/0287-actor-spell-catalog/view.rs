@@ -79,6 +79,9 @@ mod archive_tests;
 
 #[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
+    pub(crate) fn bevy_journal_view_other_character(&self) {
+        crate::play::mailbox::lock(&self.0).cyclopedia_character.change_target(Some([42; 16]));
+    }
     pub(crate) fn bevy_journal_spellbook_select(&self) {
         self.spellbook_details_initialize(true);
     }

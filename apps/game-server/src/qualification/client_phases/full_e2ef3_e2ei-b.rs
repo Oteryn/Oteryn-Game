@@ -117,8 +117,14 @@ async fn approach(
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route_avoiding(world, from, goal, |at| at != WOLF_STEP_DESTINATION)
-        .ok_or_else(|| format!("no served walk route from {from:?} to {target:?} avoiding {WOLF_STEP_DESTINATION:?}"))?;
+    let path = route_avoiding(world, from, goal, |at| {
+        route_available(at) && at != WOLF_STEP_DESTINATION
+    })
+    .ok_or_else(|| {
+        format!(
+            "no served walk route from {from:?} to {target:?} avoiding {WOLF_STEP_DESTINATION:?}"
+        )
+    })?;
     walk(client, world, &path).await
 }
 
@@ -297,15 +303,17 @@ async fn pick_up(
     at: TilePos,
     appearance: u16,
     definition: NonZeroU32,
-    route_obstacle: &str,
-) -> TestResult<NonZeroU64> {
-    approach(
-        client,
+) -> TestResult<Option<NonZeroU64>> {
+    let from = tile(client.world_spatial().actor_position)?;
+    let Some(path) = route_avoiding(
         world,
-        ("ground document", appearance, at, route_obstacle),
+        from,
         |cell| cell.floor == at.floor && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) == 1,
-    )
-    .await?;
+        |cell| route_available(cell) && cell != WOLF_STEP_DESTINATION,
+    ) else {
+        return Ok(None);
+    };
+    walk(client, world, &path).await?;
     let item = visible_item(client, at, appearance).await?;
     let MapOrigin::Handle(source) = item.origin else {
         return Err(format!("ground document at {at:?} has no pickup handle: {item:?}").into());
@@ -338,7 +346,7 @@ async fn pick_up(
     if reply.status != CommandStatus::Accepted || reply.outcome != ItemMoveOutcome::Moved {
         return Err(format!("ground pickup {appearance} at {at:?}: {reply:?}").into());
     }
-    wait_carried(client, definition).await
+    wait_carried(client, definition).await.map(Some)
 }
 
 async fn write(
@@ -398,14 +406,69 @@ async fn read(
 
 const REVISED: &str = "Second inscription: żółw 🐢";
 
+async fn acquire_document(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    at: TilePos,
+    appearance: u16,
+    definition: NonZeroU32,
+    obstacle: &str,
+) -> TestResult<NonZeroU64> {
+    if let Ok(handle) = carried(client, definition) {
+        return Ok(handle);
+    }
+    let ground = pick_up(client, world, at, appearance, definition).await;
+    ground_or_trade(ground, async {
+        let key = format!("oteryn:item.tibia.i{appearance}");
+        full_e2ef7::acquire(client, world, index, &key, 1)
+            .await
+            .map_err(|trade| format!("ground source={obstacle}; ordinary NPC trade={trade}"))?;
+        carried(client, definition)
+    })
+    .await
+}
+
+async fn ground_or_trade<T>(
+    ground: TestResult<Option<T>>,
+    trade: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    match ground? {
+        Some(item) => Ok(item),
+        None => trade.await,
+    }
+}
+
+#[tokio::test]
+async fn document_trade_cannot_mask_a_failed_ground_assertion() -> TestResult {
+    let traded = std::cell::Cell::new(false);
+    for error in [
+        "MOVE refused despite inventory credit",
+        "wrong ground definition or count",
+    ] {
+        let result = ground_or_trade(Err(error.into()), async {
+            traded.set(true);
+            Ok(1)
+        })
+        .await;
+        assert!(result.is_err_and(|observed| observed.to_string() == error));
+    }
+    assert!(!traded.get());
+    let item = ground_or_trade(Ok(None), async { Ok(1) }).await?;
+    assert_eq!(item, 1);
+    Ok(())
+}
+
 async fn rewrite_parchment(
     client: &mut DevClientSession,
     world: &BundleWorld,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
     rewritable: NonZeroU32,
 ) -> TestResult {
-    let handle = pick_up(
+    let handle = acquire_document(
         client,
         world,
+        index,
         REWRITABLE,
         2814,
         rewritable,
@@ -430,21 +493,29 @@ async fn rewrite_parchment(
     Ok(())
 }
 
-async fn documents(
+const SEALED: &str = "Sealed inscription: żółw 🐢";
+
+async fn write_document(
     client: &mut DevClientSession,
-    clients: &SeamClients<'_>,
     world: &BundleWorld,
     action: &mut &'static str,
-    logged_out: &mut bool,
+    definitions: &crate::content::item_ref::ItemDefinitionIndex,
+    once: NonZeroU32,
+    sealed: NonZeroU32,
 ) -> TestResult {
-    const SEALED: &str = "Sealed inscription: żółw 🐢";
-    let definitions = provisioning::item_index()?;
-    let rewritable = provisioning::item_reference(&definitions, 2814)?;
-    let once = provisioning::item_reference(&definitions, 2818)?;
-    let sealed = provisioning::item_reference(&definitions, 2834)?;
-
     *action = "write-once-transform";
-    let handle = pick_up(client, world, WRITE_ONCE, 2818, once, DOCUMENT_OBSTACLE).await?;
+
+    let handle = acquire_document(
+        client,
+        world,
+        definitions,
+        WRITE_ONCE,
+        2818,
+        once,
+        DOCUMENT_OBSTACLE,
+    )
+    .await?;
+
     read(client, handle, "", true).await?;
     *action = "text-limit";
     write(
@@ -488,13 +559,36 @@ async fn documents(
     .await?;
     read(client, transformed, SEALED, false).await?;
 
-    // Keep the independent write-once durability assertion when the parchment
-    // cannot be acquired or its text assertion fails.
+    Ok(())
+}
+
+async fn documents(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    action: &mut &'static str,
+    logged_out: &mut bool,
+) -> TestResult {
+    let definitions = provisioning::item_index()?;
+    let rewritable = provisioning::item_reference(&definitions, 2814)?;
+    let once = provisioning::item_reference(&definitions, 2818)?;
+    let sealed = provisioning::item_reference(&definitions, 2834)?;
+
+    let write_once = write_document(client, world, action, &definitions, once, sealed).await;
+    let once_step = *action;
+
     *action = "write-read-rewritable";
-    approach(client, world, TOWN, |at| at == TOWN).await?;
-    let rewrite = rewrite_parchment(client, world, rewritable).await;
-    *action = "relogin-text-transform";
-    let relogin = async {
+    let rewrite = async {
+        approach(client, world, TOWN, |at| at == TOWN).await?;
+        rewrite_parchment(client, world, &definitions, rewritable).await
+    }
+    .await;
+    let writes = [(once_step, write_once), ("write-read-rewritable", rewrite)];
+    if writes.iter().all(|(_, result)| result.is_err()) {
+        return document_outcome(action, writes);
+    }
+
+    let admission = async {
         approach(client, world, TOWN, |at| at == TOWN).await?;
         let session = client.join_snapshot().game_session_id;
         let (outcome, detail, attempts, busy) = super::logout_retrying_busy(client).await?;
@@ -510,22 +604,153 @@ async fn documents(
         if client.join_snapshot().game_session_id == session {
             return Err(format!("fresh admission reused session {session:?}").into());
         }
-        let entries = &client.inventory().ok_or("fresh inventory absent")?.entries;
-        if entries.iter().any(|item| item.item_definition_ref == once) {
-            return Err(
-                format!("source definition {once} returned after login: {entries:?}").into(),
-            );
-        }
-        read(client, carried(client, sealed)?, SEALED, false).await?;
-        Ok::<_, Box<dyn std::error::Error>>(())
+        Ok(())
     }
     .await;
-    if rewrite.is_err() {
-        *action = "write-read-rewritable";
-        return rewrite;
+    if admission.is_err() {
+        return document_outcome(
+            action,
+            writes
+                .into_iter()
+                .chain([("relogin-text-transform", admission)]),
+        );
     }
-    relogin?;
-    read(client, carried(client, rewritable)?, REVISED, true).await?;
-    *action = "ground-pickups-rewrite-limit-transform-refusal-fresh-admission";
+    check_document_durability(
+        client,
+        action,
+        writes,
+        async |client| {
+            let entries = &client.inventory().ok_or("fresh inventory absent")?.entries;
+            if entries.iter().any(|item| item.item_definition_ref == once) {
+                return Err(
+                    format!("source definition {once} returned after login: {entries:?}").into(),
+                );
+            }
+            read(client, carried(client, sealed)?, SEALED, false).await
+        },
+        async |client| read(client, carried(client, rewritable)?, REVISED, true).await,
+    )
+    .await?;
+    *action = "rewrite-limit-transform-refusal-fresh-admission";
     Ok(())
+}
+
+fn document_outcome(
+    action: &mut &'static str,
+    checks: impl IntoIterator<Item = (&'static str, TestResult)>,
+) -> TestResult {
+    let mut failures = checks
+        .into_iter()
+        .filter_map(|(phase, result)| result.err().map(|error| (phase, error)))
+        .peekable();
+    let Some((phase, first)) = failures.next() else {
+        return Ok(());
+    };
+    *action = phase;
+    if failures.peek().is_none() {
+        return Err(first);
+    }
+    let mut additional = String::new();
+    for (phase, error) in failures {
+        additional.push_str(&format!("; {phase}: {error}"));
+    }
+    Err(Box::new(DocumentFailures { first, additional }))
+}
+
+#[derive(Debug)]
+struct DocumentFailures {
+    first: Box<dyn std::error::Error>,
+    additional: String,
+}
+
+impl std::fmt::Display for DocumentFailures {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{}{}", self.first, self.additional)
+    }
+}
+
+impl std::error::Error for DocumentFailures {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self.first.as_ref())
+    }
+}
+
+async fn check_document_durability<C>(
+    client: &mut C,
+    action: &mut &'static str,
+    writes: [(&'static str, TestResult); 2],
+    read_sealed: impl AsyncFnOnce(&mut C) -> TestResult,
+    read_parchment: impl AsyncFnOnce(&mut C) -> TestResult,
+) -> TestResult {
+    let sealed = if writes[0].1.is_ok() {
+        read_sealed(client).await
+    } else {
+        Ok(())
+    };
+    let parchment = if writes[1].1.is_ok() {
+        read_parchment(client).await
+    } else {
+        Ok(())
+    };
+    document_outcome(
+        action,
+        writes.into_iter().chain([
+            ("relogin-write-once-text-transform", sealed),
+            ("relogin-rewritable-text", parchment),
+        ]),
+    )
+}
+
+#[tokio::test]
+async fn durability_checks_both_documents_on_sealed_mismatch() {
+    let mut reads = Vec::new();
+    let mut action = "";
+    let result = check_document_durability(
+        &mut reads,
+        &mut action,
+        [("write-once", Ok(())), ("rewrite", Ok(()))],
+        async |reads| {
+            reads.push("sealed");
+            Err("sealed text mismatch".into())
+        },
+        async |reads| {
+            reads.push("parchment");
+            Err("parchment text mismatch".into())
+        },
+    )
+    .await;
+    assert_eq!(reads, ["sealed", "parchment"]);
+    assert_eq!(action, "relogin-write-once-text-transform");
+    assert!(result.is_err_and(|error| {
+        let error = error.to_string();
+        error.contains("sealed text mismatch") && error.contains("parchment text mismatch")
+    }));
+}
+
+#[tokio::test]
+async fn durability_keeps_an_earlier_write_failure_primary() {
+    let mut reads = Vec::new();
+    let mut action = "";
+    let result = check_document_durability(
+        &mut reads,
+        &mut action,
+        [
+            ("write-once", Err("transform failed".into())),
+            ("rewrite", Ok(())),
+        ],
+        async |reads| {
+            reads.push("sealed");
+            Ok(())
+        },
+        async |reads| {
+            reads.push("parchment");
+            Err("parchment text mismatch".into())
+        },
+    )
+    .await;
+    assert_eq!(reads, ["parchment"]);
+    assert_eq!(action, "write-once");
+    assert!(result.is_err_and(|error| {
+        error.to_string() == "transform failed; relogin-rewritable-text: parchment text mismatch"
+    }));
 }

@@ -53,6 +53,7 @@ impl World {
         let mut entries = Vec::new();
         #[cfg(test)]
         let mut native_resolved_items = Vec::new();
+        let mut covering_tiles = std::collections::BTreeSet::new();
         let mut item_lights = Vec::new();
         let mut minimap_colors = BTreeMap::new();
         for tile in map
@@ -63,6 +64,20 @@ impl World {
             let mut color = (!tile.more && !tile.items.is_empty()).then_some(0);
             for (stack_index, item) in tile.items.iter().enumerate() {
                 if let Some(appearance) = index.get(u32::from(item.appearance_id)) {
+                    let pos = tile.position;
+                    if appearance.covers_tile {
+                        covering_tiles.insert((pos.floor, pos.x, pos.y));
+                    }
+                    if (appearance.ground || appearance.ground_border)
+                        && appearance
+                            .sprite_ids
+                            .first()
+                            .and_then(|id| sheets.sheet_of(*id))
+                            .is_some_and(|s| s.layout.cells() == (2, 2))
+                        && let (Some(x), Some(y)) = (pos.x.checked_sub(1), pos.y.checked_sub(1))
+                    {
+                        covering_tiles.insert((pos.floor, x, y));
+                    }
                     if let Some((level, color)) = appearance.light.filter(|(level, _)| *level > 0) {
                         item_lights.push((tile.position, level, color));
                     }
@@ -227,6 +242,7 @@ impl World {
             item_lights,
             minimap_colors,
             center: (origin.x, origin.y, origin.floor),
+            covering_tiles,
             first_visible_floor: map.header.first_visible_floor,
             tiles: HashMap::new(),
             layers: BTreeMap::new(),

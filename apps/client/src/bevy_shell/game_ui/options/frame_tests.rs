@@ -77,3 +77,148 @@ fn graphics_frame_limit_and_fps_indicator_apply_and_pace_frames() -> TestResult 
     fixture.close()?;
     result
 }
+
+#[test]
+fn toggling_foreground_limit_restores_selected_rate() -> TestResult {
+    let mut app = super::tests::app(Page::Graphics, None)?;
+    let slider = app
+        .world_mut()
+        .spawn(Control::Number("graphics.frame_limit"))
+        .observe(slide)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: slider,
+        value: 37.0f32,
+        is_final: true,
+    });
+    let check = app
+        .world_mut()
+        .spawn(Control::Check("graphics.limit_enabled"))
+        .observe(toggle)
+        .id();
+    let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
+    for (enabled, expected) in [(false, 0), (true, 37)] {
+        app.world_mut().trigger(ValueChange {
+            source: check,
+            value: enabled,
+            is_final: true,
+        });
+        app.world_mut().trigger(Activate { entity: apply });
+        let settings = &app.world().non_send::<HostOwner>().settings.preferences;
+        assert_eq!(settings.render_performance().foreground_fps, expected);
+    }
+    Ok(())
+}
+
+#[test]
+fn even_scaling_applies_to_scene_tile_size() -> TestResult {
+    let mut app = super::tests::app(Page::Graphics, None)?;
+    let check = app
+        .world_mut()
+        .spawn(Control::Check("graphics.even_scaling"))
+        .observe(toggle)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: check,
+        value: true,
+        is_final: true,
+    });
+    let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: apply });
+    let settings = &app.world().non_send::<HostOwner>().settings.preferences;
+    assert_eq!(settings.graphics.tile_pixels(180, [4096; 2]), 64);
+    Ok(())
+}
+
+#[test]
+fn fullscreen_monitor_selection_reaches_the_window() -> TestResult {
+    let mut app = super::tests::app(Page::Graphics, None)?;
+    let monitor = app
+        .world_mut()
+        .spawn(Control::Number("graphics.monitor"))
+        .observe(slide)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: monitor,
+        value: 2.0f32,
+        is_final: true,
+    });
+    let fullscreen = app
+        .world_mut()
+        .spawn(Control::Check("graphics.fullscreen"))
+        .observe(toggle)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: fullscreen,
+        value: true,
+        is_final: true,
+    });
+    let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: apply });
+    let mut window = Window::default();
+    crate::bevy_shell::apply_window(
+        &app.world().non_send::<HostOwner>().settings.preferences,
+        &mut window,
+    );
+    assert_eq!(
+        window.mode,
+        bevy::window::WindowMode::BorderlessFullscreen(bevy::window::MonitorSelection::Index(1))
+    );
+    Ok(())
+}
+
+#[test]
+fn graphics_selectors_apply_supported_backend_and_sampling_mode() -> TestResult {
+    let mut app = super::tests::app(Page::Graphics, None)?;
+    for id in ["graphics.engine", "graphics.antialiasing"] {
+        let choice = app
+            .world_mut()
+            .spawn(Control::Select(id, 1))
+            .observe(activate)
+            .id();
+        app.world_mut().trigger(Activate { entity: choice });
+    }
+    let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: apply });
+    let graphics = app
+        .world()
+        .non_send::<HostOwner>()
+        .settings
+        .preferences
+        .graphics;
+    assert_eq!(graphics.engine, oteryn_renderer::GraphicsEngine::Vulkan);
+    assert_eq!(graphics.antialiasing.samples(), 4);
+    Ok(())
+}
+
+#[test]
+fn windowed_monitor_choice_centres_once_and_preserves_manual_moves() -> TestResult {
+    use bevy::window::{MonitorSelection, PrimaryWindow, WindowPosition};
+    let mut app = App::new();
+    let mut owner = HostOwner::new(None)?;
+    owner.settings.preferences.graphics.fullscreen = false;
+    owner.settings.preferences.graphics.monitor = 2;
+    app.insert_non_send(owner)
+        .init_resource::<UiScale>()
+        .add_systems(Update, crate::bevy_shell::project_window);
+    let entity = app
+        .world_mut()
+        .spawn((PrimaryWindow, Window::default()))
+        .id();
+    app.update();
+    assert_eq!(
+        app.world().get::<Window>(entity).ok_or("window")?.position,
+        WindowPosition::Centered(MonitorSelection::Index(1))
+    );
+    let moved = WindowPosition::At(IVec2::new(123, 456));
+    app.world_mut()
+        .get_mut::<Window>(entity)
+        .ok_or("window")?
+        .position = moved;
+    app.update();
+    assert_eq!(
+        app.world().get::<Window>(entity).ok_or("window")?.position,
+        moved
+    );
+    Ok(())
+}

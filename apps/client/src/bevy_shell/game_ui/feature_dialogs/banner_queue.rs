@@ -1,4 +1,4 @@
-//! Session-local FIFO presentation for achievement banners.
+//! Session-local FIFO for confirmed progression and unlock banners.
 use super::*;
 use std::{collections::VecDeque, time::Duration};
 
@@ -57,7 +57,14 @@ fn feed(owner: NonSend<HostOwner>, time: Res<Time>, mut queue: ResMut<Queue>) {
         };
     }
     if let Some(play) = &owner.play {
-        queue.pending.extend(play.link.take_achievement_banners());
+        let notices = play.link.take_achievement_banners();
+        if !owner.settings.preferences.game_window.banner || !play.view.screen_message_controls().0
+        {
+            queue.pending.clear();
+            queue.current = None;
+            return;
+        }
+        queue.pending.extend(notices);
         if queue.current.is_none() {
             queue.next(time.elapsed());
         }
@@ -137,6 +144,96 @@ mod tests {
             .add_systems(Update, (feed, project).chain());
         spawn_banner(&mut app.world_mut().commands(), Handle::default());
         Ok((app, outbox))
+    }
+    #[test]
+    fn cosmetic_catalogue_unlock_reaches_banner() -> Result {
+        use oteryn_client_runtime::appearance::{Catalogue, Context};
+        let (mut app, outbox) = app()?;
+        outbox.bevy_outfit_test_panel(oteryn_client_ui::appearance::Panel {
+            selected: true,
+            ..default()
+        });
+        for rev in [1, 2] {
+            let catalogue = Catalogue {
+                context: Context {
+                    content_generation: [1; 32],
+                    cosmetics_digest: [2; 32],
+                },
+                root_revision: rev,
+                selected: None,
+                palette: vec![[0; 3]],
+                outfits: vec![],
+                mounts: if rev == 2 {
+                    vec!["horse".into()]
+                } else {
+                    vec![]
+                },
+            };
+            outbox.push(vec![SessionEvent::Appearance(AppliedDelta {
+                server_sequence: rev,
+                base_revision: rev - 1,
+                new_revision: rev,
+                value: oteryn_session::AppearanceUpdate::Catalogue(catalogue),
+            })]);
+            app.update();
+        }
+        assert_eq!(
+            app.world_mut()
+                .query_filtered::<&Text, With<Banner>>()
+                .single(app.world())?
+                .0,
+            "Unlocked mount: horse"
+        );
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .game_window
+            .banner = false;
+        app.update();
+        assert!(
+            text(&mut app).is_empty(),
+            "disabling banners clears the active unlock"
+        );
+        Ok(())
+    }
+    #[test]
+    fn confirmed_quest_completion_reaches_banner() -> Result {
+        use oteryn_client_runtime::quest_log::{
+            QuestListEntry, QuestLog, QuestLogView, QuestState,
+        };
+        let (mut app, outbox) = app()?;
+        outbox.bevy_journal_quest_state(QuestState {
+            selected: true,
+            revision: Some(0),
+            list: vec![QuestListEntry {
+                quest_index: 1,
+                completed: false,
+            }],
+            ..default()
+        });
+        outbox.push(vec![SessionEvent::QuestLog(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: QuestLog {
+                map_marks: vec![],
+                tracked: vec![],
+                view: Some(QuestLogView::List(vec![QuestListEntry {
+                    quest_index: 1,
+                    completed: true,
+                }])),
+            },
+        })]);
+        app.update();
+        assert_eq!(
+            app.world_mut()
+                .query_filtered::<&Text, With<Banner>>()
+                .single(app.world())?
+                .0,
+            "Quest completed: Quest 1"
+        );
+        Ok(())
     }
     fn send(outbox: &crate::play::Outbox, count: u32) {
         outbox.push(vec![SessionEvent::AchievementEarned(AppliedDelta {
