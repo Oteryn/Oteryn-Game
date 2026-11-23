@@ -28,6 +28,7 @@ macro_rules! request_data {
             $field_visibility common: GuildRequest,
             $field_visibility expected_revision: u64,
             $field_visibility names: Vec<String>,
+            $field_visibility rename_level: Option<u8>,
         }
     };
 }

@@ -1,16 +1,17 @@
 //! Basic Guild wire composition. Only native Guild writers decide roles and durable effects.
-use super::ComposedFreshAdmission;
-use super::connection::AdmittedSession;
+use super::connection::{AdmissionRefusal, AdmittedSession};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission};
 use crate::domain::{
     CharacterId,
     guild::{GuildId, GuildName},
 };
+use crate::durability::DurabilityError;
 use crate::durability::guild::{
     GuildCommand, GuildEditRanksRequest, GuildError, GuildFoundRequest, GuildOperationIdentity,
-    GuildOutcome, GuildRankRequest, GuildRequest, GuildTextRequest,
+    GuildOutcome, GuildRankRequest, GuildRequest, GuildResult, GuildTextRequest,
 };
 use crate::durability::item_transfer::CurrentCharacterItemFence;
-use crate::foundation::{CommandId, CommandRef};
+use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef};
 use oteryn_protocol_oteryn::guild::{self as wire, GuildIntent};
 use sha2::{Digest, Sha256};
 
@@ -42,25 +43,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // Keep Channel custody across the durable decision, as Guild chat does. The native writer
         // independently checks recovery, admission, node, session generation, roots and Guild.
-        let runtime = self.runtime.lock().await;
-        let binding = runtime.binding();
-        if !admitted
-            .continuity
-            .selected_capabilities
-            .contains(wire::CAPABILITY_GUILD_V1)
-            || fence.game_session_id != admitted.game_session_id
-            || fence.connection_generation.get() != admitted.continuity.connection_generation
-            || admitted.world_id != binding.world_id()
-            || Some(admitted.channel_id) != binding.channel_id()
-            || fence.runtime_scope != binding.runtime_scope()
-            || fence.scope_ownership_generation != binding.scope_generation()
-            || runtime.owner_fence().is_err()
-            || !admitted.runtime_actor.is_some_and(|actor| {
-                runtime
-                    .player_control_facts(actor, admitted.game_session_id)
-                    .is_ok_and(|facts| facts.control_loss.is_none())
-            })
-        {
+        let mut runtime = self.runtime.lock().await;
+        if !guild_actor_current(&runtime, &admitted, &fence) {
             return GuildReply::Rejected;
         }
         if command_type == wire::COMMAND_TYPE_GUILD_QUERY {
@@ -127,9 +111,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             wire_digest: Some(Sha256::digest(payload).into()),
         };
         if text_edit {
-            return self
-                .edit_guild_text(fence, identity, command, payload)
-                .await;
+            let Ok(intent) = wire::decode_guild_text_intent(payload) else {
+                return GuildReply::Rejected;
+            };
+            let retry = AdmissionRetryBudget::for_command(self.root);
+            loop {
+                let outcome = self
+                    .edit_guild_text(fence, identity.clone(), command, &intent)
+                    .await;
+                if !matches!(
+                    outcome,
+                    Err(GuildError::Unavailable(DurabilityError::RootUnavailable))
+                ) {
+                    return reply(intent.guild, outcome, true);
+                }
+                // An earlier attempt may have committed before this holder was busy.
+                // Release the actor custody while waiting and prove it again before retrying.
+                drop(runtime);
+                if !retry
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
+                {
+                    return GuildReply::Unavailable;
+                }
+                runtime = self.runtime.lock().await;
+                if !guild_actor_current(&runtime, &admitted, &fence) {
+                    return GuildReply::Unavailable;
+                }
+            }
         }
         if command_type != wire::COMMAND_TYPE_GUILD_INTENT {
             return GuildReply::Rejected;
@@ -241,7 +250,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
             }
         };
-        reply(guild, outcome)
+        reply(guild, outcome, false)
     }
 
     async fn edit_guild_text(
@@ -249,21 +258,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterItemFence,
         identity: GuildOperationIdentity,
         command: CommandRef,
-        payload: &[u8],
-    ) -> GuildReply {
+        intent: &wire::GuildTextIntent,
+    ) -> Result<GuildOutcome, GuildError> {
         use wire::GuildTextEdit::{Message, RankName, Title};
-        let Ok(intent) = wire::decode_guild_text_intent(payload) else {
-            return GuildReply::Rejected;
-        };
-        let Ok(guild_id) = GuildId::from_bytes(intent.guild) else {
-            return GuildReply::Rejected;
-        };
+        let guild_id = GuildId::from_bytes(intent.guild).map_err(|_| GuildError::InvalidInput)?;
         let operation = match &intent.edit {
             Message(_) => GuildCommand::SetMessage,
-            Title { character, .. } => match CharacterId::from_bytes(*character) {
-                Ok(character) => GuildCommand::SetTitle(character),
-                Err(_) => return GuildReply::Rejected,
-            },
+            Title { character, .. } => GuildCommand::SetTitle(
+                CharacterId::from_bytes(*character).map_err(|_| GuildError::InvalidInput)?,
+            ),
             RankName { .. } => GuildCommand::EditRanks,
         };
         let request = GuildRequest {
@@ -273,62 +276,72 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operation,
         };
         let revision = intent.expected_revision;
-        let outcome = match intent.edit {
+        match &intent.edit {
             Message(text) | Title { title: text, .. } => {
-                let Ok(edit) = GuildTextRequest::new(request, revision, &text) else {
-                    return GuildReply::Rejected;
-                };
+                let edit = GuildTextRequest::new(request, revision, text)?;
                 self.root
                     .commit_guild_text(self.character, self.holder, fence, edit)
                     .await
             }
             RankName { level, names } => {
-                let summary = match self
-                    .root
-                    .query_guild(self.character, self.holder, fence, wire::GuildQuery::Own)
-                    .await
-                {
-                    Ok(wire::GuildQueryResult::Own(Some(summary)))
-                        if summary.guild == intent.guild =>
-                    {
-                        summary
-                    }
-                    Ok(_) => return GuildReply::Rejected,
-                    Err(error) => return failure(error),
-                };
-                // The native writer can also change the rank count. A matching revision permits
-                // only the selected name. An older revision can only replay or be refused.
-                // A future revision could become current between this read and the write.
-                if revision > summary.revision
-                    || (revision == summary.revision
-                        && (summary.ranks.len() != names.len()
-                            || summary.ranks.iter().zip(&names).enumerate().any(
-                                |(index, (old, new))| index + 1 != usize::from(level) && old != new,
-                            )))
-                {
-                    return GuildReply::Rejected;
-                }
-                let Ok(edit) = GuildEditRanksRequest::new(request, revision, names) else {
-                    return GuildReply::Rejected;
-                };
+                let edit = GuildEditRanksRequest::rename(request, revision, *level, names.clone())?;
                 self.root
                     .commit_guild_edit_ranks(self.character, self.holder, fence, edit)
                     .await
             }
-        };
-        reply(intent.guild, outcome)
+        }
     }
 }
-fn reply(guild: [u8; 16], outcome: Result<GuildOutcome, GuildError>) -> GuildReply {
+
+fn guild_actor_current(
+    runtime: &ChannelRuntimeV1,
+    admitted: &AdmittedSession,
+    fence: &CurrentCharacterItemFence,
+) -> bool {
+    let binding = runtime.binding();
+    admitted
+        .continuity
+        .selected_capabilities
+        .contains(wire::CAPABILITY_GUILD_V1)
+        && fence.game_session_id == admitted.game_session_id
+        && fence.connection_generation.get() == admitted.continuity.connection_generation
+        && admitted.world_id == binding.world_id()
+        && Some(admitted.channel_id) == binding.channel_id()
+        && fence.runtime_scope == binding.runtime_scope()
+        && fence.scope_ownership_generation == binding.scope_generation()
+        && runtime.owner_fence().is_ok()
+        && admitted.runtime_actor.is_some_and(|actor| {
+            runtime
+                .player_control_facts(actor, admitted.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        })
+}
+
+fn reply(
+    guild: [u8; 16],
+    outcome: Result<GuildOutcome, GuildError>,
+    private_edit: bool,
+) -> GuildReply {
     match outcome {
         Ok(GuildOutcome::Committed(receipt) | GuildOutcome::Replayed(receipt)) => {
-            let Ok(code) = u8::try_from(receipt.result.code() + 1) else {
+            // Legacy refusals can carry the revision or closed state of an unreadable Guild.
+            // Apply the same public projection on first delivery and on receipt replay.
+            let (result, revision) = if private_edit
+                && matches!(
+                    receipt.result,
+                    GuildResult::NotAllowed | GuildResult::GuildDisbanding
+                ) {
+                (GuildResult::NotAllowed, None)
+            } else {
+                (receipt.result, receipt.revision)
+            };
+            let Ok(code) = u8::try_from(result.code() + 1) else {
                 return GuildReply::Unavailable;
             };
             wire::encode_guild_intent_result(&wire::GuildIntentResult {
                 code,
                 guild,
-                revision: receipt.revision,
+                revision,
             })
             .map_or(GuildReply::Unavailable, GuildReply::Payload)
         }
