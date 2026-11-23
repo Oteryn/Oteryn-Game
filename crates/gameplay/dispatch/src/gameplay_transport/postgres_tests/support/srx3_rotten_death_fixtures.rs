@@ -391,6 +391,113 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+pub(super) async fn assert_bakragore_settlement_and_return(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::guild_intent::GuildReply;
+    use oteryn_protocol_oteryn::boss_encounter as wire;
+
+    const BOSS: &str = "oteryn:boss.bakragore";
+    let fence = admitted.item_fence.ok_or("Bakragore Instance fence")?;
+    let RuntimeScopeRefV1::Instance { instance_id, .. } = fence.runtime_scope else {
+        return Err("Bakragore must be in a private Instance".into());
+    };
+    let (opened, terminal, deadline, cooldown): (i64, i64, i64, i64) = sqlx::query_as(
+        "SELECT a.opened_at,a.terminal_at,a.exit_deadline,c.available_at
+         FROM game_boss_room_activities a JOIN game_character_boss_cooldowns c
+           ON c.admission=a.admission AND c.boss_key=a.boss_key
+         WHERE a.instance_id=encode($1,'hex')::uuid AND a.boss_key=$2 AND a.state=2
+           AND c.character_id=encode($3,'hex')::uuid",
+    )
+    .bind(instance_id.as_slice())
+    .bind(BOSS)
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(cooldown - opened, 68 * 60 * 60 * 1_000);
+    assert_eq!(deadline - terminal, 60_000);
+
+    let settlement: (bool, bool, bool, i64, Vec<u8>) = sqlx::query_as(
+        "SELECT r.completed AND r.final_taint AND r.child_flags=0 AND r.regular_taints=0,
+                q.source_dealt_damage,
+                d.created_xact_id=q.created_xact_id AND d.created_xact_id=x.created_xact_id,
+                (SELECT count(*) FROM game_boss_reward_items i
+                 WHERE i.character_id=c.character_id AND i.world_id=c.world_id AND i.death_id=c.death_id),
+                uuid_send(d.death_id)
+         FROM game_boss_room_activities a
+         JOIN game_boss_death_settlements d ON d.world_id=a.world_id AND d.death_id=a.defeat_id
+         JOIN game_character_boss_reward_chests c ON c.world_id=d.world_id AND c.death_id=d.death_id
+         JOIN game_boss_reward_contributors p ON (p.character_id,p.world_id,p.death_id)=(c.character_id,c.world_id,c.death_id)
+         JOIN game_character_rotten_blood r ON r.character_id=c.character_id
+         JOIN game_character_rotten_blood_receipts q ON q.character_id=c.character_id
+         JOIN game_party_kill_xp_receipts x ON x.death_key=q.source_death_key
+         WHERE a.instance_id=encode($1,'hex')::uuid AND c.character_id=encode($2,'hex')::uuid
+           AND x.creature_key='oteryn:creature.bakragore' AND d.personal_rewards AND p.eligible
+           AND d.scope_kind=2 AND d.scope_id=a.instance_id AND p.source_game_session_id=encode($3,'hex')::uuid",
+    )
+    .bind(instance_id.as_slice())
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(admitted.game_session_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!((settlement.0, settlement.1, settlement.2), (true, true, true));
+    assert!(settlement.3 > 0, "native Bakragore victory retains personal loot");
+    {
+        let registered = owner
+            .activity_runtimes
+            .get(fence.runtime_scope, fence.scope_ownership_generation.get())
+            .ok_or("current Bakragore Instance owner")?;
+        let view = owner.runtime_view(&registered);
+        let command_id = admitted.continuity.next_command_id;
+        let GuildReply::Payload(groups) = view
+            .boss_cooldowns_wire(*admitted, command_id, wire::COMMAND_TYPE_BOSS_REWARD_OPEN, &[])
+            .await
+        else {
+            return Err("current Instance reward discovery refused".into());
+        };
+        assert!(groups.windows(16).any(|death| death == settlement.4));
+        let mut stale = *admitted;
+        stale.continuity.connection_generation += 1;
+        assert!(matches!(
+            view.boss_cooldowns_wire(stale, command_id, wire::COMMAND_TYPE_BOSS_REWARD_OPEN, &[]).await,
+            GuildReply::Rejected,
+        ));
+    }
+
+    owner
+        .root
+        .set_test_quest_clock((deadline + 999) / 1_000)
+        .map_err(debug)?;
+    let old_session = *admitted;
+    let (_, reply, barrier) = super::boss_activity_fixtures::exchange_command(
+        owner, admitted, BOSS, true, wire::COMMAND_TYPE_BOSS_DEFEATED,
+    )
+    .await?;
+    assert!(matches!(reply, wire::BossActivityReply::Accepted { .. }));
+    assert!(barrier.is_some());
+    assert!(matches!(
+        admitted.item_fence.ok_or("returned Channel fence")?.runtime_scope,
+        RuntimeScopeRefV1::Channel { .. },
+    ));
+    let runtime = owner.runtime.lock().await;
+    let position = runtime
+        .read_actor_position(admitted.runtime_actor.ok_or("returned Player")?)
+        .map_err(debug)?
+        .position();
+    assert_eq!((position.x, position.y, position.floor), (34106, 32052, 13));
+    drop(runtime);
+    let stale = owner
+        .boss_activity_wire(
+            old_session, old_session.continuity.next_command_id,
+            wire::COMMAND_TYPE_BOSS_DEFEATED, &wire::encode_boss_key(BOSS).map_err(debug)?,
+        )
+        .await;
+    assert!(!matches!(stale, Some((oteryn_protocol_oteryn::CommandStatus::Accepted, _))));
+    Ok(())
+}
+
 type MintReceipt = (
     String,
     String,
