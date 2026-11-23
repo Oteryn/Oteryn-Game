@@ -94,7 +94,13 @@ pub(super) fn install(app: &mut App) {
         .add_systems(Startup, widgets::setup.after(super::super::ui::setup))
         .add_systems(
             Update,
-            (keyboard, projection::project, screenshots::project).chain(),
+            (
+                keyboard,
+                projection::project,
+                audio_device::finish,
+                screenshots::project,
+            )
+                .chain(),
         )
         .add_systems(Update, audio_feedback::project.after(projection::project));
 }

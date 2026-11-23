@@ -561,3 +561,5 @@ fn console_display_checkboxes_edit_independent_options() -> TestResult {
     );
     Ok(())
 }
+
+mod sound;

@@ -273,7 +273,7 @@ fn parity_a_tracker_retains_empty_slots_and_independent_duration_groups() -> Tes
     let text = texts(app.world_mut());
     assert!(text.contains("10 minutes"));
     assert!(text.contains("unused imbuement slot"));
-    for label in ["Under 1 hour", "Unused slots"] {
+    for label in ["Under 1 hour", "Items without active imbuements"] {
         let button = app
             .world_mut()
             .query::<(&Text, &ChildOf)>()
@@ -284,19 +284,24 @@ fn parity_a_tracker_retains_empty_slots_and_independent_duration_groups() -> Tes
         app.update();
     }
     let text = texts(app.world_mut());
-    assert!(!text.contains("10 minutes"));
-    assert!(!text.contains("unused imbuement slot"));
+    assert!(text.contains("10 minutes"));
+    assert!(text.contains("unused imbuement slot"));
     assert!(text.contains("240 minutes"));
     let button = app
         .world_mut()
         .query::<(&Text, &ChildOf)>()
         .iter(app.world())
-        .find_map(|(text, parent)| text.0.ends_with("Over 3 hours").then_some(parent.parent()))
+        .find_map(|(text, parent)| {
+            text.0
+                .ends_with("3 hours or more")
+                .then_some(parent.parent())
+        })
         .ok_or("long-duration group")?;
     app.world_mut().trigger(Activate { entity: button });
     app.update();
     let text = texts(app.world_mut());
     assert!(!text.contains("240 minutes"));
+    assert!(!text.contains("10 minutes"));
     assert!(!text.contains("unused imbuement slot"));
     // Inspection rounds active timers down to whole minutes; zero still means active.
     trigger(&mut app, |kind| matches!(kind, Kind::Refresh))?;

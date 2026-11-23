@@ -447,3 +447,32 @@ fn status_bar_visibility_hides_and_restores_top_bar() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn status_bar_projects_selected_skills_and_visibility() -> TestResult {
+    let (mut app, _, outbox) = app()?;
+    outbox.bevy_hud_skills_fixture()?;
+    app.world_mut().non_send_mut::<HostOwner>().settings.preferences.status_bar_skills[3] = true;
+    app.update();
+    let top = named(&mut app, "Status bar")?;
+    let shown = texts_under(&app, top);
+    assert!(shown.contains(&"Sword 24".to_owned()));
+    assert!(!shown.contains(&"Axe 24".to_owned()));
+    app.world_mut().non_send_mut::<HostOwner>().settings.preferences.status_bar_visible = false;
+    app.update();
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    assert_eq!(app.world().get::<Node>(bar).ok_or("status region")?.display, Display::None);
+    Ok(())
+}
+
+#[test]
+fn compact_bar_fits_vitals_and_experience_on_one_row() -> TestResult {
+    let (mut app, _, _) = app()?;
+    app.world_mut().non_send_mut::<HostOwner>().settings.preferences.status_bar_style = 1;
+    app.update();
+    for name in ["Status bar vitals", "Status bar experience"] {
+        let entity = named(&mut app, name)?;
+        assert_eq!(app.world().get::<Node>(entity).ok_or("status line")?.width, percent(50.));
+    }
+    Ok(())
+}

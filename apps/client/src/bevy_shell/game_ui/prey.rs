@@ -11,14 +11,18 @@ use bevy::{
 };
 use oteryn_client_ui::prey::{Intent, PreyPanel, creature_label};
 use oteryn_client_ui_bevy as source;
+mod catalogue;
+mod portraits;
 #[cfg(test)]
 mod tests;
+mod tracker;
 mod view;
 use view::project;
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Kind {
     Close,
     Refresh,
+    ToggleTracker,
     Store,
     Reroll(u8),
     Confirm,
@@ -39,7 +43,40 @@ struct Action {
     panel: PreyPanel,
     kind: Kind,
 }
-type Seen = (u64, PreyPanel, Option<u8>, Option<Intent>, Option<(u8, u8)>);
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum RerollPrice {
+    Free,
+    Paid(u32),
+    Unknown,
+}
+impl RerollPrice {
+    fn for_slot(panel: &PreyPanel, slot: u8, link: &crate::play::PlayLink) -> Self {
+        if panel
+            .slot(slot)
+            .is_some_and(|slot| slot.free_reroll_at == 0)
+        {
+            Self::Free
+        } else {
+            link.spellbook_actor_level()
+                .map_or(Self::Unknown, Self::Paid)
+        }
+    }
+}
+
+fn now_seconds() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+type Seen = (
+    u64,
+    PreyPanel,
+    Option<u8>,
+    Option<Intent>,
+    Option<(u8, u8)>,
+    Option<RerollPrice>,
+);
 #[derive(Resource, Default)]
 struct State {
     seen: Option<Seen>,
@@ -49,15 +86,20 @@ struct State {
     candidate: Option<(u8, u8)>,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(
-        Update,
-        (
-            escape.after(crate::bevy_shell::input::route),
-            project,
-            refresh_rerolls,
-        )
-            .chain(),
-    );
+    portraits::install(app);
+    app.add_systems(Update, catalogue::project.after(project))
+        .init_resource::<tracker::Tracker>()
+        .add_systems(Update, tracker::project)
+        .init_resource::<State>()
+        .add_systems(
+            Update,
+            (
+                escape.after(crate::bevy_shell::input::route),
+                project,
+                refresh_rerolls,
+            )
+                .chain(),
+        );
 }
 fn escape(
     owner: NonSend<HostOwner>,
@@ -82,6 +124,12 @@ fn escape(
     if !pending && let Some(play) = &owner.play {
         play.link.prey_set_open(false);
     }
+}
+fn bonus_name(bonus: u8) -> &'static str {
+    ["None", "Damage", "Defense", "Experience", "Loot"]
+        .get(usize::from(bonus))
+        .copied()
+        .unwrap_or("Unknown")
 }
 fn slot_title(state: u8) -> &'static str {
     match state {
@@ -139,8 +187,10 @@ fn affordable(panel: &PreyPanel, kind: &Kind) -> bool {
 }
 fn reroll_time(free_at: u64, now: u64) -> String {
     let minutes = free_at.saturating_sub(now).div_ceil(60);
-    if minutes == 0 {
+    if free_at == 0 {
         "Free list reroll available".into()
+    } else if minutes == 0 {
+        "Estimated cooldown elapsed; server confirms the reroll price".into()
     } else {
         format!(
             "Next free list reroll in {:02}:{:02} (estimated)",
@@ -153,6 +203,7 @@ fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
     fields: Query<(&Wildcard, &EditableText)>,
+    mut tracker: ResMut<tracker::Tracker>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     guard: ModalGuard,
@@ -173,7 +224,22 @@ fn activate(
     {
         return;
     }
+    if matches!(action.kind, Kind::Confirm)
+        && state
+            .confirmation
+            .map(|slot| RerollPrice::for_slot(&action.panel, slot, &play.link))
+            != state.seen.as_ref().and_then(|seen| seen.5)
+    {
+        return;
+    }
     match action.kind {
+        Kind::ToggleTracker => {
+            tracker.visible = if tracker.visible == Some(owner.generation()) {
+                None
+            } else {
+                Some(owner.generation())
+            };
+        }
         Kind::Close => {
             play.link.prey_set_open(false);
             state.confirmation = None;
@@ -340,10 +406,7 @@ fn button(
 }
 
 fn refresh_rerolls(mut labels: Query<(&FreeReroll, &mut Text)>) {
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
+    let now = now_seconds();
     for (deadline, mut text) in &mut labels {
         let value = reroll_time(deadline.0, now);
         if text.0 != value {

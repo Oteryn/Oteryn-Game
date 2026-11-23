@@ -1,5 +1,5 @@
 use super::*;
-pub(super) const MAIN: [Row; 12] = [
+pub(super) const MAIN: [Row; 13] = [
     Row {
         id: "interface.animated_cursor",
         label: "Animate Game Cursor",
@@ -65,6 +65,7 @@ pub(super) const MAIN: [Row; 12] = [
             },
         },
     },
+    check!("interface.top_menu", "Show Game Menu", top_menu_visible),
     check!("interface.tooltips", "Show Tooltips", tooltips_enabled),
     number!(
         "interface.tooltip_delay",
@@ -88,7 +89,7 @@ pub(super) const MAIN: [Row; 12] = [
         cursor_crosshair
     ),
 ];
-pub(super) const HUD: [Row; 33] = [
+pub(super) const HUD: [Row; 44] = [
     check!(
         "hud.conditions_bar_all",
         "Show Conditions in Status Bar",
@@ -116,6 +117,65 @@ pub(super) const HUD: [Row; 33] = [
         "hud.harmony_left",
         "Place Harmony Indicator on the Left",
         harmony_left
+    ),
+    check!(
+        "hud.status_bar_axe",
+        "Status Bar: Axe",
+        status_bar_skills[4]
+    ),
+    check!(
+        "hud.status_bar_bottom",
+        "Place Status Bar Below Map",
+        status_bar_bottom
+    ),
+    check!(
+        "hud.status_bar_club",
+        "Status Bar: Club",
+        status_bar_skills[2]
+    ),
+    check!(
+        "hud.status_bar_distance",
+        "Status Bar: Distance",
+        status_bar_skills[5]
+    ),
+    check!(
+        "hud.status_bar_experience",
+        "Status Bar: Level and Experience",
+        status_bar_experience
+    ),
+    check!(
+        "hud.status_bar_fishing",
+        "Status Bar: Fishing",
+        status_bar_skills[7]
+    ),
+    check!(
+        "hud.status_bar_fist",
+        "Status Bar: Fist",
+        status_bar_skills[1]
+    ),
+    check!(
+        "hud.status_bar_magic",
+        "Status Bar: Magic",
+        status_bar_skills[0]
+    ),
+    check!(
+        "hud.status_bar_shielding",
+        "Status Bar: Shielding",
+        status_bar_skills[6]
+    ),
+    Row {
+        id: "hud.status_bar_style",
+        label: "Status Bar Style",
+        editor: Editor::Choice {
+            values: &["Default", "Compact", "Large", "Parallel"],
+            read: |p| usize::from(p.status_bar_style.min(3)),
+            write: |p, value| p.status_bar_style = value as u8,
+        },
+    },
+    check!(
+        "hud.status_bar_sword",
+        "Status Bar: Sword",
+        status_bar_skills[3]
     ),
     check!("hud.health", "Show Health", hud_health),
     check!("hud.mana", "Show Mana", hud_mana),
@@ -223,7 +283,7 @@ pub(super) const HUD: [Row; 33] = [
         resource_hud.combo
     ),
 ];
-pub(super) const CONSOLE: [Row; 18] = [
+pub(super) const CONSOLE: [Row; 19] = [
     check!(
         "console.auto_private_tabs",
         "Open Incoming Private Messages in New Tabs",
@@ -244,6 +304,11 @@ pub(super) const CONSOLE: [Row; 18] = [
     check!("console.seconds", "Show Timestamp Seconds", console.seconds),
     check!("console.status", "Show Own Status Messages", console.status),
     check!("console.timestamps", "Show Timestamps", console.timestamps),
+    check!(
+        "console.drag_locked",
+        "Lock Floating Chat Position",
+        chat_drag_locked
+    ),
     check!("console.local", "Show Local Speech", console.visible[0]),
     check!(
         "console.private",

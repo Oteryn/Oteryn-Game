@@ -85,7 +85,7 @@ impl Console {
             let open = self.channels.iter().any(
                 |tab| matches!(tab, ChannelTab::Conversation(open) if open.eq_ignore_ascii_case(&name)),
             );
-            if !open && self.communication.allows(&name) {
+            if !open && self.communication.allows_private(&name) {
                 self.channels.push(ChannelTab::Conversation(name));
             }
         }
@@ -93,6 +93,7 @@ impl Console {
 
     /// A new session starts its own sequences and notices.
     pub fn reset_extensions(&mut self) {
+        self.reset_transcript_cutoffs();
         self.owners.clear();
         self.participants.clear();
         self.channel_notices.clear();
