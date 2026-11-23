@@ -364,7 +364,7 @@ async fn plan<C: ItemLoopContent>(
             {
                 refuse!(Unsupported);
             }
-            let def = definition(&source)?;
+            let def = definition(source)?;
             let quantity = u32::try_from(source.try_get::<i64, _>("quantity")?)
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
             (def, quantity, Some(source))

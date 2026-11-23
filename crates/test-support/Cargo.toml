@@ -13,9 +13,14 @@ category = "test-support"
 release-role = "test-only"
 source-disposition = "MIGRATE_AS_IS_WITH_PROVISIONAL_GENERATION_RENAME"
 
+[features]
+postgres = ["dep:sha2", "dep:sqlx"]
+
 [dependencies]
 oteryn-diagnostics = { version = "=0.1.0", path = "../diagnostics" }
 oteryn-foundation = { version = "=0.1.0", path = "../foundation" }
+sha2 = { workspace = true, optional = true }
+sqlx = { workspace = true, optional = true }
 
 [lints]
 workspace = true

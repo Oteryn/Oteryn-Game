@@ -56,6 +56,7 @@ fn creature_movement_rl17_integrated_window_p99() {
             &sources,
             &EngineeringGroundSpeed,
             &channel.root,
+            &[],
             now,
             &mut channel.path_budget,
             false,

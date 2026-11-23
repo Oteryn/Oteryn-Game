@@ -651,8 +651,8 @@ fn scenario_with_premium(
         for ordinal in 0..=seeded {
             let special_item = ordinal.checked_sub(1)
                 .and_then(|n| mail_items.get(usize::try_from(n).ok()?))
-                .or_else(|| if ordinal == 3 {sapphire.as_ref()} else {None})
-                .or_else(|| if ordinal >= 3 {armor.as_ref()} else {None});
+                .or(if ordinal == 3 {sapphire.as_ref()} else {None})
+                .or(if ordinal >= 3 {armor.as_ref()} else {None});
             let bag = ordinal == 0
                 || (ground_container && ordinal <= 2)
                 || (contents && ordinal == 2)

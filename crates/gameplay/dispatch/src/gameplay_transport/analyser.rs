@@ -185,7 +185,7 @@ impl AnalyserStreams {
                 .as_ref()
                 .filter(|(boundary, _)| *boundary == member.boundary)
                 .map(|(_, totals)| totals.clone())
-                .unwrap_or_else(|| super::analyser_party::Totals::missing_history())
+                .unwrap_or_else(super::analyser_party::Totals::missing_history)
         };
         Some((totals, held.items.clone()))
     }

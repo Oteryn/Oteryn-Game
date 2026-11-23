@@ -3,16 +3,29 @@
     "mechanic": "0617-chat-system-message",
     "kind": "handlers",
     "id": "0617-chat-system-message-observe",
-    "status": "unsupported",
+    "status": "supported",
     "commands": [],
     "direction": "server_to_client",
-    "reason": "The client chat lane will opt in to authenticated system feedback.",
     "not_applicable": {
-      "state": "The native client leaves this capability unselected.",
+      "state": "Typed feedback identifies system messages used by the party panel.",
       "protocol": "Selected independently through capability negotiation.",
-      "view": "The client chat lane will opt in to authenticated system feedback.",
+      "view": "Typed feedback identifies system messages used by the party panel.",
       "input": "This extension adds no new client input.",
       "settings": "No new setting is defined by the wire extension."
-    }
+    },
+    "capability": 617,
+    "entry": "protocol.rs::feedback",
+    "push_messages": [
+      "ChatLine"
+    ],
+    "reducer": "protocol.rs::feedback",
+    "test": "protocol.rs::observations"
+  },
+  {
+    "mechanic": "0617-chat-system-message",
+    "kind": "panels",
+    "id": "0617-chat-system-message-panel",
+    "status": "supported",
+    "entry": "protocol.rs::feedback"
   }
 ]

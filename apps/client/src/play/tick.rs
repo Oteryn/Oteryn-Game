@@ -161,6 +161,7 @@ impl PlayView {
                     }
                 }
                 Input::Logout => link.request_logout(),
+                Input::Arrow(_) if link.death_reset_pending() => break,
                 Input::Arrow(_) => match self.send_step().map_err(|_error| UNAVAILABLE)? {
                     Some(direction) => {
                         self.cancel_chase_for_walk(link);

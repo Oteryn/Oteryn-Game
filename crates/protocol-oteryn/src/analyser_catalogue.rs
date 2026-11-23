@@ -124,6 +124,39 @@ fn read<const N: usize>(bytes: &[u8], cursor: &mut usize) -> Result<[u8; N], &'s
     Ok(value)
 }
 
+/// Each row carries its exact requested reference and a whole-gold price (0 means absent).
+pub fn encode_npc_prices(rows: &[(u32, Option<u64>)]) -> Result<Vec<u8>, &'static str> {
+    if !valid_ids(&rows.iter().map(|row| row.0).collect::<Vec<_>>())
+        || rows.iter().any(|row| row.1 == Some(0))
+    {
+        return Err("invalid NPC price rows");
+    }
+    let mut out = vec![rows.len() as u8];
+    for (item, price) in rows {
+        out.extend_from_slice(&item.to_le_bytes());
+        out.extend_from_slice(&price.unwrap_or(0).to_le_bytes());
+    }
+    Ok(out)
+}
+
+pub fn decode_npc_prices(bytes: &[u8]) -> Result<Vec<(u32, Option<u64>)>, &'static str> {
+    let count = usize::from(*bytes.first().ok_or("missing NPC price count")?);
+    if count == 0 || count > MAX_ITEMS || bytes.len() != 1 + count * 12 {
+        return Err("invalid NPC price reply size");
+    }
+    let mut rows = Vec::with_capacity(count);
+    let mut cursor = 1;
+    for _ in 0..count {
+        let item = u32::from_le_bytes(read(bytes, &mut cursor)?);
+        let price = u64::from_le_bytes(read(bytes, &mut cursor)?);
+        rows.push((item, (price != 0).then_some(price)));
+    }
+    if !valid_ids(&rows.iter().map(|row| row.0).collect::<Vec<_>>()) {
+        return Err("invalid NPC price item references");
+    }
+    Ok(rows)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -161,37 +194,4 @@ mod tests {
         );
         Ok(())
     }
-}
-
-/// Each row carries its exact requested reference and a whole-gold price (0 means absent).
-pub fn encode_npc_prices(rows: &[(u32, Option<u64>)]) -> Result<Vec<u8>, &'static str> {
-    if !valid_ids(&rows.iter().map(|row| row.0).collect::<Vec<_>>())
-        || rows.iter().any(|row| row.1 == Some(0))
-    {
-        return Err("invalid NPC price rows");
-    }
-    let mut out = vec![rows.len() as u8];
-    for (item, price) in rows {
-        out.extend_from_slice(&item.to_le_bytes());
-        out.extend_from_slice(&price.unwrap_or(0).to_le_bytes());
-    }
-    Ok(out)
-}
-
-pub fn decode_npc_prices(bytes: &[u8]) -> Result<Vec<(u32, Option<u64>)>, &'static str> {
-    let count = usize::from(*bytes.first().ok_or("missing NPC price count")?);
-    if count == 0 || count > MAX_ITEMS || bytes.len() != 1 + count * 12 {
-        return Err("invalid NPC price reply size");
-    }
-    let mut rows = Vec::with_capacity(count);
-    let mut cursor = 1;
-    for _ in 0..count {
-        let item = u32::from_le_bytes(read(bytes, &mut cursor)?);
-        let price = u64::from_le_bytes(read(bytes, &mut cursor)?);
-        rows.push((item, (price != 0).then_some(price)));
-    }
-    if !valid_ids(&rows.iter().map(|row| row.0).collect::<Vec<_>>()) {
-        return Err("invalid NPC price item references");
-    }
-    Ok(rows)
 }

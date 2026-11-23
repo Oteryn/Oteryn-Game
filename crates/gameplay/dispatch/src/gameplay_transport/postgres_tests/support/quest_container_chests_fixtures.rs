@@ -23,7 +23,7 @@ use std::sync::Arc;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[path = "quest_container_chests/forgemaster.rs"]
-mod forgemaster;
+pub(super) mod forgemaster;
 
 pub(super) use forgemaster::AccessPolicy as ForgemasterAccessPolicy;
 

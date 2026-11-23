@@ -124,42 +124,23 @@ class TreasureRewardTests(unittest.TestCase):
 
         import build_questpc4_treasure_reward_profiles as producer
         import refresh_equipment_profile_pin as cli
-        from test_refresh_equipment_profile_pin import EquipmentPinTests, document
-
-        source = EquipmentPinTests.SOURCE.replace(
-            '&[("QNPCFX", 1)];',
-            '&[("QNPCFX", 1),\n    ("QUESTPC4-STAG-ITEMS", 1),\n];',
-        ).replace("            + npc_additions.len()\n", "")
-        packet = {
-            "schema": producer.SCHEMA,
-            "producer": producer.PRODUCER,
-            "records": [
-                {"production_definition": {"production_key": f"oteryn:item.tibia.i{i}"}}
-                for i in scoped.IDS
-            ],
-        }
-        files = {
-            "content/items/definitions/spell-native-profiles.json": document(
-                0, 1, 2, 3, "stag", *(f"oteryn:item.tibia.i{i}" for i in scoped.IDS)
-            ),
-            "content/items/definitions/srx1-item-updates.json": document(4),
-            "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json": document(
-                0
-            ),
-            "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json": document(
-                1
-            ),
-            "content/items/definitions/starting-loadout-profiles.json": document(),
-            producer.PROOF: packet,
-        }
+        cohort = '    ("QUESTPC4-TREASURE-REWARDS", 5),\n'
+        source = cli.TEST.read_text()
+        self.assertEqual(source.count(cohort), 1)
+        source = source.replace(cohort, "")
+        files = (
+            "tools/content-schema/native-gameplay/key-door-item-profiles.json",
+            producer.PROOF,
+            "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json",
+        )
         with tempfile.TemporaryDirectory() as tmp:
             root = fixtures.ROOT.__class__(tmp)
             target = root / "pin.rs"
             target.write_text(source)
-            for name, value in files.items():
+            for name in files:
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(json.dumps(value))
+                path.write_bytes((cli.ROOT / name).read_bytes())
             with (
                 patch.object(cli, "ROOT", root),
                 patch.object(cli, "TEST", target),

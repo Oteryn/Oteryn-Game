@@ -3,16 +3,32 @@
     "mechanic": "0616-pvp-situation-id",
     "kind": "handlers",
     "id": "0616-pvp-situation-id-observe",
-    "status": "unsupported",
+    "status": "supported",
     "commands": [],
     "direction": "server_to_client",
-    "reason": "The PvP client lane will opt in and track the lifetime of each situation identity.",
     "not_applicable": {
-      "state": "The native client leaves this capability unselected.",
+      "state": "Incoming situation identities distinguish a renewed attack from later observations.",
       "protocol": "Selected independently through capability negotiation.",
-      "view": "The PvP client lane will opt in and track the lifetime of each situation identity.",
+      "view": "Incoming situation identities distinguish a renewed attack from later observations.",
       "input": "This extension adds no new client input.",
       "settings": "No new setting is defined by the wire extension."
-    }
+    },
+    "capability": 616,
+    "entry": "protocol.rs::renewed",
+    "push_messages": [
+      "PvpStatus"
+    ],
+    "reducer": "protocol.rs::renewed",
+    "test": "protocol.rs::observations",
+    "shared_commands": [
+      155
+    ]
+  },
+  {
+    "mechanic": "0616-pvp-situation-id",
+    "kind": "panels",
+    "id": "0616-pvp-situation-id-panel",
+    "status": "supported",
+    "entry": "protocol.rs::renewed"
   }
 ]

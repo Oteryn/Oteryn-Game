@@ -559,20 +559,19 @@ async fn authorize(
     }
     if let Binding::GraveBoss(objective) = rule {
         let death = boss_death_id(source, fence)?;
-        // The canonical receipt and the successful, nonempty chest census must
-        // belong to this transaction. The chest constraint checks that census
-        // against the actual chest rows at commit. Nictros's paired kill uses
-        // the same canonical receipt, but only Baeloc owns a chest.
+        // The canonical receipt must belong to this transaction. When the
+        // private table is admitted, the chest constraint also checks the
+        // successful, nonempty recipient census against the rows at commit.
         return sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM game_boss_death_settlements d
              JOIN game_character_quest_states q ON q.character_id=encode($4,'hex')::uuid
                 AND q.quest_key=$5 AND q.started_character_revision <= $6::text::numeric
              WHERE d.world_id=encode($1,'hex')::uuid AND d.death_id=encode($2,'hex')::uuid
                AND d.boss_key=$3 AND d.created_xact_id=pg_current_xact_id()
-               AND (($7 AND NOT d.personal_rewards) OR (d.personal_rewards AND EXISTS(
+               AND (NOT d.personal_rewards OR EXISTS(
                  SELECT 1 FROM game_boss_reward_deaths r
                   WHERE (r.world_id,r.death_id)=(d.world_id,d.death_id)
-                    AND r.settlement_outcome=1 AND r.eligible_count>0))))"
+                    AND r.settlement_outcome=1 AND r.eligible_count>0)))"
         )
         .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
         .bind(death.as_slice())
@@ -580,7 +579,6 @@ async fn authorize(
         .bind(fence.character_id.as_bytes().as_slice())
         .bind(&objective.quest)
         .bind(source.observed_revision.to_string())
-        .bind(objective.creature == death_objectives::GRAVE_NICTROS)
         .fetch_one(&mut **tx).await.map_err(DurabilityError::from);
     }
     if matches!(rule, Binding::Overlord(_)) {

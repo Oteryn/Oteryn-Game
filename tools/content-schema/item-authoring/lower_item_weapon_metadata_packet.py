@@ -18,6 +18,11 @@ ROOT = base.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_item_weapon_metadata_packet.py"
 PROOF = "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json"
 PROOF_SHA = "008be6df58af24e0ec21cb01d8c4d456657bfa23e3e6f582eea63b61f683cddb"
+FORGE_PACKET = "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json"
+FORGE_PACKET_SHA = "69bf44d0e7aea723e634f2fba199bdd39b2e5c80a3a64a3d74597d68aafe95aa"
+# Protected main 5aad10531 adds and updates map shards without taking any of the
+# 103 weapon Items into World ownership. Preserve the original proof as well.
+WORLD_OWNER_SUCCESSOR_SHA = "9fa595b089d5be84ba72b48031607fedd8afcfa2cc9069be631f47ed0134320b"
 ALIASES = (
     "tools/content-schema/item-authoring/fandom-weapon-metadata-alias-supplement.json"
 )
@@ -144,11 +149,15 @@ def check_parent_receipt(root, proof):
         "item_authoring"
     ]
     seen, targets = set(), {s["target"]["key"]: s["target"] for s in proof["records"]}
+    forge_owners = {}
     for owner in current:
         key = owner["item"]["key"]
-        if key in seen or key not in parents and key not in targets:
+        if key in seen:
             raise ValueError("unexpected/duplicate source authoring owner")
         seen.add(key)
+        if key not in parents and key not in targets:
+            forge_owners[key] = owner
+            continue
         if key in targets:
             source = next(s for s in proof["records"] if s["target"]["key"] == key)
             expected = {FIELDS[source["field"]][0]: source["value"]}
@@ -164,6 +173,11 @@ def check_parent_receipt(root, proof):
         }
         if not same(stripped, parents.get(key, {"item": targets.get(key)})):
             raise ValueError("current parent authoring sibling drift")
+    if forge_owners:
+        forge_packet = json.loads(base.checked(root, FORGE_PACKET, FORGE_PACKET_SHA))
+        qualified_forge = {row["item"]["key"]: row for row in forge_packet["promotions"]}
+        if not same(forge_owners, qualified_forge):
+            raise ValueError("unexpected source authoring owner outside the pinned Forge set")
     if (
         not set(parents).issubset(seen)
         or len(parents) != receipt["parent_authoring_count"]
@@ -342,7 +356,8 @@ def build(root=ROOT):
                 for r in json.loads(path.read_text()).get("records", [])
                 if r.get("provenance", {}).get("item_pointer")
             )
-    if maps != proof["world_owner_inputs"]:
+    map_digest = base.sha(json.dumps(maps, sort_keys=True, separators=(",", ":")).encode())
+    if maps != proof["world_owner_inputs"] and map_digest != WORLD_OWNER_SUCCESSOR_SHA:
         raise ValueError("current World owner inputs drift")
     rows, seen = [], set()
     for source in proof["records"]:
