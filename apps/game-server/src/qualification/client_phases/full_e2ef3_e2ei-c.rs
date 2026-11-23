@@ -776,12 +776,19 @@ async fn loot_policy(
     {
         return Err(format!("Click corpse readback refused: {refreshed:?}").into());
     }
-    settle(live, |live| {
-        Ok(live.open_container().is_some_and(|view| {
+    let readback = live.session_mut().attack_target(None).await?;
+    if readback.status != CommandStatus::Accepted
+        || readback.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+        || readback.result_server_sequence <= refreshed.result_server_sequence
+        || !live.open_container().is_some_and(|view| {
             view.container_handle == Some(corpse.handle) && view.entries == corpse.entries
-        }))
-    })
-    .await?;
+        })
+    {
+        return Err(format!(
+            "Click custody readback did not confirm the unchanged corpse: {readback:?}"
+        )
+        .into());
+    }
     if status != CommandStatus::Accepted || !reply.items.is_empty() || quantities(live)? != before {
         return Err(format!(
             "negative Click changed custody or did not return an empty result: {status:?}/{reply:?}"

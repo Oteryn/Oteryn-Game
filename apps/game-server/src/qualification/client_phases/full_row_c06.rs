@@ -221,40 +221,61 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     .await?;
     check(4, sequence);
 
-    // Move to a protection tile before baselining health, then use a nearby
-    // passive player as the illegal target. Rat attacks cannot race the probe.
-    let mut peer = super::full_e2ef4::keep_alive(
-        &mut client, connect_character(clients, 0xc8, 0),
-    ).await?;
-    let peer_position = tile(peer.world_spatial().actor_position)?;
-    let peer_identity = *peer.world_entities().ok_or("step=5 missing peer spatial view")?.own_identity();
+    // A passive player is refused by the bridge before cast admission. Use
+    // a real creature inside rune range while the caster stays in a PZ.
+    use oteryn_gameplay_world::movement::interest::{VisibilityPosition, VisibilitySettings};
+    let visibility_position = |at: TilePos| {
+        VisibilityPosition::new(i32::from(at.x), i32::from(at.y), i16::from(at.floor))
+    };
+    let in_range = |at: TilePos, target: TilePos| {
+        let distance = u32::from(at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)));
+        at.floor == target.floor
+            && at != target
+            && spell.range_tiles.is_none_or(|range| distance <= range)
+            && visibility_position(at).is_ok_and(|from| {
+                visibility_position(target).is_ok_and(|to| VisibilitySettings::REFERENCE.can_see(from, to))
+            })
+    };
+    let creatures: Vec<_> = client.world_entities().into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entry| entry.kind == oteryn_dev_client::EntityKind::Creature)
+        .map(|entry| tile(entry.position))
+        .collect::<TestResult<_>>()?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at != peer_position && at.floor == peer_position.floor
-            && at.x.abs_diff(peer_position.x).max(at.y.abs_diff(peer_position.y)) <= 1
-            && world.base().tile(at.x, at.y, at.floor).is_some_and(|cell| cell.protection_zone())
-    }).ok_or("step=5 no protection tile next to passive target")?;
-    super::full_e2ef4::keep_alive(&mut peer, walk(&mut client, world, &path)).await?;
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|cell| cell.protection_zone())
+            && creatures.iter().any(|&target| in_range(at, target))
+    }).ok_or("step=5 no protection tile inside creature rune range")?;
+    walk(&mut client, world, &path).await?;
     if let Some(remaining) = cooldown_until.checked_duration_since(tokio::time::Instant::now()) {
         if remaining > Duration::from_secs(5) {
             return Err(format!("step=5 unexpected remaining rune cooldown {remaining:?}").into());
         }
         client.service_liveness(remaining).await?;
     }
+    let caster_tile = tile(client.world_spatial().actor_position)?;
+    if !world.base().tile(caster_tile.x, caster_tile.y, caster_tile.floor)
+        .is_some_and(|cell| cell.protection_zone())
+    {
+        return Err("step=5 caster did not remain protected".into());
+    }
     let target = client.world_entities().and_then(|entities| {
-        entities.iter().find(|entry| entry.entity.identity == peer_identity)
-    }).ok_or("step=5 passive target not visible")?.entity;
+        entities.iter().find(|entry| entry.kind == oteryn_dev_client::EntityKind::Creature
+            && tile(entry.position).is_ok_and(|at| in_range(caster_tile, at)))
+    }).ok_or("step=5 no visible creature inside rune range")?.entity;
     let charges = quantity(&client, healing)?;
     let before = client
         .actor_vitals()
         .ok_or("step=5 observed=no-vitals")?
         .health;
     client.take_events();
-    let (illegal, sequence) = super::full_e2ef4::keep_alive(&mut peer, async {
-        let outcome = use_rune(&mut client, healing, Some(target)).await?;
-        drain_after(&mut client, outcome.1).await?;
-        Ok(outcome)
-    }).await?;
+    let (illegal, sequence) = use_rune(&mut client, healing, Some(target)).await?;
+    drain_after(&mut client, sequence).await?;
     if illegal != oteryn_protocol_oteryn::world_object::UseDisposition::TargetIllegal
+        || !client.world_entities().is_some_and(|entities| {
+            entities.get(&target).is_some_and(|entry| {
+                tile(entry.position).is_ok_and(|at| in_range(caster_tile, at))
+            })
+        })
         || quantity(&client, healing)? != charges
         || client.actor_vitals().is_none_or(|v| v.health != before)
     {
@@ -266,7 +287,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     check(5, sequence);
-    super::full_e2ef4::keep_alive(&mut client, logout(&mut peer)).await?;
 
     let old = client.join_snapshot().game_session_id;
     logout(&mut client).await?;

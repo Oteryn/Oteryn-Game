@@ -1380,7 +1380,7 @@ mod e2ef1 {
             let durable = landed == saved
                 && fresh.join_snapshot().game_session_id != previous
                 && inventory_signature(&fresh)? == inventory;
-            let back = route(world, tile(saved)?, |at| at == origin).ok_or("M05 return route")?;
+            let back = route(world, tile(landed)?, |at| at == origin).ok_or("M05 return route")?;
             walk(&mut fresh, world, &back).await?;
             if tile(fresh.world_spatial().actor_position)? != origin {
                 return Err("M05 cleanup did not return to the original tile".into());

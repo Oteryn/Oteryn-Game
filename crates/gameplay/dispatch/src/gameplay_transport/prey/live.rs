@@ -94,13 +94,14 @@ impl ChannelSpellStates {
         reply: wire::Reply,
         permanent: [bool; 3],
         defense_mode: PreyDefenseMode,
-    ) {
+    ) -> bool {
         self.prey.retain(|p| runtime.player_control_facts(p.actor, p.session).is_ok()
             || runtime.house_player_control_facts(p.actor, p.session).is_ok());
         if self.get(runtime, actor, session).is_none() {
-            return;
+            return false;
         }
         self.install_admitted_prey(actor, session, reply, permanent, defense_mode);
+        true
     }
 
     /// Only data prepared by the real source admission is installed here.
@@ -353,7 +354,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             item_fence: Some(item),
         };
         let Ok((reply, permanent)) = self
-            .prey_commit(admitted, occurrence, PreyMutation::Checkpoint(checkpoints.clone()))
+            .prey_commit(admitted, occurrence, PreyMutation::Checkpoint(checkpoints.clone()), None)
             .await
         else {
             return false;

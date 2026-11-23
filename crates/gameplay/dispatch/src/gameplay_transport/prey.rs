@@ -96,7 +96,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let occurrence =
             super::npc_trade_command::derived(b"prey:command:v1", admitted.game_session_id, id);
         match self
-            .prey_commit(admitted, occurrence, PreyMutation::Command(request))
+            .prey_commit(admitted, occurrence, PreyMutation::Command(request), None)
             .await
         {
             Ok((reply, _)) => {
@@ -105,6 +105,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         admitted,
                         occurrence,
                         PreyMutation::Command(wire::Request::Query),
+                        None,
                     )
                     .await
                 {
@@ -150,6 +151,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         occurrence: [u8; 16],
         mutation: PreyMutation,
+        budget: Option<&super::AdmissionRetryBudget<'_>>,
     ) -> Result<(wire::Reply, [bool; 3]), Error> {
         let catalogue = self.prey_catalogue().ok_or(Error::InvalidInput)?;
         let expected = admitted.item_fence.ok_or(Error::AuthorityRejected)?;
@@ -157,7 +159,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fence = super::character_gameplay_fence::current_once(self, admitted.game_session_id, true)
             .await
             .map_err(|error| match error {
-                DurabilityError::RootUnavailable => Error::Unavailable(error),
+                DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded => {
+                    Error::Unavailable(error)
+                }
                 _ => Error::AuthorityRejected,
             })?
             .ok_or(Error::AuthorityRejected)?;
@@ -197,6 +201,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ],
             )
         };
+        if let Some(budget) = budget {
+            budget.check_deadline().map_err(Error::Unavailable)?;
+        }
         let result = self
             .root
             .commit_prey_command(
@@ -262,7 +269,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         occurrence[6] = (occurrence[6] & 15) | 0x70;
         occurrence[8] = (occurrence[8] & 63) | 0x80;
         let run = async |mutation| {
-            self.prey_commit(admitted, occurrence, mutation)
+            self.prey_commit(admitted, occurrence, mutation, budget)
                 .await
                 .map_err(super::post_entry_progression_refusal)
         };
@@ -292,17 +299,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some((reply, permanent)) = prepared else {
             return Ok(());
         };
-        if let Some(actor) = admitted.runtime_actor {
-            let Some(catalogue) = self.prey_catalogue() else { return Err(super::AdmissionRefusal::Rejected); };
-            let runtime = self.runtime.lock().await;
-            self.states.spell_states.lock().await.load_prey(
-                &runtime,
-                actor,
-                admitted.game_session_id,
-                reply,
-                permanent,
-                catalogue.rules().defense_mode,
-            );
+        use super::AdmissionRefusal::Rejected;
+        let actor = admitted.runtime_actor.ok_or(Rejected)?;
+        let catalogue = self.prey_catalogue().ok_or(Rejected)?;
+        let runtime = self.runtime.lock().await;
+        if !self.states.spell_states.lock().await.load_prey(
+            &runtime,
+            actor,
+            admitted.game_session_id,
+            reply,
+            permanent,
+            catalogue.rules().defense_mode,
+        ) {
+            return Err(Rejected);
         }
         Ok(())
     }

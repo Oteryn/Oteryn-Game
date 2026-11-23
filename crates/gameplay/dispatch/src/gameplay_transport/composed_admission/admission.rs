@@ -435,12 +435,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if matches!(
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-        ) && budget
-            .retry_unavailable(async || self.admit_hazard_once(admitted).await)
+        ) && let Err(refusal) = budget
+            .retry_unavailable(async || self.admit_hazard_once(admitted, Some(&budget)).await)
             .await
-            .is_err()
         {
-            admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+            admitted.first_entry = post_entry_outcome(refusal);
         }
         // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
         // input-ineligible, its pending row intact for the next admission.
@@ -458,10 +457,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         }
-        if writes_after_progression(positioned, admitted.first_entry) {
+        if writes_after_progression(positioned, admitted.first_entry)
+            && admitted.first_entry != FirstEntryOutcome::RefusedByChannel
+        {
             let trained = admitted.first_entry;
             loop {
-                self.admit_loop_training(&mut admitted).await;
+                if budget.check_deadline().is_err()
+                    || tokio::time::timeout_at(
+                        budget.deadline,
+                        self.admit_loop_training(&mut admitted),
+                    )
+                    .await
+                    .is_err()
+                {
+                    admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+                    break;
+                }
                 if admitted.first_entry != FirstEntryOutcome::RefusedUnavailable
                     || !budget.retries_unavailable(Unavailable).await
                 {
@@ -470,12 +481,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 admitted.first_entry = trained;
             }
             if writes_after_progression(positioned, admitted.first_entry)
-                && self
-                    .admit_prey_with_budget(admitted, Some(&budget))
-                    .await
-                    .is_err()
+                && let Err(refusal) = self.admit_prey_with_budget(admitted, Some(&budget)).await
             {
-                admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+                admitted.first_entry = post_entry_outcome(refusal);
             }
         }
         if writes_after_progression(positioned, admitted.first_entry) {

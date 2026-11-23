@@ -4,12 +4,13 @@ use oteryn_protocol_oteryn::hazard as wire;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn admit_hazard(&self, admitted: AdmittedSession) -> bool {
-        self.admit_hazard_once(admitted).await.is_ok()
+        self.admit_hazard_once(admitted, None).await.is_ok()
     }
 
     pub(super) async fn admit_hazard_once(
         &self,
         admitted: AdmittedSession,
+        budget: Option<&super::AdmissionRetryBudget<'_>>,
     ) -> Result<(), super::AdmissionRefusal> {
         use super::AdmissionRefusal::Rejected;
         let actor = admitted.runtime_actor.ok_or(Rejected)?;
@@ -19,6 +20,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .await
         .map_err(super::post_entry_checkout_refusal)?
         .ok_or(Rejected)?;
+        if let Some(budget) = budget {
+            budget.check_deadline().map_err(|_| super::AdmissionRefusal::Unavailable)?;
+        }
         let (_, selected, _) = self
             .root
             .character_hazard(self.character, self.holder, fence, None)

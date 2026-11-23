@@ -150,9 +150,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         budget
             .retry_unavailable(async || {
                 current_source(self, &source).await?;
-                self.prepare_admission_prey(source, None)
-                    .await
-                    .map_err(|_| Unavailable)
+                self.prepare_admission_prey(source, Some(&budget)).await
             })
             .await?;
         self.finish_house_source_quests(&source, &budget).await?;

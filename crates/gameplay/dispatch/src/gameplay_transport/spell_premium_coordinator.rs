@@ -398,12 +398,26 @@ impl SpellPremiumCoordinator {
         T: Send,
         F: PremiumGateOperation<T>,
     {
+        self.with_premium_gate_before(account, operation, None)
+            .await
+    }
+
+    async fn with_premium_gate_before<T, F>(
+        &self,
+        account: [u8; 16],
+        operation: F,
+        deadline: Option<tokio::time::Instant>,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        F: PremiumGateOperation<T>,
+    {
         let now = self.read_now();
         let bypass = GateBypass {
             operation,
             _output: PhantomData,
         };
-        match self.settle(now, bypass).await? {
+        match self.settle(now, bypass, deadline).await? {
             Settled::Applied(applied) => Ok(applied),
             Settled::Decided { bypass, delivered } => {
                 let status = if delivered {
@@ -439,7 +453,7 @@ impl SpellPremiumCoordinator {
             operation,
             _output: PhantomData,
         };
-        match self.settle(now, bypass).await? {
+        match self.settle(now, bypass, None).await? {
             Settled::Applied(applied) => Ok(applied),
             Settled::Decided { bypass, delivered } => {
                 let statuses = accounts
@@ -468,6 +482,7 @@ impl SpellPremiumCoordinator {
         &self,
         now: Option<TrustedNow>,
         bypass: B,
+        deadline: Option<tokio::time::Instant>,
     ) -> Result<Settled<B>, DurabilityError> {
         if self.delivery.held.get().is_some() {
             return Ok(Settled::Decided {
@@ -491,7 +506,7 @@ impl SpellPremiumCoordinator {
         };
         if !matches!(empty, EmptyLatch::NotActivated) {
             let read = root.read_premium_activation::<B::Output>().await;
-            let delivered = self.after_read(&empty, read).await;
+            let delivered = self.after_read(&empty, read, deadline).await;
             return Ok(Settled::Decided { bypass, delivered });
         }
         // The read takes the bypass only if the table is empty.
@@ -521,6 +536,7 @@ impl SpellPremiumCoordinator {
         &self,
         empty: &EmptyLatch,
         read: Result<PremiumActivationRead<T>, DurabilityError>,
+        deadline: Option<tokio::time::Instant>,
     ) -> bool {
         match (read, empty, &self.delivery.activation, &self.latch) {
             (Ok(PremiumActivationRead::Latched(latch)), _, _, _) => {
@@ -532,20 +548,29 @@ impl SpellPremiumCoordinator {
                 EmptyLatch::Latch { now: at },
                 Some(activation),
                 Some(root),
-            ) => match root
-                .latch_premium_activation(
+            ) => {
+                if deadline.is_some_and(|limit| tokio::time::Instant::now() >= limit) {
+                    return false;
+                }
+                let latch = root.latch_premium_activation(
                     &activation.activation_id,
                     activation.switch_over_us,
                     at.upper_us(),
-                )
-                .await
-            {
-                Ok(latch) => {
+                );
+                let result = match deadline {
+                    Some(limit) => match tokio::time::timeout_at(limit, latch).await {
+                        Ok(result) => result,
+                        Err(_) => return false,
+                    },
+                    None => latch.await,
+                };
+                if let Ok(latch) = result {
                     self.delivery.hold(latch);
                     true
+                } else {
+                    false
                 }
-                Err(_) => false,
-            },
+            }
             _ => false,
         }
     }
@@ -565,13 +590,25 @@ impl SpellPremiumCoordinator {
         &self,
         account: [u8; 16],
     ) -> Pin<Box<dyn Future<Output = PremiumGate> + Send + '_>> {
+        self.premium_gate_before(account, None)
+    }
+
+    fn premium_gate_before(
+        &self,
+        account: [u8; 16],
+        deadline: Option<tokio::time::Instant>,
+    ) -> Pin<Box<dyn Future<Output = PremiumGate> + Send + '_>> {
         Box::pin(async move {
             if self.delivery.held.get().is_none() && self.delivery.activation.is_none() {
                 return PremiumGate::CLOSED;
             }
-            self.with_premium_gate(account, |status, _| Box::pin(async move { status.gate() }))
-                .await
-                .unwrap_or(PremiumGate::CLOSED)
+            self.with_premium_gate_before(
+                account,
+                |status, _| Box::pin(async move { status.gate() }),
+                deadline,
+            )
+            .await
+            .unwrap_or(PremiumGate::CLOSED)
         })
     }
 }
@@ -908,7 +945,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
         }
         // Settle delivery (§1.2 steps 2-6) before the view reads the latch from memory.
-        let _ = coordinator.premium_gate(current.account).await;
+        let deadline = budget.map(|budget| budget.deadline);
+        let gate = coordinator.premium_gate_before(current.account, deadline);
+        match deadline {
+            Some(limit) => {
+                let _ = tokio::time::timeout_at(limit, gate).await;
+            }
+            None => {
+                let _ = gate.await;
+            }
+        }
         coordinator.view(current.account)
     }
     /// PREM-WIRE-1: the Premium gate of `account` (PREMIUM-ACTIVATION-0 §1.2) for MAGIC-CAST-1

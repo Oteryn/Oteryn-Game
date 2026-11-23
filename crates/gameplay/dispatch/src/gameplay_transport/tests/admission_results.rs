@@ -475,8 +475,33 @@ fn review_admission_post_entry_definitive_refusal_does_not_retry() {
             attempts += 1;
             Err::<(), _>(post_entry_progression_refusal(CharacterProgressionError::AuthorityRejected))
         }).await;
-        assert!(matches!(result, Err(AdmissionRefusal::Rejected)));
+        assert_eq!(
+            result.map_err(post_entry_outcome),
+            Err(FirstEntryOutcome::RefusedByChannel)
+        );
         assert_eq!(attempts, 1);
         assert_eq!(tokio::time::Instant::now(), now);
+    });
+}
+
+#[test]
+fn admission_retry_pass_starts_and_finishes_inside_its_deadline() {
+    run_paused(async {
+        let session = GameSessionId::decode(&uuid_v7(0x40)).expect("session");
+        let mut budget = AdmissionRetryBudget::new(&session);
+        budget.deadline = tokio::time::Instant::now() + Duration::from_millis(10);
+        let mut calls = 0;
+        let result = budget.retry_unavailable(async || {
+            calls += 1;
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            Ok(())
+        }).await;
+        assert_eq!(result, Err(AdmissionRefusal::Unavailable));
+        assert_eq!(tokio::time::Instant::now(), budget.deadline);
+        assert_eq!(budget.retry_unavailable(async || {
+            calls += 1;
+            Ok(())
+        }).await, Err(AdmissionRefusal::Unavailable));
+        assert_eq!(calls, 1);
     });
 }

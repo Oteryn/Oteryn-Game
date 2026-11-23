@@ -463,10 +463,15 @@ async fn familiar_login_checkout<T, E: From<DurabilityError>>(
     is_checkout_unavailable: impl Fn(&E) -> bool,
 ) -> Result<T, E> {
     loop {
-        if let Some(budget) = budget {
-            budget.check_deadline()?;
-        }
-        let result = step().await;
+        let result = match budget {
+            Some(budget) => {
+                budget.check_deadline()?;
+                tokio::time::timeout_at(budget.deadline, step())
+                    .await
+                    .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?
+            }
+            None => step().await,
+        };
         if let Some(budget) = budget
             && result.as_ref().is_err_and(&is_checkout_unavailable)
             && budget
@@ -492,14 +497,17 @@ mod login_checkout_tests {
     use super::*;
     #[test]
     fn familiar_login_distinguishes_preparation_from_retained_finish_retry() {
-        for error in [
-            DurabilityError::RootUnavailable,
-            DurabilityError::Unavailable,
-        ] {
-            let preparation = FamiliarLoginError::Preparation("fence", error);
-            assert!(preparation.retryable());
-            assert!(!preparation.retry_retained_finish());
-        }
+        let preparation =
+            FamiliarLoginError::Preparation("fence", DurabilityError::RootUnavailable);
+        assert!(preparation.retryable());
+        assert!(!preparation.retry_retained_finish());
+        let invalid_origin = FamiliarLoginError::fence("fence", DurabilityError::Unavailable);
+        assert!(!invalid_origin.retryable());
+        assert!(!invalid_origin.unavailable());
+        let invalid_final =
+            FamiliarLoginError::fence("final_fence", DurabilityError::InvalidStoredState);
+        assert!(!invalid_final.retry_retained_finish());
+        assert!(!invalid_final.unavailable());
         let final_fence = FamiliarLoginError::FinalFence(DurabilityError::RootUnavailable);
         assert!(!final_fence.retryable());
         assert!(final_fence.retry_retained_finish());
@@ -789,7 +797,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             familiar_checkout_unavailable,
         )
         .await
-        .map_err(|error| FamiliarLoginError::Preparation("fence", error))?
+        .map_err(|error| FamiliarLoginError::fence("fence", error))?
         .ok_or(FamiliarLoginError::Refused("fence"))
     }
 
@@ -2217,6 +2225,18 @@ impl FamiliarLoginError {
         }
     }
 
+    fn fence(stage: &'static str, error: DurabilityError) -> Self {
+        // The current-session reader uses Unavailable for a missing or invalid origin.
+        // Only RootUnavailable is a known checkout miss.
+        match error {
+            DurabilityError::Unavailable | DurabilityError::InvalidStoredState => {
+                Self::Refused(stage)
+            }
+            error if stage == "final_fence" => Self::FinalFence(error),
+            error => Self::Preparation(stage, error),
+        }
+    }
+
     fn equipment(stage: &'static str, error: EquipmentError) -> Self {
         match error {
             EquipmentError::Durability(error) => Self::Preparation(stage, error),
@@ -2226,20 +2246,13 @@ impl FamiliarLoginError {
     }
 
     pub(in crate::gameplay_transport) fn retryable(&self) -> bool {
-        matches!(
-            self,
-            Self::Preparation(
-                _,
-                DurabilityError::RootUnavailable | DurabilityError::Unavailable
-            )
-        )
+        matches!(self, Self::Preparation(_, DurabilityError::RootUnavailable))
     }
 
     fn retry_retained_finish(&self) -> bool {
         matches!(
             self,
-            Self::WriteCheckoutUnavailable
-                | Self::FinalFence(DurabilityError::RootUnavailable | DurabilityError::Unavailable)
+            Self::WriteCheckoutUnavailable | Self::FinalFence(DurabilityError::RootUnavailable)
         )
     }
 
@@ -2920,7 +2933,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             v.actor != actor || v.session != session || v.spell_index != index
                         });
                         // The writer refused before commit. With the placement
-                        // rolled back, Login can continue without restoring the familiar.
+                        // rolled back, admission can consume the respawn and retry Login.
                         if matches!(error, CharacterProgressionError::RespawnPending)
                             && matches!(
                                 prepared.familiar.binding().origin(),
@@ -2940,10 +2953,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         finish.check_deadline()?;
         let fresh =
-            crate::gameplay_transport::character_gameplay_fence::current_once(self, session, false)
+            crate::gameplay_transport::character_gameplay_fence::current_once(self, session, false);
+        let fresh = match finish.deadline {
+            Some(limit) => tokio::time::timeout_at(tokio::time::Instant::from_std(limit), fresh)
                 .await
-                .map_err(FamiliarLoginError::FinalFence)?
-                .ok_or(Refused("final_fence"))?;
+                .map_err(|_| FamiliarLoginError::FinalFence(DurabilityError::RootPassDeadlineExceeded))?,
+            None => fresh.await,
+        }
+        .map_err(|error| FamiliarLoginError::fence("final_fence", error))?
+        .ok_or(Refused("final_fence"))?;
         let mut expected = prepared.fence;
         if let Some(receipt) = &finish.committed {
             expected.expected_character_revision = receipt.committed_character_revision();

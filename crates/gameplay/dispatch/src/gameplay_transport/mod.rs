@@ -1620,7 +1620,12 @@ impl<'r> AdmissionRetryBudget<'r> {
         mut step: impl AsyncFnMut() -> Result<T, AdmissionRefusal>,
     ) -> Result<T, AdmissionRefusal> {
         loop {
-            match step().await {
+            self.check_deadline()
+                .map_err(|_| AdmissionRefusal::Unavailable)?;
+            match tokio::time::timeout_at(self.deadline, step())
+                .await
+                .map_err(|_| AdmissionRefusal::Unavailable)?
+            {
                 Ok(value) => return Ok(value),
                 Err(refusal) => {
                     if !self.retries_unavailable(refusal).await {
@@ -1682,9 +1687,19 @@ impl<'r> AdmissionRetryBudget<'r> {
     }
 }
 
+fn post_entry_outcome(refusal: AdmissionRefusal) -> FirstEntryOutcome {
+    match refusal {
+        AdmissionRefusal::Unavailable => FirstEntryOutcome::RefusedUnavailable,
+        _ => FirstEntryOutcome::RefusedByChannel,
+    }
+}
+
 fn post_entry_checkout_refusal(error: crate::durability::DurabilityError) -> AdmissionRefusal {
     match error {
-        crate::durability::DurabilityError::RootUnavailable => AdmissionRefusal::Unavailable,
+        crate::durability::DurabilityError::RootUnavailable
+        | crate::durability::DurabilityError::RootPassDeadlineExceeded => {
+            AdmissionRefusal::Unavailable
+        }
         _ => AdmissionRefusal::Rejected,
     }
 }

@@ -188,7 +188,7 @@ pub(super) async fn run(
         finish_row(client, row, result).await;
     }
     row!("E03", E03, coins, world, spawns);
-    row!("E04", E04, trade, clients, world, spawns);
+    row!(travel town, "E04", E04, trade, clients, world, spawns);
     row!(travel locker, "E05", E05, market, clients, world, npcs, spawns);
     row!(travel locker, "E07", E07, storage, clients);
     row!(travel town, "S01", S01, party, clients, world, spawns, rat_xp);
@@ -293,7 +293,11 @@ async fn town(client: &mut DevClientSession, world: &BundleWorld) -> TestResult 
         at == TOWN
     })
     .ok_or("E2EF4 town route unavailable")?;
-    walk(client, world, &path).await
+    walk(client, world, &path).await?;
+    if tile(client.world_spatial().actor_position)? != TOWN {
+        return Err("E2EF4 town return did not reach the entry tile".into());
+    }
+    Ok(())
 }
 
 /// Sam's authored wander radius: `oteryn:behavior.npc.sam` movement.wander.radius_tiles in
@@ -682,11 +686,13 @@ async fn inventory_after_trade(
 ) -> TestResult {
     // Read through the race's pending pushes before accepting an unchanged
     // inventory, which otherwise could just be the pre-race projection.
+    let before = client.last_server_sequence();
     let reply = client.session_mut().attack_target(None).await?;
     if reply.status != CommandStatus::Accepted
         || reply.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+        || reply.result_server_sequence <= before
     {
-        return Err(format!("logout-race: inventory readback refused {reply:?}").into());
+        return Err(format!("trade inventory readback refused {reply:?}").into());
     }
     wait_inventory(client, expected).await
 }
@@ -751,8 +757,8 @@ async fn trade(
         peer.session_mut()
             .read_gated_delta(runtime::player_trade::STATE_DOMAIN_PLAYER_TRADE, 1)
             .await?;
-        wait_inventory(client, &before_main).await?;
-        wait_inventory(&mut peer, &before_peer).await?;
+        keep_alive(&mut peer, inventory_after_trade(client, &before_main)).await?;
+        keep_alive(client, inventory_after_trade(&mut peer, &before_peer)).await?;
         row.pass(
             "cancel",
             "active-offer-closed-and-both-inventories-retained",
