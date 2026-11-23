@@ -7,6 +7,8 @@ pub struct ArcPreferences {
     pub mana: bool,
     pub distance: u16,
     pub size: u16,
+    pub width: Option<u16>,
+    pub height: Option<u16>,
     pub opacity: u8,
 }
 impl Default for ArcPreferences {
@@ -16,6 +18,8 @@ impl Default for ArcPreferences {
             mana: false,
             distance: 20,
             size: 60,
+            width: None,
+            height: None,
             opacity: 85,
         }
     }
@@ -37,7 +41,7 @@ pub struct ArcLayout {
 }
 impl ArcPreferences {
     pub fn valid(self) -> bool {
-        self.distance <= 120 && (20..=120).contains(&self.size) && self.opacity <= 100
+        self.distance <= 120 && (20..=120).contains(&self.size) && [self.width, self.height].into_iter().flatten().all(|v| (20..=120).contains(&v)) && self.opacity <= 100
     }
     pub fn layout(
         self,
@@ -48,8 +52,8 @@ impl ArcPreferences {
             return None;
         }
         let vitals = vitals?;
-        let half_width = i32::from(self.distance) + i32::from(self.size) + 8;
-        let half_height = i32::from(self.size) + 8;
+        let half_width = i32::from(self.distance) + i32::from(self.width.unwrap_or(self.size)) + 8;
+        let half_height = i32::from(self.height.unwrap_or(self.size)) + 8;
         let mut strokes = Vec::new();
         for (health, value, maximum) in [
             (true, vitals.health, vitals.max_health),
@@ -73,9 +77,9 @@ impl ArcPreferences {
                         f64::from(self.distance)
                     };
                     [
-                        (f64::from(half_width) + offset + angle.cos() * f64::from(self.size))
+                        (f64::from(half_width) + offset + angle.cos() * f64::from(self.width.unwrap_or(self.size)))
                             .round() as i32,
-                        (f64::from(half_height) + angle.sin() * f64::from(self.size)).round()
+                        (f64::from(half_height) + angle.sin() * f64::from(self.height.unwrap_or(self.size))).round()
                             as i32,
                     ]
                 })
@@ -106,6 +110,7 @@ impl ArcPreferences {
 }
 impl crate::play::PlayView {
     pub fn hud_arc_layout(&self) -> Option<ArcLayout> {
+        if !self.preferences().player_hud_enabled { return None; }
         let icons = self.special_condition_rows(true);
         let mut layout = if let Some(layout) = self
             .preferences()
@@ -118,8 +123,8 @@ impl crate::play::PlayView {
             if icons.is_empty() || !options.valid() || options.opacity == 0 {
                 return None;
             }
-            let half_width = i32::from(options.distance) + i32::from(options.size) + 8;
-            let half_height = i32::from(options.size) + 8;
+            let half_width = i32::from(options.distance) + i32::from(options.width.unwrap_or(options.size)) + 8;
+            let half_height = i32::from(options.height.unwrap_or(options.size)) + 8;
             let center = self.scene.hud_center();
             ArcLayout {
                 origin: [

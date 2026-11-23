@@ -4,9 +4,9 @@ use oteryn_client_runtime::weapon_proficiency::ProficiencyCatalogueEntry;
 use std::collections::BTreeMap;
 #[derive(Default)]
 pub(super) struct Draft {
-    choices: BTreeMap<usize, usize>,
+    choices: BTreeMap<usize, Option<usize>>,
     base: Option<ProficiencyCatalogueEntry>,
-    waiting: Option<(usize, usize)>,
+    waiting: Option<(usize, Option<usize>)>,
     pub(super) applying: bool,
     close: bool,
     ask_close: bool,
@@ -30,7 +30,7 @@ pub(super) fn projection(panel: &WeaponProficiencyPanel, draft: &Draft) -> Weapo
     {
         for (&level, &perk) in &draft.choices {
             if let Some(row) = entry.levels.get_mut(level) {
-                row.selected = u8::try_from(perk).ok();
+                row.selected = perk.and_then(|index| u8::try_from(index).ok());
             }
         }
     }
@@ -65,6 +65,7 @@ pub(super) fn perform(
     }
     state.dirty = true;
     match kind {
+        Kind::Filter(change) => state.filters.change(change),
         Kind::Perk(level, perk) => {
             let Some(entry) = panel.weapon_entry() else {
                 return;
@@ -86,12 +87,28 @@ pub(super) fn perform(
             if entry.levels[level].selected.map(usize::from) == Some(perk) {
                 d.choices.remove(&level);
             } else {
-                d.choices.insert(level, perk);
+                d.choices.insert(level, Some(perk));
             }
             if d.choices.is_empty() {
                 d.base = None;
             }
             d.feedback = "Preview only; Apply sends the reviewed build.".into();
+        }
+        Kind::ResetCommitted => {
+            let Some(entry) = panel
+                .weapon_entry()
+                .filter(|_| panel.selected && !panel.mutation_uncertain)
+            else {
+                return;
+            };
+            d.choices = entry
+                .levels
+                .iter()
+                .enumerate()
+                .filter_map(|(level, data)| data.selected.map(|_| (level, None)))
+                .collect();
+            d.base = (!d.choices.is_empty()).then(|| entry.clone());
+            d.feedback = "Apply to clear the selected weapon’s committed perks.".into();
         }
         Kind::Apply | Kind::SaveClose => {
             if d.base.as_ref() != panel.weapon_entry() {
@@ -227,7 +244,7 @@ pub(super) fn advance(
             .and_then(|e| e.levels.get(level))
             .and_then(|l| l.selected)
             .map(usize::from)
-            != Some(perk)
+            != perk
         {
             d.applying = false;
             d.close = false;

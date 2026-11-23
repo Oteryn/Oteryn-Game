@@ -4,6 +4,10 @@ use oteryn_client_runtime::world_interaction::{Target, world_object::WorldObject
 use oteryn_renderer::TileCoord;
 use oteryn_session::world_map::MapOrigin;
 impl PlayView {
+    #[cfg(bevy_shell)]
+    pub(crate) fn has_pointer_target(&self, tile: TileCoord) -> bool {
+        self.world_context_target(tile).is_some() || self.scene.item_target_at(tile).is_some()
+    }
     pub(in crate::play) fn world_context_target(&self, tile: TileCoord) -> Option<Target> {
         self.world_context_target_for(tile, false)
     }

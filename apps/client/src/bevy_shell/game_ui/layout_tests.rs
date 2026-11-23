@@ -510,3 +510,54 @@ fn concurrent_height_edit_preserves_large_width() -> std::io::Result<()> {
     assert_eq!(LayoutStore::load(path).window(), Some([0, 0, 5000, 900]));
     Ok(())
 }
+
+#[test]
+fn saved_maximized_state_is_requested_on_window_creation() -> TestResult {
+    let folder = tempfile::tempdir()?;
+    let path = folder.path().join("layout.json");
+    let mut store = LayoutStore::load(Some(path.clone()));
+    store.remember_bounds("window.maximized", [1, 0, 1, 1]);
+    drop(store);
+    let mut window = LayoutStore::load(Some(path))
+        .primary_window_plugin()
+        .primary_window
+        .ok_or("primary window")?;
+    assert_eq!(window.internal.take_maximize_request(), Some(true));
+    Ok(())
+}
+
+#[test]
+fn upper_pane_height_resizes_only_the_upper_game_region() -> TestResult {
+    let mut app = app();
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    let mut owner = crate::bevy_shell::owner::HostOwner::new(None)?;
+    let mut saved = serde_json::to_value(owner.settings.preferences.game_window)?;
+    saved["upper_pane_height"] = 86.into();
+    owner.settings.preferences.game_window = serde_json::from_value(saved)?;
+    app.insert_non_send(owner);
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(bar).ok_or("upper pane")?.height,
+        px(86.)
+    );
+    Ok(())
+}
+
+#[test]
+fn hiding_status_bars_collapses_the_region_shared_by_vitals_and_weapon_progress() -> TestResult {
+    let mut app = app();
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    app.insert_non_send(crate::bevy_shell::owner::HostOwner::new(None)?);
+    for (visible, display) in [(false, Display::None), (true, Display::Flex)] {
+        let mut owner = app
+            .world_mut()
+            .non_send_mut::<crate::bevy_shell::owner::HostOwner>();
+        owner.settings.preferences.status_bar_visible = visible;
+        owner.settings.preferences.game_window.upper_pane_height = 86;
+        app.update();
+        let region = app.world().get::<Node>(bar).ok_or("shared status region")?;
+        assert_eq!(region.display, display);
+        assert_eq!(region.height, px(86.));
+    }
+    Ok(())
+}

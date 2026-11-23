@@ -88,6 +88,10 @@ impl PlayView {
             self.party_icons_refresh = Some(icon_now);
         }
         self.party_icons = party.icons;
+        self.combat_target = super::mailbox::lock(&link.mailbox)
+            .battle
+            .combat
+            .and_then(|combat| combat.target);
         self.sync_spell_words(link);
         self.project_presentation(std::time::Instant::now())
             .map_err(|_| UNAVAILABLE)?;
