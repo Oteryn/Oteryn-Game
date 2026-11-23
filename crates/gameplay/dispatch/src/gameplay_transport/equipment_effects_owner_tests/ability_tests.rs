@@ -36,6 +36,7 @@ fn dread_lord_lever_loads_its_active_ground_item_policy() -> TestResult {
         [NativeItemDestination::Ground]
     );
     assert_eq!(record.attributes.blocks_movement, Some(false));
+    assert_eq!(record.attributes.blocks_projectile, Some(false));
     Ok(())
 }
 

@@ -126,6 +126,7 @@ pub(super) async fn exercise_dread_lord(
                 (offering.position.x, offering.position.y, offering.position.floor)
                 && entry.facts.appearance_id == 7845
                 && !entry.facts.pickupable
+                && !entry.facts.blocks_projectile
         }).count())
     };
     let before_mints: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources")
@@ -149,6 +150,7 @@ pub(super) async fn exercise_dread_lord(
 
     seed_dread_lord_rank(harness, owner, admitted, callback, 168).await?;
     assert_eq!(pull(owner, admitted, resting_lever).await?, UseDisposition::Committed);
+    assert_eq!(ground_outputs(owner)?, 1);
 
     let map = owner.bundle_map().ok_or("map")?;
     let due = map.facts.next_movement_decay_time().ok_or("lever deadline")?;

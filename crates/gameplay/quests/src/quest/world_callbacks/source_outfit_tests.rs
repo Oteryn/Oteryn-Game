@@ -20,7 +20,7 @@ fn dread_lord_lever_creates_a_passable_ground_item_at_the_offering() -> Result<(
         return Err("one ground output".into());
     };
     assert_eq!(created.position, offering.position);
-    assert!(created.create.is_some());
+    assert_eq!(created.create, Some(7845));
     assert_eq!(created.remove, None);
     assert_eq!(created.passable, Some(true));
     let magic = lever.effects.magic.as_ref().ok_or("offering effect")?;
