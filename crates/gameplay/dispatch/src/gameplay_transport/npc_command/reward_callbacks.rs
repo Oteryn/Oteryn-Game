@@ -44,6 +44,8 @@ pub(super) struct Offer {
     minimum_level: Option<u32>,
     #[serde(default)]
     failure_reply: Vec<String>,
+    #[serde(default)]
+    failure_topic: Option<u16>,
 }
 
 #[cfg(test)]
@@ -145,10 +147,9 @@ pub(super) fn prepare(
         runtime,
         |context, topic, _, tracks| {
             let text = callback_keyword(&admission.states.chat, &context.2, &intent.text);
-            // A refused hand-in consumes its confirmation. Crystal leaves the
-            // Cyclops waiting for a new skirt offer at topic 3 after a short delivery.
+            // A refused hand-in consumes its confirmation. An offer may supply
+            // the donor's retry topic, as the Cyclops does for the skirt delivery.
             failure_topic = match (context.2.as_str(), topic.number, text.as_str()) {
-                ("oteryn:npc.a_sweaty_cyclops", 4, "yes") => Some(3),
                 ("oteryn:npc.a_sweaty_cyclops", 5..=8 | 12, "yes")
                 | ("oteryn:npc.yeo", 1, "yes") => Some(0),
                 _ => None,
@@ -156,11 +157,11 @@ pub(super) fn prepare(
             let meets_level = |minimum: Option<u32>| {
                 minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
             };
-            let mut refusal = |lines: &[String]| {
+            let mut refusal = |lines: &[String], topic: Option<u16>| {
                 refused = !lines.is_empty();
                 (!lines.is_empty()).then(|| Choice {
                     transition: None,
-                    next_topic: failure_topic.map(Topic::from),
+                    next_topic: topic.map(Topic::from),
                     reply: lines.to_vec(),
                 })
             };
@@ -213,7 +214,7 @@ pub(super) fn prepare(
                         return None;
                     }
                     if !meets_level(callback.minimum_level)
-                        && let Some(choice) = refusal(&callback.failure_reply)
+                        && let Some(choice) = refusal(&callback.failure_reply, failure_topic)
                     {
                         return Some(choice);
                     }
@@ -232,14 +233,14 @@ pub(super) fn prepare(
                 let mut blocked = matching_stage;
                 if let Some(callback) = blocked.next()
                     && blocked.next().is_none()
-                    && let Some(choice) = refusal(&callback.failure_reply)
+                    && let Some(choice) = refusal(&callback.failure_reply, failure_topic)
                 {
                     return Some(choice);
                 }
                 return None;
             }
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
-                return rottin_dialogue(topic, &text, tracks, refusal);
+                return rottin_dialogue(topic, &text, tracks, |lines| refusal(lines, None));
             }
             if !placement {
                 return None;
@@ -250,7 +251,7 @@ pub(super) fn prepare(
                 .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
             {
                 if !meets_level(offer.minimum_level) {
-                    return refusal(&offer.failure_reply);
+                    return refusal(&offer.failure_reply, offer.failure_topic.or(failure_topic));
                 }
                 if let Some(key) = &offer.transition {
                     // Keep the original callback, value plan and saved-definition pin.
@@ -261,6 +262,7 @@ pub(super) fn prepare(
                             && callback.world_claim.is_none()
                     })?;
                     failure_reply = offer.failure_reply.clone();
+                    failure_topic = offer.failure_topic.or(failure_topic);
                 }
                 return Some(Choice {
                     transition: offer.transition.clone(),
@@ -295,7 +297,8 @@ pub(super) fn prepare(
             });
             if let Some(offer) = blocked.next()
                 && blocked.next().is_none()
-                && let Some(choice) = refusal(&offer.failure_reply)
+                && let Some(choice) =
+                    refusal(&offer.failure_reply, offer.failure_topic.or(failure_topic))
             {
                 return Some(choice);
             }
@@ -317,7 +320,7 @@ pub(super) fn prepare(
                     .inventory
                     .iter()
                     .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities))))
-                && let Some(choice) = refusal(&callback.failure_reply)
+                && let Some(choice) = refusal(&callback.failure_reply, failure_topic)
             {
                 return Some(choice);
             }

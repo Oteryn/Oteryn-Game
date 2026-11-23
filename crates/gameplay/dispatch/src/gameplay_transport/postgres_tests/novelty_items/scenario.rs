@@ -3,6 +3,7 @@ use super::*;
 pub(super) fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let key = case.key();
+        let by_definition = matches!(case, Case::DefinitionLanternOff | Case::DefinitionLanternOn);
         let origin = case.origin();
         let ground_origin = MovementLocalPosition { x: origin.x - i32::from(case.feroxa()), ..origin };
         let harness =
@@ -255,7 +256,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             }
             tx.commit().await?;
         }
-        let mut expected = if case.feroxa() {
+        let expected = if case.feroxa() {
             let output = &native.item_policy_for_source_id(22059).ok_or("open trap policy")?.record().production_definition;
             novelty_items::NoveltyPlan {
                 recipe: "oteryn:feroxa-silvered-trap.v1".into(),
@@ -273,7 +274,17 @@ pub(super) fn scenario(case: Case) -> TestResult {
                     "achievement_progress":[],
                 }),
             }
-        } else if case.ground() && !matches!(case, Case::Lantern { .. }) {
+        } else if matches!(case, Case::GroundLanternOff | Case::GroundLanternOn) {
+            let mut plan = novelty_items::plan(
+                native, &used, *fence.game_session_id.as_bytes(), command_id, source,
+            ).ok_or("lantern source admitted")?;
+            plan.recipe = plan.recipe.replacen("oteryn:novelty-item.", "oteryn:novelty-ground.", 1);
+            plan.effects["kind"] = "transform".into();
+            plan.effects["ground"] = serde_json::json!({
+                "x": ground_origin.x, "y": ground_origin.y, "floor": ground_origin.floor,
+            });
+            plan
+        } else if case.ground() {
             novelty_items::plan_ground(
                 native,
                 &used,
@@ -298,10 +309,6 @@ pub(super) fn scenario(case: Case) -> TestResult {
             )
             .ok_or("novelty source admitted")?
         };
-        if matches!(case, Case::Lantern { ground: true, .. }) {
-            expected.recipe = format!("oteryn:novelty-ground.i{}.v1", expected.effects["source_item_id"]);
-            expected.effects["kind"] = "transform".into();
-        }
         let effects: NoveltyEffects = serde_json::from_value(expected.effects.clone())?;
         let before_vitals = {
             let runtime = owner.runtime.lock().await;
@@ -362,10 +369,9 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 .ok_or("offers")?;
         assert!(admitted.continuity.selected_capabilities.contains(350));
         assert!(!admitted.continuity.selected_capabilities.contains(23));
-        let by_definition = matches!(case, Case::Lantern { ground: false, .. });
         let intent = UseIntent {
             target: if by_definition {
-                UseTarget::ItemByDefinition(reference(key).ok_or("lantern definition")?)
+                UseTarget::ItemByDefinition(reference(key).ok_or("definition reference")?)
             } else {
                 UseTarget::Item(std::num::NonZeroU64::MIN)
             },

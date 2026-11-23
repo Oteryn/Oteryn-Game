@@ -108,7 +108,8 @@
       "transition": "oteryn:quest-reward/questpc7-friends-skirts",
       "failure_reply": [
         "Lil' one bring three bast skirts."
-      ]
+      ],
+      "failure_topic": 3
     },
     {
       "npc": "oteryn:npc.a_sweaty_cyclops",
@@ -170,10 +171,10 @@
           "preserve": true
         }
       ],
+      "transition": "oteryn:quest-reward/questpc7-friends-royal-steel",
       "reply": [
         "Cling clang!"
-      ],
-      "transition": "oteryn:quest-reward/questpc7-friends-royal-steel"
+      ]
     },
     {
       "npc": "oteryn:npc.a_sweaty_cyclops",

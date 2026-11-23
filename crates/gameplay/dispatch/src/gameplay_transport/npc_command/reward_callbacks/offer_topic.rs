@@ -17,7 +17,7 @@ pub(super) fn retire_cyclops_offer(
     text: &str,
 ) -> Option<()> {
     if context.2 == "oteryn:npc.a_sweaty_cyclops"
-        && matches!(
+        && (matches!(
             text,
             "amulet"
                 | "forge royal steel"
@@ -25,7 +25,9 @@ pub(super) fn retire_cyclops_offer(
                 | "dragon slayer report"
                 | "forging friendship"
                 | "deliver skirts"
-        )
+        ) || ["soul orb", "melt", "gear whell"]
+            .into_iter()
+            .any(|word| super::crystal_keyword(text, word)))
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         let state = &mut sessions.get_mut(&session)?.quest_dialogue;

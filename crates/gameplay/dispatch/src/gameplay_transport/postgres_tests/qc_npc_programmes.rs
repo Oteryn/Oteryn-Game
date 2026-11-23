@@ -45,3 +45,8 @@ fn qc_cyclops_steel_refuses_without_shield() -> TestResult {
 fn questpc7_friends_resumes_saved_definition() -> TestResult {
     run(super::questpc7_friends_fixtures::LEGACY_CASE)
 }
+
+#[test]
+fn qc_cyclops_donor_exchanges_replace_steel_quote() -> TestResult {
+    run("questpc7-friends-draconian-donor-exchanges")
+}

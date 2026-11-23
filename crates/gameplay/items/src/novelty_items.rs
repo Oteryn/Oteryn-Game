@@ -498,7 +498,10 @@ pub fn select_ground(
     }
     if matches!(
         rule.kind,
-        NoveltyKind::Dice | NoveltyKind::Firework | NoveltyKind::Transform
+        NoveltyKind::Dice
+            | NoveltyKind::Firework
+            | NoveltyKind::Transform
+            | NoveltyKind::CarriedTransform
     ) {
         selected.effects.ground = Some(ground);
     }

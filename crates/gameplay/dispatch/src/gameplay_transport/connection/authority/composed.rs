@@ -1310,6 +1310,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .use_house_event_item(actor, command, &intent, source)
                 .await;
         }
+        if matches!(
+            intent.target,
+            oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_)
+        ) {
+            return self
+                .use_event_item_impl(actor, command, intent, source, visible_target)
+                .await;
+        }
         if let Some(outcome) = self
             .use_bundle_dropdown(
                 actor,

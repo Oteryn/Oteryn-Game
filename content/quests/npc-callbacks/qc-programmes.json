@@ -46,7 +46,7 @@
       }
     },
     {
-      "key": "oteryn:quest-reward/qc-cyclops-hell-steel",
+      "key": "oteryn:quest-reward/qc-friends-hell-steel",
       "quest": "oteryn:quest.friends_and_traders",
       "npc": "oteryn:npc.a_sweaty_cyclops",
       "keywords": [
@@ -81,7 +81,7 @@
         "Cling clang!"
       ],
       "sources": [
-        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L152-L165"
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L152-L166"
       ],
       "counter": {
         "track": "oteryn:quest-progress/qc/friends/hell-steel-uses",
@@ -89,7 +89,7 @@
       }
     },
     {
-      "key": "oteryn:quest-reward/qc-cyclops-crude-iron",
+      "key": "oteryn:quest-reward/qc-friends-crude-iron",
       "quest": "oteryn:quest.friends_and_traders",
       "npc": "oteryn:npc.a_sweaty_cyclops",
       "keywords": [
@@ -124,7 +124,7 @@
         "Cling clang!"
       ],
       "sources": [
-        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L170-L183"
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L170-L184"
       ],
       "counter": {
         "track": "oteryn:quest-progress/qc/friends/crude-iron-uses",
