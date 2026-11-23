@@ -132,7 +132,7 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     if name == "qengine-rewards-l9-steamship-donation" {
-        return super::world_contributions::steamship_donation(owner, admitted, h).await;
+        return super::world_contribution_fixtures::steamship_donation(owner, admitted, h).await;
     }
     let (family, looks, vouchers) = match name {
         "qengine-rewards-l9-afflicted-story" | "qengine-rewards-l9-afflicted-swamp-fever" => ("afflicted", (430, 431), [12551, 12787, 12786]),
