@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub enum ObjectTarget {
     Use,
     Cursor,
+    CursorPosition,
     SelfActor,
     CurrentTarget,
     Equip,
@@ -15,6 +16,8 @@ pub enum ObjectTarget {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum CustomAction {
+    Unassigned,
+    Special { action: super::SpecialAction },
     PassiveStatus {
         ability: crate::play::PassiveAbility,
     },
@@ -49,7 +52,7 @@ impl CustomAction {
 
     pub(super) fn valid(&self) -> bool {
         match self {
-            Self::PassiveStatus { .. } | Self::Utility { .. } => true,
+            Self::Special { .. } | Self::Unassigned | Self::PassiveStatus { .. } | Self::Utility { .. } => true,
             Self::ActionBar { slot } => usize::try_from(*slot).is_ok_and(|slot| {
                 (1..=oteryn_client_runtime::spell::ACTION_BAR_SLOTS).contains(&slot)
             }),

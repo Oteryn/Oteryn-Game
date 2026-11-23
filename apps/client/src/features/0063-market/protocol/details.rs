@@ -35,15 +35,19 @@ impl Outbox {
         command: &oteryn_client_runtime::raw_feature::FeatureCommand,
         result: &oteryn_session::GatedCommandResult,
     ) {
-        details::apply(
-            &mut lock(&self.0).market,
-            command,
-            result.status,
-            &result.payload,
-        );
+        let mut mailbox = lock(&self.0);
+        let mailbox = &mut *mailbox;
+        let applied = details::apply(&mut mailbox.market, command, result.status, &result.payload);
+        #[cfg(bevy_shell)]
+        if applied && let Some(stats) = &mailbox.market.details.statistics {
+            mailbox
+                .screen_loot
+                .market_price(stats.definition, stats.average);
+        }
+        #[cfg(not(bevy_shell))]
+        let _ = applied;
     }
 }
-
 
 #[cfg(all(test, bevy_shell))]
 impl Outbox {

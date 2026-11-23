@@ -77,15 +77,9 @@ async fn apply(
                     .pending
                     .as_ref()
                     .map(|p| &p.request_id)
+                    .or_else(|| view.history.unverified.keys().next())
                     .or_else(|| view.order.as_ref().map(|o| &o.request_id))
-                    .or_else(|| {
-                        view.catalogue
-                            .as_ref()?
-                            .recent_orders
-                            .iter()
-                            .find(|order| !order.state.completed())
-                            .map(|order| &order.request_id)
-                    }) {
+                {
                     Some(id) => id.clone(),
                     None => return Ok(()),
                 },
@@ -96,21 +90,40 @@ async fn apply(
                         .into();
                 return Ok(());
             }
+            if view
+                .order
+                .as_ref()
+                .is_some_and(|order| order.request_id == id)
+            {
+                view.checkout_unverified = true;
+            }
             match client.coin_order_status(token, &id, cancel.clone()).await {
                 Ok(order) => accept(view, order)?,
+                // The initial create itself was refused. A missing ID can confirm there
+                // was no order only while this grant has never observed a row for it.
                 Err(NativeLoginError::Platform(HttpStatus(404)))
-                    if view.post_refusal_status == Some(409) && view.pending() =>
+                    if view.post_refusal_status == Some(409)
+                        && !view.history.unverified.contains_key(&id)
+                        && view.order.as_ref().is_none_or(|o| o.request_id != id) =>
                 {
                     view.prior.reconcile(&id);
                     clear_refused_order(view);
                     view.feedback = tr!("The server refused the request").into();
                     return Ok(());
                 }
-                Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
-                    view.post_refusal_status = None;
+                Err(error) => {
+                    if matches!(error, NativeLoginError::Platform(HttpStatus(404))) {
+                        view.post_refusal_status = None;
+                    }
+                    if known_open_order(view, &id) {
+                        view.history
+                            .unverified
+                            .insert(id, crate::account_services::history::Evidence::Pending);
+                    } else if matches!(error, NativeLoginError::Platform(HttpStatus(404))) {
+                        view.history.missing(&id);
+                    }
                     return Err(error);
                 }
-                Err(error) => return Err(error),
             }
             refresh(view, client, token, cancel).await?;
             view.feedback = tr!("Purchase status and wallet balance refreshed from Oteryn.").into();
@@ -184,34 +197,30 @@ async fn refresh(
     cancel: CancellationToken,
 ) -> Result<(), NativeLoginError> {
     view.quote_until.clear();
-    let requested_at = Instant::now();
+    // Platform issues the relative lifetime during this request. Use its earliest possible start.
+    let quoted_at = Instant::now();
     let mut catalogue = client
         .coin_catalogue(token, view.character_id.as_deref(), cancel.clone())
         .await?;
-    let mut quote_until: std::collections::BTreeMap<_, _> = catalogue
-        .packages
+    let listed = std::mem::take(&mut catalogue.recent_orders);
+    if view.order.as_ref().is_some_and(|selected| {
+        listed
+            .iter()
+            .any(|row| row.request_id == selected.request_id)
+    }) {
+        view.checkout_unverified = true;
+    }
+    let lookups = listed
         .iter()
-        .map(|p| {
-            (
-                p.quote_id.clone(),
-                requested_at + Duration::from_secs(u64::from(p.valid_for_seconds)),
-            )
-        })
-        .collect();
-    let mut verified = Vec::new();
-    for listed in std::mem::take(&mut catalogue.recent_orders) {
-        match client
-            .coin_order_status(token, &listed.request_id, cancel.clone())
-            .await
-        {
-            Ok(order) => {
-                catalogue.recent_orders.push(order.clone());
-                verified.push(order);
-            }
-            Err(error) if crate::account_services::status_temporarily_unavailable(&error) => {
-                catalogue.recent_orders.push(listed);
-            }
-            Err(_) => {}
+        .map(|row| client.coin_order_status(token, &row.request_id, cancel.clone()));
+    let results = crate::account_services::status_lookup::collect(lookups).await;
+    for (row, result) in listed.into_iter().zip(results) {
+        let pending = view
+            .pending
+            .as_ref()
+            .is_some_and(|request| request.request_id == row.request_id);
+        if let Some(order) = view.history.lookup_result(row.request_id, pending, result) {
+            catalogue.recent_orders.push(order);
         }
     }
     if let Some(request_id) = view
@@ -219,11 +228,14 @@ async fn refresh(
         .as_ref()
         .map(|request| &request.request_id)
         .or_else(|| view.order.as_ref().map(|order| &order.request_id))
-        && let Some(order) = verified.iter().find(|o| &o.request_id == request_id)
+        && let Some(order) = catalogue
+            .recent_orders
+            .iter()
+            .find(|o| &o.request_id == request_id)
     {
         accept(view, order.clone())?;
     }
-    for order in &verified {
+    for order in &catalogue.recent_orders {
         if view.order.is_none() && view.pending.is_none() && view.prior.contains(&order.request_id)
         {
             accept(view, order.clone())?;
@@ -231,9 +243,17 @@ async fn refresh(
     }
     if view.order.is_none()
         && !view.pending()
-        && let Some(order) = verified.iter().find(|o| !o.state.completed())
+        && let Some(order) = catalogue
+            .recent_orders
+            .iter()
+            .find(|o| !o.state.completed())
     {
         accept(view, order.clone())?;
+    }
+    for order in &catalogue.recent_orders {
+        if !view.history.record(order) {
+            return Err(PlatformClientError::InvalidPayload.into());
+        }
     }
     let balance = client.coin_balance(token, cancel).await?;
     if view.balance.as_ref().is_some_and(|old| {
@@ -241,6 +261,16 @@ async fn refresh(
     }) {
         return Err(PlatformClientError::InvalidPayload.into());
     }
+    let mut quote_until: std::collections::BTreeMap<_, _> = catalogue
+        .packages
+        .iter()
+        .map(|p| {
+            (
+                p.quote_id.clone(),
+                quoted_at + Duration::from_secs(u64::from(p.valid_for_seconds)),
+            )
+        })
+        .collect();
     if let Some(order) = &view.order {
         quote_until.remove(&order.quote_id);
     }
@@ -251,6 +281,12 @@ async fn refresh(
         view.post_refusal_status = None;
     }
     Ok(())
+}
+fn known_open_order(view: &View, id: &str) -> bool {
+    view.pending
+        .as_ref()
+        .is_some_and(|request| request.request_id == id)
+        || view.history.known_open(id)
 }
 fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
     if let Some(request) = &view.pending {
@@ -267,18 +303,7 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
             return Err(PlatformClientError::InvalidPayload.into());
         }
     }
-    if let Some(old) = &view.order
-        && old.request_id == order.request_id
-        && (old.order_id != order.order_id
-            || old.package_id != order.package_id
-            || old.quote_id != order.quote_id
-            || old.character_id != order.character_id
-            || old.coins != order.coins
-            || old.price != order.price
-            || order.revision < old.revision
-            || (order.revision == old.revision && old != &order)
-            || !order.state.can_follow(old.state))
-    {
+    if !view.history.record(&order) {
         return Err(PlatformClientError::InvalidPayload.into());
     }
     if view
