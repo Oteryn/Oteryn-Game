@@ -67,21 +67,38 @@ impl ChannelSpellStates {
         &self,
         runtime: &ChannelRuntimeV1,
         batch: &mut crate::spell::combat_batch::OwnerCombatBatch,
+        mut components: Option<&mut crate::spell::magnitude_owner::PreparedMagnitudeOwner>,
     ) {
+        use crate::spell::combat_batch::OwnerCombatChange;
         for effect in &mut batch.effects {
-            if let crate::spell::combat_batch::OwnerCombatChange::Damage { magnitude, .. } =
-                &mut effect.change
-                && let Ok(snapshot) = runtime.companion_snapshot(effect.target)
-            {
-                let percent = self.prey_percent(
+            let (magnitude, apply_prey) = match &mut effect.change {
+                OwnerCombatChange::Damage { magnitude, .. } => (magnitude, true),
+                OwnerCombatChange::DamageWithHealing { damage, .. } => (damage, false),
+                _ => continue,
+            };
+            let Ok(snapshot) = runtime.companion_snapshot(effect.target) else {
+                continue;
+            };
+            let percent = if apply_prey {
+                self.prey_percent(
                     runtime,
                     batch.caster,
                     batch.command.game_session_id(),
                     &snapshot.state.policy.definition_key,
                     1,
                     batch.now_us.map_or(batch.now_ms * 1000, |at| at.get()),
+                )
+            } else {
+                0
+            };
+            let scale = |amount| super::damage(amount, percent);
+            // Bind healing hits in effect order even when Prey leaves their damage unchanged.
+            if let Some(components) = components.as_deref_mut() {
+                components.scale_creature_damage(
+                    effect.target, effect.sub_ordinal, magnitude, scale,
                 );
-                *magnitude = super::damage(*magnitude, percent);
+            } else {
+                *magnitude = scale(*magnitude);
             }
         }
     }

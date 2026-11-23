@@ -292,7 +292,7 @@ pub struct PreparedMagnitudeOwner {
     // is minted only after finish_inner applied the real target's source block stage.
     player_block_shielding: Vec<(ExactActorRef, u32)>,
     finished_player_damage: Vec<(ExactActorRef, i64)>,
-    intrinsic_damage: Vec<IntrinsicDamage>,
+    damage_components: Vec<SettledSpellDamage>,
 }
 
 /// Values whose timing D.1.3 fixes at planting. Original owner observations stay
@@ -420,17 +420,24 @@ fn condition_attributes(
         .attributes_at(now_ms.checked_mul(1000).ok_or(Error::InvalidCondition)?))
 }
 
-/// A qualified intrinsic split, retained for final HP staging and block-time reflection.
+/// A qualified hit retained for final HP staging and block-time reflection.
 #[derive(Debug, Clone, Copy)]
-pub struct IntrinsicDamage {
-    /// The exact target of both components.
-    pub target: ExactActorRef,
-    /// The physical and secondary components after source and target block.
+pub struct SettledSpellDamage {
+    target: ExactActorRef,
+    ordinal: Option<u16>,
+    /// Primary and secondary damage after source and target block.
     pub post_block: [i64; 2],
-    /// The physical and secondary components at the final HP owner.
+    /// Primary and secondary damage presented to the HP owner.
     pub final_parts: [i64; 2],
-    /// The secondary component's element.
-    pub secondary_element: oteryn_protocol_oteryn::damage_element::DamageElement,
+    pub secondary_element: Option<oteryn_protocol_oteryn::damage_element::DamageElement>,
+}
+
+impl SettledSpellDamage {
+    pub fn matches_effect(&self, target: ExactActorRef, ordinal: u16, total: i64) -> bool {
+        self.target == target
+            && self.ordinal.is_none_or(|seen| seen == ordinal)
+            && self.final_parts[0].checked_add(self.final_parts[1]) == Some(total)
+    }
 }
 
 impl PreparedMagnitudeOwner {
@@ -491,9 +498,31 @@ impl PreparedMagnitudeOwner {
         }
     }
 
-    /// Intrinsic splits in the same order as the emitted damage effects.
-    pub fn intrinsic_damage_components(&self) -> impl Iterator<Item = IntrinsicDamage> + '_ {
-        self.intrinsic_damage.iter().copied()
+    /// Observations in the same order as the emitted damage effects.
+    pub fn damage_components(&self) -> impl Iterator<Item = SettledSpellDamage> + '_ {
+        self.damage_components.iter().copied()
+    }
+
+    /// Apply a creature-only damage modifier without losing the qualified primary.
+    /// The existing whole-hit rounding remains authoritative for the total.
+    pub fn scale_creature_damage(
+        &mut self,
+        target: ExactActorRef,
+        ordinal: u16,
+        total: &mut i64,
+        scale: impl Fn(i64) -> i64,
+    ) {
+        let modified = scale(*total);
+        if let Some(parts) = self
+            .damage_components
+            .iter_mut()
+            .find(|parts| parts.matches_effect(target, ordinal, *total))
+        {
+            let primary = scale(parts.final_parts[0]).clamp(0, modified.max(0));
+            parts.ordinal = Some(ordinal);
+            parts.final_parts = [primary, modified.saturating_sub(primary)];
+        }
+        *total = modified;
     }
 
     fn damage_dealt_percent(&self) -> Result<u32, Error> {
@@ -961,7 +990,7 @@ impl PreparedMagnitudeOwner {
             wheel_masterless,
             player_block_shielding,
             finished_player_damage: Vec::new(),
-            intrinsic_damage: Vec::new(),
+            damage_components: Vec::new(),
         })
     }
 
@@ -1252,20 +1281,25 @@ impl PreparedMagnitudeOwner {
         let magnitude = primary
             .checked_add(secondary)
             .ok_or(Error::InvalidMagnitude)?;
-        if let Some(element) = secondary_element
-            && (magnitude > 0 || healing > 0)
+        if (magnitude > 0 || healing > 0)
+            && (secondary_element.is_some()
+                || (matches!(plan, NativeCombatPlan::Combat(combat) if combat.element != Element::Healing)
+                    && self
+                        .charm_targets()
+                        .any(|(target, _)| target == binding.actor)))
         {
-            if self.intrinsic_damage.len() >= MAX_EFFECTS {
+            if self.damage_components.len() >= MAX_EFFECTS {
                 return invalid();
             }
-            self.intrinsic_damage
+            self.damage_components
                 .try_reserve(1)
                 .map_err(|_| Error::InvalidBatch)?;
-            self.intrinsic_damage.push(IntrinsicDamage {
+            self.damage_components.push(SettledSpellDamage {
                 target: binding.actor,
+                ordinal: None,
                 post_block,
                 final_parts: [primary, secondary],
-                secondary_element: analyser_damage_element(element),
+                secondary_element: secondary_element.map(analyser_damage_element),
             });
         }
         if magnitude > 0
@@ -2155,7 +2189,7 @@ mod tests {
                     wheel_masterless: vec![],
                     player_block_shielding: vec![(actor, 0)],
                     finished_player_damage: vec![],
-                    intrinsic_damage: vec![],
+                    damage_components: vec![],
                 };
                 assert_eq!(
                     owner

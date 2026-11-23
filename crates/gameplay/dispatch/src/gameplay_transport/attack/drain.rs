@@ -399,9 +399,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && points > 0
             {
                 if let Some(ranged) = &mut selected.weapon.ranged {
-                    if matches!(ranged.damage, ranged::RangedDamage::Distance { .. })
-                        && let ranged::RangedDamage::Distance { attack, .. } =
-                            &mut Arc::make_mut(ranged).damage
+                    if let ranged::RangedDamage::Distance { attack, .. } =
+                        &mut Arc::make_mut(ranged).damage
                     {
                         *attack = attack.saturating_add(points);
                     }
@@ -1189,7 +1188,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .max(0),
                     )
                     .unwrap_or(0);
-                    let primary = reported_primary(final_parts, value);
+                    let primary =
+                        super::super::item_spell_augments::leech_projection::owner_damage_amount(
+                            &runtime,
+                            target,
+                            final_parts[0],
+                            result.health_before,
+                            0,
+                        )
+                        .unwrap_or(final_parts[0]);
+                    let primary = reported_primary(primary, value);
                     let element = ranged::analyser_element(resolved_element);
                     states.analyser.impact(
                         entry.actor,
@@ -2507,16 +2515,9 @@ fn finish_melee_components(
 }
 
 fn boost_attack_components(parts: [i64; 2], prey: u8, talisman: u16) -> [i64; 2] {
-    let boosted =
-        parts.map(|part| bounty_talisman::damage(super::super::prey::damage(part, prey), talisman));
-    if talisman == 0 {
-        // Preserve the existing whole-hit Prey rounding when no Talisman is active.
-        let total = super::super::prey::damage(parts[0].saturating_add(parts[1]), prey);
-        let primary = boosted[0].min(total);
-        [primary, total.saturating_sub(primary)]
-    } else {
-        boosted
-    }
+    let total = super::super::prey::damage(parts[0].saturating_add(parts[1]), prey);
+    let primary = super::super::prey::damage(parts[0], prey).min(total);
+    [primary, total.saturating_sub(primary)].map(|part| bounty_talisman::damage(part, talisman))
 }
 
 fn elite_attack_components(parts: [i64; 2], elite: bool) -> [i64; 2] {
@@ -2528,8 +2529,8 @@ fn elite_attack_components(parts: [i64; 2], elite: bool) -> [i64; 2] {
 }
 
 // Creature health is consumed in component order on a lethal hit.
-fn reported_primary(parts: [i64; 2], committed: u32) -> u32 {
-    u32::try_from(parts[0].clamp(0, i64::from(committed))).unwrap_or(0)
+fn reported_primary(primary: i64, committed: u32) -> u32 {
+    u32::try_from(primary.clamp(0, i64::from(committed))).unwrap_or(0)
 }
 
 #[cfg(test)]
@@ -2604,14 +2605,19 @@ mod tests {
     }
 
     #[test]
+    fn t174_zero_talisman_damage_does_not_change_prey_rounding() {
+        assert_eq!(super::boost_attack_components([1, 1], 25, 300), [2, 1]);
+    }
+
+    #[test]
     fn t174_converted_melee_analyser_uses_final_scaled_components() {
         let boosted = super::boost_attack_components([50, 50], 20, 2500);
         assert_eq!(boosted, [75, 75]);
         assert_eq!(super::boost_attack_components([50, 50], 25, 0), [63, 62]);
-        assert_eq!(super::reported_primary(boosted, 150), 75);
+        assert_eq!(super::reported_primary(boosted[0], 150), 75);
         // Lethal clipping uses all of the available primary before spending secondary.
-        assert_eq!(super::reported_primary(boosted, 120), 75);
-        assert_eq!(super::reported_primary(boosted, 0), 0);
+        assert_eq!(super::reported_primary(boosted[0], 120), 75);
+        assert_eq!(super::reported_primary(boosted[0], 0), 0);
     }
 
     #[test]
@@ -2649,7 +2655,7 @@ mod tests {
         // Halving the combined 150 would incorrectly land 75 instead of 74.
         assert_eq!(parts, [37, 37]);
         let landed = u32::try_from(parts[0] + parts[1]).map_err(|_| "landed")?;
-        let reported_physical = super::reported_primary(parts, landed);
+        let reported_physical = super::reported_primary(parts[0], landed);
         let reported_elemental = landed - reported_physical;
         assert_eq!(
             (reported_physical, reported_elemental, landed),

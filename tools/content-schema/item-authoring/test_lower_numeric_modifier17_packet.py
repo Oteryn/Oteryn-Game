@@ -191,7 +191,11 @@ class NumericTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "four scoped structural headers drift"):
             c.qualify(*args)
-        self.assertTrue(c.qualify(*args, profile)["headers"]["materializable"])
+        self.assertTrue(args[1]["materializable"])
+        self.assertEqual(
+            c.qualify(*args, profile)["headers"],
+            args[0]["current_published_scope_receipt"]["native_headers"],
+        )
         for mutate in (
             lambda d: d.update(stack_class="StackCapable"),
             lambda d: d.update(client_projection="ServerOnly"),

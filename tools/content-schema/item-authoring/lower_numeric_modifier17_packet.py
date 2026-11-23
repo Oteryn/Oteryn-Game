@@ -284,7 +284,8 @@ def qualify(entry, definition, binding, obj, members, routed, vector, profile=No
     return {
         "source_item_id": iid,
         "target": target,
-        "headers": headers,
+        # WorldProject replays the promotion before the current native admission overlay.
+        "headers": historical,
         "expected_name": obj["name"],
         "modifiers": vector,
     }

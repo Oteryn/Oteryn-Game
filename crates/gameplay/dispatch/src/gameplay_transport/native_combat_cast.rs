@@ -2752,10 +2752,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     prepared.leech_inputs=item_spell_augments::leech_projection::capture(
                         runtime,states,owner.imported_charms,&prepared.batch,prepared.item_spell_leech,
                         prepared.magnitude.as_deref(),&stream,decision).map_err(|_|DurabilityError::Unavailable)?;
-                    states.apply_prey_spell_damage(runtime,&mut prepared.batch);
+                    states.apply_prey_spell_damage(runtime,&mut prepared.batch,prepared.magnitude.as_deref_mut());
                     let talisman=crate::durability::task_board::read_talisman_in_transaction(&mut tx,fence).await?;
                     let bounty_leech=crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
-                        runtime,&mut prepared.batch,&talisman,&stream,decision,&mut prepared.leech_inputs).ok_or(DurabilityError::Unavailable)?;
+                        runtime,&mut prepared.batch,&talisman,&stream,decision,&mut prepared.leech_inputs,prepared.magnitude.as_deref_mut()).ok_or(DurabilityError::Unavailable)?;
                     if let Some(reserved)=rune_reservation.as_ref(){
                         item_tx::validate_rune_reservation_in_transaction(&mut tx,&authority,reserved).await
                             .map_err(|_|DurabilityError::Unavailable)?;

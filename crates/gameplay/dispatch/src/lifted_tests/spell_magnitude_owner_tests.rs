@@ -499,15 +499,30 @@ fn crystal_equipment_spell_wheel_uses_health_after_damage_healing() {
 
 #[test]
 fn crystal_equipment_spell_commit_reflects_each_intrinsic_component() {
-    split_spell_reflection(true);
+    spell_reflection(true, true, None);
 }
 
 #[test]
 fn crystal_equipment_split_spell_reflects_before_wheel_damage() {
-    split_spell_reflection(false);
+    spell_reflection(false, true, None);
 }
 
-fn split_spell_reflection(capped: bool) {
+#[test]
+fn crystal_equipment_single_element_spell_reflects_before_wheel_damage() {
+    spell_reflection(false, false, None);
+}
+
+type EliteModifier = fn(
+    &ChannelRuntimeV1,
+    &mut crate::spell::combat_batch::OwnerCombatBatch,
+    &mut PreparedMagnitudeOwner,
+);
+
+pub(crate) fn split_spell_after_elite_scaling(apply_elite: EliteModifier) {
+    spell_reflection(false, true, Some(apply_elite));
+}
+
+fn spell_reflection(capped: bool, split: bool, apply_elite: Option<EliteModifier>) {
     use crate::foundation::{CommandId, CommandRef};
     use crate::gameplay_transport::actor_spell::{
         ChannelSpellStates, commit_owner_batch, stage_player_batch_with_magnitude,
@@ -577,23 +592,31 @@ fn split_spell_reflection(capped: bool) {
     } else {
         f.attributes.wheel_flat_damage = Some(0);
         let mut baseline = qualify(&f, &plan).expect("real source magnitude owner");
-        baseline.bind_intrinsic_weapon(weapon);
+        if split {
+            baseline.bind_intrinsic_weapon(weapon);
+        }
         let (total, _) = baseline
             .finish_with_damage_healing(&plan, &hit, &f.bindings[1], &mut |_, high| high)
             .expect("post-block split");
-        let [primary, _] = baseline
-            .intrinsic_damage_components()
-            .next()
-            .expect("physical and fire")
-            .final_parts;
-        assert!(primary >= 5 && total - primary >= 5);
-        let expected = u32::try_from(primary / 5 + (total - primary) / 5).expect("reflection");
+        let [primary, secondary] = if split {
+            baseline
+                .damage_components()
+                .next()
+                .expect("physical and fire")
+                .final_parts
+        } else {
+            [total, 0]
+        };
+        assert!(primary >= 5 && (!split || secondary >= 5));
+        let expected = u32::try_from(primary / 5 + secondary / 5).expect("reflection");
         f.attributes.wheel_flat_damage = Some(11);
         expected
     };
     let mut magnitude = qualify(&f, &plan).expect("real source magnitude owner");
-    magnitude.bind_intrinsic_weapon(weapon);
-    let lowered = lower_native(
+    if split {
+        magnitude.bind_intrinsic_weapon(weapon);
+    }
+    let mut lowered = lower_native(
         &f.runtime,
         OwnerCombatBatch {
             caster: f.caster,
@@ -640,6 +663,17 @@ fn split_spell_reflection(capped: bool) {
         f.session,
         f.state.clone()
     ));
+    let expected_parts = apply_elite.map(|modifier| {
+        let [primary, secondary] = magnitude
+            .damage_components()
+            .next()
+            .expect("finished split")
+            .final_parts;
+        assert!(primary > 0 && secondary > 0);
+        modifier(&f.runtime, &mut lowered.batch, &mut magnitude);
+        states.open_analyser_for_test(f.caster, f.session);
+        [primary / 2, (primary + secondary) / 2 - primary / 2]
+    });
     let before = f.state.vitals();
     let preflight = stage_player_batch_with_magnitude(
         &f.runtime,
@@ -665,6 +699,35 @@ fn split_spell_reflection(capped: bool) {
         expected,
         "reflection uses each post-block component and its independent cap"
     );
+    if let Some([physical, fire]) = expected_parts {
+        use oteryn_protocol_oteryn::analyser::{
+            AnalyserFact, AnalyserImpact, decode_analyser_facts,
+        };
+        use oteryn_protocol_oteryn::damage_element::DamageElement;
+        let facts = decode_analyser_facts(
+            &states
+                .analyser_update_for_test(f.caster, f.session)
+                .expect("damage facts"),
+        )
+        .expect("typed damage facts");
+        let damage = |kind| {
+            facts
+                .iter()
+                .filter_map(|fact| match fact {
+                    AnalyserFact::Impact(AnalyserImpact::Damage { value, element })
+                        if *element == kind =>
+                    {
+                        Some(i64::from(value.get()))
+                    }
+                    _ => None,
+                })
+                .sum::<i64>()
+        };
+        assert_eq!(
+            [damage(DamageElement::Physical), damage(DamageElement::Fire)],
+            [physical, fire]
+        );
+    }
 }
 
 #[test]

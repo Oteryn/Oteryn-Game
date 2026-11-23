@@ -29,7 +29,10 @@ enum Consumption {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum RangedDamage {
     Distance {
+        /// Projectile or throwing-weapon attack, including proficiency.
         attack: u32,
+        /// Launcher attack contributes only to the roll and displayed attack.
+        launcher_attack: u32,
         elemental_attack: u32,
         element: Element,
         chance: i8,
@@ -138,7 +141,8 @@ pub(super) fn loadout(
                     (
                         *range_cells,
                         RangedDamage::Distance {
-                            attack: u32::from(*attack) + u32::from(ammo_attack),
+                            attack: u32::from(ammo_attack),
+                            launcher_attack: u32::from(*attack),
                             elemental_attack: u32::from(elemental_attack),
                             element,
                             chance,
@@ -159,6 +163,7 @@ pub(super) fn loadout(
                     *range_cells,
                     RangedDamage::Distance {
                         attack: u32::from(*attack),
+                        launcher_attack: 0,
                         elemental_attack: u32::from(*elemental_attack),
                         element: *element,
                         chance: *hit_chance,
@@ -260,11 +265,14 @@ impl RangedLoadout {
         match self.damage {
             RangedDamage::Distance {
                 attack,
+                launcher_attack,
                 elemental_attack,
                 ..
             } => Some((
                 player_distance_formula(),
-                attack.checked_add(elemental_attack)?,
+                attack
+                    .checked_add(launcher_attack)?
+                    .checked_add(elemental_attack)?,
                 "formula:player-distance",
             )),
             RangedDamage::Magic { min, max, .. } => Some((
@@ -309,13 +317,15 @@ impl RangedDamage {
                 element,
                 ..
             } => {
+                if elemental_attack == 0 {
+                    return Some((damage, 0, element));
+                }
                 let total = i64::from(attack.checked_add(elemental_attack)?);
-                let physical = if total == 0 {
-                    damage
-                } else {
-                    damage.checked_mul(i64::from(attack))? / total
-                };
-                Some((physical, damage - physical, element))
+                Some((
+                    damage.checked_mul(i64::from(attack))? / total,
+                    damage.checked_mul(i64::from(elemental_attack))? / total,
+                    element,
+                ))
             }
         }
     }
@@ -1015,6 +1025,7 @@ mod tests {
         };
         let arrow = RangedDamage::Distance {
             attack: 40,
+            launcher_attack: 0,
             elemental_attack: 0,
             element: Element::Physical,
             chance: 0,
@@ -1030,6 +1041,67 @@ mod tests {
             analyser_element(element),
             oteryn_protocol_oteryn::damage_element::DamageElement::Fire
         );
+        Ok(())
+    }
+
+    #[test]
+    fn t174_elemental_distance_split_uses_projectile_attack() -> Result<(), String> {
+        use oteryn_gameplay_content::content::native_gameplay::{
+            NativeGameplayInput, compile_native_gameplay, decode,
+        };
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/spells.manifest.json");
+        let mut source =
+            NativeGameplayInput::from_manifest(&manifest).map_err(|e| format!("{e:?}"))?;
+        source.source_world = None;
+        let mut id = [5; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        let world = crate::foundation::WorldId::decode(&id).map_err(|e| format!("{e:?}"))?;
+        let room =
+            crate::content::qualify_native_entry_room(world).map_err(|e| format!("{e:?}"))?;
+        let artefact =
+            compile_native_gameplay(room.compiled(), &source).map_err(|e| format!("{e:?}"))?;
+        let native = decode(&artefact.server_artifact)
+            .map_err(|e| format!("{e:?}"))?
+            .state;
+        let item = |slot, production_key: &str| EquippedItem {
+            tier: 0,
+            slot,
+            item_instance_id: [slot; 16],
+            definition: crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: production_key.into(),
+                revision_ref: "definition-r1".into(),
+            },
+            quantity: 1,
+            state_revision: 1,
+        };
+        let mut equipment = EquipmentSnapshot {
+            character: id,
+            content_digest: native.source_digest(),
+            character_revision: 1,
+            revision: 1,
+            combat_mode: None,
+            items: vec![
+                item(5, "oteryn:item.tibia.i52332"),
+                item(10, "oteryn:item.tibia.i763"),
+            ],
+        };
+        let mut shot = loadout(&native, &equipment, &[])
+            .flatten()
+            .ok_or("Crypt Spine and flaming arrow loadout")?;
+        let RangedDamage::Distance { attack, .. } = &mut Arc::make_mut(&mut shot).damage else {
+            return Err("distance loadout".into());
+        };
+        *attack += 2;
+        assert_eq!(shot.formula().map(|(_, attack, _)| attack), Some(38));
+        assert_eq!(shot.split(100), Some((53, 46, Element::Fire)));
+        equipment.items = vec![item(5, "oteryn:item.tibia.i25735")];
+        let throwing = loadout(&native, &equipment, &[])
+            .flatten()
+            .ok_or("leaf star loadout")?;
+        assert_eq!(throwing.split(99), Some((95, 3, Element::Earth)));
         Ok(())
     }
 
@@ -1131,6 +1203,7 @@ mod tests {
                     .map_err(|error| format!("{error:?}"))?;
                 let distance = RangedDamage::Distance {
                     attack: 31,
+                    launcher_attack: 0,
                     elemental_attack: 11,
                     element: Element::Fire,
                     chance: 100,

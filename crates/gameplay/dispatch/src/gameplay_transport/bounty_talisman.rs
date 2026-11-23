@@ -100,6 +100,7 @@ pub(in crate::gameplay_transport) fn apply_spell_bonuses_with_leech(
     root: &GameplayDecisionRoot,
     occurrence: DecisionOccurrenceId,
     leech_inputs: &mut [crate::gameplay_transport::item_spell_augments::leech_projection::Target],
+    mut components: Option<&mut crate::spell::magnitude_owner::PreparedMagnitudeOwner>,
 ) -> Option<Vec<SpellLeech>> {
     let mut leech = Vec::new();
     for effect in &mut batch.effects {
@@ -119,17 +120,23 @@ pub(in crate::gameplay_transport) fn apply_spell_bonuses_with_leech(
             effect.sub_ordinal,
         )?;
         let elite = snapshot.elite(&creature.state.policy.definition_key);
-        *magnitude = damage(*magnitude, extra_damage);
-        if elite {
-            *magnitude /= 2;
+        let scale = |amount| {
+            let scaled = damage(amount, extra_damage);
+            if elite { scaled / 2 } else { scaled }
+        };
+        if let Some(components) = components.as_deref_mut() {
+            components.scale_creature_damage(
+                effect.target, effect.sub_ordinal, magnitude, scale,
+            );
+        } else {
+            *magnitude = scale(*magnitude);
         }
         if let Some(input) = leech_inputs
             .iter_mut()
             .find(|input| input.target == effect.target && input.ordinal == effect.sub_ordinal)
             && let Some(basis) = input.damage.as_mut()
         {
-            let scaled = damage(i64::from(*basis), extra_damage);
-            *basis = u32::try_from(if elite { scaled / 2 } else { scaled }).unwrap_or(u32::MAX);
+            *basis = u32::try_from(scale(i64::from(*basis))).unwrap_or(u32::MAX);
         }
         if extra_life > 0 {
             leech.push((effect.target, effect.sub_ordinal, extra_life));
@@ -325,6 +332,46 @@ mod tests {
     #[test]
     fn elite_spell_batch_halves_actual_hp_and_replay() {
         timer_batch_case(true);
+    }
+
+    #[test]
+    fn elite_spell_commit_reports_both_halved_components() {
+        use oteryn_gameplay_quests::quest::task_board::full::{
+            BountyStatus, BountyTask, TaskBoardData,
+        };
+        crate::spell_magnitude_owner_tests::split_spell_after_elite_scaling(|runtime, batch, magnitude| {
+            let mut board = TaskBoardData::default();
+            board.bounty.state = BountyStatus::Active;
+            board.bounty.active = Some(BountyTask {
+                elite: true,
+                dust: 0,
+                race: runtime
+                    .companion_snapshot(batch.effects[0].target)
+                    .expect("qualified bounty target")
+                    .state
+                    .policy
+                    .definition_key
+                    .clone(),
+                required: 25,
+                current: 0,
+                experience: 1850,
+                points: 25,
+                grade: 0,
+                difficulty: 0,
+                slot: 0,
+            });
+            let bounty = BountyTalismanSnapshot::from_board(&board, &Default::default(), false);
+            apply_spell_bonuses_with_leech(
+                runtime,
+                batch,
+                &bounty,
+                &GameplayDecisionRoot::from_bytes([3; 32]),
+                DecisionOccurrenceId::from_bytes([4; 16]),
+                &mut [],
+                Some(magnitude),
+            )
+            .expect("source Elite bounty modifier");
+        });
     }
 
     fn timer_batch_case(elite: bool) {
@@ -547,6 +594,7 @@ mod tests {
             &root,
             decision,
             &mut inputs,
+            None,
         )
         .expect("qualified effects");
         assert!(matches!(

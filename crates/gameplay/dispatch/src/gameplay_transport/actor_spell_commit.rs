@@ -10,7 +10,7 @@ use crate::spell::cast::PlayerSpellState;
 use crate::spell::combat_batch::{CombatBatchReceipt, Error, OwnerCombatBatch, OwnerCombatChange};
 use oteryn_protocol_oteryn::damage_element::DamageElement;
 
-// Player splits carry the primary HP loss. Creature splits are clipped against the receipt.
+// Player splits carry the primary HP loss. Creature splits are scaled by the owner and then clipped.
 pub(in crate::gameplay_transport) type DamageSplit = (u16, i64, DamageElement, DamageElement);
 
 #[derive(Debug)]
@@ -411,19 +411,17 @@ pub fn stage_player_batch_with_magnitude(
     }
     let mut splits = Vec::new();
     if let Some(magnitude) = magnitude {
-        let mut components = magnitude.intrinsic_damage_components().collect::<Vec<_>>();
+        let mut components = magnitude.damage_components().collect::<Vec<_>>();
         for effect in &batch.effects {
             let total = match effect.change {
                 OwnerCombatChange::Damage { magnitude, .. } => magnitude,
                 OwnerCombatChange::DamageWithHealing { damage, .. } => damage,
                 _ => continue,
             };
-            let creature = runtime.contains_live_creature(effect.target);
-            if let Some(index) = components.iter().position(|parts| {
-                parts.target == effect.target
-                    && (creature
-                        || parts.final_parts[0].checked_add(parts.final_parts[1]) == Some(total))
-            }) {
+            if let Some(index) = components
+                .iter()
+                .position(|parts| parts.matches_effect(effect.target, effect.sub_ordinal, total))
+            {
                 splits.push((effect.sub_ordinal, components.remove(index)));
             }
         }
@@ -474,7 +472,7 @@ impl PlayerBatchPreflight {
         &mut self,
         runtime: &ChannelRuntimeV1,
         states: &ChannelSpellStates,
-        splits: &[(u16, crate::spell::magnitude_owner::IntrinsicDamage)],
+        splits: &[(u16, crate::spell::magnitude_owner::SettledSpellDamage)],
     ) -> Result<(), SpellCastDisposition> {
         use oteryn_protocol_oteryn::damage_element::DamageElement as Element;
         let element_key = |element| match element {
@@ -498,16 +496,20 @@ impl PlayerBatchPreflight {
                 OwnerCombatChange::Heal { magnitude, .. } => (*magnitude, true),
                 _ => continue,
             };
-            if magnitude <= 0 || !runtime.contains_live_creature(effect.target) {
+            let observed = splits.iter().find(|split| split.0 == effect.sub_ordinal);
+            if (magnitude <= 0 && observed.is_none())
+                || !runtime.contains_live_creature(effect.target)
+            {
                 continue;
             }
             let mut lua_reflected = Vec::new();
-            let parts = if let Some((_, split)) =
-                splits.iter().find(|split| split.0 == effect.sub_ordinal)
-            {
+            let parts = if let Some((_, split)) = observed {
                 [
                     (split.post_block[0], self.analyser_element),
-                    (split.post_block[1], split.secondary_element),
+                    (
+                        split.post_block[1],
+                        split.secondary_element.unwrap_or(self.analyser_element),
+                    ),
                 ]
             } else {
                 [
@@ -717,7 +719,7 @@ fn stage_player_batch_inner(
     caster_successor: Option<PlayerSpellState>,
     analyser_element: Option<DamageElement>,
     attack: Option<&crate::spell::cast::PreparedWheelAttackHit>,
-    splits: &[(u16, crate::spell::magnitude_owner::IntrinsicDamage)],
+    splits: &[(u16, crate::spell::magnitude_owner::SettledSpellDamage)],
 ) -> Result<PlayerBatchPreflight, SpellCastDisposition> {
     let preprocessed = analyser_element.is_some();
     let analyser_element = analyser_element.unwrap_or(DamageElement::Physical);
@@ -792,13 +794,14 @@ fn stage_player_batch_inner(
             .iter()
             .find(|(ordinal, _)| *ordinal == effect.sub_ordinal)
             .map(|(_, split)| split);
+        let split = split.and_then(|split| split.secondary_element.map(|element| (split, element)));
         if runtime.contains_live_creature(effect.target) {
-            if let Some(split) = split {
+            if let Some((split, secondary_element)) = split {
                 analyser_parts.push((
                     effect.sub_ordinal,
                     split.final_parts[0],
                     analyser_element,
-                    split.secondary_element,
+                    secondary_element,
                 ));
             }
             continue;
@@ -863,7 +866,7 @@ fn stage_player_batch_inner(
                         super::super::analyser::element(second),
                     ));
                     (next, damage)
-                } else if let Some(split) = split {
+                } else if let Some((split, secondary_element)) = split {
                     let [primary, secondary] = split.final_parts.map(|part| {
                         u32::try_from(part).map_err(|_| SpellCastDisposition::Rejected)
                     });
@@ -878,7 +881,7 @@ fn stage_player_batch_inner(
                         effect.sub_ordinal,
                         i64::from(primary),
                         analyser_element,
-                        split.secondary_element,
+                        secondary_element,
                     ));
                     (next, damage)
                 } else if preprocessed {
