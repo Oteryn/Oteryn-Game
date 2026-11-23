@@ -26,21 +26,17 @@ fn life_ring_regen_pauses_and_resumes_postgres() -> TestResult {
 }
 
 fn run_ring(name: &'static str, base: u32, worn: u32, full_ms: i64) -> TestResult {
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(move || {
-            run(async |admin| {
-                let h = Harness::create_with_admission_seed(admin, name, true, false).await?;
-                eprintln!("POSTGRES_STARTED {name}");
-                let result = exercise_ring(&h, base, worn, full_ms).await;
-                let cleanup = h.cleanup().await;
-                result.and(cleanup)
-            })
-            .map_err(|error| error.to_string())
-        })?
-        .join()
-        .map_err(|_| "worn ring test thread")??;
-    Ok(())
+    super::journal_watchdog::run(name, move |stage| {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, name, true, false).await?;
+            eprintln!("POSTGRES_STARTED {name}");
+            stage.set("equip, reconnect, and expire");
+            let result = exercise_ring(&h, base, worn, full_ms).await;
+            stage.set("cleanup");
+            let cleanup = h.cleanup().await;
+            result.and(cleanup)
+        })
+    })
 }
 
 async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64) -> TestResult {
