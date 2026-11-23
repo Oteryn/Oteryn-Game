@@ -4,6 +4,7 @@ import json
 import unittest
 
 import harvest_item_profiles as tool
+import house_decoration_actions
 
 
 class HarvestItemProfileTests(unittest.TestCase):
@@ -16,6 +17,15 @@ class HarvestItemProfileTests(unittest.TestCase):
                 self.assertTrue(profiles[f'oteryn:item.tibia.i{item}']['admission']['materializable'])
         packet = json.loads((tool.ROOT / tool.PATH).read_bytes())
         self.assertEqual(len(packet['records']), len(tool.IDS))
+        house_decoration_actions.apply_top_order(
+            packet['records'],
+            json.loads((tool.ROOT / house_decoration_actions.PROFILES).read_bytes()))
+        # The canonical Item supplies the market policy absent from the harvest capture.
+        market_item = 'oteryn:item.tibia.i953'
+        item = next(row['definition']
+                    for shard in sorted((tool.ROOT / 'content/items/definitions').glob('items-*.json'))
+                    for row in json.loads(shard.read_bytes())['records']
+                    if row['definition']['identity']['key'] == market_item)
         taxonomy = {r['target']['key']: r['source_taxonomy'] for r in json.loads(
             (tool.ROOT / 'content/items/taxonomy/items.json').read_bytes())['records']}
         for record in packet['records']:
@@ -23,6 +33,8 @@ class HarvestItemProfileTests(unittest.TestCase):
             # Production registration attaches the existing canonical taxonomy.
             if key in taxonomy:
                 record['authoring']['taxonomy'] = taxonomy[key]
+            if key == market_item:
+                record['semantics']['trade_restrictions'] = item['semantics']['trade_restrictions']
             self.assertEqual(profiles[key], record)
         manifest = json.loads((tool.ROOT / 'content/spells.manifest.json').read_bytes())
         self.assertEqual(manifest['item_profiles']['sha256'], hashlib.sha256(raw).hexdigest())

@@ -17,6 +17,8 @@ def capture(root=shared.ROOT):
     (record,) = packet['records']
     if record['admission']['stack_class'] != 'NonStackable':
         raise ValueError('M22_TALISMAN_OUTPUT_STACK_CONFLICT')
+    # The shared capture also carries the reward owner's separate goblet promotions.
+    del packet['custody_promotions']
     return packet
 
 

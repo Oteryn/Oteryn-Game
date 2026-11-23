@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import regenerate_content as regeneration
 
@@ -46,8 +46,10 @@ class MonsterReferenceLevelTests(unittest.TestCase):
 
     def test_creature_roundtrip_requires_the_explicit_default(self):
         import copy
+        from primal_reference_overlay import apply_reference
         import validate_world_project_v2_to_tree as validation
         reference = json.loads((ROOT / "content/world/definitions/reference.json").read_text())
+        apply_reference(reference["records"], ROOT)
         declarations = json.loads((ROOT / "content/world/definitions/declarations.json").read_text())
         sources = json.loads((ROOT / "content/world/provenance/sources.json").read_text())
         validation.validate_creature_families(reference, declarations, sources)
@@ -68,12 +70,24 @@ class MonsterReferenceLevelTests(unittest.TestCase):
         commands = []
         with patch("sys.argv", ["regenerate_content.py", "--resolve", "--skip-checks", "--no-stage"]), \
                 patch.object(regeneration, "resolve_conflicts", return_value=[]), \
+                patch.object(regeneration, "refresh_quest_callback_proof"), \
                 patch.object(regeneration, "materialize_world"), \
+                patch("questpc7_thaian_authoring.install"), \
+                patch("buddel_travel.install_buddel"), \
+                patch("travel_route_corrections.project_routes"), \
+                patch.object(regeneration, "canonicalize_world"), \
+                patch.object(regeneration, "refresh_source_cohort_extent"), \
                 patch.object(regeneration, "repin_rust_inventory"), \
+                patch.object(regeneration, "refresh_world_metadata"), \
+                patch.object(regeneration, "refresh_quest_donor_capture"), \
                 patch.object(regeneration, "derived_paths", return_value=set()), \
-                patch.object(regeneration, "git", return_value=""), \
+                patch.object(regeneration, "git", return_value="") as git, \
                 patch.object(regeneration, "run", side_effect=commands.append):
             self.assertEqual(regeneration.main(), 0)
+        self.assertEqual(git.call_args_list, [
+            call("diff", "--name-only", "--diff-filter=U"),
+            call("ls-files", "--modified", "--others", "--exclude-standard"),
+        ])
         self.assertTrue(any("pin-refresh" in command for command in commands))
         self.assertFalse(any(command[0] == "git" for command in commands))
 

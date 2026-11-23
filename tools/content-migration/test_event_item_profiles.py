@@ -2,6 +2,7 @@
 import copy
 import json
 from pathlib import Path
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -120,6 +121,9 @@ class EventItemProfilePrecedence(unittest.TestCase):
                          for field in ('item_id', 'target')} <= records)
         expected_map = expected | set(novelty['map_item_ids']) | set(events['seasonal_map_item_ids']) | {
             row[state] for row in source['world_door_families'] for state in ('locked', 'closed', 'open')}
+        sys.path.insert(0, str(ROOT / 'tools/content-schema/quest-authoring'))
+        import last_creep_native
+        expected_map |= last_creep_native.map_item_ids(ROOT)
         physical = source['world_map_physical']
         self.assertEqual([row['server_item_id'] for row in physical], sorted(expected_map - gaps.keys()))
         for row in physical:

@@ -6,7 +6,7 @@ import forge_sql_admission as forge
 
 class ForgeSqlAdmissionTests(unittest.TestCase):
     def test_committed_projection_matches_all_admitted_profiles_and_prices(self):
-        actual = forge.MIGRATION.read_text()
+        actual = forge.current_migration().read_text()
         start = actual.index(forge.BEGIN)
         end = actual.index(forge.END, start) + len(forge.END)
         self.assertEqual(actual[start:end], forge.generated())

@@ -47,10 +47,15 @@ class ItemholdQTests(unittest.TestCase):
         path = ROOT / 'content/interactions/reward_claims/reward-claim-variants-00000-00099.json'
         claim = next(row['definition'] for row in json.loads(path.read_bytes())['records']
                      if row['definition']['identity']['key'].endswith('.kv.ornamentedshield'))
-        self.assertEqual(claim['data_holds'], [{'category': 'source', 'code': 'SOURCE_CHARGE_MISMATCH',
-                          'placement_index': 0, 'reward_field': 'items', 'reward_index': 2}])
-        self.assertTrue(any(c['reason'] == 'SOURCE_CHARGE_MISMATCH'
-                            for c in claim['source_variant']['charge_dispositions']))
+        self.assertEqual(claim['data_holds'], [])
+        self.assertEqual(claim['readiness'], 'waiting_implementation')
+        disposition, = claim['source_variant']['charge_dispositions']
+        self.assertEqual(
+            (disposition['data_status'], disposition['reason'], disposition['placement_index'],
+             disposition['reward_field'], disposition['reward_index']),
+            ('CONFLICT', 'SOURCE_CHARGE_MISMATCH', 0, 'items', 2))
+        self.assertEqual(disposition['source_raw_argument'], 1)
+        self.assertEqual(disposition['definition_charges'], {'state': 'KNOWN', 'value': 150})
         self.assertTrue(claim['native_contents']['placements'])
         placement, = claim['native_contents']['placements']
         child = placement['contents'][2]
