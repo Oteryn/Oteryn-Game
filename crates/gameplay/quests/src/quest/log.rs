@@ -33,6 +33,9 @@ use std::collections::BTreeMap;
 
 use super::{QuestStateCatalogue, valid_quest_key};
 
+const APE_CITY_QUEST: &str = "oteryn:quest.the_ape_city_quest";
+const APE_CITY_AUTHORED_STAGE: &str = "oteryn:quest-progress/chosen/ape-city/stage";
+
 /// `QUESTGATE0-RL-07`: quests the log can list.
 pub const QUESTGATE0_RL_07: usize = 1024;
 /// `QUESTGATE0-RL-08`: missions per quest.
@@ -177,6 +180,9 @@ impl QuestLogCatalogue {
             };
             if let Some((track, _)) = &quest.start {
                 own(track)?;
+            }
+            if quest.key == APE_CITY_QUEST && state.track(APE_CITY_AUTHORED_STAGE).is_some() {
+                own(APE_CITY_AUTHORED_STAGE)?;
             }
             for mission in &quest.missions {
                 own(&mission.track)?;
@@ -367,9 +373,9 @@ impl QuestLogContent {
             .is_some_and(|value| value >= *at_least);
         // Hairycles' authored programme records its start on the chosen stage.
         // Published saves still open the same journal through the donor flag.
-        let authored_ape_city = quest.key == "oteryn:quest.the_ape_city_quest"
+        let authored_ape_city = quest.key == APE_CITY_QUEST
             && catalogue
-                .value(facts, "oteryn:quest-progress/chosen/ape-city/stage")
+                .value(facts, APE_CITY_AUTHORED_STAGE)
                 .is_some_and(|stage| stage >= 1);
         (started || authored_ape_city).then_some((catalogue, quest, completed))
     }
