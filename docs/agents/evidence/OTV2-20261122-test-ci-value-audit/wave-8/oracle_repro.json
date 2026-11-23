@@ -1,0 +1,45 @@
+{
+  "source_head": "759e99935fab5b9beab7ed2136db3841abbd67f8",
+  "test": "tools/content-migration/test_creature_level_rating.py::test_calibration_within_ten_percent",
+  "actual_three_rows": [
+    {
+      "area": "Bulltaur Lair",
+      "observed_tibia": 300,
+      "oteryn": 300
+    },
+    {
+      "area": "Nimmersatt's Breeding Ground",
+      "observed_tibia": 454,
+      "oteryn": 454
+    },
+    {
+      "area": "Rotten Wasteland",
+      "observed_tibia": 790,
+      "oteryn": 790
+    }
+  ],
+  "mutation": "in memory: test class report calibration becomes []",
+  "existing_test_real": "PASS",
+  "existing_test_empty": "PASS false-green",
+  "candidate_literal_three_row_oracle_real": "PASS",
+  "candidate_literal_three_row_oracle_empty": "FAIL expected",
+  "negative_control": {
+    "file": "tools/content-migration/test_elephant_corpse_profiles.py",
+    "original_IDS": [
+      4360,
+      4361,
+      4362,
+      6052
+    ],
+    "mutants": [
+      [
+        6052
+      ],
+      [
+        4360
+      ]
+    ],
+    "each_result": "four methods: 3 PASS, 1 FAIL from exact capture source ID comparison"
+  },
+  "all_mutations": "interpreter only; no source file edit"
+}

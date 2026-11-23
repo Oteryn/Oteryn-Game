@@ -1,0 +1,20 @@
+{
+  "source_head": "759e99935fab5b9beab7ed2136db3841abbd67f8",
+  "source": "tools/content-migration/test_world_project_v2_to_tree.py::check_inventory(workflow_checks=True)",
+  "workflow": ".github/workflows/content-tree-migration.yml",
+  "inventory_count": 40,
+  "reviewed_modules": [
+    "test_creature_level_rating",
+    "test_dispenser_item_profiles",
+    "test_elemental_arrival_profiles",
+    "test_elemental_spheres_profiles",
+    "test_elephant_corpse_profiles",
+    "test_encounter_loot_item_admissions",
+    "test_engenc2_fugue_profile",
+    "test_engenc2_nomads_window",
+    "test_engenc_elemental_profiles",
+    "test_engenc_training_profiles"
+  ],
+  "listed_in_inventory": [],
+  "other_indirect_consumers": "UNKNOWN"
+}

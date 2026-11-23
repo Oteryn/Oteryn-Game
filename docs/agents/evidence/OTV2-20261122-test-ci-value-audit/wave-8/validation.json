@@ -1,0 +1,19 @@
+{
+  "source_head": "759e99935fab5b9beab7ed2136db3841abbd67f8",
+  "source_tree": "e0012f3f2aedf7deb4390eda7d774a8eea6b91f1",
+  "runner": "oteryn-vps isolated clean detached checkout",
+  "python": "3.14.4",
+  "dependency": "existing venv genuine zstandard==0.25.0",
+  "cwd": "tools/content-migration",
+  "command": "/home/ubuntu/oteryn-work/qmech-3056-20261111-9dd395d3452e-venv/bin/python -m unittest -v test_creature_level_rating test_dispenser_item_profiles test_elemental_arrival_profiles test_elemental_spheres_profiles test_elephant_corpse_profiles test_encounter_loot_item_admissions test_engenc2_fugue_profile test_engenc2_nomads_window test_engenc_elemental_profiles test_engenc_training_profiles",
+  "methods": 29,
+  "passed": 29,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "exit_code": 0,
+  "raw_log_sha256": "7dd95c97f0601bc66b3e2dd93db9bc23e36057ff65ec969caf9ef7725196516d",
+  "raw_log_path_on_runner": "/home/ubuntu/oteryn-work/oteryn-ci-audit-20261123-run8-tests-venv.log",
+  "first_attempt": "system python 26 PASS, one import loader ERROR (remaining 3 not collected due missing zstandard)",
+  "current_head_pg_game_platform_windows_gpu": "NOT_RUN"
+}
