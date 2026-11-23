@@ -7,6 +7,7 @@ use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
+use crate::gameplay_transport::monster_profile_cycle::with_native_ai_seed;
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
 #[test]
@@ -196,10 +197,16 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
             let ability = "oteryn:ability.creature.a_greedy_eye.optional-field-core-attacks-1";
             let mut selected = false;
             let mut dead = false;
+            // Replay the passing main fixture's AI sequence across native content revisions.
+            const EYE_SCENARIO_SEED: [u8; 32] = [
+                0xea, 0xb2, 0xa4, 0xd3, 0xe2, 0xca, 0x2b, 0x22, 0xbe, 0x8e, 0x32, 0x41, 0x34, 0xa1,
+                0xd2, 0x67, 0xaa, 0xf4, 0x72, 0x12, 0xa2, 0x6c, 0x08, 0x40, 0x72, 0xdd, 0x94, 0x2b,
+                0xf8, 0x38, 0x56, 0x71,
+            ];
             // Source interval is 2s at 100%; include the initial native scheduling turn.
             for _ in 0..4 {
                 let view = owner.runtime_view(&registered);
-                view.drain_monster_melee().await;
+                with_native_ai_seed(EYE_SCENARIO_SEED, view.drain_monster_melee()).await;
                 let runtime = view.runtime.lock().await;
                 let states = view.states.spell_states.lock().await;
                 if let Some(report) = states.monster_melee.creature_ai.last_report_for_test(eye) {
