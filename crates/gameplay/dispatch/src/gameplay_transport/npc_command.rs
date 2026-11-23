@@ -262,12 +262,20 @@ impl NpcConversations {
     }
 
     pub fn bank_reply(intent: &NpcTalkIntent, line: String) -> NpcTalkOutcome {
+        Self::reply_with_state(intent, line, NpcConversationState::Open)
+    }
+
+    pub(super) fn reply_with_state(
+        intent: &NpcTalkIntent,
+        line: String,
+        state: NpcConversationState,
+    ) -> NpcTalkOutcome {
         NpcTalkOutcome {
             unknown: false,
             inventory_changed: false,
             disposition: NpcIntentDisposition::Ok,
             conversation: Some(NpcConversation {
-                open: Some((intent.npc_actor, NpcConversationState::Open)),
+                open: Some((intent.npc_actor, state)),
                 lines: vec![line],
             }),
             window: None,

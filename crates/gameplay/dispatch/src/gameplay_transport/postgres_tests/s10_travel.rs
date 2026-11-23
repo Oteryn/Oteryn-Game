@@ -297,20 +297,13 @@ async fn regional_quotes(
             }
             let outcome = talk(owner, deps, npc, command, &input).await?;
             let reply = line(&outcome);
-            if !route.held {
-                let state = outcome
-                    .conversation
-                    .and_then(|conversation| conversation.open);
-                if state != Some((npc, NpcConversationState::Confirming)) {
-                    failures.push(format!(
-                        "{stem} {input:?}: expected Confirming, got {state:?}"
-                    ));
-                }
-            }
             command += 1;
-            let expected = if route.held {
+            let (expected, expected_state) = if route.held {
                 // PARTIAL: Petros still requires the donor cheese guard.
-                "I'm sorry but I don't sail there.".to_owned()
+                (
+                    "I'm sorry but I don't sail there.".to_owned(),
+                    NpcConversationState::Open,
+                )
             } else {
                 let fare = if stem.starts_with("tarak_") {
                     route.route.price
@@ -318,10 +311,19 @@ async fn regional_quotes(
                     source_rows.iter().find(|row| row["key"] == key)
                         .and_then(|row| row["donor_cost"].as_u64()).ok_or("donor fare")?
                 };
-                format!("Do you seek a passage to {} for {fare} gold?", route.keyword)
+                (
+                    format!("Do you seek a passage to {} for {fare} gold?", route.keyword),
+                    NpcConversationState::Confirming,
+                )
             };
             if reply != expected {
                 failures.push(format!("{stem} {input:?}: expected {expected:?}, got {reply:?}"));
+            }
+            let state = outcome.conversation.as_ref().and_then(|reply| reply.open);
+            if state != Some((npc, expected_state)) {
+                failures.push(format!(
+                    "{stem} {input:?}: expected {expected_state:?}, got {state:?}"
+                ));
             }
         }
         owner.clock_origin -= std::time::Duration::from_secs(1);

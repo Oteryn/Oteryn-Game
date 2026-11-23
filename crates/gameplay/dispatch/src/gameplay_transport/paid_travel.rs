@@ -222,13 +222,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fare,
                 },
             );
-            return npc_command::NpcTalkOutcome {
-                conversation: Some(NpcConversation {
-                    open: Some((intent.npc_actor, NpcConversationState::Confirming)),
-                    lines: vec![line],
-                }),
-                ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Ok)
-            };
+            return npc_command::NpcConversations::reply_with_state(
+                intent,
+                line,
+                NpcConversationState::Confirming,
+            );
         };
         let Some(request) = self
             .paid_travel_request(actor, command, intent, &prompt)
