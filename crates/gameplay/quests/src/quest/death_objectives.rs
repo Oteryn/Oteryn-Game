@@ -55,7 +55,7 @@ impl GuardianSpawn {
 
 impl DeathObjective {
     pub(crate) fn transition(&self) -> QuestTransition {
-        QuestTransition {
+        let mut transition = QuestTransition {
             key: self.key.clone(),
             quest: self.quest.clone(),
             completes: false,
@@ -73,7 +73,17 @@ impl DeathObjective {
                     effect: QuestEffectKind::Add(1),
                 },
             ],
+        };
+        if self.key == super::grave_danger::ZELOS_DEATH {
+            // Crystal 201189f grave_danger_access.lua advances the questline after
+            // the knights and Zelos. The existing passages guard proves the knights.
+            transition.effects.push(QuestEffect {
+                track: super::grave_danger::QUESTLINE.into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::RaiseTo(4),
+            });
         }
+        transition
     }
 
     pub fn active(&self, tracks: &BTreeMap<String, i64>) -> bool {
@@ -240,7 +250,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
         });
         transitions.push(objective.transition());
     }
-    // Compute the deployed definition before adding the source questline effect.
+    // Derive the deployed definition before Zelos also advanced the questline.
     // Existing saves retain their pin and all of their original track defaults.
     let quest = "oteryn:quest.grave_danger_quest";
     let previous = QuestStateCatalogue::new(
@@ -254,23 +264,20 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             .iter()
             .filter(|transition| transition.quest == quest)
             .cloned()
+            .map(|mut transition| {
+                if transition.key == super::grave_danger::ZELOS_DEATH {
+                    transition
+                        .effects
+                        .retain(|effect| effect.track != super::grave_danger::QUESTLINE);
+                }
+                transition
+            })
             .collect(),
     )
     .map_err(|e| format!("{e:?}"))?;
     let hash = previous
         .definition_hash(quest)
         .ok_or("Grave Danger predecessor")?;
-    let zelos = transitions
-        .iter_mut()
-        .find(|transition| transition.key == super::grave_danger::ZELOS_DEATH)
-        .ok_or("King Zelos objective")?;
-    // Crystal 201189f grave_danger_access.lua: the completed knights and Zelos
-    // advance the questline to 4. The existing passages guard proves the knights.
-    zelos.effects.push(QuestEffect {
-        track: super::grave_danger::QUESTLINE.into(),
-        from: QuestComparison::Any,
-        effect: QuestEffectKind::RaiseTo(4),
-    });
 
     let mut extended = QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))?;
