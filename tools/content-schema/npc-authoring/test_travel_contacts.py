@@ -29,3 +29,31 @@ class TravelContactsTest(unittest.TestCase):
                     [p["cell"] for p in placements if p["npc"] == f"oteryn:npc.{npc}"],
                     [{"x": x, "y": y, "floor": floor}],
                 )
+
+
+class PostmanContactsTest(unittest.TestCase):
+    def test_noodles_has_a_published_actor(self):
+        self.assert_published("noodles")
+
+    def test_olrik_has_a_published_actor(self):
+        self.assert_published("olrik")
+
+    def assert_published(self, name):
+        key = f"oteryn:npc.{name}"
+        candidates = json.loads(convert_placements.CANDIDATES.read_text())["candidates"]
+        candidate = next(row for row in candidates if row["identity"]["key"] == key)
+        published = [
+            row["declaration"]["cell"]
+            for filename, data in convert_placements.convert().items()
+            if filename.startswith("placements-")
+            for row in json.loads(data)["records"]
+            if row["declaration"]["npc"] == key
+        ]
+        source_cells = [row["position"] for row in candidate["placements"]]
+        self.assertEqual(
+            published,
+            [
+                {"x": cell["x"], "y": cell["y"], "floor": cell["z"]}
+                for cell in source_cells
+            ],
+        )

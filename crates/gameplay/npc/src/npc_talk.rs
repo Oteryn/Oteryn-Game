@@ -1139,13 +1139,6 @@ pub fn talk_with_speaker<K: Copy + PartialEq>(
             *engaged = None;
             return start(speaker, text, &said, npcs, engaged, female);
         };
-        if let Some(keyword) = npc.entry.dialogue_keyword(text, &said) {
-            return Some(NpcReply {
-                id: npc.id,
-                text: keyword.reply[0].clone(),
-                continuation: keyword.reply[1..].to_vec(),
-            });
-        }
         let farewell = focus_reply(npc.entry.focus_farewell.as_ref(), &said, female)
             .or_else(|| npc.entry.is_farewell(&said).then_some(npc.entry.farewell()));
         if let Some(farewell) = farewell {
@@ -1154,6 +1147,13 @@ pub fn talk_with_speaker<K: Copy + PartialEq>(
                 id: npc.id,
                 text: farewell.to_owned(),
                 continuation: Vec::new(),
+            });
+        }
+        if let Some(keyword) = npc.entry.dialogue_keyword(text, &said) {
+            return Some(NpcReply {
+                id: npc.id,
+                text: keyword.reply[0].clone(),
+                continuation: keyword.reply[1..].to_vec(),
             });
         }
         if says_any(&said, &TOPICS) && !npc.entry.admitted_dialogue {

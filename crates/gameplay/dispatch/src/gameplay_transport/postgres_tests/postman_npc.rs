@@ -6,7 +6,7 @@ use crate::foundation::ChannelContentPin;
 use std::sync::Arc;
 
 #[test]
-fn crystal_kevin_postgres_requires_the_full_tour_briefing() -> TestResult {
+fn crystal_kevin_postgres_requires_the_full_tour_briefing_and_takes_all_bones() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -86,12 +86,66 @@ fn crystal_kevin_postgres_requires_the_full_tour_briefing() -> TestResult {
                     "command {index}: {text}"
                 );
             }
+            let mission04 = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission04";
+            super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                &h,
+                &owner,
+                &deps.admitted,
+                &[(mission04.into(), 1)],
+                91,
+            )
+            .await?;
+            super::item_look_fixtures::seed_main_backpack(
+                &h,
+                &[
+                    ("oteryn:item.tibia.i3115", 100),
+                    ("oteryn:item.tibia.i3115", 1),
+                    ("oteryn:item.tibia.i3116", 100),
+                    ("oteryn:item.tibia.i3116", 1),
+                ],
+            )
+            .await?;
+            owner
+                .refresh_quest_session(deps.admitted.game_session_id, true)
+                .await;
+            for (command, message) in [(92, "mission"), (93, "yes")] {
+                super::classic_quests_fixtures::talk(
+                    &mut owner,
+                    &deps.admitted,
+                    kevin,
+                    command,
+                    message,
+                )
+                .await?;
+            }
+            let stage: i64 = sqlx::query_scalar(
+                "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+            )
+            .bind(mission04)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(stage, 2);
+            let consumed: Vec<(String, i64)> = sqlx::query_as(
+                "SELECT before_item->>'definition_production_key' AS item, sum(quantity)::bigint
+                   FROM game_quest_callback_consumptions
+                  WHERE transition_key='oteryn:quest-npc/postman/kevin/bones_complete'
+                  GROUP BY item ORDER BY item",
+            )
+            .fetch_all(&h.pool)
+            .await?;
+            assert_eq!(
+                consumed,
+                [
+                    ("oteryn:item.tibia.i3115".to_owned(), 101),
+                    ("oteryn:item.tibia.i3116".to_owned(), 101),
+                ]
+            );
             drop(owner);
             drop(authority);
             drop(seal);
             h.cleanup().await
         })
     })?;
-    eprintln!("POSTGRES_CASE_COMPLETED postman_kevin_tour_briefing");
+    eprintln!("POSTGRES_CASE_COMPLETED postman_kevin_tour_briefing_and_bones");
     Ok(())
 }

@@ -521,3 +521,40 @@ fn dixi_uses_source_focus_replies() -> Result<(), String> {
     assert_eq!(focus, None);
     Ok(())
 }
+
+#[test]
+fn source_keywords_do_not_intercept_goodbye() -> Result<(), String> {
+    let book = book()?;
+    let position = ChatPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    for key in [
+        "buddel",
+        "buddel_helheim",
+        "buddel_okolnir",
+        "buddel_raider_camp",
+        "buddel_tyrsung",
+        "kendra",
+        "king_tibianus",
+        "queen_eloise",
+    ] {
+        let entry = book.get(&format!("oteryn:npc.{key}")).ok_or(key)?;
+        let npc = [TalkNpc {
+            id: 1u8,
+            position,
+            entry,
+        }];
+        let mut focused = Some(1);
+        assert_eq!(
+            talk(position, "goodbye", &npc, &mut focused)
+                .map(|reply| reply.text)
+                .as_deref(),
+            Some(entry.farewell()),
+            "{key}"
+        );
+        assert_eq!(focused, None, "{key}");
+    }
+    Ok(())
+}

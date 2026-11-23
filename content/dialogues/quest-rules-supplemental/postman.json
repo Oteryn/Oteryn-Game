@@ -64,6 +64,16 @@
       ]
     },
     {
+      "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_olrik",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/olrik.lua:78"
+      ]
+    },
+    {
       "key": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
       "quest": "oteryn:quest.the_postman_missions_quest",
       "initial": 0,
@@ -3721,6 +3731,135 @@
           "kind": "set",
           "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission06",
           "value": 10
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/olrik/measurements",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.olrik",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "reply": [
+        "My measurements? Listen, lets make that a bit more exciting ... No, no, not what you think! I mean let's gamble. I will roll a dice. If I roll a 6 you win and I'll tell you what you need to know, else I win and get 5 gold. Deal? "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/olrik.lua:63"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_olrik",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/olrik/measurements_unavailable",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.olrik",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "reply": [
+        "..."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/olrik.lua:66"
+      ],
+      "guards": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/postman/olrik/roll",
+      "quest": "oteryn:quest.the_postman_missions_quest",
+      "npc": "oteryn:npc.olrik",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Ok, here we go ... {roll}! You have won! How lucky you are! So listen ...<tells you what you need to know> ",
+        "Ok, here we go ... {roll}! You lose! Try again."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/olrik.lua:70"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "ge",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "op": "lt",
+          "value": 8
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_olrik",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i3031",
+          "count": 5,
+          "op": "ge"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i3031",
+          "count": 5
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/measurements_olrik",
+          "value": 1
         },
         {
           "kind": "set_topic",

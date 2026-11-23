@@ -3,7 +3,7 @@
   "inputs": [
     {
       "path": "content/dialogues/quest-rules-supplemental/postman.json",
-      "sha256": "9605d92a9f98d3e169d124e4a0898c4318313130fec512d0ebe6617c22c3f06a",
+      "sha256": "96a757b3f7db726a3d23296c3be7d428e20a46cf6a8ed981bec90c4300999133",
       "quest": "oteryn:quest.the_postman_missions_quest"
     },
     {

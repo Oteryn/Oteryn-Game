@@ -60,9 +60,18 @@ pub(super) fn register(
                 });
         }
     }
-    // Measured on the complete deployed catalogue at 871c1dec7. Each new
-    // branch uses existing tracks, so absent values retain their original defaults.
+    // Absent tracks retain their source defaults. Entries without an explicit
+    // revision were measured on the complete deployed catalogue at 871c1dec7.
     for (quest, hash) in [
+        // Measured through the production loader at 7dc142a65.
+        (
+            "oteryn:quest.the_postman_missions_quest",
+            [
+                0xc6, 0xe3, 0xda, 0x7c, 0x90, 0xc9, 0xbe, 0xaf, 0xdf, 0x23, 0xc4, 0x06, 0x1a, 0x46,
+                0x75, 0x0b, 0xa4, 0x13, 0x93, 0x0a, 0xf6, 0xcd, 0xae, 0xa8, 0x26, 0x19, 0x6c, 0x08,
+                0x48, 0x51, 0x6b, 0xe8,
+            ],
+        ),
         // Measured through the production loader at 35d65457d.
         (
             "oteryn:quest.the_postman_missions_quest",

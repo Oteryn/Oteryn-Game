@@ -436,3 +436,72 @@ fn postman_partial_lokur_refuses_before_the_paid_olrik_measurement() -> Result<(
     );
     Ok(())
 }
+
+#[test]
+fn postman_olrik_is_admitted_to_supply_the_fifth_measurement() -> Result<(), String> {
+    let native =
+        loader::load_embedded_quest_state("postman-olrik").map_err(|e| format!("{e:?}"))?;
+    let npc = "oteryn:npc.olrik";
+    let source = NpcRuleCatalog::runtime()
+        .and_then(|source| source.admitted_for_npc(npc, native.catalogue()))
+        .map_err(|e| e.to_string())?
+        .ok_or("Olrik has no admitted programme")?;
+    let stage = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission07";
+    let tracks = BTreeMap::from([(stage.into(), 5)]);
+    // PARTIAL: this NPC participant has no bank-debit admission.
+    let bank_only = NpcInventorySnapshot {
+        bank: 5,
+        ..Default::default()
+    };
+    let outfits = BTreeMap::new();
+    let mut input = NpcRuleInput {
+        npc,
+        trigger: NpcRuleTrigger::Say,
+        message: "measurements",
+        player_name: None,
+        topic: 0,
+        tracks: &tracks,
+        inventory: &bank_only,
+        now_epoch_seconds: 0,
+        calendar_month: 1,
+        premium_current: false,
+        level: 1,
+        vocation: "",
+        sex: 0,
+        outfits: &outfits,
+    };
+    let offer = source
+        .plan_storage(&input)
+        .map_err(|e| e.to_string())?
+        .ok_or("dice offer")?;
+    input.topic = offer.next_topic;
+    input.message = "yes";
+    assert!(
+        source
+            .plan_item_exchange(&input)
+            .map_err(|e| e.to_string())?
+            .is_none()
+    );
+    let mut inventory = NpcInventorySnapshot::default();
+    inventory.items.insert(
+        NpcItemKey {
+            item: "oteryn:item.tibia.i3031".into(),
+            subtype: None,
+        },
+        5,
+    );
+    let input = NpcRuleInput {
+        inventory: &inventory,
+        ..input
+    };
+    let win = source
+        .plan_item_exchange(&input)
+        .map_err(|e| e.to_string())?
+        .ok_or("paid dice plan")?;
+    assert!(
+        win.track_changes
+            .iter()
+            .any(|change| change.key == stage && change.before == 5 && change.after == 6)
+    );
+    Ok(())
+}

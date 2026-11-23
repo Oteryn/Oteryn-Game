@@ -12,6 +12,7 @@ mod hot_cuisine_m42_tests;
 mod inventory;
 mod items;
 mod marlin_trophy;
+mod postman_olrik;
 mod rewards;
 pub mod teleport;
 pub use inventory::{NpcProgramInventory, inventory_prefetch_required, requires_current_inventory};
@@ -548,10 +549,15 @@ impl DurabilityRoot {
                 tx.commit(deadline).await?;
                 return Ok(Ok(result));
             }
-            let plan=match evaluated {
+            let mut plan=match evaluated {
                 Ok(Some(plan)) if plan.selected_rule_keys.first()==Some(&request.transition_key) && (!plan.track_changes.is_empty() || plan.completes)=>plan,
                 _=>return Ok(Ok(refused(QuestRefusal::StageMismatch))),
             };
+            if request.transition_key == postman_olrik::ROLL {
+                let face: i16 = sqlx::query_scalar("SELECT (1 + floor(random() * 6))::smallint")
+                    .fetch_one(&mut **tx).await?;
+                postman_olrik::resolve(&mut plan, face)?;
+            }
             if source.programs().iter().any(|program| {
                 program.document.quest == plan.quest && program.document.premium_required
             }) {
