@@ -37,12 +37,15 @@ impl CreatureAiTable {
                     || (i64::from(at.y) - i64::from(spawn.y)).abs() > 50
                     || (i32::from(at.floor) - i32::from(spawn.floor)).abs() > 2)
             {
-                let _ = match current_map {
+                let returned = match current_map {
                     Some(map) => map.relocate(runtime, actor, spawn),
                     None => crate::movement::relocate::relocate_creature(
                         runtime, actor, cells, blocking, spawn,
                     ),
                 };
+                if returned.is_ok() {
+                    runtime.clear_source_player_damage(actor);
+                }
                 entry.due_us = None;
                 entry.state.target = None;
                 entry.motion.stop();
