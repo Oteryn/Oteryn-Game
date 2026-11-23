@@ -125,3 +125,57 @@ pub(super) async fn place_ground(
     .execute(&mut ***tx).await?;
     Ok(())
 }
+
+/// Breadth-first search of the carried backpack, while the marble still occupies its slot.
+pub(super) async fn nested_marble_destination<C: ItemLoopContent>(
+    tx: &mut Type2Transaction<'_>,
+    backpack: &[u8],
+    content: &C,
+) -> Result<Option<(String, u64)>, DurabilityError> {
+    let rows = sqlx::query(
+        "WITH RECURSIVE tree(item, ordinals) AS (
+           SELECT item_instance_id, ARRAY[placement_ordinal]::numeric[]
+             FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid
+           UNION ALL
+           SELECT e.item_instance_id, t.ordinals || e.placement_ordinal
+             FROM tree t JOIN game_item_nested_entries e ON e.parent_item_instance_id=t.item
+            WHERE cardinality(t.ordinals)<7
+         )
+         SELECT item::text AS item, i.definition_family, i.definition_production_key, i.definition_revision_ref
+           FROM tree JOIN game_item_instances i ON i.item_instance_id=tree.item
+          WHERE i.lifecycle=1 ORDER BY cardinality(ordinals), ordinals DESC LIMIT 500",
+    )
+    .bind(backpack)
+    .fetch_all(&mut ***tx)
+    .await?;
+    for row in rows {
+        let definition = TypedDefinitionRef {
+            family: row.try_get("definition_family")?,
+            production_key: row.try_get("definition_production_key")?,
+            revision_ref: row.try_get("definition_revision_ref")?,
+        };
+        let Some(capacity) = content
+            .loop_facts(&definition)
+            .and_then(|f| f.container_capacity)
+        else {
+            continue;
+        };
+        let parent: String = row.try_get("item")?;
+        let (occupied, highest): (i64, String) = sqlx::query_as(
+            "SELECT count(*), coalesce(max(placement_ordinal),0)::text
+               FROM game_item_nested_entries WHERE parent_item_instance_id=$1::uuid",
+        )
+        .bind(&parent)
+        .fetch_one(&mut ***tx)
+        .await?;
+        if occupied < i64::from(capacity.min(20)) {
+            let ordinal = highest
+                .parse::<u64>()
+                .ok()
+                .and_then(|ordinal| ordinal.checked_add(1))
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            return Ok(Some((parent, ordinal)));
+        }
+    }
+    Ok(None)
+}

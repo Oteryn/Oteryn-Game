@@ -127,7 +127,40 @@ $arm$;
      END IF;
 $arm$;
     IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing craft output admission'; END IF;
-    EXECUTE replace(body,anchor,anchor||arm);
+    body:=replace(body,anchor,anchor||arm||$arm$
+     IF o ? 'nested_parent' AND (
+         o ? 'ground' OR jsonb_array_length(NEW.outputs)<>1 OR NEW.consume_source
+         OR o->>'count' IS DISTINCT FROM '1'
+         OR COALESCE(o->>'key','') NOT IN (
+             'oteryn:item.tibia.i10427','oteryn:item.tibia.i10428','oteryn:item.tibia.i10429')
+         OR NOT (
+             (NEW.recipe='oteryn:sculpture.carried' AND
+                 NEW.ingredient_before_item->>'definition_production_key'='oteryn:item.tibia.i10426') IS TRUE
+             OR (NEW.recipe='oteryn:gathering.crystal' AND EXISTS (
+                 SELECT 1 FROM game_terrain_tool_receipts t
+                 WHERE t.game_session_id=NEW.game_session_id AND t.command_id=NEW.command_id
+                 AND t.character_id=NEW.character_id AND t.world_id=NEW.world_id
+                 AND t.tool_item_instance_id=NEW.source_item_instance_id AND t.intent=NEW.intent
+                 AND t.transformed_item_id=0
+             ))
+         )
+         OR NOT EXISTS (
+             SELECT 1 FROM game_item_instances parent
+             JOIN LATERAL game_item_loop_owner(parent.item_instance_id) owner ON true
+             WHERE parent.item_instance_id=(o->>'nested_parent')::uuid
+             AND parent.lifecycle=1 AND parent.world_id=NEW.world_id
+             AND owner.owner_character=NEW.character_id AND owner.depth BETWEEN 1 AND 7
+         )
+         OR (o->>'ordinal')::numeric <= (
+             SELECT coalesce(max(placement_ordinal),0) FROM game_item_nested_entries
+             WHERE parent_item_instance_id=(o->>'nested_parent')::uuid
+         )
+     ) THEN RAISE EXCEPTION 'unqualified nested marble output' USING ERRCODE='23514'; END IF;
+$arm$);
+    -- Nested ordinals have their own monotonic check against their chosen parent.
+    arm:=$arm$((o->>'ordinal')::numeric<=(SELECT coalesce(max(placement_ordinal),0) FROM game_item_container_entries WHERE parent_item_instance_id=NEW.parent_item_instance_id)$arm$;
+    IF strpos(body,arm)=0 THEN RAISE EXCEPTION 'missing main backpack output ordinal guard'; END IF;
+    EXECUTE replace(body,arm,'(NOT (o ? ''nested_parent'') AND '||substring(arm FROM 2));
 
     body:=pg_get_functiondef('game_item_craft_complete(uuid)'::regprocedure);
     -- The exact ingredient debit arm originally checked direct custody only on retirement.
@@ -153,6 +186,20 @@ $arm$;
         AND encode(g.native_room_placement_context,'hex')=o->'ground'->>'frame'
         AND g.corpse_ref=convert_to('sculpture-craft-v1','UTF8')
       ) THEN RAISE EXCEPTION 'sculpture Ground output or custody mismatch' USING ERRCODE='23514'; END IF;
+    ELSIF o ? 'nested_parent' THEN
+      IF NOT EXISTS (
+        SELECT 1 FROM game_item_instances n JOIN game_item_nested_entries e USING(item_instance_id,world_id)
+        JOIN LATERAL game_item_loop_owner(e.parent_item_instance_id) owner ON true
+        WHERE n.item_instance_id=(o->>'item')::uuid AND n.world_id=r.world_id AND n.lifecycle=1
+        AND n.quantity=(o->>'count')::bigint AND n.definition_family='Item'
+        AND n.definition_production_key=o->>'key' AND n.definition_revision_ref=o->>'revision'
+        AND n.minted_transaction_id=r.transaction_id AND n.last_transaction_id IS NULL
+        AND e.parent_item_instance_id=(o->>'nested_parent')::uuid AND e.placed_transaction_id=r.transaction_id
+        AND e.placement_ordinal=(o->>'ordinal')::numeric
+        AND owner.owner_character=r.character_id AND owner.depth BETWEEN 1 AND 7
+        AND (SELECT count(*) FROM game_item_nested_entries
+             WHERE parent_item_instance_id=e.parent_item_instance_id)<=20
+      ) THEN RAISE EXCEPTION 'marble output or nested custody mismatch' USING ERRCODE='23514'; END IF;
     ELSIF NOT EXISTS(SELECT 1 FROM game_item_instances n JOIN game_item_container_entries e USING(item_instance_id)$arm$;
     IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing craft output completion'; END IF;
     EXECUTE replace(body,anchor,arm);
@@ -181,6 +228,15 @@ $arm$;
                 WHERE i.item_instance_id=OLD.item_instance_id AND i.lifecycle=2 AND i.quantity=0
                 AND r.ingredient_location=to_jsonb(OLD) AND r.created_xact_id=pg_current_xact_id()
             ) THEN RETURN NULL; END IF;
+$arm$;
+        END IF;
+        IF name='game_item_nested_entry_proven()' THEN
+            arm:=arm||$arm$
+            IF TG_OP='INSERT' AND EXISTS (
+                SELECT 1 FROM game_item_craft_records r
+                WHERE r.transaction_id=NEW.placed_transaction_id AND r.created_xact_id=pg_current_xact_id()
+                AND r.outputs->0 ? 'nested_parent' AND (r.outputs->0->>'item')::uuid=NEW.item_instance_id
+            ) THEN PERFORM game_item_craft_complete(NEW.placed_transaction_id); RETURN NULL; END IF;
 $arm$;
         END IF;
         EXECUTE overlay(body placing E'BEGIN\n'||arm from begin_at for 5);

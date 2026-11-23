@@ -483,8 +483,14 @@ async fn write_with_skinning<C: ItemLoopContent>(
                                 &request.intent,
                             )?;
                             let attempt = fishing::gathering_attempt(tool, input, 10, 1, roll)?;
-                            let outputs =
-                                gathering_outputs(native, attempt.after.or(attempt.yield_item))?;
+                            // Crystal removes carried ice, then creates the next stage
+                            // at the target position. Container addresses have no tile.
+                            let output = if expected_ground.is_some() {
+                                attempt.after.or(attempt.yield_item)
+                            } else {
+                                attempt.yield_item
+                            };
+                            let outputs = gathering_outputs(native, output)?;
                             ingredient_consumed = Some((target, quantity == 1));
                             carried_attempt = Some((input, attempt));
                             return Some(CookingConversion {
@@ -571,12 +577,26 @@ async fn write_with_skinning<C: ItemLoopContent>(
              ON e.parent_item_instance_id=t.item_instance_id WHERE t.depth<8 \
          ) SELECT count(*) FROM (SELECT item_instance_id FROM tree LIMIT 501) bounded",
     ).bind(&parent).fetch_one(&mut ***tx).await?;
-    let retired_carried_ingredient = retires_ingredient
-        && ground.as_ref().is_none_or(|ctx| ctx.operand.target.is_none());
-    let output_count = i64::try_from(conversion.outputs.len())
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let tree_full = tree_count + output_count - i64::from(retires_source)
-        - i64::from(retired_carried_ingredient) > 500;
+    let marble_yield = carried_attempt
+        .is_some_and(|(input, attempt)| input == 10426 && attempt.yield_item.is_some())
+        || request
+            .gathering
+            .as_ref()
+            .is_some_and(|g| g.mutation.before == 10426 && g.attempt.yield_item.is_some());
+    // Crystal adds the figurine before removing the marble. The marble
+    // still occupies its slot, counts toward the tree limit, and weighs
+    // the same when choosing between carried and Ground custody.
+    let retired_carried_ingredient = !marble_yield
+        && retires_ingredient
+        && ground
+            .as_ref()
+            .is_none_or(|ctx| ctx.operand.target.is_none());
+    let output_count =
+        i64::try_from(conversion.outputs.len()).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let tree_full = tree_count + output_count
+        - i64::from(retires_source)
+        - i64::from(retired_carried_ingredient)
+        > 500;
     let bag = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
         .bind(&parent).fetch_one(&mut ***tx).await?;
     let bag_definition = TypedDefinitionRef {
@@ -589,9 +609,17 @@ async fn write_with_skinning<C: ItemLoopContent>(
         .and_then(|f| f.container_capacity)
         .unwrap_or(0)
         .min(20);
-    let bag_full = occupied + output_count - i64::from(frees_output_slot)
-        - i64::from(retires_ingredient && ingredient_location.is_none()) > i64::from(capacity);
-    if (tree_full || bag_full) && ground.is_none() {
+    let bag_full = occupied + output_count
+        - i64::from(frees_output_slot)
+        - i64::from(retired_carried_ingredient && ingredient_location.is_none())
+        > i64::from(capacity);
+    let nested_destination = if marble_yield && bag_full && !tree_full {
+        sculpture::nested_marble_destination(tx, &parent, content).await?
+    } else {
+        None
+    };
+    let no_carried_room = tree_full || (bag_full && nested_destination.is_none());
+    if no_carried_room && ground.is_none() {
         return Ok(UseDisposition::NoRoom);
     }
     // Whole carried weight and capacity use the same locked projection as the item loop.
@@ -631,7 +659,12 @@ async fn write_with_skinning<C: ItemLoopContent>(
         output_weight += u64::from(weight) * u64::from(*count);
     }
     let ingredient_weight = match &ingredient_consumed {
-        Some((target, _)) if ground.as_ref().is_none_or(|ctx| ctx.operand.target.is_none()) => {
+        Some((target, _))
+            if !marble_yield
+                && ground
+                    .as_ref()
+                    .is_none_or(|ctx| ctx.operand.target.is_none()) =>
+        {
             let Some(weight) = content.loop_facts(target).and_then(|facts| facts.weight) else {
                 return Ok(UseDisposition::NotPossible);
             };
@@ -652,8 +685,9 @@ async fn write_with_skinning<C: ItemLoopContent>(
         .and_then(|w| w.checked_add(output_weight))
         .is_none_or(|w| w > capacity);
     let ground_output = ground.as_ref().and_then(|ctx| {
-        let ground_ice = ctx.operand.target.is_some() && carried_attempt.is_some_and(|(id, _)| id != 10426);
-        if ground_ice || tree_full || bag_full || overweight {
+        let ground_ice =
+            ctx.operand.target.is_some() && carried_attempt.is_some_and(|(id, _)| id != 10426);
+        if ground_ice || no_carried_room || overweight {
             Some(ctx.placement(ground_ice))
         } else {
             None
@@ -662,13 +696,17 @@ async fn write_with_skinning<C: ItemLoopContent>(
     if overweight && ground_output.is_none() {
         return Ok(UseDisposition::NotPossible);
     }
+    let nested_destination = nested_destination.filter(|_| ground_output.is_none());
     let highest: String = sqlx::query_scalar("SELECT coalesce(max(placement_ordinal),0)::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(&parent).fetch_one(&mut ***tx).await?;
     let mut ordinal: u64 = highest
         .parse()
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let mut outputs = Vec::new();
     for (position, (definition, count)) in conversion.outputs.iter().enumerate() {
-        let output_ordinal = if frees_output_slot && position == 0 {
+        let nested = nested_destination.as_ref();
+        let output_ordinal = if let Some((_, ordinal)) = nested {
+            ordinal.to_string()
+        } else if frees_output_slot && position == 0 {
             source.try_get::<String, _>("ordinal")?
         } else {
             ordinal = ordinal
@@ -682,6 +720,8 @@ async fn write_with_skinning<C: ItemLoopContent>(
         let mut output = json!({"item": item, "key": definition.production_key, "revision": definition.revision_ref, "count": count, "ordinal": output_ordinal});
         if let Some(placement) = &ground_output {
             output["ground"] = sculpture::ground_proof(fence, placement)?;
+        } else if let Some((parent, _)) = nested {
+            output["nested_parent"] = json!(parent);
         }
         outputs.push(output);
     }
@@ -811,8 +851,11 @@ async fn write_with_skinning<C: ItemLoopContent>(
             .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
         if let Some(placement) = &ground_output {
             sculpture::place_ground(tx, fence, &output, placement).await?;
+        } else if nested_destination.is_some() {
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,($1->>'nested_parent')::uuid,($1->>'ordinal')::numeric,$3::uuid)")
+                .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
         } else {
-        sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,($1->>'ordinal')::numeric,$5::uuid)")
+            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,($1->>'ordinal')::numeric,$5::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&parent).bind(&transaction).execute(&mut ***tx).await?;
         }
         if let Some(inscription) = &inscription {
