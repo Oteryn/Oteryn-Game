@@ -113,10 +113,11 @@ impl Cohorts {
             cohort.scope.0 != scope.0
                 || (cohort.scope.1 == scope.1
                     && (cohort.preparing
-                        || cohort
-                            .actors
-                            .iter()
-                            .any(|actor| runtime.contains_live_creature(*actor))))
+                        || cohort.actors.iter().any(|actor| {
+                            runtime.contains_live_creature(*actor)
+                                || (VampireCoffinKind::for_callback(&cohort.callback).is_some()
+                                    && runtime.corpse_projection_pinned(*actor))
+                        })))
         });
         if cohorts
             .iter()

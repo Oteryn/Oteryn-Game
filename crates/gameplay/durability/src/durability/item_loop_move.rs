@@ -45,6 +45,8 @@ mod source_scene;
 mod subtree;
 pub use seed_drop::{SeedDropProbe, SeedDropTarget};
 pub use source_scene::SourceSceneItemMove;
+#[cfg(feature = "test-support")]
+pub use source_scene::with_lost_source_scene_commit_ack;
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_equipment::{EquipmentError, assert_current_equipment_in_transaction};

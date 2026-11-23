@@ -294,7 +294,9 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:1780-1788",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_climbing_vine.lua:1-25"
       ],
-      "effects": {},
+      "effects": {
+        "requires_no_pz_lock": true
+      },
       "present": []
     },
     {
@@ -334,7 +336,9 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:1780-1788",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_climbing_vine.lua:1-25"
       ],
-      "effects": {},
+      "effects": {
+        "requires_no_pz_lock": true
+      },
       "present": []
     },
     {

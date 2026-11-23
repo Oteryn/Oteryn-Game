@@ -244,6 +244,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(staged) = staged else {
             return disposition;
         };
+        let [count] = staged.native.prepared().actors.as_slice() else {
+            return UseDisposition::Rejected;
+        };
+        let count = *count;
         let mut published = false;
         let delivery = self
             .root
@@ -255,6 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command,
                 content,
                 kind,
+                count,
                 || {
                     self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
                     published = true;

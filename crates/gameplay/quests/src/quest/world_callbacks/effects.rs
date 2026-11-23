@@ -51,6 +51,9 @@ pub struct CallbackEffects {
     /// Opt in to source-script displacement onto a present blocked pad.
     #[serde(default, skip_serializing_if = "is_false")]
     pub scripted_teleport: bool,
+    /// Source actions that refuse an active PZ lock even on a non-PZ landing.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub requires_no_pz_lock: bool,
     /// Current native occupants must be absent before a previously started stage commits.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clear_area: Option<ClearArea>,
@@ -489,6 +492,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         && (callback.teleport.is_none()
             || callback.selector.native.is_none()
             || callback.actor_kind != ActorKind::Player)
+    {
+        return false;
+    }
+    if effects.requires_no_pz_lock
+        && (callback.teleport.is_none() || callback.actor_kind != ActorKind::Player)
     {
         return false;
     }

@@ -570,6 +570,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
+        if blocked && callback.effects.requires_no_pz_lock {
+            return UseDisposition::NotPossible;
+        }
         let mut destination = callback.teleport;
         if let Some(remote) = &callback.remote_teleport {
             let p = tile(remote.position);
