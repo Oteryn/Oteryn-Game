@@ -4,6 +4,7 @@ use crate::content::npc_catalogue::travel::TravelRoute;
 use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
 use crate::durability::npc_travel::{PaidTravelRequest, TravelRefusal};
 use crate::map::view::MapFacts;
+use oteryn_protocol_oteryn::npc_service::{NpcConversation, NpcConversationState};
 
 #[path = "paid_travel/quest_confirmation.rs"]
 mod quest_confirmation;
@@ -18,13 +19,11 @@ pub(super) struct Prompt {
     fare: u64,
 }
 
-// Crystal's MsgContains rejects a match preceded by an alphanumeric byte.
-// Its Lua search rejects the entire input if any occurrence has that prefix.
-fn crystal_message_contains(text: &str, keyword: &str) -> bool {
-    let mut matches = text.match_indices(keyword).peekable();
-    matches.peek().is_some()
-        && matches
-            .all(|(start, _)| start == 0 || !text.as_bytes()[start - 1].is_ascii_alphanumeric())
+fn contains_whole_keyword(text: &str, keyword: &str) -> bool {
+    text.match_indices(keyword).any(|(start, matched)| {
+        !text[..start].ends_with(char::is_alphanumeric)
+            && !text[start + matched.len()..].starts_with(char::is_alphanumeric)
+    })
 }
 
 fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalkOutcome {
@@ -104,7 +103,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
         intent: &NpcTalkIntent,
-        ordinary: npc_command::NpcTalkOutcome,
+        mut ordinary: npc_command::NpcTalkOutcome,
     ) -> npc_command::NpcTalkOutcome {
         let session = command.game_session_id;
         let text = intent.text.trim().to_ascii_lowercase();
@@ -144,14 +143,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(mut prompts) => prompts.remove(&session),
             Err(_) => return ordinary,
         };
+        // Clear Confirming when the prompt is consumed and ordinary talk has no reply.
+        if ordinary.conversation.is_none()
+            && previous
+                .as_ref()
+                .is_some_and(|prompt| prompt.npc == intent.npc_actor && prompt.context == context)
+        {
+            ordinary.conversation = Some(NpcConversation {
+                open: Some((intent.npc_actor, NpcConversationState::Open)),
+                lines: Vec::new(),
+            });
+        }
         let callback_confirmation = previous
             .as_ref()
             .is_some_and(|prompt| prompt.route.crystal_callback)
-            && crystal_message_contains(&text, "yes");
+            && contains_whole_keyword(&text, "yes");
         let route = routes.into_iter().find(|route| {
             let trigger = route.route.key.replace('_', " ");
             if route.crystal_callback {
-                crystal_message_contains(&text, &trigger)
+                contains_whole_keyword(&text, &trigger)
             } else {
                 text == route.keyword || text == trigger
             }
@@ -198,20 +208,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 "Do you seek a passage to {} for {fare} gold?",
                 route.keyword
             );
-            if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
-                prompts.insert(
-                    session,
-                    Prompt {
-                        npc: intent.npc_actor,
-                        context,
-                        fence,
-                        opened: now,
-                        route,
-                        fare,
-                    },
-                );
-            }
-            return npc_command::NpcConversations::bank_reply(intent, line);
+            let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() else {
+                return ordinary;
+            };
+            prompts.insert(
+                session,
+                Prompt {
+                    npc: intent.npc_actor,
+                    context,
+                    fence,
+                    opened: now,
+                    route,
+                    fare,
+                },
+            );
+            return npc_command::NpcTalkOutcome {
+                conversation: Some(NpcConversation {
+                    open: Some((intent.npc_actor, NpcConversationState::Confirming)),
+                    lines: vec![line],
+                }),
+                ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Ok)
+            };
         };
         let Some(request) = self
             .paid_travel_request(actor, command, intent, &prompt)

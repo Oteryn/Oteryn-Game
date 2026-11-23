@@ -7,6 +7,7 @@ use crate::foundation::{
     ChannelContentPin, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
 };
 use crate::gameplay_transport::npc_talk::NpcTalkBook;
+use oteryn_protocol_oteryn::npc_service::NpcConversationState;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
@@ -57,7 +58,31 @@ fn scenario(regional: bool) -> TestResult {
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) = activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active content")?;
-        let bundle = world_fixture(world, regional)?;
+        let catalogue = NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            npc_catalogue_preproduction_limits(),
+        )
+        .map_err(debug)?;
+        let model = catalogue.service_model_for_project().map_err(debug)?;
+        let book = NpcTalkBook::from_model(&model);
+        let inner_destination = if regional {
+            let entry = book.get("oteryn:npc.tarak_inner").ok_or("Tarak Inner")?;
+            let route = entry
+                .travel_routes
+                .iter()
+                .find(|route| route.route.key == "passage")
+                .ok_or("Tarak Inner passage")?;
+            let target = &route.route.destination;
+            Some((
+                u16::try_from(target.x)?,
+                u16::try_from(target.y)?,
+                -i8::try_from(target.floor)?,
+            ))
+        } else {
+            None
+        };
+        let bundle = world_fixture(world, regional, inner_destination)?;
         let base = pin.qualified_room().clone();
         let cells = bundle
             .movement_cells(base.movement_cells())
@@ -93,14 +118,6 @@ fn scenario(regional: bool) -> TestResult {
         owner.movement_cells = room.movement_cells().into();
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
         deps.initialize(&owner).await;
-        let catalogue = NpcDataCatalogue::load(
-            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
-            std::ffi::OsStr::new("world"),
-            npc_catalogue_preproduction_limits(),
-        )
-        .map_err(debug)?;
-        let model = catalogue.service_model_for_project().map_err(debug)?;
-        let book = NpcTalkBook::from_model(&model);
         for key in ["oteryn:npc.rapanaio_boat", "oteryn:npc.dalbrect"] {
             assert!(
                 book.get(key)
@@ -265,7 +282,31 @@ async fn regional_quotes(
             } else {
                 slug.to_string()
             };
-            let reply = line(&talk(owner, deps, npc, command, &input).await?);
+            if stem.starts_with("tarak_") {
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                let partial = if *slug == "trip" {
+                    "tripwire".into()
+                } else {
+                    format!("{}s", slug.replace('_', " "))
+                };
+                let outcome = talk(owner, deps, npc, command, &partial).await?;
+                command += 1;
+                if line(&outcome).contains(" gold?") {
+                    failures.push(format!("{stem} accepted partial route {partial:?}"));
+                }
+            }
+            let outcome = talk(owner, deps, npc, command, &input).await?;
+            let reply = line(&outcome);
+            if !route.held {
+                let state = outcome
+                    .conversation
+                    .and_then(|conversation| conversation.open);
+                if state != Some((npc, NpcConversationState::Confirming)) {
+                    failures.push(format!(
+                        "{stem} {input:?}: expected Confirming, got {state:?}"
+                    ));
+                }
+            }
             command += 1;
             let expected = if route.held {
                 // PARTIAL: Petros still requires the donor cheese guard.
@@ -284,6 +325,49 @@ async fn regional_quotes(
             }
         }
         owner.clock_origin -= std::time::Duration::from_secs(1);
+        if stem == "tarak_inner" {
+            talk(owner, deps, npc, command, "passage").await?;
+            let before = deps
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position();
+            let cancelled = talk(owner, deps, npc, command + 1, "yesterday").await?;
+            let position = deps
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?
+                .position();
+            let fare: Option<i64> =
+                sqlx::query_scalar("SELECT fare_gold_units FROM game_newhaven_travel_receipts")
+                    .fetch_optional(pool)
+                    .await?;
+            if position != before || cancelled.inventory_changed || fare.is_some() {
+                failures.push(format!(
+                    "{stem} accepted a partial confirmation: before={before:?}, after={position:?}, inventory_changed={}, receipt fare={fare:?}",
+                    cancelled.inventory_changed
+                ));
+                assert!(failures.is_empty(), "{}", failures.join("\n"));
+            }
+            let state = cancelled
+                .conversation
+                .and_then(|conversation| conversation.open);
+            if state != Some((npc, NpcConversationState::Open)) {
+                failures.push(format!("{stem} cancellation: expected Open, got {state:?}"));
+            }
+            let followup = talk(owner, deps, npc, command + 2, "yes").await?;
+            let receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
+                    .fetch_one(pool)
+                    .await?;
+            assert!(!followup.inventory_changed);
+            assert_eq!(receipts, 0, "a cancelled quote was still payable");
+            command += 3;
+        }
         if stem == "tarak_sunken" {
             talk(owner, deps, npc, command, slugs[0]).await?;
             talk(owner, deps, npc, command + 1, "yes please").await?;
@@ -312,7 +396,11 @@ async fn regional_quotes(
     Ok(())
 }
 
-fn world_fixture(world: crate::foundation::WorldId, regional: bool) -> TestResult<crate::map::boot::BundleWorld> {
+fn world_fixture(
+    world: crate::foundation::WorldId,
+    regional: bool,
+    inner_destination: Option<(u16, u16, i8)>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
         self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
@@ -373,7 +461,11 @@ fn world_fixture(world: crate::foundation::WorldId, regional: bool) -> TestResul
     } else {
         &[]
     };
-    for (x, y, floor) in points.into_iter().chain(regional_points.iter().copied()) {
+    for (x, y, floor) in points
+        .into_iter()
+        .chain(regional_points.iter().copied())
+        .chain(inner_destination)
+    {
         grouped
             .entry((floor, y / 32, x / 32))
             .or_default()
