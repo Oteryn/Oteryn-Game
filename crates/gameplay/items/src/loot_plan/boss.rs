@@ -197,7 +197,6 @@ mod tests {
         source.entries[0].item =
             LootDefinitionRef::new("Item", "oteryn:item.sword", "definition-r1");
         source.entries[0].details.stackable = false;
-        source.entries[0].max_count = source.entries[0].min_count;
         let mut unique = source.entries[0].clone();
         unique.details.unique = true;
         unique.item = LootDefinitionRef::new("Item", "oteryn:item.unique", "definition-r1");

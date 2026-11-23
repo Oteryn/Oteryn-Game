@@ -40,6 +40,16 @@ fn forge_creature_postgres_real_dispatch_foreign_contributor_gets_full_dust() ->
 }
 
 #[test]
+fn fiendish_slivers_postgres_survive_reduced_loot() -> TestResult {
+    party_xp::run(Case::ForgeReducedLoot)
+}
+
+#[test]
+fn fiendish_slivers_postgres_are_awarded_once_during_double_loot() -> TestResult {
+    party_xp::run(Case::ForgeDoubleLoot)
+}
+
+#[test]
 fn elite_dust_real_party_shared_off_excludes_non_damaging_member() -> TestResult {
     party_xp::run(Case::EliteNoShared)
 }
