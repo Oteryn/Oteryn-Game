@@ -171,10 +171,13 @@ impl PlayView {
             .camera_offset(std::time::Instant::now())
             .unwrap_or([0.; 2]);
         self.scene.target_frame = self.preferences().game_window.target_frame;
-        self.scene.set_name_visibility(self.preferences().hud_names);
+        let prefs = self.preferences();
+        let [own, players, creatures] = prefs.hud_names;
+        let names = [own && prefs.player_hud_enabled, players && prefs.other_hud_enabled, creatures && prefs.other_hud_enabled];
+        self.scene.set_name_visibility(names);
         self.scene.set_name_options(
-            self.preferences().hud_marks_other,
-            self.preferences()
+            self.preferences().other_hud_enabled && self.preferences().hud_marks_other,
+            self.preferences().other_hud_enabled && self.preferences()
                 .hud_npc_names
                 .unwrap_or(self.preferences().hud_names[2]),
         );

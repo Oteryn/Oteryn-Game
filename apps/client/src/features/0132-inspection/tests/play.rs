@@ -94,3 +94,68 @@ fn cp02_inspection_native_session_scenario() -> Result<(), Box<dyn std::error::E
         Ok(())
     })
 }
+
+#[test]
+fn gameplay_inspection_option_sets_and_revokes_session_permission()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
+    use oteryn_client_ui::inspection::{Reply, Request, encode_reply, encode_request};
+    peer::scenario(|link, push, wait| {
+        let mut settings = crate::play::SettingsState::new(None);
+        for allowed in [true, false] {
+            let command = ServerMechanicCommand {
+                capability: 132,
+                command_type: 153,
+                payload: encode_request(Request::Permission {
+                    action: if allowed { 4 } else { 5 },
+                    target: None,
+                })
+                .map_err(|e| format!("{e:?}"))?,
+            };
+            push(peer::Exchange {
+                command,
+                payload: encode_reply(&Reply::refused(8)).map_err(|e| format!("{e:?}"))?,
+                status: oteryn_session::CommandStatus::Accepted,
+            });
+            settings.preferences.gameplay.allow_inspection = allowed;
+            settings.sync_local_preferences(link);
+            wait(&|| !link.discovery_panel().inspection.pending);
+            settings.sync_local_preferences(link);
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn disabling_inspection_sends_revoke_after_unreadable_grant_ack()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::inspection as wire;
+    let (link, mut cmds, outbox) = crate::play::play_channel();
+    outbox.discovery_initialize(&Selected);
+    let mut settings = crate::play::SettingsState::new(None);
+    settings.preferences.gameplay.allow_inspection = true;
+    settings.sync_local_preferences(&link);
+    cmds.try_recv()?;
+    outbox.discovery_result(
+        132,
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: vec![],
+        },
+    );
+    settings.preferences.gameplay.allow_inspection = false;
+    settings.sync_local_preferences(&link);
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = cmds.try_recv()? else {
+        return Err("missing revoke".into());
+    };
+    assert_eq!(
+        wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?,
+        wire::Request::Permission {
+            action: 5,
+            target: None
+        }
+    );
+    Ok(())
+}

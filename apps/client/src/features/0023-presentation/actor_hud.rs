@@ -20,6 +20,8 @@ pub(super) struct Options {
     pvp_frame: bool,
     loot_highlight: bool,
     health: bool,
+    own_health: bool,
+    other_health: bool,
     own_marks: bool,
     other_marks: bool,
     npc: bool,
@@ -39,15 +41,17 @@ impl Options {
         icon_cells: Option<HudIconCells>,
     ) -> Self {
         Self {
+            own_health: preferences.player_hud_enabled && preferences.hud_bars && preferences.hud_health,
+            other_health: preferences.other_hud_enabled && preferences.hud_other_health,
             age,
             icon_cells,
             pvp_frame: preferences.game_window.pvp_frame,
             loot_highlight: preferences.game_window.loot_highlight,
             health: preferences.creature_bars && !shared_frontend,
             scale: preferences.interface_scale,
-            own_marks: preferences.hud_marks_own,
-            other_marks: preferences.hud_marks_other,
-            npc: preferences.hud_npc_icons,
+            own_marks: preferences.player_hud_enabled && preferences.hud_marks_own,
+            other_marks: preferences.other_hud_enabled && preferences.hud_marks_other,
+            npc: preferences.other_hud_enabled && preferences.hud_npc_icons,
             floor,
             own,
         }
@@ -86,7 +90,7 @@ pub(super) fn draw(
                 pixel(batch, view, atlas, at, size, color)?;
             }
         }
-        if options.health
+        if options.health && (if Some(entity.entity) == options.own { options.own_health } else { options.other_health })
             && let EntityDetail::Actor { health_percent, .. } = entity.detail
         {
             let at = [x + 2.0 * scale, (y - 4.0 * scale).max(10.0 * scale)];

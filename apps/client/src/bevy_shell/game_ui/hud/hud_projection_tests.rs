@@ -416,6 +416,39 @@ fn harmony_stays_visible_when_serene_ends() -> TestResult {
 }
 
 #[test]
+fn xp_boost_button_requests_matching_store_offers() -> TestResult {
+    use oteryn_client_runtime::cui3::store::browse;
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_store_initialize();
+    app.update();
+    while commands.try_recv().is_ok() {}
+    let boost = named(&mut app, "status-xp-boost")?;
+    app.world_mut().trigger(Activate { entity: boost });
+    let crate::combat_input::PlayCommand::ServerMechanic(sent) = commands.try_recv()? else {
+        return Err("store browse".into());
+    };
+    let query = browse::Query::decode(&sent.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(query.search, "XP Boost");
+    Ok(())
+}
+
+#[test]
+fn status_bar_visibility_hides_and_restores_top_bar() -> TestResult {
+    let (mut app, _, _) = app()?;
+    app.update();
+    let bar = named(&mut app, "Status bar")?;
+    for (enabled, display) in [(false, Display::None), (true, Display::Flex)] {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let mut saved = serde_json::to_value(&host.settings.preferences)?;
+        saved["status_bar_visible"] = enabled.into();
+        host.settings.preferences = serde_json::from_value(saved)?;
+        app.update();
+        assert_eq!(app.world().get::<Node>(bar).ok_or("status bar")?.display, display);
+    }
+    Ok(())
+}
+
+#[test]
 fn status_bar_placement_and_style_follow_saved_options() -> TestResult {
     let (mut app, _, _) = app()?;
     let bar = app.world().resource::<super::super::StatusBar>().0;
@@ -455,7 +488,7 @@ fn status_bar_placement_and_style_follow_saved_options() -> TestResult {
         .non_send_mut::<HostOwner>()
         .settings
         .preferences
-        .status_panel_visible = false;
+        .status_bar_visible = false;
     app.update();
     assert_eq!(
         app.world().get::<Node>(bar).ok_or("bar")?.display,

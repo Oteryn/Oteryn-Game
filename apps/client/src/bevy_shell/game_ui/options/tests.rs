@@ -515,6 +515,54 @@ fn action_bar_options_show_one_bar_at_a_time() -> TestResult {
 }
 
 #[test]
+fn console_display_checkboxes_edit_independent_options() -> TestResult {
+    let mut app = app(Page::Console, None)?;
+    for id in ["console.levels", "console.timestamps", "console.seconds"] {
+        let checkbox = app
+            .world_mut()
+            .spawn(Control::Check(id))
+            .observe(toggle)
+            .id();
+        app.world_mut().trigger(ValueChange {
+            source: checkbox,
+            value: true,
+            is_final: true,
+        });
+        let owner = app.world().non_send::<HostOwner>();
+        let row = metadata::find(Page::Console, id).ok_or(id)?;
+        assert_eq!(
+            row.value(owner.preferences_draft().ok_or("draft")?),
+            Value::Check(true)
+        );
+    }
+    let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: apply });
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        Default::default(),
+        vec![oteryn_session::ChatLine::Private {
+            speaker_name: "Ada".into(),
+            text: "test".into(),
+        }],
+    );
+    app.world()
+        .non_send::<HostOwner>()
+        .settings
+        .sync_local_preferences(&link);
+    let display = link.chat_panel().console.display;
+    assert_eq!(display.timestamp(3661), "[01:01:01 UTC] ");
+    let crate::combat_input::PlayCommand::Feature(query) = commands.try_recv()? else {
+        return Err("level query".into());
+    };
+    assert_eq!(
+        oteryn_client_runtime::chat::console::decode_names(&query.payload),
+        Some(vec!["Ada".to_string()])
+    );
+    Ok(())
+}
+
+#[test]
 fn side_lock_switches_update_the_live_rows_at_each_dock() -> TestResult {
     use crate::play::BarDock;
     for (id, dock) in [
@@ -587,5 +635,51 @@ fn default_delay_uses_os_repeat_without_erasing_custom_delay() -> TestResult {
         assert_eq!(routed.len(), 1);
     }
     assert_eq!(owner.settings.preferences.controls.keyboard_delay_ms, 500);
+    Ok(())
+}
+
+#[test]
+fn status_bar_control_restores_a_hidden_cpkg7_panel() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
+    let mut saved = serde_json::to_value(crate::play::ReferencePreferences::default())?;
+    saved
+        .as_object_mut()
+        .ok_or("preferences")?
+        .remove("status_bar_visible");
+    saved["status_panel_visible"] = false.into();
+    std::fs::write(&path, serde_json::to_vec(&saved)?)?;
+    let mut app = app(Page::Hud, Some(path.clone()))?;
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .status_bar_visible
+    );
+    let checkbox = app
+        .world_mut()
+        .spawn(Control::Check("hud.status_bars"))
+        .observe(toggle)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: checkbox,
+        value: true,
+        is_final: true,
+    });
+    let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: apply });
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .status_bar_visible
+    );
+    assert!(
+        crate::play::SettingsState::new(Some(path))
+            .preferences
+            .status_bar_visible
+    );
     Ok(())
 }

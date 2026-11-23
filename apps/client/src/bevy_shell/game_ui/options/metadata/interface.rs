@@ -1,6 +1,71 @@
 use super::*;
 use crate::play::StatusBarStyle;
-pub(super) const MAIN: [Row; 4] = [
+pub(super) const MAIN: [Row; 12] = [
+    Row {
+        id: "interface.animated_cursor",
+        label: "Animate Game Cursor",
+        editor: Editor::Check {
+            read: |p| p.animated_cursor,
+            write: |p, v| {
+                p.animated_cursor = v;
+                if v {
+                    p.system_cursor = false;
+                }
+            },
+        },
+    },
+    check!(
+        "interface.confirm_copy_link",
+        "Confirm Before Copying Links",
+        confirm_copy_link
+    ),
+    check!(
+        "interface.expiry_containers",
+        "Show Expiry in Containers",
+        expiry_containers
+    ),
+    check!(
+        "interface.expiry_inventory",
+        "Show Expiry on Equipped Items",
+        expiry_inventory
+    ),
+    check!(
+        "interface.expiry_unused",
+        "Show Expiry on Unused Items",
+        expiry_unused
+    ),
+    check!(
+        "interface.highlight_mouse_target",
+        "Highlight Object Under Pointer",
+        highlight_mouse_target
+    ),
+    Row {
+        id: "interface.large_cursor",
+        label: "Large Game Cursor",
+        editor: Editor::Check {
+            read: |p| p.large_cursor,
+            write: |p, v| {
+                p.large_cursor = v;
+                if v {
+                    p.system_cursor = false;
+                }
+            },
+        },
+    },
+    Row {
+        id: "interface.system_cursor",
+        label: "Use Operating System Cursor",
+        editor: Editor::Check {
+            read: |p| p.system_cursor,
+            write: |p, v| {
+                p.system_cursor = v;
+                if v {
+                    p.animated_cursor = false;
+                    p.large_cursor = false;
+                }
+            },
+        },
+    },
     check!("interface.tooltips", "Show Tooltips", tooltips_enabled),
     number!(
         "interface.tooltip_delay",
@@ -24,7 +89,35 @@ pub(super) const MAIN: [Row; 4] = [
         cursor_crosshair
     ),
 ];
-pub(super) const HUD: [Row; 28] = [
+pub(super) const HUD: [Row; 37] = [
+    check!(
+        "hud.conditions_bar_all",
+        "Show Conditions in Status Bar",
+        conditions_bar_enabled
+    ),
+    check!(
+        "hud.conditions_hud_all",
+        "Show Conditions in HUD",
+        conditions_hud_enabled
+    ),
+    check!("hud.status_bars", "Show Status Bars", status_bar_visible),
+    check!(
+        "hud.other_health",
+        "Show Other Creatures' Health Bars",
+        hud_other_health
+    ),
+    check!("hud.player_bars", "Show Player HUD Bars", hud_bars),
+    check!("hud.player_enabled", "Show Player HUD", player_hud_enabled),
+    check!(
+        "hud.other_enabled",
+        "Show Other Creature HUDs",
+        other_hud_enabled
+    ),
+    check!(
+        "hud.harmony_left",
+        "Place Harmony Indicator on the Left",
+        harmony_left
+    ),
     check!("hud.health", "Show Health", hud_health),
     check!("hud.mana", "Show Mana", hud_mana),
     check!("hud.own_name", "Show Own Name", hud_names[0]),
@@ -41,11 +134,6 @@ pub(super) const HUD: [Row; 28] = [
         hud_marks_other
     ),
     check!("hud.npc_icons", "Show NPC Icons", hud_npc_icons),
-    check!(
-        "hud.status_visible",
-        "Show Status Panel",
-        status_panel_visible
-    ),
     Row {
         id: "hud.status_position",
         label: "Status Bar Position",
@@ -98,7 +186,40 @@ pub(super) const HUD: [Row; 28] = [
         u16,
         arcs.distance
     ),
-    number!("hud.arc_size", "Arc Size", 20, 120, u16, arcs.size),
+    Row {
+        id: "hud.arc_width",
+        label: "Arc Width",
+        editor: Editor::Number {
+            min: 20,
+            max: 120,
+            read: |p| p.arcs.width.unwrap_or(p.arcs.size),
+            write: |p, v| p.arcs.width = Some(v),
+        },
+    },
+    Row {
+        id: "hud.arc_height",
+        label: "Arc Height",
+        editor: Editor::Number {
+            min: 20,
+            max: 120,
+            read: |p| p.arcs.height.unwrap_or(p.arcs.size),
+            write: |p, v| p.arcs.height = Some(v),
+        },
+    },
+    Row {
+        id: "hud.arc_size",
+        label: "Arc Size",
+        editor: Editor::Number {
+            min: 20,
+            max: 120,
+            read: |p| p.arcs.size,
+            write: |p, size| {
+                p.arcs.size = size;
+                p.arcs.width = None;
+                p.arcs.height = None;
+            },
+        },
+    },
     number!(
         "hud.arc_opacity",
         "Arc Opacity (%)",
@@ -134,7 +255,27 @@ pub(super) const HUD: [Row; 28] = [
         resource_hud.combo
     ),
 ];
-pub(super) const CONSOLE: [Row; 10] = [
+pub(super) const CONSOLE: [Row; 18] = [
+    check!(
+        "console.auto_private_tabs",
+        "Open Incoming Private Messages in New Tabs",
+        console.auto_private_tabs
+    ),
+    check!("console.events", "Show Event Messages", console.events),
+    check!(
+        "console.information",
+        "Show Information Messages",
+        console.information
+    ),
+    check!(
+        "console.join_leave",
+        "Show Join and Leave Messages",
+        console.join_leave
+    ),
+    check!("console.levels", "Show Speaker Levels", console.levels),
+    check!("console.seconds", "Show Timestamp Seconds", console.seconds),
+    check!("console.status", "Show Own Status Messages", console.status),
+    check!("console.timestamps", "Show Timestamps", console.timestamps),
     check!("console.local", "Show Local Speech", console.visible[0]),
     check!(
         "console.private",
@@ -176,7 +317,7 @@ pub(super) const CONSOLE: [Row; 10] = [
         console.line_limit
     ),
 ];
-pub(super) const GAME_WINDOW: [Row; 8] = [
+pub(super) const GAME_WINDOW: [Row; 20] = [
     check!(
         "game_window.own_spells",
         "Show Own Spells",
@@ -184,7 +325,7 @@ pub(super) const GAME_WINDOW: [Row; 8] = [
     ),
     check!(
         "game_window.other_spells",
-        "Show Other Creatures' Spells",
+        "Show Other Players' Spells",
         game_window.other_spells
     ),
     check!(
@@ -207,6 +348,73 @@ pub(super) const GAME_WINDOW: [Row; 8] = [
         "game_window.loot_highlight",
         "Highlight Loot",
         game_window.loot_highlight
+    ),
+    check!(
+        "game_window.messages",
+        "Show Messages in Game Window",
+        game_window.messages
+    ),
+    check!(
+        "game_window.boosted_messages",
+        "Show Boosted Creature Messages",
+        game_window.boosted_messages
+    ),
+    check!(
+        "game_window.hotkey_messages",
+        "Show Hotkey Usage Messages",
+        game_window.hotkey_messages
+    ),
+    check!(
+        "game_window.private_messages",
+        "Show Private Messages",
+        game_window.private_messages
+    ),
+    check!(
+        "game_window.store_messages",
+        "Show Store Messages",
+        game_window.store_messages
+    ),
+    check!(
+        "game_window.attack_animation",
+        "Show Attack Hit Animation",
+        game_window.attack_animation
+    ),
+    check!(
+        "game_window.combat_frames",
+        "Show Combat Frames",
+        game_window.combat_frames
+    ),
+    check!(
+        "game_window.target_highlight",
+        "Highlight Attack Target",
+        game_window.target_highlight
+    ),
+    check!(
+        "game_window.fit_viewport",
+        "Fit Map to Game Window",
+        graphics.fit_viewport
+    ),
+    number!(
+        "game_window.upper_pane_height",
+        "Upper Pane Height (0 = automatic)",
+        0,
+        600,
+        u16,
+        game_window.upper_pane_height
+    ),
+    Row {
+        id: "game_window.loot_style",
+        label: "Colourise Loot Value",
+        editor: Editor::Choice {
+            read: |p| usize::from(p.game_window.loot_style),
+            write: |p, v| p.game_window.loot_style = v as u8,
+            values: &["None", "Frames", "Corners"],
+        },
+    },
+    check!(
+        "game_window.offline_training",
+        "Show Offline Training Messages",
+        game_window.offline_training_messages
     ),
     check!("game_window.banner", "Show Banner", game_window.banner),
 ];

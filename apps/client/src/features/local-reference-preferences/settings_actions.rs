@@ -77,6 +77,39 @@ impl SettingsState {
                     .any(|key| key == oteryn_client_ui::condition_status::icon_key(*icon))
             })
             .collect();
+        #[cfg(bevy_shell)]
+        let scope_ready = !self.preference_transfer_pending();
+        #[cfg(not(bevy_shell))]
+        let scope_ready = true;
+        if scope_ready {
+            link.sync_inspection_permission(
+                &mut mailbox.discovery.inspection,
+                self.preferences.gameplay.allow_inspection,
+            );
+        }
+        mailbox.chat.console.filters.auto_private_tabs = self.preferences.console.auto_private_tabs;
+        mailbox.chat.console.filters.join_leave = self.preferences.console.join_leave;
+        if mailbox.local_preferences.console.events != self.preferences.console.events {
+            mailbox.chat.console.filters.events = self.preferences.console.events;
+        }
+        if mailbox.local_preferences.console.information != self.preferences.console.information {
+            mailbox.chat.console.filters.information = self.preferences.console.information;
+        }
+        let levels_changed =
+            mailbox.local_preferences.console.levels != self.preferences.console.levels;
+        if levels_changed {
+            mailbox.chat.console.display.levels = self.preferences.console.levels;
+        }
+        link.refresh_console_levels(&mut mailbox, levels_changed);
+        if mailbox.local_preferences.console.seconds != self.preferences.console.seconds {
+            mailbox.chat.console.display.seconds = self.preferences.console.seconds;
+        }
+        if mailbox.local_preferences.console.status != self.preferences.console.status {
+            mailbox.chat.console.filters.status = self.preferences.console.status;
+        }
+        if mailbox.local_preferences.console.timestamps != self.preferences.console.timestamps {
+            mailbox.chat.console.display.time = self.preferences.console.timestamps;
+        }
         if mailbox.local_preferences.console_font_px != self.preferences.console_font_px {
             mailbox.chat.console.display.font_px = self.preferences.console_font_px;
         }
@@ -205,6 +238,9 @@ impl SettingsState {
             custom_choices_refreshed: None,
             pending_chat_mode: None,
             chat_mode_seen: None,
+            restoring_rooms: [false; 8],
+            unconfirmed_rooms: [false; 8],
+            restore_guild_channel: false,
             chat_context: None,
             help_report_pending: false,
             control_input: super::super::controls::ControlInput::default(),

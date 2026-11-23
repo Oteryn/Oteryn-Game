@@ -59,6 +59,7 @@ pub struct PlayView {
     sounds: Vec<SoundCue>,
     visuals: Vec<VisualCue>,
     /// When the own character last took a hit from an attacker while attacking (N006).
+    combat_target: Option<oteryn_session::EntityRef>,
     hit_flash: Option<std::time::Instant>,
     spell_words: std::collections::BTreeMap<u32, String>,
     pub(crate) tutorial_overlay: tutorial_overlay::Overlay,
@@ -114,6 +115,8 @@ mod mailbox;
 mod refusal_details;
 mod resource_hud;
 pub use hud_layout::{HudAction, HudDock, HudLayout, HudPane, HudPanel};
+#[cfg(bevy_shell)]
+pub(crate) use resource_hud::GROUPS as SKILLS_GROUPS;
 mod session_initialize;
 mod session_loop;
 mod session_stepper;
@@ -139,9 +142,6 @@ pub(crate) use feature_0017_attack::view::health as battle_row_health;
 pub(crate) use feature_local_minimap::input::MinimapSaves;
 pub use feature_local_minimap::view::{
     MinimapBinding, MinimapMark, MinimapMemory, MinimapNavigation,
-};
-pub use feature_local_spell_action_bar::view::{
-    BarAction, BarDock, BarGesture, BarLayout, ItemUseMode, PassiveAbility, SpellAim,
 };
 
 pub use feature_0023_presentation::state::*;

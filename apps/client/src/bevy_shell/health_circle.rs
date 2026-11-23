@@ -52,7 +52,7 @@ fn project(
     let active = owner
         .play
         .as_ref()
-        .filter(|_| preferences.health_circle)
+        .filter(|_| preferences.health_circle && preferences.player_hud_enabled)
         .and_then(|play| play.link.actor_vitals().map(|vitals| (play, vitals)));
     let mut count = 0;
     if let Some((play, vitals)) = active {
@@ -68,7 +68,8 @@ fn project(
         let center = Vec2::from(scene.health_circle_center()) + offset - size.as_vec2() * 0.5;
         let scale = windows.single().map_or(1., Window::scale_factor);
         let ui_scale = preferences.interface_scale as f32 / 100.;
-        let radius = preferences.arcs.size as f32 * ui_scale;
+        let width = f32::from(preferences.arcs.width.unwrap_or(preferences.arcs.size)) * ui_scale;
+        let height = f32::from(preferences.arcs.height.unwrap_or(preferences.arcs.size)) * ui_scale;
         let distance = preferences.arcs.distance as f32 * ui_scale;
         let step = std::f32::consts::PI / SEGMENTS as f32;
         let progress = (preferences.arcs.experience || preferences.arcs.skill)
@@ -143,29 +144,25 @@ fn project(
                 }
                 // Fill from the bottom; the last segment preserves fractional vitals.
                 let angle = std::f32::consts::PI - (index as f32 + portion * 0.5) * step;
-                let delta = Vec2::new(
-                    side * (distance + radius * angle.sin()),
-                    -radius * angle.cos(),
-                );
-                let at = center
-                    + if horizontal {
-                        Vec2::new(-delta.y, delta.x)
-                    } else {
-                        delta
-                    };
+                let (sin, cos) = angle.sin_cos();
+                let (delta, tangent) = if horizontal {
+                    (
+                        Vec2::new(width * cos, side * (distance + height * sin)),
+                        Vec2::new(-width * sin, -side * height * cos),
+                    )
+                } else {
+                    (
+                        Vec2::new(side * (distance + width * sin), -height * cos),
+                        Vec2::new(side * width * cos, -height * sin),
+                    )
+                };
+                let at = center + delta;
                 let sprite = Sprite::from_color(
                     colour.with_alpha(f32::from(preferences.arcs.opacity) / 100.),
-                    Vec2::new(radius * step * portion, 3. * ui_scale) / scale,
+                    Vec2::new(tangent.length() * step * portion, 3. * ui_scale) / scale,
                 );
                 let transform = Transform::from_xyz(at.x / scale, -at.y / scale, 100.)
-                    .with_rotation(Quat::from_rotation_z(
-                        (-angle.sin()).atan2(side * angle.cos())
-                            - if horizontal {
-                                std::f32::consts::FRAC_PI_2
-                            } else {
-                                0.
-                            },
-                    ));
+                    .with_rotation(Quat::from_rotation_z(tangent.y.atan2(tangent.x)));
                 if let Some(entity) = entities.get(count) {
                     if let Ok((mut segment, mut old_sprite, mut old_transform)) =
                         segments.get_mut(*entity)
@@ -269,6 +266,45 @@ mod tests {
             value["skill"] = false.into();
             owner.settings.preferences.arcs = serde_json::from_value(value)?;
         }
+        {
+            let mut host = app.world_mut().non_send_mut::<HostOwner>();
+            let arcs = &mut host.settings.preferences.arcs;
+            arcs.health = false;
+            arcs.mana = false;
+            arcs.experience = true;
+        }
+        let xp_width = |app: &mut App| {
+            let (left, right) = app
+                .world_mut()
+                .query::<(&CircleSegment, &Transform)>()
+                .iter(app.world())
+                .map(|(_, t)| t.translation.x)
+                .fold((f32::INFINITY, f32::NEG_INFINITY), |(left, right), x| {
+                    (left.min(x), right.max(x))
+                });
+            right - left
+        };
+        app.update();
+        let original = xp_width(&mut app);
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .arcs
+            .width = Some(90);
+        app.update();
+        assert!(
+            (xp_width(&mut app) / original - 1.5).abs() < 0.01,
+            "Arc Width must resize the XP arc horizontally"
+        );
+        {
+            let mut host = app.world_mut().non_send_mut::<HostOwner>();
+            let arcs = &mut host.settings.preferences.arcs;
+            arcs.experience = false;
+            arcs.health = true;
+            arcs.mana = true;
+            arcs.width = None;
+        }
         app.update();
         let mut lengths = [0.; 2];
         for (segment, sprite) in app
@@ -313,6 +349,38 @@ mod tests {
             }),
         );
         app.update();
+        let extent = |app: &mut App| {
+            app.world_mut()
+                .query::<(&CircleSegment, &Transform)>()
+                .iter(app.world())
+                .fold(
+                    (Vec2::splat(f32::INFINITY), Vec2::splat(f32::NEG_INFINITY)),
+                    |(min, max), (_, t)| {
+                        let point = t.translation.truncate();
+                        (min.min(point), max.max(point))
+                    },
+                )
+        };
+        let (min, max) = extent(&mut app);
+        let original = max - min;
+        for (field, axis) in [("width", 0), ("height", 1)] {
+            {
+                let mut host = app.world_mut().non_send_mut::<HostOwner>();
+                let mut saved = serde_json::to_value(host.settings.preferences.arcs)?;
+                saved[field] = 90.into();
+                host.settings.preferences.arcs = serde_json::from_value(saved)?;
+            }
+            app.update();
+            let (min, max) = extent(&mut app);
+            assert!(((max - min)[axis] / original[axis] - 1.5).abs() < 0.01);
+            {
+                let mut host = app.world_mut().non_send_mut::<HostOwner>();
+                let mut saved = serde_json::to_value(host.settings.preferences.arcs)?;
+                saved[field] = serde_json::Value::Null;
+                host.settings.preferences.arcs = serde_json::from_value(saved)?;
+            }
+            app.update();
+        }
         let mut full = 0.;
         for (segment, sprite) in app
             .world_mut()

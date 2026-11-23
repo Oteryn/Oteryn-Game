@@ -106,6 +106,10 @@ impl PlayView {
             self.party_summons_refresh = Some(icon_now);
         }
         self.party_icons = party.icons;
+        self.combat_target = super::mailbox::lock(&link.mailbox)
+            .battle
+            .combat
+            .and_then(|combat| combat.target);
         self.party_summons = super::mailbox::lock(&link.mailbox).party_summons();
         self.sync_spell_words(link);
         self.project_presentation(std::time::Instant::now())

@@ -9,3 +9,6 @@ pub use super::feature_local_reference_preferences::settings::{
     WINDOW_ACTIONS, default_custom_hotkeys, fit_ui_scale, help, help_text, preference_bindings,
     rescale_ui_rect, scale_ui_rect, screenshot,
 };
+pub use super::feature_local_spell_action_bar::view::{
+    BarAction, BarDock, BarGesture, BarLayout, ItemUseMode, PassiveAbility, SpellAim,
+};

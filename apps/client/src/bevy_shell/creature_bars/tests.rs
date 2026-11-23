@@ -96,6 +96,23 @@ fn otc_textmsg_bevy_health_bars_follow_visible_actors_and_settings()
         8,
         "own vitals also produce a bar"
     );
+    for (player, others, expected) in [(true, false, 2), (false, true, 6), (true, true, 8)] {
+        {
+            let mut host = app.world_mut().non_send_mut::<HostOwner>();
+            host.settings.preferences.hud_bars = player;
+            let mut saved = serde_json::to_value(&host.settings.preferences)?;
+            saved["hud_other_health"] = others.into();
+            host.settings.preferences = serde_json::from_value(saved)?;
+        }
+        app.update();
+        assert_eq!(
+            app.world_mut()
+                .query::<&CreatureBar>()
+                .iter(app.world())
+                .count(),
+            expected
+        );
+    }
     assert!(
         app.world_mut()
             .query::<&Sprite>()

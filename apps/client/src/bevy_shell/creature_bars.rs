@@ -38,6 +38,14 @@ fn project(
         let scale = windows.single().map_or(1., Window::scale_factor);
         let ui_scale = f32::from(owner.settings.preferences.interface_scale) / 100.;
         for bar in play.view.creature_health_bars() {
+            let prefs = &owner.settings.preferences;
+            let own_bars = prefs.player_hud_enabled && prefs.hud_bars;
+            let health = prefs.creature_bars
+                && if bar.own {
+                    own_bars && prefs.hud_health
+                } else {
+                    prefs.other_hud_enabled && prefs.hud_other_health
+                };
             let [r, g, b] = if bar.covered {
                 [96; 3]
             } else {
@@ -47,13 +55,9 @@ fn project(
                 .own
                 .then(|| play.link.actor_vitals())
                 .flatten()
-                .filter(|v| v.max_mana > 0 && owner.settings.preferences.hud_mana);
+                .filter(|v| v.max_mana > 0 && own_bars && prefs.hud_mana);
             let gauges = [
-                owner.settings.preferences.creature_bars.then_some((
-                    false,
-                    f32::from(bar.health) / 100.,
-                    Color::srgb_u8(r, g, b),
-                )),
+                health.then_some((false, f32::from(bar.health) / 100., Color::srgb_u8(r, g, b))),
                 mana.map(|v| {
                     (
                         true,
