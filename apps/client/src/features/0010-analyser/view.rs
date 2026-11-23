@@ -25,6 +25,16 @@ fn panel_text(
     } else {
         let mut panel = mailbox.analyser.clone();
         panel.tool = tool;
+        if tool == oteryn_client_ui::analyser::Tool::LootTracker {
+            panel.drop_race_names = mailbox
+                .properties
+                .charm_progression
+                .selector
+                .races
+                .iter()
+                .map(|card| (u32::from(card.race), card.name.clone()))
+                .collect();
+        }
         oteryn_client_ui::analyser::panel_text(&panel)
     }
 }

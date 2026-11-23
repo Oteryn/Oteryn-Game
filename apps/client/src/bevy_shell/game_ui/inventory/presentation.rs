@@ -12,6 +12,8 @@ use oteryn_session::{
 pub(super) struct Window {
     pub handle: ItemHandle,
     pub minimized: bool,
+    pub containers_first: bool,
+    pub move_nested: bool,
     pub rows: u8,
     pub name: Option<String>,
     name_requested: bool,
@@ -33,6 +35,8 @@ enum Target {
 #[derive(Clone, Copy)]
 enum Kind {
     Minimize,
+    ContainersFirst,
+    MoveNested,
     Resize(i8),
     Page(BrowseFieldPage, u16),
 }
@@ -42,6 +46,8 @@ impl Window {
         Self {
             handle: view.container_handle,
             minimized: false,
+            containers_first: false,
+            move_nested: true,
             rows: view.capacity.div_ceil(4).min(5),
             name: None,
             name_requested: false,
@@ -71,11 +77,15 @@ pub(super) fn retain(ui: &mut InventoryUi, owner: &HostOwner, views: Option<&Con
         && ui.menu.is_none()
         && ui.prompt.is_none()
         && !play.view.gameplay_input_blocked(&play.link);
+    let manual_sort = play.link.container_manual_sort_active();
     for view in &views.views {
         let window = ui
             .windows
             .entry(view.view_id)
             .or_insert_with(|| Window::new(view));
+        if manual_sort {
+            window.containers_first = false;
+        }
         window.rows = window.rows.clamp(1, view.capacity.div_ceil(4));
         if view.browse.is_some() {
             continue;
@@ -149,6 +159,7 @@ pub(super) fn body(
     generation: u64,
     view: &ContainerView,
     window: Option<&Window>,
+    manual_sort: bool,
 ) -> Entity {
     let fallback = Window::new(view);
     let window = window.unwrap_or(&fallback);
@@ -167,6 +178,44 @@ pub(super) fn body(
         "Minimize"
     };
     action(commands, skins, controls, "minimize", caption, bound);
+    if view.browse.is_none() && !window.minimized {
+        let options = row(commands, panel);
+        for (name, caption, kind) in [
+            (
+                "containers-first",
+                if window.containers_first {
+                    "Containers first: on"
+                } else {
+                    "Containers first: off"
+                },
+                Kind::ContainersFirst,
+            ),
+            (
+                "move-nested",
+                if window.move_nested {
+                    "Move nested: on"
+                } else {
+                    "Move nested: off"
+                },
+                Kind::MoveNested,
+            ),
+        ] {
+            if manual_sort && matches!(kind, Kind::ContainersFirst) {
+                continue;
+            }
+            action(
+                commands,
+                skins,
+                options,
+                name,
+                caption,
+                Action {
+                    target: Target::Container(binding, kind),
+                    ..bound
+                },
+            );
+        }
+    }
     for (name, caption, delta) in [("shrink", "− row", -1), ("grow", "+ row", 1)] {
         if !window.minimized
             && (1..=i16::from(view.capacity.div_ceil(4)))
@@ -292,6 +341,11 @@ fn activate(
                     window.rows = (i16::from(window.rows) + i16::from(delta))
                         .clamp(1, i16::from(view.capacity.div_ceil(4)))
                         as u8;
+                } else if matches!(kind, Kind::ContainersFirst) {
+                    window.containers_first =
+                        !play.link.container_manual_sort_active() && !window.containers_first;
+                } else if matches!(kind, Kind::MoveNested) {
+                    window.move_nested = !window.move_nested;
                 } else {
                     window.minimized = !window.minimized;
                 }

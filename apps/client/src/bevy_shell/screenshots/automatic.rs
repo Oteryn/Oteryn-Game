@@ -113,7 +113,12 @@ pub(in crate::bevy_shell) fn observe(
                     }
                     return;
                 }
-                if !manual && !same_crop {
+                if !manual
+                    && (!same_crop
+                        || (matches!(action, CaptureAction::Save)
+                            && owner.settings.preferences.screenshots.automatic_disabled
+                            && !owner.settings.manual_capture_requested()))
+                {
                     return;
                 }
                 let at = clock.last_update().unwrap_or(clock.startup());

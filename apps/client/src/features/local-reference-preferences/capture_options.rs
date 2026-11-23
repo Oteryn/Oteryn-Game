@@ -14,6 +14,15 @@ pub struct ScreenshotPreferences {
     pub directory: String,
     pub folder: String,
     pub backlog_frames: u8,
+    pub automatic_disabled: bool,
+    pub on_bestiary_unlock: bool,
+    pub on_bestiary_complete: bool,
+    pub on_boss_defeat: bool,
+    pub on_player_attacking: bool,
+    pub on_record_damage: bool,
+    pub on_record_healing: bool,
+    pub on_valuable_loot: bool,
+    pub on_low_health: bool,
     pub on_skill: bool,
     pub game_only: bool,
     pub backlog_seconds: u8,
@@ -61,9 +70,9 @@ impl ScreenshotPreferences {
             && (effective.directory.is_empty() || Path::new(&effective.directory).is_absolute())
     }
     pub fn apply_policy(&self, capture: &mut CaptureController) {
-        capture.policy.level = self.on_level;
-        capture.policy.death = self.on_death;
-        capture.policy.achievement = self.on_achievement;
+        capture.policy.level = !self.automatic_disabled && self.on_level;
+        capture.policy.death = !self.automatic_disabled && self.on_death;
+        capture.policy.achievement = !self.automatic_disabled && self.on_achievement;
     }
     /// Uses the same configured or platform screenshot destination as F12.
     pub fn save_frame(
@@ -141,8 +150,7 @@ mod audit_tests {
                     height: 1,
                 },
             };
-            let result =
-                preferences.save_frame(&mut CaptureController::default(), fixture, frame);
+            let result = preferences.save_frame(&mut CaptureController::default(), fixture, frame);
             assert!(result.is_err_and(|error| error.kind() == io::ErrorKind::InvalidInput));
             assert!(!Path::new(folder).exists());
             Ok(())
