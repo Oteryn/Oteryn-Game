@@ -755,6 +755,119 @@ mod tests {
     }
 
     #[test]
+    fn native_loot_rolls_honor_the_active_item_stack_class()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(check_native_loot_stack_classes)?
+            .join()
+            .map_err(|_| "native loot loader thread panicked")?
+    }
+
+    fn check_native_loot_stack_classes() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use oteryn_gameplay_content::content::native_gameplay::{
+            NativeItemStackClass, test_support::activated_with_loot_tables,
+        };
+        use oteryn_gameplay_content::content::native_gameplay_test_world_id;
+
+        let (controller, _) = activated_with_loot_tables(native_gameplay_test_world_id()?, None);
+        let native = controller
+            .active()
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("missing active native gameplay")?;
+        let rewards = native.reward_table();
+        let mut actual = Vec::new();
+        let mut expected = Vec::new();
+        for (creature, items, stack_class) in [
+            (
+                "evil_prospector",
+                &[8092][..],
+                NativeItemStackClass::NonStackable,
+            ),
+            (
+                "glooth_fairy",
+                &[21143, 21144][..],
+                NativeItemStackClass::StackCapable,
+            ),
+            (
+                "vok_the_freakish",
+                &[1781][..],
+                NativeItemStackClass::StackCapable,
+            ),
+        ] {
+            let creature_key = format!("oteryn:creature.{creature}");
+            let private_reward = native
+                .policies()
+                .policies()
+                .iter()
+                .find(|policy| policy.definition_key == creature_key)
+                .and_then(|policy| policy.reward_boss)
+                .ok_or("missing reward-boss policy")?;
+            assert_eq!(private_reward, creature != "evil_prospector", "{creature}");
+            let row = rewards
+                .row(&creature_key)
+                .map_err(|reason| reason.as_str())?;
+            let table_ref = row.loot_table_ref.as_ref().ok_or("missing loot table")?;
+            for item in items {
+                let key = format!("oteryn:item.tibia.i{item}");
+                let source = row
+                    .loot_table
+                    .entries
+                    .iter()
+                    .find(|entry| entry.item.production_key == key)
+                    .ok_or("missing loot entry")?;
+                let policy = native
+                    .item_policy(&key, &source.item.revision_ref)
+                    .ok_or("missing native Item policy")?;
+                assert_eq!(policy.record().admission.stack_class, stack_class, "{key}");
+                assert!(
+                    source.max_count > 1 && source.details.charges.is_none(),
+                    "{key}"
+                );
+                let mut largest = 0;
+                for seed in 0..2048_u32 {
+                    let plan = if private_reward {
+                        plan_boss_loot(
+                            u128::from(seed).to_be_bytes(),
+                            [2; 16],
+                            table_ref,
+                            &row.loot_table,
+                            1.0,
+                            true,
+                        )?
+                    } else {
+                        plan_creature_loot(
+                            LootPlanDeathKey::new([1; 16], [2; 16], 1, seed, 1),
+                            table_ref,
+                            &row.loot_table,
+                        )?
+                    };
+                    let mut entries = plan
+                        .entries
+                        .iter()
+                        .filter(|entry| entry.item == source.item);
+                    if let Some(entry) = entries.next() {
+                        assert!(entries.next().is_none(), "{creature} {key}, seed {seed}");
+                        largest = largest.max(entry.quantity);
+                    }
+                }
+                actual.push((creature, *item, largest));
+                let maximum = if stack_class == NativeItemStackClass::NonStackable {
+                    1
+                } else {
+                    source.max_count
+                };
+                expected.push((creature, *item, maximum));
+            }
+        }
+        assert_eq!(
+            actual, expected,
+            "largest minted quantity by creature and Item"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn clomp_loot_keeps_the_committed_roll_in_collectable_stacks()
     -> Result<(), Box<dyn std::error::Error>> {
         use oteryn_gameplay_content::content::creature_reward::{
