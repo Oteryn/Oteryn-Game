@@ -122,6 +122,8 @@ pub mod arena;
 
 #[path = "features/0503-blessings-dialog/protocol.rs"]
 mod blessings_dialog;
+#[path = "features/0615-boss-defeated/protocol.rs"]
+pub mod boss_defeated;
 #[path = "features/0225-boss-difficulty/mod.rs"]
 pub mod boss_difficulty;
 #[path = "features/0492-boss-difficulty-pity/protocol.rs"]
@@ -143,6 +145,8 @@ pub mod chat_line_sequence;
 pub mod chat_party_room;
 #[path = "features/0493-chat-private-echo/protocol.rs"]
 pub mod chat_private_echo;
+#[path = "features/0617-chat-system-message/protocol.rs"]
+pub mod chat_system_message;
 #[path = "features/0199-cyclopedia-character/mod.rs"]
 pub mod cyclopedia_character;
 #[path = "features/0487-cyclopedia-character-vocation/protocol.rs"]
@@ -173,6 +177,8 @@ mod hotkey_equip_upgrade_tier;
 pub mod item_forge;
 #[path = "features/0003-npc-service/mod.rs"]
 pub mod npc_dialogue;
+#[path = "features/0616-pvp-situation-id/protocol.rs"]
+pub mod pvp_situation_id;
 #[path = "features/0154-store/mod.rs"]
 pub mod store;
 #[path = "features/0258-vip-presence/mod.rs"]

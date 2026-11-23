@@ -157,6 +157,10 @@ fn tab_text(
                     .name(panel.console.display, &line.speaker_name);
                 let _ = writeln!(text, "{label}{name}: {}", line.text);
             }
+            ChatLine::System { text: message } => {
+                text.push_str(message);
+                text.push('\n');
+            }
             ChatLine::Dropped => text.push_str(tr!("[Some chat lines were dropped]\n")),
             ChatLine::Party {
                 speaker_name,

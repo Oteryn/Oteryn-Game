@@ -79,6 +79,9 @@ impl crate::play::Outbox {
     pub(crate) fn bevy_pvp_initialize(&self) {
         lock(&self.0).properties.party_skull.selected = true;
     }
+    pub(crate) fn bevy_pvp_id_selected(&self) {
+        lock(&self.0).properties.party_skull.situation_identity = true;
+    }
     pub(crate) fn bevy_pvp_result(
         &self,
         command: &oteryn_client_runtime::raw_feature::FeatureCommand,

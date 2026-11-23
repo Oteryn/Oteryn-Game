@@ -306,6 +306,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             kills,
             ..
         } = &mut *attack;
+        kills.bind_kill_notices(&self.states.server_messages);
         let mut activity_cells: Vec<_> = entries
             .iter()
             .filter_map(|e| e.shared_experience_activity)

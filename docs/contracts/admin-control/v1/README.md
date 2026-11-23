@@ -2,9 +2,11 @@
 
 Normative semantics: [ADM-01](../../../architecture/ADM-01_ADMIN_CONTROL_PLANE_CONTRACT.md).
 
-`oteryn-admin-contracts` owns the closed request/result structures and the fifteen
-Phase-1 read operation schemas. Schemas are generated with schemars; JCS is RFC
-8785 via serde_jcs 0.2, Ed25519 via the workspace's ed25519-dalek. JSON integers
+`oteryn-admin-contracts` owns the closed request/result structures and the
+operation schemas below. The agent advertises and executes
+`admin.policy.get` and the ADM-G3 Phase-1 reads listed below. All Phase-2 entries are available for form generation.
+Schemas are generated with schemars. JCS uses RFC 8785 via serde_jcs, and
+Ed25519 uses the workspace's ed25519-dalek. JSON integers
 are restricted to ±(2^53−1); counts/amounts above that range are decimal strings.
 The request's `params` remains opaque until verifier step 5, where the operation
 selects its closed schema. The envelope result union contains only closed
@@ -19,20 +21,155 @@ UPDATE_ADMIN_GOLDENS=1 cargo test -p oteryn-admin-contracts -p oteryn-admin-agen
 cargo test -p oteryn-admin-contracts -p oteryn-admin-agent
 ```
 
-There are 35 envelope vectors and 32 schema goldens (two envelopes and
-params/result per operation).
+The 86 schema goldens cover two envelopes, 35 operation pairs, and seven
+named-query pairs. Phase-1 envelope vectors live directly under `vectors/`.
+The 52 Phase-2 vectors in `vectors/phase-2/` retain the signed-envelope fixture
+layout and add `result` and `expected_result_valid`. Their `expected_error`
+describes parameter validation with the operation available. The agent returns
+`ADM_UNKNOWN_OPERATION` for every Phase-2 request because hello omits all of them.
+
 Vectors contain deterministic test-only signer material, signed request bytes,
 policy, clock and store/precondition evidence. `expected_error: null` means
-accepted. The agent unit test regenerates and checks the complete corpus,
-including ADM-01 §10 items 1–4. Removed rotation keys are rejected; both current
+accepted. The agent unit test regenerates and checks the Phase-1 corpus, including ADM-01
+§10 items 1–4. The contracts crate checks the Phase-2 signatures, schema
+goldens, and positive and negative payloads. Removed rotation keys are rejected; both current
 and next trusted keys are accepted within their validity windows.
 
 ADM-01 leaves read fields and pagination unspecified. This implementation fixes
 those fields in the exported schemas: list calls require a limit of 1–100 and
 an optional opaque cursor, search requires a filter, and inventory is flattened
-with location and parent ids. No executor besides `admin.policy.get` is enabled.
-The other read executors and their data-source bounds belong to ADM-G3.
+with location and parent ids. ADM-G3 implements the Phase-1 reads below.
+`admin.agent.list` and `analytics.catalog` are outside that slice.
 
+| Operation | Game source and unavailable fields |
+|---|---|
+| `ops.overview.get` | Agent ownership config, scope assignments, durable node and session presence, and read DB connectivity. Agent fleet and backup telemetry are unavailable (empty agents, null backup age). A missing read connection sets `db_available=false` and adds an alert. |
+| `world.list`, `world.get` | Configured owned World IDs and current Channel assignments. Registry name, admission state, and World-wide revisions are unavailable (empty strings and state `unavailable`). |
+| `node.list`, `node.get` | Current node registrations, scope assignments, and matching readiness generations. Uptime measures time since registration. Host, build, and resource telemetry are unavailable (empty strings and zero CPU). |
+| `db.status` | PostgreSQL catalog and statistics, including the largest 50 tables. Bloat is unavailable. Lag is replica replay age when available. Oldest transaction age covers activity visible to the read role. |
+| `db.migrations.list` | SQLx migration history compared with the Game migrations embedded in the agent build. |
+| `player.search` | Character roots and progression with matching durable session presence. IP hash lookup is unavailable. |
+| `player.character.get` | Offline Character root, progression, build, last saved position, account premium and bank projections, guild, house, sanctions, and retained online interval starts. Skill progress percentages are unavailable (zero). Missing saved position or a nonterminal session returns `ADM_TARGET_UNAVAILABLE`. |
+| `player.inventory.get` | Offline durable equipment, backpack, depot, and inbox custody trees. Stash balances have no instance IDs and are omitted. Item definitions without a numeric type ID use zero. Characters with a nonterminal session return `ADM_TARGET_UNAVAILABLE`. |
+| `sanction.list` | Game staff mute history and the Game projection of Platform sanction decisions. Account-only records require account targeting and global scope. |
+| `admin.ledger.query` | Existing Game ledger, restricted to the result fields. Time ranges are half-open and at most 31 days. |
+| `admin.policy.get` | Pinned local policy. |
+
+Read executors use short read-only PostgreSQL snapshots and never acquire a
+Character writer lease. Offline access requires no nonterminal session or
+outstanding Character or account presence holder in the same snapshot as the
+data. The existing channel still records its nonce, idempotency and audit
+evidence. Retained ADM-G3 results bind the replay digest to the signed operation,
+actor and target and the effective ownership policy.
+
+Set the optional `read_db_url_env_name` to the name of a separately provisioned
+connection to the same Game database. Provision a dedicated SELECT-only login
+for the named source relations with no gameplay writer or control membership.
+Grant access only to the columns used by the executors, plus EXECUTE on
+`game_account_closure_detached(uuid)`. In particular, ledger reads require only
+the fields listed in its result schema and never select canonical requests.
+The existing audit connection and role stay dedicated to ADM transport
+bookkeeping. An omitted read connection leaves the world roster and overview
+fallback available, returns an empty node page, and returns
+`ADM_TARGET_UNAVAILABLE` for other database-backed reads. Enable each
+operation explicitly in the pinned policy.
+
+## Operations
+
+Q denotes a query and C denotes a command. The table lists minimum risk tiers.
+
+| Operation | Kind | Risk | Permission | Phase |
+|---|---|---|---|---|
+| `admin.agent.list` | Q | R0 | `game.ops.read` | 1 |
+| `admin.ledger.query` | Q | R1 | `game.audit.read` | 1 |
+| `admin.policy.get` | Q | R0 | `game.ops.read` | 1 |
+| `analytics.catalog` | Q | R0 | `game.analytics.read` | 1 |
+| `db.migrations.list` | Q | R0 | `game.db.read` | 1 |
+| `db.status` | Q | R0 | `game.db.read` | 1 |
+| `node.get` | Q | R0 | `game.node.read` | 1 |
+| `node.list` | Q | R0 | `game.node.read` | 1 |
+| `ops.overview.get` | Q | R0 | `game.ops.read` | 1 |
+| `player.character.get` | Q | R1 | `game.player.read` | 1 |
+| `player.inventory.get` | Q | R1 | `game.player.read` | 1 |
+| `player.search` | Q | R1 | `game.player.read` | 1 |
+| `sanction.list` | Q | R1 | `game.sanction.read` | 1 |
+| `world.get` | Q | R0 | `game.world.read` | 1 |
+| `world.list` | Q | R0 | `game.world.read` | 1 |
+| `analytics.query` | Q | R0/R1 | `game.analytics.read` | 2 |
+| `node.drain` | C | R2 | `game.node.ops` | 2 |
+| `ops.alerts.ack` | C | R2 | `game.ops.write` | 2 |
+| `ops.alerts.list` | Q | R0 | `game.ops.read` | 2 |
+| `ops.logs.tail` | Q | R1 | `game.ops.logs.read` | 2 |
+| `ops.metrics.series` | Q | R0 | `game.ops.read` | 2 |
+| `player.kick` | C | R2 | `game.player.moderate` | 2 |
+| `player.message` | C | R2 | `game.player.moderate` | 2 |
+| `player.teleport` | C | R2 | `game.player.moderate` | 2 |
+| `sanction.ban.account` | C | R3 | `game.sanction.ban` | 2 |
+| `sanction.ban.character` | C | R3 | `game.sanction.ban` | 2 |
+| `sanction.mute` | C | R2 | `game.sanction.write` | 2 |
+| `sanction.notation.add` | C | R2 | `game.sanction.write` | 2 |
+| `sanction.revoke` | C | R3 | `game.sanction.ban` | 2 |
+| `sanction.unmute` | C | R2 | `game.sanction.write` | 2 |
+| `world.broadcast` | C | R2 | `game.world.ops` | 2 |
+| `world.motd.set` | C | R2 | `game.world.ops` | 2 |
+| `world.restart` | C | R3 | `game.world.ops` | 2 |
+| `world.save_now` | C | R2 | `game.world.ops` | 2 |
+| `world.state.set` | C | R3 | `game.world.config` | 2 |
+
+### Economy query forms
+
+Use `operation: "analytics.query"` and put the query ID inside the signed
+`params.query_id`. Each pair uses the filename stem `analytics.query.<query_id>`.
+Use a world target and a window of at most 400 days at minute, hour, or day
+grain. The analytics executor will enforce the window and the 10,000-point or
+row limit. The result carries the applied filters, metric revision,
+completeness, a nullable freshness watermark, and world age, active character
+count, and revision context. ANL-03's completeness, privacy, and valuation
+rules apply to the data returned by a future executor.
+
+| Query ID | Risk | Rows |
+|---|---|---|
+| `gold_supply` | R0 | Gold supply per bucket |
+| `gold_sources_sinks` | R0 | Gold minted and burned per bucket and source |
+| `item_supply_by_type` | R0 | Item quantity per bucket and item type |
+| `market_volume` | R0 | Executed trade count, quantity, and gold volume |
+| `market_price_series` | R0 | Minimum, median, and maximum executed unit price for an item type |
+| `npc_trade_flow` | R0 | Item and gold flows in each direction by NPC and item type |
+| `top_wealth` | R1 | Pseudonymous gold ranking, limited to 1–100 entries |
+
+### Phase-2 form choices
+
+- Use the envelope's character and world target for kick, teleport, and
+  private message. Kick takes the expected session generation as a decimal
+  string. The future executor must atomically compare that generation and
+  fence only the matching session. Teleport takes a tagged temple or coordinate
+  destination. The executor checks walkability and house access.
+- Private message, broadcast, and MOTD use a maximum of 255 Unicode
+  characters. An empty MOTD clears it. Broadcast uses the envelope world
+  target when supplied, otherwise it has server-wide scope.
+- Save returns a receipt. Drain targets a node and reports whether admission
+  closed, gameplay sealed, and how many sessions remain. Restart requires a
+  countdown of 1–3,600 seconds and returns the restarted node IDs, save receipt,
+  and final state. Drain and restart use envelope progress updates. World state
+  takes an optional session-kick flag and expected revision.
+- Sanction decisions carry the enforcement operation ID, stream ID, and
+  decision revision. Lifts also carry the prior decision revision. The operation
+  ID binds to the envelope's `admin_operation_id`. Mute expires, while an omitted
+  or null ban expiry represents a permanent ban. Mute and unmute use the
+  existing Enforcement Command v1 MUTE payload. Ban and revoke carry the
+  decision fields for ADM forms, pending a ban profile in Enforcement Command.
+  The operations use the distinct IDs and permissions in ADM-01. Notations are staff
+  notes of up to 1,024 characters. ADM decision summaries carry the profile,
+  resulting state and runtime effect. The enforcement consumer owns ordering,
+  scope and immediate fencing.
+- Metrics select one named series at a time. Null point values represent
+  missing samples. Alerts list active records with an opaque cursor and
+  acknowledge one alert by ID. Log tail filters a time window by target
+  world/node, channel and level. It returns at most 2,000 structured diagnostic
+  lines containing the bounded token fields. The producer must enforce
+  privacy-safe redaction.
+
+## Agent wire behavior
 The pure verifier accepts immutable nonce/idempotency/precondition snapshots.
 The driver authenticates first, atomically claims the PostgreSQL nonce, runs
 steps 5–8, and only then loads idempotency. Failed checks after step 4 consume

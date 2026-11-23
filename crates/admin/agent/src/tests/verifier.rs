@@ -403,7 +403,7 @@ fn precedence_rotation_and_policy_validation() -> Result<(), WireError> {
     let text = policy_text();
     assert!(Policy::parse(&text.replace("R0", "R1")).is_ok());
     assert!(Policy::parse(&text.replace("game.ops.read", "game.db.admin")).is_err());
-    assert!(crate::channel::execute("world.list", &p).is_err());
+    assert!(!advertised().contains(Operation::AnalyticsCatalog.name()));
     Ok(())
 }
 

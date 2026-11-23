@@ -601,6 +601,9 @@ fn item_valuation_uses_confirmed_market_or_entered_unit_price() -> TestResult {
     app.update();
     click(&mut app, Action::MarketValue)?;
     assert_eq!(link.analyser_panel().loot_prices.get(&42), Some(&19));
+    let first = link.loot_prices();
+    let second = link.loot_prices();
+    assert!(std::ptr::eq(&first[&42], &second[&42]));
     use oteryn_client_ui::market::details::{Query, Reply, Statistics};
     assert!(link.market_query(Query::Statistics { definition: 42 }));
     let PlayCommand::Feature(statistics) = receiver.try_recv()? else {

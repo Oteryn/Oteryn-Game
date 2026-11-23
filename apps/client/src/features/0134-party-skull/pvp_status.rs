@@ -2,6 +2,7 @@ use oteryn_client_runtime::{party_skull::PvpStatus, raw_feature::GatedCommandRes
 use oteryn_client_ui::party_skull::{FragWindow, Panel, SkullTimer, UnjustifiedSnapshot};
 pub(in crate::play) fn apply(panel: &mut Panel, result: &GatedCommandResult) {
     panel.incoming_situations = None;
+    panel.incoming_ids = None;
     panel.unjustified = None;
     panel.skull_timer = None;
     panel.black_limits_milli = None;
@@ -14,6 +15,14 @@ pub(in crate::play) fn apply(panel: &mut Panel, result: &GatedCommandResult) {
         panel.feedback = "Invalid PvP status reply".into();
         return;
     };
+    if panel.situation_identity {
+        panel.incoming_ids = status
+            .situations
+            .iter()
+            .filter(|s| s.incoming)
+            .map(|s| s.situation_id)
+            .collect();
+    }
     let mut incoming: Vec<_> = status
         .situations
         .iter()

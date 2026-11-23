@@ -414,40 +414,68 @@ class HeavyGateTests(unittest.TestCase):
         self.text = WORKFLOW.read_text()
         self.job = indented_yaml_mapping_block(self.text, "heavy_gate", 2)
 
+    GH_STUB = """#!/usr/bin/env python3
+import json, os, re, sys
+from pathlib import Path
+args = sys.argv[1:]
+with open(os.environ["API_CALLS"], "a") as calls:
+    calls.write(" ".join(args) + "\\n")
+prefix = "repos/Oteryn/Oteryn-Game/"
+if args[:2] == ["api", prefix + "issues/123/labels"] and args[2:] == ["--paginate", "--jq", ".[].name"]:
+    sys.stdout.write(os.environ["LIVE_LABELS"])
+    sys.exit(int(os.environ["LABELS_EXIT"]))
+assert args[:3] == ["api", "--paginate", "--slurp"] and len(args) == 4, args
+if os.environ["API_EXIT"] != "0":
+    sys.exit(int(os.environ["API_EXIT"]))
+worlds = json.loads(os.environ["WORLDS"])
+counter = Path(os.environ["WORLD_COUNTER"])
+listing = prefix + "actions/workflows/pr-postgres-harness.yml/runs?head_sha=head&event=pull_request&per_page=100"
+if args[3] == listing:
+    index = int(counter.read_text()) if counter.exists() else 0
+    counter.write_text(str(index + 1))
+    runs = [{key: run[key] for key in ("id", "created_at", "run_attempt", "status")}
+            for run in worlds[min(index, len(worlds) - 1)]]
+    print(json.dumps([{"workflow_runs": runs[:1]}, {"workflow_runs": runs[1:]}]))
+    sys.exit(0)
+match = re.fullmatch(re.escape(prefix) + r"actions/runs/([0-9]+)/attempts/([0-9]+)/jobs\\?per_page=100", args[3])
+assert match, args
+index = max(int(counter.read_text()) - 1, 0)
+run = next(run for run in worlds[min(index, len(worlds) - 1)] if str(run["id"]) == match[1])
+assert str(run["run_attempt"]) == match[2]
+print(json.dumps([{"jobs": run["jobs"]}]))
+"""
+
+    def gh_env(self, directory, *, worlds, api_exit=0, labels=(), labels_exit=0):
+        gh = Path(directory) / "gh"
+        gh.write_text(self.GH_STUB)
+        gh.chmod(0o755)
+        sleep = Path(directory) / "sleep"
+        sleep.write_text("#!/bin/bash\nexit 0\n")
+        sleep.chmod(0o755)
+        return {**os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
+                "REPOSITORY": "Oteryn/Oteryn-Game", "HEAD_SHA": "head", "PR_NUMBER": "123",
+                "GH_TOKEN": "fixture", "WORLDS": json.dumps(worlds or [[]]),
+                "WORLD_COUNTER": str(Path(directory) / "world"), "API_EXIT": str(api_exit),
+                "LIVE_LABELS": "\n".join(labels), "LABELS_EXIT": str(labels_exit),
+                "API_CALLS": str(Path(directory) / "api_calls")}
+
     def run_gate(self, *, heavy="true", real="true", archive="success", legacy="skipped",
-                 prepare="success", empty="false", affinity="true", pages=None, api_exit=0,
+                 prepare="success", empty="false", affinity="true", worlds=None, api_exit=0,
                  eligible="true", labels=(), labels_exit=0, forbid_api=False):
         self.assertIsNotNone(self.job)
         script = step_script(WORKFLOW, "Require the heavy PostgreSQL harness")
         self.assertNotIn("${{", script)
         with tempfile.TemporaryDirectory(dir=ROOT) as directory:
-            gh = Path(directory) / "gh"
-            gh.write_text(
-                '#!/bin/bash\nset -eu\n'
-                'printf "called\\n" >> "$API_CALLS"\n'
-                'if [[ "$*" == "api --paginate --slurp repos/Oteryn/Oteryn-Game/commits/head/check-runs?filter=all&per_page=100" ]]; then\n'
-                '  printf "%s" "$CHECK_PAGES"\nexit "$API_EXIT"\n'
-                'fi\n'
-                'test "$#" = 5 && test "$1" = api && test "$2" = repos/Oteryn/Oteryn-Game/issues/123/labels\n'
-                'test "$3" = --paginate && test "$4" = --jq && test "$5" = ".[].name"\n'
-                'printf "%s" "$LIVE_LABELS"\nexit "$LABELS_EXIT"\n'
-            )
-            gh.chmod(0o755)
-            api_calls = Path(directory) / "api_calls"
+            env = self.gh_env(directory, worlds=worlds, api_exit=api_exit, labels=labels, labels_exit=labels_exit)
             output = Path(directory) / "output"
             result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], env={
-                **os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
-                "IS_ELIGIBLE": eligible, "IS_HEAVY": heavy, "IS_REAL_RUN": real,
+                **env, "IS_ELIGIBLE": eligible, "IS_HEAVY": heavy, "IS_REAL_RUN": real,
                 "PREPARE_RESULT": prepare, "EMPTY_SCOPE": empty,
                 "ARCHIVE_RESULT": archive, "LEGACY_RESULT": legacy, "PG_AFFINITY": affinity,
-                "REPOSITORY": "Oteryn/Oteryn-Game", "HEAD_SHA": "head",
-                "CHECK_PAGES": json.dumps(pages or [{"check_runs": []}]),
-                "API_EXIT": str(api_exit), "PR_NUMBER": "123",
-                "LIVE_LABELS": "\n".join(labels), "LABELS_EXIT": str(labels_exit),
-                "API_CALLS": str(api_calls), "GITHUB_OUTPUT": str(output),
+                "GITHUB_OUTPUT": str(output),
             }, text=True, capture_output=True)
             if forbid_api:
-                self.assertFalse(api_calls.exists(), "Non-eligible PR called the API")
+                self.assertFalse(Path(env["API_CALLS"]).exists(), "Non-eligible PR called the API")
             should_verify = (result.returncode == 0 and eligible == heavy == real == affinity == "true"
                              and empty == "false")
             self.assertEqual(output.exists(), should_verify)
@@ -505,66 +533,158 @@ class HeavyGateTests(unittest.TestCase):
         result = self.run_gate(heavy="false", labels_exit=1)
         self.assertNotEqual(result.returncode, 0)
 
+    SCOPE = "PR early signal / PostgreSQL scope and routing"
+
     @staticmethod
-    def check(run, name, status="completed", conclusion="success", completed_at=None, check_id=0):
-        return {"id": check_id, "name": name, "status": status, "conclusion": conclusion,
-                "completed_at": completed_at,
-                "details_url": f"https://github.com/Oteryn/Oteryn-Game/actions/runs/{run}/job/{check_id}"}
+    def jobrec(name, status="completed", conclusion="success", job_id=0, completed_at="2026-11-23T01:00:00Z"):
+        return {"id": job_id, "name": name, "status": status,
+                "conclusion": conclusion if status == "completed" else None,
+                "completed_at": completed_at if status == "completed" else None}
 
-    def real_run(self, run, gate_status="completed", conclusion="success", completed_at=None, check_id=0):
-        return [self.check(run, "PR early signal / PostgreSQL scope and routing", check_id=check_id + 100),
-                self.check(run, "heavy-gate", gate_status, conclusion if gate_status == "completed" else None,
-                           completed_at, check_id)]
+    def wf_run(self, run_id, created, *, real=True, scope_status="completed", gates=(("completed", "success"),),
+            attempt=1, status="completed"):
+        """A workflow run's latest attempt: its scope job, then its heavy-gate jobs in order."""
+        jobs = [self.jobrec(self.SCOPE, scope_status, "success" if real else "skipped", run_id * 10)]
+        for index, (gate_status, conclusion) in enumerate(gates, 1):
+            jobs.append(self.jobrec("heavy-gate", gate_status, conclusion, run_id * 10 + index,
+                                 f"2026-11-23T0{index}:00:00Z"))
+        return {"id": run_id, "created_at": f"2026-11-23T{created:02d}:00:00Z", "run_attempt": attempt,
+                "status": status, "jobs": jobs}
 
-    def mirror_run(self, run, gate_status="completed", conclusion="success", completed_at=None, check_id=0):
-        return [self.check(run, "PR early signal / PostgreSQL scope and routing", conclusion="skipped",
-                           check_id=check_id + 100),
-                self.check(run, "heavy-gate", gate_status, conclusion if gate_status == "completed" else None,
-                           completed_at, check_id)]
+    def mirror(self, *runs):
+        return self.run_gate(real="false", archive="skipped", legacy="skipped", worlds=[list(runs)])
 
-    def test_mirror_uses_latest_completed_real_run_across_pages(self):
+    def test_mirror_uses_the_newest_real_run_across_pages(self):
         for conclusion in ("success", "failure", "cancelled", "neutral", "skipped", "timed_out"):
             with self.subTest(conclusion=conclusion):
-                pages = [{"check_runs": [
-                    *self.real_run(10, completed_at="2026-11-04T01:00:00Z", check_id=1),
-                    *self.mirror_run(11, gate_status="in_progress", check_id=4),
-                    self.check(12, "heavy-gate", completed_at="2026-11-04T03:00:00Z", check_id=5),
-                ]}, {"check_runs": [
-                    *self.real_run(13, conclusion=conclusion, completed_at="2026-11-04T02:00:00Z", check_id=3),
-                    *self.mirror_run(14, completed_at="2026-11-04T04:00:00Z", check_id=6),
-                ]}]
-                result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
+                result = self.mirror(
+                    self.wf_run(10, 1, gates=(("completed", "failure" if conclusion == "success" else "success"),)),
+                    self.wf_run(13, 3, gates=(("completed", conclusion),)),
+                    self.wf_run(11, 4, real=False),
+                )
                 self.assertEqual(result.returncode == 0, conclusion == "success", result.stderr)
 
     def test_mirror_never_republishes_a_non_heavy_success(self):
-        # A non-heavy run (skipped PostgreSQL scope) passed before heavy-tests was added.
-        pages = [{"check_runs": [*self.mirror_run(20, completed_at="2026-11-04T01:00:00Z", check_id=1)]}]
-        result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
+        result = self.mirror(self.wf_run(20, 1, real=False))
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("still running", result.stdout)
 
-    def test_mirror_waits_for_a_pending_real_run(self):
-        # An older real success must not be republished while a newer real run is pending.
-        pages = [{"check_runs": [
-            *self.real_run(30, completed_at="2026-11-04T01:00:00Z", check_id=1),
-            *self.real_run(31, gate_status="queued", check_id=2),
-        ]}]
-        result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("still running", result.stdout)
-        # A pending real run whose scope job is still running counts as real too.
-        pages[0]["check_runs"][2]["status"] = "in_progress"
-        pages[0]["check_runs"][2]["conclusion"] = None
-        result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
-        self.assertNotEqual(result.returncode, 0)
+    def test_mirror_waits_for_the_newest_real_run(self):
+        older_success = self.wf_run(30, 1)
+        for name, newest in {
+            "gate not created": self.wf_run(31, 5, gates=(), status="in_progress"),
+            "gate running": self.wf_run(31, 5, gates=(("in_progress", None),), status="in_progress"),
+            "scope running": self.wf_run(31, 5, scope_status="in_progress", gates=(("queued", None),),
+                                      status="in_progress"),
+        }.items():
+            with self.subTest(name):
+                result = self.mirror(older_success, newest)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("still running", result.stdout)
 
-    def test_mirror_fails_closed_without_completed_check_or_on_api_error(self):
-        for pages, api_exit in ((None, 0), ([{"check_runs": [*self.real_run(40, gate_status="in_progress")]}], 0),
-                                (None, 1)):
-            result = self.run_gate(real="false", pages=pages, api_exit=api_exit)
+    def test_mirror_selects_by_run_creation_not_rerun_ids(self):
+        # A selective rerun of an older run gives its jobs fresh ids; the newer run still wins.
+        older = self.wf_run(40, 1, attempt=2)
+        older["jobs"] = [dict(job, id=job["id"] + 1000) for job in older["jobs"]]
+        newer_failed = self.wf_run(41, 2, gates=(("completed", "failure"),))
+        self.assertNotEqual(self.mirror(older, newer_failed).returncode, 0)
+        self.assertEqual(self.mirror(self.wf_run(40, 1, gates=(("completed", "failure"),)), self.wf_run(41, 2)).returncode, 0)
+        # A rerun attempt of the newest run is read at its latest attempt.
+        self.assertNotEqual(self.mirror(self.wf_run(41, 2, attempt=3, gates=(("in_progress", None),),
+                                                 status="in_progress")).returncode, 0)
+
+    def test_mirror_passes_over_a_run_not_yet_known_to_be_real(self):
+        queued = self.wf_run(51, 5, scope_status="queued", gates=(("queued", None),), status="queued")
+        self.assertEqual(self.mirror(self.wf_run(50, 1), queued).returncode, 0)
+
+    def test_mirror_uses_the_completed_gate_while_reconcile_runs(self):
+        reconciling = (("completed", "success"), ("in_progress", None))
+        self.assertEqual(self.mirror(self.wf_run(55, 1, gates=reconciling, status="in_progress")).returncode, 0)
+        failing = (("completed", "failure"), ("in_progress", None))
+        self.assertNotEqual(self.mirror(self.wf_run(55, 1, gates=failing, status="in_progress")).returncode, 0)
+
+    def test_mirror_fails_closed_without_real_run_or_on_api_error(self):
+        for worlds, api_exit in ((None, 0), ([[self.wf_run(60, 1, gates=(("in_progress", None),))]], 0),
+                                 ([[self.wf_run(60, 1)]], 1)):
+            result = self.run_gate(real="false", worlds=worlds, api_exit=api_exit)
             self.assertNotEqual(result.returncode, 0)
             if api_exit == 0:
                 self.assertIn("still running", result.stdout)
+
+    def run_reconcile(self, *, worlds, gate_result="success", is_real="true", eligible="true",
+                      labels=("heavy-tests",), labels_exit=0):
+        script = step_script(WORKFLOW, "Republish heavy-gate after in-flight mirrors")
+        self.assertNotIn("${{", script)
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            env = self.gh_env(directory, worlds=worlds, labels=labels, labels_exit=labels_exit)
+            result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], env={
+                **env, "GATE_RESULT": gate_result, "IS_REAL": is_real, "IS_ELIGIBLE": eligible,
+                "GITHUB_RUN_ID": "70",
+            }, text=True, capture_output=True)
+            counter = Path(env["WORLD_COUNTER"])
+            listings = int(counter.read_text()) if counter.exists() else 0
+            return result, listings
+
+    def test_reconcile_waits_for_every_other_run_then_republishes_the_real_verdict(self):
+        reconciling = (("completed", "success"), ("in_progress", None))
+        own = self.wf_run(70, 2, gates=reconciling, status="in_progress")
+        busy_mirror = self.wf_run(71, 3, real=False, gates=(("completed", "failure"), ("queued", None)),
+                               status="in_progress")
+        done_mirror = dict(busy_mirror, status="completed")
+        result, listings = self.run_reconcile(worlds=[[own, busy_mirror], [own, busy_mirror], [own, done_mirror]])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(listings, 4)  # three waits, then the verdict lookup
+        self.assertIn("Waiting for 1 other run(s)", result.stdout)
+        failed_own = self.wf_run(70, 2, gates=(("completed", "failure"), ("in_progress", None)), status="in_progress")
+        result, _ = self.run_reconcile(worlds=[[failed_own, done_mirror]], gate_result="failure")
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_reconcile_never_publishes_success_while_a_run_is_still_going(self):
+        own = self.wf_run(70, 2, gates=(("completed", "success"), ("in_progress", None)), status="in_progress")
+        queued = self.wf_run(71, 3, real=False, scope_status="queued", gates=(("queued", None),), status="queued")
+        result, listings = self.run_reconcile(worlds=[[own, queued]])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(listings, 55)
+        self.assertIn("still running", result.stdout)
+
+    def test_reconcile_retry_does_not_trust_an_old_success(self):
+        # Unlabelled run passed; heavy-tests was added and the real run failed on the same head.
+        old = self.wf_run(70, 1, real=False, gates=(("completed", "success"), ("in_progress", None)),
+                       status="in_progress")
+        real_failed = self.wf_run(72, 2, gates=(("completed", "failure"), ("completed", "failure")))
+        result, _ = self.run_reconcile(worlds=[[old, real_failed]], is_real="false")
+        self.assertNotEqual(result.returncode, 0)
+        # A retried reconcile of an older real run reads the newest real run, not its own needs.
+        old_real = self.wf_run(70, 1, gates=(("completed", "success"), ("in_progress", None)),
+                            attempt=2, status="in_progress")
+        result, _ = self.run_reconcile(worlds=[[old_real, real_failed]])
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_reconcile_republishes_needs_only_where_heavy_gate_would(self):
+        for eligible, labels in (("false", ("heavy-tests",)), ("true", ("bug",)), ("true", ())):
+            for gate_result in ("success", "failure"):
+                with self.subTest(eligible=eligible, labels=labels, gate_result=gate_result):
+                    result, listings = self.run_reconcile(worlds=[[]], gate_result=gate_result,
+                                                          eligible=eligible, labels=labels)
+                    self.assertEqual((result.returncode == 0, listings), (gate_result == "success", 0))
+        result, _ = self.run_reconcile(worlds=[[]], labels_exit=1)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_reconcile_job_contract(self):
+        job = indented_yaml_mapping_block(self.text, "heavy_gate_reconcile", 2)
+        self.assertIsNotNone(job)
+        for fragment in ("    name: heavy-gate\n", "    needs: [prepare, heavy_gate]\n", "    if: always()\n",
+                         "    timeout-minutes: 10\n", "      actions: read\n", "      pull-requests: read\n",
+                         "          GATE_RESULT: ${{ needs.heavy_gate.result }}\n",
+                         "          IS_REAL: ${{ needs.prepare.result != 'skipped' }}\n"):
+            self.assertIn(fragment, job)
+        self.assertEqual(self.text.count("    name: heavy-gate\n"), 2)
+        self.assertTrue(self.text.rstrip().endswith("test \"$conclusion\" = 'success'"))
+        # Both jobs select the real run with the same code.
+        function = re.compile(r"^ *real_verdict\(\) \{\n.*?^ *\}\n", re.MULTILINE | re.DOTALL)
+        copies = [textwrap.dedent(match) for match in function.findall(self.text)]
+        self.assertEqual(len(copies), 2)
+        self.assertEqual(copies[0], copies[1])
 
     def test_job_contract_and_event_classification(self):
         self.assertIsNotNone(self.job)
