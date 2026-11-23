@@ -476,7 +476,7 @@ fn cwdoor_refused_numbered_key_exchanges_clear_confirmation_postgres() -> TestRe
         super::full_world_support::world_scenario!(
             "cwdoor_refused_keys",
             |h,
-             request,
+             _request,
              seal,
              authority,
              world_id,
