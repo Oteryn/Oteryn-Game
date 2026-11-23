@@ -742,7 +742,7 @@ async fn check_familiar_regression(
             .initialize_familiar_login(&budget, actor, session, request, native, &unknown, config)
             .await
     }
-    .map_err(|()| "Familiar Login refused")?
+    .map_err(|_| "Familiar Login refused")?
     .ok_or("Familiar Login receipt")?;
     assert!(login.creature().is_none());
     let after_login = h
