@@ -729,19 +729,11 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
                   if row["production_definition"]["production_key"] in protected_loot_yields.ARBAZILOTH_HARD_ITEMS]
     house_top_order = json.loads((root / house_decoration_actions.PROFILES).read_bytes())
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
-    # Late custody profiles must retain the verified Global client weights as well.
-    from import_cyclopedia_global import apply_profile_weights
-    apply_profile_weights(items["records"], root)
     item_detail_source_facts.apply(root, items, item_detail_weights)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.
     generated[item_path] = spell_import.canonical_bytes(items)
-    ranged_item_profiles.apply_native(root, generated)
-    # Reconcile the qualified text leaves on the late reward and shop admissions.
-    writable_item_profiles.apply_native(
-        root, generated, item_path, NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes
-    )
     # SRX-1 keeps the historical single-line provider byte-identical. The loader
     # composes only the changed records from a separately pinned small supplement.
     import srx1_profile_updates
