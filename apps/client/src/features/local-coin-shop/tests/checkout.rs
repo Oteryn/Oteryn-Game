@@ -294,3 +294,160 @@ fn refreshed_tracked_order_reconciles_paid_and_validates_immutable_binding() -> 
         Ok(())
     })
 }
+
+#[test]
+fn overlapping_purchases_send_one_post_until_response() -> TestResult {
+    test_thread(|| {
+        let _entry = crate::account_services::test_server::COMMERCE_ENTRY
+            .lock()
+            .map_err(|_| "commerce entry lock")?;
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let other = mock.token(&client)?;
+        let browser: Browser = Arc::new(|_| true);
+        let cancel = CancellationToken::new();
+        let folder = tempfile::tempdir()?;
+        let session = || {
+            crate::device_login::DeviceLogin::test_fixture(folder.path().into())
+                .commerce_session("platform", "client", Some(CHARACTER.into()))
+                .coin
+        };
+        let mut first = session();
+        let mut second = session();
+        let purchase = Action::Purchase {
+            package_id: PACKAGE.into(),
+            confirmed: true,
+        };
+        let (ready, received) = tokio::sync::oneshot::channel();
+        let (release, held) = tokio::sync::oneshot::channel();
+        mock.authority
+            .lock()
+            .map_err(|_| "lock")?
+            .hold_coin_response = Some((ready, held));
+        mock.runtime.block_on(async {
+            controller::execute(
+                &mut first,
+                Action::Refresh,
+                &client,
+                &token,
+                &browser,
+                cancel.clone(),
+            )
+            .await;
+            controller::execute(
+                &mut second,
+                Action::Refresh,
+                &client,
+                &other,
+                &browser,
+                cancel.clone(),
+            )
+            .await;
+            assert!(second.can_purchase(PACKAGE));
+            let submit = controller::execute(
+                &mut first,
+                purchase.clone(),
+                &client,
+                &token,
+                &browser,
+                cancel.clone(),
+            );
+            let overlap = async {
+                tokio::time::timeout(std::time::Duration::from_secs(5), received).await??;
+                controller::execute(
+                    &mut second,
+                    purchase.clone(),
+                    &client,
+                    &other,
+                    &browser,
+                    cancel.clone(),
+                )
+                .await;
+                release.send(()).map_err(|_| "response")?;
+                Ok::<_, Box<dyn std::error::Error>>(())
+            };
+            let (_, result) = tokio::join!(submit, overlap);
+            result?;
+            assert!(second.can_purchase(PACKAGE));
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })?;
+        let authority = mock.authority.lock().map_err(|_| "lock")?;
+        assert_eq!(
+            authority
+                .requests
+                .iter()
+                .filter(|r| r.starts_with("POST /api/v1/native-account/coin-purchases/orders "))
+                .count(),
+            1
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn fresh_grant_filters_previously_accepted_order() -> TestResult {
+    checkout_refresh_case(true)
+}
+
+#[test]
+fn earlier_order_cannot_replace_just_purchased_checkout() -> TestResult {
+    checkout_refresh_case(false)
+}
+
+fn checkout_refresh_case(deny_lookup: bool) -> TestResult {
+    test_thread(move || {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let next = mock.token(&client)?;
+        let browser: Browser = Arc::new(|_| true);
+        let execute = |view: &mut View, action, grant| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                grant,
+                &browser,
+                CancellationToken::new(),
+            ));
+        };
+        let purchase = || Action::Purchase {
+            package_id: PACKAGE.into(),
+            confirmed: true,
+        };
+        let mut first = View::new(None);
+        execute(&mut first, Action::Refresh, &token);
+        mock.with_coins(|c| {
+            c.drop_after_create = !deny_lookup;
+            c.hide_recent_orders = !deny_lookup;
+        })?;
+        execute(&mut first, purchase(), &token);
+        let original = mock
+            .with_coins(|c| c.orders.keys().next().cloned())?
+            .ok_or("order")?;
+        let mut fresh = View::with_prior(None, first.prior.clone());
+        if deny_lookup {
+            let listed = mock
+                .with_coins(|c| c.orders.remove(&original))?
+                .ok_or("listed order")?;
+            mock.with_coins(|c| c.orders.insert("stale-index".into(), listed))?;
+            execute(&mut fresh, Action::Refresh, &next);
+            assert!(!format!("{fresh:?}").contains(&original));
+            assert!(fresh.can_purchase(PACKAGE));
+        } else {
+            execute(&mut fresh, Action::Refresh, &next);
+            mock.with_coins(|c| {
+                c.hide_recent_orders = false;
+                c.drop_after_create = false;
+            })?;
+            execute(&mut fresh, purchase(), &next);
+            assert_eq!(mock.with_coins(|c| c.orders.len())?, 2);
+            assert_ne!(
+                fresh.order.as_ref().ok_or("active order")?.request_id,
+                original
+            );
+        }
+        Ok(())
+    })
+}

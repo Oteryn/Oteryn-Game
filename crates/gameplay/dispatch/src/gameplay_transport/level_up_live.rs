@@ -8,6 +8,7 @@ use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 use super::ComposedFreshAdmission;
+use super::character_progression_binding::level_up_binding_matches;
 use super::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 use crate::domain::CharacterId;
 use crate::durability::character_progression::ExperienceCommitOutcome;
@@ -84,6 +85,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.states.level_refresh.is_marked(character) {
             return;
         }
+        let Ok(Some(binding)) = self.current_quest_fence(session).await else {
+            return;
+        };
+        if binding.character_id != character {
+            return;
+        }
         let CastFactsLoad::Ready {
             facts,
             character_revision,
@@ -105,12 +112,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        #[cfg(test)]
+        install_pause::after_spell_reconciliation().await;
+
+        // Keep the Character revision stable from the final durable read through installation.
+        // A writer in flight or a superseded snapshot leaves the committed award marked.
+        let Some(_revision) = self.revision_sequencer.try_acquire(character) else {
+            return;
+        };
+        let Ok(Some(current)) = self.current_quest_fence(session).await else {
+            return;
+        };
+        if !level_up_binding_matches(binding, character_revision, current) {
+            return;
+        }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
             return;
         };
         if lease.character_id().as_bytes() != character.as_bytes()
+            || lease.generation() != current.character_lease_generation
+            || runtime.binding().runtime_scope() != current.runtime_scope
+            || runtime.binding().scope_generation() != current.scope_ownership_generation
             || states.has_pending_spell_commit(actor, session)
         {
             return;
@@ -130,6 +154,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             *state = next;
         }
         self.states.level_refresh.unmark(character);
+    }
+}
+
+#[cfg(test)]
+pub(super) mod install_pause {
+    use std::cell::RefCell;
+    use std::sync::Arc;
+    use tokio::sync::Notify;
+
+    #[derive(Default)]
+    pub(crate) struct Pause {
+        pub reached: Notify,
+        pub resume: Notify,
+    }
+
+    thread_local! {
+        static PAUSE: RefCell<Option<Arc<Pause>>> = const { RefCell::new(None) };
+    }
+
+    #[allow(
+        dead_code,
+        reason = "the level-up cases are mounted in only one PG shard"
+    )]
+    pub(crate) fn install() -> Arc<Pause> {
+        let pause = Arc::new(Pause::default());
+        PAUSE.set(Some(Arc::clone(&pause)));
+        pause
+    }
+
+    pub(super) async fn after_spell_reconciliation() {
+        if let Some(pause) = PAUSE.take() {
+            pause.reached.notify_one();
+            pause.resume.notified().await;
+        }
     }
 }
 

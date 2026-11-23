@@ -327,7 +327,7 @@ pub(super) fn clipboard_text(overlay: &str) -> String {
 }
 
 /// The platform file browser, with the folder as one argument and no shell.
-pub(super) fn folder_command(folder: &std::path::Path) -> std::process::Command {
+pub(in crate::bevy_shell) fn folder_command(folder: &std::path::Path) -> std::process::Command {
     let program = if cfg!(windows) {
         "explorer"
     } else if cfg!(target_os = "macos") {

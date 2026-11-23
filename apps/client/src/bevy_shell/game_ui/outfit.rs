@@ -8,6 +8,8 @@ use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::appearance::{Intent, Panel};
 use oteryn_client_ui_bevy as source;
 mod animation;
+mod gallery;
+mod presets;
 mod search;
 const PARTS: [&str; 4] = ["Head", "Primary", "Secondary", "Detail"];
 #[derive(Component)]
@@ -19,6 +21,8 @@ struct Action {
 }
 #[derive(Clone)]
 enum Kind {
+    Gallery(gallery::Action),
+    Preset(presets::Control),
     Preview(animation::Control),
     Outfit(String),
     Addon(u8),
@@ -31,7 +35,10 @@ enum Kind {
 #[derive(Resource, Default)]
 struct State {
     rendered: Option<(u64, Panel)>,
+    gallery: gallery::Gallery,
     riding: Option<bool>,
+    preset: Option<String>,
+    preset_riding: Option<bool>,
     search: String,
     dirty: bool,
     playback: animation::Playback,
@@ -103,13 +110,19 @@ fn edit(panel: &mut Panel, kind: &Kind) -> bool {
             panel.fields[3] = colours.join(",");
             true
         }
-        Kind::Preview(_) | Kind::Ok | Kind::Close | Kind::Riding => false,
+        Kind::Gallery(_)
+        | Kind::Preset(_)
+        | Kind::Preview(_)
+        | Kind::Ok
+        | Kind::Close
+        | Kind::Riding => false,
     }
 }
 fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
+    names: Query<&bevy::text::EditableText, With<presets::NameField>>,
     guard: ModalGuard,
     mut state: ResMut<State>,
 ) {
@@ -129,11 +142,32 @@ fn activate(
         cancel(&play.link);
         return;
     }
-    if let Kind::Preview(control) = &action.kind {
-        state.playback.edit(control);
+    if let Kind::Gallery(action) = &action.kind {
+        gallery::activate(action, &play.link, &mut state);
         return;
     }
-    send(&play.link, &action.kind);
+    if let Kind::Preset(control) = &action.kind {
+        presets::activate(
+            &mut owner,
+            &mut state,
+            control,
+            names
+                .single()
+                .ok()
+                .map(|field| field.value().to_string())
+                .unwrap_or_default(),
+        );
+        return;
+    }
+    if let Kind::Preview(control) = &action.kind {
+        state.playback.edit(control);
+        state.dirty |= matches!(
+            control,
+            animation::Control::Floor | animation::Control::Character | animation::Control::Mount
+        );
+        return;
+    }
+    presets::send_selection(&play.link, &action.kind, &mut state);
 }
 fn restore_draft(link: &crate::play::PlayLink) {
     let panel = link.appearance_panel();
@@ -221,21 +255,31 @@ type ProjectQueries<'w, 's> = (
     Res<'w, ButtonInput<KeyCode>>,
     Query<'w, 's, Entity, With<Window>>,
     Query<'w, 's, Entity, With<search::Field>>,
+    Query<'w, 's, (Entity, &'static presets::NameField)>,
 );
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
-    (keys, windows, searches): ProjectQueries,
+    (keys, windows, searches, names): ProjectQueries,
     skin: Res<Skins>,
     mut images: ResMut<Assets<Image>>,
     mut state: ResMut<State>,
     guard: ModalGuard,
 ) {
+    let generation = owner.generation();
+    if state
+        .rendered
+        .as_ref()
+        .is_some_and(|(old, _)| *old != generation)
+    {
+        state.reset_gallery();
+        state.search.clear();
+    }
     let Some(play) = &owner.play else {
         for entity in &windows {
             commands.entity(entity).despawn();
         }
-        state.rendered = None;
+        state.reset_gallery();
         return;
     };
     if keys.just_pressed(KeyCode::Escape)
@@ -252,10 +296,10 @@ fn project(
         for entity in &windows {
             commands.entity(entity).despawn();
         }
-        state.rendered = None;
+        state.reset_gallery();
         return;
     }
-    let generation = owner.generation();
+    state.dirty |= state.gallery.refresh(&play.link);
     let riding = play.link.riding();
     state.dirty |= state.riding != riding;
     state.riding = riding;
@@ -268,6 +312,20 @@ fn project(
             .as_ref()
             .is_some_and(|(previous, _)| *previous == generation)
     });
+    let retained_name = names
+        .single()
+        .ok()
+        .filter(|(_, field)| {
+            state
+                .rendered
+                .as_ref()
+                .is_some_and(|(old, _)| *old == generation)
+                && state.preset.as_deref() == Some(field.0.as_str())
+        })
+        .map(|(id, _)| id);
+    if let Some(entity) = retained_name {
+        commands.entity(entity).remove::<ChildOf>();
+    }
     if let Some(field) = retained {
         commands.entity(field).remove::<ChildOf>();
     }
@@ -305,6 +363,15 @@ fn project(
     } else {
         search::build(&mut commands, &skin, root, &state.search);
     }
+    presets::build(
+        &mut commands,
+        &skin,
+        root,
+        generation,
+        &owner,
+        state.preset.as_deref(),
+        retained_name,
+    );
     for key in outfits(&panel)
         .into_iter()
         .filter(|key| search::matches(key, &state.search))
@@ -382,7 +449,11 @@ fn project(
                 root,
                 generation,
                 Kind::Riding,
-                if riding { "Mount: on" } else { "Mount: off" },
+                if state.preset_riding.unwrap_or(riding) {
+                    "Mount: on"
+                } else {
+                    "Mount: off"
+                },
             );
         }
         for key in catalogue
@@ -404,11 +475,13 @@ fn project(
         state.artwork = std::env::var_os(crate::map::ASSET_DIR_ENV)
             .and_then(|root| preview::Assets::load(std::path::Path::new(&root)).ok());
     }
+    gallery::build(&mut commands, &skin, root, generation, &state, &panel);
     if panel.preview().is_some() {
+        let layers = state.playback.layers;
         let pixels = state
             .artwork
             .as_mut()
-            .map(|assets| assets.draw_panel(&panel, 2, 0, false));
+            .map(|assets| assets.draw_layers(&panel, 2, 0, false, layers));
         match pixels {
             Some(Ok(pixels)) => {
                 let image = animation::image(pixels);
@@ -426,12 +499,15 @@ fn project(
                     .spawn((
                         ImageNode::new(handle),
                         Node {
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Start,
                             width: px(192.),
                             height: px(192.),
                             ..default()
                         },
                     ))
                     .id();
+                state.gallery.attach_title(&mut commands, &skin, picture);
                 commands.entity(root).add_child(picture);
             }
             Some(Err(message)) => {
@@ -452,6 +528,30 @@ fn project(
         }
     }
     for (control, label) in [
+        (
+            animation::Control::Floor,
+            if state.playback.layers.floor {
+                "Hide floor"
+            } else {
+                "Show floor"
+            },
+        ),
+        (
+            animation::Control::Character,
+            if state.playback.layers.character {
+                "Hide character"
+            } else {
+                "Show character"
+            },
+        ),
+        (
+            animation::Control::Mount,
+            if state.playback.layers.mount {
+                "Hide mount"
+            } else {
+                "Show mount"
+            },
+        ),
         (animation::Control::Left, "Turn left"),
         (animation::Control::Right, "Turn right"),
         (animation::Control::Movement(true), "Movement on"),

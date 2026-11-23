@@ -233,7 +233,14 @@ pub(super) fn project_tools(
                 }
             }
         }
-        ToolSnapshot::Sort(_, containers, mode) => {
+        ToolSnapshot::Sort(panel, containers, mode) => {
+            button(
+                "Sort Nested Containers",
+                ToolAction::NestedSort {
+                    checked: panel.fields[3] == "1",
+                },
+                ready && !mode.active(),
+            );
             if mode.selected {
                 button(
                     "Use Manual Sort Mode",

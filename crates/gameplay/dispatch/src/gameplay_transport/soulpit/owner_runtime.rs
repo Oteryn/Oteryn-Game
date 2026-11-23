@@ -93,6 +93,7 @@ struct Owner<'a, 'o, 'f, 's> {
     admission: &'o ComposedFreshAdmission<'a, 'f, 's>,
     binding: SoulpitActivityBinding,
     members: &'o [SoulpitMembership],
+    species: Option<String>,
     now: u64,
     visible: Vec<VisibleSurvivor>,
 }
@@ -355,7 +356,8 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
     }
     fn read_encounter(&mut self) -> ActivityFuture<'_, SoulpitStoredEncounter> {
         Box::pin(async move {
-            self.admission
+            let stored = self
+                .admission
                 .root
                 .read_soulpit_encounter(
                     self.admission.character,
@@ -366,7 +368,9 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
                 )
                 .await
                 .map_err(durable)?
-                .ok_or(SoulpitRuntimeError::InvalidState)
+                .ok_or(SoulpitRuntimeError::InvalidState)?;
+            self.species = Some(stored.species.clone());
+            Ok(stored)
         })
     }
     fn commit_progress(
@@ -405,10 +409,13 @@ impl<'a, 'o, 'f, 's> ActivityHandoffOwnerRuntime for Owner<'a, 'o, 'f, 's> {
                     .map_err(|_| SoulpitRuntimeError::AdapterUnavailable)?;
                 slots.push(slot);
             }
+            let species = self
+                .species
+                .as_deref()
+                .ok_or(SoulpitRuntimeError::InvalidState)?;
             let outcome = self
                 .admission
-                .root
-                .advance_soulpit(self.admission.character, self.admission.holder, request)
+                .commit_soulpit_progress(species, request)
                 .await;
             // The lifecycle can advance a survivor revision when it credits Animus. Resolve
             // the sequencer cursor on its next acquire; no runtime lock crosses SQL.
@@ -515,6 +522,7 @@ pub(super) async fn drive_registered<'a, 'f, 's>(
         admission: &view,
         binding,
         members,
+        species: None,
         now,
         visible: Vec::new(),
     };
@@ -627,6 +635,7 @@ pub(super) async fn leave_registered<'a, 'f, 's>(
         admission: &view,
         binding,
         members,
+        species: None,
         now,
         visible: Vec::new(),
     };

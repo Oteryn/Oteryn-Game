@@ -1,6 +1,7 @@
 //! S04c extends the existing CHAT owner and its World relay; no second chat service.
 use super::*;
 use crate::durability::chat_public::{HelpAction, HelpReceipt, PublicChatAccess};
+use crate::durability::chat_text::TEXT_MAX_CHARS;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::gameplay_transport::connection::AdmittedSession;
 use oteryn_gameplay_social_rules::public_channels::{PublicChatFacts, PublicRoom};
@@ -328,6 +329,25 @@ fn help_command(text: &str) -> Option<(HelpAction, &str)> {
         })
 }
 
+fn guild_leaders_text(
+    access: &PublicChatAccess,
+    name: &CharacterName,
+    text: &ChatText,
+) -> Option<ChatText> {
+    // Crystal 201189f8, guild_leaders.lua:5-20. Keep the full label within the chat bound.
+    let label = match (access.role.access, access.guild_name.as_deref()) {
+        (true, Some(guild)) => format!("[Staff][{guild}]"),
+        (true, None) => "[Staff]".to_owned(),
+        (false, Some(guild)) => format!("[{guild}]"),
+        (false, None) => return None,
+    };
+    let mut line = format!("{} {label}: {}", name.as_str(), text.as_str());
+    if let Some((end, _)) = line.char_indices().nth(TEXT_MAX_CHARS) {
+        line.truncate(end);
+    }
+    ChatText::parse(&line).ok()
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     async fn public_facts(
         &self,
@@ -642,6 +662,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             );
         }
+        let text = if room == ChatRoom::GuildLeaders {
+            let Some(text) = guild_leaders_text(&access, &name, &text) else {
+                return Some(result(ChatDisposition::Rejected));
+            };
+            text
+        } else {
+            text
+        };
         if let Some(refused) = self.states.chat.public_claim_interval(&admitted, room, now) {
             return Some(refused);
         }
