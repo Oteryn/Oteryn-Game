@@ -77,57 +77,57 @@ const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
     // Package 4 changes the placement inventory cited by these existing routes.
     (
         "oteryn:quest.ferumbras_ascension_quest",
-        hash(b"f0dc38488c97bb072853640171e26919179f837d5b55e8f9412d906b1d6d28f3"),
+        hash(b"90726ffb2298ce404833c2a08cee70eb699dd600256d2edf6763858d83697685"),
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
     ),
     (
         "oteryn:quest.forgotten_knowledge_quest",
-        hash(b"adf9bc6941230d7afc81191cfe9294937baab94a51e1b948c871397f36ad45a9"),
+        hash(b"c5e817a79d863a9385dea01bfb4ab98f824a3a7d9be6656a1ee0ad1f19bbcb35"),
         hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
     ),
     (
         "oteryn:quest.formogar_mine_hoist",
-        hash(b"245f47438e615926836b405e364ae06a677c2d26c49de9baa21536165aa67b16"),
+        hash(b"011e38be924e9587dc34a60e68ce55785a2813422ceeb40d35b82bd73a1857a0"),
         hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
     ),
     (
         "oteryn:quest.giant_smithhammer_quest",
-        hash(b"94bebfccf6a5a78d90f543193bc5331168d8411a7fd5643aec27406b033c8258"),
+        hash(b"9501a6b0ebd1a3c91f01f62ce60193d4e60e963b89b35dd63874067e60b7a211"),
         hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
     ),
     (
         "oteryn:quest.goblin_merchant_quest",
-        hash(b"efca0828de7074bf7ad25b676bd695395ac42605bf0a0a99f127ccf7bd66638a"),
+        hash(b"e5374a03d334a81681c8124b29a64a9a256ab626e7b242b10be790684136fe46"),
         hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
     ),
     (
         "oteryn:quest.grave_danger_quest",
-        hash(b"7d3bb361fc2ace8d5341c2249e059fb693b55e240e713b87ad50f6f2922a2550"),
+        hash(b"4736dfb1c2085d6000f06bb8a7cb811d4f55714a01e53f5c4f35a79b01db902f"),
         hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
     ),
     (
         "oteryn:quest.grimvale_quest",
-        hash(b"fd894fb653beed2de8a754dc996dac5260acb5225d89bbfa7539c1f20347c07f"),
+        hash(b"bcfa73062ad864018ae4788e1fb314e73c105d5e5c06429dccae36caaba8e558"),
         hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
     ),
     (
         "oteryn:quest.heart_of_destruction_quest",
-        hash(b"766dc4fb70c650e5dd10572cb19f301bc42af84c19d1413b30c6ee89d8b8820e"),
+        hash(b"31d2eda46fbc8ceb31b0f874d61ac3cd5fb4a75b764007cbfb26753a557e1042"),
         hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
     ),
     (
         "oteryn:quest.hero_of_rathleton_quest",
-        hash(b"8dbc68d6840a648b80bcda27b6b0df2fd08d1bf52bd93ffd05c1082d29d10358"),
+        hash(b"3565804c6beed42b4e4f88d875db68388c3b6ec34df17e0d892881ebdd46ca14"),
         hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
     ),
     (
         "oteryn:quest.hidden_threats_quest",
-        hash(b"b833b3b32ebb450548699c411a6f4ff886878d0c8eed1da9581b9fa0a42cd5aa"),
+        hash(b"997c65cbbd982f65e0099b3071c1708962f1d46ad2e37bfbc24f90997281dfed"),
         hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
     ),
     (
         "oteryn:quest.hydra_egg_quest",
-        hash(b"ded3c3258ce069d20427c70d9d82545d0593d7ecde2721a3e6745e35e2ac1b16"),
+        hash(b"9b29515bba98d0b790f0bfdaa746c0223b6ccccf328e369370bcd9993a5a5067"),
         hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
     ),
 ];
@@ -279,14 +279,18 @@ pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> Definition
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
     for &(quest, current, previous) in GAMEPLAY_PREDECESSORS {
         if catalogue.definition_hash(quest) == Some(current) {
-            catalogue
-                .predecessors
-                .entry(quest.into())
-                .or_default()
-                .extend(previous.iter().map(|&hash| NpcDefinitionPredecessor {
-                    hash,
-                    defaults: Default::default(),
-                }));
+            let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
+            for &hash in previous {
+                if !predecessors
+                    .iter()
+                    .any(|predecessor| predecessor.hash == hash)
+                {
+                    predecessors.push(NpcDefinitionPredecessor {
+                        hash,
+                        defaults: Default::default(),
+                    });
+                }
+            }
         }
     }
 }

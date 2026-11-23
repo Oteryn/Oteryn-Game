@@ -547,7 +547,6 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/classic-quests.json"),
-    include_str!("../../../../../content/quests/npc-callbacks/explorer-society.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
@@ -574,6 +573,8 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
+    // Append Explorer Society so its corpse targets follow the retained live creature callbacks.
+    include_str!("../../../../../content/quests/npc-callbacks/explorer-society.json"),
 ];
 
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
@@ -2411,10 +2412,10 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Outfit completions add four to the shared shard. Package 4 also adds the
-        // chosen routes (18), Prisoner (2), classic contacts (5), Nomads (3) and Explorer Society (85).
+        // chosen routes (18), Prisoner (2), classic contacts (5), Nomads (3) and Explorer Society (89).
         assert_eq!(
             load()?.len(),
-            (238 + 4) + 59 + 125 + 1 + 1 + 13 + 12 + 18 + 2 + 5 + 3 + 85
+            (238 + 4) + 59 + 125 + 1 + 1 + 13 + 12 + 18 + 2 + 5 + 3 + 89
         );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
