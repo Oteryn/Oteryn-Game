@@ -27,6 +27,61 @@ impl PlayLink {
         mailbox.analyser.open_tools.retain(|open| *open != tool);
         mailbox.analyser.open = !mailbox.analyser.open_tools.is_empty();
     }
+    pub fn analyser_boss_search(&self, search: &str) {
+        lock(&self.mailbox).analyser.display.boss_search = search.to_owned();
+    }
+    pub fn analyser_boss_order(&self, name: bool) {
+        lock(&self.mailbox).analyser.display.boss_name_order = name;
+    }
+    pub fn analyser_toggle(&self, section: oteryn_client_ui::analyser::display::Section) {
+        let hidden = &mut lock(&self.mailbox).analyser.display.hidden;
+        if !hidden.remove(&section) {
+            hidden.insert(section);
+        }
+    }
+    pub fn analyser_target(&self, rate: oteryn_client_ui::analyser::display::Rate, value: &str) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        if let Ok(target) = value.trim().parse::<std::num::NonZeroU64>() {
+            panel.display.targets.insert(rate, target.get());
+            panel.feedback = None;
+        } else {
+            panel.feedback = Some("Enter a positive whole-number rate target");
+        }
+    }
+    pub fn analyser_rate_mode(&self, tool: oteryn_client_ui::analyser::Tool) {
+        let display = &mut lock(&self.mailbox).analyser.display;
+        let session = if tool == oteryn_client_ui::analyser::Tool::Impact {
+            &mut display.impact_session
+        } else {
+            &mut display.input_session
+        };
+        *session = !*session;
+    }
+    pub fn analyser_highs(&self) -> Option<(u64, [u64; 2])> {
+        let panel = &lock(&self.mailbox).analyser;
+        panel
+            .selected
+            .then_some((panel.high_revision, panel.impact_high))
+    }
+    pub fn analyser_restore_highs(&self, previous: [u64; 2]) -> [u64; 2] {
+        let panel = &mut lock(&self.mailbox).analyser;
+        for (high, saved) in panel.impact_high.iter_mut().zip(previous) {
+            *high = (*high).max(saved);
+        }
+        panel.impact_high
+    }
+    pub fn analyser_reset_high(&self) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        panel.impact_high = [0; 2];
+        panel.high_revision = panel.high_revision.saturating_add(1);
+    }
+    pub fn analyser_start_hunt(&self) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        if panel.selected && panel.open && panel.tool == oteryn_client_ui::analyser::Tool::Hunting {
+            oteryn_client_ui::analyser::protocol::start_hunt(panel);
+        }
+    }
+
     pub fn analyser_reset(&self) {
         let panel = &mut lock(&self.mailbox).analyser;
         if panel.selected && panel.open {
@@ -44,6 +99,29 @@ impl PlayLink {
             oteryn_client_ui::analyser::tracking::select(panel, item, tracked);
         }
     }
+    pub fn analyser_auto_value(&self, value: &str) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        match value.trim().parse() {
+            Ok(threshold) => {
+                panel.auto_track_value = threshold;
+                panel.feedback = None;
+            }
+            Err(_) => panel.feedback = Some("Enter a nonnegative whole-number unit value"),
+        }
+    }
+    pub fn analyser_clear_tracked(&self) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        if panel.selected
+            && panel.open
+            && panel.tool == oteryn_client_ui::analyser::Tool::LootTracker
+        {
+            panel.loot_tracked.clear();
+            panel.auto_tracked.clear();
+            panel.pending_drop_values.clear();
+            panel.feedback = None;
+        }
+    }
+
     pub fn analyser_filter_tracked(&self) {
         let panel = &mut lock(&self.mailbox).analyser;
         if panel.selected
@@ -211,6 +289,7 @@ pub(in crate::play) fn refresh_party(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
 ) {
+    mailbox.analyser.party_split_error = None;
     mailbox.analyser.party_import = None;
     if !mailbox.party.selected {
         mailbox.analyser.party_feedback =

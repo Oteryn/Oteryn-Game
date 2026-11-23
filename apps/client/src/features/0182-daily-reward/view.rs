@@ -1,6 +1,12 @@
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::daily_reward::DailyRewardPanel;
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn reward_reset_deadline(&self) -> Option<std::time::Instant> {
+        let mailbox = lock(&self.mailbox);
+        let (epoch, deadline) = mailbox.reward_reset?;
+        mailbox.daily_reward.details.as_ref().filter(|details| details.epoch == epoch).map(|_| deadline)
+    }
     #[must_use]
     pub fn daily_reward_panel(&self) -> DailyRewardPanel {
         lock(&self.mailbox).daily_reward.clone()
