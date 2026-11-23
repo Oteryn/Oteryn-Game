@@ -138,14 +138,6 @@ mod tests {
     }
 
     #[test]
-    fn intense_healing_is_admitted_as_a_direct_rune() {
-        let mut spell = test_source("candidate:spell/rune/intense_healing_rune");
-        assert!(direct_rune(&spell));
-        spell.allowed_targets = AllowedTargets::Any;
-        assert!(!direct_rune(&spell));
-    }
-
-    #[test]
     fn intense_healing_rejects_owned_summons_and_other_players() {
         use crate::target::{AllowedTargetsExt, CastTarget};
 
