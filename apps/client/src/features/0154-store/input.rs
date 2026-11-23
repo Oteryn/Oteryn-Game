@@ -24,6 +24,17 @@ impl PlayLink {
         }
     }
 
+    pub fn store_open_xp_boost(&self) {
+        {
+            let mut mailbox = lock(&self.mailbox);
+            mailbox.store.open = true;
+            if mailbox.store.confirmed_purchase.is_some() || mailbox.store.pending {
+                return;
+            }
+        }
+        self.store_browse("featured", "XP Boost", 0, 0);
+    }
+
     #[cfg(bevy_shell)]
     pub(crate) fn store_open_premium_time(&self) {
         {
@@ -80,14 +91,24 @@ impl PlayLink {
 
     pub fn store_request(&self, command_type: u32, payload: Vec<u8>) {
         let mut mailbox = lock(&self.mailbox);
-        if matches!(command_type, 6187 | 6188) && !mailbox.store.token_supported { return; }
+        if matches!(command_type, 6187 | 6188) && !mailbox.store.token_supported {
+            return;
+        }
         let Some(command) = oteryn_client_ui::store::command(command_type, payload) else {
             return;
         };
         let requested = if matches!(command_type, 6187 | 6188) {
-            oteryn_client_ui::store_cosmetic_tokens::request(&mut mailbox.store, command_type, command.payload)
-        } else { oteryn_client_ui::store::request(&mut mailbox.store, command) };
-        if requested.is_some() && command_type == 6187 { mailbox.store.token_balance_refresh = false; }
+            oteryn_client_ui::store_cosmetic_tokens::request(
+                &mut mailbox.store,
+                command_type,
+                command.payload,
+            )
+        } else {
+            oteryn_client_ui::store::request(&mut mailbox.store, command)
+        };
+        if requested.is_some() && command_type == 6187 {
+            mailbox.store.token_balance_refresh = false;
+        }
         if let Some(command) = requested
             && self
                 .commands

@@ -335,13 +335,21 @@ impl HostOwner {
         play.view.observe_bar_pointer(&play.link);
         let mut context = None;
         for click in clicks {
+            if click.secondary && play.view.secondary_click_cancels_targeting(&play.link) {
+                continue;
+            }
+            if (click.secondary || !suppress_primary)
+                && let Some(tile) = play.view.click_tile(click.x, click.y)
+                && play
+                    .view
+                    .loot_click(&play.link, tile, click.secondary, click.shortcut)
+            {
+                continue;
+            }
             if let Some(modifier) = click.shortcut {
                 if let Some(tile) = play.view.click_tile(click.x, click.y) {
                     play.view.modifier_click(tile, &play.link, modifier);
                 }
-                continue;
-            }
-            if click.secondary && play.view.secondary_click_cancels_targeting(&play.link) {
                 continue;
             }
             if suppress_primary && !click.secondary {

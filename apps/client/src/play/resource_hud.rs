@@ -4,6 +4,11 @@ use crate::combat_input::PlayCommand;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
+#[path = "skills_stats.rs"]
+mod skills_stats;
+#[cfg(bevy_shell)]
+pub(crate) use skills_stats::GROUPS;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ResourceHudOptions {
@@ -31,7 +36,10 @@ pub(super) struct MailboxState {
     selected: bool,
     pending: bool,
     stamina: Option<u16>,
+    level: Option<u32>,
     vocation: Option<u8>,
+    combat: [Option<String>; 3],
+    combat_pending: [bool; 3],
 }
 impl MailboxState {
     pub(super) fn new(selected: bool) -> Self {
@@ -88,6 +96,10 @@ impl PlayLink {
             });
     }
     #[cfg(bevy_shell)]
+    pub(crate) fn refresh_skills_character(&self) {
+        self.request_hud_stamina();
+    }
+    #[cfg(bevy_shell)]
     pub(crate) fn own_hud_vocation(&self) -> (Option<u8>, bool) {
         let mailbox = lock(&self.mailbox);
         (mailbox.hud_resource.vocation, mailbox.hud_resource.pending)
@@ -123,13 +135,15 @@ impl Outbox {
             extensions: mailbox.cyclopedia_character.extensions,
             ..Default::default()
         };
-        let stamina = apply_result(&mut panel, result)
+        let accepted = apply_result(&mut panel, result);
+        mailbox.hud_resource.level = panel.general.map(|g| g.level);
+        mailbox.hud_resource.vocation = panel.vocation_id;
+        let stamina = accepted
             .then_some(panel.general)
             .flatten()
             .map(|stats| stats.stamina_minutes);
         mailbox.hud_resource.pending = false;
         mailbox.hud_resource.stamina = stamina;
-        mailbox.hud_resource.vocation = panel.vocation_id;
     }
 }
 impl PlayView {
@@ -325,7 +339,13 @@ impl PlayView {
     pub(crate) fn special_condition_rows(&self, hud: bool) -> Vec<(String, String, String)> {
         use oteryn_client_ui::condition_status::{icon_key, icon_label};
         let preferences = self.preferences();
-        if !preferences.resource_hud.conditions {
+        if !preferences.resource_hud.conditions
+            || !(if hud {
+                preferences.conditions_hud_enabled
+            } else {
+                preferences.conditions_bar_enabled
+            })
+        {
             return Vec::new();
         }
         let hidden = if hud {

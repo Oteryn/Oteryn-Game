@@ -33,6 +33,7 @@ use bevy::ui_widgets::{ScrollArea, TextInput};
 #[derive(Event)]
 pub(super) struct CopyText(pub(super) String);
 
+pub(super) mod copy_link;
 pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Res<Skins>) {
     commands.add_observer(
         |request: On<CopyText>, clipboard: Option<Res<crate::bevy_shell::game_ui::clipboard_writer::ClipboardWriter>>| {

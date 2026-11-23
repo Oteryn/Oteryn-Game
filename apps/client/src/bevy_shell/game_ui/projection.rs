@@ -22,6 +22,7 @@ pub(super) struct RenderedItem {
     item: oteryn_session::ItemEntry,
     atlas_size: UVec2,
     available: bool,
+    loot_border: Option<(u8, Color)>,
     draws: Vec<crate::map::Draw>,
 }
 
@@ -50,7 +51,27 @@ pub(super) fn item_appearances(
         .and_then(|owner| owner.play.as_ref())
         .map(|play| play.view.scene());
     let atlas_image = cache.as_ref().and_then(|cache| cache.atlas_image());
+    let loot = owner.as_ref().and_then(|owner| {
+        let style = owner.settings.preferences.game_window.loot_style;
+        owner
+            .play
+            .as_ref()
+            .filter(|_| style != 0)
+            .map(|play| (style, play.link.loot_prices()))
+    });
     for (entity, item, mut image, previous) in &mut icons {
+        let loot_border = loot.as_ref().and_then(|(style, prices)| {
+            let value = prices.get(&item.0.item_definition_ref.get())?;
+            let rgb = match value {
+                1_000_000.. => [255, 255, 0],
+                100_000.. => [192, 0, 255],
+                10_000.. => [0, 128, 255],
+                1_000.. => [0, 255, 0],
+                50.. => [160, 160, 160],
+                _ => return None,
+            };
+            Some((*style, Color::srgb_u8(rgb[0], rgb[1], rgb[2])))
+        });
         let draws = scene.and_then(|scene| scene.item_icon(&item.0));
         let source = draws.zip(scene).zip(atlas_image);
         let size = scene.map_or(UVec2::ZERO, |scene| {
@@ -59,6 +80,7 @@ pub(super) fn item_appearances(
         if previous.is_some_and(|previous| {
             previous.item == item.0
                 && previous.atlas_size == size
+                && previous.loot_border == loot_border
                 && previous.available == source.is_some()
                 && previous.draws.as_slice() == draws.unwrap_or(&[])
         }) {
@@ -68,6 +90,7 @@ pub(super) fn item_appearances(
             item: item.0,
             atlas_size: size,
             available: source.is_some(),
+            loot_border,
             draws: draws.unwrap_or(&[]).to_vec(),
         };
         commands.entity(entity).despawn_children();
@@ -161,6 +184,39 @@ pub(super) fn item_appearances(
                 ))
                 .id();
             commands.entity(entity).add_child(label);
+        }
+        if let Some((style, color)) = loot_border {
+            let corners = [(true, true), (false, true), (true, false), (false, false)];
+            for &(left, top) in &corners[..if style == 1 { 1 } else { 4 }] {
+                let edge = style == 1;
+                let size = percent(if edge { 100. } else { 25. });
+                let border = UiRect {
+                    left: px(if edge || left { 1. } else { 0. }),
+                    right: px(if edge || !left { 1. } else { 0. }),
+                    top: px(if edge || top { 1. } else { 0. }),
+                    bottom: px(if edge || !top { 1. } else { 0. }),
+                };
+                let decoration = commands
+                    .spawn((
+                        Name::new("Loot value border"),
+                        Node {
+                            position_type: PositionType::Absolute,
+                            width: size,
+                            height: size,
+                            border,
+                            left: if left { px(0.) } else { Val::Auto },
+                            right: if left { Val::Auto } else { px(0.) },
+                            top: if top { px(0.) } else { Val::Auto },
+                            bottom: if top { Val::Auto } else { px(0.) },
+                            ..default()
+                        },
+                        BorderColor::all(color),
+                        ZIndex(20),
+                        Pickable::IGNORE,
+                    ))
+                    .id();
+                commands.entity(entity).add_child(decoration);
+            }
         }
         commands.entity(entity).insert(next);
     }
@@ -359,6 +415,32 @@ mod tests {
             .map(|text| text.0.as_str())
             .collect();
         assert_eq!(labels, ["3"]);
+        {
+            let host = app.world().non_send::<HostOwner>();
+            assert!(
+                host.play
+                    .as_ref()
+                    .ok_or("play")?
+                    .link
+                    .analyser_item_price_for(oteryn_client_ui::analyser::Tool::Loot, "17", "10000")
+            );
+        }
+        for (style, edges) in [(1, 1), (2, 4), (0, 0)] {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let mut saved = serde_json::to_value(owner.settings.preferences.game_window)?;
+            saved["loot_style"] = style.into();
+            owner.settings.preferences.game_window = serde_json::from_value(saved)?;
+            app.update();
+            let count = app
+                .world_mut()
+                .query::<(&Name, &ChildOf)>()
+                .iter(app.world())
+                .filter(|(name, parent)| {
+                    parent.parent() == icon && name.as_str() == "Loot value border"
+                })
+                .count();
+            assert_eq!(count, edges);
+        }
         Ok(())
     }
 }

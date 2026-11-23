@@ -53,12 +53,42 @@ pub struct Metadata {
     pub levels: BTreeMap<String, u32>,
     pub pending: Option<Vec<String>>,
     pub next_names: usize,
+    queried: std::collections::BTreeSet<String>,
+    speakers_changed: bool,
     previous: Vec<ChatLine>,
     receipts: Vec<u64>,
 }
 impl Metadata {
+    pub(super) fn begin_query(&mut self, names: Vec<String>) -> Option<Vec<u8>> {
+        let payload = oteryn_client_runtime::chat::console::encode_names(&names)?;
+        self.queried.extend(names.iter().cloned());
+        self.pending = Some(names);
+        Some(payload)
+    }
+
+    /// Query new speakers once, including an unavailable level. Opening the console
+    /// explicitly can still refresh a previously answered name.
+    pub fn query_new_speakers(&mut self, lines: &[ChatLine]) -> Option<Vec<u8>> {
+        if self.pending.is_some() || !self.speakers_changed {
+            return None;
+        }
+        let visible: std::collections::BTreeSet<_> = lines.iter().filter_map(speaker).collect();
+        self.queried.retain(|name| visible.contains(name.as_str()));
+        let names: Vec<_> = visible
+            .into_iter()
+            .filter(|name| !self.queried.contains(*name))
+            .take(32)
+            .map(str::to_owned)
+            .collect();
+        self.speakers_changed = names.len() == 32;
+        if names.is_empty() {
+            return None;
+        }
+        self.begin_query(names)
+    }
     /// Capture receipt before retained-log coalescing can hide an identical new line.
     pub fn received(&mut self, line: &ChatLine, received_seconds: u64) {
+        self.speakers_changed = true;
         let max = oteryn_client_runtime::chat::MAX_CHAT_LOG_LINES;
         if self.previous.len() >= max {
             let remove = self.previous.len() + 1 - max;
@@ -69,11 +99,14 @@ impl Metadata {
         self.receipts.push(received_seconds);
     }
     pub fn reset_history(&mut self) {
+        self.queried.clear();
+        self.speakers_changed = true;
         self.previous.clear();
         self.receipts.clear();
         self.levels.clear();
     }
     pub fn observe(&mut self, lines: &[ChatLine], received_seconds: u64) {
+        self.speakers_changed |= self.previous != lines;
         let overlap = (0..=self.previous.len().min(lines.len()))
             .rev()
             .find(|&n| self.previous[self.previous.len() - n..] == lines[..n])
@@ -82,6 +115,11 @@ impl Metadata {
         self.receipts = self.receipts[old..].to_vec();
         self.receipts.resize(lines.len(), received_seconds);
         self.previous = lines.to_vec();
+        self.queried.retain(|name| {
+            lines
+                .iter()
+                .any(|line| speaker(line) == Some(name.as_str()))
+        });
         self.levels.retain(|name, _| {
             lines
                 .iter()

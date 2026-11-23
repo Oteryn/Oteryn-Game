@@ -212,7 +212,7 @@ fn tab_text(
             .console
             .channel_notices
             .iter()
-            .filter(|notice| notice.channel_id == *id)
+            .filter(|notice| panel.console.filters.shows_participant_notice(notice, *id))
         {
             let _ = writeln!(
                 text,

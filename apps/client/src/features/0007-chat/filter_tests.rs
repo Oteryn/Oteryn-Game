@@ -63,6 +63,9 @@ fn console_filters_route_real_notices_store_results_and_private_tabs()
             .map_err(|e| format!("{e:?}"))?,
         },
     );
+
+    #[cfg(bevy_shell)]
+    assert!(link.take_window_notices().pop_back().is_some_and(|notice| notice.text.contains("OfferUnavailable")));
     let terms = [
         "ridge event",
         "safe area",
@@ -135,6 +138,23 @@ fn console_filters_route_real_notices_store_results_and_private_tabs()
     assert_eq!(refreshed.matches("OfferUnavailable").count(), 1);
 
     Ok(())
+}
+
+#[test]
+fn applied_console_options_filter_received_notices() {
+    let (link, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    outbox.push(vec![SessionEvent::ServerMessage(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: ServerMessage::Advance("Festival".into()),
+    })]);
+    let mut settings = crate::play::SettingsState::new(None);
+    assert!(panel_text(&link.chat_panel()).contains("Festival"));
+    settings.preferences.console.events = false;
+    settings.sync_local_preferences(&link);
+    assert!(!panel_text(&link.chat_panel()).contains("Festival"));
 }
 
 #[test]

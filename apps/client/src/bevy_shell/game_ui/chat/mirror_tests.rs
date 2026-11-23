@@ -312,6 +312,28 @@ fn copy_speech_after_history_evicts_its_source() -> TestResult {
 }
 
 #[test]
+fn copying_a_chat_link_requires_confirmation() -> TestResult {
+    let (mut app, _) = console_app(
+        ChatRoomSet::default(),
+        vec![ChatLine::Private {
+            speaker_name: "Alice".into(),
+            text: "Visit https://example.org".into(),
+        }],
+    )?;
+    capture_copy(&mut app);
+    menu(&mut app, "https://example.org", "Copy Message")?;
+    assert_eq!(app.world().resource::<Copied>().0, "before Copy Message");
+    choose(&mut app, "Copy link to clipboard")?;
+    assert!(
+        app.world()
+            .resource::<Copied>()
+            .0
+            .contains("https://example.org")
+    );
+    Ok(())
+}
+
+#[test]
 fn copy_name_from_private_speech_menu() -> TestResult {
     let (mut app, _) = console_app(
         ChatRoomSet::default(),

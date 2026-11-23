@@ -11,6 +11,7 @@ mod bulk;
 #[cfg(test)]
 mod bulk_tests;
 mod dialogs;
+mod expiry;
 #[cfg(test)]
 mod manual_sort_tests;
 mod presentation;
@@ -204,6 +205,7 @@ pub(super) fn install(app: &mut App) {
                 .chain()
                 .after(view::project),
         );
+    app.add_systems(Update, expiry::project.after(view::project));
     amount::install(app);
     bulk::install(app);
     world_drag::install(app);

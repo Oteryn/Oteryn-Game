@@ -2,12 +2,13 @@
 //! mana side by side with "cur/max" centred, then the level, a red XP bar with tick marks and
 //! the XP Boost button, then the centred row of condition icons.
 use super::{HostOwner, ModalGuard, Skins, source};
-use crate::bevy_shell::ui::{Control, toolbar::open_toolbar};
 use bevy::{prelude::*, ui_widgets::Activate};
 
 /// The value text of the health (false) or mana (true) bar.
 #[derive(Component)]
 pub(super) struct BarText(bool);
+#[derive(Component)]
+pub(super) struct BarRoot;
 #[derive(Component)]
 pub(super) struct BarFill(bool);
 #[derive(Component)]
@@ -39,6 +40,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
     let font = source::font(skins.font.clone(), true);
     let bar = commands
         .spawn((
+            BarRoot,
             Name::new("Status bar"),
             BarBody,
             Node {
@@ -203,9 +205,12 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
 }
 
 /// XP Boost opens the store, where Tibia sells the boost.
-fn xp_boost(event: On<Activate>, mut owner: NonSendMut<HostOwner>, modal: ModalGuard) {
-    if modal.allows(event.entity) && owner.play.is_some() {
-        open_toolbar(&mut owner, Control::Shortcut("store"));
+fn xp_boost(event: On<Activate>, owner: NonSend<HostOwner>, modal: ModalGuard) {
+    if modal.allows(event.entity)
+        && !owner.modal_active()
+        && let Some(play) = &owner.play
+    {
+        play.link.store_open_xp_boost();
     }
 }
 
@@ -214,8 +219,16 @@ fn xp_boost(event: On<Activate>, mut owner: NonSendMut<HostOwner>, modal: ModalG
 pub(super) fn project(
     owner: NonSend<HostOwner>,
     mut texts: Query<(&mut Text, Option<&BarText>), Or<(With<BarText>, With<LevelText>)>>,
+    mut roots: Query<&mut Node, (With<BarRoot>, Without<BarFill>, Without<XpFill>)>,
     mut fills: Query<(&mut Node, Option<&BarFill>), Or<(With<BarFill>, With<XpFill>)>>,
 ) {
+    for mut node in &mut roots {
+        node.display = if owner.settings.preferences.status_bar_visible {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
     let Some(play) = &owner.play else { return };
     let vitals = play.link.actor_vitals();
     let value = |mana: bool| {
