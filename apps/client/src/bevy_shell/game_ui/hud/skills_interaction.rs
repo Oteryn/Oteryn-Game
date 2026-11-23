@@ -30,7 +30,6 @@ struct State {
     level: Option<(Duration, u32, u16)>,
     latest: Option<(u64, u32, u16)>,
     last_gain: Duration,
-    refresh: Option<Duration>,
     details_refresh: Option<Duration>,
     hover: Option<(Entity, Duration)>,
 }
@@ -344,16 +343,7 @@ fn project(
     if let Some(full) = panel.complete {
         state.observe(now, full.experience, full.level, full.level_percent);
     }
-    // Queries serialize through the existing pending flag, as in the native skills HUD.
-    if !panel.pending
-        && panel.selected
-        && state
-            .refresh
-            .is_none_or(|last| now.saturating_sub(last) >= Duration::from_secs(1))
-    {
-        play.link.skill_progress_request();
-        state.refresh = Some(now);
-    }
+    play.link.poll_skill_progress(Duration::from_secs(1));
     let Some((entity, since)) = state.hover else {
         return;
     };

@@ -452,5 +452,17 @@ fn review_hud_conditions_follow_independent_visibility() -> TestResult {
         );
         assert_eq!(keys(&mut app)?, ["Poison"]);
     }
+    let mut excluded = conditions(&[(1, 0)]);
+    excluded.hidden.push(1);
+    publish(&app, excluded, default(), default(), default())?;
+    app.update();
+    assert!(keys(&mut app)?.is_empty());
+    let hud = app
+        .world_mut()
+        .query::<(&Name, &Children)>()
+        .iter(app.world())
+        .find(|(name, _)| name.as_str() == "HUD condition icons")
+        .ok_or("HUD row lost its condition")?;
+    assert_eq!(hud.1.len(), 1);
     Ok(())
 }

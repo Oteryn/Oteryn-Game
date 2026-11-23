@@ -745,7 +745,7 @@ def scope_pull(count, head="a" * 40, base="b" * 40):
     }
 
 
-def run_scope(before, after, records=(), *, expected_head="a" * 40):
+def run_scope(before, after, records=(), *, expected_head="a" * 40, event_base="main"):
     """Execute the production scope body; replace only its API and output boundary."""
     import urllib.request
 
@@ -772,8 +772,8 @@ def run_scope(before, after, records=(), *, expected_head="a" * 40):
         output = Path(directory) / "output"
         env = {
             "REPOSITORY": "Oteryn/Oteryn-Game", "EVENT_PR_NUMBER": "42",
-            "EVENT_PR_HEAD_SHA": expected_head, "GH_TOKEN": "fixture",
-            "GITHUB_OUTPUT": str(output),
+            "EVENT_PR_HEAD_SHA": expected_head, "EVENT_PR_BASE_REF": event_base,
+            "GH_TOKEN": "fixture", "GITHUB_OUTPUT": str(output),
         }
         errors = io.StringIO()
         code = 0
@@ -795,7 +795,7 @@ def test_scope_stable_small_pr():
     assert code == 0 and not errors, (code, errors)
     outputs = dict(line.split("=", 1) for line in wire.splitlines())
     assert outputs == {
-        "pr_number": "42", "target_sha": "a" * 40, "base_sha": "b" * 40,
+        "pr_number": "42", "target_sha": "a" * 40, "base_sha": "b" * 40, "base_ref": "main",
         "file_count": "1", "file_records": json.dumps(records, separators=(",", ":")),
         "complete": "true",
     }, outputs
@@ -918,6 +918,21 @@ def test_scope_identity_drift():
     print("Scope identity fences PASS: five identity changes fail with stable or drifting counts and no outputs")
 
 
+def test_scope_event_base_binding():
+    """A rerun after a main <-> staging retarget must not qualify the other base."""
+    records = [{"filename": "docs/note.md", "status": "modified"}]
+    staging = scope_pull(1)
+    staging["base"] = {"ref": "staging", "sha": "b" * 40}
+    code, wire, errors, _ = run_scope(staging, staging, records, event_base="staging")
+    assert code == 0 and not errors, (code, errors)
+    assert dict(line.split("=", 1) for line in wire.splitlines())["base_ref"] == "staging", wire
+    for event_base, live in (("main", staging), ("staging", scope_pull(1)), ("", scope_pull(1)),
+                             ("other", dict(scope_pull(1), base={"ref": "other", "sha": "b" * 40}))):
+        code, wire, errors, _ = run_scope(live, live, records, event_base=event_base)
+        assert code == 1 and wire == "" and ("base ref" in errors or "targeting" in errors), (event_base, code, wire, errors)
+    print("Scope base binding PASS: only the event's base ref (main or staging) qualifies")
+
+
 def test_scope_count_drift(module):
     """Mutable counts cannot block exact heads or authorize stale narrowed lanes."""
     import urllib.request
@@ -957,7 +972,8 @@ def test_scope_count_drift(module):
                     value = next(pulls)
                 return io.StringIO(json.dumps(value))
             env = {"REPOSITORY": "Oteryn/Oteryn-Game", "EVENT_PR_NUMBER": "3042",
-                   "EVENT_PR_HEAD_SHA": head, "GH_TOKEN": "fixture", "GITHUB_OUTPUT": str(output)}
+                   "EVENT_PR_HEAD_SHA": head, "EVENT_PR_BASE_REF": "main", "GH_TOKEN": "fixture",
+                   "GITHUB_OUTPUT": str(output)}
             errors = io.StringIO()
             with patch.dict(os.environ, env), patch.object(urllib.request, "urlopen", side_effect=urlopen), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(errors):
                 try:
@@ -1130,7 +1146,10 @@ def test_metadata_events():
     assert "      - edited\n" in gate, "base retargets must retain native qualification"
     assert "classify_event" not in gate and "metadata_only" not in gate
     scope = core.indented_yaml_mapping_block(gate, "scope", 2)
-    main_guard = "github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref"
+    main_guard = (
+        "github.event.pull_request.base.ref == 'main' || "
+        "github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref"
+    )
     assert f"    if: {main_guard}\n" in scope
     assert not re.search(r"^    needs:", scope, flags=re.MULTILINE)
     aggregate = core.indented_yaml_mapping_block(gate, "validate", 2)
@@ -1189,7 +1208,8 @@ def test_metadata_events():
     def accepts_live(pull):
         response = io.StringIO(json.dumps(pull))
         env = {"REPOSITORY": "Oteryn/Oteryn-Game", "PR_NUMBER": "42",
-               "EXPECTED_HEAD": expected_head, "EXPECTED_BASE": expected_base, "GH_TOKEN": "fixture"}
+               "EXPECTED_HEAD": expected_head, "EXPECTED_BASE": expected_base,
+               "EXPECTED_BASE_REF": "main", "GH_TOKEN": "fixture"}
         with patch.dict(os.environ, env), patch.object(urllib.request, "urlopen", return_value=response), contextlib.redirect_stdout(io.StringIO()):
             try:
                 exec(compile(script, "isolated-edit-live-fence", "exec"), {})
@@ -1200,6 +1220,7 @@ def test_metadata_events():
     for changed in (
         {"number": 43}, {"state": "closed"},
         {"base": {"ref": "stack", "sha": expected_base}},
+        {"base": {"ref": "staging", "sha": expected_base}},
         {"base": {"ref": "main", "sha": "c" * 40}},
         {"head": {"sha": "d" * 40, "repo": {"full_name": "Oteryn/Oteryn-Game"}}},
         {"head": {"sha": expected_head, "repo": {"full_name": "fork/Game"}}},
@@ -1209,6 +1230,7 @@ def test_metadata_events():
     assert not accepts_live({}) and not accepts_live(None)
     assert "        if: github.event.action == 'edited' && github.event.changes.base == null\n" in final
     assert "          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}\n" in final
+    assert "          EXPECTED_BASE_REF: ${{ needs.scope.outputs.base_ref }}\n" in final
     assert "      pull-requests: read\n" in final
     print("Metadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate")
 
@@ -1584,6 +1606,7 @@ def main() -> int:
     test_scope_file_count_drift(module)
     test_scope_count_drift(module)
     test_scope_identity_drift()
+    test_scope_event_base_binding()
     test_scope_invalid_file_counts()
     test_scope_stable_small_pr()
     test_aggregate()
