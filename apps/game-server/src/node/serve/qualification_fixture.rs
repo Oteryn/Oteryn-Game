@@ -35,8 +35,30 @@ pub(super) struct PreparationOwners<'a> {
     pub(super) world: Option<SpawnOwners<'a>>,
 }
 
+#[cfg(feature = "qualification-spawn")]
+const PVP_KNIGHT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000005";
+
+#[cfg(feature = "qualification-spawn")]
+const PVP_SORCERER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000006";
+
+#[cfg(feature = "qualification-spawn")]
+const LIGHT_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000000d";
+
+#[cfg(feature = "qualification-spawn")]
+const HASTE_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000000f";
+
+#[cfg(feature = "qualification-spawn")]
+const CHALLENGE_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000013";
+
+#[cfg(feature = "qualification-spawn")]
+const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
+
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
+        "s08-knight" => Some(("knight", 8)),
+        "s08-sorcerer" => Some(("sorcerer", 8)),
+        "s13-party" => Some(("sorcerer", 32)),
+        "w20b-light" => Some(("sorcerer", 26)),
         "c05-exiva" => Some(("sorcerer", 8)),
         "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
         "c11-knight" => Some(("knight", 625)),
@@ -733,6 +755,10 @@ async fn prepare_build(
             | "c11-unassigned"
             | "c11-knight"
             | "c12-monk"
+            | "s13-party"
+            | "w20b-light"
+            | "s08-knight"
+            | "s08-sorcerer"
     ) {
         if current.session_state() != crate::foundation::GameSessionState::Active
             || current.current_transport().is_none()
@@ -749,7 +775,11 @@ async fn prepare_build(
         .map_err(qualification_build::debug)?;
         let account = uuid_text(record.account_id.as_bytes());
         match (profile, account.as_str()) {
-            ("premium", KNIGHT_ACCOUNT | MONK_ACCOUNT) => {
+            (
+                "premium",
+                KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
+                | PARTY_CASTER_ACCOUNT,
+            ) => {
                 if !config
                     .premium_activation
                     .as_ref()
@@ -770,7 +800,11 @@ async fn prepare_build(
             }
             ("c11-unassigned", UNASSIGNED_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
-            | ("c12-monk", MONK_ACCOUNT) => {}
+            | ("c12-monk", MONK_ACCOUNT)
+            | ("s13-party", PARTY_CASTER_ACCOUNT)
+            | ("w20b-light", LIGHT_ACCOUNT)
+            | ("s08-knight", PVP_KNIGHT_ACCOUNT)
+            | ("s08-sorcerer", PVP_SORCERER_ACCOUNT) => {}
             _ => return Err("preparation profile does not match dedicated account".into()),
         }
     }

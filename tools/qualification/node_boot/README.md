@@ -101,8 +101,14 @@ C12 receives item 50271 through the fenced backpack grant.
 The f5 spell rows use dedicated Platform-created Sorcerers and a Knight. The
 node fixture awards their starting XP through the progression owner. The rune
 rows seed platinum, then walk to a served seller and buy from its live shop
-window. Rune grants are reserved for a bundle with no placement for any authored
-seller of that rune.
+window whenever an authored seller has a reachable placement in the served
+bundle. The rune grant covers a crop with no reachable authored seller. A live
+shop refusal still fails the row.
+
+Challenge, the party-spell pair, and the Light caster use the fixture Premium
+consumer, with separate accounts for the seeded casters. S08 prepares its own
+players through the Open PvP node’s socket. P21 receives enough carried currency
+for both charges and still proves the actual debits through the imbuement owner.
 
 To qualify the preserved full spell manifest through the same topology:
 

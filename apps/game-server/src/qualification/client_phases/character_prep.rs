@@ -14,13 +14,25 @@ impl Seeded {
         tag: u8,
         index: usize,
     ) -> TestResult<oteryn_dev_client::DevClientSession> {
+        self.connect_at(clients, tag, index, "NODE_BOOT_CONTROL_SOCKET")
+            .await
+    }
+
+    pub(super) async fn connect_at(
+        &self,
+        clients: &SeamClients<'_>,
+        tag: u8,
+        index: usize,
+        socket_env: &str,
+    ) -> TestResult<oteryn_dev_client::DevClientSession> {
         evidence(&format!(
             "character_preparation mode=Seeded profile={} reason={:?}",
             self.profile, self.reason
         ));
         let mut client = connect_character(clients, tag, index).await?;
         let session = client.join_snapshot().game_session_id;
-        request_fixture_control(
+        request_fixture_control_at(
+            socket_env,
             uuid_text(session.as_bytes()),
             "--profile",
             self.profile.into(),

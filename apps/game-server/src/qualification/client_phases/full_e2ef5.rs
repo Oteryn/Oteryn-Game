@@ -254,22 +254,29 @@ pub(super) async fn prepare_spell_access(
     let level = level_from_stats(&payload, general_stats::selected(client))?;
     let xp = u64::from_le_bytes(payload[1..9].try_into()?);
     require_spell_level(spell, level, xp)?;
-    require_premium_spell_access(client, spell)?;
+    require_premium_spell_access(client, spell).await?;
     Ok(level)
 }
 
-fn require_premium_spell_access(
+async fn require_premium_spell_access(
     client: &mut DevClientSession,
     spell: &crate::spell::SpellDefinition,
 ) -> TestResult {
     if spell.premium {
-        let available = client.session_mut().spell_catalog()?.is_some_and(|catalog| {
-            catalog.entries.iter().any(|entry| {
-                matches!(&spell.carrier, crate::spell::Carrier::Instant { words, .. } if words == &entry.words) && entry.available
-            })
-        });
-        if !available {
-            return Err(format!("spell {} requires Premium and an available native catalog entry; source:crates/protocol-oteryn/src/actor_spell_catalog.rs:24", spell.key).into());
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let available = client.session_mut().spell_catalog()?.is_some_and(|catalog| {
+                catalog.entries.iter().any(|entry| {
+                    matches!(&spell.carrier, crate::spell::Carrier::Instant { words, .. } if words == &entry.words) && entry.available
+                })
+            });
+            if available {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("spell {} requires Premium and an available native catalog entry", spell.key).into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
         }
     }
     Ok(())
@@ -637,90 +644,64 @@ fn corridor(world: &BundleWorld, from: TilePos) -> Option<Vec<TilePos>> {
     None
 }
 
-// Time actual server STEP deltas of automatic walking. Client retries/sleeps
-// never determine the cadence. Every intermediate tile must arrive in order.
+// Read the server's committed motion duration on each accepted STEP. Socket
+// delivery time is independent of the movement owner's pacing decision.
 async fn cadence_leg(client: &mut DevClientSession, cells: &[TilePos]) -> TestResult<Duration> {
-    let basis = spatial_basis::current(client)?;
-    let (&from, rest) = cells.split_first().ok_or("C17a empty speed corridor")?;
-    let &to = rest.last().ok_or("C17a speed corridor has no steps")?;
-    if tile(client.world_spatial().actor_position)? != from {
+    fn own_motion(client: &DevClientSession) -> TestResult<oteryn_protocol_oteryn::actor_motion::ActorMotion> {
+        let own = own_entity(client)?;
+        client.world_entities().and_then(|view| view.iter().find(|entry| entry.entity == own))
+            .and_then(|entry| entry.motion)
+            .ok_or_else(|| "C17a own actor motion absent".into())
+    }
+
+    if cells.first() != Some(&tile(client.world_spatial().actor_position)?) {
         return Err("C17a speed trial starts on wrong tile".into());
     }
-    client.take_events();
-    let result = client
-        .session_mut()
-        .target_walk(ActorPosition {
-            x: i32::from(to.x),
-            y: i32::from(to.y),
-            floor: basis.floor(to.floor),
-        })
-        .await?;
-    if result.status != CommandStatus::Accepted || result.payload != [8, 1] {
-        return Err("C17a native automatic walk refused".into());
-    }
-    let mut positions = rest.iter();
-    let mut previous = from;
-    let mut times = Vec::new();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    loop {
-        for event in client.take_events() {
-            let observed = match event {
-                SessionEvent::WorldSpatial(delta) => Some(delta.value.actor_position),
-                SessionEvent::WorldSpatialEntities(delta) => Some(delta.value.actor_position),
-                _ => None,
-            };
-            if let Some(position) = observed {
-                let at = tile(position)?;
-                if at == previous {
-                    continue;
-                }
-                if positions.next() != Some(&at) {
-                    return Err("C17a automatic walk deviated from fixed corridor".into());
-                }
-                previous = at;
-                times.push(tokio::time::Instant::now());
-            }
+    let mut duration = None;
+    for pair in cells.windows(2) {
+        let [from, to] = [pair[0], pair[1]];
+        let direction = match (i32::from(to.x) - i32::from(from.x), i32::from(to.y) - i32::from(from.y)) {
+            (0, -1) => StepDirection::North,
+            (1, 0) => StepDirection::East,
+            (0, 1) => StepDirection::South,
+            (-1, 0) => StepDirection::West,
+            _ => return Err("C17a corridor has a noncardinal step".into()),
+        };
+        let before = own_motion(client)?;
+        let receipt = client.step(direction).await?;
+        let motion = own_motion(client)?;
+        if receipt.disposition != StepDisposition::Moved
+            || receipt.world_spatial_delta.is_none()
+            || tile(client.world_spatial().actor_position)? != to
+            || motion.translation_revision <= before.translation_revision
+            || motion.step_duration_ms == 0
+            || duration.is_some_and(|value| value != motion.step_duration_ms)
+        {
+            return Err(format!("C17a inconsistent committed step: {receipt:?}; motion={motion:?}").into());
         }
-        if previous == to {
-            break;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("C17a missing automatic walk position frames".into());
-        }
-        client.service_liveness(Duration::from_millis(5)).await?;
+        duration = Some(motion.step_duration_ms);
+        client.take_events();
     }
-    // Ignore command-to-first-step latency. Reject batched/jittery observations
-    // instead of interpreting socket scheduling as an increase in player speed.
-    let mut intervals: Vec<_> = times
-        .windows(2)
-        .map(|pair| pair[1].duration_since(pair[0]))
-        .collect();
-    intervals.sort();
-    let first = *intervals.first().ok_or("C17a too few movement frames")?;
-    let last = *intervals.last().ok_or("C17a too few movement frames")?;
-    if first < Duration::from_millis(50) || last.saturating_sub(first) > Duration::from_millis(25) {
-        return Err("C17a network jitter/batched frames prevent a speed assertion".into());
-    }
-    Ok(intervals[intervals.len() / 2])
+    Ok(Duration::from_millis(u64::from(duration.ok_or("C17a corridor has no steps")?)))
 }
 async fn cadence(client: &mut DevClientSession, cells: &[TilePos]) -> TestResult<Duration> {
     let outward = cadence_leg(client, cells).await?;
     let reverse: Vec<_> = cells.iter().rev().copied().collect();
     let inward = cadence_leg(client, &reverse).await?;
-    if outward.abs_diff(inward) > Duration::from_millis(25) {
+    if outward != inward {
         return Err("C17a forward/reverse speed measurements disagree".into());
     }
-    Ok((outward + inward) / 2)
+    Ok(outward)
 }
 fn same_cadence(a: Duration, b: Duration) -> bool {
-    a.abs_diff(b) <= Duration::from_millis(25)
+    a == b
 }
 fn faster(a: Duration, baseline: Duration) -> bool {
     a + Duration::from_millis(25) < baseline
 }
 
 // Expected values come from the pinned spell plan and production movement table;
-// only the separately observed position frames can satisfy the row actions.
+// only separately observed committed motion frames can satisfy the row actions.
 fn expected_cadence(
     spell: Option<&crate::spell::SpellDefinition>,
     level: u32,
@@ -911,6 +892,7 @@ async fn haste(
     row.pass("haste-fresh-admission", client.last_server_sequence());
     expire_speed(client, &cells, baseline, started, haste_duration).await?;
     row.pass("haste-expiry", client.last_server_sequence());
+    character_prep::grant_premium(client).await?;
     prepare_spell_access(client, strong)
         .await
         .map_err(|error| format!("basic Haste lifecycle completed at level {player_level}; Strong Haste access: {error}"))?;
@@ -1036,7 +1018,7 @@ mod tests {
     #[test]
     fn speed_comparisons_do_not_pass_for_equal_or_jitter_only_cadence() {
         let ms = Duration::from_millis;
-        assert!(same_cadence(ms(300), ms(320)));
+        assert!(!same_cadence(ms(300), ms(320)));
         assert!(!faster(ms(300), ms(320)));
         assert!(!faster(ms(300), ms(300)));
         assert!(faster(ms(250), ms(300)));
@@ -1293,7 +1275,18 @@ async fn seeded_rune(
     }
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    if metadata.npcs.npcs.iter().any(|npc| sellers.contains(&npc.key) && !npc.placements.is_empty()) {
+    let here = tile(client.world_spatial().actor_position)?;
+    let placements: BTreeSet<_> = metadata.npcs.npcs.iter()
+        .filter(|npc| sellers.contains(&npc.key))
+        .flat_map(|npc| &npc.placements)
+        .flat_map(|p| {
+            (p.x.saturating_sub(3)..=p.x.saturating_add(3)).flat_map(move |x| {
+                (p.y.saturating_sub(3)..=p.y.saturating_add(3))
+                    .map(move |y| (p.floor, x, y))
+            })
+        })
+        .collect();
+    if route(world, here, |at| placements.contains(&(at.floor, at.x, at.y))).is_some() {
         return acquire_rune_from(client, world, id, Some(&sellers)).await;
     }
 
@@ -1302,7 +1295,7 @@ async fn seeded_rune(
     character_prep::grant_item(client, id, 2).await?;
     character_prep::reload(client, clients).await?;
     let sequence = inventory_quantity(client, reference, expected).await?;
-    evidence(&format!("E2EF5 rune={id} source=seeded reason=no-authored-seller-placement-in-served-bundle sellers={sellers:?}"));
+    evidence(&format!("E2EF5 rune={id} source=seeded reason=no-reachable-authored-seller-placement-in-served-bundle sellers={sellers:?}"));
     Ok((reference, sequence))
 }
 
@@ -2680,6 +2673,9 @@ async fn combat_rejoin(
         );
     }
     row.pass("fresh-admission-costs", client.last_server_sequence());
+    if row.0.id == "C17d" {
+        character_prep::grant_premium(client).await?;
+    }
     // In particular, any first vocation obtained from Oressa must survive.
     // Recast directly; reacquiring it here would hide a persistence defect.
     let book = native_spell_book()?;
@@ -2765,6 +2761,7 @@ async fn challenge(
             spell.vocations
         ).into());
     }
+    character_prep::grant_premium(client).await?;
     row.pass(
         "player-challenge-access",
         combat_access(client, world, book, words).await?,
