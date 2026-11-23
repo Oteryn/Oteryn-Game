@@ -31,6 +31,7 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     weakened: &Callback,
+    delivered_case: bool,
 ) -> TestResult {
     let native = owner
         .active_generation
@@ -63,7 +64,7 @@ pub(super) async fn exercise(
         .await?;
     }
     owner.states.loop_ground.invalidate();
-    let foreign_generation = weakened.key.ends_with(FOREIGN_GENERATION);
+    let foreign_generation = !delivered_case && weakened.key.ends_with(FOREIGN_GENERATION);
     if foreign_generation {
         // Fixtures own generation 1. Represent carried-over drops with a distinct
         // generation while keeping their location, stack and item identity intact.
@@ -79,7 +80,7 @@ pub(super) async fn exercise(
             u64::try_from(weakened.offerings.len())?
         );
         tx.commit().await?;
-    } else {
+    } else if !delivered_case {
         owner
             .states
             .quest_callbacks
@@ -141,6 +142,77 @@ pub(super) async fn exercise(
             .creature,
     );
     drop(runtime);
+    if delivered_case {
+        defeat_count(owner, admitted, creatures[0].actor).await?;
+        let catalogue = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
+        let hand_in = oteryn_gameplay_quests::quest::reward_callbacks::offered_for(catalogue)?
+            .into_iter()
+            .find(|callback| callback.key.ends_with("inquisition-vampire-hunt-ring"))
+            .ok_or("ring hand-in")?;
+        let [ring] = hand_in.take.as_slice() else {
+            return Err("expected one ring input".into());
+        };
+        let released: i64 = sqlx::query_scalar(
+            "SELECT coalesce(sum(quantity),0)::bigint FROM game_boss_reward_items \
+             WHERE definition_production_key=$1 AND character_id=encode($2,'hex')::uuid \
+             AND collected_transaction_id IS NULL AND NOT expired",
+        )
+        .bind(&ring.item)
+        .bind(fence.character_id.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            released,
+            i64::from(ring.count),
+            "the Count's ring was delivered"
+        );
+        assert!(
+            !owner
+                .root
+                .read_vampire_coffin_payment(owner.character, fence.character_id)
+                .await
+                .map_err(debug)?,
+            "a defeated Count still has a redeemable garlic payment",
+        );
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        let result = use_coffin(owner, admitted, weakened, 63).await?;
+        assert_eq!(
+            result,
+            UseDisposition::Rejected,
+            "coffin use after defeating its Count"
+        );
+        for (index, offering) in weakened.offerings.iter().enumerate() {
+            fixture::offering(
+                owner,
+                fence.item_fence(),
+                offering,
+                90 + u64::try_from(index)?,
+            )
+            .await?;
+        }
+        owner.states.loop_ground.invalidate();
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        assert_eq!(
+            use_coffin(owner, admitted, weakened, 64).await?,
+            UseDisposition::Rejected,
+            "fresh garlic cannot buy another Count after stage 8"
+        );
+        assert!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .visible_entities()
+                .creatures
+                .is_empty()
+        );
+    }
     let expected_burns = if foreign_generation {
         0
     } else {
@@ -191,4 +263,85 @@ async fn burns(h: &Harness) -> TestResult<i64> {
             .fetch_one(&h.pool)
             .await?,
     )
+}
+
+async fn defeat_count(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    count: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
+    use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_creature_kill};
+
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    let actor = admitted.runtime_actor.ok_or("attacker")?;
+    let session = admitted.game_session_id;
+    let observed = owner.owner_now();
+    let now = observed.get() / 1_000;
+    let queue = owner.states.attack.lock().await.kills().clone();
+    let mut runtime = owner.runtime.lock().await;
+    let lease = runtime
+        .bound_attacker_lease(actor, session)
+        .map_err(debug)?;
+    let snapshot = runtime.companion_snapshot(count).map_err(debug)?;
+    runtime
+        .borrow_exact_actor_commit_at(now)
+        .commit_damage_for_bound_attacker(
+            count,
+            actor,
+            CommandRef::new(session, CommandId::new(610).map_err(debug)?),
+            0,
+            OwnerDamageCommand {
+                target: snapshot.state.policy.definition_key.as_bytes(),
+                occurrence: session.as_bytes(),
+                binding: b"inquisition-coffin-defeat",
+                damage: snapshot.health,
+            },
+        )
+        .map_err(debug)?;
+    record_creature_kill(
+        &mut runtime,
+        KillSink {
+            prey: None,
+            activity: &[],
+            queue: &queue,
+            rewards: native.reward_table(),
+            charms: None,
+        },
+        count,
+        crate::combat::CapturedRewardPrincipal {
+            character: lease.character_id(),
+            lease_generation: lease.generation(),
+            session,
+            actor,
+        },
+        now,
+        Some(observed),
+    );
+    drop(runtime);
+    assert_eq!(
+        Box::pin(owner.drain_kill_rewards(session)).await,
+        DrainOutcome::Drained
+    );
+
+    let mut runtime = owner.runtime.lock().await;
+    let expected = runtime.read_actor_position(actor).map_err(debug)?;
+    let map = owner.bundle_map().ok_or("coffin map")?;
+    let doors = crate::map::floor::BundleDoors(map.facts.doors());
+    let proof = crate::map::floor::prepare_quest_callback_teleport(
+        &runtime,
+        &owner.movement_cells,
+        actor,
+        session,
+        expected,
+        fixture::local(staging(RESTART)?),
+        false,
+        &doors,
+    )
+    .map_err(debug)?;
+    runtime.commit_source_step(proof).map_err(debug)?;
+    Ok(())
 }

@@ -900,6 +900,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         optional_pvp,
                         None,
                         pending.selected_tool.as_ref(),
+                        None,
                     ))
                     .await
                 }
@@ -1294,11 +1295,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
-                return UseDisposition::Rejected;
-            }
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
+            let runtime = self.runtime.lock().await;
             let Ok(expected) = runtime.read_actor_position(actor) else {
                 return UseDisposition::Rejected;
             };
@@ -1327,6 +1324,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 directional.teleport=Some(destination);
                 &directional
             } else { callback };
+            drop(runtime);
+            let scene_items = match self.prepare_scene_items(
+                &permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence,
+            ).await {
+                Ok(items) => items,
+                Err(disposition) => return disposition,
+            };
+            let mut runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             let result = Box::pin(self.execute_quest_callback(
                 &permit,
                 &mut runtime,
@@ -1344,6 +1350,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 optional_pvp,
                 read_only_gate.as_ref(),
                 selected_tool.as_ref(),
+                scene_items,
             ))
             .await;
             drop(states);
@@ -1635,6 +1642,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         observation.as_ref(),
                         optional_pvp,
                         read_only_gate.as_ref(),
+                        None,
                         None,
                     ))
                     .await

@@ -139,7 +139,7 @@ fn white_raven_accepts_published_catacomb_access_saves() -> Result<(), String> {
 }
 
 #[test]
-fn vampire_coffin_can_reopen_from_its_committed_stage() -> Result<(), String> {
+fn ordinary_vampire_coffins_refuse_after_the_hunt_starts() -> Result<(), String> {
     let loaded =
         loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
     let catalogue = loaded.catalogue();
@@ -162,9 +162,13 @@ fn vampire_coffin_can_reopen_from_its_committed_stage() -> Result<(), String> {
         advance(catalogue, &mut tracks, &first.key)?;
         for retry in &coffins {
             assert!(retry.effects.encounter.is_some());
-            let mut recovered = tracks.clone();
-            advance(catalogue, &mut recovered, &retry.key)?;
-            assert_eq!(recovered, tracks, "retry must preserve the committed stage");
+            let transition = catalogue
+                .transition(&retry.key)
+                .ok_or("coffin retry transition")?;
+            assert_eq!(
+                catalogue.evaluate(transition, &tracks, 100),
+                Err(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch),
+            );
         }
         let mut finished = tracks;
         advance(
@@ -288,7 +292,13 @@ fn both_live_coffin_selectors_have_a_weakened_count_offering_plan() -> Result<()
                     })
             })
             .ok_or_else(|| format!("no live weakened variant for {key}"))?;
-        assert_eq!(weakened.storage, ordinary.storage);
+        let mut recovery = ordinary.storage.clone();
+        let questline = recovery
+            .iter_mut()
+            .find(|guard| guard.track == world_callbacks::VAMPIRE_COFFIN_QUESTLINE)
+            .ok_or("coffin questline guard")?;
+        questline.maximum = questline.set;
+        assert_eq!(weakened.storage, recovery);
         assert_eq!(weakened.offerings.len(), 3);
         assert!(
             weakened.offerings.iter().all(|offering| {

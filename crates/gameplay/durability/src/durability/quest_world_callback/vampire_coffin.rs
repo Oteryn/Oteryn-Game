@@ -3,9 +3,14 @@ use crate::domain::CharacterId;
 use crate::durability::{
     DurabilityError, DurabilityRoot,
     character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
+    character_equipment::assert_current_equipment_in_transaction,
     character_progression::CharacterProgressionError,
     db::{begin_semantic_transaction, commit_semantic_transaction},
+    item_transfer::CurrentCharacterItemFence,
+    runtime_scope_assignment::NodeIncarnationProof,
+    spell_owner_commit::SpellLanePermit,
 };
+use crate::foundation::CommandRef;
 use oteryn_gameplay_quests::quest::world_callbacks::WEAKENED_COFFIN_KEYS;
 
 impl DurabilityRoot {
@@ -31,6 +36,42 @@ impl DurabilityRoot {
             .await
             .map_err(Into::into)
     }
+
+    /// Consume the recovery payment only after the owner has staged the native
+    /// spawn and reserved its map projection, immediately before publication.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the publication uses the same current item fence as payment"
+    )]
+    pub async fn deliver_vampire_coffin_payment(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        permit: &SpellLanePermit,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        content: [u8; 32],
+    ) -> Result<bool, DurabilityError> {
+        permit.check_scope(fence.runtime_scope)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_current_equipment_in_transaction(
+                &mut tx, &recovery, &node, &fence, Some(command), content,
+            ).await.map_err(|_| DurabilityError::Unavailable)?;
+            if !current_payment(&mut tx, fence.character_id).await? {
+                return Ok(false);
+            }
+            let deleted = sqlx::query("DELETE FROM game_pending_vampire_coffin_payments WHERE character_id=encode($1,'hex')::uuid")
+                .bind(fence.character_id.as_bytes().as_slice())
+                .execute(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(deleted.rows_affected() == 1)
+        })).await
+    }
 }
 
 /// The mission track points at its latest writer, including after a ring hand-in.
@@ -42,6 +83,7 @@ pub(super) async fn current_payment(
     Ok(sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks t \
          JOIN game_character_quest_receipts r USING (character_id, committed_character_revision) \
+         JOIN game_pending_vampire_coffin_payments p USING (character_id) \
          WHERE t.character_id=encode($1,'hex')::uuid AND t.track_key=$2 \
          AND r.quest_key=t.quest_key AND r.transition_key=ANY($3))",
     )
@@ -50,4 +92,13 @@ pub(super) async fn current_payment(
     .bind(&WEAKENED_COFFIN_KEYS[..])
     .fetch_one(&mut **tx)
     .await?)
+}
+
+pub(super) async fn record_payment(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> Result<bool, DurabilityError> {
+    Ok(sqlx::query("INSERT INTO game_pending_vampire_coffin_payments (character_id) VALUES (encode($1,'hex')::uuid) ON CONFLICT DO NOTHING")
+        .bind(character.as_bytes().as_slice())
+        .execute(&mut **tx).await?.rows_affected() == 1)
 }

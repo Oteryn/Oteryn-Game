@@ -712,7 +712,7 @@
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
           "minimum": 8,
-          "maximum": 9,
+          "maximum": 8,
           "set": 9
         },
         {
@@ -794,7 +794,7 @@
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
           "minimum": 8,
-          "maximum": 9,
+          "maximum": 8,
           "set": 9
         },
         {

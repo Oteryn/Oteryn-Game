@@ -19,7 +19,7 @@ pub(super) mod elemental_arrival;
 mod floor_assembly;
 mod house_container;
 #[path = "loop_map_pickup.rs"]
-mod map_pickup;
+pub(super) mod map_pickup;
 mod map_sources;
 mod seed_drop;
 
@@ -1203,7 +1203,7 @@ fn drop_cell(
 
 /// Finite source-script relocation may span a small authored room. Both cells
 /// must exist on the same floor; ordinary item drops still use drop_cell.
-fn source_drop_cell(
+pub(super) fn source_drop_cell(
     base: &WorldBase,
     from: (i32, i32, i16),
     to: WorldTilePosition,

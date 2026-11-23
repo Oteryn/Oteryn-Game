@@ -456,7 +456,7 @@ impl DurabilityRoot {
 
     /// Durably charge one DUR03-RL-08 work unit to the reservation in its own
     /// committed transaction before the pass does any work.
-    async fn charge_map_item_mint_work_unit(
+    pub(super) async fn charge_map_item_mint_work_unit(
         &self,
         recovery: CharacterRecoveryFenceV1,
         candidate: &mut MapItemMintCandidate,
@@ -563,115 +563,17 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let permit: &SpellLanePermit = permit;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    let command = frozen.request.command;
-                    lock_cause(&mut tx, command).await?;
-
-                    if let Some(row) = load_receipt(&mut tx, command).await? {
-                        let stored: Vec<u8> = row.try_get("intent_binding")?;
-                        if stored != frozen.intent_binding {
-                            return Ok(Err(MapItemMintError::ConflictingCause));
-                        }
-                        let committed = decode_receipt(&row)?;
+                    let outcome = commit_frozen_map_item_mint(
+                        &mut tx, permit, &recovery, &node, &fence, &frozen,
+                    )
+                    .await;
+                    if outcome.is_ok() {
                         tx.commit(deadline).await?;
-                        return Ok(Ok(MapItemMintOutcome::AlreadyCommitted(committed)));
                     }
-
-                    let Some(row) = load_reservation(&mut tx, command).await? else {
-                        return Ok(Err(MapItemMintError::ConflictingCandidate));
-                    };
-                    let stored: Vec<u8> = row.try_get("intent_binding")?;
-                    if stored != frozen.intent_binding {
-                        return Ok(Err(MapItemMintError::ConflictingCause));
+                    match outcome {
+                        Err(MapItemMintError::Unavailable(error)) => Err(error),
+                        result => Ok(result),
                     }
-                    let reservation = decode_reservation(&row)?;
-                    if reservation.transaction_id != frozen.transaction_id
-                        || reservation.event_id != frozen.event_id
-                        || reservation.item_instance_id != frozen.item_instance_id
-                        || reservation.occurred_at_unix_ms != frozen.occurred_at_unix_ms
-                        || reservation.character_id != frozen.character_id
-                    {
-                        return Ok(Err(MapItemMintError::ConflictingCandidate));
-                    }
-                    let identity_reused: bool = sqlx::query_scalar(
-                        "SELECT EXISTS (SELECT 1 FROM game_map_item_mint_receipts \
-                                         WHERE transaction_id = encode($1,'hex')::uuid \
-                                            OR event_id = encode($2,'hex')::uuid \
-                                            OR item_instance_id = encode($3,'hex')::uuid) \
-                             OR EXISTS (SELECT 1 FROM game_item_audit_outbox \
-                                         WHERE transaction_id = encode($1,'hex')::uuid \
-                                            OR event_id = encode($2,'hex')::uuid) \
-                             OR EXISTS (SELECT 1 FROM game_item_instances \
-                                         WHERE item_instance_id = encode($3,'hex')::uuid \
-                                            OR minted_transaction_id = encode($1,'hex')::uuid)",
-                    )
-                    .bind(frozen.transaction_id.as_slice())
-                    .bind(frozen.event_id.as_slice())
-                    .bind(frozen.item_instance_id.as_slice())
-                    .fetch_one(&mut **tx)
-                    .await?;
-                    if identity_reused {
-                        return Ok(Err(MapItemMintError::ConflictingCandidate));
-                    }
-
-                    if let Err(error) =
-                        admit(&mut tx, &node, &fence, &frozen.request, &reservation).await?
-                    {
-                        return Ok(Err(error));
-                    }
-                    let ground = ground_of(&frozen.request, &reservation, &fence);
-                    // Keep actual session/source admission and receipt replay above;
-                    // one new MINT creates one physical root, independent of quantity.
-                    if let Err(error) =
-                        super::ground_cell_limit::check_ground_cell_root_insert_with_recovery(
-                            &mut tx,
-                            permit,
-                            &recovery,
-                            &node,
-                            (fence.runtime_scope, fence.scope_ownership_generation.get()),
-                            &super::item_mint::GroundPlacement {
-                                spatial_position: ground.spatial_position.clone(),
-                                corpse_ref: ground.corpse_ref.clone(),
-                                map_revision: ground.map_revision.clone(),
-                                content_revision: ground.content_revision.clone(),
-                                native_room_placement_context: ground
-                                    .native_room_placement_context
-                                    .clone(),
-                            },
-                            &frozen.item_instance_id,
-                        )
-                        .await
-                    {
-                        return Ok(Err(error.into_map_item_mint_error()));
-                    }
-                    let message = mint_message(&frozen, &reservation, &fence, ground.clone());
-                    let tuple = tx.tuple();
-                    let envelope = match audit::encode_map_item_mint_event(
-                        MapItemMintEventIdentity {
-                            event_id: frozen.event_id,
-                            transaction_id: frozen.transaction_id,
-                            occurred_at_unix_ms: frozen.occurred_at_unix_ms,
-                            server_build_id: SERVER_BUILD_ID,
-                        },
-                        message,
-                        tuple.tuple(),
-                    ) {
-                        Ok(envelope) => envelope,
-                        Err(error) => return Ok(Err(error.into())),
-                    };
-                    let committed = apply_mint(
-                        &mut tx,
-                        permit,
-                        &frozen,
-                        &reservation,
-                        &ground,
-                        &envelope,
-                        tuple,
-                    )
-                    .await?;
-                    tx.commit(deadline).await?;
-                    Ok(Ok(MapItemMintOutcome::Committed(committed)))
                 })
             })
             .await?
@@ -799,6 +701,134 @@ impl DurabilityRoot {
             })
             .collect()
     }
+}
+
+/// Materialize a reserved source inside the caller's custody transaction.
+pub(super) async fn commit_reserved_map_item_mint(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    permit: &SpellLanePermit,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    candidate: &MapItemMintCandidate,
+) -> Result<CommittedMapItemMint> {
+    match commit_frozen_map_item_mint(
+        tx,
+        permit,
+        recovery,
+        node,
+        fence,
+        &FrozenMint::of(candidate),
+    )
+    .await?
+    {
+        MapItemMintOutcome::Committed(mint) | MapItemMintOutcome::AlreadyCommitted(mint) => {
+            Ok(mint)
+        }
+    }
+}
+
+async fn commit_frozen_map_item_mint(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    permit: &SpellLanePermit,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    frozen: &FrozenMint,
+) -> Result<MapItemMintOutcome> {
+    assert_recovery_fence(tx, recovery).await?;
+    lock_admission_relations(tx).await?;
+    let command = frozen.request.command;
+    lock_cause(tx, command).await?;
+
+    if let Some(row) = load_receipt(tx, command).await? {
+        let stored: Vec<u8> = row
+            .try_get("intent_binding")
+            .map_err(DurabilityError::from)?;
+        if stored != frozen.intent_binding {
+            return Err(MapItemMintError::ConflictingCause);
+        }
+        let committed = decode_receipt(&row)?;
+        return Ok(MapItemMintOutcome::AlreadyCommitted(committed));
+    }
+
+    let Some(row) = load_reservation(tx, command).await? else {
+        return Err(MapItemMintError::ConflictingCandidate);
+    };
+    let stored: Vec<u8> = row
+        .try_get("intent_binding")
+        .map_err(DurabilityError::from)?;
+    if stored != frozen.intent_binding {
+        return Err(MapItemMintError::ConflictingCause);
+    }
+    let reservation = decode_reservation(&row)?;
+    if reservation.transaction_id != frozen.transaction_id
+        || reservation.event_id != frozen.event_id
+        || reservation.item_instance_id != frozen.item_instance_id
+        || reservation.occurred_at_unix_ms != frozen.occurred_at_unix_ms
+        || reservation.character_id != frozen.character_id
+    {
+        return Err(MapItemMintError::ConflictingCandidate);
+    }
+    let identity_reused: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_map_item_mint_receipts \
+                         WHERE transaction_id = encode($1,'hex')::uuid \
+                            OR event_id = encode($2,'hex')::uuid \
+                            OR item_instance_id = encode($3,'hex')::uuid) \
+             OR EXISTS (SELECT 1 FROM game_item_audit_outbox \
+                         WHERE transaction_id = encode($1,'hex')::uuid \
+                            OR event_id = encode($2,'hex')::uuid) \
+             OR EXISTS (SELECT 1 FROM game_item_instances \
+                         WHERE item_instance_id = encode($3,'hex')::uuid \
+                            OR minted_transaction_id = encode($1,'hex')::uuid)",
+    )
+    .bind(frozen.transaction_id.as_slice())
+    .bind(frozen.event_id.as_slice())
+    .bind(frozen.item_instance_id.as_slice())
+    .fetch_one(&mut ***tx)
+    .await
+    .map_err(DurabilityError::from)?;
+    if identity_reused {
+        return Err(MapItemMintError::ConflictingCandidate);
+    }
+
+    admit(tx, node, fence, &frozen.request, &reservation).await??;
+    let ground = ground_of(&frozen.request, &reservation, fence);
+    // Keep actual session/source admission and receipt replay above;
+    // one new MINT creates one physical root, independent of quantity.
+    if let Err(error) = super::ground_cell_limit::check_ground_cell_root_insert_with_recovery(
+        tx,
+        permit,
+        recovery,
+        node,
+        (fence.runtime_scope, fence.scope_ownership_generation.get()),
+        &super::item_mint::GroundPlacement {
+            spatial_position: ground.spatial_position.clone(),
+            corpse_ref: ground.corpse_ref.clone(),
+            map_revision: ground.map_revision.clone(),
+            content_revision: ground.content_revision.clone(),
+            native_room_placement_context: ground.native_room_placement_context.clone(),
+        },
+        &frozen.item_instance_id,
+    )
+    .await
+    {
+        return Err(error.into_map_item_mint_error());
+    }
+    let message = mint_message(frozen, &reservation, fence, ground.clone());
+    let tuple = tx.tuple();
+    let envelope = audit::encode_map_item_mint_event(
+        MapItemMintEventIdentity {
+            event_id: frozen.event_id,
+            transaction_id: frozen.transaction_id,
+            occurred_at_unix_ms: frozen.occurred_at_unix_ms,
+            server_build_id: SERVER_BUILD_ID,
+        },
+        message,
+        tuple.tuple(),
+    )?;
+    let committed = apply_mint(tx, permit, frozen, &reservation, &ground, &envelope, tuple).await?;
+    Ok(MapItemMintOutcome::Committed(committed))
 }
 
 /// The complete current fence (shared with B3-1 TRANSFER, ending with the
@@ -1448,7 +1478,6 @@ mod tests {
             ));
         }
     }
-
 
     #[test]
     fn map_item_mint_intent_binds_every_field_of_the_cause() {

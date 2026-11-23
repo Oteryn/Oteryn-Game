@@ -22,6 +22,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         optional_pvp: Option<bool>,
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
+        scene_items: Option<super::scene_items::PreparedSceneItems>,
     ) -> UseDisposition {
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
@@ -1419,21 +1420,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let merchant_projected = if callback.effects.encounter.is_some() && !close {
-            let disposition = self.execute_quest_encounter(
-                runtime,
-                states,
-                actor,
-                session,
-                map,
-                callback,
-                key,
-                expected_revision,
-                after,
-                false,
-                cause,
-                personal_reservation.as_mut(),
-                projection.as_ref(),
-            );
+            let disposition = if callback.vampire_coffin_fallback().is_some() {
+                self.deliver_paid_coffin(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    cause,
+                    permit,
+                    fence,
+                    personal_reservation.as_mut(),
+                )
+                .await
+            } else {
+                self.execute_quest_encounter(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    false,
+                    cause,
+                    personal_reservation.as_mut(),
+                    projection.as_ref(),
+                )
+            };
             if disposition != UseDisposition::Committed {
                 return disposition;
             }
@@ -1585,13 +1605,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             };
             if let Some(proof) = scene_moves {
-                let committed = match runtime.commit_source_scene_relocations(proof, apply_scene) {
-                    Ok(committed) => committed,
-                    Err(error) => {
-                        #[cfg(test)]
-                        eprintln!("QUEST_SCENE_REFUSED commit close={close} error={error:?}");
-                        let _ = error;
+                let committed = if let Some(items) = scene_items {
+                    let Ok(staged) = runtime.stage_source_scene_relocations(proof) else {
                         return UseDisposition::Rejected;
+                    };
+                    if !close {
+                        return UseDisposition::Rejected;
+                    }
+                    let Some(scene) = map.facts.stage_scene_close(
+                        key,
+                        expected_revision,
+                        after,
+                        &passages,
+                        &replacements,
+                        projection.as_ref(),
+                    ) else {
+                        return UseDisposition::Rejected;
+                    };
+                    if !Box::pin(self.commit_scene_items(permit, items)).await {
+                        return UseDisposition::Rejected;
+                    }
+                    scene.publish();
+                    let (_, (positions, ())) = staged.publish();
+                    positions
+                } else {
+                    match runtime.commit_source_scene_relocations(proof, apply_scene) {
+                        Ok(committed) => committed,
+                        Err(error) => {
+                            #[cfg(test)]
+                            eprintln!("QUEST_SCENE_REFUSED commit close={close} error={error:?}");
+                            let _ = error;
+                            return UseDisposition::Rejected;
+                        }
                     }
                 };
                 let now = self.owner_now().get();

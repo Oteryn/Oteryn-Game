@@ -1,5 +1,5 @@
 //! Use the Serpentine Tower lever through production dispatch.
-use super::fixture::debug;
+use super::fixture::{Harness, debug};
 use super::{
     AdmittedSession, ComposedFreshAdmission, TestResult, quest_world_callbacks_fixtures as fixture,
 };
@@ -60,6 +60,8 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     world: &BundleWorld,
+    h: &Harness,
+    variant: &str,
 ) -> TestResult {
     let lever = native(LEVER);
     let key = placement_key(lever, 1).ok_or("lever")?;
@@ -91,6 +93,13 @@ pub(super) async fn exercise(
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))
             .ok_or("clock")?;
+        if command == 2 && variant == "exhausted" {
+            let actor = admitted.runtime_actor.ok_or("scene actor")?;
+            // Use a future gate timestamp so database or scheduling latency cannot
+            // drain the cooldown during the request.
+            let now = owner.clock_origin.elapsed() + std::time::Duration::from_secs(60);
+            assert!(owner.states.world_gate.lock().map_err(debug)?.admit(actor, now));
+        }
         let target = WorldObjectTarget {
             placement: placement.clone(),
             expected_revision: world.facts().object_revision(key),
@@ -103,6 +112,21 @@ pub(super) async fn exercise(
             encode_use_intent(&target).map_err(debug)?,
         )
         .await?;
+        if command == 2 && matches!(variant, "exhausted" | "capacity") {
+            let drops = owner.root.read_item_loop_ground_for_scope(fence.runtime_scope)
+                .await.map_err(debug)?;
+            for wall in walls() {
+                assert_eq!(drops.iter().filter(|drop| drop.item.ground.spatial_position ==
+                    crate::durability::map_item_mint_audit::map_item_spatial_position(wall.x, wall.y, wall.floor)).count(),
+                    1, "ground custody changed at {wall:?}");
+                assert!(world.facts().base_hidden(placement_key(native(wall), 1).ok_or("wall")?));
+            }
+            // This fixture negotiates legacy USE results, which encode exhaustion
+            // as Rejected. Custody and wall invariants apply to either refusal.
+            assert_eq!(decode_use_result(&result).map_err(debug)?, UseDisposition::Rejected);
+            assert_eq!(world.facts().object_revision(key), target.expected_revision);
+            return Ok(());
+        }
         assert_eq!(
             decode_use_result(&result).map_err(debug)?,
             UseDisposition::Committed,
@@ -136,6 +160,26 @@ pub(super) async fn exercise(
                     100 + u64::try_from(index)?,
                 )
                 .await?;
+            }
+            if variant == "capacity" {
+                for index in 0..crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT - 1 {
+                    fixture::offering(
+                        owner,
+                        fence.item_fence(),
+                        &Offering { position: landing, ..movable.clone() },
+                        200 + u64::try_from(index)?,
+                    ).await?;
+                }
+            }
+            if variant == "repin" {
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx).await?;
+                // Preserve map revision, frame and custody across the content-only repin.
+                let changed = sqlx::query("UPDATE game_item_ground_locations SET content_revision='fixture-predecessor' WHERE game_item_loop_drop_ref(corpse_ref)")
+                    .execute(&mut *tx).await?;
+                assert_eq!(changed.rows_affected(), 4);
+                tx.commit().await?;
             }
             owner.states.loop_ground.invalidate();
             owner

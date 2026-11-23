@@ -105,8 +105,9 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     // Eclipse and the Vampire Hunt extend the live quest from main at 888210d08.
     (
         "oteryn:quest.the_inquisition_quest",
-        hash(b"50e57d828ac8398e9ba0f966bc1be0777a5640e49efc495b39af1ab16c4db8d4"),
+        hash(b"07b54f2106bcabfc742abf29a2cc09c4b271108a143d46685efae0ee52b151bd"),
         &[
+            hash(b"50e57d828ac8398e9ba0f966bc1be0777a5640e49efc495b39af1ab16c4db8d4"),
             hash(b"655d26dbf3afa93c5dfc0e195d05b0150e0af298cf74935fa8494b0be895e3d5"),
             hash(b"e34698ec47856e1bf587a56de6c0ac3cdec9119108a4abad91c7a075c4ea73ca"),
             hash(b"895ecb3a0d429bd18ca8be0fc1da84d5c6439cfb6922ae9ecacafb151895ebfe"),

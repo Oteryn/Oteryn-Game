@@ -186,6 +186,30 @@ impl Reservation<'_> {
         self.published = true;
         Ok(())
     }
+
+    /// The staged carrier already proved the roster while the Channel owner was
+    /// exclusively borrowed. Nothing can retire this reservation until publication.
+    pub(super) fn publish_staged(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actors: Vec<ExactActorRef>,
+    ) {
+        let mut cohorts = self
+            .pool
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(cohort) = cohorts.iter_mut().find(|cohort| {
+            cohort.scope == scope(runtime)
+                && cohort.callback == self.callback
+                && cohort.origin == self.origin
+                && cohort.preparing
+        }) {
+            cohort.actors = actors;
+            cohort.preparing = false;
+            self.published = true;
+        }
+    }
 }
 
 impl Drop for Reservation<'_> {

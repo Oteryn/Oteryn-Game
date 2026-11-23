@@ -625,18 +625,29 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
-    let offerings_paid = callback.vampire_coffin_fallback().is_some()
-        && vampire_coffin::current_payment(tx, fence.character_id).await?;
-    if (callback.offerings.is_empty() || offerings_paid)
+    let weakened_coffin = callback.vampire_coffin_fallback().is_some();
+    if weakened_coffin
+        && changes.iter().any(|change| {
+            change.track == oteryn_gameplay_quests::quest::world_callbacks::VAMPIRE_COFFIN_QUESTLINE
+                && change.before == change.after
+        })
+    {
+        return vampire_coffin::current_payment(tx, fence.character_id).await;
+    }
+    if callback.offerings.is_empty()
         && callback.item_on_target.is_none()
         && callback.effects.carried_inputs.is_empty()
     {
         return Ok(true);
     }
-    consume_inputs(
+    let consumed = consume_inputs(
         tx, permit, fence, request, callback, changes, context, command, world_id, channel_id,
     )
-    .await
+    .await?;
+    if consumed && weakened_coffin {
+        return vampire_coffin::record_payment(tx, fence.character_id).await;
+    }
+    Ok(consumed)
 }
 
 /// Shared current map/content/reset proof for source-qualified quest world actions.

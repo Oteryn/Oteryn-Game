@@ -585,6 +585,9 @@ fn is_default_use_range(value: &u8) -> bool {
 const WEAKENED_COFFIN: &str = "oteryn:quest-callback/inquisition-weakened-coffin";
 const WEAKENED_COFFIN_SIDE: &str = "oteryn:quest-callback/inquisition-weakened-coffin-side";
 
+pub const VAMPIRE_COFFIN_QUESTLINE: &str =
+    "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
+
 /// Durable receipt identities shared by the two physical Inquisition coffin pieces.
 pub const WEAKENED_COFFIN_KEYS: [&str; 2] = [WEAKENED_COFFIN, WEAKENED_COFFIN_SIDE];
 
@@ -930,7 +933,26 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
                 ordinary.key == fallback
                     && ordinary.quest == callback.quest
                     && ordinary.selector == callback.selector
-                    && ordinary.storage == callback.storage
+                    && ordinary.storage.len() == callback.storage.len()
+                    && ordinary
+                        .storage
+                        .iter()
+                        .any(|gate| gate.track == VAMPIRE_COFFIN_QUESTLINE)
+                    && ordinary
+                        .storage
+                        .iter()
+                        .zip(&callback.storage)
+                        .all(|(first, paid)| {
+                            if first.track == VAMPIRE_COFFIN_QUESTLINE {
+                                let mut recovery = first.clone();
+                                recovery.maximum = recovery.set;
+                                first.set > first.maximum
+                                    && recovery.minimum == first.maximum
+                                    && recovery == *paid
+                            } else {
+                                first == paid
+                            }
+                        })
             })
         {
             return Err("weakened coffin requires its matching source selector".into());

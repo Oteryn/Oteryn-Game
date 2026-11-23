@@ -23,6 +23,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let (name, variant) = name.split_once('#').unwrap_or((name, ""));
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let vampire_coffin = super::super::inquisition_coffin_recovery_fixtures::matches(name);
@@ -3023,6 +3024,7 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &callback,
+                variant == "delivered",
             ))
             .await?;
         } else if name == super::super::serpentine_tower_fixtures::NAME {
@@ -3030,6 +3032,8 @@ fn scenario_case(
                 &mut owner,
                 &mut admitted,
                 &world,
+                &h,
+                variant,
             ))
             .await?;
         } else if name == "mintwallin-cyclops-scene" {
