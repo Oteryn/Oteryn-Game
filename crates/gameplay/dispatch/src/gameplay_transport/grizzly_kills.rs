@@ -10,7 +10,6 @@ pub(super) mod native_goals;
 
 use oteryn_gameplay_quests::quest::{
     death_objectives,
-    grave_danger::ZELOS_DEATH,
     grizzly_adams::{self as quest, GrizzlyAction},
 };
 
@@ -83,8 +82,8 @@ struct Recipient {
     objective_actions: Vec<String>,
 }
 
-/// Source-party recipients, damage-qualified Zelos recipients and the personal native
-/// principal are all bounded by the captured rosters. Retained by the queued death.
+/// At most 50 source-party recipients with three tasks and one boss action each,
+/// plus one personal native principal with at most 16 goals. Retained by the queued death.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct FrozenGrizzlyDeath {
     source: Option<PartySnapshot>,
@@ -94,13 +93,6 @@ pub(super) struct FrozenGrizzlyDeath {
 }
 
 impl FrozenGrizzlyDeath {
-    pub(super) fn has_grave_boss_credit(&self) -> bool {
-        self.recipients
-            .iter()
-            .flat_map(|recipient| &recipient.objective_actions)
-            .any(|transition| waits_for_grave_boss_reward(transition))
-    }
-
     /// Only the captured loot principal's eligible objectives may select a corpse drop.
     pub(super) fn loot_objectives(&self, principal: &[u8; 16]) -> Vec<&str> {
         self.recipients
@@ -247,7 +239,7 @@ fn freeze_at(
                 .into_iter()
                 .flatten()
                 .filter(|objective| {
-                    objective.key != ZELOS_DEATH
+                    !death_objectives::is_grave_boss(&objective.key)
                         && snapshot.objective_keys.contains(&objective.key)
                         && corpse.is_some_and(|position| {
                             objective.matches(creature, position.x, position.y, position.floor)
@@ -275,51 +267,6 @@ fn freeze_at(
         native,
         native_goals: None,
     }
-}
-
-/// Crystal 201189f actions_bosses_killed.lua grants Zelos credit through the
-/// death's damage map. The retained quest copy still qualifies the room and stage.
-fn freeze_zelos_credit(
-    entry: &PendingKillSettlement,
-    snapshots: &[TaskSnapshot],
-    frozen: &mut FrozenGrizzlyDeath,
-) {
-    let at = entry.facts.corpse;
-    let Some(objective) = death_objectives::load()
-        .ok()
-        .into_iter()
-        .flatten()
-        .find(|objective| {
-            objective.key == ZELOS_DEATH && objective.matches(&entry.creature, at.x, at.y, at.floor)
-        })
-    else {
-        return;
-    };
-    for share in &entry.damage_shares {
-        let Some(snapshot) = snapshots.iter().find(|snapshot| {
-            share.total > 0
-                && share.character.as_bytes() == &snapshot.character
-                && share.session == Some(snapshot.session)
-                && share.lease_generation == Some(snapshot.lease_generation)
-                && snapshot.observed_revision > 0
-                && snapshot.objective_keys.contains(&objective.key)
-        }) else {
-            continue;
-        };
-        frozen.recipients.push(Recipient {
-            actor: snapshot.actor,
-            session: snapshot.session,
-            character: snapshot.character,
-            lease_generation: snapshot.lease_generation,
-            actions: Vec::new(),
-            objective_actions: vec![objective.key.clone()],
-        });
-    }
-}
-
-fn waits_for_grave_boss_reward(transition: &str) -> bool {
-    transition.starts_with("oteryn:quest-death/questpc7-grave-")
-        && transition != "oteryn:quest-death/questpc7-grave-scarlett_etzel"
 }
 
 #[cfg(test)]
@@ -439,7 +386,6 @@ pub(super) fn capture(
                 Some(entry.facts.corpse),
                 &live,
             );
-            freeze_zelos_credit(entry, &live, &mut frozen);
             if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
                 for recipient in &mut frozen.native {
                     if recipient.death.transition != "oteryn:quest-transition/native-kills/first-dragon-selected" { continue; }
@@ -649,15 +595,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         true
     }
 
-    async fn credit_grizzly_death(
-        &self,
-        entry: &PendingKillSettlement,
-        after_reward: bool,
-    ) -> bool {
+    async fn credit_grizzly_death(&self, entry: &PendingKillSettlement) -> bool {
         let Some(frozen) = &entry.grizzly else {
             return true;
         };
-        let Some(catalogue) = &self.quest_catalogue else {
+        let (Some(source), Some(catalogue)) = (&frozen.source, &self.quest_catalogue) else {
             return true;
         };
         let Ok(occurrence) = ExperienceRewardOccurrence::from_bytes(entry.facts.occurrence) else {
@@ -665,18 +607,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let cause = QuestCause::CreatureDeath(occurrence);
         for recipient in &frozen.recipients {
-            let actions = if !after_reward && frozen.source.is_some() {
-                recipient.actions.as_slice()
-            } else {
-                &[]
-            };
-            let has_objectives = recipient
-                .objective_actions
-                .iter()
-                .any(|transition| waits_for_grave_boss_reward(transition) == after_reward);
-            if actions.is_empty() && !has_objectives {
-                continue;
-            }
             let fence = match self.current_quest_fence(recipient.session).await {
                 Ok(Some(fence)) => fence,
                 Ok(None) => continue,
@@ -705,10 +635,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // id/revision and the task-start receipt under its existing SQL owners.
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
             let mut changed = false;
-            for action in actions {
-                let Some(source) = &frozen.source else {
-                    break;
-                };
+            for action in &recipient.actions {
                 let outcome = slot
                     .commit_grizzly_kill(
                         self.root,
@@ -745,9 +672,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
             for transition in &recipient.objective_actions {
-                if waits_for_grave_boss_reward(transition) != after_reward {
-                    continue;
-                }
                 let outcome = slot
                     .commit_quest_transition_with_admission(
                         self.root,
@@ -789,27 +713,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-/// Keep all descendants on the existing kill retry path. Grave Danger credit follows
-/// the private reward and XP commit. A retry reuses the settled death and quest receipts.
+/// Keep unavailable quest writes on the existing kill retry path.
 pub(super) async fn settle(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     entry: &PendingKillSettlement,
     ordinary: impl std::future::Future<Output = SettleReport>,
 ) -> SettleReport {
     if !super::quest_kills::settle(admission, entry).await
-        || !admission.credit_grizzly_death(entry, false).await
+        || !admission.credit_grizzly_death(entry).await
     {
         return SettleReport {
             verdict: SettleVerdict::Retry,
             no_progression: false,
         };
     }
-    let mut report = ordinary.await;
-    if report.verdict == SettleVerdict::Final && !admission.credit_grizzly_death(entry, true).await
-    {
-        report.verdict = SettleVerdict::Retry;
-    }
-    report
+    ordinary.await
 }
 
 #[cfg(test)]

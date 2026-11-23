@@ -3418,8 +3418,7 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
         self.admission
             .refresh_native_objective_recipients(entry)
             .await;
-        // Hold the corpse pin through all kill descendants, including Grave Danger
-        // credit after the ordinary reward settles.
+        // Hold the corpse pin through all kill descendants and cache refreshes.
         if report.verdict == SettleVerdict::Final {
             release_settled_corpse(
                 &mut *self.admission.runtime.lock().await,
@@ -3676,7 +3675,8 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         // corpse reward row still has a canonical death and frozen quest recipients.
         if entry.row.is_none()
             && entry.encounter_experience.is_none()
-            && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
+            && (oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
+                || super::quest_kill_objectives::has_grave_boss_credit(entry))
         {
             let Some(permit) = admission.spell_lane_permit().await else {
                 return SettleReport {
@@ -3965,14 +3965,8 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 Ok(party) => Some(party),
                 Err(error) => {
                     operator_event(&format!("party_xp_settle_deferred reason={error:?}"));
-                    // Preserve the ordered dependency even for errors that the
-                    // ordinary XP classifier would otherwise treat as terminal.
-                    if entry.boss_reward.is_some()
-                        && entry
-                            .grizzly
-                            .as_ref()
-                            .is_some_and(|death| death.has_grave_boss_credit())
-                    {
+                    // A composed Quest failure must retry the entire settlement.
+                    if super::quest_kill_objectives::has_grave_boss_credit(&entry) {
                         return SettleReport {
                             verdict: SettleVerdict::Retry,
                             no_progression: false,

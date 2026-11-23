@@ -19,13 +19,37 @@ use std::sync::Arc;
 const ZELOS: &str = "oteryn:creature.king_zelos";
 const SEED: &str = "oteryn:quest-transition/grave-danger/fixture-prerequisites";
 const KNIGHT: &str = "oteryn:creature.count_vlarkorth";
+const SCARLETT: &str = "oteryn:creature.scarlett_etzel";
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Contributors,
+    ChestFault,
+    Withheld,
+    IdleReset,
+    SecondCreditFault,
+}
 
 #[test]
 fn zelos_credits_each_eligible_damage_contributor() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario(&admin, "gz_contributors", ZELOS, false)
+    scenario(&admin, "gz_contributors", ZELOS, Case::Contributors)
+}
+
+#[test]
+fn grave_knights_credit_each_eligible_damage_contributor() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(&admin, "gz_knight_contributors", KNIGHT, Case::Contributors)?;
+    scenario(
+        &admin,
+        "gz_nictros_contributors",
+        death_objectives::GRAVE_NICTROS,
+        Case::Contributors,
+    )
 }
 
 #[test]
@@ -33,11 +57,41 @@ fn grave_boss_credit_waits_for_private_reward_insert_and_retries_once() -> TestR
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario(&admin, "gz_zelos_fault", ZELOS, true)?;
-    scenario(&admin, "gz_knight_fault", KNIGHT, true)
+    scenario(&admin, "gz_zelos_fault", ZELOS, Case::ChestFault)?;
+    scenario(&admin, "gz_knight_fault", KNIGHT, Case::ChestFault)
 }
 
-fn scenario(admin: &str, tag: &'static str, creature: &'static str, fault: bool) -> TestResult {
+#[test]
+fn grave_boss_credit_is_withheld_when_the_production_reward_table_is_refused() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(&admin, "gz_zelos_withheld", ZELOS, Case::Withheld)?;
+    scenario(&admin, "gz_scarlett_withheld", SCARLETT, Case::Withheld)
+}
+
+#[test]
+fn zelos_idle_reset_discards_previous_fight_damage_credit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(&admin, "gz_idle_reset", ZELOS, Case::IdleReset)
+}
+
+#[test]
+fn zelos_second_contributor_failure_rolls_back_chests_xp_and_all_credit() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(
+        &admin,
+        "gz_second_credit_fault",
+        ZELOS,
+        Case::SecondCreditFault,
+    )
+}
+
+fn scenario(admin: &str, tag: &'static str, creature: &'static str, case: Case) -> TestResult {
     let admin = admin.to_owned();
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -46,14 +100,16 @@ fn scenario(admin: &str, tag: &'static str, creature: &'static str, fault: bool)
                 .enable_all()
                 .build()
                 .map_err(|error| error.to_string())?;
-            let case = async {
+            let exercise_case = async {
                 let h = Harness::create_with_admission_seed(admin, tag, false, false).await?;
-                let result = exercise(&h, creature, fault).await;
+                let result = exercise(&h, creature, case).await;
                 h.cleanup().await?;
-                result
+                result?;
+                eprintln!("POSTGRES_CASE_COMPLETED {tag}");
+                Ok::<(), Box<dyn std::error::Error>>(())
             };
             runtime
-                .block_on(Box::pin(case))
+                .block_on(Box::pin(exercise_case))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -61,7 +117,7 @@ fn scenario(admin: &str, tag: &'static str, creature: &'static str, fault: bool)
         .map_err(Into::into)
 }
 
-async fn exercise(h: &Harness, creature: &str, fault: bool) -> TestResult {
+async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
     prepare_current_session(h).await?;
     let evidence = super::house_transfer_fixtures::RecoverySource::start(h).await?;
     let peer = super::boss_rewards_fixtures::privacy::admit_gameplay_peer(h, &evidence.evidence, 1)
@@ -73,13 +129,24 @@ async fn exercise(h: &Harness, creature: &str, fault: bool) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, activated) =
+    let (controller, activated) = if case == Case::Withheld {
         super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
-        )?;
+        )?
+    } else {
+        super::questpc7_grave_fixtures::generation_with_qualified_grave_rewards(
+            deps.admitted.world_id,
+        )?
+    };
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
+    if case == Case::Withheld {
+        assert!(native.reward_table().row(creature).is_err());
+        assert!(native.reward_table().reward_boss_corpse(creature).is_some());
+    } else if creature != death_objectives::GRAVE_NICTROS {
+        assert!(native.reward_table().row(creature).is_ok());
+    }
     let objective = death_objectives::load()
         .map_err(debug)?
         .iter()
@@ -123,6 +190,7 @@ async fn exercise(h: &Harness, creature: &str, fault: bool) -> TestResult {
     native
         .install_companion_policies(&mut runtime)
         .map_err(debug)?;
+    let mut peer_actor = None;
     for (session, x) in [(deps.admitted.game_session_id, at.x - 1), (peer, at.x + 1)] {
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
         let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
@@ -132,6 +200,8 @@ async fn exercise(h: &Harness, creature: &str, fault: bool) -> TestResult {
         if session == deps.admitted.game_session_id {
             deps.actor = actor;
             deps.admitted.runtime_actor = Some(actor);
+        } else {
+            peer_actor = Some(actor);
         }
     }
     deps.runtime = tokio::sync::Mutex::new(runtime);
@@ -189,9 +259,30 @@ async fn exercise(h: &Harness, creature: &str, fault: bool) -> TestResult {
             .progression_binding(admitted.game_session_id)
             .is_some()
     );
+    let mut peer_admitted = AdmittedSession {
+        game_session_id: peer,
+        runtime_actor: peer_actor,
+        first_entry: FirstEntryOutcome::Positioned,
+        controller: None,
+        item_fence: Some(
+            owner
+                .current_quest_fence(peer)
+                .await
+                .map_err(|()| "peer fence")?
+                .ok_or("peer fence")?
+                .item_fence(),
+        ),
+        ..deps.admitted
+    };
+    owner.admit_progression_session(&mut peer_admitted).await;
+    assert!(
+        owner.progression_binding(peer).is_some(),
+        "peer progression must be admitted before seeding its quest"
+    );
     let session = admitted.game_session_id;
     let primary = prepare_player(&deps, &owner, session).await?;
     let other = prepare_player(&deps, &owner, peer).await?;
+    assert_eq!(progress(h, id(101), objective).await?, (0, -1));
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
     let now = observed.get() / 1000;
@@ -205,8 +296,31 @@ async fn exercise(h: &Harness, creature: &str, fault: bool) -> TestResult {
         runtime
             .install_creature_policy(target, creature)
             .map_err(debug)?;
-        if !fault {
-            damage(&mut runtime, target, other, peer, creature, health / 3, now)?;
+        let peer_damage = if case == Case::ChestFault {
+            0
+        } else {
+            health / 3
+        };
+        if peer_damage > 0 {
+            damage(
+                &mut runtime,
+                target,
+                other,
+                peer,
+                creature,
+                peer_damage,
+                now,
+            )?;
+        }
+        if case == Case::IdleReset {
+            assert_eq!(
+                runtime
+                    .all_source_player_damage_shares(target)
+                    .map_err(debug)?
+                    .len(),
+                1
+            );
+            simulate_idle_think(&mut runtime, native, target, now)?;
         }
         damage(
             &mut runtime,
@@ -214,7 +328,7 @@ async fn exercise(h: &Harness, creature: &str, fault: bool) -> TestResult {
             primary,
             session,
             creature,
-            if fault { health } else { health - health / 3 },
+            health - peer_damage,
             now,
         )?;
         let lease = runtime
@@ -241,45 +355,60 @@ async fn exercise(h: &Harness, creature: &str, fault: bool) -> TestResult {
         );
     }
     assert!(queue.has_session(session));
-    if fault {
-        for statement in [
-            "CREATE SEQUENCE grave_chest_fault",
-            "CREATE FUNCTION grave_chest_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('grave_chest_fault'); RAISE EXCEPTION 'Grave Danger chest fixture' USING ERRCODE='23514'; END $$",
-            "CREATE TRIGGER grave_chest_fault BEFORE INSERT ON game_character_boss_reward_chests FOR EACH ROW EXECUTE FUNCTION grave_chest_fault()",
-        ] {
+    if matches!(case, Case::ChestFault | Case::SecondCreditFault) {
+        let (function, install, remove) = if case == Case::ChestFault {
+            (
+                "CREATE FUNCTION grave_settle_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('grave_settle_fault'); RAISE EXCEPTION 'Grave Danger chest fixture' USING ERRCODE='23514'; END $$",
+                "CREATE TRIGGER grave_settle_fault BEFORE INSERT ON game_character_boss_reward_chests FOR EACH ROW EXECUTE FUNCTION grave_settle_fault()",
+                "DROP TRIGGER grave_settle_fault ON game_character_boss_reward_chests",
+            )
+        } else {
+            (
+                "CREATE FUNCTION grave_settle_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.transition_key LIKE 'oteryn:quest-death/questpc7-grave-%' AND NEW.character_id=(SELECT character_id FROM game_character_roots WHERE name='Fixture Member B') THEN IF NOT EXISTS(SELECT 1 FROM game_character_boss_reward_chests) OR NOT EXISTS(SELECT 1 FROM game_party_kill_xp_receipts) THEN RAISE EXCEPTION 'fixture did not reach the composed boss transaction'; END IF; PERFORM nextval('grave_settle_fault'); RAISE EXCEPTION 'second contributor fixture' USING ERRCODE='23514'; END IF; RETURN NEW; END $$",
+                "CREATE TRIGGER grave_settle_fault BEFORE INSERT ON game_character_quest_receipts FOR EACH ROW EXECUTE FUNCTION grave_settle_fault()",
+                "DROP TRIGGER grave_settle_fault ON game_character_quest_receipts",
+            )
+        };
+        for statement in ["CREATE SEQUENCE grave_settle_fault", function, install] {
             sqlx::query(statement).execute(&h.pool).await?;
         }
         assert_eq!(
             owner.drain_kill_rewards(session).await,
             DrainOutcome::Deferred
         );
-        let attempted: bool = sqlx::query_scalar("SELECT is_called FROM grave_chest_fault")
+        let attempted: bool = sqlx::query_scalar("SELECT is_called FROM grave_settle_fault")
             .fetch_one(&h.pool)
             .await?;
-        assert!(
-            attempted,
-            "the real private reward insert must reach the fault"
-        );
+        assert!(attempted, "the real settlement must reach the fault");
         assert_eq!(progress(h, id(41), objective).await?, (0, -1));
+        assert_eq!(progress(h, id(101), objective).await?, (0, -1));
         assert_eq!(rewards(h).await?, (0, 0, 0, 0));
         assert_eq!(credits(h, objective).await?, 0);
-        sqlx::query("DROP TRIGGER grave_chest_fault ON game_character_boss_reward_chests")
-            .execute(&h.pool)
-            .await?;
+        sqlx::query(remove).execute(&h.pool).await?;
     }
     assert_eq!(
         owner.drain_kill_rewards(session).await,
         DrainOutcome::Drained
     );
-    let expected = (1, if creature == ZELOS { 4 } else { -1 });
+    let earned = (1, if creature == ZELOS { 4 } else { -1 });
+    let primary_credit = case != Case::Withheld;
+    let peer_credit = matches!(case, Case::Contributors | Case::SecondCreditFault);
+    assert_eq!(
+        progress(h, id(41), objective).await?,
+        if primary_credit { earned } else { (0, -1) }
+    );
     assert_eq!(
         progress(h, id(101), objective).await?,
-        if fault { (0, -1) } else { expected }
+        if peer_credit { earned } else { (0, -1) }
     );
-    assert_eq!(progress(h, id(41), objective).await?, expected);
     let counts = rewards(h).await?;
-    let contributors = if fault { 1 } else { 2 };
-    assert_eq!(counts, (1, contributors, 1, 1));
+    let contributors = i64::from(primary_credit) + i64::from(peer_credit);
+    if case == Case::Withheld || creature == death_objectives::GRAVE_NICTROS {
+        assert_eq!((counts.0, counts.1), (0, 0));
+    } else {
+        let damage_contributors = if case == Case::ChestFault { 1 } else { 2 };
+        assert_eq!(counts, (1, damage_contributors, 1, damage_contributors));
+    }
     assert_eq!(credits(h, objective).await?, contributors);
     assert_eq!(
         owner.drain_kill_rewards(session).await,
@@ -287,6 +416,53 @@ async fn exercise(h: &Harness, creature: &str, fault: bool) -> TestResult {
     );
     assert_eq!(rewards(h).await?, counts);
     assert_eq!(credits(h, objective).await?, contributors);
+    Ok(())
+}
+
+fn simulate_idle_think(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    target: ExactActorRef,
+    now_ms: u64,
+) -> TestResult {
+    let mut ai = crate::ai_think::CreatureAiTable::default();
+    let now_us = now_ms * 1000;
+    let revisions = crate::ability::RevisionSet::new(
+        "ruleset:ai-v1",
+        "content:test",
+        "world:ai-v1",
+        "formula:source-melee-baseline",
+        "simulation:v1",
+    )
+    .map_err(debug)?;
+    // The empty target census models all players outside the boss's view.
+    let definition = &native
+        .creature_profiles()
+        .records
+        .iter()
+        .find(|record| record.profile.target.key == ZELOS)
+        .ok_or("Zelos native profile")?
+        .profile
+        .target;
+    ai.admit_native_creature(runtime, native, target, definition, now_us)
+        .map_err(debug)?;
+    let reports = ai.run_due_thinks(
+        runtime,
+        now_us,
+        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([9; 32]),
+        &revisions,
+        &[],
+    );
+    let [(_, report)] = reports.as_slice() else {
+        return Err("expected one boss think".into());
+    };
+    assert!(report.idle && !report.over_budget);
+    assert!(
+        runtime
+            .all_source_player_damage_shares(target)
+            .map_err(debug)?
+            .is_empty()
+    );
     Ok(())
 }
 

@@ -101,6 +101,14 @@ impl DeathObjective {
     }
 }
 
+pub fn is_grave_boss(transition: &str) -> bool {
+    transition.starts_with("oteryn:quest-death/questpc7-grave-")
+}
+
+/// Crystal 201189f sir_nictros.lua: only Baeloc has a reward chest. Nictros is
+/// the other half of the passage, whose guard also requires Baeloc's credit.
+pub const GRAVE_NICTROS: &str = "oteryn:creature.sir_nictros";
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Document {
