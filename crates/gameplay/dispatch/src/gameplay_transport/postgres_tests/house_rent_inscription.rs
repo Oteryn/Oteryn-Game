@@ -237,7 +237,11 @@ async fn install_legacy_tick(h: &Harness) -> TestResult {
     let start = predecessor
         .find("CREATE OR REPLACE FUNCTION game_house_rent_tick")
         .ok_or("0941 rent tick")?;
-    sqlx::raw_sql(&predecessor[start..])
+    let tick = predecessor[start..].replace(
+        "OUT operation TEXT)",
+        "OUT operation TEXT,OUT cancelled_operation TEXT)",
+    );
+    sqlx::raw_sql(sqlx::AssertSqlSafe(tick))
         .execute(&h.pool)
         .await?;
     Ok(())
