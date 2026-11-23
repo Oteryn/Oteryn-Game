@@ -42,10 +42,9 @@ pub(super) async fn relogin_starter(
     // Quentin wanders up to two tiles from (32368, 32240, 7), which includes the
     // entry cell. Fresh admission requires the recorded cell to remain free after
     // logout, so use the north side of the temple beyond his wander radius.
-    let path = route(world, from, |at| {
-        at.y < TOWN.y
-            && at.floor == TOWN.floor
-            && at.x.abs_diff(TOWN.x).max(at.y.abs_diff(TOWN.y)) <= 3
+    let safe = |at: TilePos| {
+        at != TOWN
+            && !(at.floor == TOWN.floor && at.x.abs_diff(32368).max(at.y.abs_diff(32240)) <= 2)
             && world
                 .base()
                 .tile(at.x, at.y, at.floor)
@@ -55,8 +54,17 @@ pub(super) async fn relogin_starter(
                     .iter()
                     .all(|entity| entity.position != basis.position(at))
             })
+    };
+    let path = route(world, from, |at| {
+        at.y < TOWN.y
+            && at.floor == TOWN.floor
+            && at.x.abs_diff(TOWN.x).max(at.y.abs_diff(TOWN.y)) <= 3
+            && safe(at)
     })
-    .ok_or("E2EF3 no unoccupied non-entry relog cell in the temple PZ")?;
+    .or_else(|| route(world, from, safe))
+    .ok_or_else(|| {
+        format!("E2EF3 no reachable unoccupied non-entry PZ relog cell from {from:?}")
+    })?;
     walk(client, world, &path).await?;
     relogin(client, clients).await
 }

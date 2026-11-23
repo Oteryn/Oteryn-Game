@@ -39,6 +39,41 @@ impl Seeded {
         )
         .await
         .map_err(|error| format!("character preparation {} refused: {error}", self.profile))?;
+        if let Some((dx, dy)) = match self.profile {
+            "f5-c17a" => Some((-1, -1)),
+            "f5-c17c" => Some((0, -1)),
+            "f5-c13" => Some((1, -1)),
+            "f5-c18a" => Some((-1, 1)),
+            "f5-c17d" => Some((1, 1)),
+            _ => None,
+        } {
+            let world = full_e2ef7::qualification_world(clients)?;
+            let from = tile(client.world_spatial().actor_position)?;
+            let basis = spatial_basis::current(&mut client)?;
+            let path = route(world, from, |at| {
+                at.floor == TOWN.floor
+                    && at.x.abs_diff(TOWN.x).max(at.y.abs_diff(TOWN.y)) <= 12
+                    && at.x.abs_diff(TOWN.x).max(at.y.abs_diff(TOWN.y)) >= 4
+                    && (i32::from(at.x) - i32::from(TOWN.x)).signum() == dx
+                    && (i32::from(at.y) - i32::from(TOWN.y)).signum() == dy
+                    && world
+                        .base()
+                        .tile(at.x, at.y, at.floor)
+                        .is_some_and(|tile| tile.protection_zone())
+                    && client.world_entities().is_some_and(|view| {
+                        view.iter()
+                            .all(|actor| actor.position != basis.position(at))
+                    })
+            });
+            if let Some(path) = path {
+                walk(&mut client, world, &path).await?;
+            } else {
+                evidence(&format!(
+                    "character_preparation profile={} no reachable protected staging tile from={from:?}",
+                    self.profile
+                ));
+            }
+        }
         let (result, detail, _, _) = logout_retrying_busy(&mut client).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("character preparation logout refused: {detail}").into());

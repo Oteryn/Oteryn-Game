@@ -952,6 +952,37 @@ impl PreparedNativeCombatCast {
                     .install_preflighted(proof);
             }
         }
+        #[cfg(feature = "qualification-cast-evidence")]
+        if result.applied
+            && let Some(magnitude) = self.magnitude.as_deref()
+        {
+            let command = self.batch.command;
+            for &(target, before, after) in magnitude.base_damage_evidence() {
+                if result.effects.iter().any(|effect| {
+                    effect.target == target
+                        && effect
+                            .health
+                            .is_some_and(|health| health.committed_health_loss().is_some())
+                }) {
+                    let target_id = target
+                        .placement_identity()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>();
+                    let session_id = command
+                        .game_session_id()
+                        .as_bytes()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>();
+                    eprintln!(
+                        "SEAM_EVIDENCE c12_base_damage session={session_id} command={} target={target_id} generation={} before={before} after={after}",
+                        command.command_id().get(),
+                        target.actor_local_generation()
+                    );
+                }
+            }
+        }
         result
     }
 }
@@ -962,7 +993,16 @@ pub struct CheckedNativeCommit {
     owner: super::CheckedOwnerBatch,
 }
 
+#[track_caller]
 fn reject<T>() -> Result<T, SpellCastDisposition> {
+    if cfg!(feature = "qualification-cast-evidence") {
+        let source = std::panic::Location::caller();
+        eprintln!(
+            "SEAM_EVIDENCE native_owner_refused file={} line={}",
+            source.file(),
+            source.line()
+        );
+    }
     Err(SpellCastDisposition::Rejected)
 }
 
@@ -2366,7 +2406,15 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         {
             return NativeCastDispatch::NotApplicable;
         }
-        let rejected = || NativeCastDispatch::Outcome(super::SpellCastOutcome::rejected());
+        let rejected = |reason: &str| {
+            if cfg!(feature = "qualification-cast-evidence") {
+                eprintln!(
+                    "SEAM_EVIDENCE native_cast_refused spell={} command={command_id} gate={reason}",
+                    spell.key
+                );
+            }
+            NativeCastDispatch::Outcome(super::SpellCastOutcome::rejected())
+        };
         if parameter.as_ref().is_some_and(|p| {
             p.intent != *intent
                 || intent.target != SpellTarget::None
@@ -2375,12 +2423,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 || !(super::parameter_cast::named_player_spell(spell)
                     || native_companion_item_cast::direct_applicable(spell))
         }) {
-            return rejected();
+            return rejected("parameter_intent");
         }
         if rune.as_ref().is_some_and(|r| {
             oteryn_protocol_oteryn::actor_spell_item_v2::encode_item_spell_cast_intent(r).is_err()
                 || (r.target_item.is_some() && !matches!(&spell.execution,Execution::NativeProfile(p) if p.spell()["execution"]["native_behavior"]["key"]=="tile_item_operation" && p.spell()["execution"]["native_behavior"]["parameters"]["operation"]=="mimic_item"))
-        }) {return rejected();}
+        }) {return rejected("rune_encoding_or_target");}
         match (&spell.carrier, rune.as_ref()) {
             (crate::spell::Carrier::Rune { .. }, None) => {
                 return NativeCastDispatch::Outcome(super::SpellCastOutcome {
@@ -2388,29 +2436,31 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     vitals: None,
                 });
             }
-            (crate::spell::Carrier::Instant { .. }, Some(_)) => return rejected(),
+            (crate::spell::Carrier::Instant { .. }, Some(_)) => {
+                return rejected("instant_with_rune");
+            }
             (_, Some(r))
                 if r.intent != *intent
                     || r.expected_state_revision == 0
                     || r.rune_item_instance[6] >> 4 != 7
                     || r.rune_item_instance[8] >> 6 != 2 =>
             {
-                return rejected();
+                return rejected("rune_binding");
             }
             _ => {}
         }
 
         if !active_spell || command_id == 0 {
-            return rejected();
+            return rejected("source_index_or_command");
         }
         let Some(active) = self.active_generation else {
-            return rejected();
+            return rejected("active_generation");
         };
         let Some(native) = active.native_gameplay() else {
-            return rejected();
+            return rejected("native_gameplay");
         };
         let Some(_room) = self.rooms().gate_native_combat_cast() else {
-            return rejected();
+            return rejected("combat_room");
         };
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
             .current_session_at(session)
@@ -2419,12 +2469,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             return NativeCastDispatch::Pending;
         };
         if current.session_state() != GameSessionState::Active {
-            return rejected();
+            return rejected("session_not_active");
         }
         let Ok(character) =
             crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
         else {
-            return rejected();
+            return rejected("character_id");
         };
         let Ok(root_record) = self
             .root
@@ -2443,7 +2493,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             expected_character_revision: root_record.revision,
         };
         let Ok(command) = CommandId::new(command_id).map(|id| CommandRef::new(session, id)) else {
-            return rejected();
+            return rejected("command_id");
         };
         // Lock order (§1.2): the lane before any Channel guard.
         let mut acquired;
@@ -2459,14 +2509,17 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
-        if runtime.player_control_facts(actor, session).is_err()
-            || runtime.owner_fence().is_err()
-            || runtime.content_pin().server_artifact_digest() != native.source_digest()
-        {
-            return rejected();
+        if runtime.player_control_facts(actor, session).is_err() {
+            return rejected("actor_control");
+        }
+        if runtime.owner_fence().is_err() {
+            return rejected("owner_fence");
+        }
+        if runtime.content_pin().server_artifact_digest() != native.source_digest() {
+            return rejected("artifact_digest");
         }
         let Ok(attacker) = CharacterId::decode(character.as_bytes()) else {
-            return rejected();
+            return rejected("attacker_id");
         };
         match replay_with_rune(
             &mut runtime,
@@ -2492,7 +2545,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 });
             }
             Ok(None) => {}
-            Err(_) => return rejected(),
+            Err(_) => return rejected("replay_binding"),
         }
         // Known replay above needs no new spectator/name read. An unresolved
         // original attempt likewise keeps its original numeric observation.
@@ -2562,13 +2615,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             scope_ownership_generation: fence.scope_ownership_generation,
                         }
                 }) {
-                    return rejected();
+                    return rejected("legacy_rune_fence");
                 }
                 if reconcile_only
                     || states.pending_native.len() >= MAX_PENDING_NATIVE
                     || states.pending_native.try_reserve(1).is_err()
                 {
-                    return rejected();
+                    return rejected("pending_marker_reservation");
                 }
                 states.pending_native.push(super::PendingSpellMarker {
                     actor,
@@ -2739,8 +2792,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     let mut prepared=match prepared_result{
                         Ok(p)=>p,Err(disposition)=>{
                         Box::pin(refusal_on_live_transaction(&mut tx)).await?;
-                        #[cfg(test)]
-                        eprintln!("SEAM_EVIDENCE native_combat_prepare result={disposition:?} ordinary={}",ordinary_combat::applicable(spell));
+                        #[cfg(any(test, feature = "qualification-cast-evidence"))]
+                        eprintln!("SEAM_EVIDENCE native_combat_prepare spell={} command={command_id} result={disposition:?} ordinary={} direct_companion={}",spell.key,ordinary_combat::applicable(spell),native_companion_item_cast::direct_applicable(spell));
                         if let (Some(rune),Some(legacy))=(rune.as_ref(),legacy.as_ref()) {
                             let refused=rune_item_cast::use_refusal(&mut tx,&authority,runtime,states,room,objects,spell,actor,rune,legacy,disposition,now).await;
                             return Ok(NativeCastDispatch::RuneRefused(refused));
@@ -2839,10 +2892,15 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         if definition.field_class!=crate::durability::spell_items_abi::SpellFieldClass::NotField))).await.is_ok();
                 let drome_items_current=attempt.request.operations.is_empty()
                     || owner.drome_item_changes_allowed(runtime,actor,attempt.prepared.tile_facts.keys().copied());
-                (if drome_items_current && pvp_current && original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
+                let validated=if drome_items_current && pvp_current && original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
                     attempt.prepared.validate_new_write(runtime,states,&owned,&attempt.owned,spell,
                         owner.owner_now().get(),reconnect.as_ref())
-                } else { Err(Error::SnapshotChanged) }).map_err(|_|item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED))
+                } else { Err(Error::SnapshotChanged) };
+                #[cfg(feature = "qualification-cast-evidence")]
+                if let Err(error)=&validated {
+                    eprintln!("SEAM_EVIDENCE native_cast_refused spell={} command={command_id} gate=new_write_snapshot reason={error:?} drome={drome_items_current} pvp={pvp_current} tiles={original_tiles_current} party={original_party_current} carried={carried_target_current} field={field_policy_current} companion={companion_current} direct={direct_current} rune={rune_current}",spell.key);
+                }
+                validated.map_err(|_|item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED))
             };
             // Release after S: the COMMIT and the post-commit transaction hold only the lane.
             *guards=None;

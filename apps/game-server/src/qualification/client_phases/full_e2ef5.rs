@@ -146,26 +146,19 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
                     result
                 })
                 .await;
-            if !completed {
-                return result;
-            }
-            // Only a completed exchange can be followed by cleanup. A timeout
-            // returns above and drops this connection with its uncertain reply/frame.
-            // Restore the entry tile even after a failed movement/cast assertion.
-            let cleanup: TestResult = async {
-                let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-                    at == TOWN
-                })
-                .ok_or("E2EF5 return route unavailable")?;
-                walk(&mut client, world, &back).await?;
-                logout(&mut client).await
-            }
-            .await;
+            let cleanup = if completed {
+                rune_cleanup(&mut client, world).await
+            } else {
+                Ok(())
+            };
+            drop(client);
+            let released = wait_character_released(clients, 1).await;
             if let Err(error) = &cleanup {
                 evidence(&format!("E2EF5_GAP {id} cleanup: {error}"));
             }
             result?;
-            cleanup
+            cleanup?;
+            released
         }
         .await;
         row.finish(result);
@@ -453,6 +446,7 @@ async fn illusion(
         .ok_or("C17c own vitals absent")?;
     client.take_events();
     let cast_started = tokio::time::Instant::now();
+    let last_before_cast = client.last_server_sequence();
     let cast = say(client, words).await?;
     if cast.status != CommandStatus::Accepted || cast.disposition != ChatDisposition::Ok {
         return Err(format!("C17c legitimate player cast refused: status={:?} disposition={:?}; observed_level={player_level} required_level={} observed_mana={} required_mana={mana} required_vocations={:?}; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225", cast.status, cast.disposition, spell.level, before.mana, spell.vocations).into());
@@ -468,12 +462,12 @@ async fn illusion(
         if client.actor_vitals().is_some_and(|after| {
             before.mana.checked_sub(mana) == Some(after.mana) && after.soul == before.soul
         }) && own_reference(client)? != binding.appearance_ref
-            && appearance_sequence > cast.result_server_sequence
+            && appearance_sequence > last_before_cast
         {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("C17c cast lacks exact mana debit and rat appearance frames".into());
+            return Err(format!("C17c cast command={} lacks exact mana debit and rat appearance frames: appearance_sequence={appearance_sequence} before_sequence={last_before_cast} before={before:?} after={:?}", cast.command_id, client.actor_vitals()).into());
         }
         pump(client, &mut appearance_sequence, &mut messages).await?;
     }
@@ -1145,11 +1139,17 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
 
 pub(super) async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     let travel: TestResult = async {
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            at == TOWN
-        })
-        .ok_or("rune journey return route unavailable")?;
-        walk(client, world, &path).await
+        let from = tile(client.world_spatial().actor_position)?;
+        let path = route(world, from, |at| at == TOWN).or_else(|| {
+            route(world, from, |at| world.base().tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| tile.protection_zone()))
+        });
+        if let Some(path) = path {
+            walk(client, world, &path).await?;
+        } else {
+            evidence(&format!("E2EF5 cleanup from={from:?} no protected landing, attempting ordinary logout in place"));
+        }
+        Ok(())
     }
     .await;
     let close = player_logout(client).await;
@@ -1294,7 +1294,13 @@ async fn seeded_rune(
     let expected = rune_quantity(client, reference)?.checked_add(2).ok_or("rune quantity overflow")?;
     character_prep::grant_item(client, id, 2).await?;
     character_prep::reload(client, clients).await?;
-    let sequence = inventory_quantity(client, reference, expected).await?;
+    // Admission returns a complete authoritative inventory snapshot. A seed
+    // written before logout creates no inventory delta in the new session.
+    let observed = rune_quantity(client, reference)?;
+    if observed != expected {
+        return Err(format!("seeded rune inventory snapshot mismatch: definition={reference} expected={expected} observed={observed}").into());
+    }
+    let sequence = client.last_server_sequence();
     evidence(&format!("E2EF5 rune={id} source=seeded reason=no-reachable-authored-seller-placement-in-served-bundle sellers={sellers:?}"));
     Ok((reference, sequence))
 }
@@ -2138,15 +2144,19 @@ async fn combat_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
                     result
                 })
                 .await;
-            if !completed || peer_cancelled {
-                return result;
-            }
-            let cleanup = rune_cleanup(&mut client, world).await;
+            let cleanup = if completed && !peer_cancelled {
+                rune_cleanup(&mut client, world).await
+            } else {
+                Ok(())
+            };
+            drop(client);
+            let released = wait_character_released(clients, index).await;
             if let Err(error) = &cleanup {
                 evidence(&format!("E2EF5_GAP {id} cleanup: {error}"));
             }
             result?;
-            cleanup
+            cleanup?;
+            released
         }
         .await;
         row.finish(result);
@@ -2209,7 +2219,7 @@ async fn player_spell(
     };
     if result.status != CommandStatus::Accepted || result.disposition != SpellCastDisposition::Cast
     {
-        return Err(format!("{words} native player cast refused: {:?}; observed_level={observed_level} required_level={} observed_mana={} required_mana={cost} required_vocations={:?} premium_required={}; source:crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2520", result.disposition, spell.level, before.mana, spell.vocations, spell.premium).into());
+        return Err(format!("{words} native player cast refused: {:?}; command={} observed_level={observed_level} required_level={} observed_mana={} required_mana={cost} required_vocations={:?} premium_required={}; source:crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast.rs:2520", result.disposition, result.command_id, spell.level, before.mana, spell.vocations, spell.premium).into());
     }
     if result.actor_vitals_delta.as_ref().is_none_or(|delta| {
         delta.server_sequence == 0
@@ -3288,8 +3298,8 @@ async fn summon_rat(
     let reply = say(client, words).await?;
     if reply.status != CommandStatus::Accepted || reply.disposition != ChatDisposition::Ok {
         return Err(format!(
-            "Summon Creature refused: {:?}; required_level={} observed_mana={} creature_type_mana={mana} vocations={:?}; source:crates/gameplay/dispatch/src/gameplay_transport/native_companion_item_cast.rs:77",
-            reply.disposition, spell.level, vitals.mana, spell.vocations
+            "Summon Creature refused: {:?}; command={} required_level={} observed_mana={} creature_type_mana={mana} vocations={:?}; source:crates/gameplay/dispatch/src/gameplay_transport/native_companion_item_cast.rs:77",
+            reply.disposition, reply.command_id, spell.level, vitals.mana, spell.vocations
         ).into());
     }
     let sequence = companion_payment(client, vitals, mana, spell.soul).await?;

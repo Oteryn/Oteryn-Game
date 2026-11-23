@@ -126,7 +126,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if reply.status != CommandStatus::Accepted || reply.disposition != ChatDisposition::Ok
         || before.mana.checked_sub(20) != Some(after.mana)
         || !messages.iter().any(|line| line.starts_with(&format!("{target_name} ")))
-    { return Err(format!("locate step observed status={:?} disposition={:?} mana={}->{} replies={messages:?}", reply.status, reply.disposition, before.mana, after.mana).into()); }
+    { return Err(format!("locate step command={} observed status={:?} disposition={:?} mana={}->{} replies={messages:?}", reply.command_id, reply.status, reply.disposition, before.mana, after.mana).into()); }
     evidence(&format!("C05_CHECK {} PASS locate-reply-and-mana-delta", ACTIONS[1]));
 
     if setting(&mut target, &[0, 0]).await? != [1] { return Err("deny step missing committed [1] reply".into()); }

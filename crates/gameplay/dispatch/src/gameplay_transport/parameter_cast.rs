@@ -477,7 +477,12 @@ async fn prepare_parameter(
                 intent.parameter.as_deref().unwrap_or(""),
             )
             .await
-            .map_err(|_| SpellCastDisposition::NotAvailable)?;
+            .map_err(|reason| {
+                if cfg!(feature = "qualification-cast-evidence") {
+                    eprintln!("SEAM_EVIDENCE parameter_cast_refused spell={} command={} gate=locate_owner reason={reason:?}", spell.key, command.command_id().get());
+                }
+                SpellCastDisposition::NotAvailable
+            })?;
             match plan {
                 HouseMovementPlan::Message {
                     text,
@@ -1136,7 +1141,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     let objects=owner.door.lock().await;
                     let prepared=match prepare_parameter(&mut tx,&authority,&FreshAdmissionStore::from_root(owner.root.clone()),runtime,states,room,&objects,content,owned.clone(),
                         spell,intent.clone(),fence,command,owner.owner_now()).await{
-                        Ok(p)=>p,Err(disposition)=>return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition,vitals:None}),result:None}),
+                        Ok(p)=>p,Err(disposition)=>{
+                            #[cfg(feature = "qualification-cast-evidence")]
+                            eprintln!("SEAM_EVIDENCE parameter_cast_refused spell={} command={} gate=prepare disposition={disposition:?}",spell.key,command.command_id().get());
+                            return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition,vitals:None}),result:None});
+                        },
                     };
                     *pending=Some(prepared);
                 }

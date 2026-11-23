@@ -4166,7 +4166,8 @@ async fn pvp_journey(
             profile,
             reason: "Open PvP tests combat and protection with two eligible players",
         };
-        let mut player = prep.connect_at(clients, 0xf2 + u8::try_from(index)?, index, "NODE_BOOT_PVP_CONTROL_SOCKET").await?;
+        let mut player = prep.connect_at(clients, 0xf2 + u8::try_from(index)?, index, "NODE_BOOT_PVP_CONTROL_SOCKET")
+            .await.map_err(|error| format!("S08 participant {index} {profile} Open PvP preparation: {error}"))?;
         let level = player_level(&mut player).await?;
         if level < oteryn_gameplay_combat_rules::pvp::PVP_MIN_LEVEL {
             return Err(format!("S08 seeded participant {index} is ineligible at level {level}").into());
@@ -4870,11 +4871,12 @@ async fn imbuement_journey(
     const PREPARATION: &str = "Seeded: Basic Strike inspects application, effects, fees and persistence";
     evidence(&format!("P21 preparation={PREPARATION}"));
     let (id, target) = candidate;
-    character_prep::grant_item(client, id, 1).await?;
+    character_prep::grant_item(client, id, 1).await.map_err(|error| format!("P21 target item {id}: {error}"))?;
     let basic = oteryn_gameplay_items::imbuement::imbuement_recipe(1, 1)
         .ok_or("basic Strike recipe absent")?;
     for &(key, count) in basic.materials {
-        character_prep::grant_item(client, character_prep::item_id(key)?, count).await?;
+        character_prep::grant_item(client, character_prep::item_id(key)?, count).await
+            .map_err(|error| format!("P21 material {key} x{count}: {error}"))?;
     }
     character_prep::reload(client, clients).await?;
     carried(client, target)?;
@@ -6843,7 +6845,7 @@ async fn forge_journey(
                 || value["result"] != serde_json::Value::Null
                 || client.slivers(sliver) != before
             {
-                return Err("insufficient dust refusal changed custody".into());
+                return Err(format!("insufficient dust refusal changed custody: reply={value}; slivers={before}->{}",client.slivers(sliver)).into());
             }
             row.pass("insufficient-dust-refusal");
             break;

@@ -12,7 +12,7 @@
 //! 4. `unequip`: ITEM_MOVE it back to the backpack; require the inventory delta.
 //! 5. `unequipped-cast`: restore the baseline weapon and CAST with item 50271 only carried.
 //! 6. `fresh-admission`: re-equip, LOGOUT, admit afresh, require the right-hand item to persist and
-//!    CAST again. This observes damage and custody. Augment attribution needs independent evidence.
+//!    CAST again and require the committed cast owner to prove the exact augment on its original roll.
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
@@ -339,6 +339,7 @@ struct Hunt<'a> {
     spawns: &'a oteryn_world_bundle::spawn::Table,
     creature: String,
     profile: &'a CreatureProfile,
+    cast_evidence_log: std::path::PathBuf,
 }
 
 impl Hunt<'_> {
@@ -368,7 +369,7 @@ impl Hunt<'_> {
 
     /// One cast, retried only while the server reports `CoolingDown`; returns the damage the server
     /// attributes to that cast (events sharing the decision ordinal of the caster's SpellWords).
-    async fn cast_damage(&self, client: &mut DevClientSession, spell: NonZeroU32) -> TestResult<u64> {
+    async fn cast_damage(&self, client: &mut DevClientSession, spell: NonZeroU32, bps: u64) -> TestResult<u64> {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
         loop {
             let victim = self.target(client).await?;
@@ -376,6 +377,7 @@ impl Hunt<'_> {
             let before = *client.actor_vitals().ok_or("pre-cast vitals absent")?;
             client.take_events();
             let sequence = client.last_server_sequence();
+            let evidence_start = std::fs::metadata(&self.cast_evidence_log)?.len();
             let outcome = verdict::indexed_timeout(COMMAND_BUDGET, client.cast_spell(spell, SpellTarget::AttackTarget, true))
                 .await
                 .map_err(|_| format!("CAST deadline=8s last-frame={sequence}"))??;
@@ -383,7 +385,7 @@ impl Hunt<'_> {
                 client.service_liveness(Duration::from_millis(250)).await?;
                 continue;
             }
-            if outcome.disposition != SpellCastDisposition::Cast || outcome.actor_vitals_delta.is_none() {
+            if outcome.status != CommandStatus::Accepted || outcome.disposition != SpellCastDisposition::Cast || outcome.actor_vitals_delta.is_none() {
                 return Err(format!("CAST reply={outcome:?}").into());
             }
             let mut damage = 0_u64;
@@ -401,9 +403,55 @@ impl Hunt<'_> {
             {
                 return Err(format!("damage={damage} may be capped by {} health={}; needed=creature-with-spell-proof-health", self.creature, self.profile.health).into());
             }
+            let session = client.join_snapshot().game_session_id;
+            let marker = format!(
+                "SEAM_EVIDENCE c12_base_damage session={} command={} target={} generation={} ",
+                hex_bytes(session.as_bytes()), outcome.command_id, hex_bytes(&victim.identity), victim.generation,
+            );
+            let paired = committed_base_damage(&self.cast_evidence_log, evidence_start, &marker, bps)?;
+            evidence(&format!("C12 committed_cast command={} damage={damage} base_pair={paired:?} expected_bps={bps}", outcome.command_id));
             return Ok(damage);
         }
     }
+}
+
+fn hex_bytes(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn committed_base_damage(
+    path: &Path,
+    start: u64,
+    marker: &str,
+    bps: u64,
+) -> TestResult<(u64, u64)> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut file = std::fs::File::open(path)?;
+    file.seek(SeekFrom::Start(start))?;
+    read_base_damage(std::io::BufReader::new(file.take(512 * 1024)), marker, bps)
+}
+
+fn read_base_damage(
+    reader: impl std::io::BufRead,
+    marker: &str,
+    bps: u64,
+) -> TestResult<(u64, u64)> {
+    let mut observed = None;
+    for line in reader.lines() {
+        let line = line?;
+        let Some(fields) = line.strip_prefix(marker) else { continue };
+        let (before, after) = fields.strip_prefix("before=").and_then(|s| s.split_once(" after="))
+            .ok_or("malformed committed C12 damage pair")?;
+        if observed.replace((before.parse::<u64>()?, after.parse::<u64>()?)).is_some() {
+            return Err("multiple committed C12 damage pairs for one cast and target".into());
+        }
+    }
+    let (before, after) = observed.ok_or_else(|| format!("committed C12 damage pair absent for {marker}"))?;
+    let increase = before.checked_mul(bps).ok_or("C12 augment arithmetic overflow")? / 10_000;
+    if before == 0 || (bps != 0 && increase == 0) || before.checked_add(increase) != Some(after) {
+        return Err(format!("C12 exact base damage comparison failed: before={before} after={after} bps={bps}").into());
+    }
+    Ok((before, after))
 }
 
 /// Damage to `victim` in presentation batches that also carry `own`'s SpellWords in the same decision.
@@ -427,12 +475,12 @@ fn cast_damage_in(event: &SessionEvent, own: oteryn_dev_client::EntityRef, victi
         .sum()
 }
 
-async fn samples(hunt: &Hunt<'_>, client: &mut DevClientSession, spell: NonZeroU32) -> TestResult<Vec<u64>> {
+async fn samples(hunt: &Hunt<'_>, client: &mut DevClientSession, spell: NonZeroU32, bps: u64) -> TestResult<Vec<u64>> {
     let mut out = Vec::new();
     for _ in 0..SAMPLES {
         restore_cast_mana(client).await?;
         let before = client.actor_vitals().ok_or("pre-sample vitals absent")?.mana;
-        out.push(hunt.cast_damage(client, spell).await?);
+        out.push(hunt.cast_damage(client, spell, bps).await?);
         if client.actor_vitals().ok_or("post-sample vitals absent")?.mana >= before {
             return Err(format!("Cast without a mana debit: mana {before} -> {}", client.actor_vitals().map_or(0, |v| v.mana)).into());
         }
@@ -530,13 +578,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         |at| world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone()),
     )?;
     let profile = profiles.get(&creature).ok_or("selected creature profile absent")?;
-    let hunt = Hunt { world, spawns: &metadata.spawns, creature, profile };
+    let hunt = Hunt { world, spawns: &metadata.spawns, creature, profile, cast_evidence_log: required("NODE_BOOT_CAST_EVIDENCE_LOG")?.into() };
 
     let baseline_weapon = weapon(&client)?;
     if baseline_weapon == Some(definition) {
         return Err("need=augment-off-baseline;item-50271-already-equipped".into());
     }
-    let baseline = verdict::indexed_timeout(BASELINE_BUDGET, samples(&hunt, &mut client, spell_index))
+    let baseline = verdict::indexed_timeout(BASELINE_BUDGET, samples(&hunt, &mut client, spell_index, 0))
         .await
         .map_err(|_| format!("baseline sampling deadline=75s last-frame={}", client.last_server_sequence()))??;
     row.record_cast("baseline-cast", &baseline, baseline_weapon);
@@ -548,7 +596,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("acquire-50271", acquired);
 
     equip_right(&mut client, definition).await?;
-    let augmented = samples(&hunt, &mut client, spell_index).await?;
+    let augmented = samples(&hunt, &mut client, spell_index, augment).await?;
     row.record_cast("augmented-cast", &augmented, weapon(&client)?);
 
     let equipped = client
@@ -568,7 +616,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if let Some(baseline_weapon) = baseline_weapon {
         equip_right(&mut client, baseline_weapon).await?;
     }
-    let carried = samples(&hunt, &mut client, spell_index).await?;
+    let carried = samples(&hunt, &mut client, spell_index, 0).await?;
     row.record_cast("unequipped-cast", &carried, weapon(&client)?);
 
     equip_right(&mut client, definition).await?;
@@ -581,17 +629,34 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     character_prep::grant_premium(&fresh).await?;
     let fresh_spell_index = spell(&mut fresh).await?;
-    let replay = samples(&hunt, &mut fresh, fresh_spell_index).await?;
+    let replay = samples(&hunt, &mut fresh, fresh_spell_index, augment).await?;
     row.record_cast("fresh-admission", &replay, weapon(&fresh)?);
     logout(&mut fresh).await?;
-    Err(format!(
-        "need=augment-attribution-with-controlled-attack-inputs;item={ITEM_ID};configured-bps={augment}"
-    ).into())
+    row.pass("augment-attribution", (ITEM_ID, augment));
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn committed_pair_requires_exact_unchanged_input_and_expected_delta() -> TestResult {
+        const MARKER: &str = "SEAM_EVIDENCE c12_base_damage session=test command=1 target=rat generation=2 ";
+        let read = |tail: &str, bps| {
+            let log = format!("{MARKER}{tail}");
+            read_base_damage(log.as_bytes(), MARKER, bps)
+        };
+        assert_eq!(read("before=37 after=40", 1_000)?, (37, 40));
+        assert_eq!(read("before=37 after=37", 0)?, (37, 37));
+        assert!(read("before=37 after=41", 1_000).is_err());
+        assert!(read("before=37 after=37", 1_000).is_err());
+        assert!(read("before=37 after=40", 0).is_err());
+        let duplicate = format!("{MARKER}before=37 after=40
+{MARKER}before=37 after=40");
+        assert!(read_base_damage(duplicate.as_bytes(), MARKER, 1_000).is_err());
+        Ok(())
+    }
 
     #[test]
     fn cast_observation_does_not_complete_augment_attribution() {

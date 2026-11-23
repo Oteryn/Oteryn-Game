@@ -278,6 +278,13 @@ impl Hunt<'_> {
         {
             return Err(format!("hunt chase mode refused: {reply:?}").into());
         }
+        let prior_corpses: BTreeSet<_> = client
+            .world_entities()
+            .into_iter()
+            .flat_map(|view| view.others())
+            .filter(|entry| entry.kind == EntityKind::Corpse)
+            .map(|entry| entry.entity.identity)
+            .collect();
         let mut position = target.position;
         let mut removed = false;
         let mut corpses = Vec::new();
@@ -309,13 +316,28 @@ impl Hunt<'_> {
                         position = updated.position;
                     }
                     removed |= delta.value.leave.contains(&target.entity);
-                    corpses.extend(
-                        delta
-                            .value
-                            .enter
-                            .into_iter()
-                            .filter(|entity| entity.kind == EntityKind::Corpse),
-                    );
+                    corpses.extend(delta.value.enter.into_iter().filter(|entity| {
+                        entity.kind == EntityKind::Corpse
+                            && !prior_corpses.contains(&entity.entity.identity)
+                    }));
+                }
+            }
+            // The item handle can arrive in a later entity projection, or be
+            // present in the live view after the stream coalesces an enter.
+            if removed {
+                for corpse in client
+                    .world_entities()
+                    .into_iter()
+                    .flat_map(|view| view.others())
+                    .filter(|entry| {
+                        entry.kind == EntityKind::Corpse
+                            && entry.position == position
+                            && !prior_corpses.contains(&entry.entity.identity)
+                    })
+                {
+                    if !corpses.iter().any(|seen| seen.entity == corpse.entity) {
+                        corpses.push(*corpse);
+                    }
                 }
             }
             if removed

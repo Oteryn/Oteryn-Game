@@ -67,6 +67,19 @@ pub fn store_condition_gate<S: Clone>(
         store.spell_cast_gate(spell.aggressive, now.get())
     }
 }
+pub(super) fn reported_disposition(
+    spell: &SpellDefinition,
+    rejection: &CastRejection,
+) -> SpellCastDisposition {
+    if cfg!(feature = "qualification-cast-evidence") {
+        eprintln!(
+            "SEAM_EVIDENCE spell_gate_refused spell={} reason={rejection:?}",
+            spell.key
+        );
+    }
+    disposition(rejection)
+}
+
 /// [`condition_gate`] on the wire: any gate refuses with `REJECTED`. A feared player is
 /// refused every spell and rune before that, as Canary `Spell::playerSpellCheck` does first.
 pub fn admit_condition_gates(
@@ -83,7 +96,15 @@ pub fn admit_condition_gates(
     ) {
         return Err(SpellCastDisposition::Rejected);
     }
-    condition_gate(state, spell, now).map_err(|_| SpellCastDisposition::Rejected)
+    condition_gate(state, spell, now).map_err(|reason| {
+        if cfg!(feature = "qualification-cast-evidence") {
+            eprintln!(
+                "SEAM_EVIDENCE spell_condition_refused spell={} gate={reason:?}",
+                spell.key
+            );
+        }
+        SpellCastDisposition::Rejected
+    })
 }
 
 pub fn cast(
@@ -188,7 +209,7 @@ pub(super) fn cast_resolved(
             )
         }
     }
-    .map_err(|rejection| disposition(&rejection))?;
+    .map_err(|rejection| reported_disposition(spell, &rejection))?;
     let mut next = state.clone();
     let focus_profile = match &spell.execution {
         crate::spell::Execution::ActorFocus { profile } => Some(profile),
@@ -233,7 +254,7 @@ pub(super) fn cast_resolved(
             resolution
                 .cooldowns
                 .rearm(spell, context.now)
-                .map_err(|rejection| disposition(&rejection))?;
+                .map_err(|rejection| reported_disposition(spell, &rejection))?;
         }
     }
     let plan = effect_plan(

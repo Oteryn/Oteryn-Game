@@ -10,7 +10,7 @@ use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::PlayerSpellState;
-use super::gate::{CastContext, admit_condition_gates, cast_resolved, disposition};
+use super::gate::{CastContext, admit_condition_gates, cast_resolved, reported_disposition};
 use crate::ability::Effect;
 use crate::spell::harmony::HarmonyMultiplier;
 use crate::spell::{CasterState, HarmonyRole, SpellBook, SpellDefinition};
@@ -99,7 +99,7 @@ pub fn prepare_focus_owner_cast_with_caster(
         paid.next
             .cooldowns
             .rearm(spell, context.now)
-            .map_err(|reason| disposition(&reason))?;
+            .map_err(|reason| reported_disposition(spell, &reason))?;
     }
     paid.anchor.cooldown_deadlines = paid.next.cooldowns.canonical_deadlines();
     Ok(PaidFocusOwnerCast {
@@ -165,7 +165,7 @@ pub fn prepare_source_self_cast_with_caster(
             paid.next
                 .cooldowns
                 .rearm(spell, context.now)
-                .map_err(|r| disposition(&r))?;
+                .map_err(|r| reported_disposition(spell, &r))?;
         }
         paid.anchor.cooldown_deadlines = paid.next.cooldowns.canonical_deadlines();
         return Ok(PaidSourceSelfCast {
@@ -299,7 +299,7 @@ pub fn prepare_ordinary_owner_cast_with_wheel(
         return Err(SpellCastDisposition::Rejected);
     }
     crate::spell::check_operational_rules(spell, operational, false)
-        .map_err(|e| disposition(&e))?;
+        .map_err(|e| reported_disposition(spell, &e))?;
     if spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield" {
         crate::spell::actor_conditions::require_active_mana_shield(&state.conditions, now.get())?;
     }
@@ -345,7 +345,7 @@ pub fn prepare_ordinary_owner_cast_with_wheel(
             draw,
         )
     }
-    .map_err(|error| disposition(&error))?;
+    .map_err(|error| reported_disposition(spell, &error))?;
     let mut next = state.clone();
     next.prepare_wheel_spell_state(spell, now.get())
         .ok_or(SpellCastDisposition::Rejected)?;
@@ -554,7 +554,7 @@ fn prepare_native_owner_cast_impl(
         facts,
         draw,
     )
-    .map_err(|error| disposition(&error))?;
+    .map_err(|error| reported_disposition(spell, &error))?;
     let mut next = state.clone();
     next.prepare_wheel_spell_state(spell, now.get())
         .ok_or(SpellCastDisposition::Rejected)?;
@@ -720,7 +720,7 @@ fn prepare_native_callback_owner_cast_core(
             operational,
         ),
     }
-    .map_err(|error| disposition(&error))?;
+    .map_err(|error| reported_disposition(spell, &error))?;
     let mut next = state.clone();
     next.prepare_wheel_spell_state(spell, now.get())
         .ok_or(SpellCastDisposition::Rejected)?;
@@ -827,7 +827,7 @@ pub fn prepare_conjure_owner_cast_with_caster(
             minimum
         },
     )
-    .map_err(|error| disposition(&error))?;
+    .map_err(|error| reported_disposition(spell, &error))?;
     if unexpected_draw
         || common.effects
             != vec![crate::spell::ResolvedEffect::Conjure {
@@ -948,7 +948,7 @@ pub fn prepare_named_player_failure_owner_cast_with_caster(
     }
     if let Some(group) = spell.groups.first() {
         crate::spell::check_group(&state.cooldowns, &group.key, now)
-            .map_err(|e| disposition(&e))?;
+            .map_err(|e| reported_disposition(spell, &e))?;
     }
     if state
         .cooldowns
@@ -959,7 +959,7 @@ pub fn prepare_named_player_failure_owner_cast_with_caster(
     }
     for group in spell.groups.iter().skip(1) {
         crate::spell::check_group(&state.cooldowns, &group.key, now)
-            .map_err(|e| disposition(&e))?;
+            .map_err(|e| reported_disposition(spell, &e))?;
     }
     if caster.level < spell.level {
         return Err(SpellCastDisposition::LevelTooLow);
@@ -988,7 +988,7 @@ pub fn prepare_named_player_failure_owner_cast_with_caster(
         .ok_or(SpellCastDisposition::Rejected)?;
     next.cooldowns
         .rearm(spell, now)
-        .map_err(|e| disposition(&e))?;
+        .map_err(|e| reported_disposition(spell, &e))?;
     next.revision = next
         .revision
         .checked_add(1)
