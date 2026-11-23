@@ -1,0 +1,26 @@
+{
+  "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "remote_predecessor": "0623fbd59c372bbf479f3965031f47393c42cd39",
+  "verified_current_main": "d1d44e717cbe327c6348932921671ff6803df4de",
+  "scope": "Read-only per-file three-way merge check on the current authored PR delta; not a merge or a mergeability authorization. New candidate checked again after publication.",
+  "shared_changed_paths": [
+    {
+      "path": "tools/content-migration/test_regenerate_content.py",
+      "merge_file_exit_code": 1,
+      "needs_resolution": true,
+      "our_sha256": "140a51f54a2b62ceaa4a25e861b9f1ffa21f9a2cb5d4c8431294c0807d95d9e8",
+      "main_sha256": "a753ba005ec2bb01138b13137f6773845295f2648b263b36369f57f75becc5b1"
+    }
+  ],
+  "resolved_authoring_recheck": {
+    "source_path": "tools/content-migration/test_regenerate_content.py",
+    "source_sha256": "0354b1111f841419dacf4e6cc0dcc2614cd0a0868be0b5c3f974c6a86fb7be46",
+    "merge_file_exit_code": 0,
+    "conflict_markers": 0,
+    "merged_sha256": "26d366ca190055df60b60647c0b0cd499e1799fbb97bb8c479a9e2e632ba5a52",
+    "resolution": "One-line Buddel fixture boundary decorator; preserves remote baseline semantics and main changes on standard three-way merge.",
+    "validation_receipt": "../content/regenerate_merge_safe_proposal.json",
+    "phase": "AUTHORING",
+    "marker_count_method": "Only Git marker lines at line start; test fixture string literals contain their own conflict examples."
+  }
+}

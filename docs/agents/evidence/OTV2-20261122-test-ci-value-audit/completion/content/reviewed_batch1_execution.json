@@ -1,0 +1,229 @@
+{
+  "modules": [
+    {
+      "module": "test_quest_shared_boss_corpses",
+      "run": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.002,
+      "output": "test_exact_bound_policy (test_quest_shared_boss_corpses.SharedBodies.test_exact_bound_policy) ... ok\ntest_unmounted_policies_admit_nothing (test_quest_shared_boss_corpses.SharedBodies.test_unmounted_policies_admit_nothing) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.000s\n\nOK\n"
+    },
+    {
+      "module": "test_m42_hot_recipe_custody",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.421,
+      "output": "test_all_fifteen_recipe_inputs_and_outputs_are_materializable (test_m42_hot_recipe_custody.CookingCustody.test_all_fifteen_recipe_inputs_and_outputs_are_materializable) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.420s\n\nOK\n"
+    },
+    {
+      "module": "test_first_dragon_item_profiles",
+      "run": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.547,
+      "output": "test_source_corpse_decay_closure_is_native (test_first_dragon_item_profiles.FirstDragonItemProfileTest.test_source_corpse_decay_closure_is_native) ... ok\ntest_source_exit_carpet_is_nonblocking_ground_only (test_first_dragon_item_profiles.FirstDragonItemProfileTest.test_source_exit_carpet_is_nonblocking_ground_only) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.546s\n\nOK\n"
+    },
+    {
+      "module": "test_grizzly_debris_profiles",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.002,
+      "output": "test_closed_walkable_debris_set (test_grizzly_debris_profiles.GrizzlyDebrisProfileTests.test_closed_walkable_debris_set) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n"
+    },
+    {
+      "module": "test_m01c_key_door_equipment_pin",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.137,
+      "output": "test_refresh_is_source_bounded_and_idempotent (test_m01c_key_door_equipment_pin.M01cKeyDoorPinTests.test_refresh_is_source_bounded_and_idempotent) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nOK\n"
+    },
+    {
+      "module": "test_m41_quest_item_profiles",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.245,
+      "output": "test_exact_set_preserves_corpse_timers_and_beak_stack (test_m41_quest_item_profiles.M41ItemProfileTests.test_exact_set_preserves_corpse_timers_and_beak_stack) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.243s\n\nOK\n"
+    },
+    {
+      "module": "test_qm50_elevator_profiles",
+      "run": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.102,
+      "output": "test_qm50_evacuation_decoration_is_qualified (test_qm50_elevator_profiles.ElevatorProfilesTest.test_qm50_evacuation_decoration_is_qualified) ... ok\ntest_qm50_source_profiles_keep_winch_and_empty_frame_solid (test_qm50_elevator_profiles.ElevatorProfilesTest.test_qm50_source_profiles_keep_winch_and_empty_frame_solid) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 2.100s\n\nOK\n"
+    },
+    {
+      "module": "test_soul_war_appearance_profiles",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.039,
+      "output": "test_registered_stage_retains_base_order_and_pins_exact_two_source_records (test_soul_war_appearance_profiles.SoulWarAppearancePipelineTests.test_registered_stage_retains_base_order_and_pins_exact_two_source_records) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.037s\n\nOK\n"
+    },
+    {
+      "module": "test_engnpc_m05_item_profiles",
+      "run": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.003,
+      "output": "test_check_accepts_current_and_preserves_bytes (test_engnpc_m05_item_profiles.PublicationTests.test_check_accepts_current_and_preserves_bytes) ... ok\ntest_check_rejects_missing_and_stale_without_writing (test_engnpc_m05_item_profiles.PublicationTests.test_check_rejects_missing_and_stale_without_writing) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n"
+    },
+    {
+      "module": "test_forge_sql_admission",
+      "run": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.559,
+      "output": "test_committed_projection_matches_all_admitted_profiles_and_prices (test_forge_sql_admission.ForgeSqlAdmissionTests.test_committed_projection_matches_all_admitted_profiles_and_prices) ... FAIL\ntest_current_native_class_caps_and_exact_transfer_prices_are_preserved (test_forge_sql_admission.ForgeSqlAdmissionTests.test_current_native_class_caps_and_exact_transfer_prices_are_preserved) ... ok\n\n======================================================================\nFAIL: test_committed_projection_matches_all_admitted_profiles_and_prices (test_forge_sql_admission.ForgeSqlAdmissionTests.test_committed_projection_matches_all_admitted_profiles_and_prices)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_forge_sql_admission.py\", line 12, in test_committed_projection_matches_all_admitted_profiles_and_prices\n    self.assertEqual(actual[start:end], forge.generated())\nAssertionError: \"-- B[190 chars]256: 5669fe567e6b82cd6ee7a00551fcd3a18dfeb7716[11007 chars]CY\\n\" != \"-- B[190 chars]256: 96fbe7f52ea7278bef145c1cc4f83f8fe429de13f[11552 chars]CY\\n\"\nDiff is 12096 characters long. Set self.maxDiff to None to see it.\n\n----------------------------------------------------------------------\nRan 2 tests in 1.556s\n\nFAILED (failures=1)\n"
+    },
+    {
+      "module": "test_marriage_item_profiles",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.28,
+      "output": "test_all_wedding_items_are_exact_portable_nonstackable_value (test_marriage_item_profiles.MarriageItemProfiles.test_all_wedding_items_are_exact_portable_nonstackable_value) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.279s\n\nOK\n"
+    },
+    {
+      "module": "test_srx1_potion_variants",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.259,
+      "output": "test_current_variants_have_production_consumption (test_srx1_potion_variants.CurrentPotionVariants.test_current_variants_have_production_consumption) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.258s\n\nOK\n"
+    },
+    {
+      "module": "test_fluid_container_profiles",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.279,
+      "output": "test_fluid_containers_are_carried_non_stackable_and_hold_an_instance_fluid (test_fluid_container_profiles.FluidContainerProfiles.test_fluid_containers_are_carried_non_stackable_and_hold_an_instance_fluid) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.277s\n\nOK\n"
+    },
+    {
+      "module": "test_native_item_key_pin",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.394,
+      "output": "test_registered_provider_refuses_missing_real_reference_keys (test_native_item_key_pin.NativeItemKeyPinTests.test_registered_provider_refuses_missing_real_reference_keys) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.378s\n\nOK\n"
+    },
+    {
+      "module": "test_podium_item_profiles",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.427,
+      "output": "test_podiums_are_materializable_ground_furniture (test_podium_item_profiles.PodiumItemProfiles.test_podiums_are_materializable_ground_furniture) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.425s\n\nOK\n"
+    },
+    {
+      "module": "test_season_creature_inventory",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 6.428,
+      "output": "test_same_count_substituted_creature_cannot_refresh_the_registry (test_season_creature_inventory.RegistrySourceBoundaryTests.test_same_count_substituted_creature_cannot_refresh_the_registry) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 6.178s\n\nOK\n"
+    },
+    {
+      "module": "test_writing_item_admission",
+      "run": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.673,
+      "output": "test_captured_cohort_matches_qualified_text_owner (test_writing_item_admission.WritingAdmission.test_captured_cohort_matches_qualified_text_owner) ... ok\ntest_current_xml_digest_is_required (test_writing_item_admission.WritingAdmission.test_current_xml_digest_is_required) ... ok\ntest_physical_admission_does_not_replace_accepted_text_rules (test_writing_item_admission.WritingAdmission.test_physical_admission_does_not_replace_accepted_text_rules) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 1.666s\n\nOK\n"
+    },
+    {
+      "module": "test_questpc8_nail_custody",
+      "run": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.004,
+      "output": "test_changed_stack_is_rejected (test_questpc8_nail_custody.NailCustody.test_changed_stack_is_rejected) ... ok\ntest_exact_pinned_stack_is_accepted_without_mutating_canonical (test_questpc8_nail_custody.NailCustody.test_exact_pinned_stack_is_accepted_without_mutating_canonical) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.996s\n\nOK\n"
+    },
+    {
+      "module": "test_reward_bag_catalogue",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.006,
+      "output": "test_generated_catalogue_matches_captured_rules (test_reward_bag_catalogue.RewardBagCatalogue.test_generated_catalogue_matches_captured_rules) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nOK\n"
+    },
+    {
+      "module": "test_questpc7_item_owner_preservation",
+      "run": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.001,
+      "output": "test_absent_pick_speed_stays_absent (test_questpc7_item_owner_preservation.ItemOwnerPreservationTests.test_absent_pick_speed_stays_absent) ... ok\ntest_explicit_unknown_pick_speed_stays_unknown (test_questpc7_item_owner_preservation.ItemOwnerPreservationTests.test_explicit_unknown_pick_speed_stays_unknown) ... ok\ntest_known_pick_speed_is_not_silenced (test_questpc7_item_owner_preservation.ItemOwnerPreservationTests.test_known_pick_speed_is_not_silenced) ... ok\ntest_other_custody_items_keep_their_observation (test_questpc7_item_owner_preservation.ItemOwnerPreservationTests.test_other_custody_items_keep_their_observation) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n"
+    },
+    {
+      "module": "test_forge_sql_admission_forward",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.002,
+      "output": "test_explicit_forward_projection_keeps_published_migration_and_checks_latest (test_forge_sql_admission_forward.ForwardForgeAdmissionTests.test_explicit_forward_projection_keeps_published_migration_and_checks_latest) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nOK\n"
+    },
+    {
+      "module": "test_healing_global_overrides",
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.153,
+      "output": "test_potion_definitions_carry_the_global_values (test_healing_global_overrides.HealingGlobalOverrides.test_potion_definitions_carry_the_global_values) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.152s\n\nOK\n"
+    },
+    {
+      "module": "test_engnpc2_slug_corpse_profiles",
+      "run": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 4.709,
+      "output": "test_cohort_is_source_checked_and_idempotent (test_engnpc2_slug_corpse_profiles.SlugCorpse.test_cohort_is_source_checked_and_idempotent) ... ok\ntest_registered_native_profiles_admit_the_real_slug_death (test_engnpc2_slug_corpse_profiles.SlugCorpse.test_registered_native_profiles_admit_the_real_slug_death) ... ok\ntest_source_chain_is_ground_only_and_retains_exact_first_form (test_engnpc2_slug_corpse_profiles.SlugCorpse.test_source_chain_is_ground_only_and_retains_exact_first_form) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 4.697s\n\nOK\n"
+    },
+    {
+      "module": "test_feroxa_maps",
+      "run": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.02,
+      "output": "test_retained_maps_have_source_order_and_distinct_scenery (test_feroxa_maps.FeroxaMapsTest.test_retained_maps_have_source_order_and_distinct_scenery) ... ok\ntest_substituted_capture_and_raw_maps_are_rejected (test_feroxa_maps.FeroxaMapsTest.test_substituted_capture_and_raw_maps_are_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.015s\n\nOK\n"
+    },
+    {
+      "module": "test_harvest_item_profiles",
+      "run": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.41,
+      "output": "test_duplicate_is_rejected_before_writing (test_harvest_item_profiles.HarvestItemProfileTests.test_duplicate_is_rejected_before_writing) ... ok\ntest_production_provider_contains_the_complete_harvest_closure (test_harvest_item_profiles.HarvestItemProfileTests.test_production_provider_contains_the_complete_harvest_closure) ... FAIL\n\n======================================================================\nFAIL: test_production_provider_contains_the_complete_harvest_closure (test_harvest_item_profiles.HarvestItemProfileTests.test_production_provider_contains_the_complete_harvest_closure)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_harvest_item_profiles.py\", line 26, in test_production_provider_contains_the_complete_harvest_closure\n    self.assertEqual(profiles[key], record)\nAssertionError: {'admission': {'legal_destinations': ['Chara[2328 chars]N'}}} != {'authoring': {'item': {'family': 'Item', 'k[2052 chars]None}\nDiff is 4542 characters long. Set self.maxDiff to None to see it.\n\n----------------------------------------------------------------------\nRan 2 tests in 0.407s\n\nFAILED (failures=1)\n"
+    }
+  ]
+}

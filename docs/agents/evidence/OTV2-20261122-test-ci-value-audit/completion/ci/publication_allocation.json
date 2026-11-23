@@ -1,0 +1,18 @@
+{
+  "allocated_at": "2026-11-23T13:33:50.372482+00:00",
+  "writer": "ChatGPT /root current task session",
+  "repository": "Oteryn/Oteryn-Game",
+  "branch": "codex/test-ci-value-audit-20261122",
+  "expected_predecessor": "0623fbd59c372bbf479f3965031f47393c42cd39",
+  "route": "API_NATIVE_NEW_CANDIDATE",
+  "bounded_delta": "All qualified source repairs and stable point-in-time completion evidence; source/family audit continues separately.",
+  "constraints": [
+    "one fresh predecessor read before mutation",
+    "one complete tree",
+    "one commit, sole parent predecessor",
+    "one force=false ref update with expected_sha",
+    "immediate exact readback; any drift/failure stops mutation",
+    "no merge or ready-state mutation",
+    "remote machines validation only"
+  ]
+}

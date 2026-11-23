@@ -1,0 +1,64 @@
+{
+  "original": {
+    "test_news_overrides_preserve_every_unrelated_profile_field": {
+      "passed": true
+    },
+    "test_no_gold_coin_tables_are_invented": {
+      "passed": true
+    },
+    "test_percentage_xp_uses_nearest_integer_on_base_values": {
+      "passed": true
+    },
+    "test_runtime_native_profiles_have_the_final_news_values": {
+      "passed": true
+    }
+  },
+  "empty": {
+    "test_news_overrides_preserve_every_unrelated_profile_field": {
+      "passed": false,
+      "type": "AssertionError",
+      "message": "Element counts were not equal:\n\nDiff is 2380 characters long. Set self.maxDiff to None to see it."
+    },
+    "test_no_gold_coin_tables_are_invented": {
+      "passed": true
+    },
+    "test_percentage_xp_uses_nearest_integer_on_base_values": {
+      "passed": true
+    },
+    "test_runtime_native_profiles_have_the_final_news_values": {
+      "passed": true
+    }
+  },
+  "missing_first": {
+    "test_news_overrides_preserve_every_unrelated_profile_field": {
+      "passed": false,
+      "type": "AssertionError",
+      "message": "Element counts were not equal:\nFirst has 0, Second has 1:  (8918, 'druid_s_apparition', 'experience')"
+    },
+    "test_no_gold_coin_tables_are_invented": {
+      "passed": true
+    },
+    "test_percentage_xp_uses_nearest_integer_on_base_values": {
+      "passed": true
+    },
+    "test_runtime_native_profiles_have_the_final_news_values": {
+      "passed": true
+    }
+  },
+  "duplicate": {
+    "test_news_overrides_preserve_every_unrelated_profile_field": {
+      "passed": false,
+      "type": "AssertionError",
+      "message": "Element counts were not equal:\nFirst has 2, Second has 1:  (8918, 'druid_s_apparition', 'experience')"
+    },
+    "test_no_gold_coin_tables_are_invented": {
+      "passed": true
+    },
+    "test_percentage_xp_uses_nearest_integer_on_base_values": {
+      "passed": true
+    },
+    "test_runtime_native_profiles_have_the_final_news_values": {
+      "passed": true
+    }
+  }
+}

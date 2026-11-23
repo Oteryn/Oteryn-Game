@@ -21,8 +21,14 @@ fn boss_cooldown_codec_bounds() -> Result<(), Error> {
     assert!(encode_cooldown_list(i64::MAX as u64, &entries, true)?.len() <= MAX_RESULT_BYTES);
     assert!(encode_cooldown_list(0, &entries[..63], true).is_err());
     let mut bad = entries.clone();
-    bad.push(entries[0].clone());
-    assert!(encode_cooldown_list(0, &bad, false).is_err());
+    bad.push(BossCooldownEntry {
+        boss_key: format!("oteryn:boss.{COOLDOWN_PAGE_SIZE:03}{}", "a".repeat(497)),
+        available_at_unix_ms: i64::MAX as u64,
+    });
+    assert_eq!(
+        encode_cooldown_list(0, &bad, false),
+        Err(Error::LimitExceeded)
+    );
     let mut bad = entries;
     bad.swap(0, 1);
     assert!(encode_cooldown_list(0, &bad, false).is_err());
@@ -32,13 +38,16 @@ fn boss_cooldown_codec_bounds() -> Result<(), Error> {
         vec![10, 0, 10, 0],
         vec![10, 0, 16, 1],
         vec![10, 2, b'a'],
-        vec![0; MAX_QUERY_BYTES + 1],
     ] {
         assert!(decode_cooldown_query(&bad).is_err());
     }
+    assert_eq!(
+        decode_cooldown_query(&[0; MAX_QUERY_BYTES + 1]),
+        Err(Error::LimitExceeded)
+    );
     let mut bad = Vec::new();
     push_message_field(&mut bad, 1, format!("{key}a").as_bytes());
-    assert!(decode_cooldown_query(&bad).is_err());
+    assert_eq!(decode_cooldown_query(&bad), Err(Error::LimitExceeded));
     assert!(
         encode_cooldown_list(
             0,

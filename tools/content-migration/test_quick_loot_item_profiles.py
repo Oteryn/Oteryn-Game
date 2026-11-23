@@ -14,6 +14,8 @@ class QuickLootProfiles(unittest.TestCase):
         cls.profiles = {r['production_definition']['production_key']: r for r in rows}
 
     def test_quivers_keep_bound_identities_and_both_global_slots(self):
+        self.assertEqual(quick.IDS, {23721, 35524, 35562, 35848, 35849,
+                                    36666, 39150, 39160, 45644})
         for number in sorted(quick.IDS - {23721}):
             key = f'oteryn:item.tibia.i{number}'
             row = self.profiles[key]

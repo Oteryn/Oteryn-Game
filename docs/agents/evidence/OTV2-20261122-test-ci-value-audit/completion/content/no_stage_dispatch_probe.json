@@ -1,0 +1,9 @@
+{
+  "original": {
+    "passed": true
+  },
+  "unconditional_git_stage_mutant": {
+    "rejected": true,
+    "message": "True is not false"
+  }
+}

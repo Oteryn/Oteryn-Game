@@ -794,7 +794,7 @@ async fn runtime_transaction(
 }
 
 #[test]
-fn a_crash_at_any_step_leaves_nothing_and_an_ambiguous_commit_resolves_by_replay() -> TestResult {
+fn an_uncommitted_body_rolls_back_and_a_committed_body_replays() -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
@@ -829,8 +829,10 @@ fn a_crash_at_any_step_leaves_nothing_and_an_ambiguous_commit_resolves_by_replay
         assert!(tx.commit().await.is_err());
         assert_eq!(snapshot(&harness.pool).await?, before);
 
-        // An abort after each write step: every statement belongs to the one transaction, so a
-        // failure at any point leaves no partial row. Each prefix is cut by a forced error.
+        // Force one SQL error after the complete body. Check all five written tables
+        // before aborting; this proves post-body rollback, not five distinct crash points.
+        let (mut tx, outcome) = runtime_transaction(&harness, &request).await?;
+        assert!(matches!(outcome, BankOperationOutcome::Committed(_)));
         for table in [
             "game_account_bank_operations",
             "game_account_bank_entries",
@@ -838,16 +840,15 @@ fn a_crash_at_any_step_leaves_nothing_and_an_ambiguous_commit_resolves_by_replay
             "game_account_bank_coin_lines",
             "game_account_bank_audit_outbox",
         ] {
-            let (mut tx, _) = runtime_transaction(&harness, &request).await?;
             let rows: i64 =
                 sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM {table}")))
                     .fetch_one(&mut *tx)
                     .await?;
             assert!(rows > 0, "{table} written in the transaction");
-            assert!(sqlx::query("SELECT 1/0").execute(&mut *tx).await.is_err());
-            drop(tx);
-            assert_eq!(snapshot(&harness.pool).await?, before, "{table}");
         }
+        assert!(sqlx::query("SELECT 1/0").execute(&mut *tx).await.is_err());
+        drop(tx);
+        assert_eq!(snapshot(&harness.pool).await?, before);
 
         // The commit succeeds but its outcome is lost: the entry point replays it.
         let (tx, outcome) = runtime_transaction(&harness, &request).await?;

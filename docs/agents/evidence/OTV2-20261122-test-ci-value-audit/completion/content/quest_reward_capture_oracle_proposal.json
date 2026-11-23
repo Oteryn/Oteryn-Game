@@ -1,0 +1,16 @@
+{
+  "classification": "CONFIRMED_EMPTY_CANDIDATE_ORACLE_GAP_PROPOSAL_ONLY",
+  "boundary": "test_questpc2_reward_capture.MixedCaptureEvidence.evaluate calls enabled_claims(root,{}) so positiveempty-result assertioncannotobserve a wronglycreatedreward binding. Actualnegativeformatguardsremainactive.",
+  "mutant": "Exact authenticated Gates bytes wronglyreturnonevalid-shaped reward row; unchangedotherinputguard delegates tooriginalreward_rows.",
+  "recommendation": "Add independent assertion that actual reward_rows for exactGates returns[] or provide a real candidate claim whose binding wouldbe observable; no source edit made.",
+  "baseline": {
+    "tests_run": 2,
+    "success": true,
+    "output": "test_exact_panpipe_gate_evidence_cannot_become_a_reward_binding (test_questpc2_reward_capture.MixedCaptureEvidence.test_exact_panpipe_gate_evidence_cannot_become_a_reward_binding) ... ok\ntest_other_missing_binding_documents_are_refused (test_questpc2_reward_capture.MixedCaptureEvidence.test_other_missing_binding_documents_are_refused) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.003s\n\nOK\n"
+  },
+  "wrong_reward_row_for_gate": {
+    "tests_run": 2,
+    "success": true,
+    "output": "test_exact_panpipe_gate_evidence_cannot_become_a_reward_binding (test_questpc2_reward_capture.MixedCaptureEvidence.test_exact_panpipe_gate_evidence_cannot_become_a_reward_binding) ... ok\ntest_other_missing_binding_documents_are_refused (test_questpc2_reward_capture.MixedCaptureEvidence.test_other_missing_binding_documents_are_refused) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n"
+  }
+}

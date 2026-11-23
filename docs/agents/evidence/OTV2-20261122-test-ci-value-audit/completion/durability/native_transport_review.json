@@ -1,0 +1,581 @@
+{
+  "base": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "state": "SOURCE_REVIEW_ONLY; ALL_NEW_SOURCE_PROPOSALS_HELD",
+  "counts": {
+    "transport_bodies": 19,
+    "real_interop_bodies": 5,
+    "additional_owner_body": 1,
+    "context_ranges": 15
+  },
+  "case_reviews": [
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "ingress_is_segmentation_independent_and_increment_atomic",
+      "oracle": "Two segmentations retain exactly 65,536 bytes; crossing the limit with a two-byte read keeps both output and seen at 65,535 and consumes no accepted suffix.",
+      "boundary": "Tests real BoundedHandshakeIo over a scripted AsyncRead, not negotiated TLS ingress.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "transient_capacity_is_two_active_and_eight_queued",
+      "oracle": "Fixed literal eight queue permits, ninth refusal, two active permits, third refusal and reuse after drop.",
+      "boundary": "In-memory capacity owner; error-only negatives are paired with usable permits and successful reuse.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "controlled_producer_proves_tls13_mtls_and_four_operations",
+      "oracle": "A TLS1.3-only server requiring a client certificate accepts all four operations; client decodes exact Unavailable responses and server checks request path.",
+      "boundary": "Test CA and controlled local producer, not Platform. This server checks the path using Operation::path; separate endpoint-literal test supplies an independent path oracle. Request body is not independently inspected here.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "chunked_profile_enforces_count_and_dechunked_body_bounds",
+      "oracle": "Literal 64/65 chunks, 8,192/8,193 content length, oversized chunk and malformed status/framing/trailer negatives.",
+      "boundary": "Chunked positive is 64 bytes, while fixed-length cases independently qualify exact body maximum. No physical network.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "descriptor_and_deadline_bounds_are_fixed",
+      "oracle": "Literal 1,000/2,000/3,000 ms constants, mismatched host/name, excessive root count, invalid client material and a 4,097-byte root are refused.",
+      "boundary": "The oversized root is all zero and also invalid DER; its refusal is not isolated proof of the size guard. Five-root boundary has a separate 4/5 valid-root test.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "repeated_activation_cannot_leak_capacity",
+      "oracle": "Second activation refuses; after drop eight queue permits can still be acquired and a ninth refuses.",
+      "boundary": "The final refill checks queued slots, not all active slots. Adjacent two-active/reuse test is distinct.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "authenticated_peer_boundaries_reject_wrong_name_root_client_and_fifth_certificate",
+      "oracle": "A real local mTLS exchange accepts the four-certificate control and rejects changed server name, root, client identity/EKU and a fifth certificate.",
+      "boundary": "Controlled public test CA/keys; success/error shape of raw exchange, not admission or publication.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "stalled_handshake_and_exchange_timeout_and_cancellation_release_socket",
+      "oracle": "Actual stalled TCP/TLS peers yield Unavailable after the expected lower deadline; server must observe closure within two seconds. Aborting an active client produces EOF.",
+      "boundary": "System-clock/network test; elapsed lower bounds do not independently cap excessive delay before return. The separate literal constant assertions retain value.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "expired_queue_and_inactive_exchange_fail_closed",
+      "oracle": "Unactivated exchange is required to error; after 1,001 ms activation must be Unavailable.",
+      "boundary": "Inactive exchange uses uncontrolled loopback port 1 and only is_err. A connection failure could satisfy it if require_active were removed; no surviving production mutant was executed.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "configured_roots_are_four_not_five",
+      "oracle": "Four copies of a valid CA are accepted, five refused.",
+      "boundary": "Exact root-count boundary, separate from root DER byte bound.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "final_chunk_crlf_counts_toward_total_framing",
+      "oracle": "Two constructed chunk streams differ by one framing byte; exact acceptance/refusal pins inclusion of the final CRLF.",
+      "boundary": "Read-response parser over duplex; no TLS stack.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "descriptor_connect_address_is_fixed_ip_without_dns",
+      "oracle": "IPv4/IPv6 literals accepted; source.test/localhost refused with otherwise equal descriptor material.",
+      "boundary": "Descriptor parsing contract, no DNS/network lookup performed by the case.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "strict_http_framing_rejects_ambiguous_names_controls_and_signed_lengths",
+      "oracle": "Independent valid controls and one malformed header-name, signed length, control-byte or signed chunk-size condition each determine parser success.",
+      "boundary": "Raw HTTP parser only; all generated bytes are retained in this case body.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "character_bootstrap_intent_read_uses_its_separate_endpoint",
+      "oracle": "Fixed endpoint and exact version-4 request bytes; TLS producer inspects request path/body and returns golden intent bytes. 404/400 map to Unavailable; wrong source authority maps specifically to InvalidDescriptor.",
+      "boundary": "Fixture CA and golden intent; not live Platform. Server uses one request read, so its request fixture assumes delivery within that read.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "four_operations_use_the_accepted_platform_endpoint",
+      "oracle": "Each of four explicit operations equals the fixed accepted native-evidence path literal.",
+      "boundary": "Pure mapping compatibility guard; complements transport loop that uses the same Operation::path on its server side.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "eof_body_and_identity_encoding_follow_bounded_profile",
+      "oracle": "EOF/fixed-length and absent/case-insensitive identity encoding preserve exact decoded Unavailable. 8,192/8,193 EOF bounds, compression/duplicate encoding refusal and truncated JSON decode refusal.",
+      "boundary": "Parser plus decoder, no source publication or durable floor.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "stalled_eof_body_preserves_exchange_deadline",
+      "oracle": "TLS server sends body without closing, requires request bytes, and sees client close; exchange returns Unavailable after 3,000 ms.",
+      "boundary": "Real socket deadline case with lower time bound and server-closure timeout.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "public_v2_new_families_flag_off_never_published",
+      "oracle": "Four disabled publication families return Unavailable and the actual nonblocking listener has no accepted connection.",
+      "boundary": "Production publication_supported checks only the relevant family flags for these snapshot operations; the {} body does not independently refuse them before a connection. No producer/durable acceptance tested.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "case": "public_v2_skills_flag_on_publishes_golden_bytes",
+      "oracle": "Enabled skills publication reaches real mTLS listener at fixed endpoint with close semantics and exact golden body; accepted version-2 ACK maps to Delivery::Accepted.",
+      "boundary": "One family positive wire case; other families have their own pure activation tests. Local controlled producer, not public deployment.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "case": "qualification_pins_are_closed",
+      "oracle": "Literal capacity values two/eight are checked. SHA constants are checked only for length 40.",
+      "boundary": "The SHA-length assertions do not validate checkout identity; run.sh and workflow independently compare actual Git objects/revisions.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "case": "real_platform_producer_decodes_all_four_operations",
+      "oracle": "All four real queries require Observed provenance (authority, nonzero revision, matching decision and bounded clock uncertainty). Account allow/minimum-generation and exact fresh/recovery key material are checked.",
+      "boundary": "Explicit ignored topology case; required environment fails rather than silently skips when selected. Depends on pinned external Platform topology and deliberately seeded test account/key facts.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "case": "real_platform_producer_reports_revoked_fresh_key",
+      "oracle": "Actual decoder must observe untrusted fresh key with exact retained public bytes; emits a case marker after this assertion.",
+      "boundary": "Explicit ignored topology case. Reconciliation/revocation action is performed by run.sh before selection.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "case": "real_capacity_two_inflight_rejects_third",
+      "oracle": "Two threads acquire active permits before a three-party barrier; a third activation must be CapacityExceeded, and both real queries eventually return valid Observed provenance.",
+      "boundary": "Tests Game-side capacity permits, not independently observed simultaneous HTTP execution. External script holds DB rows temporarily; its producer-side capacity proof is a separate section.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "case": "failure_shape_remains_closed",
+      "oracle": "Only compares Response::Failure(Failure::Unavailable) with the identical constructor expression.",
+      "boundary": "No production operation, decoder or input varies. This is a tautology beyond compile-time enum availability; propose removal or a concrete codec behavior, held pending source checkpoint.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/descriptor.rs",
+      "case": "peer_numeric_caps_remain_coupled",
+      "oracle": "Pure length validator accepts four 4,096-byte certificates and refuses a 4,097-byte leaf, oversize fourth, fifth certificate and addition overflow.",
+      "boundary": "Certificate lengths only, not DER validity or cryptographic chain authentication; complements actual TLS peer boundary tests.",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    }
+  ],
+  "source_scopes": [
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "ingress_is_segmentation_independent_and_increment_atomic",
+      "start_line": 292,
+      "end_line": 317,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "81ba6da2e1a20dc0f50626c6a00b2b7b66f3ace2231e0bf7345f75dedd19fb30",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "transient_capacity_is_two_active_and_eight_queued",
+      "start_line": 319,
+      "end_line": 332,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "205fea9b7ce4a3a738392c6c803aee4bf2035933b373555405d08b99fa4ae821",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "controlled_producer_proves_tls13_mtls_and_four_operations",
+      "start_line": 345,
+      "end_line": 553,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "d6640e10bd7bdb185e426bf4ce4b3b4656057ae2f8842832d389c6988087e9d2",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "chunked_profile_enforces_count_and_dechunked_body_bounds",
+      "start_line": 556,
+      "end_line": 601,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "b03009413a37720678b15321e09df190f16488b98e76e5cb5ddd18d1e7383ab5",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "descriptor_and_deadline_bounds_are_fixed",
+      "start_line": 604,
+      "end_line": 666,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "0d6d9f6f70519fc38246c396706b7cd4f37fda891f13a1fa473b1007b5642b8a",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "repeated_activation_cannot_leak_capacity",
+      "start_line": 669,
+      "end_line": 681,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "60b843b1b4ea9c7566fe6d240dcd590307eb77cc74a6aa2b3a66386e27051cad",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "authenticated_peer_boundaries_reject_wrong_name_root_client_and_fifth_certificate",
+      "start_line": 705,
+      "end_line": 752,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "8a3e7fea0203b18fb0360dc6a0e20983b60e6dfdf1275f75d7f6e546e90d4661",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "stalled_handshake_and_exchange_timeout_and_cancellation_release_socket",
+      "start_line": 754,
+      "end_line": 797,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "85b64e906f7e47ff7f09ebac5a034b5794962b6a44785aebf7b32a71440f8a67",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "expired_queue_and_inactive_exchange_fail_closed",
+      "start_line": 813,
+      "end_line": 834,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "61b2f213153d1c0386db39345cd51e0392e96bd7ebf983cb3f4a5369d6479298",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "configured_roots_are_four_not_five",
+      "start_line": 837,
+      "end_line": 853,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "1573f639ce1d83921f1b3ea535856dca3f8f27edf8b63f2727178ec1ed56d310",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "final_chunk_crlf_counts_toward_total_framing",
+      "start_line": 856,
+      "end_line": 878,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "f1c39c55f4e148981145699096dbf4448217e471f95425f7e736bb5b4f81920b",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "descriptor_connect_address_is_fixed_ip_without_dns",
+      "start_line": 881,
+      "end_line": 900,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "cfc84808167a8b0e13512553dbf325926c048bebc0865238351b569bb44b4f45",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "strict_http_framing_rejects_ambiguous_names_controls_and_signed_lengths",
+      "start_line": 902,
+      "end_line": 953,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "aa069b120c4fa8bb19a3432b573ae8806bccd31992cb8edc4726447ebadcc579",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "character_bootstrap_intent_read_uses_its_separate_endpoint",
+      "start_line": 956,
+      "end_line": 1045,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "3a2149e22e113bdbf3e7aa8289683cc7d54082b268fe620feb9601ee538ea447",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "four_operations_use_the_accepted_platform_endpoint",
+      "start_line": 1048,
+      "end_line": 1057,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "adf1fda72d7d0b8d2d81ee5696355699925fc0e74a8c0207540a9f80985ca25e",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "eof_body_and_identity_encoding_follow_bounded_profile",
+      "start_line": 1060,
+      "end_line": 1116,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "6d7f1bf7648c8c0e238981cfbb7d9f1561d0489251a0bfce521304e586cd148d",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "stalled_eof_body_preserves_exchange_deadline",
+      "start_line": 1118,
+      "end_line": 1143,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "570c6f963ec33955a825c7ed9351df58bce807e047decd12dc3b27b65ca54c42",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "public_v2_new_families_flag_off_never_published",
+      "start_line": 1162,
+      "end_line": 1189,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "cf706c51e07346df7a24922edad737e9eb08a09097f1032c6945eed944fb1724",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "public_v2_skills_flag_on_publishes_golden_bytes",
+      "start_line": 1191,
+      "end_line": 1221,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "body_sha256": "4fbc77032bd84106ee222c238f018e0959dc254193c0a16e56653ab6fde91979",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "scope": "qualification_pins_are_closed",
+      "start_line": 91,
+      "end_line": 96,
+      "file_sha256": "c6590c9c2150149359b9262c97610069c1d86a77d1e152f95957b07638454fdc",
+      "body_sha256": "f607069dd8ab3e6dcbb003dfd52659c45f85b216c81aaa56d6445fede0788fb8",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "scope": "real_platform_producer_decodes_all_four_operations",
+      "start_line": 100,
+      "end_line": 171,
+      "file_sha256": "c6590c9c2150149359b9262c97610069c1d86a77d1e152f95957b07638454fdc",
+      "body_sha256": "2a740f8ec72c669f9d00b1196a7069315879f73d90c8e88f6103feabc1a7dfb2",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "scope": "real_platform_producer_reports_revoked_fresh_key",
+      "start_line": 175,
+      "end_line": 200,
+      "file_sha256": "c6590c9c2150149359b9262c97610069c1d86a77d1e152f95957b07638454fdc",
+      "body_sha256": "7bbf565afde127db77038a59c1d69fe2f052a55a49862cabb96e8ac1ed00b61c",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "scope": "real_capacity_two_inflight_rejects_third",
+      "start_line": 204,
+      "end_line": 259,
+      "file_sha256": "c6590c9c2150149359b9262c97610069c1d86a77d1e152f95957b07638454fdc",
+      "body_sha256": "1ccc85210a6f006801f73d92486fd9718aca585f7879ec57d404816ca63eecf6",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "scope": "failure_shape_remains_closed",
+      "start_line": 262,
+      "end_line": 267,
+      "file_sha256": "c6590c9c2150149359b9262c97610069c1d86a77d1e152f95957b07638454fdc",
+      "body_sha256": "108b3c1267aa47763bdde246f5babea938c65fab343f1e033abc0e6b5d126d5e",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/descriptor.rs",
+      "scope": "peer_numeric_caps_remain_coupled",
+      "start_line": 389,
+      "end_line": 395,
+      "file_sha256": "e0e8926537c8aad38a287de367a9082e1d7f0229138474015d66291043e5f1b4",
+      "body_sha256": "9c6b1d5896d40ec23a9cee9cf0672deb87cd1020ba7415feeef9e1f0a0d3dc8a",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "Scripted AsyncRead and runtime",
+      "start_line": 259,
+      "end_line": 290,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "range_sha256": "0171169f4ff1e7447abbe9a04a594427c0535bebf3d8653ded36f21366a8b068",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "descriptor fixture",
+      "start_line": 333,
+      "end_line": 343,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "range_sha256": "d07591f71b16b9e00dc87a1d57c3326d6d2ad9ff5544ab7380b95729fdd4a29c",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "TLS1.3 mutual-client-auth server config",
+      "start_line": 682,
+      "end_line": 703,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "range_sha256": "bdb1c2c0b66d274e6f3997bc5781789df0f9b02e69a5b0cfe00b93583f5506ac",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "temporary exchange permit helper",
+      "start_line": 799,
+      "end_line": 810,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "range_sha256": "f5b2a7ecd9c5eafab7eee475ce2cf3417d30365f2a5cc8e6fd94d3b2ae4ada54",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "scope": "public sink descriptor",
+      "start_line": 1145,
+      "end_line": 1160,
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "range_sha256": "b73517607f6ab5c640668604285c5dc71f03e45d8d9002063d4d2e7fc48acb25",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+      "scope": "environment, PEM, descriptor, provenance and query helpers",
+      "start_line": 1,
+      "end_line": 88,
+      "file_sha256": "c6590c9c2150149359b9262c97610069c1d86a77d1e152f95957b07638454fdc",
+      "range_sha256": "4196eef2e556285406e9a01885ce6ad541eb52d0da6ab85c4baa0c0f0d1f7f95",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/lib.rs",
+      "scope": "capacity counters, permit lifetime, query activation and decoder gate",
+      "start_line": 32,
+      "end_line": 180,
+      "file_sha256": "0c486f6725b0b068ea76dfbdffcb783ef2837421c5acac087a3b6b24b9a0dda0",
+      "range_sha256": "f1a6358daa3435549d477fb65393ed8bd53e1d76fa44151e50b965fa6c86ed8e",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/http1_mtls.rs",
+      "scope": "bounded ingress and exchange activation/connect/handshake path",
+      "start_line": 1,
+      "end_line": 255,
+      "file_sha256": "b73103acda5c3ce18a7f0d471b9f089a6107d91522737074c4d591fdad6d99f5",
+      "range_sha256": "151dba1475d47153eaf20a023aba0c75dfbc149fb196a27a23fa0887107fe7e7",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/descriptor.rs",
+      "scope": "descriptor validation, bounded verifier and length helper",
+      "start_line": 242,
+      "end_line": 396,
+      "file_sha256": "e0e8926537c8aad38a287de367a9082e1d7f0229138474015d66291043e5f1b4",
+      "range_sha256": "9f3bb352437af6a7d8edd83e596a10a2a281b77d1eb133358f2d8acf3a939e8e",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/public_projections.rs",
+      "scope": "sink activation before transport and ACK decode",
+      "start_line": 697,
+      "end_line": 780,
+      "file_sha256": "64e11e7dafde30a09846e660a7d7729ac7d15d2c875fea7c4fb084a75c32fdeb",
+      "range_sha256": "ea6068a6ef2bffc8bd92bd134a6e2caaca0c512b2192041d6f7f131d879c7473",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/public_projections/v2/validation.rs",
+      "scope": "per-family publication predicate",
+      "start_line": 119,
+      "end_line": 149,
+      "file_sha256": "6f937a6645d8b1799c970b6d85127c713fb448a4ff4b47b790b0a00d1f6bc0e0",
+      "range_sha256": "b9d4f5bad6ba9c9af4815c42df802c25a64f0e926f4aeeb1137e83c4d2e6e16d",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": ".github/workflows/wp5-s3a-real-interop.yml",
+      "scope": "exact checkout, retained source, compile and composed execution consumer",
+      "start_line": 1,
+      "end_line": 90,
+      "file_sha256": "c24edf00f6070ab8e4708165ceb0812f7c0d1ff5247981f19395b1db05a4c991",
+      "range_sha256": "c24edf00f6070ab8e4708165ceb0812f7c0d1ff5247981f19395b1db05a4c991",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3a/run.sh",
+      "scope": "closed pins and topology bootstrap/cleanup declarations",
+      "start_line": 1,
+      "end_line": 115,
+      "file_sha256": "03a96a817b2b2af03f9169b9958802b6f411e76e0895bf47f43b27d08452d520",
+      "range_sha256": "a1290c23d219e5d9d2405dcc4a5deae0f5659583070d8e064027910304eaa2ee",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3a/run.sh",
+      "scope": "four-operation and two-active test consumers",
+      "start_line": 365,
+      "end_line": 415,
+      "file_sha256": "03a96a817b2b2af03f9169b9958802b6f411e76e0895bf47f43b27d08452d520",
+      "range_sha256": "450bf6443f06c660e0771289598843bf24a9f08675626429038371cb47e18bf3",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "tools/qualification/wp5_s3a/run.sh",
+      "scope": "revocation/reconciliation/successor test consumers",
+      "start_line": 575,
+      "end_line": 625,
+      "file_sha256": "03a96a817b2b2af03f9169b9958802b6f411e76e0895bf47f43b27d08452d520",
+      "range_sha256": "900199dad41e944c1b3fd464a25e7058defe5cc6a3e5f9ad2c3147413ca87855",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    }
+  ],
+  "runtime_boundary": "No transport or real S3-A case executed in this review. Separate s3a_selector_semantics_probe.json ran a previously built native test binary with a nonexistent exact ignored selector: rc0/0 tests. It proves libtest selection semantics, not a current S3-A no-op or successful topology.",
+  "unapplied_findings": [
+    {
+      "id": "NATIVE-TRANSPORT-01",
+      "fact": "Inactive exchange test accepts any error at loopback port 1; actual require_active returns CapacityExceeded before connecting.",
+      "inference": "If the activation check is removed and that endpoint is unavailable, an I/O error still satisfies the assertion.",
+      "recommendation": "Require the exact CapacityExceeded outcome and/or observe no accepted connection on a controlled listener; qualify with guard deletion before editing."
+    },
+    {
+      "id": "NATIVE-TRANSPORT-02",
+      "fact": "The root size negative supplies 4,097 zero bytes. After the size check, RootCertStore::add also maps invalid DER to InvalidDescriptor.",
+      "inference": "This negative has an independent DER rejection cause; it does not isolate the configured-root byte cap.",
+      "recommendation": "Use structurally valid oversize DER or an independently tested length predicate in a qualified follow-up."
+    },
+    {
+      "id": "S3A-01",
+      "fact": "failure_shape_remains_closed is identical constructor self-equality.",
+      "recommendation": "Remove the no-behavior case or replace it with a specific input/decoder refusal; preserve the actual transport Unavailable cases."
+    },
+    {
+      "id": "S3A-02",
+      "fact": "run.sh uses bare Cargo exit status for the selected ignored Rust cases, then emits broader evidence. Actual libtest accepts a nonexistent exact ignored selector with exit0 and zero tests.",
+      "boundary": "All current selector names exist. No actual current S3-A no-op or whole-topology run is claimed.",
+      "recommendation": "Give the S3-A caller the exact selected-case/count/body terminal contract and malformed/zero-selection controls, as separately qualified for S3-B."
+    },
+    {
+      "id": "S3A-03",
+      "fact": "qualification_pins_are_closed only checks the two SHA string lengths. Actual checkout pins are enforced by shell/workflow Git comparisons.",
+      "recommendation": "Keep literal capacity assertions as a capacity contract; avoid crediting SHA self-length checks as revision qualification."
+    }
+  ],
+  "whole_repository_or_fixture_completion": false
+}

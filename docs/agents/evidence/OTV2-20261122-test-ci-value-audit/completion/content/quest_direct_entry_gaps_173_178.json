@@ -1,0 +1,49 @@
+{
+  "scope": "Four fully reviewed modules omit direct unittest entry. Actual direct invocation emits no case count or output. Explicit unittest executions recorded separately. Bounded rg exact-name search in tools and .github non-JSON/non-lock files had no callers; this does not establish all external CI absence. Source repairs paused.",
+  "results": [
+    {
+      "path": "tools/content-schema/quest-authoring/test_qready1_crafting.py",
+      "sha256": "1caff23a19c5d7202e228d02af6d1be3d799d641a29abd6ad62860cf5d157409",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "tools/content-schema/quest-authoring/test_qready1_crafting.py"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qm03_world_admission.py",
+      "sha256": "947a3454b354271ccc937f6d87962279e0c8201f8d65025b571ea2eddee0d629",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "tools/content-schema/quest-authoring/test_qm03_world_admission.py"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qready1_reward_use_proofs.py",
+      "sha256": "b09793a9adaf0c1b81b13b9fc1cbce9531f1f4c94bd6d6ce12f117cc02544fc5",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "tools/content-schema/quest-authoring/test_qready1_reward_use_proofs.py"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_qready1_clocks.py",
+      "sha256": "83456ee36e37e0e768d85c6f70faf394d9354d1013ee1d6178d3b80373cdf6fe",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "tools/content-schema/quest-authoring/test_qready1_clocks.py"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

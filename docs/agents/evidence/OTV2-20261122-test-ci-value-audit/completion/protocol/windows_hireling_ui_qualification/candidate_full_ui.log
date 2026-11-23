@@ -1,0 +1,925 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor\tokio-1.53.1\src\runtime\io\scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor\tokio-1.53.1\src\sync\oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor\tokio-1.53.1\src\lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+   Compiling oteryn-client-ui v0.1.0 (C:\Users\barte\work\oteryn-test-value-20261123\crates\client-ui)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 24.40s
+     Running unittests src\lib.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/7efc6dcfba386225\out\oteryn_client_ui-7efc6dcfba386225.exe)
+
+running 671 tests
+test account_achievements::tests::input_ignores_repeat_and_requires_the_exact_chord ... ok
+test achievement_notices::tests::achievement_notice_input_requires_exact_chord_and_fresh_press ... ok
+test account_achievements::tests::achievement_browser_search_trims_input_and_finds_confirmed_keys ... ok
+test actor_motion::tests::mount_chord_is_control_r ... ok
+test achievement_notices::popup_tests::advancement_log_is_bounded_and_keeps_the_newest_lines ... ok
+test account_achievements::tests::full_account_list_collects_all_server_pages_before_global_secret_filter_and_sort ... ok
+test analyser::boss_tracker_tests::boss_tracker_rejects_refused_facts_and_bounds_history ... ok
+test achievement_notices::tests::pushed_achievement_notices_are_bounded_and_visible ... ok
+test achievement_notices::popup_tests::pushed_achievement_shows_popup_and_one_advancement_line ... ok
+test analyser::boss_tracker_tests::boss_tracker_reuses_server_cooldowns_and_observes_each_drop_once ... ok
+test account_achievements::tests::unavailable_and_mismatched_results_never_replace_confirmed_data ... ok
+test account_achievements::tests::paging_waits_for_confirmed_data_and_refusal_keeps_it ... ok
+test account_achievements::tests::changing_account_pages_never_replace_a_confirmed_full_list ... ok
+test ambient_sound::tests::replacement_and_silence_are_explicit ... ok
+test analyser::kill_tracker_tests::kill_goals_count_only_credited_kills_and_preserve_confirmed_task_progress ... ok
+test analyser::measurement_tests::analyser_metadata_reply_is_matched_and_coin_prices_cannot_duplicate_gold ... ok
+test analyser::loot_tracker_tests::loot_tracker_filters_confirmed_drop_history_and_preserves_selection_on_reset ... ok
+test analyser::measurement_tests::xp_chart_keeps_partial_reset_minute ... ok
+test analyser::measurement_tests::supply_counts_costs_rates_and_charts_revalue_real_consumption ... ok
+test analyser::measurement_tests::impact_uses_wire_damage_types_healing_rates_gauges_and_charts ... ok
+test analyser::measurement_tests::input_preserves_wire_sources_elements_rates_and_reset ... ok
+test analyser::tests::confirmed_state_is_visible ... ok
+test analyser::outgoing_tests::outgoing_views_show_own_rates_types_and_charts_without_mixing_metrics ... ok
+test analyser::measurement_tests::xp_rates_goal_eta_and_minute_chart_follow_confirmed_experience ... ok
+test analyser::loot_tracker_tests::loot_tracker_bounds_recent_entries_without_losing_item_totals ... ok
+test analyser::measurement_tests::loot_items_reprice_confirmed_counts_rates_and_history ... ok
+test analyser::party_import_tests::adjusted_party_summary_rejects_invalid_costs_flags_and_columns ... ok
+test analyser::tests::hunting_session_reports_signed_balance_rates_and_credited_kills ... ok
+test analyser::tests::party_rounding_agrees_for_viewers_with_different_opaque_handles ... ok
+test analyser::tests::analytics_selector_opens_independent_tools_over_confirmed_totals ... ok
+test analyser::tests::analyser_recovery_discards_generation_scoped_item_settings ... ok
+test analyser::party_import_tests::party_summary_roundtrips_real_values_and_reuses_conserving_splits ... ok
+test analyser::tests::healing_rate_uses_the_same_duration_before_and_after_a_current_second_sample ... ok
+test analyser::tests::party_split_conserves_positive_negative_and_remainder_balances ... ok
+test analyser::tests::every_analyser_tool_marks_a_dropped_server_feed_incomplete ... ok
+test analyser::tests::t107_session_shows_clock_xp_per_hour_and_profit_balance ... ok
+test analyser_hit_attribution::tests::c0486_a_hit_without_an_attacker_does_not_flash ... ok
+test analyser::tests::expired_buckets_do_not_change_combat_report_rates ... ok
+test analyser_hit_attribution::tests::c0486_an_attributed_hit_with_an_attack_target_flashes ... ok
+test analyser::tests::local_reset_keeps_inflight_party_query_until_its_server_interval_finishes ... ok
+test analyser_hit_attribution::tests::c0486_one_attributed_hit_among_other_facts_flashes_and_facts_stay_plain ... ok
+test analyser_hit_attribution::tests::c0486_the_frame_blinks_twice_then_goes ... ok
+test analyser::tests::parity_a_current_combat_rates_expire_without_erasing_session_totals ... ok
+test analyser_hit_attribution::tests::c0486_without_an_attack_target_nothing_flashes ... ok
+test analyser::tests::party_prices_changed_while_pending_never_publish_stale_settlements ... ok
+test animus_mastery::tests::animus_hotkey_requires_the_exact_nonrepeating_control_a_chord ... ok
+test analyser::party_import_tests::party_summary_rejects_ambiguous_malformed_unbounded_and_incomplete_inputs ... ok
+test analyser::tests::selector_keeps_confirmed_totals_and_shows_only_the_selected_tool ... ok
+test appearance::memorial_gallery_tests::memorial_tabs_preview_without_grant_and_require_explicit_npc_confirmation ... ok
+test animus_mastery::tests::animus_empty_page_and_requested_offset_are_bounded ... ok
+test appearance::tests::memorial_token_preview_requires_explicit_offer_and_balance ... ok
+test animus_mastery::tests::animus_refusal_or_malformed_reply_preserves_confirmed_page_and_allows_refresh ... ok
+test appearance::tests::palette_and_addon_selectors_stay_inside_the_server_catalogue ... ok
+test animus_mastery::tests::animus_pages_require_selection_and_advance_only_after_confirmed_replies ... ok
+test appearance::tests::gallery_navigation_uses_catalogue_and_never_changes_confirmed_selection ... ok
+test arena::tests::arena_open_binding_requires_control_shift_z_press ... ok
+test appearance::tests::pc01_appearance_shortcut_and_request_gate ... ok
+test arena::tests::drome_native_selection_requires_a_valid_control_and_reward ... ok
+test arena::tests::drome_reply_refuses_malformed_oversized_and_wrong_version_data ... ok
+test battle::tests::alt_b_toggles_without_claiming_inventory_or_repeats ... ok
+test arena::tests::arena_panel_exposes_tibiadrome_alongside_svargrond ... ok
+test battle::tests::battle_rows_follow_the_own_actors_floor ... ok
+test arena::tests::arena_controls_gate_pending_and_never_predict_progress ... ok
+test battle::tests::mode_input_waits_for_the_previous_server_answer ... ok
+test battle::tests::mode_controls_preserve_other_server_modes ... ok
+test arena::tests::arena_catalogue_replay_and_refusal_render_only_valid_server_state ... ok
+test battle::tests::projection_replaces_visible_actors_and_rejects_stale_selection ... ok
+test battle::tests::metadata::battle_metadata_rejects_unrequested_actors_and_rotates_bounded_batches ... ok
+test arena::e2e_w17::e2e_w17_arena_replies_replay_into_the_arena_panel ... ok
+test bestiary_charms::tests::protocol::a_full_slot_limit_blocks_assign_and_no_limit_never_does ... ok
+test battle_instinct_status::e2e_c11::replays_server_battle_instinct_status_and_preserves_state_on_invalid_payload ... ok
+test bestiary_charms::tests::protocol::assign_requests_follow_the_stage_hint_and_never_unassign ... ok
+test arena::tests::drome_requests_are_gated_and_decode_only_the_expected_reply_family ... ok
+test bestiary_charms::tests::protocol::unlock_requests_carry_the_seen_stage_or_the_servers_answer ... ok
+test battle_instinct_status::tests::battle_instinct_panel_requires_a_confirmed_snapshot_and_preserves_it_on_failure ... ok
+test battle_instinct_status::tests::battle_instinct_panel_distinguishes_inactive_eligible_and_active ... ok
+test bestiary_charms::tests::view::bestiary_rows_derive_stage_and_progress_and_apply_deltas ... ok
+test bestiary_charms::tests::protocol::every_result_has_a_feedback_line ... ok
+test bestiary_charms::tests::view::charm_rows_show_what_can_be_done ... ok
+test boss_difficulty::tests::server_window_drives_difficulty_and_closed_context_cannot_start ... ok
+test boss_difficulty_pity::tests::c0492_a_selected_session_still_takes_a_window_without_tracker ... ok
+test boss_difficulty_pity::tests::c0492_bonus_percent_formats_permille_with_one_decimal ... ok
+test boss_difficulty_pity::tests::c0492_selected_windows_show_the_bad_luck_tracker ... ok
+test boss_difficulty_pity::tests::c0492_boss_window_text_shows_the_tracker_of_the_selected_boss ... ok
+test boss_difficulty_pity::tests::c0492_unselected_session_keeps_the_legacy_window_and_rejects_tracker_fields ... ok
+test boss_difficulty_pity::tests::c0492_inactive_tracker_reads_inactive_and_has_no_bonus ... ok
+test boss_encounter::catalogue_tests::boss_cooldown_refresh_after_gallery_updates_snapshot_and_clock ... ok
+test boss_encounter::catalogue_tests::boss_gallery_next_restarts_when_current_filters_change ... ok
+test boss_encounter::catalogue_tests::boss_refresh_reconciles_gallery_progress_and_stages ... ok
+test boss_encounter::browser_tests::boss_browser_search_categories_and_detail_selection_use_server_records ... ok
+test boss_encounter::catalogue_tests::boss_gallery_refusal_bad_cursor_and_category_mismatch_preserve_confirmed_cards ... ok
+test boss_encounter::catalogue_tests::boss_refresh_requeries_the_loaded_gallery_page_including_progress_outside_snapshot ... ok
+test boss_encounter::browser_tests::bosstiary_browser_filters_and_selects_confirmed_bosses ... ok
+test boss_encounter::browser_tests::boss_slot_selector_uses_server_unlocks_and_preserves_confirmed_bonus ... ok
+test blessings_dialog::tests::blessings_dialog_replays_real_dispatch_capture ... ok
+test boss_encounter::tests::boss_encounter_open_requires_exact_chord_and_ignores_repeat_release ... ok
+test boss_encounter::e2e_n07b::e2e_n07b_replays_cooldown_snapshots_into_the_tracker ... ok
+test boss_encounter::tests::cooldown_shortcut_requires_exact_modifiers_and_a_fresh_press ... ok
+test boss_encounter::e2e_w10::e2e_w10_replays_hazard_state_selection_and_locked_refusal ... ok
+test boss_encounter::e2e_w02::e2e_w02_replays_cooldowns_and_lever_reply ... ok
+test boss_encounter::e2e_p02::e2e_p02_replays_bosstiary_progress_slots_and_refusal ... ok
+test boss_encounter::e2e_w03::e2e_w03_replays_reward_chest_browse_refusal_and_collect_refusal ... ok
+test boss_encounter::tests::boss_encounter_gates_pending_and_projects_only_valid_server_data ... ok
+test boss_encounter::tests::boss_encounter_next_uses_earlier_cursor_to_avoid_skipping_either_list ... ok
+test boss_encounter::e2e_w11::e2e_w11_replays_taint_projection_and_lever_refusal ... ok
+test boss_encounter::tests::cooldown_widget_counts_down_confirmed_deadlines_and_keeps_progress_out ... ok
+test boss_encounter::tests::cooldown_widget_lists_the_next_available_boss_first ... ok
+test boss_encounter::tests::endgame_chain_selection_covers_both_chains_without_claiming_progress ... ok
+test boss_encounter::tests::endgame_chain_selection_preserves_confirmed_progress_boundary ... ok
+test boss_encounter::tests::hazard_panel_shows_unlocked_levels_and_blocks_locked_selection ... ok
+test boss_encounter::tests::primal_party_refusal_rejects_success_envelopes_without_replacing_confirmed_state ... ok
+test boss_encounter::tests::pc05_boss_activity_uses_existing_codec_and_keeps_confirmed_state ... ok
+test boss_rewards::tests::requests_encode_every_server_command_with_the_contract_layout ... ok
+test boss_encounter::tests::primal_party_level_refusal_has_native_participant_feedback ... ok
+test cast_view::tests::s17b_chat_draft_is_unicode_bounded_and_has_no_gameplay_intent ... ok
+test browse_field::protocol::tests::controls_encode_reply_and_refusal ... ok
+test boss_encounter::tests::primal_party_size_and_position_refusals_are_actionable_and_retryable ... ok
+test boss_rewards::tests::server_encoded_browse_and_collection_replies_reduce_into_panel_state ... ok
+test boss_encounter::tests::pc05_boss_auxiliary_flows_validate_input_and_render_server_results ... ok
+test boss_encounter::tests::pc05_reward_chest_paging_uses_only_last_server_death_id ... ok
+test channel_list::tests::gap_world_channel_list ... ok
+test cast_chat::tests::s17c_live_text_and_revision_fenced_moderation_are_native_values ... ok
+test cast_control::tests::s17a_native_start_update_stop_use_confirmed_revision ... ok
+test cast_consent::tests::s17a_character_consent_is_read_before_fenced_toggle_and_needs_no_cast_control ... ok
+test channel_switch::tests::c0512_confirmed_switch_to_open_pvp_warns_and_returns_the_target ... ok
+test cast_view::tests::s17b_public_picture_commits_atomically_and_slate_clears_private_free_view ... ok
+test channel_switch::tests::c0512_cooldown_greys_every_row_with_a_running_timer ... ok
+test channel_switch::tests::c0512_destination_refusal_allows_another_request ... ok
+test channel_switch::tests::c0512_every_refusal_opens_the_error_of_its_lock ... ok
+test channel_switch::tests::c0512_full_refusal_removes_the_destination_from_recommendations ... ok
+test channel_switch::tests::c0512_no_recommendation_across_pvp_types ... ok
+test character_info::tests::title_selector_filters_owned_titles_and_foreign_profiles_never_replace_ownership ... ok
+test channel_switch::tests::c0512_load_fills_the_online_column_and_unknown_channels_stay_unknown ... ok
+test character_info::tests::pc03_character_info_view_keeps_confirmed_result_during_refusal ... ok
+test channel_switch::tests::c0512_window_sends_the_status_query_and_shows_the_columns ... ok
+test character_info::tests::pc03_character_info_shortcut_and_request_gate ... ok
+test charm_progression::tests::t080_bestiary_illustrations_follow_the_selected_creature_category ... ok
+test charm_progression::tests::t081_charm_selector_lists_names_without_indices_and_shows_full_description ... ok
+test chat::tests::channels::chat_channels_close_current_asks_the_server_and_keeps_fixed_tabs ... ok
+test charm_progression::tests::charm_selector_uses_confirmed_costs_and_eligible_races ... ok
+test chat::tests::channels::chat_channels_create_own_channel_selects_it_when_the_list_arrives ... ok
+test charm_progression::tests::pc01_charm_progression_shortcut_and_request_gate ... ok
+test charm_progression::tests::bestiary_browser_filters_confirmed_stages_and_selects_without_index_entry ... ok
+test chat::tests::channels::chat_channels_conversation_tab_opens_locally_and_closes_without_wire ... ok
+test charm_progression::tests::selected_bestiary_card_shows_confirmed_discovery_goal ... ok
+test chat::tests::channels::chat_conversation_reopens_select_the_original_tab_and_preserve_other_tabs ... ok
+test chat::tests::channels::chat_channels_cycle_wraps_across_fixed_and_opened_tabs ... ok
+test chat::tests::channels::chat_npc_tab_keeps_the_last_conversation_lines ... ok
+test chat::tests::channels::chat_channels_each_tab_shows_only_its_own_lines_and_sends_to_it ... ok
+test chat::tests::channels::chat_channels_help_tab_opens_when_the_server_opens_the_room ... ok
+test chat::tests::channels::chat_channels_list_offers_rooms_own_channel_and_invitations ... ok
+test chat::tests::channels::chat_dialog_selects_steps_and_confirms_rows_or_a_typed_name ... ok
+test chat::tests::console_metadata_query_is_bounded ... ok
+test chat::tests::channels::chat_local_tabs_open_from_the_dialog_rows_and_close_without_wire ... ok
+test chat::tests::console_receipt_times_are_stable_and_seconds_are_optional ... ok
+test chat::tests::channels::chat_loot_tab_takes_loot_notices_out_of_the_server_log_and_all_tabs ... ok
+test chat::tests::console_filter_changes_projection_without_removing_history ... ok
+test chat::tests::channels::guild_members_open_the_guild_channel_from_the_dialog_and_write_in_it ... ok
+test chat::tests::dismissed_oldest_line_preserves_remaining_receipt_metadata_after_publish ... ok
+test chat::tests::console_tabs_have_independent_filters_and_temporary_chat_restores_off ... ok
+test chat::tests::identical_messages_at_log_capacity_keep_new_receipt_times ... ok
+test chat::tests::guild_lines_reach_the_native_chat_projection ... ok
+test chat::tests::n021_default_channel_and_temporary_mode_keys ... ok
+test chat::tests::guild_lines_require_current_matching_membership_and_preserve_order ... ok
+test chat::tests::open_key_is_an_explicit_non_repeating_play_shortcut ... ok
+test chat::tests::local_speech_projection_preserves_mode_and_speaker ... ok
+test chat::tests::npc_speech_never_inherits_a_players_current_level ... ok
+test chat::tests::private_lines_and_dropped_delivery_are_visible ... ok
+test chat_channel_participants::tests::c0495_notices_are_taken_once_and_reset_with_the_session ... ok
+test chat::tests::server_notice_switch_covers_combined_local_and_private_channel_views ... ok
+test chat::tests::speech_and_named_private_input_are_validated_and_serialized ... ok
+test chat_joined_channels::tests::c0494_a_tab_opened_by_the_join_result_is_not_doubled ... ok
+test chat_joined_channels::tests::c0494_joined_channels_get_a_tab_after_a_reconnect ... ok
+test chat_joined_channels::tests::c0494_without_the_capability_no_tab_opens_from_the_list ... ok
+test chat_channel_participants::tests::c0495_tabs_read_owners_channel_with_participants_and_notices ... ok
+test chat_channel_participants::tests::c0495_without_the_capability_the_tab_reads_channel_and_id ... ok
+test chat_line_sequence::tests::c0496_an_incoming_private_message_opens_its_tab_once ... ok
+test chat_guild_room::tests::guild_composer_requires_live_membership ... ok
+test chat_line_sequence::tests::c0496_own_echoes_and_ignored_senders_open_no_tab ... ok
+test chat_line_sequence::tests::c0496_without_the_capability_no_tab_opens_by_itself ... ok
+test chat_party_room::tests::pushed_party_line_is_visible_and_send_builds_party_intent ... ok
+test chat_private_channel::tests::private_channel_input_and_server_projection ... ok
+test chat_private_channel::tests::private_channel_leave_label_warns_the_owner_that_it_closes ... ok
+test chat_public_channels::tests::every_extended_room_builds_the_real_existing_chat_intent ... ok
+test chat_private_channel::tests::private_channel_refusal_releases_pending_and_shows_server_reason ... ok
+test chat_private_channel::tests::private_channel_rejects_invalid_inputs_and_filters_transcript ... ok
+test chat_public_channels::tests::public_channel_shortcut_requires_a_fresh_ctrl_c_press ... ok
+test chat_private_echo::tests::c0493_echo_reads_as_sent_in_the_private_tab_too ... ok
+test chat_private_channel::tests::reused_channel_id_hides_closed_channel_history ... ok
+test chat_private_channel::tests::private_channel_refusals_explain_the_requested_action ... ok
+test chat_private_echo::tests::c0493_without_the_capability_own_lines_are_not_shown ... ok
+test chat_private_echo::tests::c0493_own_echo_shows_in_the_recipients_conversation_tab ... ok
+test chat_public_channels::tests::public_channel_list_projects_base_and_extended_room_membership ... ok
+test condition_status::e2e_c16b::replay_paralyze_condition_payload ... ok
+test container_manual_sort::tests::a_dropped_on_list_row_names_its_slot_only_in_the_mode ... ok
+test container_manual_sort::tests::a_slot_is_sent_only_while_the_negotiated_mode_is_on ... ok
+test condition_status::e2e_c17a::replay_haste_and_strong_haste_condition_payloads ... ok
+test chat_public_channels::tests::server_room_projection_and_lines_replace_panel_state ... ok
+test condition_status::view::tests::condition_status_panel_only_consumes_confirmed_icons_and_duration ... ok
+test container_tree::tests::t038_move_all_contents_snapshots_every_direct_entry_into_the_destination_in_order ... ok
+test container_tree::tests::t038_move_all_refuses_self_unknown_empty_and_stops_at_the_first_refusal ... ok
+test container_tree::tests::t038_managed_containers_menu_switches_views_selects_rows_and_opens_the_selection ... ok
+test container_sort::tests::pc02_container_sort_view_keeps_confirmed_result_during_refusal ... ok
+test container_sort::tests::pc02_container_sort_shortcut_and_request_gate ... ok
+test cyclopedia_character::augments::tests::spell_modifier_pages_validate_target_filters_revisions_and_unknowns ... ok
+test cyclopedia_character::combat_modifier_tests::combat_modifier_reply_reaches_panel_with_every_field_and_exact_units ... ok
+test cyclopedia_character::general_stats_selection::live_selection_metadata_is_required_and_validated ... ok
+test cyclopedia_character::e2e_c03::e2e_c03_replays_combat_pages_with_server_observed_numbers ... ok
+test cyclopedia_character::e2e_c20a::e2e_c20a_replays_death_experience_payloads ... ok
+test cyclopedia_character::e2e_c15::e2e_c15_replays_hunt_and_offline_recovery_payloads ... ok
+test cyclopedia_character::gap_character_tabs::gap_character_tabs_reject_truncated_general_stats ... ok
+test cyclopedia_character::gap_character_tabs::gap_character_tabs_reject_invalid_tags_counts_and_text ... ok
+test cyclopedia_character::profile_tests::profile_badges_inspection_and_target_changes_are_coherent ... ok
+test cyclopedia_character::e2e_s16b::e2e_s16b_changed_vocation_statistics_replay ... ok
+test cyclopedia_character::tests::character_navigation_targets_and_pages_are_bounded_and_frozen_while_pending ... ok
+test cyclopedia_character::stamina_tests::stamina_minutes_are_decoded_in_general_panel_for_all_boundaries ... ok
+test cyclopedia_character::tests::character_history_rejects_complete_reply_exceeding_requested_page ... ok
+test cyclopedia_character::tests::cmech_e::n007_promotion_view_shows_title_regeneration_and_soul_cap_200 ... ok
+test cyclopedia_character::tests::cmech_e::t087_offence_sources_expose_interactive_source_descriptions ... ok
+test cyclopedia_character::tests::character_panel_rejects_malformed_trailing_wrong_tab_and_excess_page_rows ... ok
+test cyclopedia_character::combat_modifier_tests::defence_table_preserves_signed_resistance_and_exposes_mitigation_sources ... ok
+test cyclopedia_character::tests::achievements::character_catalog_loads_all_pages_before_global_filtering_and_preserves_identity ... ok
+test cyclopedia_character::tests::cmech_e::t089_resource_presentation_bars_cap_stamina_and_offline_training ... ok
+test cyclopedia_character::tests::cmech_e::t090_death_table_keeps_each_confirmed_death_with_time_and_cause ... ok
+test cyclopedia_character::tests::character_reply_renders_stats_deaths_and_pvp_through_panel ... ok
+test cyclopedia_character::tests::achievements::foreign_or_mixed_profile_pages_fail_closed_without_publishing_partial_rows ... ok
+test cyclopedia_character::tests::history_tables::recent_deaths_table_keeps_timestamp_and_cause_in_separate_columns ... ok
+test cyclopedia_character::tests::cmech_e::t091_kill_type_filters_select_each_kill_kind ... ok
+test cyclopedia_character::tests::history_tables::pvp_history_table_filters_confirmed_kill_kinds_without_changing_the_page ... ok
+test cyclopedia_character::tests::misc::profile_changes_clear_previous_typed_views_and_refusals_do_not_restore_them ... ok
+test cyclopedia_character_vocation::tests::c0487_every_vocation_id_has_its_exact_title ... ok
+test cyclopedia_character::stamina_tests::stamina_rejects_truncation_trailing_bytes_and_invalid_option_tag ... ok
+test cyclopedia_character::tests::services::store_summary_cards_and_blessings_come_from_the_validated_reply ... ok
+test cyclopedia_character::tests::misc::misc_table_and_resources_keep_the_selected_tab_and_confirmed_sources ... ok
+test cyclopedia_character::tests::services::blessings_overview_distinguishes_empty_protection_from_unloaded_state ... ok
+test cyclopedia_character_vocation::tests::c0487_selected_general_stats_reply_stores_the_vocation_and_shows_the_exact_title ... ok
+test cyclopedia_death_details::tests::c0488_selected_rows_carry_the_detailed_death_table ... ok
+test cyclopedia_character::tests::overview::overview_cards_and_resource_bars_project_the_confirmed_general_stats ... ok
+test cyclopedia_map::region_atlas_view::tests::atlas_projection_preserves_gaps_and_selected_floor_at_coordinate_limits ... ok
+test cyclopedia_character_vocation::tests::c0487_an_invalid_vocation_id_is_refused ... ok
+test cyclopedia_character::tests::misc::refused_or_malformed_auxiliary_reads_leave_misc_confirmed_and_do_not_retry ... ok
+test cyclopedia_character::combat_modifier_tests::combat_modifier_unknown_is_distinct_from_zero_and_malformed_is_rejected ... ok
+test cyclopedia_death_details::tests::c0488_pvp_kill_rows_never_carry_death_details ... ok
+test cyclopedia_death_details::tests::c0488_unselected_session_keeps_the_plain_rows ... ok
+test cyclopedia_map::tests::cyclopedia_sections_have_stable_navigation_and_distinct_titles ... ok
+test cyclopedia_character_vocation::tests::c0487_unselected_session_keeps_the_old_reply_and_the_generic_text ... ok
+test cyclopedia_tracker::tests::bestiary_widget_keeps_its_snapshot_when_a_boss_update_arrives_and_filters_sorted_rows ... ok
+test cyclopedia_tracker::tests::boss_selection_follows_identity_when_sort_or_filter_changes ... ok
+test cyclopedia_tracker::tests::nearest_completion_sorts_by_next_unfinished_stage ... ok
+test cyclopedia_tracker::tests::bosstiary_widget_has_independent_config_and_survives_bestiary_updates ... ok
+test cyclopedia_map::tests::map_projects_only_visible_points_on_the_selected_floor ... ok
+test cyclopedia_map::tests::pc06_cyclopedia_map_shortcut_and_request_gate ... ok
+test cyclopedia_map::tests::pc06_cyclopedia_map_view_keeps_confirmed_result_during_refusal ... ok
+test cyclopedia_map::tests::exploration_layers_cycle_confirmed_floors_and_filter_pois ... ok
+test cyclopedia_character::tests::cmech_e::t088_defence_table_lists_every_defence_stat_with_source_and_detail ... ok
+test daily_boost::e2e_w13::e2e_w13_replays_daily_boost_selection_and_refusal ... ok
+test daily_boost::protocol::tests::controls_encode_reply_and_refusal ... ok
+test daily_boost::view::duration_precision_tests::xp_boost_remaining_time_uses_hours_and_minutes ... ok
+test daily_boost::view::spotlight_tests::spotlight_projects_both_server_choices_and_reset_time ... ok
+test daily_boost::view::tests::loading_hides_previous_daily_selection ... ok
+test daily_reward::tests::claim_refusal_is_visible_and_not_inferred_as_state ... ok
+test daily_boost::view::xp_boost_tests::xp_boosts_show_two_separate_lines_with_own_time_and_no_paused_state ... ok
+test daily_reward::e2e_p09::e2e_p09_replays_wall_and_claim_refusal ... ok
+test daily_reward::tests::confirmed_claim_disables_repeat_claim_and_projects_receipt ... ok
+test daily_reward::tests::reward_calendar_records_only_server_confirmed_claims ... ok
+test death_protection::e2e_c20c::replays_real_death_protection_receipt_and_rejects_invalid_payload_unchanged ... ok
+test daily_reward::tests::shortcut_requires_fresh_control_d ... ok
+test daily_reward::tests::returner_reward_notification_never_infers_entitlement_from_daily_streak ... ok
+test daily_reward::tests::reward_streak_bonus_is_one_point_per_claim_capped_at_seven_percent ... ok
+test daily_reward::tests::wall_repeats_every_seven_days_and_lists_the_new_reward_kinds ... ok
+test daily_reward::tests::wall_encoded_like_server_reduces_into_panel ... ok
+test depot::tests::committed_reply_replaces_grid_and_stale_selection_cannot_move ... ok
+test depot::tests::open_chord_ignores_repeat_and_extra_modifiers ... ok
+test death_protection::tests::death_protection_notice_uses_exact_receipt_consumption ... ok
+test depot_search::protocol::tests::controls_encode_reply_and_refusal ... ok
+test diagonal_movement::tests::every_perpendicular_pair_maps_to_its_diagonal ... ok
+test depot::tests::deposit_uses_live_inventory_or_container_handles ... ok
+test diagonal_movement::tests::m40_keypad_diagonals_require_selected_capability ... ok
+test diagonal_movement::tests::focus_and_capture_loss_release_held_arrow_chords ... ok
+test depot::tests::container_source_requires_live_handle_capability_and_one_pending_request ... ok
+test depot_search::e2e_e08::e08_real_server_payloads_replay_into_depot_search_panel ... ok
+test diagonal_movement::tests::negotiated_profile_exposes_only_native_keypad_diagonals ... ok
+test diagonal_movement::tests::opposing_arrows_do_not_cancel_into_a_diagonal_and_device_loss_releases_all ... ok
+test diagonal_movement::tests::two_perpendicular_arrows_held_walk_diagonally ... ok
+test depot::tests::manual_sort_deposit_holds_the_item_until_a_box_slot_is_chosen ... ok
+test depot::tests::every_refusal_clears_pending_and_projects_text ... ok
+test equipment::state::tests::equip_ammo_sends_the_whole_stack_without_a_count_extension ... ok
+test equipment::state::tests::equip_unequip_and_drop_keep_the_handle_and_wait_for_server ... ok
+test equipment::state::tests::backpack_slot_is_only_a_drop_target ... ok
+test cyclopedia_character::tests::character_remaining_tabs_decode_completely_and_reject_every_truncation ... ok
+test equipment::state::tests::equipped_ammo_unequips_whole_without_a_count_prompt ... ok
+test equipment::state::tests::equipment_is_unavailable_without_capability_even_with_an_inventory ... ok
+test forge_creature::tests::pushed_forge_markers_replace_and_remove_creature_labels ... ok
+test exiva_settings::e2e_c05::e2e_c05_replays_exiva_mode_change_and_player_list ... ok
+test gem_atelier::tests::commands_use_the_v2_numbers_with_the_documented_bytes ... ok
+test gem_atelier::tests::a_v2_reply_decodes_into_gems_without_domains_and_the_vessel_board ... ok
+test gem_atelier::tests::replace_vessel_only_allows_an_open_slot_of_the_gems_own_quality ... ok
+test exiva_settings::e2e_p17::e2e_p17_replays_exiva_deny_add_and_remove_lists ... ok
+test equipment::state::tests::slots_project_live_identity_and_clear_on_delta_or_disconnect ... ok
+test exiva_settings::tests::exiva_editor_requires_selection_and_authoritative_refresh ... ok
+test gem_atelier::tests::vessel_lines_list_slots_the_node_bonus_and_the_resistance_cap ... ok
+test guild::flow_tests::guild_entry_requires_ctrl_g_pressed_without_repeat ... ok
+test guild::e2e_s03::guild_replay_found_summary_roster_and_invitation ... ok
+test cyclopedia_character::gap_character_tabs::gap_character_tabs_decode_every_body_and_retain_confirmed_state ... ok
+test guild::flow_tests::no_next_page_does_not_repeat_the_first_page ... ok
+test guild_emblem::tests::latest_emblems_replace_the_previous_list_and_resolve_per_entity ... ok
+test guild::tests::requests_and_refusals_are_visible ... ok
+test guild_bank::tests::cp01_guild_bank_shortcut_and_request_gate ... ok
+test highscores_catalogue::tests::catalogue_continuation_runs_once_and_does_not_retry_a_refused_query ... ok
+test guild_war::tests::pc02_guild_war_shortcut_and_request_gate ... ok
+test guild_war::tests::pc02_guild_war_view_keeps_confirmed_result_during_refusal ... ok
+test highscores_catalogue::tests::world_type_selector_uses_the_server_catalogue ... ok
+test highscores_loyalty::tests::c0498_loyalty_is_offered_in_id_order_only_when_selected ... ok
+test guildhall::tests::pc04_guildhall_shortcut_and_request_gate ... ok
+test guildhall::tests::pc04_guildhall_view_keeps_confirmed_result_during_refusal ... ok
+test hireling::tests::ctrl_shift_h_opens_panel ... ok
+test highscores::e2e_s11::e2e_s11_ranking_page_replays_into_the_highscores_panel ... ok
+test highscores_loyalty::tests::c0498_the_filter_requests_category_13_only_with_the_capability ... ok
+test hireling::tests::accepted_status_updates_plain_text ... ok
+test hireling::tests::requests_use_the_codec_and_refusals_are_visible ... ok
+test holdings_search::tests::holdings_labels_use_server_names_and_retain_unknown_keys ... ok
+test hotkey_equip::protocol::tests::controls_encode_reply_and_refusal ... ok
+test hotkey_equip::protocol::tests::refusal_detail_suffix_is_split_before_the_outcome_decodes ... ok
+test hotkey_equip_upgrade_tier::tests::c0485_selected_appends_the_upgrade_tier_byte ... ok
+test hireling_management::tests::hireling_configuration_displays_owned_jobs_and_pending_outfit_preview ... ok
+test hotkey_equip_upgrade_tier::tests::c0485_the_tier_applies_to_one_request_only ... ok
+test hireling_management::e2e_e12::e12_real_server_payloads_replay_into_hireling_panel ... ok
+test hireling_management::tests::hireling_management_selects_server_identity_and_sends_outfit ... ok
+test hotkey_equip_upgrade_tier::tests::c0485_unselected_keeps_the_four_byte_payload ... ok
+test hireling_management::tests::hireling_management_gates_requests_and_handles_refused_and_malformed_results ... ok
+test house::ownership_date::tests::house_confirmation_dates_preserve_utc_calendar_and_leap_day ... ok
+test house_container_capacity::tests::negotiated_extension_keeps_ordinary_backpack_label_generic ... ok
+test hotkey_equip_upgrade_tier::tests::c0485_tier_above_ten_sends_nothing ... ok
+test house::sale::tests::house_ownership_exact_selection_confirmation_is_required_and_edits_invalidate_it ... ok
+test house_furniture_rotation::tests::explicit_rotation_chord_requires_shift ... ok
+test house_container_capacity::tests::negotiated_twenty_fifth_entry_is_visible_and_selectable ... ok
+test house_podium::tests::podium_previews_the_draft_separately_from_committed_projection ... ok
+test house_podium::tests::t136_creature_podium_switch_set_cycles_displays_and_facings_without_touching_the_projection ... ok
+test house_podium::tests::t136_switch_refuses_unknown_displays_and_pending_requests_and_drops_stale_artwork ... ok
+test house_furniture_rotation::tests::named_rotation_choices_present_authoritative_targets_and_gate_requests ... ok
+test house_move_out::tests::pc04_house_move_out_view_keeps_confirmed_result_during_refusal ... ok
+test house_podium_flags::tests::c0489_selected_projection_reports_the_committed_flags ... ok
+test house_move_out::tests::pc04_house_move_out_shortcut_and_request_gate ... ok
+test house_podium::tests::cp01_house_podium_shortcut_and_request_gate ... ok
+test house_podium_flags::tests::c0489_selected_set_request_appends_the_three_flags ... ok
+test house_podium_flags::tests::c0489_switches_are_locked_while_a_request_is_pending ... ok
+test house_podium_flags::tests::c0489_unselected_session_keeps_the_v1_request_and_ignores_switches ... ok
+test house_transfer::tests::pc04_house_transfer_shortcut_and_request_gate ... ok
+test imbue::catalogue_protocol::catalogue_window_keeps_all_48_offers ... ok
+test imbue::e2e_p21::selected_success_decoder_preserves_server_percentages ... ok
+test house_transfer::tests::pc04_house_transfer_view_keeps_confirmed_result_during_refusal ... ok
+test imbue::slot_cases::t115_slot_view_selects_only_existing_slots_and_labels_empty_and_applied_slots ... ok
+test imbue::tests::actions_are_built_from_loaded_server_state ... ok
+test imbue::e2e_p21::e2e_p21_replays_imbuement_window_and_refusal ... ok
+test imbuement_success_chance::tests::c0491_a_mismatched_percentage_list_is_never_shown ... ok
+test imbuement_success_chance::tests::c0491_a_mutation_reply_discards_the_old_percentages ... ok
+test imbue::slot_cases::t115_cost_and_chance_detail_follows_the_selected_offer_and_its_quote ... ok
+test imbue::tests::refusal_is_visible_and_success_replaces_the_window ... ok
+test imbue::tracker_cases::time_filter_tests::tracker_time_filter_keeps_only_confirmed_slots_within_limit ... ok
+test imbue::tracker_cases::tracker_tests::low_time_alert_uses_confirmed_imbuements_and_clears_on_item_change ... ok
+test imbuement_success_chance::tests::c0491_selected_offers_show_the_servers_success_percentages ... ok
+test imbuement_success_chance::tests::c0491_unselected_session_keeps_the_fixed_hundred_percent_line ... ok
+test inspection::page_tests::catalogue_item_selection_clears_sources_when_the_selected_template_changes ... ok
+test inspection::catalogue_tests::item_categories_are_selected_from_confirmed_attributes ... ok
+test inspection::catalogue_tests::catalogue_retains_confirmed_templates_and_searches_attributes ... ok
+test inventory::movement::tests::prompted_count_equal_to_observed_stack_stays_explicit ... ok
+test inspection::page_tests::catalogue_details_and_compact_sources_preserve_browse_pagination ... ok
+test inspection::e2e_i16::e2e_i16_inspection_replay ... ok
+test inventory::tests::inventory_open_key_is_exact_and_ignores_repeats ... ok
+test inspection::page_tests::catalogue_encodings_switch_without_reusing_the_other_cursor ... ok
+test inspection::page_tests::catalogue_sources_keep_separate_item_and_creature_cursors ... ok
+test inspection::page_tests::compact_drop_sources_preserve_inspected_attributes ... ok
+test inventory_capacity::tests::capacity_line_shows_whole_ounces_of_free_capacity_only_once_sent ... ok
+test inspection::page_tests::public_catalogue_paging_uses_wire_filters_and_keeps_confirmed_page_on_refusal ... ok
+test item_appearance::decoded_appearance_count_and_subtype_identify_the_sprite ... ok
+test item_effects::tests::item_effects_reject_non_item_visual_data ... ok
+test inventory::movement::tests::short_click_aborts_silently_and_preserves_feedback ... ok
+test inventory::movement::tests::split_requires_valid_count_and_retains_identity ... ok
+test inventory::movement::tests::whole_stack_fallback_and_cancel_do_not_send_counts ... ok
+test item_forge::exaltation::tests::exaltation_actual_receipt_tiers_spend_and_all_bonuses_are_presented ... ok
+test inventory::tests::inventory_selection_tracks_handles_instead_of_rows ... ok
+test item_forge::exaltation::tests::exaltation_reply_refuses_stale_selection_and_scope ... ok
+test item_forge::resource_dialog::tests::confirmation_tests::forge_resource_confirmation_is_explicit_single_use_and_scope_fenced ... ok
+test item_forge::resource_dialog::tests::publication_tests::forge_resource_expired_review_and_invalid_occurrence_never_submit ... ok
+test item_forge::resource_dialog::tests::publication_tests::forge_resource_receipt_survives_inventory_refresh_but_not_scope_end ... ok
+test item_forge::protocol::tests::controls_encode_reply_and_refusal ... ok
+test item_forge::protocol::e2e_p18::e2e_p18_replays_forge_history_and_operation_receipts ... ok
+test item_forge::resource_dialog::tests::publication_tests::forge_resource_unknown_reply_retains_original_attempt_without_new_charge ... ok
+test item_forge::selection_tests::t116_item_preview_shows_names_and_tiers_instead_of_numeric_handles ... ok
+test item_forge::selection_tests::settled_pair_operations_invalidate_metadata_even_when_live_entries_are_unchanged ... ok
+test item_forge::selection_tests::t116_item_selector_offers_named_non_container_items_and_rejects_unknown_handles ... ok
+test item_forge::selection_tests::t116_legacy_server_without_preview_labels_carried_items_without_the_handle ... ok
+test item_inscription::tests::an_unshown_too_long_text_blocks_only_the_same_items_write ... ok
+test item_inscription::tests::a_write_is_sent_only_for_the_read_writable_text_of_the_same_item ... ok
+test item_inscription::tests::without_the_capability_no_read_is_sent_and_an_empty_write_is_refused ... ok
+test item_use::tests::source_removal_clears_targeting ... ok
+test lens_help::tests::every_catalog_key_has_a_help_text_and_unknown_keys_none ... ok
+test lens_help::tests::lens_mode_toggles_and_a_click_ends_it ... ok
+test market::coins::tests::market_confirmation_keeps_one_key_after_ambiguous_result_and_never_changes_balances ... ok
+test loyalty_skills::tests::loyalty_skills_panel_requires_selection_and_a_server_reply ... ok
+test market::coins::presentation::tests::coin1_market_shows_one_balance_and_receipt_for_current_and_legacy_wire ... ok
+test market::tests::market_open_and_pages_use_valid_queries ... ok
+test loyalty_skills::tests::loyalty_skills_refusal_and_invalid_reply_preserve_last_confirmed_state ... ok
+test mail::tests::cp01_mail_shortcut_and_request_gate ... ok
+test mail::context::tests::combined_menu_preserves_world_npc_trade_party_actions_and_appends_properties_once ... ok
+test mail::context::tests::property_menu_is_capability_and_handle_gated ... ok
+test market::tests::t124_changing_item_invalidates_offer_selection ... ok
+test loyalty_skills::e2e_p13::e2e_p13_replays_snapshot_and_malformed_query_rejection ... ok
+test market::tests::market_page_statistics_keep_items_and_sides_separate ... ok
+test market::tests::market_form_validates_without_partial_updates_and_projects_total ... ok
+test market::tests::t124_table_selection_preserves_displayed_identity_after_reorder_and_removal ... ok
+test market::e2e_e06::e06_real_server_payloads_replay_into_market_panel ... ok
+test market::e2e_e05::e05_real_server_payloads_replay_into_market_panel ... ok
+test market::tests::market_panel_builds_requests_and_surfaces_refusals ... ok
+test market::tests::market_server_early_refusal_keeps_reason_and_clears_pending ... ok
+test minimap::input::tests::create_mark_shortcut_requires_alt_shift_m_and_a_fresh_press ... ok
+test market::tests::t124_market_distinguishes_completed_30_day_statistics_from_loaded_quotes ... ok
+test minimap::input::tests::editor_shortcut_requires_the_exact_chord_and_a_fresh_press ... ok
+test minimap::view::tests::center_edges_and_invalid_coordinates ... ok
+test market::tests::wares_returns_from_item_book_and_keeps_refresh_and_paging_on_wares ... ok
+test minimap::view::tests::t076_zoom_and_floor_controls_clamp_at_their_limits ... ok
+test modal_dialogs::answer_tests::modal_handler_rejects_stale_unknown_and_duplicate_answers ... ok
+test modal_dialogs::notice_tests::balancing_notice_requires_acknowledgement_before_suppression ... ok
+test mechanics_status::tests::cl6_all_owner_projections_reach_native_text_and_refusals_retain_confirmation ... ok
+test modal_dialogs::server_dialog_tests::server_dialog_keeps_ids_and_content_image_reference ... ok
+test modal_dialogs::tests::dismissed_confirmation_survives_reload ... ok
+test modal_dialogs::tests::editor_preserves_multiline_text_and_checks_byte_limit ... ok
+test native_creature_icons::protocol::preserves_entity_identity ... ok
+test npc_dialogue::e2e_p16::p16_dialogue_replay ... ok
+test npc_dialogue::tests::capability_pending_refusals_and_target_switching ... ok
+test npc_dialogue::tests::dialogue_shortcut_avoids_altgr ... ok
+test npc_dialogue::e2e_p20::p20_dialogue_replay ... ok
+test npc_dialogue::tests::farewell_remains_visible_without_an_active_conversation ... ok
+test npc_dialogue::tests::input_requires_exact_chord_and_no_repeat ... ok
+test npc_dialogue::tests::replies_keywords_and_close_follow_server ... ok
+test npc_dialogue::tests::terminal_refusal_survives_the_servers_closed_update ... ok
+test npc_dialogue::tests::w05d_seasonal_npc_topics_decode_and_render_in_usable_native_dialogue ... ok
+test npc_shop::e2e_e01::e01_real_server_payloads_replay_into_native_panels ... ok
+test npc_shop::input::tests::amount_requires_a_positive_in_range_integer ... ok
+test npc_shop::e2e_w05c::w05c_rashid_payloads_replay_into_service_panel ... ok
+test npc_shop::live_tests::gold_projection_distinguishes_negotiation_and_live_balances ... ok
+test npc_shop::live_tests::side_totals_and_backpack_free_slots_follow_server_limits ... ok
+test npc_shop::live_tests::npc_shop_full_backpack_can_pay_with_its_last_coin_stack ... ok
+test npc_shop::tests::npc_prerequisite_reducer_uses_live_quote_and_clears_closed_window ... ok
+test npc_shop::live_tests::quote_identity_survives_display_order_but_not_revision ... ok
+test modal_dialogs::tests::dismissed_confirmation_is_written_to_disk ... ok
+test npc_shop::live_tests::sellable_counts_aggregate_carried_stacks_by_server_item_identity ... ok
+test npc_shop::live_tests::npc_shop_identical_offers_keep_the_later_server_index ... ok
+test npc_shop::tests::request_selects_every_wire_action_and_guards_pending ... ok
+test paced_movement::qn6_keypad_diagonal_press_maps_to_one_step ... ok
+test npc_shop::live_tests::quote_keeps_its_server_index_after_display_reordering ... ok
+test npc_shop::live_tests::trade_rejects_quantity_101_before_sending ... ok
+test npc_shop::tests::replies_render_state_and_refusals ... ok
+test paced_movement::review12_keypad_diagonals_require_selected_capability ... ok
+test party::input::tests::shortcut_and_context_use_pressed_events_and_forget_lost_pointer ... ok
+test party::e2e_s01::party_replay_invite_join_and_leadership_pass ... ok
+test party::tests::capability_gates_never_send_unavailable_requests ... ok
+test party::tests::failed_refresh_preserves_the_authoritative_refusal ... ok
+test party::tests::party_shortcut_does_not_steal_prey_or_weapon_proficiency ... ok
+test party::tests::leadership_controls_follow_own_character_and_authoritative_role_changes ... ok
+test party::tests::malformed_operation_is_never_reported_as_confirmed ... ok
+test party::tests::request_uses_party_codec_and_requires_selection ... ok
+test party::tests::result_applies_view_and_surfaces_refusal ... ok
+test party::tests::shared_refusal_text_reaches_party_projection_only_for_a_shared_request ... ok
+test party_list::tests::party_list_uses_existing_party_query ... ok
+test party::tests::shared_xp_uses_existing_server_route ... ok
+test party::tests::unknown_own_identity_cannot_manage_party_members ... ok
+test party_effects::e2e_s13c::e2e_s13c_party_spell_condition_shows_on_both_members ... ok
+test party_effects::tests::party_effects_panel_consumes_only_valid_server_reply_and_retains_on_refusal ... ok
+test personal_map_marks::view::tests::personal_marks_use_true_world_coordinates_floor_and_anchor ... ok
+test party_skull::tests::pc06_party_skull_view_keeps_confirmed_result_during_refusal ... ok
+test party_skull::tests::pc06_party_skull_shortcut_and_request_gate ... ok
+test party_skull::tests::skull_timer_projects_observed_remaining_time_without_inventing_an_expiry ... ok
+test party_skull::tests::unjustified_widget_keeps_fractional_points_and_server_limits ... ok
+test player_report::tests::pc02_player_report_shortcut_and_request_gate ... ok
+test player_report::tests::pc02_player_report_view_keeps_confirmed_result_during_refusal ... ok
+test party_member_effects::tests::member_effects_replace_and_count_down ... ok
+test player_trade::picker::refusal_keeps_partner_so_another_inventory_item_can_be_offered ... ok
+test player_typing::tests::composer_coalesces_text_and_stops_even_with_start_in_flight ... ok
+test player_typing::tests::composer_results_preserve_an_in_flight_manual_request ... ok
+test player_typing::tests::initialization_resets_composer_state_and_rate_gate ... ok
+test player_trade::picker::tests::incoming_partner_can_choose_counter_offer_without_trade_id ... ok
+test player_typing::tests::tick_retries_a_rate_gated_start_and_blur_cancels_it ... ok
+test player_trade::picker::tests::picker_encodes_live_row_and_rejects_removed_item_and_busy_session ... ok
+test player_trade::picker::tests::picker_merges_visible_sources_without_duplicate_handles ... ok
+test player_trade::tests::requests_all_wire_actions_and_applies_refusal ... ok
+test player_trade::picker::tests::all_authoritative_refusals_and_terminal_states_reach_text ... ok
+test player_typing::tests::server_wire_updates_add_and_clear_the_exact_actor_generation ... ok
+test prey::existing_actions::requests_cover_every_wire_action ... ok
+test potion_durations::tests::nx8_potion_durations_play_receives_all_sources_counts_down_and_clears_expiry ... ok
+test prey::tests::expansion_changes_only_grid_rows_and_select_supports_twelfth_candidate ... ok
+test prey::tests::locked_and_unselected_slots_cannot_send_actions ... ok
+test prey::e2e_w22b::e2e_w22b_replays_active_rat_loot_bonus_and_refusal ... ok
+test prey::tests::prey_shortcut_preserves_main_control_p_and_ignores_repeats ... ok
+test prey::existing_actions::result_replaces_state_and_exposes_refusals ... ok
+test prey::e2e_p03::e2e_p03_replays_query_reroll_and_refusal ... ok
+test prey::tests::retained_tier_after_level_loss_is_selected_but_disabled ... ok
+test prey::tests::offered_creatures_require_explicit_confirmation_and_bind_server_price ... ok
+test prey::tests::offered_pages_replace_a_bounded_page_and_maintain_cursor ... ok
+test prey::tests::accepted_mutation_without_current_projection_requires_refresh_before_more_actions ... ok
+test prey::tests::receipt_replay_applies_current_projection_and_exhaustion_explains_no_charge ... ok
+test quest_log::list_options_tests::journal_search_finds_known_missions_without_adding_stale_quests ... ok
+test prey::tests::tiers_use_server_allowance_and_do_not_redraw_or_change_before_confirmation ... ok
+test quest_log::list_options_tests::painted_row_identity_is_checked_against_the_latest_list ... ok
+test quest_log::tests::quest_open_binding_is_ctrl_j_without_repeat ... ok
+test prey::tests::unsolicited_and_malformed_replies_do_not_replace_confirmed_state ... ok
+test pvp_expert::tests::pc01_pvp_expert_shortcut_and_request_gate ... ok
+test quest_log::tests::quest_tracking_toggle_preserves_order_and_obeys_the_wire_limit ... ok
+test quest_log::list_options_tests::quest_list_search_and_all_sort_modes_preserve_confirmed_state ... ok
+test quest_log::tracker_tests::auto_tracking_baselines_old_quests_and_waits_for_server_confirmation ... ok
+test quest_log::tracker_tests::automation_never_exceeds_ten_slots ... ok
+test quest_log::tracker_tests::completed_removal_and_tracker_filters_preserve_authoritative_lines ... ok
+test quest_log::tests::quest_panel_lists_missions_description_completion_and_tracking ... ok
+test quest_log::tracker_tests::independent_tracker_renders_only_matching_confirmed_quests ... ok
+test quest_log::tracker_tests::queued_new_quests_wait_for_the_previous_tracking_delta ... ok
+test quest_log::tracker_tests::tracker_windows_do_not_overwrite_each_others_search ... ok
+test quest_log::tracker_tests::rejected_new_quest_additions_retry_after_refresh_without_a_busy_loop ... ok
+test quick_loot::e2e_i07::replays_i07_quick_loot_results_and_rejects_invalid_payload ... ok
+test raid_schedule::tests::pc03_raid_schedule_shortcut_and_request_gate ... ok
+test raid_schedule::tests::pc03_raid_schedule_view_keeps_confirmed_result_during_refusal ... ok
+test rest_status::tests::rest_status_panel_consumes_server_state_and_clears_on_refusal ... ok
+test sanction_record::tests::c0497_a_refusal_or_bad_bytes_keep_the_record_and_say_so ... ok
+test server_info::tests::server_info_query_reply_is_bound_to_the_requested_owner ... ok
+test sanction_record::tests::c0497_an_elapsed_end_reads_expired_and_an_empty_record_says_so ... ok
+test server_modal::tests::generic_modal_panel_drives_wire_and_clears_only_after_matching_ack ... ok
+test server_modal::tests::only_explicit_initial_query_rejection_selects_the_legacy_query ... ok
+test sanction_record::tests::c0497_without_the_capability_nothing_is_sent ... ok
+test server_modal::tests::refused_unnegotiated_stale_or_cancelled_answers_never_log_out ... ok
+test server_modal::tests::t158_modal_text_input_and_dont_show_again_follow_the_byte_budget_and_explicit_ack ... ok
+test sanction_record::tests::c0497_open_sends_the_empty_query_and_the_reply_fills_the_record ... ok
+test server_modal::tests::t159_modal_show_image_and_button_variants_validate_and_resolve_answers ... ok
+test server_modal::tests::t166_nagging_balancing_and_generic_notices_keep_separate_suppression_keys ... ok
+test server_modal::tests::terminal_ack_ends_only_the_negotiated_matching_answer ... ok
+test server_modal::tests::terminal_payload_requires_an_answer_and_canonical_bytes ... ok
+test server_modal_defaults::tests::default_and_escape_use_server_ids ... ok
+test server_modal_input::tests::c0490_an_unacceptable_or_missing_value_sends_nothing_but_cancel_still_does ... ok
+test server_modal_input::tests::c0490_selected_dialog_exposes_its_input_and_answers_with_the_value ... ok
+test server_modal_input::tests::c0490_selected_dialog_without_input_still_answers_with_the_extended_bytes ... ok
+test server_modal_input::tests::c0490_unselected_session_keeps_the_v1_dialog_and_answer ... ok
+test server_save_countdown::server_save_replaces_previous_announcement ... ok
+test spell_action_bar::assign_dialog::tests::show_only_known_spells_hides_unlearned_and_runes ... ok
+test skill_progress::tests::skill_progress_panel_waits_for_server_then_displays_all_bars ... ok
+test social_channel::tests::c0513_rows_show_the_channel_and_notices_name_it ... ok
+test spell_action_bar::movement::tests::movement_spell_commands_are_canonical_in_every_language ... ok
+test spell_action_bar::assign_dialog::tests::target_options_use_the_test_client_strings ... ok
+test spell_action_bar::view::tests::bars_draw_track_and_fill_per_vital_and_nothing_without_vitals ... ok
+test spell_action_bar::input::tests::digit_hotkeys_route_to_spell_book_indices ... ok
+test spell_action_bar::view::tests::cooldown_bar_overlay_does_not_restart_when_another_snapshot_arrives ... ok
+test spell_action_bar::input::tests::all_default_spell_hotkeys_repeat_until_release_or_text_focus ... ok
+test spell_action_bar::movement::tests::movement_spells_use_local_speech_and_wait_for_the_server ... ok
+test spell_action_bar::view::tests::fill_clamps_and_survives_zero_max ... ok
+test spell_action_bar::view::tests::docked_row_counts_down_server_cooldown_without_changing_authority ... ok
+test spell_aim_mode::tests::a_cursor_cast_without_a_cursor_tile_sends_nothing ... ok
+test spell_aim_mode::tests::each_target_option_selects_its_aimed_cast_command ... ok
+test spell_action_bar::view::tests::hud_clamps_overfull_and_handles_largest_vitals ... ok
+test spell_catalog::tests::confirmed_state_is_visible ... ok
+test spell_action_bar::view::tests::hud_shows_current_max_and_bounded_bars ... ok
+test spell_catalog::tests::n003_toggle_spell_list_widget_is_alt_l_only ... ok
+test spell_catalog::tests::filtered_paging_stops_at_the_last_matching_page ... ok
+test staff::tests::legacy_staff_requests_keep_capability_and_original_signed_payload ... ok
+test staff_tools::tests::staff_tools_request_keeps_signed_bytes_and_uses_negotiated_commands ... ok
+test staff_tools::tests::staff_tools_shortcut_is_exact_and_does_not_repeat ... ok
+test stash::tests::carried_click_rejects_a_changed_projection_and_invalid_row ... ok
+test stash::tests::invalid_stash_filter_is_reported_without_sending_a_command ... ok
+test stash::tests::stash_search_and_sort_reach_the_server_before_pagination ... ok
+test stash::e2e_e07::e07_real_server_payloads_replay_into_stash_panel ... ok
+test stash::tests::browse_and_withdraw_use_server_rows_and_render_refusals ... ok
+test stash::tests::filtered_sorted_stash_withdraws_the_displayed_server_handle ... ok
+test store::browser::tests::empty_server_store_page_clears_the_previously_selected_purchase_quote ... ok
+test stash::tests::stow_rejects_handles_not_in_the_visible_carried_picker ... ok
+test store::protocol::tests::controls_encode_reply_and_refusal ... ok
+test stash::tests::visible_carried_selection_stows_the_server_handle_and_blocks_repeated_input ... ok
+test store::gift::tests::coin1_gift_review_uses_one_balance_and_allows_confirmation ... ok
+test store::protocol::tests::gap_store_catalogue_follows_cursor_and_resets_category ... ok
+test store::e2e_e10::e10_real_server_payloads_replay_into_store_panels ... ok
+test store::protocol::tests::store_hireling_without_identity_requests_server_choice_before_purchase ... ok
+test store::protocol::tests::gap_store_hireling_fields_follow_offer_kind ... ok
+test task_board::tests::weekly_controls_send_full_owner_actions_and_guard_pending ... ok
+test store::view::token_reason_tests::token_quote_above_balance_shows_not_enough_cosmetic_tokens ... ok
+test target_move::tests::negotiation_and_pending_gate_world_input_and_refusal_allows_retry ... ok
+test task_board::soulseals::tests::fight_dialog_never_fabricates_a_balance_or_available_encounters ... ok
+test task_board::tests::requests_every_wire_action_and_renders_reply_and_refusal ... ok
+test task_board::e2e_p23c::e2e_p23c_replays_hunting_task_query_and_select ... ok
+test team_finder::tests::t029_social_composition_assemble_tab_lists_advertisement_occupancy_and_applicants ... ok
+test task_board::e2e_p05::e2e_p05_replays_purchase_and_refused_repeat ... ok
+test task_board::e2e_p04::e2e_p04_replays_query_and_refused_start_weekly ... ok
+test tutorial_notices::tests::notice_shortcut_requires_exact_modifiers_and_fresh_press ... ok
+test task_board::view::tests::shop_cards_name_rewards_and_show_affordability_and_ownership ... ok
+test task_board::view::tests::difficulty_names_and_tooltips_follow_the_test_client ... ok
+test team_finder::tests::t029_team_finder_list_layout_shows_every_row_with_level_range_free_slots_and_status ... ok
+test task_board::view::tests::elite_text_rarity_and_reroll_token_cap_are_shown_without_daily_claim ... ok
+test timed_item::tests::pc06_timed_item_view_keeps_confirmed_result_during_refusal ... ok
+test timed_item::tests::pc06_timed_item_shortcut_and_request_gate ... ok
+test trade_details::authoritative_quotes_reach_ui_rows_and_bounds ... ok
+test training::tests::cp01_training_shortcut_and_request_gate ... ok
+test vip_presence::tests::pushed_vip_presence_is_visible_with_online_and_offline_state ... ok
+test tutorial_notices::tests::general_event_banners_obey_configuration_dismissal_and_expiry ... ok
+test tutorial_notices::tests::notices_are_bounded_and_server_save_is_separate ... ok
+test wheel_allocation::diagram::graph::tests::wheel_graph_hit_testing_selects_exactly_thirty_six_slots ... ok
+test vip::tests::requests_every_operation_and_displays_refusals ... ok
+test vip::e2e_s04a::vip_replay_add_edit_query_and_duplicate_refusal ... ok
+test wheel_allocation::diagram::tests::vessel_node_shows_the_gem_vessel_perk_text_and_no_domain_name ... ok
+test weapon_proficiency::selection_tests::t123_visual_selection_picks_weapon_level_and_perk_by_row_without_typing_ids ... ok
+test weapon_proficiency::selection_tests::t123_catalogue_text_names_weapons_and_marks_the_selected_perk_instead_of_showing_ids ... ok
+test tutorial_vocation::tests::tutorial_vocation_replays_real_dispatch_offer_and_submission ... ok
+test weapon_proficiency::e2e_p08::e2e_p08_replays_catalogue_browse_select_and_stale_refusal ... ok
+test wheel_allocation::gems::tests::gem_reply_is_bound_to_current_revision_and_nonce ... ok
+test wheel_allocation::diagram::tests::wheel_preview_cannot_submit_a_changed_unreviewed_or_stale_scope_draft ... ok
+test wheel_allocation::diagram::tests::wheel_reset_draft_requires_a_new_valid_preview_and_uses_original_reset ... ok
+test wheel_allocation::gems::tests::gem_current_catalogue_qualification_does_not_claim_old_values_are_active ... ok
+test wheel_allocation::gems::tests::gem_review_and_wheel_preview_requests_are_serialized ... ok
+test wheel_allocation::e2e_p07::e2e_p07_replays_atelier_state_and_stale_reveal ... ok
+test wheel_allocation::tests::additional::open_shortcut_requires_a_fresh_control_w_press ... ok
+test wheel_allocation::gems::tests::inactive_workshop_grades_do_not_contribute_active_totals ... ok
+test wheel_allocation::gems::atlas::tests::gem_shapes_distinguish_quality_lock_and_vessel ... ok
+test wheel_allocation::e2e_p06::e2e_p06_replays_query_and_stale_revision_save ... ok
+test wheel_allocation::tests::additional::modifier_labels_distinguish_weaknesses_and_paid_spell_variants ... ok
+test wheel_allocation::gems::tests::gem_review_requires_confirmation_and_refuses_changed_expired_or_scope_state ... ok
+test wheel_allocation::tests::additional::stale_or_incomplete_live_queries_never_partially_replace_the_view ... ok
+test wheel_allocation::tests::additional::panel_displays_server_quotes_and_the_matching_modifier_grade ... ok
+test wheel_allocation::tests::additional::wheel_build_exchange_is_bounded_and_only_applies_as_a_server_proposal ... ok
+test wheel_allocation::tests::additional::uncertain_outcome_retains_exact_request_across_refresh_and_retry ... ok
+test wheel_allocation::tests::live_queries_replace_historical_receipts_and_restore_current_vessels_and_prices ... ok
+test wheel_allocation::tests::atelier_controls_send_only_intent_and_current_revision ... ok
+test wheel_allocation::tests::additional::t120_named_presets_load_into_the_wheel_by_code_and_by_url ... ok
+test wheel_allocation::tests::reset_and_unsocket_use_the_existing_allocation_owner ... ok
+test wheel_allocation::tests::refused_changes_show_the_live_state_without_optimistic_commits ... ok
+test wheel_allocation::tests::reshape::importing_an_older_wheel_configuration_shows_the_changed_values_notice ... ok
+test wheel_allocation::tests::paid_actions_require_live_quotes_and_unresolved_changes_remain_blocked ... ok
+test wheel_allocation::tests::reshape::vessel_node_perk_text_matches_the_announced_wording ... ok
+test wheel_allocation::tests::reshape::replace_vessel_moves_a_gem_into_the_chosen_slot_without_duplicates ... ok
+test wheel_allocation::tests::reshape::reshape_position_costs_match_the_announced_prices ... ok
+test wheel_allocation::tests::reshape::gems_and_vessels_show_no_domain_or_resonance ... ok
+test wheel_allocation::tests::reshape::reshape_is_disabled_with_a_reason_outside_a_temple_without_premium_or_for_a_locked_gem ... ok
+test wheel_allocation::tests::reshape::panel_text_shows_reshape_price_and_disabled_reason ... ok
+test wheel_allocation::tests::reshape::reshape_request_reports_the_block_reason_and_sends_nothing ... ok
+test wheel_allocation::tests::reshape::workshop_lines_show_health_mana_capacity_and_promotion_points ... ok
+test wheel_allocation::tests::resources::displayed_balances_never_become_client_payment_authority ... ok
+test wheel_allocation::tests::resources::stale_core_projection_cannot_publish_a_partial_resource_refresh ... ok
+test wheel_allocation::tests::vessels_v2::replace_vessel_sends_the_slot_gem_and_wheel_revision_and_checks_the_quality ... ok
+test wheel_allocation::tests::resources::absent_or_malformed_optional_balances_clear_old_values_without_blocking_legacy_controls ... ok
+test wheel_allocation::tests::resources::live_balances_follow_receipt_replay_and_display_all_seven_resources ... ok
+test wheel_allocation::tests::vessels_v2::locked_revealed_gem_cannot_stage_or_confirm_reshape ... ok
+test wheel_allocation::tests::vessels_v2::v2_commands_use_the_6210_family_and_save_keeps_the_vessels_unsent ... ok
+test wheel_allocation::tests::unavailable_live_views_preserve_confirmed_state_and_explain_eligibility ... ok
+test wheel_allocation::tests::vessels_v2::the_panel_text_lists_twelve_vessels_the_node_bonus_and_the_resistance_cap ... ok
+test wheel_allocation::tests::vessels_v2::reshape_intent_encodes_6214_and_applies_the_live_result ... ok
+test wheel_allocation::tests::vessels_v2::a_v2_reply_enables_reshape_only_in_the_temple_with_premium ... ok
+test wheel_allocation::tests::vessels_v2::without_483_the_four_draft_vessels_and_old_bytes_remain ... ok
+test wheel_allocation::tests::wheel_proposals_preserve_confirmed_state_and_encode_all_four_vessels ... ok
+test world_event::tests::world_event_input_ignores_repeats_releases_and_other_modifiers ... ok
+test wheel_allocation::tests::additional::wheel_named_presets_roundtrip_and_reject_corrupt_storage ... ok
+test world_interaction::menu::feedback_tests::context_feedback_expires_and_title_projection_is_single_line_and_bounded ... ok
+test wheel_allocation::tests::workshop::workshop_selection_survives_gem_changes_and_uses_the_query_after_replay ... ok
+test wheel_allocation::tests::workshop::workshop_invalid_or_out_of_range_selection_sends_no_upgrade ... ok
+test world_interaction::menu::modifier_tests::modifier_mouse_actions_wait_for_release_and_cancel_drags ... ok
+test world_event::tests::w05d_seasonal_calendar_names_are_decoded_and_presented_natively ... ok
+test world_interaction::menu::tests::n004_alt_click_routes_an_attack_toggle_not_a_walk_click ... ok
+test world_event::tests::world_event_query_and_projection_follow_server_results ... ok
+test world_interaction::menu::tests::secondary_pointer_routes_menu_and_respects_modal_and_focus ... ok
+test world_light::tests::midnight_and_white_light ... ok
+test wheel_allocation::tests::workshop::workshop_legacy_fallback_deduplicates_pairs_and_keeps_gem_details ... ok
+test wheel_allocation::tests::workshop::workshop_query_modifiers_can_be_upgraded_without_any_owned_gem ... ok
+test world_interaction::menu::tests::menu_gates_actions_by_identity_and_negotiation ... ok
+test world_weather::tests::weather_replacement_intensity_and_floors ... ok
+test world_interaction::menu::targeting_tests::targeting_can_be_cancelled_and_consumed_only_once ... ok
+test world_interaction::menu::review_tests::handle_items_do_not_offer_bed_without_base_or_definition_facts ... ok
+test world_interaction::menu::use_with_menu_tests::use_with_requires_negotiation_and_a_handle_source ... ok
+test wheel_allocation::gems::tests::vessel_graphic_reads_every_v2_board_slot ... ok
+test wheel_allocation::diagram::tests::wheel_graph_edges_and_cpu_pixels_use_only_declared_links_and_selected_slot ... ok
+test server_modal::tests::o005_every_client_text_has_all_six_languages_with_unchanged_arguments ... ok
+
+test result: ok. 671 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.62s
+
+     Running tests\bulletin.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/e090207aeecc86bd\out\bulletin-e090207aeecc86bd.exe)
+
+running 1 test
+test feed_retains_descriptions_and_filters_event_month ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\chat_lists.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/69da8462bb649684\out\chat_lists-69da8462bb649684.exe)
+
+running 1 test
+test communication_lists_filter_received_messages_and_whitelist_overrides ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\chat_log.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/d14034a1ad2b8320\out\chat_log-d14034a1ad2b8320.exe)
+
+running 1 test
+test channel_log_writes_and_appends_utf8_and_propagates_io_errors ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\container_tree.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/945a4002231df7e8\out\container_tree-945a4002231df7e8.exe)
+
+running 7 tests
+test refusal_and_unavailable_state_do_not_invent_contents ... ok
+test nested_navigation_uses_live_handles_and_server_view_ids ... ok
+test ground_open_chord_requires_control_shift_and_a_fresh_press ... ok
+test refused_open_keeps_the_previous_active_view ... ok
+test a_new_ground_view_becomes_active_even_when_result_precedes_delta ... ok
+test up_keeps_the_originating_view_when_parent_is_already_open ... ok
+test open_focus_waits_for_acceptance_when_delta_arrives_first ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\depot_search_results.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/7cd417eb45c24c27\out\depot_search_results-7cd417eb45c24c27.exe)
+
+running 1 test
+test depot_results_show_the_picker_index_tiers_and_retrieve_scope ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\friends.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/7fe84e9715fa3adb\out\friends-7fe84e9715fa3adb.exe)
+
+running 1 test
+test friends_view_separates_confirmed_contacts_and_pending_invitations ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\gap_house.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/96f6d7d13da9684b\out\gap_house-96f6d7d13da9684b.exe)
+
+running 4 tests
+test gap_house_adjacent_capabilities_do_not_admit_house ... ok
+test house_bid_reports_insufficient_funds ... ok
+test house_catalogue_shows_auction_identity_and_navigation ... ok
+test gap_house_revision_refusal_paging_and_cleanup ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\highscores.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/0f37d2360adb3c91\out\highscores-0f37d2360adb3c91.exe)
+
+running 6 tests
+test open_key_ignores_repeat_release_and_other_modifiers ... ok
+test native_combo_selection_preserves_reserved_category_gaps ... ok
+test show_me_uses_the_confirmed_rank_and_snapshot_page ... ok
+test unavailable_invalid_and_unsolicited_results_do_not_change_rows ... ok
+test live_page_projection_and_snapshot_navigation ... ok
+test tibiadrome_highscore_filters_decode_and_render_native_rankings ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\highscores_world.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/13128fa805ae6040\out\highscores_world-13128fa805ae6040.exe)
+
+running 2 tests
+test show_me_uses_stored_filter_position_instead_of_global_rank ... ok
+test world_selection_resets_the_snapshot_and_rejects_a_foreign_reply ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\house_furniture_confirmation.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/16b7d0cbd5e64d98\out\house_furniture_confirmation-16b7d0cbd5e64d98.exe)
+
+running 1 test
+test furniture_requires_review_of_exact_item_and_destination ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\localization_audit.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/8aea5c90237d8206\out\localization_audit-8aea5c90237d8206.exe)
+
+running 9 tests
+test movement_spell_words_are_identical_in_every_locale ... ok
+test polish_active_session_guidance_requests_logout_before_login ... ok
+test portuguese_pvp_modes_preserve_zero_through_three ... ok
+test table_headers_preserve_numeric_columns ... ok
+test diagnostic_consent_preserves_literal_yes ... ok
+test portuguese_previous_controls_describe_backward_selection ... ok
+test validation_messages_preserve_upper_bounds ... ok
+test imported_summary_renders_localized_columns_over_real_values ... ok
+test logout_messages_describe_logging_out ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\login_queue.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/edd81126c0a65cbd\out\login_queue-edd81126c0a65cbd.exe)
+
+running 2 tests
+test countdown_rounds_up_and_retry_is_consumed_once ... ok
+test cancellation_never_retries_or_invents_a_position ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\managed_loot.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/7a9b4e5f342ace0b\out\managed_loot-7a9b4e5f342ace0b.exe)
+
+running 1 test
+test managed_destinations_replace_only_after_server_confirmation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\player_guide.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/f299ca0ee0cf7ff1\out\player_guide-f299ca0ee0cf7ff1.exe)
+
+running 2 tests
+test player_guide_switches_from_controls_to_recommendations ... ok
+test compendium_has_updates_features_and_support_sections ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\registrations.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/442fb82ab08a8a09\out\registrations-442fb82ab08a8a09.exe)
+
+running 5 tests
+test cyclopedia_navigation_is_collected_from_feature_fragments ... ok
+test pc02_container_sort_registered ... ok
+test pc02_guild_war_registered ... ok
+test pc02_player_report_registered ... ok
+test build_output_equals_discovered_fragments_and_mechanic_coverage ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.61s
+
+     Running tests\shop_filters.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/02ba8571d2fd4d34\out\shop_filters-02ba8571d2fd4d34.exe)
+
+running 1 test
+test filtered_shop_quotes_keep_the_original_server_offer_index ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\shortcut_coexistence.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/d9c007b51de7382d\out\shortcut_coexistence-d9c007b51de7382d.exe)
+
+running 2 tests
+test registered_shortcuts_reach_one_panel_each ... ok
+test right_click_actions_coexist_in_stable_order ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\skill_widget.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/e870cc6743bb5e7b\out\skill_widget-e870cc6743bb5e7b.exe)
+
+running 1 test
+test t031_skill_widget_projects_confirmed_progress_and_configures_rows ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\social_badges.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/ecb6e22eb40790c6\out\social_badges-ecb6e22eb40790c6.exe)
+
+running 1 test
+test badge_filters_use_confirmed_earned_ids_and_local_hidden_choices ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\spell_metadata.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/d72023954dbe6d3e\out\spell_metadata-d72023954dbe6d3e.exe)
+
+running 1 test
+test spell_metadata::tests::rune_alias_matches_numeric_id_across_reference_formats ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\spellbook.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/c42332ccbb4bb6c4\out\spellbook-c42332ccbb4bb6c4.exe)
+
+running 3 tests
+test t033_selection_follows_filtered_catalogue_rows ... ok
+test o059_selected_spell_details_distinguish_unknown_cooldown ... ok
+test t032_spellbook_filters_confirmed_level_group_and_learning ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\store_browse.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/49358041dd641f90\out\store_browse-49358041dd641f90.exe)
+
+running 1 test
+test store_search_and_price_sort_preserve_the_confirmed_server_quote ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\store_history_details.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/3acacec7bf6a95be\out\store_history_details-3acacec7bf6a95be.exe)
+
+running 1 test
+test coin_purchase_details_include_order_identity_and_quote_revision ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\store_history_filters.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/2294061d91db20d7\out\store_history_filters-2294061d91db20d7.exe)
+
+running 1 test
+test history_filters_offer_and_inclusive_time_range_without_combining_currencies ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\team_filters.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/a1eba80099666c66\out\team_filters-a1eba80099666c66.exe)
+
+running 1 test
+test filtered_team_selection_keeps_the_server_handle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\violation_reasons.rs (C:\Users\barte\work\oteryn-test-value-20261123-target\debug\build\oteryn-client-ui/c67e192752002114\out\violation_reasons-c67e192752002114.exe)
+
+running 1 test
+test violation_reason_picker_wraps_named_reasons_and_invalidates_review ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests oteryn_client_ui
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

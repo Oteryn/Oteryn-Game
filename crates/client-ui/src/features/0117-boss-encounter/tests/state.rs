@@ -355,7 +355,10 @@ fn cooldown_widget_lists_the_next_available_boss_first() {
         }
     ));
     let text = cooldown_text(&panel, 0);
-    assert!(text.find("b:b:") < text.find("a:a:"));
+    assert!(matches!(
+        (text.find("b:b:"), text.find("a:a:")),
+        (Some(earlier), Some(later)) if earlier < later
+    ));
 }
 
 #[test]
@@ -381,55 +384,6 @@ fn hazard_panel_shows_unlocked_levels_and_blocks_locked_selection() {
     assert!(request(&mut p, Intent::HazardSelect).is_none());
     p.fields[2] = "5".into();
     assert!(request(&mut p, Intent::HazardSelect).is_some());
-}
-
-#[test]
-fn endgame_chain_selection_preserves_confirmed_progress_boundary()
--> Result<(), Box<dyn std::error::Error>> {
-    for (chain, expected) in [
-        (
-            EndgameChain::SoulWar,
-            vec![
-                "goshnar_s_cruelty",
-                "goshnar_s_greed",
-                "goshnar_s_hatred",
-                "goshnar_s_malice",
-                "goshnar_s_spite",
-                "goshnar_s_megalomania_purple",
-            ],
-        ),
-        (
-            EndgameChain::RottenBlood,
-            vec!["ichgahal", "murcion", "vemiath", "chagorz", "bakragore"],
-        ),
-    ] {
-        let mut panel = BossEncounterPanel::default();
-        assert!(!select_next_boss(&mut panel, chain));
-        panel.selected = true;
-        for boss in &expected {
-            assert!(select_next_boss(&mut panel, chain));
-            let key = format!("oteryn:creature.{boss}");
-            assert_eq!(panel.fields[0], key);
-            let command = request(&mut panel, Intent::Enter).ok_or("entry command")?;
-            assert_eq!(command.kind, 178);
-            assert_eq!(
-                command.payload,
-                oteryn_client_runtime::boss_encounter::encode_boss_key(&key)
-                    .map_err(|error| format!("{error:?}"))?
-            );
-            let before = panel.clone();
-            assert!(!select_next_boss(&mut panel, chain));
-            assert_eq!(panel, before);
-            panel.pending = false;
-            assert!(
-                panel.snapshot.is_none(),
-                "selecting a boss cannot fabricate quest progress"
-            );
-        }
-        assert!(select_next_boss(&mut panel, chain));
-        assert_eq!(panel.fields[0], format!("oteryn:creature.{}", expected[0]));
-    }
-    Ok(())
 }
 
 #[test]

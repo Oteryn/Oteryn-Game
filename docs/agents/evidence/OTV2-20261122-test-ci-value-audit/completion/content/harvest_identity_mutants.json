@@ -1,0 +1,23 @@
+{
+  "original": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "successful": true,
+    "output": "test_duplicate_is_rejected_before_writing (test_harvest_item_profiles.HarvestItemProfileTests.test_duplicate_is_rejected_before_writing) ... ok\ntest_production_provider_contains_the_complete_harvest_closure (test_harvest_item_profiles.HarvestItemProfileTests.test_production_provider_contains_the_complete_harvest_closure) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.995s\n\nOK\n"
+  },
+  "empty": {
+    "tests": 2,
+    "failures": 2,
+    "errors": 0,
+    "successful": false,
+    "output": "test_duplicate_is_rejected_before_writing (test_harvest_item_profiles.HarvestItemProfileTests.test_duplicate_is_rejected_before_writing) ... FAIL\ntest_production_provider_contains_the_complete_harvest_closure (test_harvest_item_profiles.HarvestItemProfileTests.test_production_provider_contains_the_complete_harvest_closure) ... FAIL\n\n======================================================================\nFAIL: test_duplicate_is_rejected_before_writing (test_harvest_item_profiles.HarvestItemProfileTests.test_duplicate_is_rejected_before_writing)\n----------------------------------------------------------------------\nValueError: HARVEST_ITEM_PROFILE_SET\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_harvest_item_profiles.py\", line 49, in test_duplicate_is_rejected_before_writing\n    with self.assertRaisesRegex(ValueError, 'HARVEST_ITEM_PROFILE_DUPLICATE'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: \"HARVEST_ITEM_PROFILE_DUPLICATE\" does not match \"HARVEST_ITEM_PROFILE_SET\"\n\n======================================================================\nFAIL: test_production_provider_contains_the_complete_harvest_closure (test_harvest_item_profiles.HarvestItemProfileTests.test_production_provider_contains_the_complete_harvest_closure)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_harvest_item_profiles.py\", line 18, in test_production_provider_contains_the_complete_harvest_closure\n    self.assertEqual(len(packet['records']), len(tool.IDS))\nAssertionError: 25 != 0\n\n----------------------------------------------------------------------\nRan 2 tests in 0.235s\n\nFAILED (failures=2)\n"
+  },
+  "singleton": {
+    "tests": 2,
+    "failures": 2,
+    "errors": 0,
+    "successful": false,
+    "output": "test_duplicate_is_rejected_before_writing (test_harvest_item_profiles.HarvestItemProfileTests.test_duplicate_is_rejected_before_writing) ... FAIL\ntest_production_provider_contains_the_complete_harvest_closure (test_harvest_item_profiles.HarvestItemProfileTests.test_production_provider_contains_the_complete_harvest_closure) ... FAIL\n\n======================================================================\nFAIL: test_duplicate_is_rejected_before_writing (test_harvest_item_profiles.HarvestItemProfileTests.test_duplicate_is_rejected_before_writing)\n----------------------------------------------------------------------\nValueError: HARVEST_ITEM_PROFILE_SET\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_harvest_item_profiles.py\", line 49, in test_duplicate_is_rejected_before_writing\n    with self.assertRaisesRegex(ValueError, 'HARVEST_ITEM_PROFILE_DUPLICATE'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: \"HARVEST_ITEM_PROFILE_DUPLICATE\" does not match \"HARVEST_ITEM_PROFILE_SET\"\n\n======================================================================\nFAIL: test_production_provider_contains_the_complete_harvest_closure (test_harvest_item_profiles.HarvestItemProfileTests.test_production_provider_contains_the_complete_harvest_closure)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_harvest_item_profiles.py\", line 18, in test_production_provider_contains_the_complete_harvest_closure\n    self.assertEqual(len(packet['records']), len(tool.IDS))\nAssertionError: 25 != 1\n\n----------------------------------------------------------------------\nRan 2 tests in 0.913s\n\nFAILED (failures=2)\n"
+  }
+}

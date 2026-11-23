@@ -1,0 +1,63 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor\tokio-1.53.1\src\runtime\io\scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor\tokio-1.53.1\src\sync\oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor\tokio-1.53.1\src\lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+
+running 911 tests
+....................................................................................... 87/911
+....................................................................................... 174/911
+....................................................................................... 261/911
+....................................................................................... 348/911
+....................................................................................... 435/911
+....................................................................................... 522/911
+....................................................................................... 609/911
+....................................................................................... 696/911
+....................................................................................... 783/911
+.................. 801/911
+world_clock::tests::registry_binds_the_clock_wire_ids_and_limits --- FAILED
+.... 806/911
+world_interaction::tests::registry_binds_the_world_interaction_ids_and_limits --- FAILED
+....................................................................................... 894/911
+.................
+failures:
+
+---- world_clock::tests::registry_binds_the_clock_wire_ids_and_limits stdout ----
+
+thread 'world_clock::tests::registry_binds_the_clock_wire_ids_and_limits' (25320) panicked at crates\protocol-oteryn\src\world_clock_tests.rs:133:5:
+assertion failed: SCHEMA.contains(&format!("At most\n// {MAX_WORLD_CLOCK_BYTES} bytes"))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- world_interaction::tests::registry_binds_the_world_interaction_ids_and_limits stdout ----
+
+thread 'world_interaction::tests::registry_binds_the_world_interaction_ids_and_limits' (28372) panicked at crates\protocol-oteryn\src\world_interaction_tests.rs:606:5:
+assertion failed: ITEM_SCHEMA.contains("// Capability 12 or capability 11 (a map-item or Ground source, WORLD-INTERACTION-0 §10.1): the\n  // tile does not accept the item, no line of sight, or a limit is reached.\n  ITEM_MOVE_OUTCOME_BLOCKED = 12;")
+
+
+failures:
+    world_clock::tests::registry_binds_the_clock_wire_ids_and_limits
+    world_interaction::tests::registry_binds_the_world_interaction_ids_and_limits
+
+test result: FAILED. 909 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.86s
+
+error: test failed, to rerun pass `-p oteryn-protocol-oteryn --lib`

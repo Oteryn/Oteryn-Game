@@ -1,0 +1,130 @@
+{
+  "base": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "path": "crates/gameplay/durability/src/durability/core_modules_terminal_replacement_schema_red_tests.rs",
+  "file_sha256": "c09f8b2e2c09638b0dfac1f3a129919f002017d61e944847a1fbe0c3ca473760",
+  "case_bodies": [
+    {
+      "case": "terminal_replacement_forward_syncs_lagging_scope_fence_atomically",
+      "start_line": 5,
+      "end_line": 16,
+      "body_sha256": "89980c39cc268b97c76e7953285f7e2e98a987e3ec3ae711f19586ce4a45a9bd",
+      "disposition": "KEEP_SCHEMA_SHAPE_COMPLEMENT_WITH_EXPLICIT_STATIC_LABEL",
+      "oracle": "Only contains/not-contains assertions against embedded migration text; no runtime admission/reconciliation transaction invoked."
+    },
+    {
+      "case": "terminal_replacement_rejects_scope_fence_ahead_of_foundation_authority",
+      "start_line": 19,
+      "end_line": 24,
+      "body_sha256": "744d587f8e2add8afcef1f3c806130a0910d501c5fec26181711e5245f2d523d",
+      "disposition": "KEEP_SCHEMA_SHAPE_COMPLEMENT_WITH_EXPLICIT_STATIC_LABEL",
+      "oracle": "Only contains/not-contains assertions against embedded migration text; no runtime admission/reconciliation transaction invoked."
+    },
+    {
+      "case": "terminal_replacement_rejects_live_or_mismatched_predecessor_without_mutation",
+      "start_line": 27,
+      "end_line": 36,
+      "body_sha256": "40a58b2995d14baed6b1a15463181ea54900ff81d79dae6ec399601e9caf0066",
+      "disposition": "KEEP_SCHEMA_SHAPE_COMPLEMENT_WITH_EXPLICIT_STATIC_LABEL",
+      "oracle": "Only contains/not-contains assertions against embedded migration text; no runtime admission/reconciliation transaction invoked."
+    },
+    {
+      "case": "terminal_replacement_lost_response_replays_only_exact_receipt_binding",
+      "start_line": 39,
+      "end_line": 51,
+      "body_sha256": "c03c1d38a25c5b797e70f1e0d042b8d05c21444bddf84f66d35d9b06b509fc6a",
+      "disposition": "KEEP_SCHEMA_SHAPE_COMPLEMENT_WITH_EXPLICIT_STATIC_LABEL",
+      "oracle": "Only contains/not-contains assertions against embedded migration text; no runtime admission/reconciliation transaction invoked."
+    },
+    {
+      "case": "terminal_replacement_conflicting_receipt_binding_fails_closed",
+      "start_line": 54,
+      "end_line": 59,
+      "body_sha256": "3b2f4ae6e04c9b096802d69ffda65a936d45c2adb6719a974053582a69d06028",
+      "disposition": "KEEP_SCHEMA_SHAPE_COMPLEMENT_WITH_EXPLICIT_STATIC_LABEL",
+      "oracle": "Only contains/not-contains assertions against embedded migration text; no runtime admission/reconciliation transaction invoked."
+    },
+    {
+      "case": "terminal_replacement_fences_predecessor_prepared_attempt_against_late_commit",
+      "start_line": 62,
+      "end_line": 69,
+      "body_sha256": "b949526dc95df2b20ce90c85ade2b155cbff631106601d287ddd45b937ccab92",
+      "disposition": "KEEP_SCHEMA_SHAPE_COMPLEMENT_WITH_EXPLICIT_STATIC_LABEL",
+      "oracle": "Only contains/not-contains assertions against embedded migration text; no runtime admission/reconciliation transaction invoked."
+    },
+    {
+      "case": "terminal_replacement_mid_transaction_failure_rolls_back_predecessor_and_candidate",
+      "start_line": 72,
+      "end_line": 77,
+      "body_sha256": "61efe26d7155188a465c5321435a3ceac8be7eccb7c5694ab02f329336c53b26",
+      "disposition": "KEEP_SCHEMA_SHAPE_COMPLEMENT_WITH_EXPLICIT_STATIC_LABEL",
+      "oracle": "Only contains/not-contains assertions against embedded migration text; no runtime admission/reconciliation transaction invoked."
+    },
+    {
+      "case": "collision_existing_terminal_replay_preserves_typed_collision_reason",
+      "start_line": 80,
+      "end_line": 89,
+      "body_sha256": "0bfdd3a28818c4ddf0831656e66fce3b457b932c911a6538db2414bf687b9695",
+      "disposition": "KEEP_SCHEMA_SHAPE_COMPLEMENT_WITH_EXPLICIT_STATIC_LABEL",
+      "oracle": "Only contains/not-contains assertions against embedded migration text; no runtime admission/reconciliation transaction invoked."
+    },
+    {
+      "case": "v2_reconciliation_round_trips_collision_concurrent_and_stale_distinctly",
+      "start_line": 92,
+      "end_line": 97,
+      "body_sha256": "215d4a2deedef40e579b229acc75f7b99c0d3b12fd95456ebf9a1cdb56261d0c",
+      "disposition": "KEEP_SCHEMA_SHAPE_COMPLEMENT_WITH_EXPLICIT_STATIC_LABEL",
+      "oracle": "Only contains/not-contains assertions against embedded migration text; no runtime admission/reconciliation transaction invoked."
+    },
+    {
+      "case": "concurrent_terminal_replacement_has_exactly_one_candidate_winner",
+      "start_line": 100,
+      "end_line": 110,
+      "body_sha256": "7ea35ae96b4fc9e905f187dbb7b46d8e5161ad98dda513d42df999477f8fdf14",
+      "disposition": "KEEP_SCHEMA_SHAPE_COMPLEMENT_WITH_EXPLICIT_STATIC_LABEL",
+      "oracle": "Only contains/not-contains assertions against embedded migration text; no runtime admission/reconciliation transaction invoked."
+    }
+  ],
+  "review_boundary": "All ten case bodies read. Their names describe behavior, but the actual scope is source-text schema shape. These are not evidence of rollback, concurrency, exact receipt replay, stale authority or current collision classification.",
+  "concrete_duplicate_predicates": [
+    {
+      "cases": [
+        "terminal_replacement_rejects_scope_fence_ahead_of_foundation_authority",
+        "terminal_replacement_mid_transaction_failure_rolls_back_predecessor_and_candidate"
+      ],
+      "predicate": "MIGRATION contains game_durability_session_replacements"
+    },
+    {
+      "cases": [
+        "terminal_replacement_forward_syncs_lagging_scope_fence_atomically",
+        "terminal_replacement_fences_predecessor_prepared_attempt_against_late_commit"
+      ],
+      "predicate": "Both require the same session_state 1..3 spelling; first also checks predecessor scope field."
+    },
+    {
+      "cases": [
+        "collision_existing_terminal_replay_preserves_typed_collision_reason",
+        "v2_reconciliation_round_trips_collision_concurrent_and_stale_distinctly"
+      ],
+      "predicate": "Both require identical attempt state 1..5 spelling; first also checks attempts table name."
+    }
+  ],
+  "prior_default_library_execution": {
+    "receipt": "holder_wait_validation.json",
+    "ids_receipt": "holder_wait_lib_ids.json",
+    "ids": [
+      "durability::terminal_replacement_schema_red_tests::collision_existing_terminal_replay_preserves_typed_collision_reason",
+      "durability::terminal_replacement_schema_red_tests::concurrent_terminal_replacement_has_exactly_one_candidate_winner",
+      "durability::terminal_replacement_schema_red_tests::terminal_replacement_conflicting_receipt_binding_fails_closed",
+      "durability::terminal_replacement_schema_red_tests::terminal_replacement_fences_predecessor_prepared_attempt_against_late_commit",
+      "durability::terminal_replacement_schema_red_tests::terminal_replacement_forward_syncs_lagging_scope_fence_atomically",
+      "durability::terminal_replacement_schema_red_tests::terminal_replacement_lost_response_replays_only_exact_receipt_binding",
+      "durability::terminal_replacement_schema_red_tests::terminal_replacement_mid_transaction_failure_rolls_back_predecessor_and_candidate",
+      "durability::terminal_replacement_schema_red_tests::terminal_replacement_rejects_live_or_mismatched_predecessor_without_mutation",
+      "durability::terminal_replacement_schema_red_tests::terminal_replacement_rejects_scope_fence_ahead_of_foundation_authority",
+      "durability::terminal_replacement_schema_red_tests::v2_reconciliation_round_trips_collision_concurrent_and_stale_distinctly"
+    ],
+    "boundary": "These IDs were among the 937 successful default-library functions. No new execution or PG qualification is claimed."
+  },
+  "unapplied_recommendation": "Consolidate redundant lexical predicates or rename the source checks to the schema shape they observe, retaining independent semantic tests elsewhere. Do not use ten passing lexical case names as ten runtime behavioral proofs. No source change applied.",
+  "whole_repository_completion": false
+}

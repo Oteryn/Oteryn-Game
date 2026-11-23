@@ -1,0 +1,63 @@
+{
+  "method": "Source evidence extraction, not execution or complete semantic correctness. Full raw JSON compressed deterministically, source hashes and exact assertion/call/risk metadata preserved.",
+  "versions": {
+    "tree-sitter": "0.25.2",
+    "tree-sitter-rust": "0.24.0"
+  },
+  "scanner_sha256": "0e67c6e8ed72d096878b0b660a26c9fda33aea1ca862c0010ad6c37477a9a116",
+  "observations": [
+    {
+      "stage": "initial root scan",
+      "outcome": "ERROR",
+      "reason": "Python3.12 tomllib could not parse workspace Cargo.toml line107,column9; recovered by preserving manifest parse error and continuing source evidence, not claiming valid Cargo selection."
+    },
+    {
+      "stage": "independent initial content probe",
+      "outcome": "6 of7 predicates satisfied; comment-equivalence false negative",
+      "receipt": "completion/content/source_scan_independent_probe.json"
+    },
+    {
+      "stage": "independent corrected probe",
+      "receipt": "completion/content/source_scan_independent_probe_after.json",
+      "outcome": "Unchanged seven predicates plus three metadata checks pass"
+    }
+  ],
+  "controls": {
+    "result": "PASS",
+    "controls": [
+      "Rust comments/formatting preserve token identity",
+      "Rust whitespace inside string literals changes token identity",
+      "Uninvoked nested assertions are not direct assertions",
+      "Nested return is not a successful outer-test early return",
+      "Outer successful early return is a review candidate",
+      "Macro argument calls remain explicitly opaque",
+      "Python class/fixture skip and environ subscript are visible",
+      "Python nested assertion/return scope remains separate"
+    ]
+  },
+  "summary": {
+    "assigned_paths": 1222,
+    "parsed_test_functions": 5003,
+    "paths_with_parse_errors": 7,
+    "paths_without_ordinary_tests": 9,
+    "risk_counts": {
+      "no_direct_assertion": 522,
+      "assertions_only_in_nested_callable": 242,
+      "all_quantifier_needs_nonempty_fixture": 103,
+      "text_input_or_source_oracle": 235,
+      "successful_early_return": 20,
+      "environment_dependency": 93,
+      "option_find_ordering": 1,
+      "skip_path": 10,
+      "return_path_requires_review": 46,
+      "self_equality": 1,
+      "ignored_attribute": 1
+    },
+    "duplicate_groups": 8
+  },
+  "raw_sha256": "6e9e7dcb18032cb923d9906fd9ac3502907f26c01af62516596384ba1992ef62",
+  "compressed_sha256": "e9ada84c9d584900496e4a2dcaf944fa4843e3d563f8ddc36153f83abb194adc",
+  "raw_bytes": 17152767,
+  "compressed_bytes": 1774658,
+  "parser_errors_preserved": true
+}

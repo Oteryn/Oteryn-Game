@@ -16,6 +16,47 @@ class OfficialCreatureBalanceTests(unittest.TestCase):
         cls.stage = json.loads(STAGE.read_bytes())
 
     def test_news_overrides_preserve_every_unrelated_profile_field(self):
+        # TIBIA-NEWS-BAL-1 admitted these exact source/creature/field rows. Keep
+        # coverage independent of the ledger that selects the profiles below.
+        self.assertCountEqual(
+            [(row["news_id"], row["creature"], row["field"])
+             for row in self.ledger["overrides"]],
+            [
+                (8918, "druid_s_apparition", "experience"),
+                (8918, "knight_s_apparition", "experience"),
+                (8918, "monk_s_apparition", "experience"),
+                (8918, "paladin_s_apparition", "experience"),
+                (8918, "sorcerer_s_apparition", "experience"),
+                (8935, "darklight_matter", "experience"),
+                (8935, "darklight_matter", "fire_sensitivity"),
+                (8935, "darklight_source", "experience"),
+                (8935, "darklight_striker", "experience"),
+                (8935, "darklight_striker", "fire_sensitivity"),
+                (8935, "devoted_radiant_acolyte", "experience"),
+                (8935, "devoted_radiant_inquisitor", "experience"),
+                (8935, "devoted_radiant_paragon", "experience"),
+                (8935, "devoted_radiant_templar", "experience"),
+                (8935, "devoted_radiant_warden", "experience"),
+                (8935, "devoted_radiant_zealot", "experience"),
+                (8935, "radiant_acolyte", "experience"),
+                (8935, "radiant_inquisitor", "experience"),
+                (8935, "radiant_paragon", "experience"),
+                (8935, "radiant_templar", "experience"),
+                (8935, "radiant_warden", "experience"),
+                (8935, "radiant_zealot", "experience"),
+                (8935, "walking_pillar", "experience"),
+                (9024, "dworc_shadowstalker", "experience"),
+                (9024, "gloom_maw", "experience"),
+                (9024, "orclops_bloodbreaker", "experience"),
+                (9024, "true_dawnfire_asura", "experience"),
+                (9024, "true_feverbloom_asura", "experience"),
+                (9024, "true_midnight_asura", "experience"),
+                (9039, "darklight_source", "fire_sensitivity"),
+                (9039, "darklight_striker", "fire_sensitivity"),
+                (9039, "mycobiontic_beetle", "energy_sensitivity"),
+                (9039, "oozing_corpus", "energy_sensitivity"),
+            ],
+        )
         selected = {"oteryn:creature." + row["creature"] for row in self.ledger["overrides"]}
         before = {"authoring_profiles": [row for row in self.stage["authoring_profiles"] if row["target"]["key"] in selected]}
         after = {"authoring_profiles": json.loads((ROOT / "content/world/definitions/declarations.json").read_bytes())["authoring_profiles"]}

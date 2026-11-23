@@ -18,11 +18,26 @@ class HarvestItemProfileTests(unittest.TestCase):
         self.assertEqual(len(packet['records']), len(tool.IDS))
         taxonomy = {r['target']['key']: r['source_taxonomy'] for r in json.loads(
             (tool.ROOT / 'content/items/taxonomy/items.json').read_bytes())['records']}
+        top_order = json.loads((tool.ROOT / 'tools/content-schema/native-gameplay/house-decoration-profiles.json').read_bytes())['always_on_top']
+        nail = next(row['definition']
+                    for path in sorted((tool.ROOT / 'content/items/definitions').glob('items-*.json'))
+                    for row in json.loads(path.read_bytes())['records']
+                    if row['definition']['identity']['key'] == 'oteryn:item.tibia.i953')
+        self.assertEqual(nail['semantics']['trade_restrictions']['value']['marketable'],
+                         {'state': 'KNOWN', 'value': True})
         for record in packet['records']:
             key = record['production_definition']['production_key']
             # Production registration attaches the existing canonical taxonomy.
             if key in taxonomy:
                 record['authoring']['taxonomy'] = taxonomy[key]
+            # The House source and canonical nail owner enrich the earlier capture.
+            # Read those independent inputs; keep the complete final-row comparison.
+            top = top_order[key.removeprefix('oteryn:item.tibia.i')]
+            record['attributes']['always_on_top'] = top != 0
+            record['attributes']['always_on_top_order'] = top
+            if key == 'oteryn:item.tibia.i953':
+                self.assertEqual(record['semantics']['trade_restrictions'], {'state': 'UNKNOWN'})
+                record['semantics']['trade_restrictions'] = nail['semantics']['trade_restrictions']
             self.assertEqual(profiles[key], record)
         manifest = json.loads((tool.ROOT / 'content/spells.manifest.json').read_bytes())
         self.assertEqual(manifest['item_profiles']['sha256'], hashlib.sha256(raw).hexdigest())

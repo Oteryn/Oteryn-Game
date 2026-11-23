@@ -3,8 +3,8 @@
 //! The Channel table retains at most one think and one step per exact creature; idle cancels both.
 //! Movement owns destination admission, bounded A*, the shared path ledger and position commits.
 //!
-//! The bootstrap `ai` tree is also compiled standalone by compatibility tests. Runtime goals
-//! are mounted here so those immutable snapshot/proposal tests retain their existing boundary.
+//! The bootstrap integration tests consume the public `ai` API. Runtime goals stay
+//! mounted here, separate from their immutable snapshot/proposal fixtures.
 
 mod attack_facing;
 pub mod behaviour_profile;

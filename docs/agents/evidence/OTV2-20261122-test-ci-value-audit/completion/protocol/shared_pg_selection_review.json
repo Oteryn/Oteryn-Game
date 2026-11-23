@@ -1,0 +1,144 @@
+{
+  "schema": "oteryn-test-value-shared-pg-selection/v1",
+  "source_heads": {
+    "authoring": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+    "reconciled": "0623fbd59c372bbf479f3965031f47393c42cd39"
+  },
+  "method": "Read-only source/caller/fixture review; all recorded source hashes compared across both worktrees. No runtime executions in this receipt.",
+  "findings": [
+    {
+      "id": "PG-BOUNDARY-01",
+      "verdict": "Environment-qualified coverage",
+      "evidence": "The shared character_revision fixture::run obtains configured_admin. Missing OTERYN_TEST_POSTGRES_ADMIN_URL prints PRE-ROUTING / NONCANONICAL and returns Ok(()) before constructing/executing body(admin). Bestiary configured_admin independently has the same missing-config boundary.",
+      "implication": "A default libtest/nextest PASS without that environment is not evidence of a SQL scenario execution."
+    },
+    {
+      "id": "PG-BOUNDARY-02",
+      "verdict": "Separate pure and configured callers",
+      "evidence": "rust-fast-archive.yml explicitly unsets the admin URL before running the archive. postgres-test-partitions.yml supplies it from a service container or isolated local server and invokes digest-bound archive filters through PG_RUN.",
+      "implication": "Only an actual configured run receipt with selected cases/body execution may be counted as PG qualification. This source trace does not prove a current CI run passed."
+    },
+    {
+      "id": "PG-BOUNDARY-03",
+      "verdict": "Source registration and dedicated archive traced",
+      "evidence": "lib and dedicated target share the same declarations. Cargo has explicit dedicated target test=false, selected by nextest archive --test oteryn-gameplay-dispatch. Build script emits generated direct-directory mounts; shard helper chooses groups. Shared helper checks exact clean head, fixed dedicated mode, shard and one-binary complete inventory.",
+      "implication": "The generated module graph is configuration-dependent. Source mountability is distinct from compiled IDs and runtime results."
+    },
+    {
+      "id": "PG-BOUNDARY-04",
+      "verdict": "Runnable partition accounting is exact at planner input",
+      "evidence": "plan_pg_partitions.py includes filter-match status matches, rejects duplicates/empty inventories, constrains secondary archives to the dispatch PG mount, compares sorted assigned cases to all selected cases and emits exact binary_id plus test filters. Ignored inventory entries remain ignored mismatches and are not selected.",
+      "implication": "Explicitly ignored hireling and canonical authoring cases cannot receive coverage credit from this default partitioning."
+    },
+    {
+      "id": "PG-BOUNDARY-05",
+      "verdict": "Helper-only tests may have real propagated oracles",
+      "evidence": "scenario_thread::run joins the invoked scenario and propagates both panic and TestResult errors; run_async routes through fixture::run. A wrapper with no inline assertion still needs its actual callee and fixture reviewed.",
+      "implication": "AST no_direct_assertion is not a deletion verdict."
+    }
+  ],
+  "source_scopes": [
+    {
+      "path": "crates/gameplay/dispatch/Cargo.toml",
+      "sha256": "003da0c454f42208067c4efbfd513ef21e0674eb5a2eca18330f48cdef39e2a5",
+      "scope": "Full manifest: explicit dedicated test target has test=false; CI selects it by exact name.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/lib.rs",
+      "sha256": "069f42ecec4226688d2fc63d04d7cb0ce6efaec881cf5fba78285681697e2d01",
+      "scope": "Full three declarations and common-mode crate cfg.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/ci_unit_archive.rs",
+      "sha256": "a86f4dc68a13d6b260f3359c019d91b5000488a37077512500c1f3924be039e4",
+      "scope": "Full dedicated-mode cfg and identical three declarations.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/build.rs",
+      "sha256": "6ce5103a2bc35f8df02fd1fb41428847ba8f8b194900c0f6948559c971f532e7",
+      "scope": "Full source: generated directory mounts, shard configuration, archive-mode validation.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/build_pg_shards.rs",
+      "sha256": "3aca3fe4fb5881de28c3edbe6fd5f0976bf668461e4d7f23b5e2f717f20e931f",
+      "scope": "Full source: primary/secondary cfg, recursive source weighting, shard groups and emitted selected mounts.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "apps/game-server/build_mounts.rs",
+      "sha256": "833f370c1249ffa877105e65ee7a812e8b034a1cd38142583691d5f0f32e2895",
+      "scope": "Full source: every direct .rs child sorted, snake_case checked, absolute #[path] mounts emitted.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/monk_save.rs",
+      "sha256": "8a2f04bb6c9542c2feecf6396c1372948d2b86fb8756208cd9dabe408c651565",
+      "scope": "Test module mount at 220-222 only; production behavior not reviewed by this receipt.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs",
+      "sha256": "b70975915fb8858aabaca64a7338f8d038d51fd7c8a51d5aacab1f6ddc00f441",
+      "scope": "Lines1-88: explicit primary fixtures and generated support/test mount includes; shared fixture import.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs",
+      "sha256": "cf933afebacc780febe184f19019ef86d1afabd44ce93fbcf8cb4fb82fd4d725",
+      "scope": "configured_admin at836-848 and run at992-1009; no full-file semantic claim.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "apps/game-server/tests/support/bestiary_postgres_harness.rs",
+      "sha256": "c62fed5ec533134455490402d0b3c2705fb657a08224cd5fb0869d23c6caa34f",
+      "scope": "Lines1-140: configured_admin, canonical test URL, real database creation, exact PostgreSQL version check and migrations/cleanup.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_fixture/scenario_thread.rs",
+      "sha256": "7cacc2730f716db9341adc98e706b0945c272c208cb26d3fe63bcc7485750431",
+      "scope": "Full source: 64MB stack wrapper propagates panic/scenario errors; run_async delegates shared fixture::run.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "tools/ci/shared_dispatch_archive.py",
+      "sha256": "e107725ed79de663630a645f55478007fa41758b5244736c6054a19ea01c6f77",
+      "scope": "Lines1-164 and171-205: recipe, entrypoint parity, exact clean head, fixed dedicated/shard environment, one-binary complete inventory including ignored mismatches; this is not a whole-script security audit.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": "tools/ci/plan_pg_partitions.py",
+      "sha256": "0e3cdf32579feec5d270659382d23bbe9de29b9d10d59ce994b34bcb1d4f8188",
+      "scope": "Full source: filter-match runnable selection, duplicate rejection, all archives, exactly-once partition assertion, exact binary_id/test filters.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": ".github/workflows/rust-fast-archive.yml",
+      "sha256": "79094b0db353d76dc919099ec636e7e34add81e1a90a0847f206519eee0f6ace",
+      "scope": "Lines350-410: archive verification, explicit unset of PG admin environment, archive runner and completion distinction.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": ".github/workflows/pr-postgres-harness.yml",
+      "sha256": "253311344bf0037fda6abe34e17cdcded6e23cd0b2680c065c265b1b98fdd25e",
+      "scope": "Lines244-305: split-dispatch inventory check and reusable PG partition caller/arguments.",
+      "same_bytes_in_reconciled": true
+    },
+    {
+      "path": ".github/workflows/postgres-test-partitions.yml",
+      "sha256": "63227f9e891db9e4cf5f256cd8740045a47332371ec1e8dc0416beda1b0298e5",
+      "scope": "Lines1-70,486-534,606-644,745-825: inputs, exact-head checkout, configured local PG branches, verified planner and actual archive execution loops.",
+      "same_bytes_in_reconciled": true
+    }
+  ],
+  "runtime_executions": 0,
+  "limitations": [
+    "No current GitHub workflow conclusion, case count, or actual PG connection is asserted here.",
+    "This receipt resolves shared caller/environment boundaries, not every scenario body or custom local gate.",
+    "Historical configured PG receipts from other named tests cannot qualify an ignored test or a different test path."
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "path": "tools/content-schema/quest-authoring/donor_sources/refinements/joins_next/test_builder.py",
+  "sha256": "c7d80b1b167ddb2870e6d2e60a71418ea25e89b009613b73befd7f2b68bd5d1b",
+  "command": [
+    "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+    "-m",
+    "unittest",
+    "-v",
+    "test_builder.ParserControls"
+  ],
+  "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/donor_sources/refinements/joins_next",
+  "PYTHONPATH": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+  "observed_tool_chunk": "49c83f",
+  "tests_run": 11,
+  "result": "PASS",
+  "executed_ids": [
+    "ParserControls.test_literal_monster_call_only",
+    "ParserControls.test_quotes_and_comments_not_calls",
+    "ParserControls.test_registered_monster_event_names",
+    "ParserControls.test_dynamic_event_table_remains_unresolved",
+    "ParserControls.test_missing_event_table_still_counts_as_monster_definition",
+    "ParserControls.test_table_shadow_and_rebind_rejected",
+    "ParserControls.test_events_after_register_or_mutated_rejected",
+    "ParserControls.test_factory_shadow_and_table_escape_rejected",
+    "ParserControls.test_nested_table_or_events_scope_rejected",
+    "ParserControls.test_events_before_table_declaration_rejected",
+    "ParserControls.test_shadowed_registered_table_not_used"
+  ],
+  "scope": "Actual separately selected syntheticparsercontrols after fullmodule50secondsetup timeout. Seven PacketControls remain without completeexecution."
+}

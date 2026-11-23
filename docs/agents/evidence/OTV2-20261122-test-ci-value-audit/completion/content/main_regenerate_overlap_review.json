@@ -1,0 +1,116 @@
+{
+  "scope": "Read-only current-main source review plus actual two existing test-function executions against current-main dispatcher compiled in memory. Existing test mocks retain complete producer boundaries; absent travel module supplied only as an unmocked-call trap then patched by real tests. ROOT/WORLD additionally isolated in temporary roots. Not full main checkout/36-test execution or main production generation.",
+  "upstream_commit": "d1d44e717cbe327c6348932921671ff6803df4de",
+  "reviewed_source_hashes": {
+    "tools/content-migration/regenerate_content.py": "590260f0969b7b2aad91a894c9af8b86c6077efd52b23c8008c14fbd57a3d685",
+    "tools/content-migration/test_regenerate_content.py": "a753ba005ec2bb01138b13137f6773845295f2648b263b36369f57f75becc5b1"
+  },
+  "semantic_delta": "main adds project_routes before canonicalization and --check. Main test patches Buddel and routes; full_generation_trace records routes, and exact order test includes both before cohort.",
+  "results": [
+    {
+      "mode": "baseline_main",
+      "test": "test_source_cohort_includes_installed_successors",
+      "status": "PASS"
+    },
+    {
+      "mode": "baseline_main",
+      "test": "test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them",
+      "status": "PASS"
+    },
+    {
+      "mode": "omit_buddel",
+      "test": "test_source_cohort_includes_installed_successors",
+      "status": "PASS"
+    },
+    {
+      "mode": "omit_buddel",
+      "test": "test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them",
+      "status": "REJECTED",
+      "exception_type": "AssertionError",
+      "detail": "Existing exact-order/count assertion rejected mutated dispatch.",
+      "observed_order": [
+        [
+          "python3",
+          "tools/content-migration/world_project_v2_to_tree.py",
+          "--items-only"
+        ],
+        [
+          "materialize-world"
+        ],
+        [
+          "install-thaian"
+        ],
+        [
+          "project-travel-routes"
+        ],
+        [
+          "canonicalize-world"
+        ],
+        [
+          "source-cohort"
+        ],
+        [
+          "repin-world"
+        ],
+        [
+          "python3",
+          "tools/content-migration/world_project_v2_to_tree.py"
+        ],
+        [
+          "world-metadata"
+        ]
+      ]
+    },
+    {
+      "mode": "premature_cohort",
+      "test": "test_source_cohort_includes_installed_successors",
+      "status": "PASS"
+    },
+    {
+      "mode": "premature_cohort",
+      "test": "test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them",
+      "status": "REJECTED",
+      "exception_type": "AssertionError",
+      "detail": "Existing exact-order/count assertion rejected mutated dispatch.",
+      "observed_order": [
+        [
+          "python3",
+          "tools/content-migration/world_project_v2_to_tree.py",
+          "--items-only"
+        ],
+        [
+          "materialize-world"
+        ],
+        [
+          "install-thaian"
+        ],
+        [
+          "source-cohort"
+        ],
+        [
+          "install-buddel"
+        ],
+        [
+          "project-travel-routes"
+        ],
+        [
+          "canonicalize-world"
+        ],
+        [
+          "source-cohort"
+        ],
+        [
+          "repin-world"
+        ],
+        [
+          "python3",
+          "tools/content-migration/world_project_v2_to_tree.py"
+        ],
+        [
+          "world-metadata"
+        ]
+      ]
+    }
+  ],
+  "conclusion": "The exact escaped Buddel defect and producer ordering contract are fixed on current main. Dropping our changed test file is appropriate only if base-head unmocked Buddel failure is explicitly superseded by verified merge result, or a main-based branch is allowed. Sole-parent0623 by itself still contains the old defective test. Do not copy current-main test alone without its producer/new travel owner."
+}

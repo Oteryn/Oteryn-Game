@@ -1,0 +1,208 @@
+{
+  "head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "source_sha256": {
+    "crates/gameplay/durability/src/durability/core_modules_linkage_tests.rs": "834b82c938310fcd6544eb835149c189e457c06841179731d15e986563d28f31",
+    "crates/gameplay/durability/src/durability/bank.rs": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+    "crates/gameplay/durability/src/durability/db_tests/holder_round_trip_tests.rs": "e93940544720f60f632cd9f55816b22b95b66455cc0d36f8ac5493020e7aa099",
+    "apps/game-server/tests/support/bank_postgres_cases.rs": "95e2862cd0e7694874e5101f6d85d18b442d17451ebaecd9abc9b9fe35a7017d"
+  },
+  "commands": [
+    {
+      "label": "durability_build",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "--no-run",
+        "--message-format=json"
+      ],
+      "rc": 0,
+      "seconds": 546.786,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_build.log",
+      "postgres_configured": false
+    },
+    {
+      "label": "durability_linkage_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-gameplay-durability/8a3697ee7c854f3c/out/oteryn_gameplay_durability-8a3697ee7c854f3c",
+        "durability::runtime_scope_assignment_linkage::runtime_scope_assignment_api_is_linked",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "seconds": 0.043,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_linkage_list.log",
+      "postgres_configured": false
+    },
+    {
+      "label": "durability_linkage",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-gameplay-durability/8a3697ee7c854f3c/out/oteryn_gameplay_durability-8a3697ee7c854f3c",
+        "--exact",
+        "durability::runtime_scope_assignment_linkage::runtime_scope_assignment_api_is_linked",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "seconds": 0.02,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_linkage.log",
+      "postgres_configured": false
+    },
+    {
+      "label": "durability_bank_codes_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-gameplay-durability/8a3697ee7c854f3c/out/oteryn_gameplay_durability-8a3697ee7c854f3c",
+        "durability::bank::tests::stored_codes_match_migration_0071",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "seconds": 0.005,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_bank_codes_list.log",
+      "postgres_configured": false
+    },
+    {
+      "label": "durability_bank_codes",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-gameplay-durability/8a3697ee7c854f3c/out/oteryn_gameplay_durability-8a3697ee7c854f3c",
+        "--exact",
+        "durability::bank::tests::stored_codes_match_migration_0071",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "seconds": 0.006,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_bank_codes.log",
+      "postgres_configured": false
+    },
+    {
+      "label": "durability_relation_locks_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-gameplay-durability/8a3697ee7c854f3c/out/oteryn_gameplay_durability-8a3697ee7c854f3c",
+        "durability::db::runtime_scope_identity_red_tests::admission_relation_fence_locks_the_required_relations_exclusively",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "seconds": 0.004,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_relation_locks_list.log",
+      "postgres_configured": false
+    },
+    {
+      "label": "durability_relation_locks",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-gameplay-durability/8a3697ee7c854f3c/out/oteryn_gameplay_durability-8a3697ee7c854f3c",
+        "--exact",
+        "durability::db::runtime_scope_identity_red_tests::admission_relation_fence_locks_the_required_relations_exclusively",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "seconds": 9.405,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_relation_locks.log",
+      "postgres_configured": true
+    },
+    {
+      "label": "durability_bank_pg_build",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "character_authority_postgres",
+        "--no-run",
+        "--message-format=json"
+      ],
+      "rc": 0,
+      "seconds": 882.778,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_bank_pg_build.log",
+      "postgres_configured": false
+    },
+    {
+      "label": "durability_bank_rollback_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/47bd2d0725a58a06/out/character_authority_postgres-47bd2d0725a58a06",
+        "bank_postgres_cases::an_uncommitted_body_rolls_back_and_a_committed_body_replays",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "seconds": 0.074,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_bank_rollback_list.log",
+      "postgres_configured": false
+    },
+    {
+      "label": "durability_bank_rollback",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/47bd2d0725a58a06/out/character_authority_postgres-47bd2d0725a58a06",
+        "--exact",
+        "bank_postgres_cases::an_uncommitted_body_rolls_back_and_a_committed_body_replays",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "seconds": 34.306,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_bank_rollback.log",
+      "postgres_configured": true
+    }
+  ],
+  "status": "PASS",
+  "rustc": "rustc 1.100.0 (0ef1bc386 2026-11-09)",
+  "durability_binary": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-gameplay-durability/8a3697ee7c854f3c/out/oteryn_gameplay_durability-8a3697ee7c854f3c",
+  "postgres": {
+    "name": "oteryn-test-ci-value-audit-durability-20261123",
+    "container_id": "49e7f9bf1f143487aa31c06cc158a2eef5abe8c23b702bada0ad244c5a133a3f",
+    "image": "postgres:18.6-bookworm",
+    "image_id": "sha256:5c4783a8cc3f0074912164f94dfa1be4e043438f0f707cf968d7af9a0d31a2c8",
+    "port": 32869,
+    "server_version_num": "180006",
+    "current_user": "oteryn_test_admin",
+    "credentials": "generated solely for this isolated validation; omitted",
+    "cleanup": [
+      "sudo",
+      "-n",
+      "docker",
+      "stop",
+      "oteryn-test-ci-value-audit-durability-20261123"
+    ]
+  },
+  "postgres_case_connections": [
+    "2026-11-23 11:40:06.196 UTC [139] LOG:  connection authorized: user=oteryn_test_admin database=oteryn_game_review_24121_0_holder_fence_one_stmt",
+    "2026-11-23 11:40:14.983 UTC [140] LOG:  connection authorized: user=oteryn_test_admin database=oteryn_game_review_24121_0_holder_fence_one_stmt",
+    "2026-11-23 11:54:58.357 UTC [179] LOG:  connection authorized: user=oteryn_test_admin database=bp_bank_crash_1795434898141241688",
+    "2026-11-23 11:55:31.041 UTC [182] LOG:  connection authorized: user=oteryn_test_admin database=bp_bank_crash_1795434898141241688",
+    "2026-11-23 11:55:31.107 UTC [183] LOG:  connection authorized: user=oteryn_test_admin database=bp_bank_crash_1795434898141241688",
+    "2026-11-23 11:55:31.252 UTC [184] LOG:  connection authorized: user=oteryn_test_admin database=bp_bank_crash_1795434898141241688",
+    "2026-11-23 11:55:31.369 UTC [185] LOG:  connection authorized: user=oteryn_test_admin database=bp_bank_crash_1795434898141241688"
+  ],
+  "final_source_sha256": {
+    "crates/gameplay/durability/src/durability/core_modules_linkage_tests.rs": "834b82c938310fcd6544eb835149c189e457c06841179731d15e986563d28f31",
+    "crates/gameplay/durability/src/durability/bank.rs": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+    "crates/gameplay/durability/src/durability/db_tests/holder_round_trip_tests.rs": "e93940544720f60f632cd9f55816b22b95b66455cc0d36f8ac5493020e7aa099",
+    "apps/game-server/tests/support/bank_postgres_cases.rs": "95e2862cd0e7694874e5101f6d85d18b442d17451ebaecd9abc9b9fe35a7017d"
+  },
+  "selected_case_logs": {
+    "bank": "\nrunning 1 test\nDURABILITY_ROOT_REESTABLISHED\ncharacter_authority_postgres-47bd2d0725a58a06 ts=1795434931149 level=info module=durability event=db_tx_end outcome=ok ms=4 operation=begin attempts=1\ncharacter_authority_postgres-47bd2d0725a58a06 ts=1795434931178 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ncharacter_authority_postgres-47bd2d0725a58a06 ts=1795434931183 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ncharacter_authority_postgres-47bd2d0725a58a06 ts=1795434931408 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\ncharacter_authority_postgres-47bd2d0725a58a06 ts=1795434931431 level=info module=durability event=db_tx_end outcome=ok ms=3 operation=begin attempts=1\ncharacter_authority_postgres-47bd2d0725a58a06 ts=1795434931438 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ncharacter_authority_postgres-47bd2d0725a58a06 ts=1795434931482 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ncharacter_authority_postgres-47bd2d0725a58a06 ts=1795434931489 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ncharacter_authority_postgres-47bd2d0725a58a06 ts=1795434931508 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ncharacter_authority_postgres-47bd2d0725a58a06 ts=1795434932092 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ntest bank_postgres_cases::an_uncommitted_body_rolls_back_and_a_committed_body_replays ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 849 filtered out; finished in 34.30s\n",
+    "durability_linkage": "\nrunning 1 test\ntest durability::runtime_scope_assignment_linkage::runtime_scope_assignment_api_is_linked ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 936 filtered out; finished in 0.01s\n",
+    "durability_bank_codes": "\nrunning 1 test\ntest durability::bank::tests::stored_codes_match_migration_0071 ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 936 filtered out; finished in 0.00s\n",
+    "durability_relation_locks": "\nrunning 1 test\noteryn-game-server ts=1795434006200 level=info module=durability event=db_pool size=1 idle=1 max=1\nDURABILITY_ROOT_REESTABLISHED\noteryn_gameplay_durability-8a3697ee7c854f3c ts=1795434015005 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\ntest durability::db::runtime_scope_identity_red_tests::admission_relation_fence_locks_the_required_relations_exclusively ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 936 filtered out; finished in 9.40s\n"
+  },
+  "wrapper": {
+    "pid": 4186734,
+    "exit_code": 0
+  },
+  "selected_tests": {
+    "passed": 4,
+    "failed": 0,
+    "ignored": 0,
+    "postgres_executed": 2,
+    "pure_executed": 2
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "source_sha256": {
+    "test_coin_converter_profiles": "f445b23522ec7c686266a2142970e18967a614e00d563d0f3f50274ded608690",
+    "test_creature_level_rating": "8da4719ee1e3dd7ccf7c3a9203e23512e96deb642ad38f0d8a2a4cd5a6182b78",
+    "test_boss_corpse_terminal_reference": "aa5495586e9d352791f31830b7a3f4d75112cf072803c5eb99c87704e76651d4",
+    "test_cake_bridge_reference": "5cfc565100624e77df1c05ef3d6695dbda8905db3a5e9428b8c1eb5647b212b4"
+  },
+  "unmodified_inputs": {
+    "run": 9,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "successful": false,
+    "output": "test_converters_are_carried_nonstackable_tools_with_500_charges (test_coin_converter_profiles.CoinConverterProfiles.test_converters_are_carried_nonstackable_tools_with_500_charges) ... ok\ntest_calibration_within_ten_percent (test_creature_level_rating.CreatureLevelRatingTests.test_calibration_within_ten_percent) ... ok\ntest_deterministic (test_creature_level_rating.CreatureLevelRatingTests.test_deterministic) ... ok\ntest_every_creature_is_rated (test_creature_level_rating.CreatureLevelRatingTests.test_every_creature_is_rated) ... ok\ntest_missing_attacks_are_null_safe (test_creature_level_rating.CreatureLevelRatingTests.test_missing_attacks_are_null_safe) ... ok\ntest_existing_canonical_reference_is_retained_without_second_allocation (test_boss_corpse_terminal_reference.ExistingElderReferenceTests.test_existing_canonical_reference_is_retained_without_second_allocation) ... FAIL\ntest_exact_map_reference_is_idempotent_and_not_materializable (test_cake_bridge_reference.CakeBridgeReferenceTests.test_exact_map_reference_is_idempotent_and_not_materializable) ... ok\ntest_existing_semantic_facts_cannot_be_overwritten (test_cake_bridge_reference.CakeBridgeReferenceTests.test_existing_semantic_facts_cannot_be_overwritten) ... ok\ntest_inventory_admission_or_source_substitution_is_rejected (test_cake_bridge_reference.CakeBridgeReferenceTests.test_inventory_admission_or_source_substitution_is_rejected) ... ok\n\n======================================================================\nFAIL: test_existing_canonical_reference_is_retained_without_second_allocation (test_boss_corpse_terminal_reference.ExistingElderReferenceTests.test_existing_canonical_reference_is_retained_without_second_allocation)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_boss_corpse_terminal_reference.py\", line 19, in test_existing_canonical_reference_is_retained_without_second_allocation\n    self.assertEqual(len(records),34117)\nAssertionError: 34123 != 34117\n\n----------------------------------------------------------------------\nRan 9 tests in 5.614s\n\nFAILED (failures=1)\n"
+  },
+  "mutants": {
+    "coin_singleton": {
+      "rejected": false
+    },
+    "coin_empty": {
+      "rejected": false
+    },
+    "calibration_empty": {
+      "rejected": false
+    },
+    "calibration_missing": {
+      "rejected": false
+    },
+    "calibration_duplicate": {
+      "rejected": false
+    },
+    "calibration_wrong_reference": {
+      "rejected": false
+    }
+  },
+  "direct": {
+    "test_boss_corpse_terminal_reference": {
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "test_cake_bridge_reference": {
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  }
+}

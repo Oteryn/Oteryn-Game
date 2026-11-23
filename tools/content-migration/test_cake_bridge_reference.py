@@ -40,3 +40,7 @@ class CakeBridgeReferenceTests(unittest.TestCase):
         row['materializable'] = True
         with self.assertRaisesRegex(ValueError, 'REFERENCE_CHANGED'):
             reference.extend_records([row], ROOT)
+
+
+if __name__ == '__main__':
+    unittest.main()

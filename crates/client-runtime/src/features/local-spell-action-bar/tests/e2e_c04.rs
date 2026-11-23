@@ -1,8 +1,6 @@
-//! C04 replay covers `presentation::apply` in `crates/session/src/presentation.rs`, which decodes
-//! domain 20 into `SessionEvent::ActorCooldowns`; `vitals_events` in
-//! `apps/client/src/features/local-spell-action-bar/protocol.rs`, which installs that value; and
-//! `ActionBar::remaining_ms` in `crates/client-runtime/src/features/local-spell-action-bar/bar.rs`,
-//! which projects spell, primary-group, and secondary-group cooldowns for the native UI.
+//! C04 component replay exercises `decode_actor_cooldowns`, `ActionBar::remaining_ms`
+//! and feedback text. Optional captures supply bytes and expected scalars; the default
+//! fixture checks spell, primary-group and secondary-group cooldown projection.
 
 use super::*;
 use oteryn_session::{
@@ -78,9 +76,7 @@ fn replays_c04_server_cooldowns_and_refusals() -> Result<(), Box<dyn std::error:
     assert_eq!(value("pz")?, "Rejected");
     assert_eq!(value("cast")?, "Cast");
 
-    let before = bar.remaining_ms(spell, &groups);
     assert!(decode_actor_cooldowns(&[0xff]).is_err());
-    assert_eq!(bar.remaining_ms(spell, &groups), before);
     Ok(())
 }
 

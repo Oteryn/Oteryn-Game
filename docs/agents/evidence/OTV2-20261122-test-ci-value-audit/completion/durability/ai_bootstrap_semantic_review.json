@@ -1,0 +1,330 @@
+{
+  "base": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "state": "SOURCE_REVIEW; NEW_BEHAVIOR_PROPOSALS_HELD",
+  "counts": {
+    "integration_bodies": 7,
+    "library_bodies": 7,
+    "context_ranges": 8
+  },
+  "case_reviews": [
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "case": "every_hard_limit_accepts_max_and_rejects_max_plus_one_and_overflow",
+      "oracle": "For all eight enumerated resources, checks admitted maximum, maximum+1 rejection and checked-add overflow with typed error.",
+      "boundary": "The maximum and enumeration come from production; this is an algorithm envelope guard, not independent evidence of every literal resource policy.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "case": "active_actor_envelope_accepts_256_and_rejects_257_before_snapshot_publication",
+      "oracle": "Requires literal returned length256, exact provenance and typed rejection after adding one distinct actor.",
+      "boundary": "Fixture size derives from maximum but the returned literal length independently pins256.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "case": "canonical_perception_accepts_64_and_rejects_65_and_shuffled_ties_choose_lowest_id",
+      "oracle": "Reversed tied candidates choose literal ID0, and one excess candidate gives the exact capacity error.",
+      "boundary": "Both capacity fixtures derive from production maximum; neither assertion pins literal64/65 despite the name.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "case": "resolution_is_deterministic_stale_safe_and_cannot_publish_partial_result",
+      "oracle": "Four authored units select the literal lowest tied ID; work8 accepted,9 refused; actor/scope/content revisions independently refuse stale provenance.",
+      "boundary": "Pure immutable owner call. No mutable publication or actual game action; not all eight provenance dimensions are independently changed here.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "case": "resolution_canonicalizes_shuffled_unique_ordinals_and_rejects_duplicates",
+      "oracle": "Two different input orders select the same independently fixed candidate; duplicated ordinals specifically refuse.",
+      "boundary": "Pure canonical program order and duplicate policy.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "case": "path_proposal_is_data_only_and_rejects_config_and_hard_capacity_boundaries",
+      "oracle": "Pins128 returned steps,4096 route bytes, work31, first node0, exact repeat equality, current/stale navigation checks, one/two bootstrap requests and1024/1025 search work.",
+      "boundary": "Proposal data only; no path adoption or movement. Repeated equality is complemented by independent literal properties.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "case": "excluded_dimensions_fail_closed_without_a_foreign_mutation_operation",
+      "oracle": "Accepts exactly Resolve/PathProposal and checks specific rejection for seven explicitly listed excluded operations.",
+      "boundary": "Enum capability boundary; does not exercise a foreign mutating operation.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "case": "malformed_duplicate_snapshot_and_perception_inputs_fail_closed",
+      "oracle": "Duplicate actor identities and candidate identities are independently refused with InvalidInput.",
+      "boundary": "Negative identity guard; positive canonical order is covered separately.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "case": "priority_separated_duplicate_candidate_ids_fail_for_every_input_permutation",
+      "oracle": "All six permutations of two same-ID different-priority candidates plus an unrelated candidate specifically refuse.",
+      "boundary": "Protects against sorting by priority and checking only adjacent equal identities.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "case": "duplicate_candidate_ids_fail_at_input_head_middle_and_tail",
+      "oracle": "Three explicit duplicate placements at head/separated/tail refuse.",
+      "boundary": "Overlaps malformed duplicate refusal, but exercises different arrangements from the two-element case.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "case": "unique_perception_candidates_preserve_canonical_order",
+      "oracle": "Checks the entire candidate array against an independently spelled priority-descending and ID-ascending order.",
+      "boundary": "Pure canonicalization, no perception discovery or world snapshot.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "case": "perception_candidate_capacity_behavior_is_unchanged",
+      "oracle": "At production maximum preserves full length; one beyond specifically refuses.",
+      "boundary": "Shares the policy-derived maximum limitation with the integration capacity case; it does not pin64 independently.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "case": "evaluation_exhaustion_and_route_byte_overflow_publish_no_result",
+      "oracle": "Two authored units with work1 return EvaluationExhausted. A usize::MAX-sized first route step returns RouteBytes capacity error.",
+      "boundary": "The byte case reaches capacity rejection on the first step before arithmetic addition overflow. Its actual asserted CapacityExceeded result is correct; name alone must not be credited as route accumulation overflow.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests/path_request_tests.rs",
+      "case": "one_request_per_think_is_accepted_and_a_second_is_refused",
+      "oracle": "One request with a valid one-step route succeeds; two requests give BootstrapPathRequestLimit.",
+      "boundary": "Literal bootstrap per-think request policy, distinct from the general hard limit2.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    }
+  ],
+  "source_scopes": [
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "scope": "every_hard_limit_accepts_max_and_rejects_max_plus_one_and_overflow",
+      "start_line": 23,
+      "end_line": 35,
+      "file_sha256": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+      "body_sha256": "0917b5f664bf9084a76f73478db7ed89521fb2b30a0c365cb99517e6fa44b0e8",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "scope": "active_actor_envelope_accepts_256_and_rejects_257_before_snapshot_publication",
+      "start_line": 38,
+      "end_line": 54,
+      "file_sha256": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+      "body_sha256": "718fdd64352d8f2279b5bd8c2289f53f1ca04c5f7a2da87f3e94fd5cd1c0a6d1",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "scope": "canonical_perception_accepts_64_and_rejects_65_and_shuffled_ties_choose_lowest_id",
+      "start_line": 57,
+      "end_line": 78,
+      "file_sha256": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+      "body_sha256": "38f1de7f1fab5b4f3ed66ad1952f67470e4803a86336492c6a6e5656ad21ec70",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "scope": "resolution_is_deterministic_stale_safe_and_cannot_publish_partial_result",
+      "start_line": 81,
+      "end_line": 133,
+      "file_sha256": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+      "body_sha256": "8175b6e5055907c5afaa2fd3d0891ca4616a2ac17599ee95e0de326f4deaf4c4",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "scope": "resolution_canonicalizes_shuffled_unique_ordinals_and_rejects_duplicates",
+      "start_line": 136,
+      "end_line": 163,
+      "file_sha256": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+      "body_sha256": "a30e022619af0efd40c406504a6546f1d747f00ea0a0e9948a9666aa018db029",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "scope": "path_proposal_is_data_only_and_rejects_config_and_hard_capacity_boundaries",
+      "start_line": 166,
+      "end_line": 195,
+      "file_sha256": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+      "body_sha256": "1ad589ef35cbf8d8bf1c21ae4116f5e799ba71b66633d84f3dea422c7e88faa8",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "scope": "excluded_dimensions_fail_closed_without_a_foreign_mutation_operation",
+      "start_line": 198,
+      "end_line": 216,
+      "file_sha256": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+      "body_sha256": "a41a1126339b358e8bf331476ef6469266791602adff68c33fc6bff0c466ca0a",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "scope": "malformed_duplicate_snapshot_and_perception_inputs_fail_closed",
+      "start_line": 23,
+      "end_line": 35,
+      "file_sha256": "0b1b10bb8fa1721e04a6a86fb89b3628a8f6c9a42577182d68d46ae285498f98",
+      "body_sha256": "e4d39bee4b37b02fac383214d70d3d0debf7e4da6af58b20a9f77a4384e1e917",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "scope": "priority_separated_duplicate_candidate_ids_fail_for_every_input_permutation",
+      "start_line": 38,
+      "end_line": 58,
+      "file_sha256": "0b1b10bb8fa1721e04a6a86fb89b3628a8f6c9a42577182d68d46ae285498f98",
+      "body_sha256": "462b63e6b5ce628415d23de29d05bdc97e79ebd5e4276a058a3b21d06f37658d",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "scope": "duplicate_candidate_ids_fail_at_input_head_middle_and_tail",
+      "start_line": 61,
+      "end_line": 87,
+      "file_sha256": "0b1b10bb8fa1721e04a6a86fb89b3628a8f6c9a42577182d68d46ae285498f98",
+      "body_sha256": "945b6e84a69401d0a7173f85cedf43c9a1ab17a9dfab8971ab5b21df3b1161e4",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "scope": "unique_perception_candidates_preserve_canonical_order",
+      "start_line": 90,
+      "end_line": 110,
+      "file_sha256": "0b1b10bb8fa1721e04a6a86fb89b3628a8f6c9a42577182d68d46ae285498f98",
+      "body_sha256": "0ebfdd0b2eba641f3b0f4d93933f3773e802fdf2b6176a592d536c324bf05721",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "scope": "perception_candidate_capacity_behavior_is_unchanged",
+      "start_line": 113,
+      "end_line": 133,
+      "file_sha256": "0b1b10bb8fa1721e04a6a86fb89b3628a8f6c9a42577182d68d46ae285498f98",
+      "body_sha256": "f2d85060714f517e2aa1753c0fc3b273ad62157e89e0de8f99c43ff16f1b80bb",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests.rs",
+      "scope": "evaluation_exhaustion_and_route_byte_overflow_publish_no_result",
+      "start_line": 136,
+      "end_line": 155,
+      "file_sha256": "0b1b10bb8fa1721e04a6a86fb89b3628a8f6c9a42577182d68d46ae285498f98",
+      "body_sha256": "6e8aa13b74b0068e4c0cf0f890e99d0d4fce7afe206f488e0610696c4d3d2108",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/tests/path_request_tests.rs",
+      "scope": "one_request_per_think_is_accepted_and_a_second_is_refused",
+      "start_line": 4,
+      "end_line": 11,
+      "file_sha256": "c9ec84082a4518ea007166d50f6a80451dbae2b1890e6bf3082f0851cd8cbe50",
+      "body_sha256": "6f7e5c266784dcd04532e7c62c1fc4938c07badba9423689e2cefd90e4a3bf91",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/mod.rs",
+      "scope": "Public module structure, eight limits and operation capability boundary",
+      "start_line": 1,
+      "end_line": 116,
+      "file_sha256": "bddab355674c61af52100638e0799a6b6d45dabf990144848fe1985a88fef29f",
+      "range_sha256": "bddab355674c61af52100638e0799a6b6d45dabf990144848fe1985a88fef29f",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/snapshot.rs",
+      "scope": "Snapshot canonical identity and exact provenance comparison",
+      "start_line": 1,
+      "end_line": 118,
+      "file_sha256": "966442daf7eca5d659046ef6652bd1a9edc7eeacbe9111b5bd9d5d27162ed593",
+      "range_sha256": "966442daf7eca5d659046ef6652bd1a9edc7eeacbe9111b5bd9d5d27162ed593",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/perception.rs",
+      "scope": "Candidate identity, duplicate detection and canonical priority ordering",
+      "start_line": 1,
+      "end_line": 71,
+      "file_sha256": "386755946bd6c5f9fc4f7a8ff5daccb6dc6330d6980acc9032250d91c017639d",
+      "range_sha256": "386755946bd6c5f9fc4f7a8ff5daccb6dc6330d6980acc9032250d91c017639d",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/resolution.rs",
+      "scope": "Current provenance, bounded units/work, canonical ordinals and immutable decision",
+      "start_line": 1,
+      "end_line": 73,
+      "file_sha256": "3e371cff90c1771ccbd7cb4de74f5a140d4832cefb802f3ec60546f096a4c8dc",
+      "range_sha256": "3e371cff90c1771ccbd7cb4de74f5a140d4832cefb802f3ec60546f096a4c8dc",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/path_proposal.rs",
+      "scope": "Bootstrap1 versus hard2 requests, search/step/byte bounds and immutable proposal",
+      "start_line": 1,
+      "end_line": 106,
+      "file_sha256": "399e61fecfdf453332e896007ef7b02abeb8b5ab185b47708ed166dc787f9647",
+      "range_sha256": "399e61fecfdf453332e896007ef7b02abeb8b5ab185b47708ed166dc787f9647",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "scope": "Public owner exports",
+      "start_line": 1,
+      "end_line": 12,
+      "file_sha256": "723ca446757ec87b2131818f2434e6f6071ae34c3109a446edf320cdb0757d93",
+      "range_sha256": "8ce48675d7b7dedb07be42a861935e237fd3e843dc8f9cd1d1d5485b5fe4e1ef",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/Cargo.toml",
+      "scope": "Normal library dependency",
+      "start_line": 43,
+      "end_line": 47,
+      "file_sha256": "41af9e1fc4fa9f078ae3af9385982e552de5878fac17e39fa0784b106a6c71d6",
+      "range_sha256": "2c5db3421733e53e9ecf168d992f5c3c6fb921966040ce161e80ee27d8fa0fac",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/Cargo.toml",
+      "scope": "Test-support development dependency",
+      "start_line": 87,
+      "end_line": 92,
+      "file_sha256": "41af9e1fc4fa9f078ae3af9385982e552de5878fac17e39fa0784b106a6c71d6",
+      "range_sha256": "f4cd2d668a32e74a444399b318c6d7c95953a2436e6ebdf3bc95eabee6a70094",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    }
+  ],
+  "closed_test_source_paths": [
+    "apps/game-server/tests/ai_bootstrap.rs",
+    "crates/gameplay/monster-ai/src/ai/tests.rs",
+    "crates/gameplay/monster-ai/src/ai/tests/path_request_tests.rs"
+  ],
+  "closure_boundary": "All bodies and local fixture definitions in these three test-source files were read, and actual public implementation/owner dependencies were traced. This is semantic source review, not full gameplay or topology qualification. Runtime qualification belongs to ai_dedup_validation.json.",
+  "unapplied_findings": [
+    {
+      "id": "AI-01",
+      "fact": "Both named perception64/65 cases derive their positive and negative cardinality from ResourceLimit::PerceptionCandidates.maximum without an independent64 assertion.",
+      "inference": "Those two assertions alone cannot detect a coordinated change of the policy constant while algorithm behavior stays consistent. No production mutation was executed and no whole-suite survival is claimed.",
+      "recommendation": "If64 is an independently accepted stable contract, pin it in one retained owner/compatibility test after contract trace and focused mutation qualification."
+    },
+    {
+      "id": "AI-02",
+      "fact": "evaluation_exhaustion_and_route_byte_overflow_publish_no_result rejects usize::MAX on its first route element through capacity, before cumulative arithmetic overflow.",
+      "recommendation": "Describe the actual capacity oracle accurately; generic ResourceLimit::admit has a separate direct arithmetic-overflow test. No removal is proposed merely from the name."
+    }
+  ],
+  "documentation_followup": "CandidateId::get standalone-tree explanation became stale under approved import-only dedup; root authorized a separate fifth documentation-only correction, retaining allow(dead_code).",
+  "whole_assignment_completion": false
+}

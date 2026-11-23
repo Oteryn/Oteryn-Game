@@ -147,7 +147,8 @@ mod tests {
         }
         assert!(encode_request(&[0]).is_err());
         assert!(encode_request(&[7, 7]).is_err());
-        assert!(encode_request(&[1; MAX_ITEMS + 1]).is_err());
+        let oversized: Vec<_> = (1..=MAX_ITEMS as u32 + 1).collect();
+        assert!(encode_request(&oversized).is_err());
         assert!(
             encode_reply(&[ItemInfo {
                 item_type: 7,

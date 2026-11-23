@@ -1,0 +1,241 @@
+{
+  "scope": "Actual tiny Rust libtest, actual mode selection and actual S3B cleanup/verdict tail; no Game/PG/Platform run",
+  "source_sha256": "62e4e16cda0c1b0c684c70b1785869d2b27f179d852d8832982ca2adfcea659a",
+  "fixture": "\nfn body() {\n    println!(\"fixture body started\");\n    assert_ne!(std::env::var(\"PROBE_TERMINAL\").as_deref(), Ok(\"failure\"), \"intentional assertion failure\");\n    if std::env::var(\"PROBE_TERMINAL\").as_deref() == Ok(\"missing\") { return; }\n    let marker = match std::env::var(\"WP5_QUALIFICATION\").as_deref() {\n        Ok(\"s3b\") => \"S3B_EVIDENCE composition=complete\",\n        Ok(\"seam\") => \"SEAM_EVIDENCE shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED\",\n        Ok(\"spell-seam\") => \"SEAM_EVIDENCE spell_seam shutdown=drained scope=real_owner_tcp_tls gameplay_complete=false\",\n        _ => panic!(\"unknown probe mode\"),\n    };\n    if std::env::var(\"PROBE_TERMINAL\").as_deref() == Ok(\"stderr\") { eprintln!(\"{marker}\"); }\n    else { println!(\"{marker}\"); }\n}\n#[test] #[ignore]\nfn real_owners_compose_fresh_admission_and_fence_replacement() { body(); }\nmod qualification {\n    #[test] #[ignore]\n    fn server_seam_real_owners_over_tcp_tls() { super::body(); }\n}\n#[test] #[ignore]\nfn unrelated_case() { body(); }\n",
+  "cases": [
+    {
+      "mode": "s3b",
+      "case": "success",
+      "selected": "real_owners_compose_fresh_admission_and_fence_replacement",
+      "terminal": "stdout",
+      "expected_exit_code": 0,
+      "exit_code": 0,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\nS3B_EVIDENCE composition=complete\ntest real_owners_compose_fresh_admission_and_fence_replacement ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_PASS\n",
+      "stderr": ""
+    },
+    {
+      "mode": "s3b",
+      "case": "stderr_terminal",
+      "selected": "real_owners_compose_fresh_admission_and_fence_replacement",
+      "terminal": "stderr",
+      "expected_exit_code": 0,
+      "exit_code": 0,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\nS3B_EVIDENCE composition=complete\ntest real_owners_compose_fresh_admission_and_fence_replacement ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_PASS\n",
+      "stderr": ""
+    },
+    {
+      "mode": "s3b",
+      "case": "no_exact_match",
+      "selected": "missing_name",
+      "terminal": "stdout",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "s3b",
+      "case": "selected_but_ignored",
+      "selected": "real_owners_compose_fresh_admission_and_fence_replacement",
+      "terminal": "stdout",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\ntest real_owners_compose_fresh_admission_and_fence_replacement ... ignored\n\ntest result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "s3b",
+      "case": "failed_body",
+      "selected": "real_owners_compose_fresh_admission_and_fence_replacement",
+      "terminal": "failure",
+      "expected_exit_code": 101,
+      "exit_code": 101,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\n\nthread 'real_owners_compose_fresh_admission_and_fence_replacement' (191088) panicked at /tmp/oteryn-s3b-reconciled-j_nho3fn/fixture.rs:4:5:\nassertion `left != right` failed: intentional assertion failure\n  left: Ok(\"failure\")\n right: Ok(\"failure\")\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest real_owners_compose_fresh_admission_and_fence_replacement ... FAILED\n\nfailures:\n\nfailures:\n    real_owners_compose_fresh_admission_and_fence_replacement\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.02s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": ""
+    },
+    {
+      "mode": "s3b",
+      "case": "missing_terminal",
+      "selected": "real_owners_compose_fresh_admission_and_fence_replacement",
+      "terminal": "missing",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\ntest real_owners_compose_fresh_admission_and_fence_replacement ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "s3b",
+      "case": "unselected_case",
+      "selected": "unrelated_case",
+      "terminal": "stdout",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\nS3B_EVIDENCE composition=complete\ntest unrelated_case ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "seam",
+      "case": "success",
+      "selected": "qualification::server_seam_real_owners_over_tcp_tls",
+      "terminal": "stdout",
+      "expected_exit_code": 0,
+      "exit_code": 0,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\nSEAM_EVIDENCE shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED\ntest qualification::server_seam_real_owners_over_tcp_tls ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=SEAM_PASS\n",
+      "stderr": ""
+    },
+    {
+      "mode": "seam",
+      "case": "stderr_terminal",
+      "selected": "qualification::server_seam_real_owners_over_tcp_tls",
+      "terminal": "stderr",
+      "expected_exit_code": 0,
+      "exit_code": 0,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\nSEAM_EVIDENCE shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED\ntest qualification::server_seam_real_owners_over_tcp_tls ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=SEAM_PASS\n",
+      "stderr": ""
+    },
+    {
+      "mode": "seam",
+      "case": "no_exact_match",
+      "selected": "missing_name",
+      "terminal": "stdout",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "seam",
+      "case": "selected_but_ignored",
+      "selected": "qualification::server_seam_real_owners_over_tcp_tls",
+      "terminal": "stdout",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\ntest qualification::server_seam_real_owners_over_tcp_tls ... ignored\n\ntest result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "seam",
+      "case": "failed_body",
+      "selected": "qualification::server_seam_real_owners_over_tcp_tls",
+      "terminal": "failure",
+      "expected_exit_code": 101,
+      "exit_code": 101,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\n\nthread 'qualification::server_seam_real_owners_over_tcp_tls' (191180) panicked at /tmp/oteryn-s3b-reconciled-j_nho3fn/fixture.rs:4:5:\nassertion `left != right` failed: intentional assertion failure\n  left: Ok(\"failure\")\n right: Ok(\"failure\")\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest qualification::server_seam_real_owners_over_tcp_tls ... FAILED\n\nfailures:\n\nfailures:\n    qualification::server_seam_real_owners_over_tcp_tls\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": ""
+    },
+    {
+      "mode": "seam",
+      "case": "missing_terminal",
+      "selected": "qualification::server_seam_real_owners_over_tcp_tls",
+      "terminal": "missing",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\ntest qualification::server_seam_real_owners_over_tcp_tls ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "seam",
+      "case": "unselected_case",
+      "selected": "unrelated_case",
+      "terminal": "stdout",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\nSEAM_EVIDENCE shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED\ntest unrelated_case ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "spell-seam",
+      "case": "success",
+      "selected": "qualification::server_seam_real_owners_over_tcp_tls",
+      "terminal": "stdout",
+      "expected_exit_code": 0,
+      "exit_code": 0,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\nSEAM_EVIDENCE spell_seam shutdown=drained scope=real_owner_tcp_tls gameplay_complete=false\ntest qualification::server_seam_real_owners_over_tcp_tls ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=SPELL_SEAM_PASS\n",
+      "stderr": ""
+    },
+    {
+      "mode": "spell-seam",
+      "case": "stderr_terminal",
+      "selected": "qualification::server_seam_real_owners_over_tcp_tls",
+      "terminal": "stderr",
+      "expected_exit_code": 0,
+      "exit_code": 0,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\nSEAM_EVIDENCE spell_seam shutdown=drained scope=real_owner_tcp_tls gameplay_complete=false\ntest qualification::server_seam_real_owners_over_tcp_tls ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=SPELL_SEAM_PASS\n",
+      "stderr": ""
+    },
+    {
+      "mode": "spell-seam",
+      "case": "no_exact_match",
+      "selected": "missing_name",
+      "terminal": "stdout",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "spell-seam",
+      "case": "selected_but_ignored",
+      "selected": "qualification::server_seam_real_owners_over_tcp_tls",
+      "terminal": "stdout",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\ntest qualification::server_seam_real_owners_over_tcp_tls ... ignored\n\ntest result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "spell-seam",
+      "case": "failed_body",
+      "selected": "qualification::server_seam_real_owners_over_tcp_tls",
+      "terminal": "failure",
+      "expected_exit_code": 101,
+      "exit_code": 101,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\n\nthread 'qualification::server_seam_real_owners_over_tcp_tls' (191263) panicked at /tmp/oteryn-s3b-reconciled-j_nho3fn/fixture.rs:4:5:\nassertion `left != right` failed: intentional assertion failure\n  left: Ok(\"failure\")\n right: Ok(\"failure\")\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest qualification::server_seam_real_owners_over_tcp_tls ... FAILED\n\nfailures:\n\nfailures:\n    qualification::server_seam_real_owners_over_tcp_tls\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": ""
+    },
+    {
+      "mode": "spell-seam",
+      "case": "missing_terminal",
+      "selected": "qualification::server_seam_real_owners_over_tcp_tls",
+      "terminal": "missing",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\ntest qualification::server_seam_real_owners_over_tcp_tls ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    },
+    {
+      "mode": "spell-seam",
+      "case": "unselected_case",
+      "selected": "unrelated_case",
+      "terminal": "stdout",
+      "expected_exit_code": 1,
+      "exit_code": 1,
+      "matched_expected": true,
+      "stdout": "\nrunning 1 test\nfixture body started\nSEAM_EVIDENCE spell_seam shutdown=drained scope=real_owner_tcp_tls gameplay_complete=false\ntest unrelated_case ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nS3B_EVIDENCE cleanup=complete containers=removed volumes=removed ephemeral_keys=removed\nS3B_RESULT=COMPOSED_FAIL\n",
+      "stderr": "S3B qualification did not prove exactly one passing selected test and its terminal body evidence\n"
+    }
+  ],
+  "rustc": "rustc 1.100.0 (0ef1bc386 2026-11-09)",
+  "compile_exit_code": 0,
+  "all_expected_outcomes": true
+}

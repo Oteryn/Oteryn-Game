@@ -477,7 +477,9 @@ mod tests {
         assert_eq!(decode_set_lock(&encode_set_lock(&value)?)?, value);
         assert!(decode_query(&[]).is_ok());
         assert!(decode_query(&[0]).is_err());
-        assert!(decode_set_lock(&[32, 2]).is_err());
+        let mut invalid_bool = encode_set_lock(&value)?;
+        *invalid_bool.last_mut().ok_or(Error::Malformed)? = 2;
+        assert_eq!(decode_set_lock(&invalid_bool), Err(Error::Malformed));
         Ok(())
     }
 
@@ -525,7 +527,10 @@ mod tests {
         request.mutation = Mutation::GradeUp { kind: 2, mod_id: 0 };
         assert!(encode_mutate(&request).is_err());
         assert!(decode_mutate(&[]).is_err());
-        assert!(decode_mutate(&[0; MAX_REQUEST_BYTES + 1]).is_err());
+        assert_eq!(
+            decode_mutate(&[0; MAX_REQUEST_BYTES + 1]),
+            Err(Error::LimitExceeded)
+        );
         request.mutation = Mutation::Reveal { quality: 0 };
         let bytes = encode_mutate(&request)?;
         for end in 0..bytes.len() {

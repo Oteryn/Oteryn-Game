@@ -46,7 +46,6 @@ ALLOWED_DUPLICATING_TARGETS: dict[tuple[str, str], tuple[tuple[str, ...], str]] 
         ("oteryn-game-server", target): (prefixes, COPY_REASON)
         for target, prefixes in (
             ("ability_engine", (GAME_SERVER_SRC, *CARVED_GAMEPLAY_SRC)),
-            ("ai_bootstrap", ("crates/gameplay/monster-ai/src/",)),
             ("character_authority_postgres", (GAME_SERVER_SRC, *CARVED_GAMEPLAY_SRC)),
             ("durability_postgres", CARVED_GAMEPLAY_SRC),
             ("native_admission_source_postgres", CARVED_GAMEPLAY_SRC),

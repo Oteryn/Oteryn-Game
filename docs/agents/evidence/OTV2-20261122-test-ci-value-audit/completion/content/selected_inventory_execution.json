@@ -1,0 +1,110 @@
+{
+  "inventory": [
+    {
+      "name": "test_boss_corpse_terminal_reference",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_boss_corpse_terminal_reference"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_cake_bridge_reference",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_cake_bridge_reference"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_coin_converter_profiles",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_coin_converter_profiles"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_creature_level_rating",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_creature_level_rating"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_forge_sql_admission",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_forge_sql_admission"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_forge_sql_admission_forward",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_forge_sql_admission_forward"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_harvest_item_profiles",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_harvest_item_profiles"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_quick_loot_item_profiles",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quick_loot_item_profiles"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    }
+  ],
+  "execution_method": "actual check_inventory(workflow_checks=True) \u2192 actual parallel_checks.run_checks(jobs=2), restricted to the eight repaired modules",
+  "exit_code": 0,
+  "seconds": 5.387,
+  "stdout": "START migration-check=test_boss_corpse_terminal_reference\nSTART migration-check=test_cake_bridge_reference\nPASS migration-check=test_boss_corpse_terminal_reference exit=0\nSTART migration-check=test_coin_converter_profiles\nPASS migration-check=test_cake_bridge_reference exit=0\nSTART migration-check=test_creature_level_rating\nPASS migration-check=test_coin_converter_profiles exit=0\nSTART migration-check=test_forge_sql_admission\nPASS migration-check=test_forge_sql_admission exit=0\nSTART migration-check=test_forge_sql_admission_forward\nPASS migration-check=test_forge_sql_admission_forward exit=0\nSTART migration-check=test_harvest_item_profiles\nPASS migration-check=test_harvest_item_profiles exit=0\nSTART migration-check=test_quick_loot_item_profiles\nPASS migration-check=test_creature_level_rating exit=0\nPASS migration-check=test_quick_loot_item_profiles exit=0\nPASS migration-checks=8 workers=2\n",
+  "stderr": "test_existing_canonical_reference_is_retained_without_second_allocation (test_boss_corpse_terminal_reference.ExistingElderReferenceTests.test_existing_canonical_reference_is_retained_without_second_allocation) ... test_exact_map_reference_is_idempotent_and_not_materializable (test_cake_bridge_reference.CakeBridgeReferenceTests.test_exact_map_reference_is_idempotent_and_not_materializable) ... ok\ntest_existing_semantic_facts_cannot_be_overwritten (test_cake_bridge_reference.CakeBridgeReferenceTests.test_existing_semantic_facts_cannot_be_overwritten) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.727s\n\nOK\nok\ntest_inventory_admission_or_source_substitution_is_rejected (test_cake_bridge_reference.CakeBridgeReferenceTests.test_inventory_admission_or_source_substitution_is_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.746s\n\nOK\ntest_converters_are_carried_nonstackable_tools_with_500_charges (test_coin_converter_profiles.CoinConverterProfiles.test_converters_are_carried_nonstackable_tools_with_500_charges) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.224s\n\nOK\ntest_committed_projection_matches_all_admitted_profiles_and_prices (test_forge_sql_admission.ForgeSqlAdmissionTests.test_committed_projection_matches_all_admitted_profiles_and_prices) ... ok\ntest_current_native_class_caps_and_exact_transfer_prices_are_preserved (test_forge_sql_admission.ForgeSqlAdmissionTests.test_current_native_class_caps_and_exact_transfer_prices_are_preserved) ... test_calibration_within_ten_percent (test_creature_level_rating.CreatureLevelRatingTests.test_calibration_within_ten_percent) ... ok\ntest_deterministic (test_creature_level_rating.CreatureLevelRatingTests.test_deterministic) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 1.485s\n\nOK\ntest_explicit_forward_projection_keeps_published_migration_and_checks_latest (test_forge_sql_admission_forward.ForwardForgeAdmissionTests.test_explicit_forward_projection_keeps_published_migration_and_checks_latest) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nOK\ntest_duplicate_is_rejected_before_writing (test_harvest_item_profiles.HarvestItemProfileTests.test_duplicate_is_rejected_before_writing) ... ok\ntest_production_provider_contains_the_complete_harvest_closure (test_harvest_item_profiles.HarvestItemProfileTests.test_production_provider_contains_the_complete_harvest_closure) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 1.174s\n\nOK\nok\ntest_every_creature_is_rated (test_creature_level_rating.CreatureLevelRatingTests.test_every_creature_is_rated) ... ok\ntest_missing_attacks_are_null_safe (test_creature_level_rating.CreatureLevelRatingTests.test_missing_attacks_are_null_safe) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 3.943s\n\nOK\ntest_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy (test_quick_loot_item_profiles.QuickLootProfiles.test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy) ... ok\ntest_quick_loot_profiles_have_no_speed_bonus (test_quick_loot_item_profiles.QuickLootProfiles.test_quick_loot_profiles_have_no_speed_bonus) ... ok\ntest_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.282s\n\nOK\n",
+  "selection_and_failure_propagation_regressions": {
+    "command": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+      "-m",
+      "unittest",
+      "-v",
+      "test_parallel_checks"
+    ],
+    "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration",
+    "exit_code": 0,
+    "stdout": "START migration-check=fails\nFAIL migration-check=fails exit=7\nSTART migration-check=still-runs\nPASS migration-check=still-runs exit=0\nSTART migration-check=one\nSTART migration-check=two\nPASS migration-check=one exit=0\nPASS migration-check=two exit=0\nPASS migration-checks=2 workers=2\n",
+    "stderr": "test_failure_does_not_skip_the_remaining_inventory (test_parallel_checks.ParallelChecks.test_failure_does_not_skip_the_remaining_inventory) ... ok\ntest_independent_processes_overlap_without_sharing_state (test_parallel_checks.ParallelChecks.test_independent_processes_overlap_without_sharing_state) ... ok\ntest_invalid_plan_fails_before_launching_a_process (test_parallel_checks.ParallelChecks.test_invalid_plan_fails_before_launching_a_process) ... ok\ntest_inventory_has_every_existing_check_once (test_parallel_checks.ParallelChecks.test_inventory_has_every_existing_check_once) ... ok\ntest_workflow_aggregate_requires_every_qualification_to_succeed (test_parallel_checks.ParallelChecks.test_workflow_aggregate_requires_every_qualification_to_succeed) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.115s\n\nOK\n"
+  }
+}

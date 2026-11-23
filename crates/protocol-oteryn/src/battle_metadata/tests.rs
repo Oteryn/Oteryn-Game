@@ -26,7 +26,13 @@ fn battle_metadata_codec_is_bounded_and_preserves_generation_and_unknowns()
     let payload = encode_reply(&rows).ok_or("reply")?;
     assert_eq!(decode_reply(&payload), Some(rows));
     assert!(encode_query(&[query[0], query[0]]).is_none());
-    assert!(encode_query(&vec![entity(1); 17]).is_none());
+    let mut bounded: Vec<_> = (1..=16).map(entity).collect();
+    assert_eq!(
+        decode_query(&encode_query(&bounded).ok_or("16 distinct entities")?),
+        Some(bounded.clone())
+    );
+    bounded.push(entity(17));
+    assert_eq!(encode_query(&bounded), None);
     assert!(
         encode_query(&[EntityRef {
             generation: 0,

@@ -1,0 +1,285 @@
+{
+  "scope": "Suppress finish_wait report in actual durability crate; selected old/new test; restore; full lib test functions with PG environment absent",
+  "base_head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "source_sha256": {
+    "base": "1344f7040c3a5c8f23c1ed4c83396b0fd30be28ba8bf7119892aef9220b38b2b",
+    "candidate": "5bfab2a627d1f70ffd96805beead44616b7f356f044816a6b356dc7efd2f1a09",
+    "production": "06fab6d63c13391aa6fe94efab3a91a381f0f84b6271d38ec4e3682e0ab8be7d"
+  },
+  "commands": [
+    {
+      "label": "holder_wait_original_positive",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "durability::db::holder_wait_tests::a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most",
+        "--",
+        "--exact",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 60.671,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/holder_wait_original_positive.log",
+      "log_sha256": "750e81866474cb5e587951c845c979a51fa0607dbdb318ffeeba58e504a6bdfd",
+      "tail": [
+        "",
+        "warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)",
+        "warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)",
+        "   Compiling oteryn-gameplay-durability v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/durability)",
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 00s",
+        "     Running unittests src/lib.rs (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-gameplay-durability/8a3697ee7c854f3c/out/oteryn_gameplay_durability-8a3697ee7c854f3c)",
+        "",
+        "running 1 test",
+        "test durability::db::holder_wait_tests::a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most ... ok",
+        "",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 936 filtered out; finished in 0.01s",
+        ""
+      ]
+    },
+    {
+      "label": "holder_wait_old_report_suppressed",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "durability::db::holder_wait_tests::a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most",
+        "--",
+        "--exact",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 67.053,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/holder_wait_old_report_suppressed.log",
+      "log_sha256": "655ed2d1427df0fd631d63d5b352f682833abdaf17077fe70a708b9ccc739558",
+      "tail": [
+        "",
+        "warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)",
+        "warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)",
+        "   Compiling oteryn-gameplay-durability v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/durability)",
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 06s",
+        "     Running unittests src/lib.rs (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-gameplay-durability/8a3697ee7c854f3c/out/oteryn_gameplay_durability-8a3697ee7c854f3c)",
+        "",
+        "running 1 test",
+        "test durability::db::holder_wait_tests::a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most ... ok",
+        "",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 936 filtered out; finished in 0.01s",
+        ""
+      ]
+    },
+    {
+      "label": "holder_wait_new_report_suppressed",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "durability::db::holder_wait_tests::a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most",
+        "--",
+        "--exact",
+        "--nocapture"
+      ],
+      "rc": 101,
+      "expected_rc": 101,
+      "seconds": 68.704,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/holder_wait_new_report_suppressed.log",
+      "log_sha256": "eb11278604e1ee9c19983277bf7dae840d0a06fb0516a16f1d5937776aeedfc3",
+      "tail": [
+        "running 1 test",
+        "Error: \"a 650 ms wait is reported\"",
+        "test durability::db::holder_wait_tests::a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most ... FAILED",
+        "",
+        "failures:",
+        "",
+        "failures:",
+        "    durability::db::holder_wait_tests::a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most",
+        "",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 936 filtered out; finished in 0.01s",
+        "",
+        "error: test failed, to rerun pass `-p oteryn-gameplay-durability --lib`"
+      ]
+    },
+    {
+      "label": "holder_wait_final_positive",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "durability::db::holder_wait_tests::a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most",
+        "--",
+        "--exact",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 64.408,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/holder_wait_final_positive.log",
+      "log_sha256": "5e8c8556ee762ccdac72eff43c8fac1ddfd2aa0c6bd9509d3e79344a5613941d",
+      "tail": [
+        "",
+        "warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)",
+        "warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)",
+        "   Compiling oteryn-gameplay-durability v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/durability)",
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 04s",
+        "     Running unittests src/lib.rs (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-gameplay-durability/8a3697ee7c854f3c/out/oteryn_gameplay_durability-8a3697ee7c854f3c)",
+        "",
+        "running 1 test",
+        "test durability::db::holder_wait_tests::a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most ... ok",
+        "",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 936 filtered out; finished in 0.02s",
+        ""
+      ]
+    },
+    {
+      "label": "durability_final_lib",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "--",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 130.776,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_final_lib.log",
+      "log_sha256": "e80e5074ad71e3d4ddd295c8fe54ceced55f7b0cb557255b8fd76fa5280eca85",
+      "tail": [
+        "test durability::world_reset::migration_tests::death_tree_bounds_remain_compulsory_at_both_terminal_root_proofs ... ok",
+        "test durability::world_reset::migration_tests::death_tree_retirement_adds_private_source_proofs_without_replacing_authority_checks ... ok",
+        "test durability::world_reset::migration_tests::death_tree_retirement_preserves_the_existing_corpse_capacity ... ok",
+        "test durability::world_reset::migration_tests::world_reset_migration_preserves_the_latest_guard_definitions ... ok",
+        "test durability::wp3_error_classification_tests::bounded_statement_refusals_keep_commit_certainty_and_drop_payloads ... ok",
+        "test durability::wp3_error_classification_tests::database_commit_rejection_is_definitive_without_payload_retention ... ok",
+        "test durability::wp3_error_classification_tests::non_database_commit_error_stays_ambiguous_without_payload_retention ... ok",
+        "test durability::wp3_error_classification_tests::sqlx_payload_is_classified_then_destroyed_without_formatting ... ok",
+        "test migration_numbers_are_unique_and_match_embedded_migrator ... ok",
+        "",
+        "test result: ok. 937 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 129.61s",
+        ""
+      ]
+    },
+    {
+      "label": "durability_final_clippy",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 428.77,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_final_clippy.log",
+      "log_sha256": "08fc348100a72685155e7a9cd696b0a88488cdec6da74fff380bb7abfa9a455b",
+      "tail": [
+        "    Checking sqlx v0.9.0",
+        "    Checking oteryn-gameplay-characters v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/characters)",
+        "    Checking oteryn-gameplay-entities v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/entities)",
+        "    Checking oteryn-task-supervisor v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/task-supervisor)",
+        "    Checking oteryn-gameplay-items v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/items)",
+        "    Checking oteryn-gameplay-encounter-rules v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/encounter-rules)",
+        "    Checking oteryn-gameplay-housing v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/housing)",
+        "    Checking oteryn-gameplay-social-rules v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/social-rules)",
+        "    Checking oteryn-gameplay-economy v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/economy)",
+        "    Checking oteryn-gameplay-world-change v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/world-change)",
+        "    Checking oteryn-gameplay-character-recovery-fence v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/character-recovery-fence)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7m 08s"
+      ]
+    },
+    {
+      "label": "durability_final_build",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "build",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 562.863,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_final_build.log",
+      "log_sha256": "ee8ea6046cd0c49b1af1f52149d6203f0a02f3bc99a0f03d7ded879c593171ea",
+      "tail": [
+        "",
+        "warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)",
+        "warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)",
+        "   Compiling oteryn-gameplay-foundation v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/foundation)",
+        "   Compiling oteryn-gameplay-progression v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/progression)",
+        "   Compiling oteryn-gameplay-combat-rules v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/combat-rules)",
+        "   Compiling oteryn-gameplay-characters v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/characters)",
+        "   Compiling oteryn-gameplay-entities v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/entities)",
+        "   Compiling oteryn-gameplay-encounter-rules v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/encounter-rules)",
+        "   Compiling oteryn-gameplay-items v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/items)",
+        "   Compiling oteryn-gameplay-durability v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/durability)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 9m 22s"
+      ]
+    },
+    {
+      "label": "durability_final_package_fmt",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "fmt",
+        "--package",
+        "oteryn-gameplay-durability",
+        "--",
+        "--check"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 2.206,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/durability_final_package_fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "boundary": "Package rustfmt traversal; include!-mounted test sources are not traversed by cargo fmt."
+    }
+  ],
+  "status": "PASS",
+  "mutant_production_sha256": "d3d249745cca352fffd2c16ade1b92e6566bd9d741d46b363cf5121a740b230a",
+  "production_restored": true,
+  "lib_rust_test_summary": {
+    "passed": 937,
+    "failed": 0,
+    "ignored": 0,
+    "postgres_configured": false,
+    "boundary": "PG-gated bodies can return early; this is not full PostgreSQL qualification"
+  },
+  "pg_skip_output_lines": [],
+  "wrapper": {
+    "pid": 117742,
+    "exit_code": 0,
+    "runtime_seconds": 1383.36
+  },
+  "formatting_boundary": "Package cargo fmt passed. Direct rustfmt of include!-mounted db_holder_wait_tests.rs exposes pre-existing formatting outside the bounded edit; no unrelated formatting changes were applied."
+}

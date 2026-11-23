@@ -354,9 +354,9 @@ mod tests {
 
     #[test]
     fn entry_count_and_byte_bounds_fail_closed() {
-        let too_many: Vec<_> = (1..=MAX_BESTIARY_RACE + 1)
-            .map(|index| progress(index, 7, [5, 10, 25]))
-            .collect();
+        // Every entry is individually valid. There are only 1024 valid race IDs, so
+        // the exact limit error distinguishes the count guard from duplicate rejection.
+        let too_many = vec![progress(1, 7, [5, 10, 25]); MAX_BESTIARY_VIEW_ENTRIES + 1];
         assert_eq!(
             encode_bestiary_view(&too_many),
             Err(CyclopediaWireError::LimitExceeded)

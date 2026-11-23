@@ -1,0 +1,258 @@
+{
+  "status": "READY_FOR_PARENT_INTEGRATION",
+  "base_head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "source_files": [
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "sha256": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "test_target_import"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/mod.rs",
+      "sha256": "bddab355674c61af52100638e0799a6b6d45dabf990144848fe1985a88fef29f",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "documentation_only"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think.rs",
+      "sha256": "5f5a032d3d72e96ca0fdc41c4b57185c55c71d1cc7e4ef1e7949af0384dd910c",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "documentation_only"
+    },
+    {
+      "path": "tools/repository/check_duplicate_test_sources.py",
+      "sha256": "2f3af05c1957c61fd0844761982d449a5ebdf80167f596a28be3ff8453e65817",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "one_proven_duplicate_allowlist_entry_removed"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/perception.rs",
+      "sha256": "386755946bd6c5f9fc4f7a8ff5daccb6dc6330d6980acc9032250d91c017639d",
+      "qualification": "ai5_doc_validation.json",
+      "change_kind": "documentation_only"
+    }
+  ],
+  "runtime_receipt": {
+    "path": "ai_dedup_validation.json",
+    "sha256": "738e70eb56b26424e163f9c6d050e94196be67b9de9eadf1d05fe4ac86e18c6c"
+  },
+  "doc_receipt": {
+    "path": "ai5_doc_validation.json",
+    "sha256": "e586e150d7daee7792e5d9874992539bcad1d8f8b1d9b7d1fa582f97e9b9e29e"
+  },
+  "compiled_selection": {
+    "owner_ids_before": 171,
+    "owner_ids_after": 171,
+    "owner_ids_exactly_preserved": true,
+    "integration_before": 14,
+    "integration_after": 7,
+    "retained_owner_ai_ids": [
+      "ai::tests::duplicate_candidate_ids_fail_at_input_head_middle_and_tail",
+      "ai::tests::evaluation_exhaustion_and_route_byte_overflow_publish_no_result",
+      "ai::tests::malformed_duplicate_snapshot_and_perception_inputs_fail_closed",
+      "ai::tests::path_request_tests::one_request_per_think_is_accepted_and_a_second_is_refused",
+      "ai::tests::perception_candidate_capacity_behavior_is_unchanged",
+      "ai::tests::priority_separated_duplicate_candidate_ids_fail_for_every_input_permutation",
+      "ai::tests::unique_perception_candidates_preserve_canonical_order"
+    ],
+    "distinct_integration_ids": [
+      "active_actor_envelope_accepts_256_and_rejects_257_before_snapshot_publication",
+      "canonical_perception_accepts_64_and_rejects_65_and_shuffled_ties_choose_lowest_id",
+      "every_hard_limit_accepts_max_and_rejects_max_plus_one_and_overflow",
+      "excluded_dimensions_fail_closed_without_a_foreign_mutation_operation",
+      "path_proposal_is_data_only_and_rejects_config_and_hard_capacity_boundaries",
+      "resolution_canonicalizes_shuffled_unique_ordinals_and_rejects_duplicates",
+      "resolution_is_deterministic_stale_safe_and_cannot_publish_partial_result"
+    ]
+  },
+  "execution": {
+    "owner_passed": 167,
+    "owner_failed": 0,
+    "owner_ignored": 4,
+    "integration_passed": 7,
+    "guard_regression_python_cases": 14,
+    "boundary": "Libtest reports 167 successful owner functions. monster_lab::run_from_manifest returns early without OTERYN_MONSTER_LAB_INPUT; no external manifest arena batch is claimed. The seven shared ai:: owner cases and seven distinct integration cases actually executed."
+  },
+  "gates": [
+    {
+      "label": "ai_duplicate_guard_regressions",
+      "argv": [
+        "python3",
+        "tools/repository/test_check_duplicate_test_sources.py",
+        "-v"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.187,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/ai_duplicate_guard_regressions.log",
+      "log_sha256": "967ab53811c19b5867098d5e5cf3bbccd0adbf67a5697cac6d39075856d9c29f",
+      "tail": [
+        "test_build_smoke_selects_only_explicit_workspace_benches (__main__.RustTestShards.test_build_smoke_selects_only_explicit_workspace_benches) ... ok",
+        "test_planner_fails_closed (__main__.RustTestShards.test_planner_fails_closed) ... ok",
+        "test_shards_partition_tested_integration_targets (__main__.RustTestShards.test_shards_partition_tested_integration_targets) ... ok",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 14 tests in 0.011s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "label": "ai_owner_clippy",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-monster-ai",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 169.943,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/ai_owner_clippy.log",
+      "log_sha256": "fc9baeb9053cffc53677ce9c9063f746a195c959e716ed36d31f53df1bb87dec",
+      "tail": [
+        "    Checking num-integer v0.1.47",
+        "    Checking oteryn-gameplay-source-critical-baseline v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/source-critical-baseline)",
+        "    Checking oteryn-gameplay-combat v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/combat)",
+        "    Checking num-bigint v0.4.8",
+        "    Checking oteryn-gameplay-spell-rules v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/spell-rules)",
+        "    Checking oteryn-gameplay-spell v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/spell)",
+        "    Checking oteryn-gameplay-monster-ai v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/monster-ai)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 49s"
+      ]
+    },
+    {
+      "label": "ai_owner_non_test_build",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "build",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-monster-ai",
+        "--lib"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 174.77,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/ai_owner_non_test_build.log",
+      "log_sha256": "cab69ae1ec19fa4cbf7852195223830a0c86f086d818b5334b6795920f055df4",
+      "tail": [
+        "warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)",
+        "   Compiling oteryn-gameplay-durability v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/durability)",
+        "   Compiling oteryn-gameplay-world v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/world)",
+        "   Compiling oteryn-gameplay-combat v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/combat)",
+        "   Compiling oteryn-gameplay-spell-rules v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/spell-rules)",
+        "   Compiling oteryn-gameplay-spell v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/spell)",
+        "   Compiling oteryn-gameplay-monster-ai v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/monster-ai)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 54s"
+      ]
+    },
+    {
+      "label": "server_all_targets_clippy",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 484.919,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/server_all_targets_clippy.log",
+      "log_sha256": "bc65a1a684bf1523f1bb95d88f0e01e32469bff160522f63227202f1e0bc00dd",
+      "tail": [
+        "    Checking oteryn-client-runtime v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/client-runtime)",
+        "    Checking oteryn-renderer v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/renderer)",
+        "   Compiling oteryn-gameplay-content-promotion v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/content-promotion)",
+        "    Checking oteryn-session-tcp v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/session-tcp)",
+        "    Checking oteryn-world-bundle-compiler v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/tools/world-bundle-compiler)",
+        "    Checking oteryn-dev-client v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/tools/dev-client)",
+        "    Checking rcgen v0.14.10",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8m 03s"
+      ]
+    },
+    {
+      "label": "server_default_build",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "build",
+        "--locked",
+        "-p",
+        "oteryn-game-server"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 993.858,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/server_default_build.log",
+      "log_sha256": "84d2cd533e907ef87525f44bc54773489d0b10d044b85bc7e63cc5664c1f8f51",
+      "tail": [
+        "   Compiling oteryn-gameplay-monster-ai v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/monster-ai)",
+        "   Compiling oteryn-gameplay-dispatch v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/dispatch)",
+        "   Compiling oteryn-gameplay-social v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/social)",
+        "   Compiling oteryn-gameplay-encounters v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/encounters)",
+        "   Compiling oteryn-gameplay-npc v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/npc)",
+        "   Compiling oteryn-gameplay-weather v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/gameplay/weather)",
+        "   Compiling oteryn-game-server v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/apps/game-server)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 16m 33s"
+      ]
+    },
+    {
+      "label": "ai_owner_package_fmt",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "fmt",
+        "--package",
+        "oteryn-gameplay-monster-ai",
+        "--",
+        "--check"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.686,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/ai_owner_package_fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tail": []
+    },
+    {
+      "label": "server_package_fmt",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "fmt",
+        "--package",
+        "oteryn-game-server",
+        "--",
+        "--check"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 6.354,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/server_package_fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tail": []
+    }
+  ],
+  "limits": [
+    "full workspace duplicate-source guard",
+    "four explicitly ignored owner source/host-measurement cases",
+    "Selected owner/integration dep-info guard only; the other seven allowlist entries are unchanged and out of this runtime guard scope.",
+    "The fifth file is documentation only and separately checked; semantic gates ran with identical executable and attribute bytes.",
+    "No commit, publication, merge or exact reconciled-head CI qualification is performed by this lane."
+  ]
+}

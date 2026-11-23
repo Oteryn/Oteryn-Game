@@ -1,0 +1,18 @@
+{
+  "status": "PROPOSAL_ONLY_NOT_APPLIED",
+  "baseline": "reviewed_batch7_execution.json: 25 total, 20 pass and5 SharedPhysicalAdmission fixture KeyErrors",
+  "in_memory_change": "synthetic capture return_value={'records': [record], 'custody_promotions': []}",
+  "executed_ids": [
+    "SharedPhysicalAdmission.test_unknown_custody_completion_keeps_known_charge_policy",
+    "SharedPhysicalAdmission.test_custody_completion_keeps_existing_unknown_speed",
+    "SharedPhysicalAdmission.test_conflicting_known_weight_is_never_replaced",
+    "SharedPhysicalAdmission.test_newer_manifest_schema_is_preserved",
+    "SharedPhysicalAdmission.test_only_exact_existing_purified_soul_weight_is_reconciled"
+  ],
+  "tests_run": 5,
+  "success": true,
+  "failures": 0,
+  "errors": 0,
+  "output": "test_unknown_custody_completion_keeps_known_charge_policy (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_unknown_custody_completion_keeps_known_charge_policy) ... ok\ntest_custody_completion_keeps_existing_unknown_speed (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_custody_completion_keeps_existing_unknown_speed) ... ok\ntest_conflicting_known_weight_is_never_replaced (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_conflicting_known_weight_is_never_replaced) ... ok\ntest_newer_manifest_schema_is_preserved (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_newer_manifest_schema_is_preserved) ... ok\ntest_only_exact_existing_purified_soul_weight_is_reconciled (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_only_exact_existing_purified_soul_weight_is_reconciled) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.004s\n\nOK\n",
+  "production_contract": "qengine_reward_item_profiles.capture returns both records and custody_promotions; admit concatenates them. This proof changes the test stub only; product and source files unchanged."
+}

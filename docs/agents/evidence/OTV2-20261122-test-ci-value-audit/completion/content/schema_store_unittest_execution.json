@@ -1,0 +1,84 @@
+{
+  "limits": "Execution only; no inferred semantic review or hosted CI proof.",
+  "results": [
+    {
+      "path": "tools/content-schema/test_materialized_authored_props.py",
+      "source_sha256": "a458e04acc5e328d7f782769cb6b8b8d85421e4d787f6c57a9095de67209408e",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_materialized_authored_props"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema",
+      "elapsed_seconds": 0.182,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 6,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 6,
+      "suite_result": "PASS",
+      "case_results": [
+        "test_exact_pinned_document_is_in_inventory (test_materialized_authored_props.AuthoredPropInventory.test_exact_pinned_document_is_in_inventory) ... ok",
+        "test_path_escape_fails (test_materialized_authored_props.AuthoredPropInventory.test_path_escape_fails) ... ok",
+        "test_static_source_registry_is_a_successor_not_a_legacy_locator (test_materialized_authored_props.AuthoredPropInventory.test_static_source_registry_is_a_successor_not_a_legacy_locator) ... ok",
+        "test_symlink_fails (test_materialized_authored_props.AuthoredPropInventory.test_symlink_fails) ... ok",
+        "test_unpinned_document_still_fails (test_materialized_authored_props.AuthoredPropInventory.test_unpinned_document_still_fails) ... ok",
+        "test_wrong_hash_fails (test_materialized_authored_props.AuthoredPropInventory.test_wrong_hash_fails) ... ok"
+      ],
+      "output_tail": "test_exact_pinned_document_is_in_inventory (test_materialized_authored_props.AuthoredPropInventory.test_exact_pinned_document_is_in_inventory) ... ok\ntest_path_escape_fails (test_materialized_authored_props.AuthoredPropInventory.test_path_escape_fails) ... ok\ntest_static_source_registry_is_a_successor_not_a_legacy_locator (test_materialized_authored_props.AuthoredPropInventory.test_static_source_registry_is_a_successor_not_a_legacy_locator) ... ok\ntest_symlink_fails (test_materialized_authored_props.AuthoredPropInventory.test_symlink_fails) ... ok\ntest_unpinned_document_still_fails (test_materialized_authored_props.AuthoredPropInventory.test_unpinned_document_still_fails) ... ok\ntest_wrong_hash_fails (test_materialized_authored_props.AuthoredPropInventory.test_wrong_hash_fails) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.048s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-schema/store-authoring/test_catalogue_revision.py",
+      "source_sha256": "6ded9486b8e0ae2b57d0318d5edb858e5054ec85b4a58f190a0883dfb0eae90c",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_catalogue_revision"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/store-authoring",
+      "elapsed_seconds": 0.073,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 2,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 2,
+      "suite_result": "PASS",
+      "case_results": [
+        "test_rejects_floats_recursively (test_catalogue_revision.CatalogueRevisionTest.test_rejects_floats_recursively) ... ok",
+        "test_rust_fixture_revision (test_catalogue_revision.CatalogueRevisionTest.test_rust_fixture_revision) ... ok"
+      ],
+      "output_tail": "test_rejects_floats_recursively (test_catalogue_revision.CatalogueRevisionTest.test_rejects_floats_recursively) ... ok\ntest_rust_fixture_revision (test_catalogue_revision.CatalogueRevisionTest.test_rust_fixture_revision) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-schema/store-authoring/test_runtime_catalogue.py",
+      "source_sha256": "1e53e4934f814588a762a3009c84d33f25d13f058adb9d9d28e6174ddf678852",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_runtime_catalogue"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/store-authoring",
+      "elapsed_seconds": 1.299,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 2,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 2,
+      "suite_result": "PASS",
+      "case_results": [
+        "test_charm_entitlement_still_requires_valid_price_and_currency (test_runtime_catalogue.RuntimeCatalogueTests.test_charm_entitlement_still_requires_valid_price_and_currency) ... ok",
+        "test_committed_charm_entitlement_needs_no_item (test_runtime_catalogue.RuntimeCatalogueTests.test_committed_charm_entitlement_needs_no_item) ... ok"
+      ],
+      "output_tail": "test_charm_entitlement_still_requires_valid_price_and_currency (test_runtime_catalogue.RuntimeCatalogueTests.test_charm_entitlement_still_requires_valid_price_and_currency) ... ok\ntest_committed_charm_entitlement_needs_no_item (test_runtime_catalogue.RuntimeCatalogueTests.test_committed_charm_entitlement_needs_no_item) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 1.147s\n\nOK\n"
+    }
+  ]
+}

@@ -1,0 +1,264 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "rust_toolchain": "1.100.0",
+  "target": "aarch64-unknown-linux-gnu",
+  "runs": [
+    {
+      "label": "baseline_mutant_pkce",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-identity",
+        "--lib",
+        "pkce_"
+      ],
+      "returncode": 0,
+      "seconds": 1.117,
+      "summaries": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "baseline_mutant_daily",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "daily_boost::tests::"
+      ],
+      "returncode": 0,
+      "seconds": 33.815,
+      "summaries": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "baseline_mutant_guild",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "guild_war::tests::round_trip"
+      ],
+      "returncode": 0,
+      "seconds": 0.939,
+      "summaries": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "baseline_mutant_registry",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "contract_registries::tests::"
+      ],
+      "returncode": 0,
+      "seconds": 0.245,
+      "summaries": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 908 filtered out; finished in 0.04s"
+      ]
+    },
+    {
+      "label": "candidate_mutant_pkce",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-identity",
+        "--lib",
+        "pkce_"
+      ],
+      "returncode": 101,
+      "seconds": 1.01,
+      "summaries": [
+        "test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "candidate_mutant_daily",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "daily_boost::tests::"
+      ],
+      "returncode": 101,
+      "seconds": 13.137,
+      "summaries": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.01s"
+      ]
+    },
+    {
+      "label": "candidate_mutant_guild",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "guild_war::tests::round_trip"
+      ],
+      "returncode": 101,
+      "seconds": 0.228,
+      "summaries": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.01s"
+      ]
+    },
+    {
+      "label": "candidate_mutant_registry",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "contract_registries::tests::"
+      ],
+      "returncode": 101,
+      "seconds": 0.3,
+      "summaries": [
+        "test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 908 filtered out; finished in 0.07s"
+      ]
+    },
+    {
+      "label": "format_changed",
+      "command": [
+        "rustfmt",
+        "+1.100.0",
+        "--config-path",
+        "rustfmt.toml",
+        "crates/identity/src/lib.rs",
+        "crates/protocol-oteryn/src/daily_boost.rs",
+        "crates/protocol-oteryn/src/guild_war.rs",
+        "crates/protocol-oteryn/src/contract_registries.rs",
+        "crates/gameplay/foundation/src/scheduled_events.rs"
+      ],
+      "returncode": 0,
+      "seconds": 0.056,
+      "summaries": []
+    },
+    {
+      "label": "format_all_check",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "returncode": 0,
+      "seconds": 52.414,
+      "summaries": []
+    },
+    {
+      "label": "candidate_unit",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-identity",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "-p",
+        "oteryn-gameplay-foundation",
+        "--lib"
+      ],
+      "returncode": 0,
+      "seconds": 28.906,
+      "summaries": [
+        "test result: ok. 394 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.25s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 911 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.17s"
+      ]
+    },
+    {
+      "label": "candidate_clippy",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "clippy",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-identity",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "-p",
+        "oteryn-gameplay-foundation",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "returncode": 0,
+      "seconds": 32.714,
+      "summaries": []
+    },
+    {
+      "label": "candidate_diff_check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "returncode": 0,
+      "seconds": 1.298,
+      "summaries": []
+    }
+  ],
+  "candidate_sha256": {
+    "crates/identity/src/lib.rs": "e63df43f6e32e184e92ae8518c994bd4e9994674b07104a519ba48767a321288",
+    "crates/protocol-oteryn/src/daily_boost.rs": "910f6d6d3e61d4c6d445eed716ab9335f088298b86300805f73a8c91e0114e26",
+    "crates/protocol-oteryn/src/guild_war.rs": "5a905f634449bc8316771f057ec30e01ae13f2168453a7d7a5898dde028e218a",
+    "crates/protocol-oteryn/src/contract_registries.rs": "e7de501635419065aa81a7e993d1ff388c34223789b5398dcaada4d4a4f4d528",
+    "crates/gameplay/foundation/src/scheduled_events.rs": "00323b11ca29bcbcc6958c163f4456df1bcba104f6202b2b78bc6ae02448134b"
+  }
+}

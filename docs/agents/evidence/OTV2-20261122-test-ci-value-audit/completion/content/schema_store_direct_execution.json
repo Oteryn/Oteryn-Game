@@ -1,0 +1,62 @@
+{
+  "limits": "Execution only; no inferred semantic review or hosted CI proof.",
+  "results": [
+    {
+      "path": "tools/content-schema/test_validate_full_game_content_tree.py",
+      "source_sha256": "0476e8a337714aa51ff1d095cce162d07e03e7c1598169f413e19a6d58e39ee1",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/test_validate_full_game_content_tree.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema",
+      "elapsed_seconds": 0.066,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "PASS positive=2 negative=6\n"
+    },
+    {
+      "path": "tools/content-schema/test_validate_item_master_schema.py",
+      "source_sha256": "e1c43214932b345a645c809459fcbfaa645b387d7306cbd53bac4077f0457b4f",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/test_validate_item_master_schema.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema",
+      "elapsed_seconds": 0.055,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "PASS positive=2 negative=5\n"
+    },
+    {
+      "path": "tools/content-schema/store-authoring/test_convert_store.py",
+      "source_sha256": "936b6c22bfbf3e98a5f921c7629bb42c7b13b8a0f73c24a7c6edd8462188ab6b",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/store-authoring/test_convert_store.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/store-authoring",
+      "elapsed_seconds": 0.297,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "ok   test_full_pipeline\nok   test_coin_type_default_divergence\nok   test_state_resolution\nPASS\n"
+    }
+  ]
+}

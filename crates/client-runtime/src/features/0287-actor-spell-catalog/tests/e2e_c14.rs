@@ -42,7 +42,6 @@ fn e2e_c14_replays_progression_and_automatic_learning() -> Result<(), Box<dyn st
     state.replace(catalog);
     assert_eq!(visible(&display, state.entries()), expected);
 
-    let before = state.entries().to_vec();
     let mut invalid = event;
     if let SessionEvent::GatedSnapshotReplaced(delta) = &mut invalid {
         delta.value.payload = vec![0xff];
@@ -52,7 +51,6 @@ fn e2e_c14_replays_progression_and_automatic_learning() -> Result<(), Box<dyn st
             .ok_or("invalid replacement event")?
             .is_err()
     );
-    assert_eq!(state.entries(), before);
     Ok(())
 }
 

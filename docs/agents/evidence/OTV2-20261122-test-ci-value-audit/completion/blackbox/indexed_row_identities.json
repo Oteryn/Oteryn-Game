@@ -1,0 +1,1214 @@
+{
+  "source_sha": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "scope": "dispatcher identity mapping only; not gameplay semantic review",
+  "rows": [
+    {
+      "index": 1,
+      "scenario": "C03.full"
+    },
+    {
+      "index": 2,
+      "scenario": "C12.full"
+    },
+    {
+      "index": 3,
+      "scenario": "C09.full"
+    },
+    {
+      "index": 4,
+      "scenario": "C06.full"
+    },
+    {
+      "index": 5,
+      "scenario": "C02.full"
+    },
+    {
+      "index": 6,
+      "scenario": "C01.full"
+    },
+    {
+      "index": 7,
+      "scenario": "W22b.full"
+    },
+    {
+      "index": 8,
+      "scenario": "C05.full"
+    },
+    {
+      "index": 9,
+      "scenario": "C04.full"
+    },
+    {
+      "index": 10,
+      "scenario": "W18.full"
+    },
+    {
+      "index": 11,
+      "scenario": "C11.full"
+    },
+    {
+      "index": 12,
+      "scenario": "W19a.full"
+    },
+    {
+      "index": 13,
+      "scenario": "W01b.full"
+    },
+    {
+      "index": 14,
+      "scenario": "W23.full"
+    },
+    {
+      "index": 15,
+      "scenario": "W15d.full"
+    },
+    {
+      "index": 16,
+      "scenario": "W15a.full"
+    },
+    {
+      "index": 17,
+      "scenario": "W10.full"
+    },
+    {
+      "index": 18,
+      "scenario": "W08.full"
+    },
+    {
+      "index": 19,
+      "scenario": "W24.full"
+    },
+    {
+      "index": 20,
+      "scenario": "W22a.full"
+    },
+    {
+      "index": 21,
+      "scenario": "W15b.full"
+    },
+    {
+      "index": 22,
+      "scenario": "W11.full"
+    },
+    {
+      "index": 23,
+      "scenario": "W05a.full"
+    },
+    {
+      "index": 24,
+      "scenario": "W03.full"
+    },
+    {
+      "index": 25,
+      "scenario": "W01a.full"
+    },
+    {
+      "index": 26,
+      "scenario": "S16b.full"
+    },
+    {
+      "index": 27,
+      "scenario": "S15b.full"
+    },
+    {
+      "index": 28,
+      "scenario": "S10.full"
+    },
+    {
+      "index": 29,
+      "scenario": "S07.full"
+    },
+    {
+      "index": 30,
+      "scenario": "S06.full"
+    },
+    {
+      "index": 31,
+      "scenario": "S05.full"
+    },
+    {
+      "index": 32,
+      "scenario": "P07.full"
+    },
+    {
+      "index": 33,
+      "scenario": "W17.full"
+    },
+    {
+      "index": 34,
+      "scenario": "W16.full"
+    },
+    {
+      "index": 35,
+      "scenario": "W13.full"
+    },
+    {
+      "index": 36,
+      "scenario": "W12.full"
+    },
+    {
+      "index": 37,
+      "scenario": "W05c.full"
+    },
+    {
+      "index": 38,
+      "scenario": "W04.full"
+    },
+    {
+      "index": 39,
+      "scenario": "W02.full"
+    },
+    {
+      "index": 40,
+      "scenario": "W01c.full"
+    },
+    {
+      "index": 41,
+      "scenario": "S13c.full"
+    },
+    {
+      "index": 42,
+      "scenario": "S04c.full"
+    },
+    {
+      "index": 43,
+      "scenario": "S04a.full"
+    },
+    {
+      "index": 44,
+      "scenario": "S02.full"
+    },
+    {
+      "index": 45,
+      "scenario": "P23c.full"
+    },
+    {
+      "index": 46,
+      "scenario": "P20.full"
+    },
+    {
+      "index": 47,
+      "scenario": "P18.full"
+    },
+    {
+      "index": 48,
+      "scenario": "P17.full"
+    },
+    {
+      "index": 49,
+      "scenario": "P15.full"
+    },
+    {
+      "index": 50,
+      "scenario": "P14.full"
+    },
+    {
+      "index": 51,
+      "scenario": "P13.full"
+    },
+    {
+      "index": 52,
+      "scenario": "P12c.full"
+    },
+    {
+      "index": 53,
+      "scenario": "P12a.full"
+    },
+    {
+      "index": 54,
+      "scenario": "P11.full"
+    },
+    {
+      "index": 55,
+      "scenario": "P09.full"
+    },
+    {
+      "index": 56,
+      "scenario": "P08.full"
+    },
+    {
+      "index": 57,
+      "scenario": "P06.full"
+    },
+    {
+      "index": 58,
+      "scenario": "P05.full"
+    },
+    {
+      "index": 59,
+      "scenario": "P04.full"
+    },
+    {
+      "index": 60,
+      "scenario": "P03.full"
+    },
+    {
+      "index": 61,
+      "scenario": "P02.full"
+    },
+    {
+      "index": 62,
+      "scenario": "P01.full"
+    },
+    {
+      "index": 63,
+      "scenario": "E10.full"
+    },
+    {
+      "index": 64,
+      "scenario": "E09.full"
+    },
+    {
+      "index": 65,
+      "scenario": "E08.full"
+    },
+    {
+      "index": 66,
+      "scenario": "E06.full"
+    },
+    {
+      "index": 67,
+      "scenario": "I11.full"
+    },
+    {
+      "index": 68,
+      "scenario": "I10.full"
+    },
+    {
+      "index": 69,
+      "scenario": "I05.full"
+    },
+    {
+      "index": 70,
+      "scenario": "M11b.full"
+    },
+    {
+      "index": 71,
+      "scenario": "M11a.full"
+    },
+    {
+      "index": 72,
+      "scenario": "M08.full"
+    },
+    {
+      "index": 73,
+      "scenario": "C18b.full"
+    },
+    {
+      "index": 74,
+      "scenario": "C17b.full"
+    },
+    {
+      "index": 75,
+      "scenario": "C10.full"
+    },
+    {
+      "index": 76,
+      "scenario": "C07.full"
+    },
+    {
+      "index": 77,
+      "scenario": "E12.full"
+    },
+    {
+      "index": 78,
+      "scenario": "I14.full"
+    },
+    {
+      "index": 79,
+      "scenario": "I03.full"
+    },
+    {
+      "index": 80,
+      "scenario": "M10.full"
+    },
+    {
+      "index": 81,
+      "scenario": "M09.full"
+    },
+    {
+      "index": 82,
+      "scenario": "M06.full"
+    },
+    {
+      "index": 83,
+      "scenario": "C15.full"
+    },
+    {
+      "index": 84,
+      "scenario": "C08.full"
+    },
+    {
+      "index": 85,
+      "scenario": "S04b.full"
+    },
+    {
+      "index": 86,
+      "scenario": "C14.full"
+    },
+    {
+      "index": 87,
+      "scenario": "E02.full"
+    },
+    {
+      "index": 88,
+      "scenario": "C01.client"
+    },
+    {
+      "index": 89,
+      "scenario": "C02.client"
+    },
+    {
+      "index": 90,
+      "scenario": "C03.client"
+    },
+    {
+      "index": 91,
+      "scenario": "C04.client"
+    },
+    {
+      "index": 92,
+      "scenario": "C05.client"
+    },
+    {
+      "index": 93,
+      "scenario": "C06.client"
+    },
+    {
+      "index": 227,
+      "scenario": "C07.client"
+    },
+    {
+      "index": 94,
+      "scenario": "C09.client"
+    },
+    {
+      "index": 95,
+      "scenario": "C10.client"
+    },
+    {
+      "index": 96,
+      "scenario": "C11.client"
+    },
+    {
+      "index": 97,
+      "scenario": "C12.client"
+    },
+    {
+      "index": 98,
+      "scenario": "C13.client"
+    },
+    {
+      "index": 99,
+      "scenario": "C14.client"
+    },
+    {
+      "index": 100,
+      "scenario": "C15.client"
+    },
+    {
+      "index": 101,
+      "scenario": "C16a.client"
+    },
+    {
+      "index": 102,
+      "scenario": "C16b.client"
+    },
+    {
+      "index": 103,
+      "scenario": "C16c.client"
+    },
+    {
+      "index": 104,
+      "scenario": "C16d.client"
+    },
+    {
+      "index": 105,
+      "scenario": "C17a.client"
+    },
+    {
+      "index": 106,
+      "scenario": "C17b.client"
+    },
+    {
+      "index": 107,
+      "scenario": "C17d.client"
+    },
+    {
+      "index": 108,
+      "scenario": "C18a.client"
+    },
+    {
+      "index": 109,
+      "scenario": "C18b.client"
+    },
+    {
+      "index": 228,
+      "scenario": "C20a.client"
+    },
+    {
+      "index": 110,
+      "scenario": "C20b.client"
+    },
+    {
+      "index": 111,
+      "scenario": "C20c.client"
+    },
+    {
+      "index": 229,
+      "scenario": "C20d.client"
+    },
+    {
+      "index": 112,
+      "scenario": "E01.client"
+    },
+    {
+      "index": 113,
+      "scenario": "I01.client"
+    },
+    {
+      "index": 114,
+      "scenario": "I03.client"
+    },
+    {
+      "index": 115,
+      "scenario": "I04.client"
+    },
+    {
+      "index": 116,
+      "scenario": "I05.client"
+    },
+    {
+      "index": 117,
+      "scenario": "I06.client"
+    },
+    {
+      "index": 118,
+      "scenario": "I07.client"
+    },
+    {
+      "index": 119,
+      "scenario": "I08.client"
+    },
+    {
+      "index": 120,
+      "scenario": "I09.client"
+    },
+    {
+      "index": 121,
+      "scenario": "I10.client"
+    },
+    {
+      "index": 122,
+      "scenario": "I11.client"
+    },
+    {
+      "index": 123,
+      "scenario": "I12.client"
+    },
+    {
+      "index": 124,
+      "scenario": "I13.client"
+    },
+    {
+      "index": 125,
+      "scenario": "I14.client"
+    },
+    {
+      "index": 126,
+      "scenario": "I15.client"
+    },
+    {
+      "index": 127,
+      "scenario": "I16.client"
+    },
+    {
+      "index": 128,
+      "scenario": "M01.client"
+    },
+    {
+      "index": 129,
+      "scenario": "M02.client"
+    },
+    {
+      "index": 130,
+      "scenario": "M03.client"
+    },
+    {
+      "index": 131,
+      "scenario": "M04.client"
+    },
+    {
+      "index": 132,
+      "scenario": "M05.client"
+    },
+    {
+      "index": 133,
+      "scenario": "M06.client"
+    },
+    {
+      "index": 134,
+      "scenario": "M07.client"
+    },
+    {
+      "index": 135,
+      "scenario": "M08.client"
+    },
+    {
+      "index": 136,
+      "scenario": "M09.client"
+    },
+    {
+      "index": 137,
+      "scenario": "M10.client"
+    },
+    {
+      "index": 138,
+      "scenario": "M11a.client"
+    },
+    {
+      "index": 139,
+      "scenario": "M11b.client"
+    },
+    {
+      "index": 140,
+      "scenario": "N01.client"
+    },
+    {
+      "index": 141,
+      "scenario": "N02.client"
+    },
+    {
+      "index": 142,
+      "scenario": "N03.client"
+    },
+    {
+      "index": 143,
+      "scenario": "N04.client"
+    },
+    {
+      "index": 144,
+      "scenario": "C08.client"
+    },
+    {
+      "index": 145,
+      "scenario": "C17c.client"
+    },
+    {
+      "index": 146,
+      "scenario": "C19a.client"
+    },
+    {
+      "index": 147,
+      "scenario": "E02.client"
+    },
+    {
+      "index": 148,
+      "scenario": "E03.client"
+    },
+    {
+      "index": 149,
+      "scenario": "E05.client"
+    },
+    {
+      "index": 150,
+      "scenario": "E06.client"
+    },
+    {
+      "index": 151,
+      "scenario": "E07.client"
+    },
+    {
+      "index": 152,
+      "scenario": "E08.client"
+    },
+    {
+      "index": 153,
+      "scenario": "E09.client"
+    },
+    {
+      "index": 154,
+      "scenario": "E10.client"
+    },
+    {
+      "index": 155,
+      "scenario": "E12.client"
+    },
+    {
+      "index": 156,
+      "scenario": "P01.client"
+    },
+    {
+      "index": 157,
+      "scenario": "P02.client"
+    },
+    {
+      "index": 158,
+      "scenario": "P03.client"
+    },
+    {
+      "index": 159,
+      "scenario": "P04.client"
+    },
+    {
+      "index": 160,
+      "scenario": "P05.client"
+    },
+    {
+      "index": 161,
+      "scenario": "P06.client"
+    },
+    {
+      "index": 162,
+      "scenario": "P07.client"
+    },
+    {
+      "index": 163,
+      "scenario": "P08.client"
+    },
+    {
+      "index": 164,
+      "scenario": "P09.client"
+    },
+    {
+      "index": 165,
+      "scenario": "P10.client"
+    },
+    {
+      "index": 166,
+      "scenario": "P11.client"
+    },
+    {
+      "index": 167,
+      "scenario": "P12a.client"
+    },
+    {
+      "index": 168,
+      "scenario": "P12c.client"
+    },
+    {
+      "index": 169,
+      "scenario": "P13.client"
+    },
+    {
+      "index": 170,
+      "scenario": "P14.client"
+    },
+    {
+      "index": 171,
+      "scenario": "P15.client"
+    },
+    {
+      "index": 172,
+      "scenario": "P16.client"
+    },
+    {
+      "index": 173,
+      "scenario": "P17.client"
+    },
+    {
+      "index": 174,
+      "scenario": "P18.client"
+    },
+    {
+      "index": 175,
+      "scenario": "P19.client"
+    },
+    {
+      "index": 176,
+      "scenario": "P20.client"
+    },
+    {
+      "index": 177,
+      "scenario": "P21.client"
+    },
+    {
+      "index": 178,
+      "scenario": "P23c.client"
+    },
+    {
+      "index": 179,
+      "scenario": "S01.client"
+    },
+    {
+      "index": 180,
+      "scenario": "S02.client"
+    },
+    {
+      "index": 181,
+      "scenario": "S03.client"
+    },
+    {
+      "index": 182,
+      "scenario": "S04a.client"
+    },
+    {
+      "index": 183,
+      "scenario": "S04b.client"
+    },
+    {
+      "index": 184,
+      "scenario": "S18.client"
+    },
+    {
+      "index": 185,
+      "scenario": "W01a.client"
+    },
+    {
+      "index": 186,
+      "scenario": "W01b.client"
+    },
+    {
+      "index": 187,
+      "scenario": "W01c.client"
+    },
+    {
+      "index": 188,
+      "scenario": "W02.client"
+    },
+    {
+      "index": 189,
+      "scenario": "W03.client"
+    },
+    {
+      "index": 190,
+      "scenario": "W04.client"
+    },
+    {
+      "index": 191,
+      "scenario": "W05a.client"
+    },
+    {
+      "index": 192,
+      "scenario": "W05c.client"
+    },
+    {
+      "index": 193,
+      "scenario": "W10.client"
+    },
+    {
+      "index": 194,
+      "scenario": "W11.client"
+    },
+    {
+      "index": 195,
+      "scenario": "W12.client"
+    },
+    {
+      "index": 196,
+      "scenario": "W13.client"
+    },
+    {
+      "index": 197,
+      "scenario": "S06.client"
+    },
+    {
+      "index": 198,
+      "scenario": "S08.client"
+    },
+    {
+      "index": 199,
+      "scenario": "S13c.client"
+    },
+    {
+      "index": 200,
+      "scenario": "S13b.client"
+    },
+    {
+      "index": 201,
+      "scenario": "S13a.client"
+    },
+    {
+      "index": 202,
+      "scenario": "S15b.client"
+    },
+    {
+      "index": 203,
+      "scenario": "S04c.client"
+    },
+    {
+      "index": 204,
+      "scenario": "S07.client"
+    },
+    {
+      "index": 205,
+      "scenario": "S16b.client"
+    },
+    {
+      "index": 206,
+      "scenario": "S09.client"
+    },
+    {
+      "index": 207,
+      "scenario": "S05.client"
+    },
+    {
+      "index": 208,
+      "scenario": "S10.client"
+    },
+    {
+      "index": 209,
+      "scenario": "S16a.client"
+    },
+    {
+      "index": 210,
+      "scenario": "S11.client"
+    },
+    {
+      "index": 211,
+      "scenario": "W15a.client"
+    },
+    {
+      "index": 212,
+      "scenario": "W15b.client"
+    },
+    {
+      "index": 213,
+      "scenario": "W15d.client"
+    },
+    {
+      "index": 214,
+      "scenario": "W16.client"
+    },
+    {
+      "index": 215,
+      "scenario": "W17.client"
+    },
+    {
+      "index": 216,
+      "scenario": "W19a.client"
+    },
+    {
+      "index": 217,
+      "scenario": "W20a.client"
+    },
+    {
+      "index": 218,
+      "scenario": "W20b.client"
+    },
+    {
+      "index": 219,
+      "scenario": "W22a.client"
+    },
+    {
+      "index": 220,
+      "scenario": "W22b.client"
+    },
+    {
+      "index": 221,
+      "scenario": "W23.client"
+    },
+    {
+      "index": 222,
+      "scenario": "W24.client"
+    },
+    {
+      "index": 223,
+      "scenario": "N07a.client"
+    },
+    {
+      "index": 224,
+      "scenario": "N07b.client"
+    },
+    {
+      "index": 225,
+      "scenario": "N07c.client"
+    },
+    {
+      "index": 226,
+      "scenario": "N07d.client"
+    },
+    {
+      "index": 233,
+      "scenario": "G01.full"
+    },
+    {
+      "index": 234,
+      "scenario": "G02.full"
+    },
+    {
+      "index": 235,
+      "scenario": "G03.full"
+    },
+    {
+      "index": 236,
+      "scenario": "G04.full"
+    },
+    {
+      "index": 237,
+      "scenario": "G05.full"
+    },
+    {
+      "index": 238,
+      "scenario": "G06.full"
+    },
+    {
+      "index": 239,
+      "scenario": "G07.full"
+    },
+    {
+      "index": 240,
+      "scenario": "G08.full"
+    },
+    {
+      "index": 241,
+      "scenario": "G09.full"
+    },
+    {
+      "index": 242,
+      "scenario": "G10.full"
+    },
+    {
+      "index": 243,
+      "scenario": "G11.full"
+    },
+    {
+      "index": 244,
+      "scenario": "G12.full"
+    },
+    {
+      "index": 245,
+      "scenario": "G13.full"
+    },
+    {
+      "index": 246,
+      "scenario": "G14.full"
+    },
+    {
+      "index": 247,
+      "scenario": "G15.full"
+    },
+    {
+      "index": 248,
+      "scenario": "G16.full"
+    },
+    {
+      "index": 249,
+      "scenario": "G17.full"
+    },
+    {
+      "index": 250,
+      "scenario": "G18.full"
+    },
+    {
+      "index": 251,
+      "scenario": "G19.full"
+    },
+    {
+      "index": 252,
+      "scenario": "G20.full"
+    },
+    {
+      "index": 253,
+      "scenario": "G21.full"
+    },
+    {
+      "index": 254,
+      "scenario": "G22.full"
+    },
+    {
+      "index": 255,
+      "scenario": "G23.full"
+    },
+    {
+      "index": 256,
+      "scenario": "G24.full"
+    },
+    {
+      "index": 257,
+      "scenario": "G25.full"
+    },
+    {
+      "index": 258,
+      "scenario": "G26.full"
+    },
+    {
+      "index": 259,
+      "scenario": "G27.full"
+    },
+    {
+      "index": 260,
+      "scenario": "G28.full"
+    },
+    {
+      "index": 261,
+      "scenario": "G29.full"
+    },
+    {
+      "index": 262,
+      "scenario": "G30.full"
+    },
+    {
+      "index": 263,
+      "scenario": "G31.full"
+    },
+    {
+      "index": 264,
+      "scenario": "G32.full"
+    },
+    {
+      "index": 265,
+      "scenario": "G33.full"
+    },
+    {
+      "index": 266,
+      "scenario": "G34.full"
+    },
+    {
+      "index": 267,
+      "scenario": "G35.full"
+    },
+    {
+      "index": 268,
+      "scenario": "G36.full"
+    },
+    {
+      "index": 269,
+      "scenario": "C19b.full"
+    },
+    {
+      "index": 270,
+      "scenario": "I17a.full"
+    },
+    {
+      "index": 271,
+      "scenario": "I17b.full"
+    },
+    {
+      "index": 272,
+      "scenario": "I17c.full"
+    },
+    {
+      "index": 273,
+      "scenario": "I17d.full"
+    },
+    {
+      "index": 274,
+      "scenario": "I18a.full"
+    },
+    {
+      "index": 275,
+      "scenario": "I18b.full"
+    },
+    {
+      "index": 276,
+      "scenario": "I18c.full"
+    },
+    {
+      "index": 277,
+      "scenario": "I19.full"
+    },
+    {
+      "index": 278,
+      "scenario": "P12b.full"
+    },
+    {
+      "index": 279,
+      "scenario": "P22a.full"
+    },
+    {
+      "index": 280,
+      "scenario": "P22b.full"
+    },
+    {
+      "index": 281,
+      "scenario": "P22c.full"
+    },
+    {
+      "index": 282,
+      "scenario": "P22d.full"
+    },
+    {
+      "index": 283,
+      "scenario": "S14a.full"
+    },
+    {
+      "index": 284,
+      "scenario": "S14b.full"
+    },
+    {
+      "index": 285,
+      "scenario": "S14c.full"
+    },
+    {
+      "index": 286,
+      "scenario": "S15a.full"
+    },
+    {
+      "index": 287,
+      "scenario": "S16c.full"
+    },
+    {
+      "index": 288,
+      "scenario": "S16d.full"
+    },
+    {
+      "index": 289,
+      "scenario": "S17a.full"
+    },
+    {
+      "index": 290,
+      "scenario": "S17b.full"
+    },
+    {
+      "index": 291,
+      "scenario": "S17c.full"
+    },
+    {
+      "index": 292,
+      "scenario": "S19.full"
+    },
+    {
+      "index": 293,
+      "scenario": "W05b.full"
+    },
+    {
+      "index": 294,
+      "scenario": "W05d.full"
+    },
+    {
+      "index": 295,
+      "scenario": "W06.full"
+    },
+    {
+      "index": 296,
+      "scenario": "W07.full"
+    },
+    {
+      "index": 297,
+      "scenario": "W09.full"
+    },
+    {
+      "index": 298,
+      "scenario": "W15c.full"
+    },
+    {
+      "index": 299,
+      "scenario": "W19b.full"
+    },
+    {
+      "index": 300,
+      "scenario": "W19c.full"
+    },
+    {
+      "index": 301,
+      "scenario": "W19d.full"
+    },
+    {
+      "index": 302,
+      "scenario": "W19e.full"
+    },
+    {
+      "index": 303,
+      "scenario": "W21.full"
+    },
+    {
+      "index": 304,
+      "scenario": "G37.full"
+    },
+    {
+      "index": 305,
+      "scenario": "G38.full"
+    }
+  ]
+}

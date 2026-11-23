@@ -1,0 +1,490 @@
+{
+  "scope": "Actual repository entrypoints, governance, pins, shell syntax and whitespace; no full product/PG/Windows/GPU claim.",
+  "source_head": "0623fbd59c372bbf479f3965031f47393c42cd39",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "commands": [
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/validate_repository_policy.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.745,
+      "output": "Post-merge exact-candidate routing regressions PASS\nRepository policy validation passed (23 files, 78 workflows).",
+      "raw_output_sha256": "15abcb5cc41fb24255f3c008537274ae36171547c4b582bd51ee700e33681e8f",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/refresh_ci_workflow_pins.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.066,
+      "output": "",
+      "raw_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/agents/validate_governance.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.442,
+      "output": "Governance validation passed for Oteryn/Oteryn-Game.\nValidated 22 required policy documents and 9 project lanes.",
+      "raw_output_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/agents/tests"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.134,
+      "output": "......................................................................................................................................\n----------------------------------------------------------------------\nRan 134 tests in 0.888s\n\nOK",
+      "raw_output_sha256": "76c19c9f725aad65156785f6f28d90ae821c3eb66a7dd3cdad54a037a3ba3b68",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_agent_governance_pr_targets.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 10.793,
+      "output": "................\n----------------------------------------------------------------------\nRan 16 tests in 10.672s\n\nOK",
+      "raw_output_sha256": "4a2b485a988866d606959c3c1948f72af49bcb7d918b4a56490864384611eb9e",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_benchmark_rust_cache.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 8.337,
+      "output": "...........\n----------------------------------------------------------------------\nRan 11 tests in 8.232s\n\nOK",
+      "raw_output_sha256": "82d7abe273ab17f65c19d673e757c5aef2499b74e84818ba677d36492a43fddf",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_check_dispatch_pg_shards.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 11.386,
+      "output": "..........\n----------------------------------------------------------------------\nRan 10 tests in 11.303s\n\nOK\n1/3: 3,310,359 test bytes (3.310 MB), 6,531,739 shared bytes, 876 named tests\n2/3: 3,392,531 test bytes (3.393 MB), 6,531,739 shared bytes, 979 named tests\n3/3: 3,392,763 test bytes (3.393 MB), 6,531,739 shared bytes, 785 named tests\nUnion matches all 2,640 named tests, zero duplicates",
+      "raw_output_sha256": "77cd42de81347a20803ffed9fff07d77a1fc0c06210202f90b1fa790c7f2ef84",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_check_duplicate_test_sources.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.148,
+      "output": "..............\n----------------------------------------------------------------------\nRan 14 tests in 0.011s\n\nOK",
+      "raw_output_sha256": "dd818658e9c8008cb354da9371485cb574dabd3d7c356cdfa1c694608942fdca",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_classify_content_routing.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.11,
+      "output": "PASS test_pr_905_content_tree_shape_is_not_full\nPASS test_content_real_consumers_still_select_product_lanes\nPASS test_unknown_inputs_remain_fail_closed\nPASS test_exact_candidate_scan_finds_existing_content_world_consumer\nPASS test_pr_content_deferral_is_explicit_and_narrow\nPASS test_deploy_inputs_use_exact_consumer_routing\nPASS test_main_defers_content_only_for_pull_request_events\nContent/import exact-consumer routing regressions PASS",
+      "raw_output_sha256": "d1cd83035e3703d4dead2779da5809e3a350df81c32c6c7d39aa2eea175eb0d6",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_classify_post_merge_lanes.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.88,
+      "output": "Post-merge exact-candidate routing regressions PASS",
+      "raw_output_sha256": "f680285d224c682a4bfce69ade878a06310f9199beec110e80be74052d572b96",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_classify_pr_test_lanes.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 7.279,
+      "output": "fatal: not a tree object\nfatal: not a tree object\nReusing successful hosted Rust qualification from run/attempt 7/1.\nReusing successful hosted Rust qualification from run/attempt 7/1.\nReusing successful hosted Rust qualification from run/attempt 7/1.\nReconfirmed hosted Rust qualification from run/attempt 7/1.\nPrevious qualification unavailable.\nMetadata concurrency PASS: isolated edits, retarget cancellation and canonical full game-gate\nRepository tool dependencies PASS: auxiliary case, consumer promotion, security and unknown FULL\nRouting matrix PASS: product, auxiliary, exact consumers, controls, Atlas and fail-closed cases\nExact candidate reference scan PASS: file, directory, package and canonical-control consumers\nDirectory reference left boundary PASS: prose ignored; quoted, joined and exact-file consumers kept\nWorkflow routing PASS: auxiliary workflows narrow, gate workflows and selectors stay FULL\nDocumentation fast path PASS: docs-only skip, mixed/control/unknown/consumed FULL\nCandidate mode PASS: regular trees accepted, special modes fail closed\nAudit rotation PASS: exact PR pin replacement only, full routing for all other cases\nAudit rotation PASS: exact PR pin replacement only, full routing for all other cases\nLarge PR fallback PASS: exact Git trees recover complete changed-file evidence\nScope count drift PASS: seven positive-first transitions recover exact Git; zero-first selects FULL\nScope count drift PASS: immutable recovery or FULL fallback; authority and count validity stay strict\nScope identity fences PASS: five identity changes fail with stable or drifting counts and no outputs\nScope invalid counts PASS: both reads reject negative/missing/null/string/float/bool without outputs\nScope stable small PR PASS: exact immutable comparison records remain complete\nAggregate PASS: only fast PR lanes, required failures/cancellations/skips and invalid routing fail closed\nServer qualification PASS: boot/transport/durability paths select it, unrelated paths skip, malformed input fails closed\nWorld bundle PASS: each compiler input selects the lane, a docs-only change skips, malformed input fails closed\nCLI fallback PASS: malformed classifier inputs remain conservative FULL\nExact-candidate PR routing regressions PASS",
+      "raw_output_sha256": "97a47da14648dfbc2dae59f72ea9858e975041549bf1fa09e24f766c20995b9d",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_classify_quest_authoring_scope.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 38.873,
+      "output": "..............................\n----------------------------------------------------------------------\nRan 30 tests in 38.732s\n\nOK\nQuest scope: full (not a Quest tool doc: content/items/a.json)\nDonor-source check: skipped (no donor input changed)\nQuest scope: full (not a Quest tool doc: content/quests/a.json)\nDonor-source check: run (donor input content/quests/a.json)\nQuest scope: full (classification failed closed: FileNotFoundError)\nDonor-source check: run (classification failed closed: FileNotFoundError)\nQuest scope: full (doc path outside the plain alphabet)\nDonor-source check: run (donor input tools/content-schema/quest-authoring/x?full?false?donor?false?.md)\nQuest scope: full (classification failed closed: ValueError)\nDonor-source check: run (classification failed closed: ValueError)\nQuest scope: full (classification failed closed: ValueError)\nDonor-source check: run (classification failed closed: ValueError)\nQuest scope: full (classification failed closed: ValueError)\nDonor-source check: run (classification failed closed: ValueError)\nQuest scope: docs_only (1 unreferenced Quest tool doc(s))\nDonor-source check: run (donor input tools/content-schema/quest-authoring/README.md)\nQuest scope: full (classification failed closed: ValueError)\nDonor-source check: run (classification failed closed: ValueError)",
+      "raw_output_sha256": "1a9dc700037a8a360a2288d6f7ed50298a8ca6bcd1953f46dd252f931e1e4b28",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_collect_rust_fast_results.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.995,
+      "output": ".....................\n----------------------------------------------------------------------\nRan 21 tests in 2.846s\n\nOK\nRUST_FAST_RESULT role=lib shard=2/5 job=101 attempt=1 artifact=201\nRUST_FAST_RESULT role=dispatch-1 shard=2/5 job=102 attempt=2 artifact=202\nRUST_FAST_RESULT role=lib shard=2/5 job=101 attempt=1 artifact=201\nRUST_FAST_RESULT role=dispatch-1 shard=2/5 job=102 attempt=2 artifact=202",
+      "raw_output_sha256": "62d415bc3b96d870d540c2b2a9f2b15af8f96361bc914fcdb894d9f94fe9f016",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_heavy_gate.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 50.634,
+      "output": "................./tmp/tmpqgq7qbxd/pg-planner/pg_archive_affinity.py: OK\n../tmp/tmpoyllzb73/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpr1wmofun/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpyq19v9wm/pg-planner/pg_archive_affinity.py: OK\n./tmp/tmpsqq9wsmc/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp6w7i1hdj/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpzc8xhy_n/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpwwcbqelq/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpwt2p3_3k/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmptlvlldat/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpdpj18utc/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpsnrix5bo/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp3hbqkf4o/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpidrmwsai/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp0wrf9ku2/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpmx99vdu5/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpiuymaac6/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmprhfhcs0_/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp04_5rhq5/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp6vswz_90/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpa92dyrhl/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpg9waxt_y/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpdnihj75o/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmphaqw0my2/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpta2xcx_7/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpbnn3evdw/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpeioxrnjd/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmphe7h4gb2/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp20a39ee6/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpqn37qona/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmp2o96ny1d/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpux4k9rqf/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmpnim93veh/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmprj5pa2ze/pg-planner/pg_archive_affinity.py: OK\n/tmp/tmppfuelv6s/pg-planner/pg_archive_affinity.py: OK\n../tmp/tmp96sa245z/pg-planner/pg_archive_affinity.py: OK\n....\n----------------------------------------------------------------------\nRan 26 tests in 50.536s\n\nOK",
+      "raw_output_sha256": "d85d61967d4deb22148163a241d63825eeceb58ae928d9b03dff1cffc5f721bc",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_job_result_key.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 17.919,
+      "output": "...............................\n----------------------------------------------------------------------\nRan 31 tests in 17.830s\n\nOK",
+      "raw_output_sha256": "eaca399e63706759fb4611140417c9ab680e2be24c23b3b4d57554e13a163b50",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_normalize_cargo_mtimes.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.492,
+      "output": "........\n----------------------------------------------------------------------\nRan 8 tests in 1.418s\n\nOK",
+      "raw_output_sha256": "5561de5230df2b211c57098082d571cd5f0e28b3660977bc38dcb7768ec1aa29",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_pg_archive_affinity.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.202,
+      "output": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.126s\n\nOK",
+      "raw_output_sha256": "6340868bcb6fdb67e5f34c1b3013c8762c3a51faa85adab5e9daf2e9eb1b45ff",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_pg_test_durations.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.279,
+      "output": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.175s\n\nOK",
+      "raw_output_sha256": "2883683acc18ad75a5bc59a202565af534679f56218db3d1a66368e72cb40c45",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_plan_pg_partitions.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.09,
+      "output": ".........\n----------------------------------------------------------------------\nRan 9 tests in 0.007s\n\nOK",
+      "raw_output_sha256": "5684d13977a1f6829bcd5f644c72b35ab6f8d42951d571a5f230c4cc35a359f3",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_protected_main_cache.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.411,
+      "output": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.326s\n\nOK",
+      "raw_output_sha256": "e547ff38ff70cc0efa87222385881f6349a777c6d134ede5462accf548d9a6f7",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_refresh_ci_workflow_pins.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.107,
+      "output": "...\n----------------------------------------------------------------------\nRan 3 tests in 0.020s\n\nOK",
+      "raw_output_sha256": "58976e1ebef02b28fad1bcf93e82831c9ac8cc4bf93fac3ea64e4eed88432c50",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_reliability_checklist.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.253,
+      "output": "........\n----------------------------------------------------------------------\nRan 8 tests in 0.087s\n\nOK",
+      "raw_output_sha256": "bbcd0d518ccd83386e1f5e9c2625596756a049d4d07929e5fd77520863c9f378",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_repository_tests_run.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.324,
+      "output": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.961s\n\nOK",
+      "raw_output_sha256": "5ded123f44a7e65cbda7236dc8e3173bc69b7b1cefc437cc8a9f6cd3a145e58b",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_required_status_checks.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.044,
+      "output": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.631s\n\nOK",
+      "raw_output_sha256": "6ab208f7de5c02a77ab106645cf548a8679c54bf1e65e3429cf193a8ac885954",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_run_rust_fast_archive.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.734,
+      "output": ".........\n----------------------------------------------------------------------\nRan 9 tests in 1.663s\n\nOK",
+      "raw_output_sha256": "ac494189c7036905c3144e0e721ff33b157a7e67a4ed25529a94bc3c06e3dbbd",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_rust_cache_pilot_workflow.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.549,
+      "output": "...\n----------------------------------------------------------------------\nRan 3 tests in 0.372s\n\nOK",
+      "raw_output_sha256": "fdbb71908d4bf75604bdab34f82d2da70046120189d0c94af5c36733ac1a8e5a",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_rust_fast_archive_routing.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.434,
+      "output": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.204s\n\nOK",
+      "raw_output_sha256": "fc0a2e7ec617815ae081159b672a57c2e0519eb6936c20d2d310957d8f9d61d2",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_select_postgres_packages.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.663,
+      "output": "..........\n----------------------------------------------------------------------\nRan 10 tests in 0.563s\n\nOK",
+      "raw_output_sha256": "624a23f3af87a94b5a71c6e043513a4f9c22e5939f836ff18c7ce36499cde149",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_shared_dispatch_archive.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.305,
+      "output": "..................../usr/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 302: 'Found'>\n  _warnings.warn(self.warn_message, ResourceWarning)\n...................\n----------------------------------------------------------------------\nRan 39 tests in 0.159s\n\nOK",
+      "raw_output_sha256": "e2ee7f192bc52e11ccf54dc1fe0e6c6f22668581df7b707762d61b875b1cbcaf",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_trim_cargo_cache.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.265,
+      "output": ".............\n----------------------------------------------------------------------\nRan 13 tests in 0.152s\n\nOK",
+      "raw_output_sha256": "5091cedc74d6387dd1f5da0b843814d04d2cd108bd0611b3e3923cc994310209",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_validate_coded_output.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.135,
+      "output": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.024s\n\nOK",
+      "raw_output_sha256": "b2300d1aafe0595c9c54a615ef485e8d42fbb732d33a076b213da446a6aafe8f",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_validate_game_atlas_semantic_search_triggers.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.474,
+      "output": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.395s\n\nOK",
+      "raw_output_sha256": "ebe9687deb3ee45299a5d46f216fca743979e4131872b942ff891e17c02edd79",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_validate_merge_group_pg_sim.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 7.461,
+      "output": "Post-merge exact-candidate routing regressions PASS\ninvalid Merge Queue lane selection: rust=invalid windows=false\ninvalid Merge Queue lane selection: rust=False windows=false\ninvalid Merge Queue lane selection: rust=0 windows=false\ninvalid Merge Queue lane selection: rust=true windows=invalid\ninvalid Merge Queue lane selection: rust=true windows=False\ninvalid Merge Queue lane selection: rust=true windows=0\ninvalid Merge Queue lane selection: rust=false windows=true\nRepository policy validation passed (23 files, 78 workflows).\nAtlas MQ PASS: protected routing, exact synthetic checkout and 32 fail-closed fan-in cases\nWorld bundle MQ PASS: protected routing, exact synthetic checkout and fail-closed fan-in cases\nQueue credibility regressions PASS: approved blob, protected-base exact-consumer routing, 4 native failure positions, 54 workflow mutations, full fan-in failures, docs-only skipped-lane success and fail-closed docs negatives",
+      "raw_output_sha256": "ce8436c2b694074c97dbc718e97397b5447a0d3c0d137b56ef5b442d05315d81",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_validate_pr_gate_pg_sim.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 6.175,
+      "output": ".................\n----------------------------------------------------------------------\nRan 17 tests in 6.054s\n\nOK\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package\n::notice::Runner identity differs from the ledger plan; testing every selected package",
+      "raw_output_sha256": "37debd19637ed07d82942713b37c454f1292644357e50d791f9b53c2ef10d56b",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "/usr/bin/python3",
+        "tools/repository/test_wp5_s3b_verdict.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.276,
+      "output": "......\n----------------------------------------------------------------------\nRan 6 tests in 2.196s\n\nOK",
+      "raw_output_sha256": "402226bff34fef324ceaf43d906c771af7ece22a3fbc541fddf21bc1073143d8",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "tools/qualification/node_boot/run.sh"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.005,
+      "output": "",
+      "raw_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "tools/qualification/wp5_s3b/run.sh"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.002,
+      "output": "",
+      "raw_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "redacted_lines": 0
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.393,
+      "output": "",
+      "raw_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "redacted_lines": 0
+    }
+  ],
+  "changed_source_sha256": {
+    "apps/game-server/tests/native_admission_source_postgres.rs": "338c46afa64b65bf27ee21c24e5e45333bcf78b000a44e83da51daf6d9d154a7",
+    "apps/game-server/tests/support/bank_postgres_cases.rs": "95e2862cd0e7694874e5101f6d85d18b442d17451ebaecd9abc9b9fe35a7017d",
+    "crates/client-runtime/src/features/0064-target-move/tests/e2e_m01.rs": "79c9d79e0e90f7e723303893da5159501c87b08f3e2096897af32817829e630c",
+    "crates/client-runtime/src/features/0287-actor-spell-catalog/tests/e2e_c14.rs": "a07de8d5730ac8f5cb1285a29a37bd720a854958d7cdb7b29e4a2206688618f7",
+    "crates/client-runtime/src/features/local-spell-action-bar/tests/e2e_c04.rs": "7589347be634412419d12a161ccff9dd6d001c4195b1360c9a09b9cf62f1cd4a",
+    "crates/client-runtime/tests/gap_house.rs": "33c4c82214d4d0f0b9689e9c33afb4097f9b65f7a7aa2600e910d3a9efb458d3",
+    "crates/client-ui/tests/chat_log.rs": "ef84a79b75de54b714ddd644f285813f968a3e1e9b6338d7078566a53f440a66",
+    "crates/gameplay/durability/src/durability/bank.rs": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+    "crates/gameplay/durability/src/durability/core_modules_linkage_tests.rs": "834b82c938310fcd6544eb835149c189e457c06841179731d15e986563d28f31",
+    "crates/gameplay/durability/src/durability/db_holder_wait_tests.rs": "5bfab2a627d1f70ffd96805beead44616b7f356f044816a6b356dc7efd2f1a09",
+    "crates/gameplay/durability/src/durability/db_tests/holder_round_trip_tests.rs": "e93940544720f60f632cd9f55816b22b95b66455cc0d36f8ac5493020e7aa099",
+    "crates/gameplay/foundation/src/scheduled_events.rs": "00323b11ca29bcbcc6958c163f4456df1bcba104f6202b2b78bc6ae02448134b",
+    "crates/identity/src/lib.rs": "e63df43f6e32e184e92ae8518c994bd4e9994674b07104a519ba48767a321288",
+    "crates/input-platform/tests/native_winit.rs": "c80929f7bdf0241f0f6a778449f343de81903f5afb1f559a4a5ccc7c7d71dcce",
+    "crates/protocol-oteryn/src/analyser_catalogue.rs": "0cadd2224571cbf702f5cdb27bbd6097344d3601c076af73c49d4bc53268513e",
+    "crates/protocol-oteryn/src/analyser_party.rs": "c26a72c267330d5b2b81204ca4ad905608ab79c14619f14484020268f6c7cf87",
+    "crates/protocol-oteryn/src/appearance_tests/mappings_tests.rs": "3e37038ec5d7d94a610968f64cf56c81b11b29433304625c8935532ad21a0681",
+    "crates/protocol-oteryn/src/atelier.rs": "53a477050738b2a95d5355e85d8f91b2e71ee4776eed5042aceea581e6d14679",
+    "crates/protocol-oteryn/src/attack_tests.rs": "9b363a1ff83fe9d39d4566509c3495ffe4aa4dd9f29889fc8f6286e48a653438",
+    "crates/protocol-oteryn/src/battle_metadata/tests.rs": "5e548de120a433a0897200fdf419369e26a701319224e56cc081f401d08836e6",
+    "crates/protocol-oteryn/src/bestiary.rs": "4790424728cadb4b1061566c520c2dcb4dd752bc3e4de1f58557e5516bde035c",
+    "crates/protocol-oteryn/src/bestiary_catalogue.rs": "3d9ddcb14edbc248c576ac5b1321d7276dc73f1664d0ad764c6880da79627e92",
+    "crates/protocol-oteryn/src/boss_difficulty_tests.rs": "a3d76126c271f8dea165813e69ad7570409bfa95790cf94e9d83de8b4fbf7d84",
+    "crates/protocol-oteryn/src/boss_encounter.rs": "5a52f38c503c84359d49b5e36801d7b6d8aae300af9b5b9883fbf0cc9a608ac0",
+    "crates/protocol-oteryn/src/boss_encounter/catalogue_tests.rs": "ba74f0017a69a874fd455fb28f72601c1a983164fec8fb7f40dda03f9c92fcb1",
+    "crates/protocol-oteryn/src/boss_encounter_tests.rs": "a9772f9d87a5faeefabe2cb48dd73fc707f024719624c5cc7eac070dff09008d",
+    "crates/protocol-oteryn/src/boss_rewards_tests.rs": "2ea74efa68eb5f19740ac08e31de503b54997f6d1831f8610532a0c199c7a278",
+    "crates/protocol-oteryn/src/contract_registries.rs": "e7de501635419065aa81a7e993d1ff388c34223789b5398dcaada4d4a4f4d528",
+    "crates/protocol-oteryn/src/cyclopedia.rs": "c5e2f104e981c3ded0bbbb39adb3aac6be6505de7eafdfaca7fb44239ba7de05",
+    "crates/protocol-oteryn/src/daily_boost.rs": "910f6d6d3e61d4c6d445eed716ab9335f088298b86300805f73a8c91e0114e26",
+    "crates/protocol-oteryn/src/guild_war.rs": "5a905f634449bc8316771f057ec30e01ae13f2168453a7d7a5898dde028e218a",
+    "crates/renderer/src/batch.rs": "a2327cd5e866e73b51112c1f3dc626dfd46f9861be786752912a06882317d546",
+    "docs/agents/evidence/OTV2-20261122-test-ci-value-audit/README.md": "461265a7dbb5985f91a802d11e450bcd3c44820a269f1a664999523e7617f5d4",
+    "docs/agents/tasks/active/OTV2-20261122-test-ci-value-audit.md": "ddab74b519945badd3bccfef4b93ac88b49b68757d6c716ea9cdd7128d3ca780",
+    "tools/agents/tests/test_enqueue_readiness.py": "c11ca72616ae372656532b687754a82b0a784f6388f4e5247e6f28db0191c4db",
+    "tools/content-migration/test_cake_bridge_reference.py": "c73cc0244c71c4f5cca283fcb98470ebb5956786c60b9a19d3d5635f471ec65d",
+    "tools/content-migration/test_forge_sql_admission.py": "1aa2257a939315744c164bbc3fde916db3dd3830cc3146e81dfd75a540007d78",
+    "tools/content-migration/test_harvest_item_profiles.py": "90583fa08df2e471964f216e7f4e5605762210d32a38887b64bc8ea8deb8bbad",
+    "tools/content-migration/test_itemhold_q.py": "23705fecd7b8a9bdc0c088dbf951fc5872b6dc07c67c01649fac9ff3502ef5d4",
+    "tools/content-migration/test_monster_reference_level.py": "479956b4bf4c05c82139799747afd6c00b863ab28c04d41b4b6658c356f234dd",
+    "tools/content-migration/test_official_creature_balance.py": "7745968439378ae9072f0241697444feb7a0aebbbe145069c1197b3dbd09441a",
+    "tools/content-migration/test_parallel_checks.py": "29fbb4bb4ac7a8abbe3d70603f0b3782636ca6faa279a5f693291102389acb0a",
+    "tools/content-migration/test_qengine_reward_item_profiles.py": "fde9a229f7d1d8d977607389949d455c67441e1e095117a68bc37033220a15c5",
+    "tools/content-migration/test_questpc4_treasure_reward_profiles.py": "fe4901129560612c611ec187ce31ce72a3a430759cd0d51b14f5f6587313fcf7",
+    "tools/content-migration/test_quick_loot_item_profiles.py": "16eb07db23dd4289b90f754d0e928461883907f57cc1a75a704a6317959b1d90",
+    "tools/content-migration/test_regenerate_content.py": "140a51f54a2b62ceaa4a25e861b9f1ffa21f9a2cb5d4c8431294c0807d95d9e8",
+    "tools/content-migration/test_world_project_v2_to_tree.py": "228da7ef95341c9d9fad7b43e7904232675b1f922c6dd35e775053fcd6e6f7a6",
+    "tools/qualification/wp5_s3b/run.sh": "62e4e16cda0c1b0c684c70b1785869d2b27f179d852d8832982ca2adfcea659a",
+    "tools/repository/test_heavy_gate.py": "187a249b8ca8d82b13787371dee7b6aeae31a721209e7b7d53afcc2b5b5a2b0c",
+    "tools/repository/test_protected_main_cache.py": "74193415c8324d3bdf4532a3fa19b531ae1f56d1c8b0965cc1f95f3984b809c2",
+    "tools/repository/test_repository_tests_run.py": "0189671ff5a824d0c5eb55e35fbd8d89aef5ec02c91758da68d31f140a55d44c",
+    "tools/repository/test_wp5_s3b_verdict.py": "ddc021c4da44cf38721605182b616d273e3c74d239a8eea90f72058f597e48e6",
+    "tools/synthetic-client-harness/src/main.rs": "15e5d8f716e64c0a4ec55f24231e7ad5602335a839dd2951eae9273bda196778"
+  },
+  "redaction": "Output lines containing password, database URLs, secret, token, key or grant are omitted; SHA256 binds the complete raw output.",
+  "all_commands_passed": true
+}

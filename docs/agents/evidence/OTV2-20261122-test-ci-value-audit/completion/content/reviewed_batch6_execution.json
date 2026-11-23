@@ -1,0 +1,205 @@
+{
+  "modules": [
+    {
+      "path": "tools/content-migration/test_item_official_navigation.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_item_official_navigation"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_explicit_native_admission_is_required (test_item_official_navigation.OfficialNavigationTests.test_explicit_native_admission_is_required) ... ok\ntest_identity_admission_owner_and_name_guards (test_item_official_navigation.OfficialNavigationTests.test_identity_admission_owner_and_name_guards) ... ok\ntest_missing_or_ambiguous_positive_facts_do_not_default (test_item_official_navigation.OfficialNavigationTests.test_missing_or_ambiguous_positive_facts_do_not_default) ... ok\ntest_missing_slot_observation_or_mapping_cannot_qualify (test_item_official_navigation.OfficialNavigationTests.test_missing_slot_observation_or_mapping_cannot_qualify) ... ok\ntest_qualification_digest_and_current_generation_are_sealed (test_item_official_navigation.OfficialNavigationTests.test_qualification_digest_and_current_generation_are_sealed) ... ok\ntest_real_six_records_are_navigation_only (test_item_official_navigation.OfficialNavigationTests.test_real_six_records_are_navigation_only) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 2.599s\n\nOK\n",
+      "seconds": 3.56
+    },
+    {
+      "path": "tools/content-migration/test_quest_batch3_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quest_batch3_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_accepted_semantic_hold_precedes_all_new_source_qualification (test_quest_batch3_item_profiles.QuestBatchThreeItemProfiles.test_accepted_semantic_hold_precedes_all_new_source_qualification) ... ok\ntest_fluid_never_reaches_plain_item_qualification (test_quest_batch3_item_profiles.QuestBatchThreeItemProfiles.test_fluid_never_reaches_plain_item_qualification) ... ok\ntest_only_explicit_canonical_identities_enter_item_set (test_quest_batch3_item_profiles.QuestBatchThreeItemProfiles.test_only_explicit_canonical_identities_enter_item_set) ... ok\ntest_only_published_authoring_can_enter_item_inputs (test_quest_batch3_item_profiles.QuestBatchThreeItemProfiles.test_only_published_authoring_can_enter_item_inputs) ... ok\ntest_plain_portable_item_uses_existing_exact_binding_qualifier (test_quest_batch3_item_profiles.QuestBatchThreeItemProfiles.test_plain_portable_item_uses_existing_exact_binding_qualifier) ... ok\ntest_recipe_admission_does_not_replace_conflicting_native_facts (test_quest_batch3_item_profiles.QuestBatchThreeItemProfiles.test_recipe_admission_does_not_replace_conflicting_native_facts) ... ok\ntest_recipe_admission_is_bounded_and_retains_state_holds (test_quest_batch3_item_profiles.QuestBatchThreeItemProfiles.test_recipe_admission_is_bounded_and_retains_state_holds) ... ok\ntest_retained_uniform_choice_items_are_facts_without_runtime_admission (test_quest_batch3_item_profiles.QuestBatchThreeItemProfiles.test_retained_uniform_choice_items_are_facts_without_runtime_admission) ... ok\ntest_source_charge_and_decay_keep_their_existing_owner (test_quest_batch3_item_profiles.QuestBatchThreeItemProfiles.test_source_charge_and_decay_keep_their_existing_owner) ... ok\ntest_xml_line_binding_handles_single_ids_and_explicit_ranges (test_quest_batch3_item_profiles.QuestBatchThreeItemProfiles.test_xml_line_binding_handles_single_ids_and_explicit_ranges) ... ok\ntest_retained_census_does_not_add_a_recipe_item_owner (test_quest_batch3_item_profiles.RetainedQn3CensusTests.test_retained_census_does_not_add_a_recipe_item_owner) ... ok\ntest_retained_qn3_source_and_jar_match_all_existing_owners (test_quest_batch3_item_profiles.RetainedQn3CensusTests.test_retained_qn3_source_and_jar_match_all_existing_owners) ... ok\n\n----------------------------------------------------------------------\nRan 12 tests in 3.913s\n\nOK\n",
+      "seconds": 4.132
+    },
+    {
+      "path": "tools/content-migration/test_soulpit_echo_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_soulpit_echo_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "timeout_seconds": 55,
+      "output": "test_admission_preserves_existing_profiles_and_pins_exact_output_bytes (test_soulpit_echo_item_profiles.SoulpitEchoItemProfilesTest.test_admission_preserves_existing_profiles_and_pins_exact_output_bytes) ... ",
+      "seconds": 55.068
+    },
+    {
+      "path": "tools/content-migration/test_npc_source_item_references.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_npc_source_item_references"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_corrupt_alias_entries_digest_is_rejected (test_npc_source_item_references.SourceItemReferencesTests.test_corrupt_alias_entries_digest_is_rejected) ... ok\ntest_exact_alias_rewrites_only_reference_and_keeps_lossless_r4_locator (test_npc_source_item_references.SourceItemReferencesTests.test_exact_alias_rewrites_only_reference_and_keeps_lossless_r4_locator) ... ok\ntest_missing_active_target_and_alias_chain_fail_closed (test_npc_source_item_references.SourceItemReferencesTests.test_missing_active_target_and_alias_chain_fail_closed) ... ok\ntest_original_r4_field_and_custody_must_match_exactly (test_npc_source_item_references.SourceItemReferencesTests.test_original_r4_field_and_custody_must_match_exactly) ... ok\ntest_other_source_values_and_executable_offer_are_untouched (test_npc_source_item_references.SourceItemReferencesTests.test_other_source_values_and_executable_offer_are_untouched) ... ok\ntest_pipeline_normalizes_before_native_packet_without_loosening_before_fence (test_npc_source_item_references.SourceItemReferencesTests.test_pipeline_normalizes_before_native_packet_without_loosening_before_fence) ... ok\ntest_retired_without_successor_is_not_admitted (test_npc_source_item_references.SourceItemReferencesTests.test_retired_without_successor_is_not_admitted) ... ok\ntest_unknown_retired_key_is_not_derived_from_numeric_suffix (test_npc_source_item_references.SourceItemReferencesTests.test_unknown_retired_key_is_not_derived_from_numeric_suffix) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.140s\n\nOK\n",
+      "seconds": 0.243
+    },
+    {
+      "path": "tools/content-migration/test_drome_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_drome_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_actual_non_stackable_source_is_preserved (test_drome_item_profiles.DromeItemProfilesTests.test_actual_non_stackable_source_is_preserved) ... ok\ntest_agreeing_existing_native_profile_keeps_richer_fields (test_drome_item_profiles.DromeItemProfilesTests.test_agreeing_existing_native_profile_keeps_richer_fields) ... ok\ntest_all_twenty_rewards_and_cube_are_registered_pinned_and_idempotent (test_drome_item_profiles.DromeItemProfilesTests.test_all_twenty_rewards_and_cube_are_registered_pinned_and_idempotent) ... ok\ntest_binding_bytes_are_checked_before_any_native_output_mutation (test_drome_item_profiles.DromeItemProfilesTests.test_binding_bytes_are_checked_before_any_native_output_mutation) ... ok\ntest_conflicting_or_duplicate_native_profile_does_not_change_output (test_drome_item_profiles.DromeItemProfilesTests.test_conflicting_or_duplicate_native_profile_does_not_change_output) ... ok\ntest_invalid_custody_weight_and_stack_bounds_are_refused (test_drome_item_profiles.DromeItemProfilesTests.test_invalid_custody_weight_and_stack_bounds_are_refused) ... ok\ntest_missing_and_oversize_reward_names_are_not_silent_notices (test_drome_item_profiles.DromeItemProfilesTests.test_missing_and_oversize_reward_names_are_not_silent_notices) ... ok\ntest_missing_duplicate_extra_and_reordered_records_are_refused (test_drome_item_profiles.DromeItemProfilesTests.test_missing_duplicate_extra_and_reordered_records_are_refused) ... ok\ntest_non_exact_missing_or_changed_binding_is_not_promoted (test_drome_item_profiles.DromeItemProfilesTests.test_non_exact_missing_or_changed_binding_is_not_promoted) ... ok\ntest_overlay_requires_primary_revision_full_source_closure_and_record_digest (test_drome_item_profiles.DromeItemProfilesTests.test_overlay_requires_primary_revision_full_source_closure_and_record_digest) ... ok\ntest_pool_capture_requires_exact_ids_counts_and_cube (test_drome_item_profiles.DromeItemProfilesTests.test_pool_capture_requires_exact_ids_counts_and_cube) ... ok\ntest_unknown_or_modified_source_bytes_fail_git_blob_proof (test_drome_item_profiles.DromeItemProfilesTests.test_unknown_or_modified_source_bytes_fail_git_blob_proof) ... ok\ntest_unknown_physical_facts_are_not_guessed (test_drome_item_profiles.DromeItemProfilesTests.test_unknown_physical_facts_are_not_guessed) ... ok\ntest_unqualified_admission_container_or_temporal_record_is_refused (test_drome_item_profiles.DromeItemProfilesTests.test_unqualified_admission_container_or_temporal_record_is_refused) ... ok\ntest_validation_does_not_mutate_source_profiles_or_bindings (test_drome_item_profiles.DromeItemProfilesTests.test_validation_does_not_mutate_source_profiles_or_bindings) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 0.052s\n\nOK\n",
+      "seconds": 0.179
+    },
+    {
+      "path": "tools/content-migration/test_raid_catalogue.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_raid_catalogue"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_apply_plan_verifies_every_sha_before_any_output (test_raid_catalogue.RaidCatalogueTest.test_apply_plan_verifies_every_sha_before_any_output) ... ok\ntest_calendar_end_is_the_last_active_reset_date (test_raid_catalogue.RaidCatalogueTest.test_calendar_end_is_the_last_active_reset_date) ... ok\ntest_crystal_bosstiary_marks_horned_fox_case_insensitively (test_raid_catalogue.RaidCatalogueTest.test_crystal_bosstiary_marks_horned_fox_case_insensitively) ... ok\ntest_every_kind_has_a_deterministic_classification (test_raid_catalogue.RaidCatalogueTest.test_every_kind_has_a_deterministic_classification) ... ok\ntest_feroxa_global_lua_timeline_uses_source_spawn_and_announcements (test_raid_catalogue.RaidCatalogueTest.test_feroxa_global_lua_timeline_uses_source_spawn_and_announcements) ... ok\ntest_flower_month_admits_owner_selected_donor_cycle_and_shared_budget (test_raid_catalogue.RaidCatalogueTest.test_flower_month_admits_owner_selected_donor_cycle_and_shared_budget) ... ok\ntest_full_generated_catalogue_is_reproducible_and_key_safe (test_raid_catalogue.RaidCatalogueTest.test_full_generated_catalogue_is_reproducible_and_key_safe) ... ok\ntest_furyosa_retains_source_schedule_and_requires_native_fury_activation (test_raid_catalogue.RaidCatalogueTest.test_furyosa_retains_source_schedule_and_requires_native_fury_activation) ... ok\ntest_global_count_conflicts_and_custom_identity_do_not_activate (test_raid_catalogue.RaidCatalogueTest.test_global_count_conflicts_and_custom_identity_do_not_activate) ... ok\ntest_global_timeline_retimes_only_directly_anchored_source_events (test_raid_catalogue.RaidCatalogueTest.test_global_timeline_retimes_only_directly_anchored_source_events) ... ok\ntest_inactive_reasons_are_exact_and_active_never_has_one (test_raid_catalogue.RaidCatalogueTest.test_inactive_reasons_are_exact_and_active_never_has_one) ... ok\ntest_legacy_delays_are_milliseconds_and_stagger_close_events (test_raid_catalogue.RaidCatalogueTest.test_legacy_delays_are_milliseconds_and_stagger_close_events) ... ok\ntest_region_binding_preserves_source_coordinates (test_raid_catalogue.RaidCatalogueTest.test_region_binding_preserves_source_coordinates) ... ok\ntest_registered_content_preserves_unrelated_families (test_raid_catalogue.RaidCatalogueTest.test_registered_content_preserves_unrelated_families) ... ok\ntest_reversed_rectangle_matches_source_uniform_random_without_moving_it (test_raid_catalogue.RaidCatalogueTest.test_reversed_rectangle_matches_source_uniform_random_without_moving_it) ... ok\ntest_source_sha_blob_and_revision_are_checked (test_raid_catalogue.RaidCatalogueTest.test_source_sha_blob_and_revision_are_checked) ... ok\ntest_unbound_area_is_inactive_not_relocated (test_raid_catalogue.RaidCatalogueTest.test_unbound_area_is_inactive_not_relocated) ... ok\n\n----------------------------------------------------------------------\nRan 17 tests in 12.079s\n\nOK\n",
+      "seconds": 12.188
+    },
+    {
+      "path": "tools/content-migration/test_event_item_profiles.py",
+      "not_executed": "Five cases call complete register_spell_families.outputs; full producer registration remains deferred to qualified pipeline lane. Source review completed."
+    },
+    {
+      "path": "tools/content-migration/test_item_bootstrap.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_item_bootstrap"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_dangling_index_repaired_with_exact_attachments_and_no_foreign_writes (test_item_bootstrap.ItemBootstrapTests.test_dangling_index_repaired_with_exact_attachments_and_no_foreign_writes) ... ok\ntest_item_only_cannot_be_combined_with_other_modes (test_item_bootstrap.ItemBootstrapTests.test_item_only_cannot_be_combined_with_other_modes) ... usage: python -m unittest [-h] [--items-only | --refresh-bestiary-inventory]\npython -m unittest: error: argument --refresh-bestiary-inventory: not allowed with argument --items-only\nok\ntest_normal_main_and_item_only_use_the_same_writer_and_emit_identical_bytes (test_item_bootstrap.ItemBootstrapTests.test_normal_main_and_item_only_use_the_same_writer_and_emit_identical_bytes) ... ok\ntest_real_capture_pin_refusal_precedes_any_output_or_later_producer (test_item_bootstrap.ItemBootstrapTests.test_real_capture_pin_refusal_precedes_any_output_or_later_producer) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.398s\n\nOK\nPASS Item prerequisites items=3 item_shards=2\nPASS Item prerequisites items=3 item_shards=2\nPASS Item prerequisites items=3 item_shards=2\n",
+      "seconds": 0.537
+    },
+    {
+      "path": "tools/content-migration/test_item_bounded7_navigation.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_item_bounded7_navigation"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_admission_and_source_seals_are_required (test_item_bounded7_navigation.BoundedSevenTests.test_admission_and_source_seals_are_required) ... ok\ntest_container_exception_is_only4290_and_no_scalar_promotion (test_item_bounded7_navigation.BoundedSevenTests.test_container_exception_is_only4290_and_no_scalar_promotion) ... ok\ntest_exact_own_wiki_and_dom_not_other_categories (test_item_bounded7_navigation.BoundedSevenTests.test_exact_own_wiki_and_dom_not_other_categories) ... ok\ntest_name_domain_and_native_state_guards (test_item_bounded7_navigation.BoundedSevenTests.test_name_domain_and_native_state_guards) ... ok\ntest_real_seven_no_native_mutation_and_honest_primary (test_item_bounded7_navigation.BoundedSevenTests.test_real_seven_no_native_mutation_and_honest_primary) ... ok\ntest_scope_native_identity_binding_and_precedence_failures (test_item_bounded7_navigation.BoundedSevenTests.test_scope_native_identity_binding_and_precedence_failures) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 6.333s\n\nOK\n",
+      "seconds": 7.796
+    },
+    {
+      "path": "tools/content-migration/test_equipment_source_overlaps.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_equipment_source_overlaps"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_complete_source_packets_count_the_same_ground_grinder_once (test_equipment_source_overlaps.CraftSourceOverlapProofs.test_complete_source_packets_count_the_same_ground_grinder_once) ... ok\ntest_grinder_custody_and_known_body_conflicts_still_refuse (test_equipment_source_overlaps.CraftSourceOverlapProofs.test_grinder_custody_and_known_body_conflicts_still_refuse) ... ok\ntest_missing_duplicate_or_foreign_grinder_cannot_prove_an_overlap (test_equipment_source_overlaps.CraftSourceOverlapProofs.test_missing_duplicate_or_foreign_grinder_cannot_prove_an_overlap) ... ok\ntest_previous_four_item_contribution_is_not_an_accepted_current_count (test_equipment_source_overlaps.CraftSourceOverlapProofs.test_previous_four_item_contribution_is_not_an_accepted_current_count) ... ok\ntest_shared_craft_rows_preserve_the_complete_prior_profiles (test_equipment_source_overlaps.CraftSourceOverlapProofs.test_shared_craft_rows_preserve_the_complete_prior_profiles) ... ok\ntest_arbitrary_prior_count_cannot_be_silently_repaired (test_equipment_source_overlaps.SourceOverlapProofs.test_arbitrary_prior_count_cannot_be_silently_repaired) ... ok\ntest_both_elevator_sources_include_the_same_nine_fixed_identities (test_equipment_source_overlaps.SourceOverlapProofs.test_both_elevator_sources_include_the_same_nine_fixed_identities) ... ok\ntest_craft_declaration_requires_full_or_qualified_unique_count (test_equipment_source_overlaps.SourceOverlapProofs.test_craft_declaration_requires_full_or_qualified_unique_count) ... ok\ntest_craft_overlap_requires_complete_registered_source_identities (test_equipment_source_overlaps.SourceOverlapProofs.test_craft_overlap_requires_complete_registered_source_identities) ... ok\ntest_duplicate_or_foreign_packet_identity_refuses_overlap_proof (test_equipment_source_overlaps.SourceOverlapProofs.test_duplicate_or_foreign_packet_identity_refuses_overlap_proof) ... ok\ntest_exact_source_overlaps_remove_34_duplicate_contributions (test_equipment_source_overlaps.SourceOverlapProofs.test_exact_source_overlaps_remove_34_duplicate_contributions) ... ok\ntest_merged_subtraction_does_not_repeat_cohort_owned_corrections (test_equipment_source_overlaps.SourceOverlapProofs.test_merged_subtraction_does_not_repeat_cohort_owned_corrections) ... ok\ntest_unproven_boss_overlap_cannot_lower_the_cohort (test_equipment_source_overlaps.SourceOverlapProofs.test_unproven_boss_overlap_cannot_lower_the_cohort) ... ok\n\n----------------------------------------------------------------------\nRan 13 tests in 8.936s\n\nOK\n",
+      "seconds": 9.225
+    },
+    {
+      "path": "tools/content-migration/test_refresh_season_creature_inventory.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_refresh_season_creature_inventory"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_canonical_immunities_fact_changes_remain_rejected (test_refresh_season_creature_inventory.SeasonalInventory.test_canonical_immunities_fact_changes_remain_rejected) ... ok\ntest_canonical_omitted_empty_immunities_qualifies_same_source (test_refresh_season_creature_inventory.SeasonalInventory.test_canonical_omitted_empty_immunities_qualifies_same_source) ... ok\ntest_closure_diagnostics_preserve_complete_operands (test_refresh_season_creature_inventory.SeasonalInventory.test_closure_diagnostics_preserve_complete_operands) ... ok\ntest_exact_merged_cohort_qualifies_one_melee_successor (test_refresh_season_creature_inventory.SeasonalInventory.test_exact_merged_cohort_qualifies_one_melee_successor) ... ok\ntest_explicit_empty_immunities_qualifies_same_source (test_refresh_season_creature_inventory.SeasonalInventory.test_explicit_empty_immunities_qualifies_same_source) ... ok\ntest_missing_or_duplicate_thaian_records_remain_rejected (test_refresh_season_creature_inventory.SeasonalInventory.test_missing_or_duplicate_thaian_records_remain_rejected) ... ok\ntest_native_behavior_remains_raw_source_exact (test_refresh_season_creature_inventory.SeasonalInventory.test_native_behavior_remains_raw_source_exact) ... ok\ntest_native_empty_immunities_omission_remains_rejected (test_refresh_season_creature_inventory.SeasonalInventory.test_native_empty_immunities_omission_remains_rejected) ... ok\ntest_native_source_default_bytes_remain_exact (test_refresh_season_creature_inventory.SeasonalInventory.test_native_source_default_bytes_remain_exact) ... ok\ntest_nondefault_canonical_fields_are_not_normalized_away (test_refresh_season_creature_inventory.SeasonalInventory.test_nondefault_canonical_fields_are_not_normalized_away) ... ok\ntest_omitted_empty_immunities_keeps_other_source_guards (test_refresh_season_creature_inventory.SeasonalInventory.test_omitted_empty_immunities_keeps_other_source_guards) ... ok\ntest_same_count_thaian_profile_mutation_remains_rejected (test_refresh_season_creature_inventory.SeasonalInventory.test_same_count_thaian_profile_mutation_remains_rejected) ... ok\ntest_tree_projection_preserves_source_closure (test_refresh_season_creature_inventory.SeasonalInventory.test_tree_projection_preserves_source_closure) ... ok\ntest_unprojected_reference_level_omissions_are_rejected (test_refresh_season_creature_inventory.SeasonalInventory.test_unprojected_reference_level_omissions_are_rejected) ... ok\ntest_unrelated_creature_and_schedule_additions_remain_rejected (test_refresh_season_creature_inventory.SeasonalInventory.test_unrelated_creature_and_schedule_additions_remain_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 1.221s\n\nOK\n",
+      "seconds": 2.381
+    },
+    {
+      "path": "tools/content-migration/test_engnpc_m04_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_engnpc_m04_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_canonical_marlin_drift_is_not_a_general_conflict_override (test_engnpc_m04_item_profiles.TerminalItemProfiles.test_canonical_marlin_drift_is_not_a_general_conflict_override) ... ok\ntest_diary_promotion_cannot_replace_a_different_text_owner (test_engnpc_m04_item_profiles.TerminalItemProfiles.test_diary_promotion_cannot_replace_a_different_text_owner) ... ok\ntest_four_exact_profiles_are_reproducible_from_pinned_sources (test_engnpc_m04_item_profiles.TerminalItemProfiles.test_four_exact_profiles_are_reproducible_from_pinned_sources) ... ok\ntest_marlin_retains_sealed_definition_and_unknown_source_stack_semantics (test_engnpc_m04_item_profiles.TerminalItemProfiles.test_marlin_retains_sealed_definition_and_unknown_source_stack_semantics) ... ok\ntest_own_qualified_output_replays_byte_identically (test_engnpc_m04_item_profiles.TerminalItemProfiles.test_own_qualified_output_replays_byte_identically) ... ok\ntest_promoted_diary_refusals_leave_every_generated_byte_unchanged (test_engnpc_m04_item_profiles.TerminalItemProfiles.test_promoted_diary_refusals_leave_every_generated_byte_unchanged) ... ok\ntest_publication_recomputes_every_fact_before_native_merging (test_engnpc_m04_item_profiles.TerminalItemProfiles.test_publication_recomputes_every_fact_before_native_merging) ... ok\ntest_source_qualified_qengine_prefix_is_preserved (test_engnpc_m04_item_profiles.TerminalItemProfiles.test_source_qualified_qengine_prefix_is_preserved) ... ok\ntest_source_scope_and_each_xml_witness_are_closed (test_engnpc_m04_item_profiles.TerminalItemProfiles.test_source_scope_and_each_xml_witness_are_closed) ... ok\ntest_valid_publication_pins_profiles_and_rejects_conflicting_native_owner (test_engnpc_m04_item_profiles.TerminalItemProfiles.test_valid_publication_pins_profiles_and_rejects_conflicting_native_owner) ... ok\n\n----------------------------------------------------------------------\nRan 10 tests in 32.006s\n\nOK\n",
+      "seconds": 32.261
+    },
+    {
+      "path": "tools/content-migration/test_item_engine_navigation.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_item_engine_navigation"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_foreign_primary_absence_is_not_a_derived_family_label (test_item_engine_navigation.EngineNavigationTests.test_foreign_primary_absence_is_not_a_derived_family_label) ... ok\ntest_no_clothing_only_or_unlisted_dead_name_family (test_item_engine_navigation.EngineNavigationTests.test_no_clothing_only_or_unlisted_dead_name_family) ... ok\ntest_own_wiki_numeric_priority_duplicates_and_disagreement (test_item_engine_navigation.EngineNavigationTests.test_own_wiki_numeric_priority_duplicates_and_disagreement) ... ok\ntest_owner_current_identity_reverse_binding_and_native_guards (test_item_engine_navigation.EngineNavigationTests.test_owner_current_identity_reverse_binding_and_native_guards) ... ok\ntest_real_closed_batch_and_existing_rows_take_precedence (test_item_engine_navigation.EngineNavigationTests.test_real_closed_batch_and_existing_rows_take_precedence) ... ok\ntest_scope_seal_and_current_artifact_membership (test_item_engine_navigation.EngineNavigationTests.test_scope_seal_and_current_artifact_membership) ... ok\ntest_single_hop_requires_actual_target_membership_and_native_identity (test_item_engine_navigation.EngineNavigationTests.test_single_hop_requires_actual_target_membership_and_native_identity) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 6.961s\n\nOK\n",
+      "seconds": 7.955
+    },
+    {
+      "path": "tools/content-migration/test_hireling_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_hireling_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_all_source_trade_food_and_package_operands_are_profiled (test_hireling_item_profiles.HirelingItemProfiles.test_all_source_trade_food_and_package_operands_are_profiled) ... ok\ntest_answer_q11_preserves_three_stale_sell_rows_without_a_carry_grant (test_hireling_item_profiles.HirelingItemProfiles.test_answer_q11_preserves_three_stale_sell_rows_without_a_carry_grant) ... ok\ntest_answer_q14_preserves_only_the_five_asserted_shared_weights (test_hireling_item_profiles.HirelingItemProfiles.test_answer_q14_preserves_only_the_five_asserted_shared_weights) ... ok\ntest_answer_q15_preserves_only_the_virtual_pouch_movable_pair (test_hireling_item_profiles.HirelingItemProfiles.test_answer_q15_preserves_only_the_virtual_pouch_movable_pair) ... ok\ntest_chest_admission_retains_trader_equipment_decay_and_classification (test_hireling_item_profiles.HirelingItemProfiles.test_chest_admission_retains_trader_equipment_decay_and_classification) ... ok\ntest_complete_active_profiles_fit_the_unchanged_native_input_bound (test_hireling_item_profiles.HirelingItemProfiles.test_complete_active_profiles_fit_the_unchanged_native_input_bound) ... ok\ntest_known_source_conflict_never_silently_overwrites_existing_value (test_hireling_item_profiles.HirelingItemProfiles.test_known_source_conflict_never_silently_overwrites_existing_value) ... ok\ntest_lamp_is_immovable_and_admitted_to_inbox_only (test_hireling_item_profiles.HirelingItemProfiles.test_lamp_is_immovable_and_admitted_to_inbox_only) ... ok\ntest_merge_fills_absent_value_groups (test_hireling_item_profiles.HirelingItemProfiles.test_merge_fills_absent_value_groups) ... ok\ntest_merge_preserves_mail_owned_semantics (test_hireling_item_profiles.HirelingItemProfiles.test_merge_preserves_mail_owned_semantics) ... ok\ntest_merge_preserves_richer_authoring_and_restricted_destinations (test_hireling_item_profiles.HirelingItemProfiles.test_merge_preserves_richer_authoring_and_restricted_destinations) ... ok\ntest_nonportable_offer_never_gains_inventory_admission (test_hireling_item_profiles.HirelingItemProfiles.test_nonportable_offer_never_gains_inventory_admission) ... ok\ntest_package_merge_preserves_exactly_main_task_board_weights (test_hireling_item_profiles.HirelingItemProfiles.test_package_merge_preserves_exactly_main_task_board_weights) ... ok\n\n----------------------------------------------------------------------\nRan 13 tests in 1.752s\n\nOK\nHIRELING_NATIVE_PROFILE_CLOSURE items=1425 active_profiles=6604 active_bytes=14826135\n",
+      "seconds": 2.679
+    },
+    {
+      "path": "tools/content-migration/test_house_decoration_actions.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_house_decoration_actions"
+      ],
+      "cwd": "tools/content-migration",
+      "exit_code": 0,
+      "output": "test_admission_preserves_existing_specialized_facts_and_adds_closed_sources (test_house_decoration_actions.HouseDecorationActions.test_admission_preserves_existing_specialized_facts_and_adds_closed_sources) ... ok\ntest_bed_parser_zero_reverse_free_slot_is_initialized_in_xml_order (test_house_decoration_actions.HouseDecorationActions.test_bed_parser_zero_reverse_free_slot_is_initialized_in_xml_order) ... ok\ntest_captured_source_families_are_complete_without_invented_targets (test_house_decoration_actions.HouseDecorationActions.test_captured_source_families_are_complete_without_invented_targets) ... ok\ntest_exact_source_bed_profiles_and_in_place_admission (test_house_decoration_actions.HouseDecorationActions.test_exact_source_bed_profiles_and_in_place_admission) ... ok\ntest_house_admission_preserves_owned_qready1_reward_profiles (test_house_decoration_actions.HouseDecorationActions.test_house_admission_preserves_owned_qready1_reward_profiles) ... ok\ntest_initialized_appearance_requires_explicit_id_and_flags (test_house_decoration_actions.HouseDecorationActions.test_initialized_appearance_requires_explicit_id_and_flags) ... ok\ntest_initialized_wrap_eligibility_preserves_runtime_output_and_source_intent (test_house_decoration_actions.HouseDecorationActions.test_initialized_wrap_eligibility_preserves_runtime_output_and_source_intent) ... ok\ntest_native_decoration_temporal_targets_are_closed (test_house_decoration_actions.HouseDecorationActions.test_native_decoration_temporal_targets_are_closed) ... ok\ntest_native_tile_specs_apply_cpp_precedence_and_xml_overrides (test_house_decoration_actions.HouseDecorationActions.test_native_tile_specs_apply_cpp_precedence_and_xml_overrides) ... ok\ntest_native_tile_specs_are_complete_read_only_source_facts (test_house_decoration_actions.HouseDecorationActions.test_native_tile_specs_are_complete_read_only_source_facts) ... ok\ntest_native_xml_wrap_pairs_are_exact_forward_evidence (test_house_decoration_actions.HouseDecorationActions.test_native_xml_wrap_pairs_are_exact_forward_evidence) ... ok\ntest_source_carpet_and_mirror_have_real_native_policies (test_house_decoration_actions.HouseDecorationActions.test_source_carpet_and_mirror_have_real_native_policies) ... ok\ntest_srx_updates_keep_source_top_order_after_specialized_overrides (test_house_decoration_actions.HouseDecorationActions.test_srx_updates_keep_source_top_order_after_specialized_overrides) ... ok\ntest_top_order_enrichment_preserves_specialized_rules_and_unknowns (test_house_decoration_actions.HouseDecorationActions.test_top_order_enrichment_preserves_specialized_rules_and_unknowns) ... ok\ntest_xml_only_carpets_are_qualified_without_fabricated_use_handlers (test_house_decoration_actions.HouseDecorationActions.test_xml_only_carpets_are_qualified_without_fabricated_use_handlers) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 3.667s\n\nOK\n",
+      "seconds": 3.909
+    }
+  ],
+  "limits": "Bounded standalone Python source tests only; module timeout is not a pass. No external native/database services started."
+}

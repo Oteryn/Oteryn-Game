@@ -1,0 +1,12 @@
+{
+  "path": "tools/content-schema/quest-authoring/test_native_talk_binding_evidence.py",
+  "sha256": "14f64e94c74bf5f9ee021993a8bfeffec04a1cfd594a7d1ed5fc4b95c461d2f2",
+  "command": [
+    "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+    "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_native_talk_binding_evidence.py"
+  ],
+  "returncode": 0,
+  "stdout": "",
+  "stderr": "",
+  "scope": "Direct execution emits no tests; actual explicit nine-case suite PASS in batch evidence. No global CI absence claim."
+}

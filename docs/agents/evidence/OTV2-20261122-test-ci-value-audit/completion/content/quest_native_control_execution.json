@@ -1,0 +1,31 @@
+{
+  "scope": "Bounded execution of two reviewed existing controls. This is not a full quest suite or direct CI selection claim.",
+  "results": [
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_binding_index.py",
+      "source_sha256": "40ebb3f61422dade466ddff0e2834ca79632ee4df7275cbde53b4f3e2e544192",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "tools/content-schema/quest-authoring/test_quest_binding_index.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.523,
+      "stdout": "",
+      "stderr": "test_cross_quest_join_rejected (__main__.BindingIndexControls.test_cross_quest_join_rejected) ... ok\ntest_negative_array_index_rejected (__main__.BindingIndexControls.test_negative_array_index_rejected) ... ok\ntest_repository_paths_are_portable (__main__.BindingIndexControls.test_repository_paths_are_portable) ... ok\ntest_runtime_promotion_rejected (__main__.BindingIndexControls.test_runtime_promotion_rejected) ... ok\ntest_stale_definition_rejected (__main__.BindingIndexControls.test_stale_definition_rejected) ... ok\ntest_unregistered_output_rejected (__main__.BindingIndexControls.test_unregistered_output_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.262s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/donor_sources/maps/test_nodes.py",
+      "source_sha256": "07f734e36dab0b46c598f9ec972598752dfb92d006bef1ae0bfa5c8cfbcc67a1",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "tools/content-schema/quest-authoring/donor_sources/maps/test_nodes.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.942,
+      "stdout": "",
+      "stderr": "test_deep_container_tree_above_old_depth_eight (__main__.NodeTests.test_deep_container_tree_above_old_depth_eight) ... ok\ntest_empty_payload_and_unknown_escaped_type (__main__.NodeTests.test_empty_payload_and_unknown_escaped_type) ... ok\ntest_gzip_matches_raw_structure (__main__.NodeTests.test_gzip_matches_raw_structure) ... ok\ntest_preserve_duplicate_siblings_and_order (__main__.NodeTests.test_preserve_duplicate_siblings_and_order) ... ok\ntest_reject_corrupt_gzip_crc (__main__.NodeTests.test_reject_corrupt_gzip_crc) ... ok\ntest_reject_missing_close (__main__.NodeTests.test_reject_missing_close) ... ok\ntest_reject_multiple_roots (__main__.NodeTests.test_reject_multiple_roots) ... ok\ntest_reject_properties_after_child (__main__.NodeTests.test_reject_properties_after_child) ... ok\ntest_reject_trailing_source (__main__.NodeTests.test_reject_trailing_source) ... ok\ntest_reject_truncated_escape (__main__.NodeTests.test_reject_truncated_escape) ... ok\ntest_unknown_types_attrs_and_escaped_markers (__main__.NodeTests.test_unknown_types_attrs_and_escaped_markers) ... ok\n\n----------------------------------------------------------------------\nRan 11 tests in 0.822s\n\nOK\n"
+    }
+  ]
+}

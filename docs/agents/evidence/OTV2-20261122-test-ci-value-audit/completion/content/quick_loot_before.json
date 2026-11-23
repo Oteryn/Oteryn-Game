@@ -1,0 +1,20 @@
+{
+  "real": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy (test_quick_loot_item_profiles.QuickLootProfiles.test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy) ... ok\ntest_quick_loot_profiles_have_no_speed_bonus (test_quick_loot_item_profiles.QuickLootProfiles.test_quick_loot_profiles_have_no_speed_bonus) ... ok\ntest_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.398s\n\nOK\n"
+  },
+  "singleton": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy (test_quick_loot_item_profiles.QuickLootProfiles.test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy) ... ok\ntest_quick_loot_profiles_have_no_speed_bonus (test_quick_loot_item_profiles.QuickLootProfiles.test_quick_loot_profiles_have_no_speed_bonus) ... ok\ntest_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.364s\n\nOK\n"
+  },
+  "empty": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy (test_quick_loot_item_profiles.QuickLootProfiles.test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy) ... ok\ntest_quick_loot_profiles_have_no_speed_bonus (test_quick_loot_item_profiles.QuickLootProfiles.test_quick_loot_profiles_have_no_speed_bonus) ... ok\ntest_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.225s\n\nOK\n"
+  }
+}

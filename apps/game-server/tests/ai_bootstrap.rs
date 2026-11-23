@@ -1,5 +1,4 @@
-#[path = "../../../crates/gameplay/monster-ai/src/ai/mod.rs"]
-mod ai;
+use oteryn_gameplay_monster_ai::ai;
 
 use ai::{
     ActorId, AiError, AiProvenance, AiProvenanceInput, AiSnapshot, BootstrapOperation, Candidate,

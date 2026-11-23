@@ -2580,25 +2580,47 @@ mod tests {
     }
 
     #[test]
-    fn stored_codes_round_trip() {
-        for code in 0..=8 {
-            assert_eq!(
-                BankResult::from_code(code).map(BankResult::code),
-                Some(code)
-            );
+    fn stored_codes_match_migration_0071() {
+        // Persisted meanings from 0071_account_bank.sql, independent of the codec.
+        for (result, code) in [
+            (BankResult::Ok, 0),
+            (BankResult::BalanceLimit, 1),
+            (BankResult::InsufficientBalance, 2),
+            (BankResult::InsufficientCoins, 3),
+            (BankResult::NoRoom, 4),
+            (BankResult::JuniorAccount, 5),
+            (BankResult::UnknownRecipient, 6),
+            (BankResult::RecipientCannotReceiveTransfers, 7),
+            (BankResult::SameAccount, 8),
+        ] {
+            assert_eq!(result.code(), code, "{result:?}");
+            assert_eq!(BankResult::from_code(code), Some(result));
         }
-        assert_eq!(BankResult::from_code(9), None);
-        for code in 1..=3 {
-            assert_eq!(
-                BankOperationKind::from_code(code).map(BankOperationKind::code),
-                Some(code)
-            );
+        for code in [i16::MIN, -1, 9, i16::MAX] {
+            assert_eq!(BankResult::from_code(code), None);
         }
-        for code in 1..=4_i16 {
-            assert_eq!(
-                BankLedgerKind::from_code(code).map(|kind| i16::try_from(kind.code()).unwrap()),
-                Some(code)
-            );
+        for (kind, code) in [
+            (BankOperationKind::Deposit, 1),
+            (BankOperationKind::Withdraw, 2),
+            (BankOperationKind::Transfer, 3),
+        ] {
+            assert_eq!(kind.code(), code, "{kind:?}");
+            assert_eq!(BankOperationKind::from_code(code), Some(kind));
+        }
+        for code in [i16::MIN, -1, 0, 4, i16::MAX] {
+            assert_eq!(BankOperationKind::from_code(code), None);
+        }
+        for (kind, code) in [
+            (BankLedgerKind::Deposit, 1),
+            (BankLedgerKind::Withdraw, 2),
+            (BankLedgerKind::TransferOut, 3),
+            (BankLedgerKind::TransferIn, 4),
+        ] {
+            assert_eq!(i16::try_from(kind.code()).unwrap(), code, "{kind:?}");
+            assert_eq!(BankLedgerKind::from_code(code), Some(kind));
+        }
+        for code in [i16::MIN, -1, 0, 5, i16::MAX] {
+            assert_eq!(BankLedgerKind::from_code(code), None);
         }
     }
 }

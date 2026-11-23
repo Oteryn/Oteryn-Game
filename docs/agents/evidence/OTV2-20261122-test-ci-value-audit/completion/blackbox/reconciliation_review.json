@@ -1,0 +1,52 @@
+{
+  "base": "0623fbd59c372bbf479f3965031f47393c42cd39",
+  "reviewed_checkout": "/workspace/scratch/738970310ba7/Oteryn-Game-reconciled",
+  "review_type": "Independent complete-source read and exact diff/consumer trace",
+  "files": [
+    {
+      "path": "tools/qualification/wp5_s3b/run.sh",
+      "sha256": "62e4e16cda0c1b0c684c70b1785869d2b27f179d852d8832982ca2adfcea659a"
+    },
+    {
+      "path": "tools/qualification/node_boot/test_prebuilt.py",
+      "sha256": "32a88671152437831c6180629364abe9ac626d7d3884f48db37978a5dd379381",
+      "byte_identical_to_base": true
+    },
+    {
+      "path": "tools/repository/test_wp5_s3b_verdict.py",
+      "sha256": "ddc021c4da44cf38721605182b616d273e3c74d239a8eea90f72058f597e48e6"
+    }
+  ],
+  "finding": "No material issue found within reviewed changes; one caller-verdict test owner retains the distinct controls from both branches.",
+  "controls": [
+    "All three actual mode selections and their exact selected names/body terminal markers",
+    "Full anchored summary and --color never retained",
+    "stderr merged into qualified log; dedicated mixed-stream positive",
+    "Zero, missing, prefixed, partial, trailing, duplicate/mixed and non-single-success summaries refused",
+    "Wrong case, a name only inside body output, missing/wrong mode marker refused",
+    "Child exit codes 1 and 7 preserved despite complete successful-looking output",
+    "No duplicate SeamExecutionEvidenceTests class in prebuilt module"
+  ],
+  "actual_marker_sources": [
+    {
+      "path": "apps/game-server/tests/wp5_s3b_composition.rs",
+      "printer_lines": [
+        111,
+        112
+      ],
+      "terminal_line": 1028
+    },
+    {
+      "path": "apps/game-server/src/qualification.rs",
+      "printer_lines": [
+        101,
+        103
+      ],
+      "terminal_lines": [
+        2103,
+        2140
+      ]
+    }
+  ],
+  "boundary": "Six unittest methods were read; root separately owns their runtime and real-libtest probes. This review did not execute or qualify the real Platform/Game topology."
+}

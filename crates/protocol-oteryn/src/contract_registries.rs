@@ -21,17 +21,30 @@ mod tests {
     use std::collections::BTreeSet;
     use std::path::Path;
 
-    fn fragment_count(directory: &Path) -> usize {
-        std::fs::read_dir(directory)
+    fn fragment_entries(directory: &Path) -> Vec<Value> {
+        let mut fragments: Vec<_> = std::fs::read_dir(directory)
             .expect("fragment directory")
-            .filter(|item| {
-                item.as_ref()
-                    .expect("fragment entry")
-                    .file_name()
-                    .to_string_lossy()
-                    .ends_with(".json")
+            .map(|item| item.expect("fragment entry").path())
+            .filter(|path| {
+                path.extension()
+                    .is_some_and(|extension| extension == "json")
             })
-            .count()
+            .collect();
+        fragments.sort_by_cached_key(|path| {
+            let name = path.file_name().expect("fragment name").to_string_lossy();
+            let (ordinal, _) = name.split_once('-').expect("fragment ordinal");
+            (
+                ordinal.parse::<u64>().expect("numeric ordinal"),
+                name.into_owned(),
+            )
+        });
+        fragments
+            .iter()
+            .map(|path| {
+                serde_json::from_str(&std::fs::read_to_string(path).expect("fragment file"))
+                    .expect("fragment JSON")
+            })
+            .collect()
     }
 
     /// The aggregate is the base file plus every fragment file, in order, and nothing else.
@@ -58,9 +71,9 @@ mod tests {
             let entries = aggregate[key].as_array().expect("collection");
             let directory = base_path.parent().expect("base directory").join(key);
             assert_eq!(
-                entries.len(),
-                fragment_count(&directory),
-                "`{key}` fragments"
+                entries,
+                &fragment_entries(&directory),
+                "`{key}` contains every complete fragment in ordinal order"
             );
             let ids: Vec<String> = entries
                 .iter()

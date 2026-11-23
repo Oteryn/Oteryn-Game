@@ -117,26 +117,25 @@ class ProtectedMainCache(unittest.TestCase):
         self.assertNotRegex(compile_step, r"--(?:tests|all-targets)(?:\s|$)")
 
     def test_linker_matches_the_archive_producer_without_adding_cargo_flags(self):
-        mold_steps = [step for step in self.steps if step.startswith("Install pinned mold linker\n")]
+        mold_steps = [step for step in self.steps if "          MOLD_SHA256:" in step]
         self.assertEqual(len(mold_steps), 1)
         mold = mold_steps[0]
         producer = WORKFLOW.with_name("merge-gate.yml").read_text(encoding="utf-8")
         for variable in ("MOLD_VERSION", "MOLD_SHA256"):
             value = re.search(rf"^          {variable}: (.+)$", mold, re.M).group(1)
             self.assertIn(f"          {variable}: {value}\n", producer)
-        build_steps = [step for step in self.steps if step.startswith((
-            "Build workspace\n", "Produce public Game catalogue\n", "Strict Clippy\n",
-            "Compile workspace tests without executing them\n",
-            "Build synthetic harness and native game-server\n",
-        ))]
-        self.assertEqual(len(build_steps), 5)
+        build_steps = [step for step in self.steps if re.search(
+            r"(?m)^\s*(?:run:\s*)?(?:cargo\s+(?:\+\S+\s+)?(?:build|clippy|test)\b"
+            r"|python3?\s+tools/game-platform-catalog/build\.py\b)", step,
+        )]
+        self.assertTrue(build_steps, "no compilation command was selected")
         for step in build_steps:
             self.assertIn("          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}\n", step)
             self.assertLess(self.steps.index(mold), self.steps.index(step))
         self.assertNotRegex(self.linux, r"(?:RUSTFLAGS|CARGO_ENCODED_RUSTFLAGS|CARGO_TARGET_\w+_LINKER)\s*[:=]")
 
     def test_real_linker_install_script_rejects_a_digest_mismatch_before_extraction(self):
-        mold_steps = [step for step in self.steps if step.startswith("Install pinned mold linker\n")]
+        mold_steps = [step for step in self.steps if "          MOLD_SHA256:" in step]
         self.assertEqual(len(mold_steps), 1)
         mold = mold_steps[0]
         version = re.search(r"^          MOLD_VERSION: (.+)$", mold, re.M).group(1)

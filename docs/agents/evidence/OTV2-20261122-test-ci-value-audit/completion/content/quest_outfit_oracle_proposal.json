@@ -1,0 +1,23 @@
+{
+  "status": "CONFIRMED_UNAPPLIED_ORACLE_GAP",
+  "source_path": "tools/content-schema/quest-authoring/test_engoutfit_m36.py",
+  "source_sha256": "f8daf5775ec83f345fcaad705d7c1600c3aff70801392d420568250354259c34",
+  "producer_path": "tools/content-schema/quest-authoring/qengine_rewards.py",
+  "mutation": "After one real q.build, replace only returned authoring document outfits and grant_mappings with empty lists. Execute both actual test bodies using that same built output; no source or committed fixture is changed.",
+  "real_output_outfit_count": 145,
+  "baseline": {
+    "tests_run": 2,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_collection_is_persisted_and_the_final_item_earns_the_weapon (test_engoutfit_m36.RockSteady.test_collection_is_persisted_and_the_final_item_earns_the_weapon) ... ok\ntest_every_admitted_outfit_has_explicit_sex_scoped_grants (test_engoutfit_m36.RockSteady.test_every_admitted_outfit_has_explicit_sex_scoped_grants) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.029s\n\nOK\n"
+  },
+  "mutant": {
+    "tests_run": 2,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_collection_is_persisted_and_the_final_item_earns_the_weapon (test_engoutfit_m36.RockSteady.test_collection_is_persisted_and_the_final_item_earns_the_weapon) ... ok\ntest_every_admitted_outfit_has_explicit_sex_scoped_grants (test_engoutfit_m36.RockSteady.test_every_admitted_outfit_has_explicit_sex_scoped_grants) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.010s\n\nOK\n"
+  },
+  "scope": "Per-file oracle proposal; existing tests do not anchor catalogue presence. Does not assert no other tests detect missing outfits, nor that empty output is reachable through current production code. Independent identity owner needed before repair."
+}

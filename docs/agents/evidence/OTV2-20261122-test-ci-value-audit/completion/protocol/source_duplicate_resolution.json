@@ -1,0 +1,893 @@
+{
+  "schema": "oteryn-test-value-duplicate-resolution/v1",
+  "scanner_snapshot": "source_value_ci_live_audit_v2.json",
+  "scanner_sha256": "0e67c6e8ed72d096878b0b660a26c9fda33aea1ca862c0010ad6c37477a9a116",
+  "method": "All38 ordinary test-body token duplicate groups reviewed with actual source/import/local-function/constant resolution. This resolves duplicate candidates only; it does not promote every containing file to full semantic review. Exact scenario duplicates are proposals, not executed deletion proof.",
+  "summary": {
+    "groups": 38,
+    "distinct_binding_or_scenario_groups": 28,
+    "same_scenario_groups": 10,
+    "redundant_test_ids_in_same_scenario_groups": 11,
+    "runtime_executions": 0,
+    "source_edits": 0
+  },
+  "shared_selection_receipt": "shared_pg_selection_review.json",
+  "context_scopes": [
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/qengine_rewards_fixtures.rs",
+      "sha256": "659a091ad29b90cf7c8e468e00ea45e63c7ed63e2a594e2c3173865ddc85a53e",
+      "scope": "Only entry functions/imports/constants required for duplicate binding resolution; not full helper review."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/l6_tomb_native_fixtures.rs",
+      "sha256": "9ffafff59183b4d3c41e0673efc02cd2a44497f7975174db47aa100c71f4af3d",
+      "scope": "Only entry functions/imports/constants required for duplicate binding resolution; not full helper review."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/qengine_m03_pits_fixtures.rs",
+      "sha256": "8ab6ba9eb7fc22bc3738caafc7e2f98c82e5d4e70bfaa481627d25873f6911d1",
+      "scope": "Only entry functions/imports/constants required for duplicate binding resolution; not full helper review."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/qengine_m03_use_fixtures.rs",
+      "sha256": "ae3f99bdc8d7fd5b0daf0413b5c392fe83c3db251a7457983659bedfd815e818",
+      "scope": "Only entry functions/imports/constants required for duplicate binding resolution; not full helper review."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/parameter_spell_fixtures.rs",
+      "sha256": "3b73af9a75b7fad9132daee7ad330ec5b03901d78f7f4f4fca3db1f1869ed723",
+      "scope": "Only entry functions/imports/constants required for duplicate binding resolution; not full helper review."
+    }
+  ],
+  "groups": [
+    {
+      "body_token_sha256": "5f03459fca6a008e3ed7bd4b57c0b33f0a102dfb17663f32949dc76a1ae7f687",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/inbound_tests.rs",
+          "test": "browse_slow_visibility_refresh_dispatches_ready_client_before_next_refresh",
+          "line": 520,
+          "source_sha256": "5cb6cb55a38385e64d536872e79a26009b1c1602f3252c93d695cde0cbe126e3"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_departed.rs",
+          "test": "activity_departed_postgres_committed_return_survives_cancel_and_empty_registry",
+          "line": 37,
+          "source_sha256": "e9fe83fe4c8aba93568a1c85141d0a5c27c8f020d7300554173b2b1a64df1e60"
+        }
+      ],
+      "group_index": 0,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "run(true) resolves to inbound_tests::run(browse), using SlowOwner/duplex, versus activity_departed::run(cancel_commit), using an entered activity and durable departure. The booleans have different semantics."
+    },
+    {
+      "body_token_sha256": "fa75039917f6013747c59f87ee6d1801a760a31e08d9a02bbfc23e6bb0102386",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/inbound_tests.rs",
+          "test": "legacy_slow_visibility_refresh_dispatches_ready_client_before_next_refresh",
+          "line": 525,
+          "source_sha256": "5cb6cb55a38385e64d536872e79a26009b1c1602f3252c93d695cde0cbe126e3"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_departed.rs",
+          "test": "activity_departed_postgres_origin_lifecycle_releases_for_fresh_admission_and_retires_ground",
+          "line": 31,
+          "source_sha256": "e9fe83fe4c8aba93568a1c85141d0a5c27c8f020d7300554173b2b1a64df1e60"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_membership.rs",
+          "test": "party_membership_real_dispatch_postgres_end_to_end",
+          "line": 7,
+          "source_sha256": "e16c559f85b58b0d5cd31bf6a9c200004ea95b2289456e8a908762270afd7a31"
+        }
+      ],
+      "group_index": 1,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "run(false) has distinct definitions: inbound SlowOwner/duplex, activity_departed::run_with_departure, and imported party_membership_fixtures::run."
+    },
+    {
+      "body_token_sha256": "5da9b08ef2088c3a4146638620086fe8bb7cee56b8fca966e1fc23293c59393e",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/item_look_postgres_tests.rs",
+          "test": "item_look_postgres_composed_owner_serves_near_far_items_creature_player_and_hidden_target",
+          "line": 8,
+          "source_sha256": "1d80d44d5a7478f633767914e21486b8944dae825719a87ab039be65220826de"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/admit_cap_2.rs",
+          "test": "admit_cap_2_postgres_real_wire_refuses_missing_requirements_and_commits_field_once",
+          "line": 86,
+          "source_sha256": "5d0e314e9c6255b66d6f0ceb5a49a970d289805bda6377a5d3230fb97b8cdfec"
+        }
+      ],
+      "group_index": 2,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "large_stack is shared, but item_look imports item_look_fixtures::scenario while admit_cap_2 defines its own scenario looping field_case(false/true)."
+    },
+    {
+      "body_token_sha256": "e14f70bc03581acc19e5224a55b0e5b6babf540a2b53d7b57461657dc9a5b552",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/player_typing_wire_tests.rs",
+          "test": "player_typing_real_connection_broadcasts_on_off_and_replays_without_reexecution",
+          "line": 390,
+          "source_sha256": "c924155986bd15b409e4fe2e9c4f241a44a57b2a6059efd2de905f1a095e5778"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs",
+          "test": "item_cosmetics_ground_unavailable_preserves_actual_ground_source",
+          "line": 20,
+          "source_sha256": "9e2be77105ddc590967657519a8b25b9a8e52d2a165eb70f3fe8066a8a84c50d"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_store_retry.rs",
+          "test": "prey_diff_store_accepted_purchase_resumes_after_catalogue_change_without_another_debit",
+          "line": 28,
+          "source_sha256": "e78aa40e35aa5a5a8d623bf4df6b7af0ffda4d5f679c9dd09e764fed2d438d45"
+        }
+      ],
+      "group_index": 3,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "run_case(true,false) binds player_typing selected/flood, item_cosmetics ground/afflicted via run_all, and prey_store_retry answered/invalid_local. Distinct fixture and owner calls."
+    },
+    {
+      "body_token_sha256": "34f46170574af9c314a5cbf71107101514758ea033daee60138cb2abdaca6927",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/player_typing_wire_tests.rs",
+          "test": "player_typing_real_connection_requires_negotiated_capability",
+          "line": 396,
+          "source_sha256": "c924155986bd15b409e4fe2e9c4f241a44a57b2a6059efd2de905f1a095e5778"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs",
+          "test": "item_cosmetics_unavailable_never_spends_the_source",
+          "line": 15,
+          "source_sha256": "9e2be77105ddc590967657519a8b25b9a8e52d2a165eb70f3fe8066a8a84c50d"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_store_retry.rs",
+          "test": "prey_diff_store_lost_platform_answer_reconciles_original_id_after_catalogue_change",
+          "line": 33,
+          "source_sha256": "e78aa40e35aa5a5a8d623bf4df6b7af0ffda4d5f679c9dd09e764fed2d438d45"
+        }
+      ],
+      "group_index": 4,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "Same distinction as group3 for run_case(false,false); the identical tokens are not identical scenarios."
+    },
+    {
+      "body_token_sha256": "effbc6cba1a29d8e3ae8e2bb3b71530ffcf947df342e0faf765d48afc0cef8f3",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/player_typing_wire_tests.rs",
+          "test": "player_typing_real_connection_reuses_transient_command_rate_limit",
+          "line": 401,
+          "source_sha256": "c924155986bd15b409e4fe2e9c4f241a44a57b2a6059efd2de905f1a095e5778"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs",
+          "test": "item_cosmetics_ground_afflicted_unavailable_preserves_all_carried_pieces",
+          "line": 25,
+          "source_sha256": "9e2be77105ddc590967657519a8b25b9a8e52d2a165eb70f3fe8066a8a84c50d"
+        }
+      ],
+      "group_index": 5,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "Same distinction as group3 for run_case(true,true), between typing rate limit and ground afflicted cosmetics."
+    },
+    {
+      "body_token_sha256": "041485e3c63df7292a88ce8fc60b2021640916ce4c56e8f80f3890a7b2914cf1",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/actor_motion.rs",
+          "test": "actor_motion_riding_dispatch_postgres",
+          "line": 15,
+          "source_sha256": "79b17c203c441397faa69714f5349f8fc388a658c717ba6f0457dd0d0aaaef3b"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/entity_names_unbound_creature.rs",
+          "test": "entity_names_native_gameplay_selects_v2_and_sends_bound_names",
+          "line": 16,
+          "source_sha256": "247f48e331c619499401fa805136aae28aaf613bc0f25ccc53689154a29a1af0"
+        }
+      ],
+      "group_index": 6,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "run_scenario(true) binds actor_motion position-before-change and entity_names native selection. Each has its own scenario/Harness seed and behavior."
+    },
+    {
+      "body_token_sha256": "94298af9f0f131fb1f3013a827b5bf3ea5cb91e56313057afe22a74e8ca0dadf",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/actor_motion.rs",
+          "test": "actor_motion_riding_committed_appearance_without_position_is_settled_postgres",
+          "line": 20,
+          "source_sha256": "79b17c203c441397faa69714f5349f8fc388a658c717ba6f0457dd0d0aaaef3b"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/entity_names_unbound_creature.rs",
+          "test": "entity_names_baseline_selects_v1_and_sends_unbound_creature",
+          "line": 11,
+          "source_sha256": "247f48e331c619499401fa805136aae28aaf613bc0f25ccc53689154a29a1af0"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_trade.rs",
+          "test": "player_trade_postgres_two_real_sessions_atomic_replay_and_cancellation",
+          "line": 7,
+          "source_sha256": "057adfe95871e4c45f95deac2aba3ddbc6e4d41f12b0563b6636565c098c1ed6"
+        }
+      ],
+      "group_index": 7,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "actor_motion and entity_names bind their local distinct scenarios; player_trade imports player_trade_fixtures::run_scenario."
+    },
+    {
+      "body_token_sha256": "a6b5989363e179a88ba38d13fbd61e0bb4db6bc42603d684679621a0de3959d4",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/appearance_census_departure.rs",
+          "test": "appearance_census_departure_race_keeps_live_connection_postgres",
+          "line": 96,
+          "source_sha256": "8135b9796e2b3dbd4b7dc2284039a1cbed36dd44e28024f481360b7646022f0f"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/appearance_holder_retry.rs",
+          "test": "appearance_holder_busy_postgres_waits_without_runtime_locks_and_keeps_stale_refusal",
+          "line": 12,
+          "source_sha256": "761d327b2fb438ad1a51e95a05b3980385c7bc8786b70846c61c8164c1d89cbd"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/appearance_respawn_pending.rs",
+          "test": "appearance_projection_defers_while_the_observer_respawn_is_pending_postgres",
+          "line": 13,
+          "source_sha256": "370e167b07bb2b7f1d0148112be0c216f3709c754d5c8bc84972126bcce713c7"
+        }
+      ],
+      "group_index": 8,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "The common configured-admin/large-stack wrapper calls three distinct local scenarios with appearance census departure, holder contention/retry, or observer respawn setup."
+    },
+    {
+      "body_token_sha256": "2efec94ef2a451c986e31151f6e080084e6b77c4553d3d23d07dc3501541c701",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs",
+          "test": "atelier_wire_resource_balances_are_negotiated_live_and_read_only",
+          "line": 156,
+          "source_sha256": "a8ac65412e670056080d87a8cbf653748c1d8dc7ebf9c692b725f5f12f791a6f"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/presentation.rs",
+          "test": "gem_presentation_postgres_real_catalogue_revision_and_readonly_fences",
+          "line": 5,
+          "source_sha256": "65dfca1f2e961e266bf732e7f9a25e722cac0eb867a0c0a9f7cfe3f453cb63b9"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/wheel_presentation.rs",
+          "test": "wheel_presentation_postgres_real_budget_topology_draft_and_session_fences",
+          "line": 5,
+          "source_sha256": "e18def05e215753efa6c53990a25cf7fea577de8046c40c2671d6d7b4bfe7155"
+        }
+      ],
+      "group_index": 9,
+      "verdict": "DUPLICATE_SCENARIO_HELD_PROPOSAL",
+      "resolution": "Both child modules use super::* and define no check or Case. All three tests resolve to parent wire_paid::check(Case::Resources). Its scenario at533-731 always invokes presentation::check_read, wheel_presentation::check_read and resources::check for that variant, then the same cleanup. Two additional test IDs repeat the same entire scenario."
+    },
+    {
+      "body_token_sha256": "12540656c0a4a737bab1f02691be59d08a7221cea676d6957d93819db7a77a59",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/blessings_dialog.rs",
+          "test": "blessings_dialog_real_dispatch",
+          "line": 13,
+          "source_sha256": "557688115642a387bedeb981f8481f9f08343cd4097ded97cc9b953f0312f3c5"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_protection.rs",
+          "test": "cyclopedia_protection_forecast_real_dispatch",
+          "line": 13,
+          "source_sha256": "fe5e3db1e3a192d290e741653cce395af8e47d4208b6b93f631636ab18e830c9"
+        }
+      ],
+      "group_index": 10,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "The local scenarios overlap, but blessings_dialog additionally selects capability503, rejects unselected/malformed selector134 and validates the dialog snapshot before shared forecast assertions. Different helper bodies; optional consolidation of duplicated forecast setup is not exact test-body equivalence."
+    },
+    {
+      "body_token_sha256": "7a3271d9af783537b45bc8122345c328b3cdf814cdbea98d616af945d6f961d7",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field.rs",
+          "test": "browse_field_postgres_pickup_carried_container_and_atomic_refusal",
+          "line": 34,
+          "source_sha256": "48243080704f79eafe6ecd9602ae943fc0aeae76c793513e0258ff9c8e8d99c7"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon.rs",
+          "test": "w19_house_balloon_nested_uses_actual_container_command_and_replays",
+          "line": 16,
+          "source_sha256": "759e803f4368241367fa79f19caafbdd3e69f0d43e11eb2ef7c61c7cb4baafba"
+        }
+      ],
+      "group_index": 11,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "browse_field defines its own Case::Nested and run_case calling fixture::scenario; house_balloon imports a different Case and run_case from house_balloon_fixtures."
+    },
+    {
+      "body_token_sha256": "7b4027a7c75df31920707fa94e185e6427462d31e4303e99000413ecd8f5012e",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cake_contributions.rs",
+          "test": "w05d_cake_baker_all_carried_equipment_source_caps_and_replays_postgres",
+          "line": 10,
+          "source_sha256": "832760758b4496b72032e9530cbbbf1c890464afb849b4e3c4e7f47ea7d162ef"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/journal_logout.rs",
+          "test": "game_journal_logout_unapproved_cut_never_fabricates_empty_snapshot",
+          "line": 123,
+          "source_sha256": "3f4b5928b5f263b4ef4165c5be5d3caae8e6290a2f8767c73061a898bb980922"
+        }
+      ],
+      "group_index": 12,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "cake_contributions::case(equipped,tiny) invokes its cake owner scenario; journal_logout::case(enabled,approved) routes Change::None through journal_watchdog. Distinct typed setup and owner calls."
+    },
+    {
+      "body_token_sha256": "f4ca7da5ffac5f975c2f95c01bf34c097cc1e3a15044cc237bfe92797311467d",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cake_contributions.rs",
+          "test": "w05d_cake_baker_two_hundred_nested_inputs_use_one_compact_audit_postgres",
+          "line": 18,
+          "source_sha256": "832760758b4496b72032e9530cbbbf1c890464afb849b4e3c4e7f47ea7d162ef"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/journal_logout.rs",
+          "test": "game_journal_logout_flag_off_has_no_outbox_or_publication",
+          "line": 119,
+          "source_sha256": "3f4b5928b5f263b4ef4165c5be5d3caae8e6290a2f8767c73061a898bb980922"
+        }
+      ],
+      "group_index": 13,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "Same resolved distinction as group12 for case(false,true)."
+    },
+    {
+      "body_token_sha256": "2d3d99f7bf1733d006e448deb4e4a2c8ced60639a90b53d240801fcd64bbf10e",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_combat.rs",
+          "test": "p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences",
+          "line": 18,
+          "source_sha256": "6a023876dc7f4c18041a0a0b3a153ac305d130e954f67d182aa2b7644f6b1b8a"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/cyclopedia_offence.rs",
+          "test": "t087_offence_augments_postgres_real_capture_privacy_replay_and_fences",
+          "line": 21,
+          "source_sha256": "8ffdffe465fdcade57598bfaf0d3079a01bef6cb061d2dfd5ce25500b9a24bb4"
+        }
+      ],
+      "group_index": 14,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "cyclopedia_combat sets equipment/native combat snapshots, while cyclopedia_offence configures item augments and its own setup helpers. Both call local scenario but real producer, typed payload and assertions differ."
+    },
+    {
+      "body_token_sha256": "35d7a9c5948eb966dac25125b43a7acb3bd31fdf0e41fb3e5b3a5245b9b7e858",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/daily_resting.rs",
+          "test": "daily_resting_persisted_streak_feeds_existing_vitals_owner",
+          "line": 8,
+          "source_sha256": "ffeb1bee3604962f4721bc0541e556dd43aa8f82bdab1f6acec31853b485b3cd"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m25_ahau_exit.rs",
+          "test": "m25_ahau_native_step_exit_returns_exact_current_instance_participant_postgres",
+          "line": 7,
+          "source_sha256": "31b1acafe50d2def3439613aea07e4261f348fadb7b4209cdc28e283532ff1ea"
+        }
+      ],
+      "group_index": 15,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "daily_resting::scenario(premium) calls its local scenario_with; m25_ahau_exit::scenario(push) calls imported scenario_case. Different durable owner and movement scenario."
+    },
+    {
+      "body_token_sha256": "3224519f5d214192e12ad01b796848cfcf404c555b2855bc8e5a8f61e733047b",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/daily_resting.rs",
+          "test": "daily_resting_premium_streak_feeds_vitals_and_soul_owner",
+          "line": 13,
+          "source_sha256": "ffeb1bee3604962f4721bc0541e556dd43aa8f82bdab1f6acec31853b485b3cd"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m25_ahau_exit.rs",
+          "test": "m25_ahau_player_push_exit_returns_only_pushed_participant_postgres",
+          "line": 11,
+          "source_sha256": "31b1acafe50d2def3439613aea07e4261f348fadb7b4209cdc28e283532ff1ea"
+        }
+      ],
+      "group_index": 16,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "Same resolved distinction as group15 for scenario(true)."
+    },
+    {
+      "body_token_sha256": "4d536ad4dfbd36a54c6cb79b0987b64b0eb0ec6ac1361a203d170ea7a094b858",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/engenc2_ground_busy.rs",
+          "test": "engenc2_ground_busy_item_refuses_without_poisoning_quest_transaction",
+          "line": 12,
+          "source_sha256": "21d12733e269cffc538dd3d613b8b45d227fed4b0ec0f91a0ad53af833a0a020"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/engenc2_nomads_window.rs",
+          "test": "engenc2_nomads_window_current_crates_and_amphora_postgres",
+          "line": 9,
+          "source_sha256": "d4ebe5532a904d6c2604e3a4eb073fcca530883ef1212896360b56be9d2c8a57"
+        }
+      ],
+      "group_index": 17,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "engenc2_ground_busy local run creates writer/reader SQL connections and contention; engenc2_nomads_window local run resolves a named nomads callback. Identical gate/runtime wrapper only."
+    },
+    {
+      "body_token_sha256": "e03194d552f7e01f6a4d6ff5fb108ee0fc2092161d367647c16bed1a47a3cccc",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/engoutfit.rs",
+          "test": "engoutfit_battle_mage_atomic_outfit_and_addons",
+          "line": 5,
+          "source_sha256": "621b97729f9d7e001b7fa55af2124c3924c4b3e10a21bde6f92c605811cc1bc4"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qengine_outfit_stories.rs",
+          "test": "qengine_l2_battle_mage_whole_outfit_story",
+          "line": 6,
+          "source_sha256": "269833e6580ba1cd6961cfaa12624e8c236e9e64154030d8550714493c0cac08"
+        }
+      ],
+      "group_index": 18,
+      "verdict": "DUPLICATE_SCENARIO_HELD_PROPOSAL",
+      "resolution": "Both sibling modules resolve super::qengine_rewards_fixtures::scenario with identical literal qengine-rewards-l2-battle-mage-story. Directory mounts give the same parent fixture. The shared helper chooses the same entry point and propagates the same scenario result."
+    },
+    {
+      "body_token_sha256": "84669e61ef951ed61b297aa9e156b6ab8e2885a3e6b95942cbcba929d6e63f9f",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/engoutfit.rs",
+          "test": "engoutfit_beggar_atomic_outfit_and_addons",
+          "line": 10,
+          "source_sha256": "621b97729f9d7e001b7fa55af2124c3924c4b3e10a21bde6f92c605811cc1bc4"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qengine_outfit_stories.rs",
+          "test": "qengine_l6_beggar_female_complete_source_outfit_story",
+          "line": 72,
+          "source_sha256": "269833e6580ba1cd6961cfaa12624e8c236e9e64154030d8550714493c0cac08"
+        }
+      ],
+      "group_index": 19,
+      "verdict": "DUPLICATE_SCENARIO_HELD_PROPOSAL",
+      "resolution": "Same shared qualified helper and literal qengine-rewards-l6-beggar-female-story; one redundant test ID."
+    },
+    {
+      "body_token_sha256": "29e41ed4233fec0148c60867b12a5ef07a7986af77821164281ccbb9265a686e",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/engoutfit.rs",
+          "test": "engoutfit_assassin_atomic_outfit_and_addons",
+          "line": 15,
+          "source_sha256": "621b97729f9d7e001b7fa55af2124c3924c4b3e10a21bde6f92c605811cc1bc4"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qengine_outfit_stories.rs",
+          "test": "qengine_l7_assassin_complete_source_outfit_story",
+          "line": 89,
+          "source_sha256": "269833e6580ba1cd6961cfaa12624e8c236e9e64154030d8550714493c0cac08"
+        }
+      ],
+      "group_index": 20,
+      "verdict": "DUPLICATE_SCENARIO_HELD_PROPOSAL",
+      "resolution": "Same shared qualified helper and literal qengine-rewards-l7-assassin-story; one redundant test ID."
+    },
+    {
+      "body_token_sha256": "6d174a3fe26d328a2714b954846a0c1761085a0f082c8681ae9dd0699782c082",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_tomb_native.rs",
+          "test": "l6_tomb_native_present_3950_uses_source_branch",
+          "line": 23,
+          "source_sha256": "684accaae215618de232474a1a698f4c5c4a6cf7132c1f46a6c8c90bebe3b098"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qcx_the_ancient_tombs.rs",
+          "test": "morguthis_boss_forcefield_accepts_pass",
+          "line": 68,
+          "source_sha256": "e6311c79a2cee15f6ef7734f30252930cd0a937dbc335c454e80dbc331ac342c"
+        }
+      ],
+      "group_index": 21,
+      "verdict": "DUPLICATE_SCENARIO_HELD_PROPOSAL",
+      "resolution": "Sibling modules call the same l6_tomb_native_fixtures::present_3950 with no arguments. The helper fixes the same name, trigger and expected position, delegates stateless_scenario and propagates failure."
+    },
+    {
+      "body_token_sha256": "73f2cfaf05bbdd89f38ce30490b3cc74aa738a21d221c4bd626b7aa8de1acbcb",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_tomb_native.rs",
+          "test": "l6_tomb_native_present_3951_uses_source_branch",
+          "line": 43,
+          "source_sha256": "684accaae215618de232474a1a698f4c5c4a6cf7132c1f46a6c8c90bebe3b098"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qcx_the_ancient_tombs.rs",
+          "test": "thalas_boss_forcefield_accepts_pass",
+          "line": 73,
+          "source_sha256": "e6311c79a2cee15f6ef7734f30252930cd0a937dbc335c454e80dbc331ac342c"
+        }
+      ],
+      "group_index": 22,
+      "verdict": "DUPLICATE_SCENARIO_HELD_PROPOSAL",
+      "resolution": "Same resolution for l6_tomb_native_fixtures::present_3951."
+    },
+    {
+      "body_token_sha256": "b8efb322c58d8a06b6d14969411e41a7cd28fa8c6977c12471a8651de266a91a",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_tomb_native.rs",
+          "test": "l6_tomb_native_present_3952_uses_source_branch",
+          "line": 63,
+          "source_sha256": "684accaae215618de232474a1a698f4c5c4a6cf7132c1f46a6c8c90bebe3b098"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qcx_the_ancient_tombs.rs",
+          "test": "mahrdis_boss_forcefield_accepts_pass",
+          "line": 78,
+          "source_sha256": "e6311c79a2cee15f6ef7734f30252930cd0a937dbc335c454e80dbc331ac342c"
+        }
+      ],
+      "group_index": 23,
+      "verdict": "DUPLICATE_SCENARIO_HELD_PROPOSAL",
+      "resolution": "Same resolution for l6_tomb_native_fixtures::present_3952."
+    },
+    {
+      "body_token_sha256": "a59c2df6f7ce1ca0862dfbaaeac08ab3a470e39662351e964ddb7c70a0330d43",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_tomb_other_native.rs",
+          "test": "l6_tomb_other_native_present_3954_uses_source_branch",
+          "line": 53,
+          "source_sha256": "bd88c2eca957a3cdb3e8a88ae31ad1f4b04017ec3c9156b81d3e5d36c6b75f3f"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qcx_the_ancient_tombs.rs",
+          "test": "rahemos_boss_forcefield_accepts_pass",
+          "line": 83,
+          "source_sha256": "e6311c79a2cee15f6ef7734f30252930cd0a937dbc335c454e80dbc331ac342c"
+        }
+      ],
+      "group_index": 24,
+      "verdict": "DUPLICATE_SCENARIO_HELD_PROPOSAL",
+      "resolution": "Same resolution for l6_tomb_native_fixtures::present_3954."
+    },
+    {
+      "body_token_sha256": "7c44e8bb4148c7885cc5f3f04d7c55bb4413e71a3680761eee25788ad2df7e67",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_tomb_other_native.rs",
+          "test": "l6_tomb_other_native_present_3955_uses_source_branch",
+          "line": 73,
+          "source_sha256": "bd88c2eca957a3cdb3e8a88ae31ad1f4b04017ec3c9156b81d3e5d36c6b75f3f"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qcx_the_ancient_tombs.rs",
+          "test": "dipthrah_boss_forcefield_accepts_pass",
+          "line": 88,
+          "source_sha256": "e6311c79a2cee15f6ef7734f30252930cd0a937dbc335c454e80dbc331ac342c"
+        }
+      ],
+      "group_index": 25,
+      "verdict": "DUPLICATE_SCENARIO_HELD_PROPOSAL",
+      "resolution": "Same resolution for l6_tomb_native_fixtures::present_3955."
+    },
+    {
+      "body_token_sha256": "9e4c7530e13b8054d005c7ea8261c18695c130a0e385bb98de84fe63a8ec0dd3",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m07_lion_offerings.rs",
+          "test": "m07_lion_strength_postgres_exact_consumption_counter_and_pagoda_reset",
+          "line": 10,
+          "source_sha256": "374b8a559080afe7b962c785cb1633f601536545ef93cd512ff957fff8bbc51f"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m07_machinery_burn.rs",
+          "test": "m07_machinery_postgres_ballista_retains_tool_checks_level_and_resets",
+          "line": 12,
+          "source_sha256": "82a1edebdf9975fca3d69d07dc06e4fcf4acf2d8785e71b6fb707c8c505356d7"
+        }
+      ],
+      "group_index": 26,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "The lion test uses local run plus NAME m07/lion-strength and SOURCE(33137,32291,-8); machinery imports its own fixture run plus NAME m07/machinery-ballista-01 and SOURCE(32824,31708,-7)."
+    },
+    {
+      "body_token_sha256": "1e6158285458bd78564c8639c76e6613b992af8fc2cf6f37a1b9970a0cdb922a",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m26_spite_chain.rs",
+          "test": "m26_spite_production_entry_fight_quest_reward_custody_and_return",
+          "line": 27,
+          "source_sha256": "3a300fcae0f69b0c2eabdabae16655a1affa7dbfda94a75d70acb601031abb96"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m26_static_instance.rs",
+          "test": "m26_spite_postgres_static_instance_map_needs_no_channel_item_custody",
+          "line": 24,
+          "source_sha256": "2d22745162ee14d82648b0b73f6c8c6c714d9d497cd6d743b679407cb49870be"
+        }
+      ],
+      "group_index": 27,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "The shared run_async/thread wrapper receives two distinct local async scenario functions: m26_spite_chain and m26_static_instance with distinct Harness seeds and chain versus static-instance setup."
+    },
+    {
+      "body_token_sha256": "b87f98d800632acf19a51a7fec220a429122245c36d166468dd38e3f6427630d",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m44_flower_lifecycle.rs",
+          "test": "m44_native_flower_reharvest_preserves_higher_quest_progress",
+          "line": 12,
+          "source_sha256": "1f6ccf7d5ce94c87d5ea0ed2c20f8312d7d102e5d175e76e0105204bcd2e9388"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m44_lions_lifecycle.rs",
+          "test": "m44_native_lions_later_offering_preserves_existing_progress_and_resets_pagoda",
+          "line": 12,
+          "source_sha256": "aaed0852c67f9465fc6c022da204e07c19c8813be8cfee30f0be6f051a2212ce"
+        }
+      ],
+      "group_index": 28,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "Local case functions call m44-flower versus m44-lions scenario threads and import distinct AT constants; phase later has different mechanic meaning."
+    },
+    {
+      "body_token_sha256": "f247dd0e41bfd5e0fcfdb50ad7df8b89658660e43a3d4749098b41a593d485f8",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell.rs",
+          "test": "parameter_spell_online_exiva_real_session_postgres",
+          "line": 9,
+          "source_sha256": "c2bf3fc46def7df3dfac076b93e2cb359dcd50da7ad1c64066c4baba1bf7b174"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/planned_world_reset_source_map.rs",
+          "test": "world_reset_source_map_epoch_zero_keeps_the_legacy_intent_bytes",
+          "line": 11,
+          "source_sha256": "d7def27c4e36c3d6d88ece74a0cd5aeaaa1b054098c2f182c07f3e1c500da3f6"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/platform_enforcement.rs",
+          "test": "platform_enforcement_apply_replace_revoke_expire",
+          "line": 722,
+          "source_sha256": "038ef14bea960bc21252d40ad44469589a14410a24d7461e7201142cbc3d87df"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/profile_b.rs",
+          "test": "profile_b_durable_fence_repeat_purchase_and_restart",
+          "line": 371,
+          "source_sha256": "5a24dbbe76bfbbcc78f7265dda1b95abad9706f4114bee081db4dcc522cd4ba4"
+        }
+      ],
+      "group_index": 29,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "parameter_spell imports parameter_spell_fixtures::scenario; source-map defines an epoch scenario; platform_enforcement matches enforcement decisions; profile_b matches fence/concurrency/premium_hint. Numeric selector0 has different resolved behavior."
+    },
+    {
+      "body_token_sha256": "425ec9b00072ea798ebb0e7f9ca34f3ba6fd9db201de5eb744c27af71fb8e48e",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell.rs",
+          "test": "parameter_spell_offline_and_unknown_exiva_real_session_postgres",
+          "line": 13,
+          "source_sha256": "c2bf3fc46def7df3dfac076b93e2cb359dcd50da7ad1c64066c4baba1bf7b174"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/planned_world_reset_source_map.rs",
+          "test": "world_reset_source_map_receipt_and_audit_bind_the_active_epoch",
+          "line": 6,
+          "source_sha256": "d7def27c4e36c3d6d88ece74a0cd5aeaaa1b054098c2f182c07f3e1c500da3f6"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/platform_enforcement.rs",
+          "test": "platform_mute_blocks_chat_until_expiry_or_revoke",
+          "line": 726,
+          "source_sha256": "038ef14bea960bc21252d40ad44469589a14410a24d7461e7201142cbc3d87df"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/profile_b.rs",
+          "test": "profile_b_concurrent_answers_and_hints_are_monotonic",
+          "line": 375,
+          "source_sha256": "5a24dbbe76bfbbcc78f7265dda1b95abad9706f4114bee081db4dcc522cd4ba4"
+        }
+      ],
+      "group_index": 30,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "Same distinct helper bindings as group29 for numeric selector1."
+    },
+    {
+      "body_token_sha256": "4c174a47cff113e9920d76dd18922f0f230b96541ff88a8bab8f46b904d213d4",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell.rs",
+          "test": "parameter_spell_ordinary_cast_unchanged_real_session_postgres",
+          "line": 17,
+          "source_sha256": "c2bf3fc46def7df3dfac076b93e2cb359dcd50da7ad1c64066c4baba1bf7b174"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/platform_enforcement.rs",
+          "test": "platform_enforcement_concurrent_commands_are_serialized",
+          "line": 730,
+          "source_sha256": "038ef14bea960bc21252d40ad44469589a14410a24d7461e7201142cbc3d87df"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/profile_b.rs",
+          "test": "profile_b_premium_hint_fences_late_snapshot_and_restart",
+          "line": 380,
+          "source_sha256": "5a24dbbe76bfbbcc78f7265dda1b95abad9706f4114bee081db4dcc522cd4ba4"
+        }
+      ],
+      "group_index": 31,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "Same distinct helper bindings as group29 for numeric selector2; source-map is absent from this group."
+    },
+    {
+      "body_token_sha256": "feb94d43056a9004242e44bc3f1dfaada1a406cf1d49d4a52669c9006cc2dc24",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell.rs",
+          "test": "parameter_spell_protected_exiva_real_session_postgres",
+          "line": 22,
+          "source_sha256": "c2bf3fc46def7df3dfac076b93e2cb359dcd50da7ad1c64066c4baba1bf7b174"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/platform_enforcement.rs",
+          "test": "platform_enforcement_storage_privileges_and_immutable_binding",
+          "line": 734,
+          "source_sha256": "038ef14bea960bc21252d40ad44469589a14410a24d7461e7201142cbc3d87df"
+        }
+      ],
+      "group_index": 32,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "parameter_spell helper versus platform_enforcement permissions branch for selector3."
+    },
+    {
+      "body_token_sha256": "2a789f6e92db3a24169f852d1d2a3065f0cab2ab5533cc503ce0247dc83d5ee7",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell/exiva_settings.rs",
+          "test": "exiva_settings_allow_all_postgres",
+          "line": 4,
+          "source_sha256": "13d2fc2931833539c292f0d94d6e9f6922ccb9f63548f5c74f82fdfe7e40674b"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/platform_enforcement.rs",
+          "test": "platform_enforcement_pending_runtime_finishes_all_intents",
+          "line": 1051,
+          "source_sha256": "038ef14bea960bc21252d40ad44469589a14410a24d7461e7201142cbc3d87df"
+        }
+      ],
+      "group_index": 33,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "exiva_settings inherits parameter_spell scenario through super::*; platform_enforcement selector7 selects pending_runtime_restart. Different bindings."
+    },
+    {
+      "body_token_sha256": "38e14db249e1e9df1259123dbd62d82e64bc75a0bdbb26af40440a2661eae06c",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qengine_m03_pits.rs",
+          "test": "m03_pits_native_step_enforces_live_premium_level_and_replay_postgres",
+          "line": 15,
+          "source_sha256": "93cf87b417915c3cb4cd9045da34bf4ece071231bcee24a7837574de2f5be5de"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qengine_m03_use.rs",
+          "test": "m03_time_machine_native_use_live_guards_replay_and_free_return_postgres",
+          "line": 8,
+          "source_sha256": "5768d91f8ade628c20d5e7687dd9b57f8df14cefd085ea0ccea7e545d9d6aa4e"
+        }
+      ],
+      "group_index": 34,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "Both call the same scenario framework, but qengine_m03_pits has NAME qengine-rewards-m03-pits and ENTRY(32791,32331,-10); qengine_m03_use imports NAME qengine-rewards-m03-use and ENTRY(32430,32166,-8). These drive distinct callback routes."
+    },
+    {
+      "body_token_sha256": "e0aeae79ea8faa8b78d5d672af6e269247d9f94574b385b3814156e79e264d5d",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs",
+          "test": "quest_reward_claims_phase_a_key_container_cohort",
+          "line": 292,
+          "source_sha256": "632d95499ad5ac914398b847f4dac83cdc3210151f3b7aef7c40c83629e6b7b2"
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs",
+          "test": "quest_reward_claims_batch_two_parchment_room_key_bag",
+          "line": 334,
+          "source_sha256": "632d95499ad5ac914398b847f4dac83cdc3210151f3b7aef7c40c83629e6b7b2"
+        }
+      ],
+      "group_index": 35,
+      "verdict": "DUPLICATE_SCENARIO_HELD_PROPOSAL",
+      "resolution": "Both functions in the same module call execute_cohort(PHASE_A_KEY_CONTAINER). The constant is a nonempty singleton parchment-room bag with five literal children. execute_cohort iterates that same slice and propagates every execute failure. One redundant test ID."
+    },
+    {
+      "body_token_sha256": "c791b218bd49c11ecfa8336d55567b78aeaad3857ff954af1b1e3877c04595d2",
+      "cases": [
+        {
+          "path": "crates/protocol-oteryn/src/account_achievements.rs",
+          "test": "f26_borrowed_length_bounds",
+          "line": 966,
+          "source_sha256": "53ce58c0bbf0adebdc99fc81e5f27e7fa9208d613e99ef9fefb87d77d3c59cac"
+        },
+        {
+          "path": "crates/protocol-oteryn/src/actor_spell.rs",
+          "test": "f26_borrowed_length_bounds",
+          "line": 1350,
+          "source_sha256": "88e6dbf432d73dc11098a4deb451d02dbb103b8fc1fba61b3ae98a5fb59b6d67"
+        },
+        {
+          "path": "crates/protocol-oteryn/src/charm_wire.rs",
+          "test": "f26_borrowed_length_bounds",
+          "line": 127,
+          "source_sha256": "ea9b22599e16f171a9b1fe7cb0022694635b2556de5f66d86af78a809f984f37"
+        },
+        {
+          "path": "crates/protocol-oteryn/src/world_object.rs",
+          "test": "f26_borrowed_length_bounds",
+          "line": 1667,
+          "source_sha256": "30961510bd961e68ac692ba0254d32a21f3c9fa2be9f0c6a56ba565b661d29ca"
+        },
+        {
+          "path": "crates/protocol-oteryn/src/world_spatial.rs",
+          "test": "f26_borrowed_length_bounds",
+          "line": 1087,
+          "source_sha256": "951af8dc5233b136f25c1da2546da9bef130ac58be89603cff202abed690069b"
+        }
+      ],
+      "group_index": 36,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "The common borrowed_length_bounds helper is instantiated with different module-local read_bytes implementations. Existing full protocol review traced each provider; retain distinct decoder boundary checks."
+    },
+    {
+      "body_token_sha256": "661fb9454530638ad8b8a029b6f415c0cda096b79197794308f7bc5cb4b776fc",
+      "cases": [
+        {
+          "path": "crates/protocol-oteryn/src/actor_spell_item_v2.rs",
+          "test": "f26_borrowed_length_bounds",
+          "line": 238,
+          "source_sha256": "0da61cac63a3e6e036b1b09c2182450e149b924343fe9296cc926e953184aea9"
+        },
+        {
+          "path": "crates/protocol-oteryn/src/actor_spell_v2.rs",
+          "test": "f26_borrowed_length_bounds",
+          "line": 507,
+          "source_sha256": "13549bc40587984b19fe3412f97139de558cae245761f5af229feb37de326846"
+        }
+      ],
+      "group_index": 37,
+      "verdict": "RETAIN_DISTINCT_RESOLVED_BINDING_OR_SCENARIO",
+      "resolution": "The common borrowed_length_bounds helper is instantiated with actor_spell_item_v2::bytes versus actor_spell_v2::bytes. Existing full protocol review traced both codecs; retain."
+    }
+  ],
+  "limits": [
+    "Macro-generated tests are outside ordinary-function duplicate scanning.",
+    "No test is removed by this receipt. Any deletion must preserve selected compiled IDs and qualify the surviving scenario in configured PG.",
+    "Same-body wrappers with different resolved helpers remain separate; shared names alone are not equivalence."
+  ]
+}

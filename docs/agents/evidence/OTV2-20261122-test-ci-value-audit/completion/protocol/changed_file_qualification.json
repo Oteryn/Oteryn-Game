@@ -1,0 +1,1267 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "state": "source additions paused after completed Windows batch4; read-only review continues",
+  "source_files": [
+    {
+      "path": "crates/gameplay/foundation/src/scheduled_events.rs",
+      "sha256": "00323b11ca29bcbcc6958c163f4456df1bcba104f6202b2b78bc6ae02448134b",
+      "latest_qualification_receipt": "qualification/qualification_analyser.json",
+      "status": "qualified",
+      "change": "removed Debug-text smoke subsumed by neighboring holiday schedule assertions",
+      "mutation_receipt": "qualification/qualification_analyser.json",
+      "mutation_labels": [],
+      "limitation": "Deletion justified by explicit neighboring behavioral assertions; no mutation probe for the removed smoke.",
+      "mutation_runs": [],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/identity/src/lib.rs",
+      "sha256": "e63df43f6e32e184e92ae8518c994bd4e9994674b07104a519ba48767a321288",
+      "latest_qualification_receipt": "qualification/qualification_analyser.json",
+      "status": "qualified",
+      "change": "fixed PKCE verifier/challenge and retained redaction",
+      "mutation_receipt": "qualification/qualification_initial.json",
+      "mutation_labels": [
+        "pkce"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_pkce",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-identity",
+            "--lib",
+            "pkce_"
+          ],
+          "returncode": 0,
+          "seconds": 1.117,
+          "summaries": [
+            "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_pkce",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-identity",
+            "--lib",
+            "pkce_"
+          ],
+          "returncode": 101,
+          "seconds": 1.01,
+          "summaries": [
+            "test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/analyser_catalogue.rs",
+      "sha256": "0cadd2224571cbf702f5cdb27bbd6097344d3601c076af73c49d4bc53268513e",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "17 individually valid unique monster IDs",
+      "mutation_receipt": "qualification/qualification_analyser.json",
+      "mutation_labels": [
+        "analyser_catalogue"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_analyser_catalogue",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "analyser_catalogue::tests::"
+          ],
+          "returncode": 0,
+          "seconds": 11.691,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.01s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_analyser_catalogue",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "analyser_catalogue::tests::"
+          ],
+          "returncode": 101,
+          "seconds": 11.677,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.01s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/analyser_party.rs",
+      "sha256": "c26a72c267330d5b2b81204ca4ad905608ab79c14619f14484020268f6c7cf87",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "2049 individually valid unique price IDs; existing2048 positive retained",
+      "mutation_receipt": "qualification/qualification_analyser.json",
+      "mutation_labels": [
+        "analyser_party"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_analyser_party",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "analyser_party::tests::"
+          ],
+          "returncode": 0,
+          "seconds": 0.234,
+          "summaries": [
+            "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 909 filtered out; finished in 0.03s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_analyser_party",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "analyser_party::tests::"
+          ],
+          "returncode": 101,
+          "seconds": 0.232,
+          "summaries": [
+            "test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 909 filtered out; finished in 0.03s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/appearance_tests/mappings_tests.rs",
+      "sha256": "3e37038ec5d7d94a610968f64cf56c81b11b29433304625c8935532ad21a0681",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "256 valid ordered mount names positive;257 exact rejection",
+      "mutation_receipt": "appearance_qualification/results.json",
+      "mutation_labels": [
+        "mount_limit"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_mount_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "appearance_catalogue_palette_and_list_bounds_are_symmetric"
+          ],
+          "returncode": 0,
+          "seconds": 10.694,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.01s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_mount_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "appearance_catalogue_palette_and_list_bounds_are_symmetric"
+          ],
+          "returncode": 101,
+          "seconds": 13.37,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.02s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/atelier.rs",
+      "sha256": "53a477050738b2a95d5355e85d8f91b2e71ee4776eed5042aceea581e6d14679",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "valid lock fixture with only bool changed; exact paid-action byte limit",
+      "mutation_receipt": "windows_batch1_qualification/results.json",
+      "mutation_labels": [
+        "atelier_lock_bool",
+        "atelier_request_limit"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_atelier_lock_bool",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "lock_round_trip_and_query_shape"
+          ],
+          "returncode": 0,
+          "seconds": 0.5,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "baseline_mutant_atelier_request_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "paid_actions_reject_invalid_shape_enums_and_bounds"
+          ],
+          "returncode": 0,
+          "seconds": 0.406,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_atelier_lock_bool",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "lock_round_trip_and_query_shape"
+          ],
+          "returncode": 101,
+          "seconds": 0.468,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_atelier_request_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "paid_actions_reject_invalid_shape_enums_and_bounds"
+          ],
+          "returncode": 101,
+          "seconds": 0.532,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/attack_tests.rs",
+      "sha256": "9b363a1ff83fe9d39d4566509c3495ffe4aa4dd9f29889fc8f6286e48a653438",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "exact result byte limit distinguishes duplicate-field fallback",
+      "mutation_receipt": "windows_batch3_qualification/results.json",
+      "mutation_labels": [
+        "attack_result_byte_limit"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_attack_result_byte_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "attack::tests::results_carry_every_disposition_and_fail_closed"
+          ],
+          "returncode": 0,
+          "seconds": 5.891,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_attack_result_byte_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "attack::tests::results_carry_every_disposition_and_fail_closed"
+          ],
+          "returncode": 101,
+          "seconds": 7.5,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/battle_metadata/tests.rs",
+      "sha256": "5e548de120a433a0897200fdf419369e26a701319224e56cc081f401d08836e6",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "16 unique valid entity refs positive;17th distinct rejection",
+      "mutation_receipt": "windows_batch1_qualification/results.json",
+      "mutation_labels": [
+        "battle_metadata_count"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_battle_metadata_count",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "battle_metadata_codec_is_bounded_and_preserves_generation_and_unknowns"
+          ],
+          "returncode": 0,
+          "seconds": 29.344,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_battle_metadata_count",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "battle_metadata_codec_is_bounded_and_preserves_generation_and_unknowns"
+          ],
+          "returncode": 101,
+          "seconds": 11.344,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/bestiary.rs",
+      "sha256": "4790424728cadb4b1061566c520c2dcb4dd752bc3e4de1f58557e5516bde035c",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "1025 individually valid race rows isolate count from invalid race1025",
+      "mutation_receipt": "windows_batch2_qualification/results.json",
+      "mutation_labels": [
+        "bestiary_encoder_count"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_bestiary_encoder_count",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "entry_count_and_byte_bounds_fail_closed"
+          ],
+          "returncode": 0,
+          "seconds": 8.125,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_bestiary_encoder_count",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "entry_count_and_byte_bounds_fail_closed"
+          ],
+          "returncode": 101,
+          "seconds": 10.563,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/bestiary_catalogue.rs",
+      "sha256": "3d9ddcb14edbc248c576ac5b1321d7276dc73f1664d0ad764c6880da79627e92",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "exact page byte-limit rejection",
+      "mutation_receipt": "windows_batch1_qualification/results.json",
+      "mutation_labels": [
+        "bestiary_page_limit"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_bestiary_page_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "catalogue_wire_checks_bounds_duplicates_and_round_trip"
+          ],
+          "returncode": 0,
+          "seconds": 0.422,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_bestiary_page_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "catalogue_wire_checks_bounds_duplicates_and_round_trip"
+          ],
+          "returncode": 101,
+          "seconds": 0.578,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/boss_difficulty_tests.rs",
+      "sha256": "a3d76126c271f8dea165813e69ad7570409bfa95790cf94e9d83de8b4fbf7d84",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "exact request byte-limit rejection",
+      "mutation_receipt": "windows_batch2_qualification/results.json",
+      "mutation_labels": [
+        "boss_difficulty_request_limit"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_boss_difficulty_request_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "boss_difficulty::tests::malformed_and_action_incompatible_requests_fail_closed"
+          ],
+          "returncode": 0,
+          "seconds": 7.813,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_boss_difficulty_request_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "boss_difficulty::tests::malformed_and_action_incompatible_requests_fail_closed"
+          ],
+          "returncode": 101,
+          "seconds": 8.546,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/boss_encounter.rs",
+      "sha256": "5a52f38c503c84359d49b5e36801d7b6d8aae300af9b5b9883fbf0cc9a608ac0",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "exact reward cursor byte limit; valid7-day lifetime at deadline\u22121/deadline",
+      "mutation_receipt": "windows_batch2_qualification/results.json",
+      "mutation_labels": [
+        "boss_reward_cursor_limit",
+        "boss_reward_expiry_boundary"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_boss_reward_cursor_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "reward_group_cursor_preserves_legacy_empty_and_refuses_malformed_forms"
+          ],
+          "returncode": 0,
+          "seconds": 8.422,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "baseline_mutant_boss_reward_expiry_boundary",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "reward_chest_encodes_only_live_seven_day_personal_groups"
+          ],
+          "returncode": 0,
+          "seconds": 7.265,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_boss_reward_cursor_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "reward_group_cursor_preserves_legacy_empty_and_refuses_malformed_forms"
+          ],
+          "returncode": 101,
+          "seconds": 7.797,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_boss_reward_expiry_boundary",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "reward_chest_encodes_only_live_seven_day_personal_groups"
+          ],
+          "returncode": 101,
+          "seconds": 7.719,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/boss_encounter/catalogue_tests.rs",
+      "sha256": "ba74f0017a69a874fd455fb28f72601c1a983164fec8fb7f40dda03f9c92fcb1",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "16 distinct valid boss keys positive;17th rejection",
+      "mutation_receipt": "windows_batch2_qualification/results.json",
+      "mutation_labels": [
+        "boss_catalogue_entry_limit"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_boss_catalogue_entry_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "boss_catalogue_bounds_filters_stages_and_portrait_identity"
+          ],
+          "returncode": 0,
+          "seconds": 8.265,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.01s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_boss_catalogue_entry_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "boss_catalogue_bounds_filters_stages_and_portrait_identity"
+          ],
+          "returncode": 101,
+          "seconds": 7.891,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/boss_encounter_tests.rs",
+      "sha256": "a9772f9d87a5faeefabe2cb48dd73fc707f024719624c5cc7eac070dff09008d",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "65 sorted distinct cooldown keys; exact query byte limit",
+      "mutation_receipt": "windows_batch2_qualification/results.json",
+      "mutation_labels": [
+        "boss_cooldown_entry_count",
+        "boss_cooldown_query_limit"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_boss_cooldown_entry_count",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "boss_cooldown_codec_bounds"
+          ],
+          "returncode": 0,
+          "seconds": 6.86,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "baseline_mutant_boss_cooldown_query_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "boss_cooldown_codec_bounds"
+          ],
+          "returncode": 0,
+          "seconds": 7.125,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_boss_cooldown_entry_count",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "boss_cooldown_codec_bounds"
+          ],
+          "returncode": 101,
+          "seconds": 7.281,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_boss_cooldown_query_limit",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "boss_cooldown_codec_bounds"
+          ],
+          "returncode": 101,
+          "seconds": 8.141,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/boss_rewards_tests.rs",
+      "sha256": "2ea74efa68eb5f19740ac08e31de503b54997f6d1831f8610532a0c199c7a278",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "exact browse/collect request and collect-result byte limits",
+      "mutation_receipt": "windows_batch3_qualification/results.json",
+      "mutation_labels": [
+        "boss_reward_reader_byte_limits"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_boss_reward_reader_byte_limits",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "boss_rewards::tests::"
+          ],
+          "returncode": 0,
+          "seconds": 7.281,
+          "summaries": [
+            "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 909 filtered out; finished in 0.01s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_boss_reward_reader_byte_limits",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "boss_rewards::tests::"
+          ],
+          "returncode": 101,
+          "seconds": 6.891,
+          "summaries": [
+            "test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 909 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/contract_registries.rs",
+      "sha256": "e7de501635419065aa81a7e993d1ff388c34223789b5398dcaada4d4a4f4d528",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "full ordered fragment aggregate equality",
+      "mutation_receipt": "qualification/qualification_initial.json",
+      "mutation_labels": [
+        "registry"
+      ],
+      "limitation": "Registry proof mutates the value fed to the oracle, not the production builder.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_registry",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "contract_registries::tests::"
+          ],
+          "returncode": 0,
+          "seconds": 0.245,
+          "summaries": [
+            "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 908 filtered out; finished in 0.04s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_registry",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "contract_registries::tests::"
+          ],
+          "returncode": 101,
+          "seconds": 0.3,
+          "summaries": [
+            "test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 908 filtered out; finished in 0.07s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/cyclopedia.rs",
+      "sha256": "c5e2f104e981c3ded0bbbb39adb3aac6be6505de7eafdfaca7fb44239ba7de05",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "eight valid unique viewport points positive; distinct ninth point isolates encoder count guard",
+      "mutation_receipt": "windows_batch4_qualification/results.json",
+      "mutation_labels": [
+        "cyclopedia_encoder_point_count"
+      ],
+      "limitation": "Coordinates are valid u16 values and floor7 belongs to wire floors0..=15; all nine points are distinct. The temporary encoder guard mutation is restored in the exact candidate SHA.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_cyclopedia_encoder_point_count",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "cyclopedia::tests::cyclopedia_codec_rejects_invalid_and_bounds_results"
+          ],
+          "returncode": 0,
+          "seconds": 12.219,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_cyclopedia_encoder_point_count",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "cyclopedia::tests::cyclopedia_codec_rejects_invalid_and_bounds_results"
+          ],
+          "returncode": 101,
+          "seconds": 6.625,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/daily_boost.rs",
+      "sha256": "910f6d6d3e61d4c6d445eed716ab9335f088298b86300805f73a8c91e0114e26",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "literal22-byte wire oracle replaces test-only mirror decoder",
+      "mutation_receipt": "qualification/qualification_initial.json",
+      "mutation_labels": [
+        "daily"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_daily",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "daily_boost::tests::"
+          ],
+          "returncode": 0,
+          "seconds": 33.815,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_daily",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "daily_boost::tests::"
+          ],
+          "returncode": 101,
+          "seconds": 13.137,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.01s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/guild_war.rs",
+      "sha256": "5a905f634449bc8316771f057ec30e01ae13f2168453a7d7a5898dde028e218a",
+      "latest_qualification_receipt": "windows_batch4_qualification/results.json",
+      "status": "qualified",
+      "change": "oversize request requires exact LimitExceeded",
+      "mutation_receipt": "qualification/qualification_initial.json",
+      "mutation_labels": [
+        "guild"
+      ],
+      "limitation": "Mutation result applies to the recorded scoped tests, not a whole-workspace mutant score.",
+      "mutation_runs": [
+        {
+          "label": "baseline_mutant_guild",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "guild_war::tests::round_trip"
+          ],
+          "returncode": 0,
+          "seconds": 0.939,
+          "summaries": [
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+          ]
+        },
+        {
+          "label": "candidate_mutant_guild",
+          "command": [
+            "cargo",
+            "+1.100.0",
+            "test",
+            "--offline",
+            "--locked",
+            "--quiet",
+            "-p",
+            "oteryn-protocol-oteryn",
+            "--lib",
+            "guild_war::tests::round_trip"
+          ],
+          "returncode": 101,
+          "seconds": 0.228,
+          "summaries": [
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.01s"
+          ]
+        }
+      ],
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    }
+  ],
+  "source_file_count": 19,
+  "mutation_probe_count": 21,
+  "latest_protocol_qualification": {
+    "receipt": "windows_batch4_qualification/results.json",
+    "tests_passed": 911,
+    "failed": 0,
+    "ignored": 0,
+    "clippy_all_targets_deny_warnings": "PASS",
+    "fmt_package": "PASS",
+    "git_diff_check": "PASS",
+    "scope": "All 17 protocol candidate files; current file hashes match candidate and retained hashes recorded in that receipt.",
+    "default_build": "PASS"
+  },
+  "identity_and_foundation_qualification": {
+    "receipt": "qualification/qualification_analyser.json",
+    "identity_tests_passed": 7,
+    "gameplay_foundation_tests_passed": 394,
+    "clippy_all_targets_deny_warnings": "PASS",
+    "scope": "Exact unchanged identity and scheduled_events candidate hashes; later protocol edits are test-only.",
+    "default_build": "PASS"
+  },
+  "root_owned_files_qualified_by_this_agent": [
+    {
+      "path": "crates/client-runtime/src/features/0064-target-move/tests/e2e_m01.rs",
+      "sha256": "79c9d79e0e90f7e723303893da5159501c87b08f3e2096897af32817829e630c",
+      "receipt": "windows_client_followup_qualification/results.json",
+      "current_bytes_match": true,
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/main.rs",
+      "sha256": "15e5d8f716e64c0a4ec55f24231e7ad5602335a839dd2951eae9273bda196778",
+      "receipt": "client_qualification/results.json",
+      "current_bytes_match": true
+    },
+    {
+      "path": "crates/client-runtime/tests/gap_house.rs",
+      "sha256": "33c4c82214d4d0f0b9689e9c33afb4097f9b65f7a7aa2600e910d3a9efb458d3",
+      "receipt": "windows_client_followup_qualification/results.json",
+      "current_bytes_match": true,
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/client-runtime/src/features/0287-actor-spell-catalog/tests/e2e_c14.rs",
+      "sha256": "a07de8d5730ac8f5cb1285a29a37bd720a854958d7cdb7b29e4a2206688618f7",
+      "receipt": "windows_client_followup_qualification/results.json",
+      "current_bytes_match": true,
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/client-runtime/src/features/local-spell-action-bar/tests/e2e_c04.rs",
+      "sha256": "7589347be634412419d12a161ccff9dd6d001c4195b1360c9a09b9cf62f1cd4a",
+      "receipt": "windows_client_followup_qualification/results.json",
+      "current_bytes_match": true,
+      "default_build_receipt": "windows_default_build_qualification/results.json"
+    },
+    {
+      "path": "crates/client-ui/tests/chat_log.rs",
+      "sha256": "ef84a79b75de54b714ddd644f285813f968a3e1e9b6338d7078566a53f440a66",
+      "receipt": "ui_followup_qualification/results.json",
+      "current_bytes_match": true
+    },
+    {
+      "path": "crates/client-ui/src/features/0165-hireling/mod.rs",
+      "sha256": "061a3c719bc7a297c7ffb10550bfc114663330ceb8719b913388d9713146b7bb",
+      "receipt": "windows_hireling_ui_qualification/results.json",
+      "current_bytes_match": true
+    },
+    {
+      "path": "crates/client-ui/src/features/0117-boss-encounter/tests/state.rs",
+      "sha256": "a08947ccd0b93908526c5976683d13ab538b85e8e5ec9d595044e9ac2187c9de",
+      "receipt": "windows_boss_ui_qualification/results.json",
+      "current_bytes_match": true,
+      "change_authorization": "Root-approved final bounded test-only repair; implemented and qualified by this lane, not independent self-approval."
+    }
+  ],
+  "review_boundary": "This file maps changed-source qualification only. semantic_review.json remains an incomplete manual review ledger; inventory.json is mechanical routing and is not audit completion.",
+  "ui_qualification": {
+    "receipt": "ui_followup_qualification/results.json",
+    "tests_passed": 729,
+    "unit_tests_passed": 671,
+    "integration_tests_passed": 58,
+    "failed": 0,
+    "ignored": 0,
+    "clippy_all_targets_deny_warnings": "PASS",
+    "build": "PASS",
+    "fmt_package": "PASS",
+    "git_diff_check": "PASS",
+    "mutation": "Baseline chat_log test passed the ASCII-drop mutation; final is_ok_and assertion failed it by assertion. A formatting-only rustfmt patch followed before final package qualification.",
+    "resolved_failure": "Initial candidate strict Clippy rejected expect_used; root replaced it with is_ok_and. Initial failure is retained in the receipt.",
+    "production_restored": true,
+    "other_changed_sources_preserved": true
+  },
+  "default_package_build_qualification": {
+    "receipt": "windows_default_build_qualification/results.json",
+    "platform": "x86_64-pc-windows-msvc",
+    "packages": [
+      "oteryn-protocol-oteryn",
+      "oteryn-identity",
+      "oteryn-gameplay-foundation",
+      "oteryn-client-runtime"
+    ],
+    "status": "PASS",
+    "source_file_count": 23,
+    "current_source_hashes_match": true,
+    "test_execution": "No test rerun; four sequential default cargo build --locked commands."
+  },
+  "hireling_ui_qualification": {
+    "receipt": "windows_hireling_ui_qualification/results.json",
+    "platform": "x86_64-pc-windows-msvc",
+    "rust_toolchain": "1.100.0",
+    "tests_passed": 729,
+    "unit_tests_passed": 671,
+    "integration_tests_passed": 58,
+    "failed": 0,
+    "ignored": 0,
+    "clippy_all_targets_deny_warnings": "PASS",
+    "default_build": "PASS",
+    "fmt_package": "PASS",
+    "git_diff_check": "PASS",
+    "mutation": "Summon-only request\u2192None: original named test passes1, repaired Result test fails1 with summon command missing. Production restored before full suite.",
+    "compiled_owner_ids": 671,
+    "final_executed_owner_ids": 671,
+    "owner_selection_unchanged": true,
+    "candidate_hashes": {
+      "crates/client-ui/src/features/0165-hireling/mod.rs": "061a3c719bc7a297c7ffb10550bfc114663330ceb8719b913388d9713146b7bb",
+      "crates/client-ui/tests/chat_log.rs": "ef84a79b75de54b714ddd644f285813f968a3e1e9b6338d7078566a53f440a66"
+    },
+    "resolved_environment_failure": "Initial fmt failure was only CRLF in3 unchanged imported architecture-check files. Exact byte equality after CRLF\u2192LF with HEAD was required before normalization; initial failure retained. Only fmt/diff rerun.",
+    "production_restored": true,
+    "other_changed_sources_preserved": true
+  },
+  "boss_ui_qualification": {
+    "receipt": "windows_boss_ui_qualification/results.json",
+    "duplicate_equality_receipt": "windows_boss_ui_qualification/duplicate_equality.json",
+    "platform": "x86_64-pc-windows-msvc",
+    "rust_toolchain": "1.100.0",
+    "tests_passed": 728,
+    "unit_tests_passed": 670,
+    "integration_tests_passed": 58,
+    "failed": 0,
+    "ignored": 0,
+    "clippy_all_targets_deny_warnings": "PASS",
+    "default_build": "PASS",
+    "fmt_package": "PASS",
+    "git_diff_check": "PASS",
+    "mutation": "Drop only b:b inside cooldown_text rendering loop: old Option order test passes1; Some/Some repaired assertion fails1. Production restored before full suite.",
+    "compiled_library_ids_before": 671,
+    "executed_library_ids_after": 670,
+    "library_id_delta": {
+      "removed": [
+        "boss_encounter::tests::endgame_chain_selection_preserves_confirmed_progress_boundary"
+      ],
+      "added": [],
+      "kept": "boss_encounter::tests::endgame_chain_selection_covers_both_chains_without_claiming_progress"
+    },
+    "candidate_hashes": {
+      "crates/client-ui/src/features/0117-boss-encounter/tests/state.rs": "a08947ccd0b93908526c5976683d13ab538b85e8e5ec9d595044e9ac2187c9de",
+      "crates/client-ui/src/features/0165-hireling/mod.rs": "061a3c719bc7a297c7ffb10550bfc114663330ceb8719b913388d9713146b7bb",
+      "crates/client-ui/tests/chat_log.rs": "ef84a79b75de54b714ddd644f285813f968a3e1e9b6338d7078566a53f440a66"
+    },
+    "production_restored": true,
+    "other_changed_sources_preserved": true
+  }
+}

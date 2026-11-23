@@ -1,0 +1,68 @@
+{
+  "baseline_evidence": "reviewed_batch5_execution.json",
+  "original": {
+    "ornamented_shield": {
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "details": []
+    },
+    "treasure_check": {
+      "run": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "details": []
+    }
+  },
+  "mutants": {
+    "live_conflict_reintroduced": {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "details": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_itemhold_q.py\", line 53, in test_ornamented_shield_exact_source_charge_keeps_conflicting_witness\n    self.assertEqual(claim['data_holds'], [])\nAssertionError: Lists differ: [{'category': 'source', 'code': 'SOURCE_CH[77 chars]: 2}] != []\n\nFirst list contains 1 additional elements.\nFirst extra element 0:\n{'category': 'source', 'code': 'SOURCE_CHARGE_MISMATCH', 'placement_index': 0, 'reward_field': 'items', 'reward_index': 2}\n\n+ []\n- [{'category': 'source',\n-   'code': 'SOURCE_CHARGE_MISMATCH',\n-   'placement_index': 0,\n-   'reward_field': 'items',\n-   'reward_index': 2}]\n"
+      ]
+    },
+    "default_150_instead_of_raw_one": {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "details": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_itemhold_q.py\", line 62, in test_ornamented_shield_exact_source_charge_keeps_conflicting_witness\n    self.assertEqual(child['charges_remaining'], 1)\nAssertionError: 150 != 1\n"
+      ]
+    },
+    "historical_witness_removed": {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "details": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_itemhold_q.py\", line 55, in test_ornamented_shield_exact_source_charge_keeps_conflicting_witness\n    self.assertTrue(any(c['reason'] == 'SOURCE_CHARGE_MISMATCH'\nAssertionError: False is not true\n"
+      ]
+    },
+    "treasure_owner_omitted": {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "details": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_questpc4_treasure_reward_profiles.py\", line 142, in test_check_mode_rejects_a_missing_cohort_without_writing\n    self.assertEqual(cli.questpc4_treasure_reward_equipment_pin.refresh(source, packet), original)\nAssertionError: 'use [10710 chars]n    // The Gold Pouch 23721 and eight quivers[54813 chars]n}\\n' != 'use [10710 chars]n    (\"QUESTPC4-TREASURE-REWARDS\", 5),\\n    //[54852 chars]n}\\n'\nDiff is 67003 characters long. Set self.maxDiff to None to see it.\n"
+      ]
+    },
+    "check_writes_before_refusal": {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "details": [
+        "Traceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_questpc4_treasure_reward_profiles.py\", line 161, in test_check_mode_rejects_a_missing_cohort_without_writing\n    self.assertEqual(target.read_text(), source)\nAssertionError: 'use [65539 chars]ition.is_some());\\n    Ok(())\\n}\\n\\nUNAUTHORIZED_CHECK_WRITE\\n' != 'use [65539 chars]ition.is_some());\\n    Ok(())\\n}\\n'\nDiff is 66993 characters long. Set self.maxDiff to None to see it.\n"
+      ]
+    }
+  },
+  "all_original_pass": true,
+  "all_mutants_rejected": true
+}

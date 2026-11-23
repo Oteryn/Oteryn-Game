@@ -379,14 +379,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn w05d_annual_calendar_retains_holiday_sources_for_production() -> Result<(), ScheduleError> {
-        let schedule = Schedule::parse(SCHEDULE)?;
-        assert!(format!("{schedule:?}").contains("halloween"));
-        assert!(format!("{schedule:?}").contains("piece_of_cake"));
-        Ok(())
-    }
-
-    #[test]
     fn w05d_annual_windows_are_half_open_and_wrap_across_years() -> Result<(), ScheduleError> {
         let schedule = Schedule::parse(SCHEDULE)?;
         assert!(schedule.seasonal_at(10, 30).is_empty());

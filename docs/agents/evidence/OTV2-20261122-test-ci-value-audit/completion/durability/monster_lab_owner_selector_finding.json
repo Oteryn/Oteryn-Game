@@ -1,0 +1,60 @@
+{
+  "classification": "DERIVED",
+  "status": "UNAPPLIED_PROPOSAL; NO_ADDITIONAL_SERVER_TEST_BUILD",
+  "finding": "MONSTER-LAB-OWNER-01",
+  "fact": "run.py selects the game-server library with filter monster_lab::. Current game-server source has no monster_lab module/import/export; monster-ai owns the cfg(test) module. Actual owner compiled-ID receipt includes monster_lab cases.",
+  "impact": "The manual arena runner is expected to select no such server tests and fail when no fresh native-arena-result.json is produced. This exact runner was not executed here.",
+  "false_pass_boundary": "Caller deletes any prior result, requires a newly created file, validates requested profiles/counts/provenance and returns failure for blocked outcomes. No false successful run was observed or claimed.",
+  "recommendation": "In a later authorized qualification, switch the package selector to the actual monster-ai owner; run its exact intended module with explicit input/output and verify both negative no-output/blocked cases and real retained-source positive receipt.",
+  "source_scopes": [
+    {
+      "path": "tools/monster-lab/run.py",
+      "start_line": 207,
+      "end_line": 240,
+      "scope": "Fresh result deletion, old package selector and result-file/summary checks",
+      "file_sha256": "353bf88222c7474bba591e128d813d684114e4622d5290da8d34dbe8acb8c5ed",
+      "range_sha256": "d1e808088b1c9d51ebd3302c63dfd8ad390190448900520684aae28811b8f4c6"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "start_line": 1,
+      "end_line": 48,
+      "scope": "Server imports selected AI modules, no monster_lab",
+      "file_sha256": "c25df59b572d112f93f7a878dcd46da80ef465bf69637d8e6b6545f28973148e",
+      "range_sha256": "ea5a5833f4ba771a7c0888eac1fcdd8f577961c95004b68f1937b1b0d400e8a2"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/lib.rs",
+      "start_line": 1,
+      "end_line": 12,
+      "scope": "Current actual test module owner",
+      "file_sha256": "723ca446757ec87b2131818f2434e6f6071ae34c3109a446edf320cdb0757d93",
+      "range_sha256": "b528848ef7cd572623fb81b88b2a63ec56038c16ea814062c85145e99a0e8b55"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/monster_lab.rs",
+      "start_line": 390,
+      "end_line": 432,
+      "scope": "Nonempty native outcomes, optional manifest adapter and result write",
+      "file_sha256": "c9ee8ed2f73659c2603c5480dfb218def7749427adc5827d0cbeb0c8200bb9ee",
+      "range_sha256": "18f8532243eaca7751c65e6bd8a65859e904320381755ea3f7c19ebe6e37cca5"
+    }
+  ],
+  "compiled_id_receipt": {
+    "path": "ai_dedup_validation.json",
+    "sha256": "738e70eb56b26424e163f9c6d050e94196be67b9de9eadf1d05fe4ac86e18c6c",
+    "field": "final.owner_ids"
+  },
+  "selection_lookup": "rg -n monster_lab apps/game-server/src apps/game-server/Cargo.toml found no module owner; search across tools found the stale driver.",
+  "runtime_in_this_probe": "NONE",
+  "actual_owner_compiled_ids": [
+    "monster_lab::monster_lab_actor_mismatch_refuses_native_schedule",
+    "monster_lab::monster_lab_real_owner_lifecycle_and_replay",
+    "monster_lab::monster_lab_refuses_blocked_spawn_slot",
+    "monster_lab::monster_lab_refuses_wrong_source_hash",
+    "monster_lab::monster_lab_refuses_zero_and_negative_hp",
+    "monster_lab::monster_lab_rejects_invalid_format_before_stage_access",
+    "monster_lab::run_from_manifest"
+  ],
+  "actual_owner_compiled_id_count": 171
+}

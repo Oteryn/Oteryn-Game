@@ -1,0 +1,888 @@
+{
+  "method_limit": "Minimal grammar diagnostic and direct original error-context review, not Rust compilation or broad semantic proof.",
+  "scanner_sha256": "0e67c6e8ed72d096878b0b660a26c9fda33aea1ca862c0010ad6c37477a9a116",
+  "files": [
+    {
+      "path": "crates/gameplay/content-promotion/src/content/item_description_promotion.rs",
+      "source_sha256": "7c7c6c7be5ad8ec6517a3ac148f3ebb8fb3fedd1c2ad5ca058cf73d49a2f4dc8",
+      "observed_error_lines": [
+        {
+          "line": 244,
+          "type": "ERROR"
+        }
+      ],
+      "probe": "In-memory grammar diagnosis only: rename literal &raw token to &raw_value; repository source and product semantics unchanged. This does not compile the renamed source.",
+      "renamed_errors": [],
+      "original_test_identity_lines": [
+        [
+          "actual_setter_preserves_full_headers_siblings_and_outside_and_is_idempotent",
+          171
+        ],
+        [
+          "late_blocked_or_conflicting_leaf_is_atomic",
+          189
+        ],
+        [
+          "name_header_identity_group_and_duplicate_mutations_are_atomic",
+          201
+        ],
+        [
+          "utf8_byte_boundary_and_unsupported_markup_fail_closed",
+          236
+        ]
+      ],
+      "renamed_test_identity_lines": [
+        [
+          "actual_setter_preserves_full_headers_siblings_and_outside_and_is_idempotent",
+          171
+        ],
+        [
+          "late_blocked_or_conflicting_leaf_is_atomic",
+          189
+        ],
+        [
+          "name_header_identity_group_and_duplicate_mutations_are_atomic",
+          201
+        ],
+        [
+          "utf8_byte_boundary_and_unsupported_markup_fail_closed",
+          236
+        ]
+      ],
+      "disposition": "GRAMMAR_RAW_BORROW_AMBIGUITY"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_gameplay.rs",
+      "source_sha256": "c03d6e95a0351eaf9a5d2aedc48e9292a3a11b24d8ec9bc7abad1f9c5ea3ef15",
+      "observed_error_lines": [
+        {
+          "line": 2310,
+          "type": "ERROR"
+        },
+        {
+          "line": 2313,
+          "type": "ERROR"
+        },
+        {
+          "line": 2325,
+          "type": "ERROR"
+        },
+        {
+          "line": 2348,
+          "type": "ERROR"
+        }
+      ],
+      "probe": "In-memory grammar diagnosis only: rename literal &raw token to &raw_value; repository source and product semantics unchanged. This does not compile the renamed source.",
+      "renamed_errors": [],
+      "original_test_identity_lines": [
+        [
+          "m25_complete_canonical_item_policies_qualify_before_boss_admission",
+          2247
+        ],
+        [
+          "m18_exit_carpet_uses_validated_native_collision_and_ground_custody",
+          2280
+        ],
+        [
+          "creature_source_identity_preserves_nulls_and_rejects_changed_pinned_bytes",
+          2301
+        ],
+        [
+          "creature_source_identity_keeps_duplicate_record_and_field_rejection",
+          2342
+        ],
+        [
+          "w18_native_item_top_order_and_furniture_cohort_keep_input_bounds",
+          2365
+        ],
+        [
+          "itemhold_q_resolved_catalogue_materializes_and_remaining_holds_reject",
+          2414
+        ],
+        [
+          "sugar_corpse_source_binding_and_ground_policy_are_closed",
+          2524
+        ],
+        [
+          "hireling_lamp_inbox_destination_is_source_bound_and_not_portable",
+          2586
+        ],
+        [
+          "item_spell_augments_artifact_roundtrip_and_bounds",
+          2653
+        ],
+        [
+          "m07_too_hot_tools_survive_native_artifact_with_portable_custody",
+          2689
+        ],
+        [
+          "m07_fire_bug_profile_survives_native_artifact_with_portable_custody",
+          2720
+        ],
+        [
+          "m07_lion_flower_profile_preserves_annotation_without_an_active_deadline",
+          2748
+        ],
+        [
+          "writable_profiles_survive_native_artifact_and_preserve_definition_admission",
+          2782
+        ],
+        [
+          "ranged_profiles_survive_native_artifact_and_incomplete_weapon_is_rejected",
+          2965
+        ],
+        [
+          "actual_full_manifest_qualifies_source_world_and_all_owner_profiles",
+          2999
+        ],
+        [
+          "actual_profile_policies_carry_the_profile_spawn_blocking",
+          3198
+        ],
+        [
+          "actual_profile_policies_preserve_health_speed_look_cost_and_flags",
+          3238
+        ],
+        [
+          "actual_object_presentation_qualifies_as_object_without_outfit_or_invisibility",
+          3302
+        ],
+        [
+          "object_presentation_rejects_noncanonical_bindings_and_conflicting_selection",
+          3313
+        ],
+        [
+          "fugue_melee_admission_is_limited_to_the_exact_source_body",
+          3374
+        ],
+        [
+          "monster_melee_requires_exact_active_schedule_and_explicit_approximation_status",
+          3409
+        ],
+        [
+          "caller_artifact_activates_full_book_under_outer_pin_without_changing_baseline",
+          3457
+        ],
+        [
+          "explicit_v2_items_bind_hash_and_reject_duplicate_or_invalid_authoring",
+          3566
+        ],
+        [
+          "srx3_reward_binding_requires_complete_source_profile_at_real_decoder",
+          3590
+        ],
+        [
+          "existing_twenty_two_record_baseline_is_preserved_exactly_by_envelope",
+          3642
+        ],
+        [
+          "explicit_v4_profiles_activate_and_bind_training_revision_and_appearance",
+          3664
+        ],
+        [
+          "altered_payload_with_correct_inner_hash_still_fails_independent_outer_pin",
+          3740
+        ],
+        [
+          "v6_progression_section_is_pinned_strict_and_older_pins_carry_none",
+          3768
+        ],
+        [
+          "production_manifest_activates_with_the_rat_reward_row",
+          3821
+        ],
+        [
+          "reward_boss_empty_corpse_does_not_admit_missing_private_loot",
+          3845
+        ],
+        [
+          "item_key_set_section_is_pinned_digest_bound_and_absent_or_empty_offers_no_index",
+          3961
+        ],
+        [
+          "cosmetics_legacy_unavailable_preserves_bytes_and_refuses_bad_pin",
+          4058
+        ],
+        [
+          "cosmetics_v9_decodes_exact_view_and_legacy_framing_cannot_hide_section",
+          4085
+        ],
+        [
+          "cosmetics_unknown_missing_and_mismatched_promotions_fail_closed",
+          4154
+        ],
+        [
+          "cosmetics_definition_source_citations_require_their_own_promotion",
+          4188
+        ],
+        [
+          "v6_manifest_with_cosmetics_requires_the_loot_tables_closure",
+          4204
+        ],
+        [
+          "cosmetics_canonical_bounds_ascii_and_zero_citations_match_materializer",
+          4242
+        ],
+        [
+          "cosmetics_activation_uses_independent_outer_issuance_and_keeps_previous_generation",
+          4291
+        ],
+        [
+          "reaudit_market_population_admission_is_bound_to_the_active_artifact",
+          4348
+        ],
+        [
+          "summer_corpse_capacity_reward_admission_accepts_forty_eight_and_refuses_forty_nine",
+          4411
+        ],
+        [
+          "loot_section_selects_v8_and_builds_the_reward_table",
+          4444
+        ],
+        [
+          "explicit_v5_familiar_config_is_qualified_and_every_table_binds_outer_digest",
+          4507
+        ],
+        [
+          "substituted_source_revision_and_incomplete_creature_data_are_rejected",
+          4556
+        ],
+        [
+          "provisioning_reads_caller_files_and_rejects_partial_or_stale_pins",
+          4588
+        ],
+        [
+          "producer_preserves_source_reservations_requirements_and_unknown_ambiguity",
+          4739
+        ],
+        [
+          "shipped_unrestricted_weapons_project_equipment_claims",
+          4782
+        ],
+        [
+          "production_native_creature_attack_closures_validate",
+          4959
+        ],
+        [
+          "summer_attack_closure_requires_exact_creature_and_behavior",
+          4980
+        ],
+        [
+          "source_item_closure_actual82_requires_exact_creature_schedule_membership",
+          5020
+        ],
+        [
+          "source_item_closure_foreign_exact_ability_and_removed_schedule_refuse",
+          5046
+        ],
+        [
+          "source_item_closure_presentation_only_cannot_become_ground_item_writer",
+          5073
+        ],
+        [
+          "callback_membership_requires_current_digest_and_exact_loaded_profile",
+          5227
+        ]
+      ],
+      "renamed_test_identity_lines": [
+        [
+          "m25_complete_canonical_item_policies_qualify_before_boss_admission",
+          2247
+        ],
+        [
+          "m18_exit_carpet_uses_validated_native_collision_and_ground_custody",
+          2280
+        ],
+        [
+          "creature_source_identity_preserves_nulls_and_rejects_changed_pinned_bytes",
+          2301
+        ],
+        [
+          "creature_source_identity_keeps_duplicate_record_and_field_rejection",
+          2342
+        ],
+        [
+          "w18_native_item_top_order_and_furniture_cohort_keep_input_bounds",
+          2365
+        ],
+        [
+          "itemhold_q_resolved_catalogue_materializes_and_remaining_holds_reject",
+          2414
+        ],
+        [
+          "sugar_corpse_source_binding_and_ground_policy_are_closed",
+          2524
+        ],
+        [
+          "hireling_lamp_inbox_destination_is_source_bound_and_not_portable",
+          2586
+        ],
+        [
+          "item_spell_augments_artifact_roundtrip_and_bounds",
+          2653
+        ],
+        [
+          "m07_too_hot_tools_survive_native_artifact_with_portable_custody",
+          2689
+        ],
+        [
+          "m07_fire_bug_profile_survives_native_artifact_with_portable_custody",
+          2720
+        ],
+        [
+          "m07_lion_flower_profile_preserves_annotation_without_an_active_deadline",
+          2748
+        ],
+        [
+          "writable_profiles_survive_native_artifact_and_preserve_definition_admission",
+          2782
+        ],
+        [
+          "ranged_profiles_survive_native_artifact_and_incomplete_weapon_is_rejected",
+          2965
+        ],
+        [
+          "actual_full_manifest_qualifies_source_world_and_all_owner_profiles",
+          2999
+        ],
+        [
+          "actual_profile_policies_carry_the_profile_spawn_blocking",
+          3198
+        ],
+        [
+          "actual_profile_policies_preserve_health_speed_look_cost_and_flags",
+          3238
+        ],
+        [
+          "actual_object_presentation_qualifies_as_object_without_outfit_or_invisibility",
+          3302
+        ],
+        [
+          "object_presentation_rejects_noncanonical_bindings_and_conflicting_selection",
+          3313
+        ],
+        [
+          "fugue_melee_admission_is_limited_to_the_exact_source_body",
+          3374
+        ],
+        [
+          "monster_melee_requires_exact_active_schedule_and_explicit_approximation_status",
+          3409
+        ],
+        [
+          "caller_artifact_activates_full_book_under_outer_pin_without_changing_baseline",
+          3457
+        ],
+        [
+          "explicit_v2_items_bind_hash_and_reject_duplicate_or_invalid_authoring",
+          3566
+        ],
+        [
+          "srx3_reward_binding_requires_complete_source_profile_at_real_decoder",
+          3590
+        ],
+        [
+          "existing_twenty_two_record_baseline_is_preserved_exactly_by_envelope",
+          3642
+        ],
+        [
+          "explicit_v4_profiles_activate_and_bind_training_revision_and_appearance",
+          3664
+        ],
+        [
+          "altered_payload_with_correct_inner_hash_still_fails_independent_outer_pin",
+          3740
+        ],
+        [
+          "v6_progression_section_is_pinned_strict_and_older_pins_carry_none",
+          3768
+        ],
+        [
+          "production_manifest_activates_with_the_rat_reward_row",
+          3821
+        ],
+        [
+          "reward_boss_empty_corpse_does_not_admit_missing_private_loot",
+          3845
+        ],
+        [
+          "item_key_set_section_is_pinned_digest_bound_and_absent_or_empty_offers_no_index",
+          3961
+        ],
+        [
+          "cosmetics_legacy_unavailable_preserves_bytes_and_refuses_bad_pin",
+          4058
+        ],
+        [
+          "cosmetics_v9_decodes_exact_view_and_legacy_framing_cannot_hide_section",
+          4085
+        ],
+        [
+          "cosmetics_unknown_missing_and_mismatched_promotions_fail_closed",
+          4154
+        ],
+        [
+          "cosmetics_definition_source_citations_require_their_own_promotion",
+          4188
+        ],
+        [
+          "v6_manifest_with_cosmetics_requires_the_loot_tables_closure",
+          4204
+        ],
+        [
+          "cosmetics_canonical_bounds_ascii_and_zero_citations_match_materializer",
+          4242
+        ],
+        [
+          "cosmetics_activation_uses_independent_outer_issuance_and_keeps_previous_generation",
+          4291
+        ],
+        [
+          "reaudit_market_population_admission_is_bound_to_the_active_artifact",
+          4348
+        ],
+        [
+          "summer_corpse_capacity_reward_admission_accepts_forty_eight_and_refuses_forty_nine",
+          4411
+        ],
+        [
+          "loot_section_selects_v8_and_builds_the_reward_table",
+          4444
+        ],
+        [
+          "explicit_v5_familiar_config_is_qualified_and_every_table_binds_outer_digest",
+          4507
+        ],
+        [
+          "substituted_source_revision_and_incomplete_creature_data_are_rejected",
+          4556
+        ],
+        [
+          "provisioning_reads_caller_files_and_rejects_partial_or_stale_pins",
+          4588
+        ],
+        [
+          "producer_preserves_source_reservations_requirements_and_unknown_ambiguity",
+          4739
+        ],
+        [
+          "shipped_unrestricted_weapons_project_equipment_claims",
+          4782
+        ],
+        [
+          "production_native_creature_attack_closures_validate",
+          4959
+        ],
+        [
+          "summer_attack_closure_requires_exact_creature_and_behavior",
+          4980
+        ],
+        [
+          "source_item_closure_actual82_requires_exact_creature_schedule_membership",
+          5020
+        ],
+        [
+          "source_item_closure_foreign_exact_ability_and_removed_schedule_refuse",
+          5046
+        ],
+        [
+          "source_item_closure_presentation_only_cannot_become_ground_item_writer",
+          5073
+        ],
+        [
+          "callback_membership_requires_current_digest_and_exact_loaded_profile",
+          5227
+        ]
+      ],
+      "disposition": "GRAMMAR_RAW_BORROW_AMBIGUITY"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_rotten_death_events.rs",
+      "source_sha256": "9377a3b81e0d1abe624c799dfe7d08cb88515885211b3bdb9d573f9b54780b5d",
+      "observed_error_lines": [
+        {
+          "line": 77,
+          "type": "ERROR"
+        },
+        {
+          "line": 215,
+          "type": "ERROR"
+        }
+      ],
+      "probe": "In-memory grammar diagnosis only: rename literal &raw token to &raw_value; repository source and product semantics unchanged. This does not compile the renamed source.",
+      "renamed_errors": [],
+      "original_test_identity_lines": [
+        [
+          "actual_rotten_entry_vectors_keep_loaded_index_and_proved_empty_sources",
+          210
+        ],
+        [
+          "changed_source_registration_or_empty_vector_cannot_gain_native_admission",
+          240
+        ]
+      ],
+      "renamed_test_identity_lines": [
+        [
+          "actual_rotten_entry_vectors_keep_loaded_index_and_proved_empty_sources",
+          210
+        ],
+        [
+          "changed_source_registration_or_empty_vector_cannot_gain_native_admission",
+          240
+        ]
+      ],
+      "disposition": "GRAMMAR_RAW_BORROW_AMBIGUITY"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_soul_war_callbacks.rs",
+      "source_sha256": "9caf0b7081620ab4d886a52734494c5c8af23b245501c51c8cb2af767d76cea5",
+      "observed_error_lines": [
+        {
+          "line": 363,
+          "type": "ERROR"
+        }
+      ],
+      "probe": "In-memory grammar diagnosis only: rename literal &raw token to &raw_value; repository source and product semantics unchanged. This does not compile the renamed source.",
+      "renamed_errors": [],
+      "original_test_identity_lines": [
+        [
+          "selected_sphere_health_requires_exact_raw_source_record",
+          114
+        ],
+        [
+          "srx3_soul_war_health_callbacks_require_exact_full_native_closure_and_last_event_assignment",
+          357
+        ]
+      ],
+      "renamed_test_identity_lines": [
+        [
+          "selected_sphere_health_requires_exact_raw_source_record",
+          114
+        ],
+        [
+          "srx3_soul_war_health_callbacks_require_exact_full_native_closure_and_last_event_assignment",
+          357
+        ]
+      ],
+      "disposition": "GRAMMAR_RAW_BORROW_AMBIGUITY"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/native_soul_war_death_events.rs",
+      "source_sha256": "401d3cf60d6f65a883174043ac725b5140a121124547fe409f7ef184650df253",
+      "observed_error_lines": [
+        {
+          "line": 69,
+          "type": "ERROR"
+        },
+        {
+          "line": 220,
+          "type": "ERROR"
+        }
+      ],
+      "probe": "In-memory grammar diagnosis only: rename literal &raw token to &raw_value; repository source and product semantics unchanged. This does not compile the renamed source.",
+      "renamed_errors": [],
+      "original_test_identity_lines": [
+        [
+          "srx3_soul_war_death_descriptors_keep_effective_source_order_and_empty_parents",
+          215
+        ]
+      ],
+      "renamed_test_identity_lines": [
+        [
+          "srx3_soul_war_death_descriptors_keep_effective_source_order_and_empty_parents",
+          215
+        ]
+      ],
+      "disposition": "GRAMMAR_RAW_BORROW_AMBIGUITY"
+    },
+    {
+      "path": "crates/gameplay/content/src/content/project/public_view.rs",
+      "source_sha256": "bf34693ea2061e04cdedf4fc634e6df8d58f696449cd9d8575dad01b7be9e38c",
+      "observed_error_lines": [
+        {
+          "line": 144,
+          "type": "ERROR"
+        },
+        {
+          "line": 170,
+          "type": "ERROR"
+        },
+        {
+          "line": 228,
+          "type": "ERROR"
+        },
+        {
+          "line": 258,
+          "type": "ERROR"
+        }
+      ],
+      "probe": "In-memory grammar diagnosis only: rename literal &raw token to &raw_value; repository source and product semantics unchanged. This does not compile the renamed source.",
+      "renamed_errors": [],
+      "original_test_identity_lines": [
+        [
+          "public_view_coverage_visibility_and_determinism",
+          375
+        ]
+      ],
+      "renamed_test_identity_lines": [
+        [
+          "public_view_coverage_visibility_and_determinism",
+          375
+        ]
+      ],
+      "disposition": "GRAMMAR_RAW_BORROW_AMBIGUITY"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soulpit.rs",
+      "source_sha256": "756652c9a37eff4ecb2980523952fe367f9c1c7ac9a9bfcb16b349e03657608a",
+      "observed_error_lines": [
+        {
+          "line": 670,
+          "type": "ERROR"
+        },
+        {
+          "line": 741,
+          "type": "ERROR"
+        }
+      ],
+      "probe": "In-memory grammar diagnosis only: rename literal &raw token to &raw_value; repository source and product semantics unchanged. This does not compile the renamed source.",
+      "renamed_errors": [],
+      "original_test_identity_lines": [
+        [
+          "soulpit_craft_wire_custody_replay_refusals_and_ground_delivery",
+          17
+        ]
+      ],
+      "renamed_test_identity_lines": [
+        [
+          "soulpit_craft_wire_custody_replay_refusals_and_ground_delivery",
+          17
+        ]
+      ],
+      "disposition": "GRAMMAR_RAW_BORROW_AMBIGUITY"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/stack_quantity.rs",
+      "source_sha256": "a3c1ae8aa96a9cb212cc9b9e1c1c0323af3b02a6b38700f9d5c2aa6e36909a47",
+      "observed_error_lines": [
+        {
+          "line": 368,
+          "type": "ERROR"
+        },
+        {
+          "line": 413,
+          "type": "ERROR"
+        },
+        {
+          "line": 517,
+          "type": "ERROR"
+        },
+        {
+          "line": 606,
+          "type": "ERROR"
+        },
+        {
+          "line": 627,
+          "type": "ERROR"
+        },
+        {
+          "line": 653,
+          "type": "ERROR"
+        },
+        {
+          "line": 662,
+          "type": "ERROR"
+        },
+        {
+          "line": 700,
+          "type": "ERROR"
+        }
+      ],
+      "probe": "In-memory grammar diagnosis only: rename literal &raw token to &raw_value; repository source and product semantics unchanged. This does not compile the renamed source.",
+      "renamed_errors": [],
+      "original_test_identity_lines": [
+        [
+          "stack_quantity_dispatch_split_merge_drop_replay_and_atomic_refusals",
+          15
+        ],
+        [
+          "boss_activity_item_consumer_postgres_real_dispatch",
+          28
+        ],
+        [
+          "inventory_capacity_rereads_after_own_drop_postgres",
+          43
+        ]
+      ],
+      "renamed_test_identity_lines": [
+        [
+          "stack_quantity_dispatch_split_merge_drop_replay_and_atomic_refusals",
+          15
+        ],
+        [
+          "boss_activity_item_consumer_postgres_real_dispatch",
+          28
+        ],
+        [
+          "inventory_capacity_rereads_after_own_drop_postgres",
+          43
+        ]
+      ],
+      "disposition": "GRAMMAR_RAW_BORROW_AMBIGUITY"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/spell_access_facts.rs",
+      "source_sha256": "4130e0b4a72061ce8edac18e8307113e6c501a628ecd10376f33aa425b3cdb65",
+      "observed_error_lines": [
+        {
+          "line": 442,
+          "type": "ERROR"
+        }
+      ],
+      "probe": "In-memory grammar diagnosis only: rename literal &raw token to &raw_value; repository source and product semantics unchanged. This does not compile the renamed source.",
+      "renamed_errors": [],
+      "original_test_identity_lines": [
+        [
+          "corrupt_wheel_withholds_projection_but_transaction_or_owner_failure_rejects",
+          572
+        ],
+        [
+          "real_no_row_allocation_has_known_zero_without_inventing_wheel_revision",
+          582
+        ],
+        [
+          "positive_stages_come_from_current_slots_and_current_vocation",
+          604
+        ],
+        [
+          "existing_native_consumer_labels_resolve_actual_revelation_and_spell_augment_stages",
+          635
+        ],
+        [
+          "wheel_rejects_missing_expired_negative_or_revisionless_premium",
+          679
+        ],
+        [
+          "independently_retained_premium_cannot_authorize_a_replaced_owner_binding",
+          741
+        ],
+        [
+          "outdated_ruleset_and_ineligible_build_never_become_a_zero_stage_grant",
+          789
+        ],
+        [
+          "durable_wheel_snapshot_must_match_current_character_item_and_session_fences",
+          854
+        ],
+        [
+          "food_regeneration_credits_through_the_channel_owner_fed_and_after_expiry",
+          933
+        ]
+      ],
+      "renamed_test_identity_lines": [
+        [
+          "corrupt_wheel_withholds_projection_but_transaction_or_owner_failure_rejects",
+          572
+        ],
+        [
+          "real_no_row_allocation_has_known_zero_without_inventing_wheel_revision",
+          582
+        ],
+        [
+          "positive_stages_come_from_current_slots_and_current_vocation",
+          604
+        ],
+        [
+          "existing_native_consumer_labels_resolve_actual_revelation_and_spell_augment_stages",
+          635
+        ],
+        [
+          "wheel_rejects_missing_expired_negative_or_revisionless_premium",
+          679
+        ],
+        [
+          "independently_retained_premium_cannot_authorize_a_replaced_owner_binding",
+          741
+        ],
+        [
+          "outdated_ruleset_and_ineligible_build_never_become_a_zero_stage_grant",
+          789
+        ],
+        [
+          "durable_wheel_snapshot_must_match_current_character_item_and_session_fences",
+          854
+        ],
+        [
+          "food_regeneration_credits_through_the_channel_owner_fed_and_after_expiry",
+          933
+        ]
+      ],
+      "disposition": "GRAMMAR_RAW_BORROW_AMBIGUITY"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/spell_magnitude_facts.rs",
+      "source_sha256": "a87c82e3688683c017a66d0894d4ab8da40a455c1f49bfaf8ad41457b9d7bd60",
+      "observed_error_lines": [
+        {
+          "line": 18,
+          "type": "ERROR"
+        },
+        {
+          "line": 72,
+          "type": "ERROR"
+        },
+        {
+          "line": 91,
+          "type": "ERROR"
+        }
+      ],
+      "probe": "In-memory grammar diagnosis only: rename literal &raw token to &raw_value; repository source and product semantics unchanged. This does not compile the renamed source.",
+      "renamed_errors": [],
+      "original_test_identity_lines": [
+        [
+          "wheel_magnitude_uses_exact_source_stage_numbers_and_current_zero_is_proven",
+          301
+        ],
+        [
+          "wheel_magnitude_gates_on_durable_promotion_not_the_stored_base_vocation",
+          333
+        ],
+        [
+          "wheel_magnitude_missing_expired_or_negative_authority_stays_unknown",
+          352
+        ],
+        [
+          "wheel_magnitude_rejects_partial_malformed_wrong_revision_and_wrong_content_proofs",
+          399
+        ],
+        [
+          "wheel_magnitude_retained_proof_cannot_follow_replaced_cast_owners",
+          454
+        ]
+      ],
+      "renamed_test_identity_lines": [
+        [
+          "wheel_magnitude_uses_exact_source_stage_numbers_and_current_zero_is_proven",
+          301
+        ],
+        [
+          "wheel_magnitude_gates_on_durable_promotion_not_the_stored_base_vocation",
+          333
+        ],
+        [
+          "wheel_magnitude_missing_expired_or_negative_authority_stays_unknown",
+          352
+        ],
+        [
+          "wheel_magnitude_rejects_partial_malformed_wrong_revision_and_wrong_content_proofs",
+          399
+        ],
+        [
+          "wheel_magnitude_retained_proof_cannot_follow_replaced_cast_owners",
+          454
+        ]
+      ],
+      "disposition": "GRAMMAR_RAW_BORROW_AMBIGUITY"
+    }
+  ]
+}

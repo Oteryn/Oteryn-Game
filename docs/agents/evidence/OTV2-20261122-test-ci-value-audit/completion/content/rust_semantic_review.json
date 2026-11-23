@@ -1,0 +1,24 @@
+{
+  "baseline_commit": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "limits": "Full source review is explicitly distinguished from source-aware family review. Execution and hosted CI selection require separate receipts.",
+  "reviewed": [
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/store/catalogue.rs",
+      "sha256": "911d202ecccc24c8101b96d97f1fa9b8005b44c0b3cc645d2dac4312b388202c",
+      "review_kind": "FULL_TEST_AND_PRODUCER_SOURCE_READ",
+      "read_lines": "1-278",
+      "test_case_ids": [
+        "tests::storefix_revision_matches_python_utf8_fixture",
+        "tests::storefix_catalogue_rejects_all_float_numbers",
+        "tests::storefix_dispatch_loads_generated_catalogues"
+      ],
+      "oracle_fixture_consumer_disposition": "Three tests keep a cross-language frozen UTF-8 revision golden, reject each floating number form including metadata, and assert both committed runtime catalogues admit. The full consumer derives SHA from sorted compact UTF-8 JSON, refuses unknown fields, empty catalogues, nonpositive coin prices, mismatched item/unlock/hireling ownership and malformed previews. KEEP protocol/ownership content boundaries. Static catalogue presence is a bounded startup smoke, not purchase runtime coverage.",
+      "selection": "store.rs mod catalogue; gameplay_transport/mod.rs mod store; lib.rs mounts gameplay_transport outside common archive cfg, ci_unit_archive.rs mounts the same module only under dedicated cfg. Cargo.toml explicit dedicated target has test=false. This is source reachability, not compiled test execution.",
+      "fixture_sources": [
+        "tools/content-schema/store-authoring/samples/revision-utf8.json",
+        "tools/content-schema/store-authoring/samples/revision-utf8.sha256"
+      ],
+      "runtime": "NOT_EXECUTED_RUST; counterpart Python revision and catalogue tests passed in schema_store_unittest_execution.json."
+    }
+  ]
+}

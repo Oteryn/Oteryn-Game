@@ -583,7 +583,7 @@ mod runtime_scope_assignment_linkage {
     };
 
     #[test]
-    fn runtime_scope_assignment_api_is_linked() {
+    fn runtime_scope_assignment_api_is_linked() -> Result<(), String> {
         let _ = std::mem::size_of::<AssignmentCommand>();
         let _ = std::mem::size_of::<AssignmentError>();
         let _ = std::mem::size_of::<AssignmentOutcome>();
@@ -621,24 +621,21 @@ mod runtime_scope_assignment_linkage {
         let _ = RuntimeScopeAssignmentWriter::unreconciled;
         let _ = RuntimeScopeAssignmentWriter::submit;
         let _ = RuntimeScopeAssignmentWriter::reconcile;
-        if let RegistrationError::Unavailable(inner) =
-            RegistrationError::from(super::DurabilityError::Unavailable)
-        {
-            assert!(matches!(inner, super::DurabilityError::Unavailable));
-        }
-        if let AssignmentError::Unavailable(inner) =
-            AssignmentError::from(super::DurabilityError::Unavailable)
-        {
-            assert!(matches!(inner, super::DurabilityError::Unavailable));
-        }
+        assert!(matches!(
+            RegistrationError::from(super::DurabilityError::Unavailable),
+            RegistrationError::Unavailable(super::DurabilityError::Unavailable)
+        ));
+        assert!(matches!(
+            AssignmentError::from(super::DurabilityError::Unavailable),
+            AssignmentError::Unavailable(super::DurabilityError::Unavailable)
+        ));
         let uuid = [1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16];
-        let (Ok(world), Ok(channel), Ok(node)) = (
-            crate::foundation::WorldId::decode(&uuid),
-            crate::foundation::ChannelId::decode(&uuid),
-            crate::foundation::NodeId::decode(&uuid),
-        ) else {
-            return;
-        };
+        let world = crate::foundation::WorldId::decode(&uuid)
+            .map_err(|error| format!("WorldId fixture: {error:?}"))?;
+        let channel = crate::foundation::ChannelId::decode(&uuid)
+            .map_err(|error| format!("ChannelId fixture: {error:?}"))?;
+        let node = crate::foundation::NodeId::decode(&uuid)
+            .map_err(|error| format!("NodeId fixture: {error:?}"))?;
         let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
         let target = NodeRegistrationFact::new(node, 1);
         let predecessor = AssignmentPredecessor {
@@ -646,9 +643,8 @@ mod runtime_scope_assignment_linkage {
             source_revision: 1,
             runtime_guard_publication_revision: Some(1),
         };
-        let Ok(actor) = ControlActor::new("operator") else {
-            return;
-        };
+        let actor = ControlActor::new("operator")
+            .map_err(|error| format!("ControlActor fixture: {error:?}"))?;
         for command in [
             AssignmentCommand::Assign { scope, target },
             AssignmentCommand::Replace {
@@ -665,5 +661,6 @@ mod runtime_scope_assignment_linkage {
             };
             assert!(request.encode().is_ok_and(|encoded| encoded.len() <= 1024));
         }
+        Ok(())
     }
 }

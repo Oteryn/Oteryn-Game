@@ -1,0 +1,244 @@
+{
+  "limits": "Execution only; no inferred semantic review or hosted CI proof.",
+  "results": [
+    {
+      "path": "tools/content-schema/native-gameplay/test_questpc2_book_speed_fingerprint.py",
+      "source_sha256": "d12d74ad4c8dd4325e2a6b0441b3474467c91fa56236c0c4e5131c88ab3f1250",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc2_book_speed_fingerprint"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.128,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 8,
+      "case_results": [
+        "test_another_record_cannot_be_hidden (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_another_record_cannot_be_hidden) ... ok",
+        "test_canonical_change_cannot_be_hidden (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_canonical_change_cannot_be_hidden) ... ok",
+        "test_exact_leaf_refresh_keeps_canonical_proof (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_exact_leaf_refresh_keeps_canonical_proof) ... ok",
+        "test_known_stat_cannot_be_retuned (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_known_stat_cannot_be_retuned) ... ok",
+        "test_old_proof_must_reproduce (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_old_proof_must_reproduce) ... ok",
+        "test_other_book_fields_cannot_be_hidden (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_other_book_fields_cannot_be_hidden) ... ok",
+        "test_unqualified_source_cannot_authorize_zero (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_unqualified_source_cannot_authorize_zero) ... ok",
+        "test_wrong_base_cannot_refresh (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_wrong_base_cannot_refresh) ... ok"
+      ],
+      "output_tail": "test_another_record_cannot_be_hidden (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_another_record_cannot_be_hidden) ... ok\ntest_canonical_change_cannot_be_hidden (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_canonical_change_cannot_be_hidden) ... ok\ntest_exact_leaf_refresh_keeps_canonical_proof (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_exact_leaf_refresh_keeps_canonical_proof) ... ok\ntest_known_stat_cannot_be_retuned (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_known_stat_cannot_be_retuned) ... ok\ntest_old_proof_must_reproduce (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_old_proof_must_reproduce) ... ok\ntest_other_book_fields_cannot_be_hidden (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_other_book_fields_cannot_be_hidden) ... ok\ntest_unqualified_source_cannot_authorize_zero (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_unqualified_source_cannot_authorize_zero) ... ok\ntest_wrong_base_cannot_refresh (test_questpc2_book_speed_fingerprint.BookFingerprintBounds.test_wrong_base_cannot_refresh) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.007s\n\nOK\nBOOK_SPEED_BOUNDED_NATIVE_FINGERPRINT cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 8,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_questpc2_rotten_loot_items.py",
+      "source_sha256": "ab7b009720e6242fd1ae2ddd6325ae5af1b8a309aba73db7c1863cb13ada1d64",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc2_rotten_loot_items"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 23.512,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 3,
+      "case_results": [
+        "test_boss_yield_custody_survives_real_rotten_capture (test_questpc2_rotten_loot_items.RottenItemAdmissionTests.test_boss_yield_custody_survives_real_rotten_capture) ... ok",
+        "test_client_weight_overlay_keeps_qualified_weight_and_refuses_unproved_physical_changes (test_questpc2_rotten_loot_items.RottenItemAdmissionTests.test_client_weight_overlay_keeps_qualified_weight_and_refuses_unproved_physical_changes) ... ok",
+        "test_exact_six_canonical_and_native_admissions_preserve_other_records (test_questpc2_rotten_loot_items.RottenItemAdmissionTests.test_exact_six_canonical_and_native_admissions_preserve_other_records) ... ok"
+      ],
+      "output_tail": "test_boss_yield_custody_survives_real_rotten_capture (test_questpc2_rotten_loot_items.RottenItemAdmissionTests.test_boss_yield_custody_survives_real_rotten_capture) ... ok\ntest_client_weight_overlay_keeps_qualified_weight_and_refuses_unproved_physical_changes (test_questpc2_rotten_loot_items.RottenItemAdmissionTests.test_client_weight_overlay_keeps_qualified_weight_and_refuses_unproved_physical_changes) ... ok\ntest_exact_six_canonical_and_native_admissions_preserve_other_records (test_questpc2_rotten_loot_items.RottenItemAdmissionTests.test_exact_six_canonical_and_native_admissions_preserve_other_records) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 23.303s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 3,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_questpc2_soul_loot_items.py",
+      "source_sha256": "100927d414b93632f8a79656ccdeae217e0ebfa00e31a39991d9368e4f6a35ad",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc2_soul_loot_items"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 1.139,
+      "timeout_seconds": 50.0,
+      "exit_code": 1,
+      "status": "FAIL",
+      "unittest_case_count": 1,
+      "case_results": [
+        "test_every_selected_loot_item_has_canonical_and_native_custody (test_questpc2_soul_loot_items.SoulLootClosureTests.test_every_selected_loot_item_has_canonical_and_native_custody) ... FAIL"
+      ],
+      "output_tail": "test_every_selected_loot_item_has_canonical_and_native_custody (test_questpc2_soul_loot_items.SoulLootClosureTests.test_every_selected_loot_item_has_canonical_and_native_custody) ... FAIL\n\n======================================================================\nFAIL: test_every_selected_loot_item_has_canonical_and_native_custody (test_questpc2_soul_loot_items.SoulLootClosureTests.test_every_selected_loot_item_has_canonical_and_native_custody)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/test_questpc2_soul_loot_items.py\", line 44, in test_every_selected_loot_item_has_canonical_and_native_custody\n    self.assertEqual(actual, EXISTING_SHA256, 'already-qualified canonical records must remain byte-identical')\nAssertionError: '6b18234a7e4ad5d0a8e3c7b30d1dcf24aa973c158b153af15ff8b19074f1ee33' != 'cfadd635e050604a0b654fe660bc652b81f9a1bf0034df0cb1eb8a714b422481'\n- 6b18234a7e4ad5d0a8e3c7b30d1dcf24aa973c158b153af15ff8b19074f1ee33\n+ cfadd635e050604a0b654fe660bc652b81f9a1bf0034df0cb1eb8a714b422481\n : already-qualified canonical records must remain byte-identical\n\n----------------------------------------------------------------------\nRan 1 test in 0.539s\n\nFAILED (failures=1)\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "FAIL"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_quests_2_soul_dialogues.py",
+      "source_sha256": "6861716a842f74710f2933c87651e0d85cb6e21ba16e0edb552140ed9bdec5a5",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quests_2_soul_dialogues"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.097,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 5,
+      "case_results": [
+        "test_additional_liquid_static_speech_is_source_only_and_never_computed (test_quests_2_soul_dialogues.SourceDialogueGuards.test_additional_liquid_static_speech_is_source_only_and_never_computed) ... ok",
+        "test_all_held_primal_source_speeches_remain_present_without_native_admission (test_quests_2_soul_dialogues.SourceDialogueGuards.test_all_held_primal_source_speeches_remain_present_without_native_admission) ... ok",
+        "test_coordinator_holds_are_excluded_from_every_active_state_transition (test_quests_2_soul_dialogues.SourceDialogueGuards.test_coordinator_holds_are_excluded_from_every_active_state_transition) ... ok",
+        "test_literal_extractors_refuse_computed_or_executable_text (test_quests_2_soul_dialogues.SourceDialogueGuards.test_literal_extractors_refuse_computed_or_executable_text) ... ok",
+        "test_primal_templates_allow_only_the_three_exact_numeric_source_locals (test_quests_2_soul_dialogues.SourceDialogueGuards.test_primal_templates_allow_only_the_three_exact_numeric_source_locals) ... ok"
+      ],
+      "output_tail": "test_additional_liquid_static_speech_is_source_only_and_never_computed (test_quests_2_soul_dialogues.SourceDialogueGuards.test_additional_liquid_static_speech_is_source_only_and_never_computed) ... ok\ntest_all_held_primal_source_speeches_remain_present_without_native_admission (test_quests_2_soul_dialogues.SourceDialogueGuards.test_all_held_primal_source_speeches_remain_present_without_native_admission) ... ok\ntest_coordinator_holds_are_excluded_from_every_active_state_transition (test_quests_2_soul_dialogues.SourceDialogueGuards.test_coordinator_holds_are_excluded_from_every_active_state_transition) ... ok\ntest_literal_extractors_refuse_computed_or_executable_text (test_quests_2_soul_dialogues.SourceDialogueGuards.test_literal_extractors_refuse_computed_or_executable_text) ... ok\ntest_primal_templates_allow_only_the_three_exact_numeric_source_locals (test_quests_2_soul_dialogues.SourceDialogueGuards.test_primal_templates_allow_only_the_three_exact_numeric_source_locals) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.002s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 5,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_canonical_monster_profiles.py",
+      "source_sha256": "adf645d3047d9e14e5d09cbf68f73c35f10f85d65faf0294a97684825b3287d9",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_canonical_monster_profiles"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.121,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 9,
+      "case_results": [
+        "test_conflicting_presentation_and_missing_exact_profile_refuse (test_canonical_monster_profiles.CanonicalUnion.test_conflicting_presentation_and_missing_exact_profile_refuse) ... ok",
+        "test_duplicate_active_keys_refuse_even_across_revision (test_canonical_monster_profiles.CanonicalUnion.test_duplicate_active_keys_refuse_even_across_revision) ... ok",
+        "test_existing_profile_wins_without_rewriting_inputs (test_canonical_monster_profiles.CanonicalUnion.test_existing_profile_wins_without_rewriting_inputs) ... ok",
+        "test_native_display_name_alias_is_excluded_without_renaming (test_canonical_monster_profiles.CanonicalUnion.test_native_display_name_alias_is_excluded_without_renaming) ... ok",
+        "test_new_exact_identity_uses_actual_authoring_and_presentation (test_canonical_monster_profiles.CanonicalUnion.test_new_exact_identity_uses_actual_authoring_and_presentation) ... ok",
+        "test_opt_in_preserves_existing_aliases_but_never_admits_new_alias (test_canonical_monster_profiles.CanonicalUnion.test_opt_in_preserves_existing_aliases_but_never_admits_new_alias) ... ok",
+        "test_already_qualified_link_keeps_original_row_and_does_not_reissue (test_canonical_monster_profiles.IllusionAppearanceClosure.test_already_qualified_link_keeps_original_row_and_does_not_reissue) ... ok",
+        "test_missing_link_uses_exact_source_and_preserves_illusion_flag (test_canonical_monster_profiles.IllusionAppearanceClosure.test_missing_link_uses_exact_source_and_preserves_illusion_flag) ... ok",
+        "test_source_outfit_drift_refuses_without_rewriting_canonical_policy (test_canonical_monster_profiles.IllusionAppearanceClosure.test_source_outfit_drift_refuses_without_rewriting_canonical_policy) ... ok"
+      ],
+      "output_tail": "test_conflicting_presentation_and_missing_exact_profile_refuse (test_canonical_monster_profiles.CanonicalUnion.test_conflicting_presentation_and_missing_exact_profile_refuse) ... ok\ntest_duplicate_active_keys_refuse_even_across_revision (test_canonical_monster_profiles.CanonicalUnion.test_duplicate_active_keys_refuse_even_across_revision) ... ok\ntest_existing_profile_wins_without_rewriting_inputs (test_canonical_monster_profiles.CanonicalUnion.test_existing_profile_wins_without_rewriting_inputs) ... ok\ntest_native_display_name_alias_is_excluded_without_renaming (test_canonical_monster_profiles.CanonicalUnion.test_native_display_name_alias_is_excluded_without_renaming) ... ok\ntest_new_exact_identity_uses_actual_authoring_and_presentation (test_canonical_monster_profiles.CanonicalUnion.test_new_exact_identity_uses_actual_authoring_and_presentation) ... ok\ntest_opt_in_preserves_existing_aliases_but_never_admits_new_alias (test_canonical_monster_profiles.CanonicalUnion.test_opt_in_preserves_existing_aliases_but_never_admits_new_alias) ... ok\ntest_already_qualified_link_keeps_original_row_and_does_not_reissue (test_canonical_monster_profiles.IllusionAppearanceClosure.test_already_qualified_link_keeps_original_row_and_does_not_reissue) ... ok\ntest_missing_link_uses_exact_source_and_preserves_illusion_flag (test_canonical_monster_profiles.IllusionAppearanceClosure.test_missing_link_uses_exact_source_and_preserves_illusion_flag) ... ok\ntest_source_outfit_drift_refuses_without_rewriting_canonical_policy (test_canonical_monster_profiles.IllusionAppearanceClosure.test_source_outfit_drift_refuses_without_rewriting_canonical_policy) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.002s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 9,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_disabled_monster_profiles.py",
+      "source_sha256": "2cfa477618be6db5eac96f41ebc58a32328e357c962e109ad10c15bdf414a386",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_disabled_monster_profiles"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.074,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 2,
+      "case_results": [
+        "test_frozen_source_bytes_are_required_for_disabled_evidence (test_disabled_monster_profiles.DisabledProfileEvidence.test_frozen_source_bytes_are_required_for_disabled_evidence) ... ok",
+        "test_zero_damage_and_secondary_conditions_are_preserved_in_evidence (test_disabled_monster_profiles.DisabledProfileEvidence.test_zero_damage_and_secondary_conditions_are_preserved_in_evidence) ... ok"
+      ],
+      "output_tail": "test_frozen_source_bytes_are_required_for_disabled_evidence (test_disabled_monster_profiles.DisabledProfileEvidence.test_frozen_source_bytes_are_required_for_disabled_evidence) ... ok\ntest_zero_damage_and_secondary_conditions_are_preserved_in_evidence (test_disabled_monster_profiles.DisabledProfileEvidence.test_zero_damage_and_secondary_conditions_are_preserved_in_evidence) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.001s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 2,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_companion_population_profiles.py",
+      "source_sha256": "c29162392848a33bf984a4bb8f0ba7ed306e9ac6c4406e2563c3a0c25956b6b3",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_companion_population_profiles"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.297,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 6,
+      "case_results": [
+        "test_all_supported_canonical_policies_are_preserved_within_existing_bounds (test_companion_population_profiles.CompanionPopulationTests.test_all_supported_canonical_policies_are_preserved_within_existing_bounds) ... skipped 'requires the genuine canonical source export'",
+        "test_appearance_closure_uses_actual_source_bindings_for_canonical_identities (test_companion_population_profiles.CompanionPopulationTests.test_appearance_closure_uses_actual_source_bindings_for_canonical_identities) ... skipped 'requires the genuine canonical source export'",
+        "test_current_source_and_source_initial_health_cannot_be_substituted (test_companion_population_profiles.CompanionPopulationTests.test_current_source_and_source_initial_health_cannot_be_substituted) ... skipped 'requires the genuine canonical source export'",
+        "test_object_rift_and_crystal_stag_retain_actual_distinct_source_authorities (test_companion_population_profiles.CompanionPopulationTests.test_object_rift_and_crystal_stag_retain_actual_distinct_source_authorities) ... skipped 'requires the genuine canonical source export'",
+        "test_six_complete_source_conversions_preserve_normalized_acquisition_exclusion (test_companion_population_profiles.CompanionPopulationTests.test_six_complete_source_conversions_preserve_normalized_acquisition_exclusion) ... skipped 'requires the genuine canonical source export'",
+        "test_source_dependency_carrier_is_actual_and_explicitly_unprofiled_where_required (test_companion_population_profiles.CompanionPopulationTests.test_source_dependency_carrier_is_actual_and_explicitly_unprofiled_where_required) ... skipped 'requires the genuine canonical source export'"
+      ],
+      "output_tail": "test_all_supported_canonical_policies_are_preserved_within_existing_bounds (test_companion_population_profiles.CompanionPopulationTests.test_all_supported_canonical_policies_are_preserved_within_existing_bounds) ... skipped 'requires the genuine canonical source export'\ntest_appearance_closure_uses_actual_source_bindings_for_canonical_identities (test_companion_population_profiles.CompanionPopulationTests.test_appearance_closure_uses_actual_source_bindings_for_canonical_identities) ... skipped 'requires the genuine canonical source export'\ntest_current_source_and_source_initial_health_cannot_be_substituted (test_companion_population_profiles.CompanionPopulationTests.test_current_source_and_source_initial_health_cannot_be_substituted) ... skipped 'requires the genuine canonical source export'\ntest_object_rift_and_crystal_stag_retain_actual_distinct_source_authorities (test_companion_population_profiles.CompanionPopulationTests.test_object_rift_and_crystal_stag_retain_actual_distinct_source_authorities) ... skipped 'requires the genuine canonical source export'\ntest_six_complete_source_conversions_preserve_normalized_acquisition_exclusion (test_companion_population_profiles.CompanionPopulationTests.test_six_complete_source_conversions_preserve_normalized_acquisition_exclusion) ... skipped 'requires the genuine canonical source export'\ntest_source_dependency_carrier_is_actual_and_explicitly_unprofiled_where_required (test_companion_population_profiles.CompanionPopulationTests.test_source_dependency_carrier_is_actual_and_explicitly_unprofiled_where_required) ... skipped 'requires the genuine canonical source export'\n\n----------------------------------------------------------------------\nRan 6 tests in 0.000s\n\nOK (skipped=6)\n",
+      "skipped_case_count": 6,
+      "observed_ok_case_count": 0,
+      "suite_result": "ALL_CASES_SKIPPED"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_full_spell_artifact.py",
+      "source_sha256": "b746582918fe44ae2a1d1f95fe25477357b16006003cd8f6ce885cbdda92637d",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_full_spell_artifact"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 27.763,
+      "timeout_seconds": 50.0,
+      "exit_code": 1,
+      "status": "FAIL",
+      "unittest_case_count": 21,
+      "case_results": [
+        "test_actual_elder_reference_retains_its_complete_source_profile_gate (test_full_spell_artifact.CorpseSourceCohortTests.test_actual_elder_reference_retains_its_complete_source_profile_gate) ... ok",
+        "test_changed_capture_pin_is_rejected (test_full_spell_artifact.CorpseSourceCohortTests.test_changed_capture_pin_is_rejected) ... ok",
+        "test_current_complete_capture_qualifies_without_changing_source (test_full_spell_artifact.CorpseSourceCohortTests.test_current_complete_capture_qualifies_without_changing_source) ... ok",
+        "test_matching_pin_cannot_substitute_the_complete_source_cohort (test_full_spell_artifact.CorpseSourceCohortTests.test_matching_pin_cannot_substitute_the_complete_source_cohort) ... ok",
+        "test_an_appearances_file_that_differs_from_its_pin_refuses (test_full_spell_artifact.CreatureProductFactsTests.test_an_appearances_file_that_differs_from_its_pin_refuses) ... ok",
+        "test_market_category_marks_creature_products_only (test_full_spell_artifact.CreatureProductFactsTests.test_market_category_marks_creature_products_only) ... ok",
+        "test_checked_in_key_set_is_generated_byte_ordered_unique_and_bounded (test_full_spell_artifact.ItemKeySetTests.test_checked_in_key_set_is_generated_byte_ordered_unique_and_bounded) ... ok",
+        "test_non_item_record_and_duplicate_key_are_refused (test_full_spell_artifact.ItemKeySetTests.test_non_item_record_and_duplicate_key_are_refused) ... ok",
+        "test_checked_in_section_is_generated_from_the_production_profiles (test_full_spell_artifact.LootTablesTests.test_checked_in_section_is_generated_from_the_production_profiles) ... FAIL",
+        "test_corruptor_projects_current_items_and_native_corpse_without_changing_source (test_full_spell_artifact.LootTablesTests.test_corruptor_projects_current_items_and_native_corpse_without_changing_source) ... ok",
+        "test_forge_resource_uses_exact_native_admission_without_promoting_legacy (test_full_spell_artifact.LootTablesTests.test_forge_resource_uses_exact_native_admission_without_promoting_legacy) ... ok",
+        "test_null_binding_is_explicit_and_a_missing_item_refuses (test_full_spell_artifact.LootTablesTests.test_null_binding_is_explicit_and_a_missing_item_refuses) ... ok",
+        "test_actual_build_preserves_item_provider_bytes_through_production_bound (test_full_spell_artifact.NativeItemProviderBoundaryTests.test_actual_build_preserves_item_provider_bytes_through_production_bound) ... ok",
+        "test_actual_source_identity_and_custom_operation_preserved (test_full_spell_artifact.SourceCompositionTests.test_actual_source_identity_and_custom_operation_preserved) ... skipped 'requires the explicit local Familiar source export'",
+        "test_all_246_exact_item_refs_require_independent_production_bindings (test_full_spell_artifact.SourceCompositionTests.test_all_246_exact_item_refs_require_independent_production_bindings) ... skipped 'requires the explicit local Familiar source export'",
+        "test_changed_source_export_pin_rejects (test_full_spell_artifact.SourceCompositionTests.test_changed_source_export_pin_rejects) ... skipped 'requires the explicit local Familiar source export'",
+        "test_complete_40450_qualification_packet_cannot_be_truncated (test_full_spell_artifact.SourceCompositionTests.test_complete_40450_qualification_packet_cannot_be_truncated) ... skipped 'requires the explicit local Familiar source export'",
+        "test_complete_illusionable_appearance_closure_is_generated_from_actual_source (test_full_spell_artifact.SourceCompositionTests.test_complete_illusionable_appearance_closure_is_generated_from_actual_source) ... skipped 'requires the explicit local Familiar source export'",
+        "test_pins_bind_exact_utf8_provider_bytes (test_full_spell_artifact.SourceCompositionTests.test_pins_bind_exact_utf8_provider_bytes) ... skipped 'requires the explicit local Familiar source export'",
+        "test_skeleton_exact_formal_source_and_all_dependencies_preserved (test_full_spell_artifact.SourceCompositionTests.test_skeleton_exact_formal_source_and_all_dependencies_preserved) ... skipped 'requires the explicit local Familiar source export'",
+        "test_unchanged_blob_without_definition_revision_rejects (test_full_spell_artifact.SourceCompositionTests.test_unchanged_blob_without_definition_revision_rejects) ... skipped 'requires the explicit local Familiar source export'"
+      ],
+      "output_tail": "l_spell_artifact.SourceCompositionTests.test_complete_40450_qualification_packet_cannot_be_truncated) ... skipped 'requires the explicit local Familiar source export'\ntest_complete_illusionable_appearance_closure_is_generated_from_actual_source (test_full_spell_artifact.SourceCompositionTests.test_complete_illusionable_appearance_closure_is_generated_from_actual_source) ... skipped 'requires the explicit local Familiar source export'\ntest_pins_bind_exact_utf8_provider_bytes (test_full_spell_artifact.SourceCompositionTests.test_pins_bind_exact_utf8_provider_bytes) ... skipped 'requires the explicit local Familiar source export'\ntest_skeleton_exact_formal_source_and_all_dependencies_preserved (test_full_spell_artifact.SourceCompositionTests.test_skeleton_exact_formal_source_and_all_dependencies_preserved) ... skipped 'requires the explicit local Familiar source export'\ntest_unchanged_blob_without_definition_revision_rejects (test_full_spell_artifact.SourceCompositionTests.test_unchanged_blob_without_definition_revision_rejects) ... skipped 'requires the explicit local Familiar source export'\n\n======================================================================\nFAIL: test_checked_in_section_is_generated_from_the_production_profiles (test_full_spell_artifact.LootTablesTests.test_checked_in_section_is_generated_from_the_production_profiles)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/test_full_spell_artifact.py\", line 318, in test_checked_in_section_is_generated_from_the_production_profiles\n    self.assertEqual(raw, full.LOOT_TABLES.read_bytes())\nAssertionError: b'{\"schema\":\"OTERYN_NATIVE_LOOT_TABLES/v1\",\\n[3724614 chars]]}\\n' != b'{\"creature_loot\":[{\"creature\":{\"family\":\"Cr[3712105 chars]]}\\n'\n\n----------------------------------------------------------------------\nRan 21 tests in 27.528s\n\nFAILED (failures=1, skipped=8)\n",
+      "skipped_case_count": 8,
+      "observed_ok_case_count": 12,
+      "suite_result": "FAIL"
+    }
+  ]
+}

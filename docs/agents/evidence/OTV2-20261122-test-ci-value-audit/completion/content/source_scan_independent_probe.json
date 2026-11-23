@@ -1,0 +1,317 @@
+{
+  "scanner_sha256": "04dae56093b3b0f8c530a818d904a68c5dab5bdd3bfaf67d28f22003699d8265",
+  "checks": {
+    "rust_comment_formatting_equal": false,
+    "rust_string_whitespace_distinct": true,
+    "rust_return_scope_separated": true,
+    "rust_macro_body_not_claimed": true,
+    "python_class_skip_not_detected": true,
+    "python_environ_subscript_not_detected": true,
+    "python_nested_return_conservative_flag": true
+  },
+  "examples": {
+    "rust_comments": "#[test] fn a(){assert_eq!(\"a b\", \"a b\");} #[test] fn b(){/* x */ assert_eq!( \"a b\", \"a b\" );}",
+    "rust_literal_whitespace": "#[test] fn a(){assert_eq!(\"a b\", \"a b\");} #[test] fn b(){assert_eq!(\"ab\", \"ab\");}",
+    "rust_return_scope": "#[test] fn a(){let f=||{return;};if std::env::var(\"E\").is_err(){return;} assert!(true);}",
+    "rust_macro_opaque": "macro_rules! tests {()=>{#[test] fn hidden(){assert!(true);}}} tests!(); #[test] fn visible(){check!();}"
+  },
+  "python_example": "@unittest.skipUnless(os.environ.get(\"EXTERNAL\"), \"missing\")\nclass C(unittest.TestCase):\n    def test_a(self):\n        def inner():\n            return\n        self.assertEqual(1, 1)\n    def test_b(self):\n        value = os.environ[\"EXTERNAL\"]\n        helper(value)\n",
+  "results": {
+    "rust_comments": {
+      "tests": [
+        {
+          "name": "a",
+          "line": 1,
+          "end_line": 1,
+          "attributes": [
+            "#[test]"
+          ],
+          "module_context": [],
+          "body_sha256": "70193c4f45cd27eccc99820a0a7b674e4a1a3dec5fce866e220159cc699bbc7e",
+          "body_token_sha256": "10cd2b51966cd9f72554b8b4210f8174809a40ae1e7a261cc595fbe2557fb99d",
+          "body_bytes": 27,
+          "assertions": [
+            {
+              "macro": "assert_eq",
+              "line": 1,
+              "arguments": [
+                "\"a b\"",
+                "\"a b\""
+              ],
+              "callable_scope": "test",
+              "self_equality": true
+            }
+          ],
+          "macro_argument_limit": "Argument token trees are not expression ASTs; generic commas may split argument candidates. Review source before accepting equality candidates.",
+          "ast_calls": [],
+          "macros": [
+            "assert_eq"
+          ],
+          "returns": [],
+          "risk_candidates": [
+            "self_equality"
+          ]
+        },
+        {
+          "name": "b",
+          "line": 1,
+          "end_line": 1,
+          "attributes": [
+            "#[test]"
+          ],
+          "module_context": [],
+          "body_sha256": "8d262334d30f5ebd4c3dce2775d6579c6c1e7378c57240e9d93850c7cfdd1595",
+          "body_token_sha256": "a061cdbed48ad3844265d0fefd31ba275bc9bd390e1767e8129a7ba74c52964e",
+          "body_bytes": 37,
+          "assertions": [
+            {
+              "macro": "assert_eq",
+              "line": 1,
+              "arguments": [
+                "\"a b\"",
+                "\"a b\""
+              ],
+              "callable_scope": "test",
+              "self_equality": true
+            }
+          ],
+          "macro_argument_limit": "Argument token trees are not expression ASTs; generic commas may split argument candidates. Review source before accepting equality candidates.",
+          "ast_calls": [],
+          "macros": [
+            "assert_eq"
+          ],
+          "returns": [],
+          "risk_candidates": [
+            "self_equality"
+          ]
+        }
+      ],
+      "context": [],
+      "errors": []
+    },
+    "rust_literal_whitespace": {
+      "tests": [
+        {
+          "name": "a",
+          "line": 1,
+          "end_line": 1,
+          "attributes": [
+            "#[test]"
+          ],
+          "module_context": [],
+          "body_sha256": "70193c4f45cd27eccc99820a0a7b674e4a1a3dec5fce866e220159cc699bbc7e",
+          "body_token_sha256": "10cd2b51966cd9f72554b8b4210f8174809a40ae1e7a261cc595fbe2557fb99d",
+          "body_bytes": 27,
+          "assertions": [
+            {
+              "macro": "assert_eq",
+              "line": 1,
+              "arguments": [
+                "\"a b\"",
+                "\"a b\""
+              ],
+              "callable_scope": "test",
+              "self_equality": true
+            }
+          ],
+          "macro_argument_limit": "Argument token trees are not expression ASTs; generic commas may split argument candidates. Review source before accepting equality candidates.",
+          "ast_calls": [],
+          "macros": [
+            "assert_eq"
+          ],
+          "returns": [],
+          "risk_candidates": [
+            "self_equality"
+          ]
+        },
+        {
+          "name": "b",
+          "line": 1,
+          "end_line": 1,
+          "attributes": [
+            "#[test]"
+          ],
+          "module_context": [],
+          "body_sha256": "f108263898184c6402f3f2ce9dcd692d98d0c0fb26c8c24d58c2b4cc00c942b4",
+          "body_token_sha256": "2f465f052ed1c57146fe06cf7c38ec4216e5bc8f6d9b3b19ea384ab14b9b1dd2",
+          "body_bytes": 25,
+          "assertions": [
+            {
+              "macro": "assert_eq",
+              "line": 1,
+              "arguments": [
+                "\"ab\"",
+                "\"ab\""
+              ],
+              "callable_scope": "test",
+              "self_equality": true
+            }
+          ],
+          "macro_argument_limit": "Argument token trees are not expression ASTs; generic commas may split argument candidates. Review source before accepting equality candidates.",
+          "ast_calls": [],
+          "macros": [
+            "assert_eq"
+          ],
+          "returns": [],
+          "risk_candidates": [
+            "self_equality"
+          ]
+        }
+      ],
+      "context": [],
+      "errors": []
+    },
+    "rust_return_scope": {
+      "tests": [
+        {
+          "name": "a",
+          "line": 1,
+          "end_line": 1,
+          "attributes": [
+            "#[test]"
+          ],
+          "module_context": [],
+          "body_sha256": "36d12a1dce5df286d4567bd2b0e9797b586fe478721c090c5e8975c0c8f59fce",
+          "body_token_sha256": "53014510d6bf8ca9755a5a801e2073359731ef71db1e57245ab789948abd5362",
+          "body_bytes": 74,
+          "assertions": [
+            {
+              "macro": "assert",
+              "line": 1,
+              "arguments": [
+                "true"
+              ],
+              "callable_scope": "test",
+              "self_equality": false
+            }
+          ],
+          "macro_argument_limit": "Argument token trees are not expression ASTs; generic commas may split argument candidates. Review source before accepting equality candidates.",
+          "ast_calls": [
+            "std::env::var",
+            "std::env::var(\"E\").is_err"
+          ],
+          "macros": [
+            "assert"
+          ],
+          "returns": [
+            {
+              "line": 1,
+              "expression": "return",
+              "scope": "nested_callable",
+              "context": "",
+              "successful": true
+            },
+            {
+              "line": 1,
+              "expression": "return",
+              "scope": "test",
+              "context": "if std::env::var(\"E\").is_err(){return;}",
+              "successful": true
+            }
+          ],
+          "risk_candidates": [
+            "successful_early_return",
+            "environment_dependency",
+            "literal_first_assertion_argument"
+          ]
+        }
+      ],
+      "context": [],
+      "errors": []
+    },
+    "rust_macro_opaque": {
+      "tests": [
+        {
+          "name": "visible",
+          "line": 1,
+          "end_line": 1,
+          "attributes": [
+            "#[test]"
+          ],
+          "module_context": [],
+          "body_sha256": "128d1cbca4fb27b3e57fb012a97bfe6fec14b59e9e4f40ed59c8c6eabf56dfd1",
+          "body_token_sha256": "e4d3e8dd8c02426d010d18bef73674c0bed30cee6662a038285f0d4ad7e5a500",
+          "body_bytes": 11,
+          "assertions": [],
+          "macro_argument_limit": "Argument token trees are not expression ASTs; generic commas may split argument candidates. Review source before accepting equality candidates.",
+          "ast_calls": [],
+          "macros": [
+            "check"
+          ],
+          "returns": [],
+          "risk_candidates": [
+            "no_direct_assertion"
+          ]
+        }
+      ],
+      "context": [
+        {
+          "kind": "macro_definition",
+          "line": 1,
+          "name": "tests",
+          "attributes": [],
+          "has_body": false,
+          "include_expression": null
+        }
+      ],
+      "errors": []
+    },
+    "python_class_skip_and_nested_return": {
+      "tests": [
+        {
+          "name": "test_a",
+          "line": 3,
+          "end_line": 6,
+          "attributes": [],
+          "body_sha256": "1cac30609fded4e2b1931e25cc86b2013d8127d730bc8c5ee769e38b6c3f0b5c",
+          "body_token_sha256": "c842931cc6b871305899fabc836227e859cedfaddd69ef1936f031cc94b8885f",
+          "body_bytes": 88,
+          "assertions": [
+            {
+              "macro": "self.assertEqual",
+              "line": 6,
+              "arguments": [
+                "1",
+                "1"
+              ],
+              "callable_scope": "test",
+              "self_equality": true
+            }
+          ],
+          "ast_calls": [
+            "self.assertEqual"
+          ],
+          "returns": [
+            {
+              "line": 5,
+              "expression": "return",
+              "scope": "nested_callable",
+              "successful": true
+            }
+          ],
+          "risk_candidates": [
+            "self_equality",
+            "return_path_requires_review"
+          ]
+        },
+        {
+          "name": "test_b",
+          "line": 7,
+          "end_line": 9,
+          "attributes": [],
+          "body_sha256": "00f3a1c93f7eb990b70ccf9cb392b439201db287150dcbb78c5a6dc763294628",
+          "body_token_sha256": "5c968e978dba931caa25583113c02ac2cf6f580bf17b5eccdacce70efa9c33bd",
+          "body_bytes": 78,
+          "assertions": [],
+          "ast_calls": [
+            "helper"
+          ],
+          "returns": [],
+          "risk_candidates": [
+            "no_direct_assertion"
+          ]
+        }
+      ]
+    }
+  }
+}

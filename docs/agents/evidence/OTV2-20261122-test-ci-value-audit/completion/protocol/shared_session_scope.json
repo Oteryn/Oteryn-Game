@@ -1,0 +1,1734 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "inventory_source": "test_value_inventory.tsv (historical routing only; current paths/hash/existence reconciled)",
+  "kind": "routing and source inventory, not semantic completion",
+  "groups": [
+    "crates/admin/agent",
+    "crates/admin/contracts",
+    "crates/diagnostics",
+    "crates/error-codes",
+    "crates/ntp-clock",
+    "crates/platform-contracts",
+    "crates/task-supervisor",
+    "crates/test-support",
+    "crates/gameplay/admission-evidence",
+    "crates/gameplay/character-recovery-fence",
+    "crates/gameplay/node-files",
+    "crates/gameplay/source-critical-baseline",
+    "crates/gameplay/weather",
+    "crates/session",
+    "crates/gameplay/foundation"
+  ],
+  "files": [
+    {
+      "path": "crates/admin/agent/src/tests/channel.rs",
+      "exists": true,
+      "sha256": "0fdb35f8641dabe1809432b8ff407c376c34f70850f22b479d446883f43d610a",
+      "lines": 243,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/admin/agent/src/tests/postgres.rs",
+      "exists": true,
+      "sha256": "00d6083d36b4352a15033b7c7187394bfb22944d1668225364a91213c3d09b25",
+      "lines": 240,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/admin/agent/src/tests/verifier.rs",
+      "exists": true,
+      "sha256": "aed4afa1c85c57a2ca5de388fc1574726063a070dc14a3496c3ca1e4e0b419f3",
+      "lines": 517,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/admin/contracts/tests/contract.rs",
+      "exists": true,
+      "sha256": "bf8a18ef17bdca01979c6b7f5c87e881f6bae13e6fd896869b66d85d0744c153",
+      "lines": 82,
+      "baseline_test_attributes": 4,
+      "current_test_attributes": 4,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/diagnostics/src/lib.rs",
+      "exists": true,
+      "sha256": "26e8067e4ca806a0a64a303943259fd8404115478d4caeecfae305f9d9f02605",
+      "lines": 558,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/error-codes/src/build_source.rs",
+      "exists": true,
+      "sha256": "fc012d6f9b3f2e453c0a474bd545e1209de402498b979a99a4d8d2ee8e123e6e",
+      "lines": 43,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/error-codes/src/emit.rs",
+      "exists": true,
+      "sha256": "cac48aacac15c58bd22850304176e392f8fa25f42ed4578e863363a14ec046dd",
+      "lines": 79,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/error-codes/src/filter.rs",
+      "exists": true,
+      "sha256": "296288c7c4a9a5a7745d42324b7df771638002d764580c2495790fa998fa0d5b",
+      "lines": 144,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/error-codes/src/flight.rs",
+      "exists": true,
+      "sha256": "302796efb7e3e5c63e789e8ec04697e62de0d48a217cf9ef762b4f1e0b5b93d4",
+      "lines": 124,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/error-codes/src/hook.rs",
+      "exists": true,
+      "sha256": "0d0ef7a64719cf1172e7eb655971a0f6e04436722f7adf2bdc0b9c4093eabf27",
+      "lines": 106,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/error-codes/src/line.rs",
+      "exists": true,
+      "sha256": "6cde34143cdc32e9122cbd07922a5c6f65edc3075b4ab693771034174d13d2ac",
+      "lines": 636,
+      "baseline_test_attributes": 7,
+      "current_test_attributes": 7,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/error-codes/src/metrics.rs",
+      "exists": true,
+      "sha256": "2d4e29edcfd6e416d4b20952a9cf6ab2c8ecfeda15d5f1743d88ff09a3794627",
+      "lines": 420,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/error-codes/src/span.rs",
+      "exists": true,
+      "sha256": "87fe6d97abcd70230716766caabbf8182dc4ff1aaa3e00f90929283d3afc4a81",
+      "lines": 319,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/error-codes/tests/panic_hook.rs",
+      "exists": true,
+      "sha256": "2093b1fdd1ab088c7cce23a79f1fd65248d25c55ba3d4f5cfc00d5022ba2dbaf",
+      "lines": 69,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/ntp-clock/src/lib.rs",
+      "exists": true,
+      "sha256": "f555f7b8cf2f2b3cabf61e371f63b65aeb43268de1607238f6f9b50f77571429",
+      "lines": 168,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/platform-contracts/src/lib.rs",
+      "exists": true,
+      "sha256": "a754e9f91af4578494410d133838fc94c9c464722b49c594ccfe6a77ea5980db",
+      "lines": 121,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/task-supervisor/src/lib.rs",
+      "exists": true,
+      "sha256": "2c5f2d778b3b486f5629155f3f7bd8e1de6c44520590af2352e33b24cb36dc25",
+      "lines": 1013,
+      "baseline_test_attributes": 10,
+      "current_test_attributes": 10,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/test-support/src/lib.rs",
+      "exists": true,
+      "sha256": "6ef35e69a532d27e1e8ca185e40f8191f4473c0ea4a2321cdf607998ae9557b8",
+      "lines": 198,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/test-support/src/property_tests.rs",
+      "exists": true,
+      "sha256": "e3e7cf9ed99dbcaf9809ade1bddf0660c1e1c74e6bc4b53ac8150ffd26d35a81",
+      "lines": 279,
+      "baseline_test_attributes": 11,
+      "current_test_attributes": 11,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/gameplay/admission-evidence/src/lib.rs",
+      "exists": true,
+      "sha256": "f15c562cac7d48d9e34dee47e969ca605f11ce040b83a553300273b05800edb7",
+      "lines": 577,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/gameplay/character-recovery-fence/src/lib.rs",
+      "exists": true,
+      "sha256": "d6fad215e1c29b1357e7d7d182b850683299682e3e085a77c9dddd51b24a39de",
+      "lines": 807,
+      "baseline_test_attributes": 8,
+      "current_test_attributes": 8,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/gameplay/node-files/src/operator_files.rs",
+      "exists": true,
+      "sha256": "9fae0100b4affb39c05c134a57507df867f67e13952884f6a2de2eb97a401bbc",
+      "lines": 242,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/gameplay/node-files/src/secure_file.rs",
+      "exists": true,
+      "sha256": "75033332748d90a553abc794ab08b200eb0034520f416dcf481d8a8b4cad98a8",
+      "lines": 538,
+      "baseline_test_attributes": 5,
+      "current_test_attributes": 5,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/gameplay/source-critical-baseline/src/lib.rs",
+      "exists": true,
+      "sha256": "1f679a7df898d3d628783125ee3626d9b6af6684a02a1283092aebcbc3415574",
+      "lines": 127,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/gameplay/weather/src/tests.rs",
+      "exists": true,
+      "sha256": "428445e6876b609aa82013afb7a60f634f49786e392ca6ecb4d859e9cd3353eb",
+      "lines": 252,
+      "baseline_test_attributes": 10,
+      "current_test_attributes": 10,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/achievement_notices_tests.rs",
+      "exists": true,
+      "sha256": "c5b6c8b4df51953466ffb3f6451dc5db77620fa4e1b9f4be38036575a5b85ca2",
+      "lines": 262,
+      "baseline_test_attributes": 4,
+      "current_test_attributes": 4,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/appearance_state/mapping_tests.rs",
+      "exists": true,
+      "sha256": "730bbb69b23944a2d94cee5fdbe82ed4eee41a543fc346d4e072664c8f0b9a04",
+      "lines": 140,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/capability_support.rs",
+      "exists": true,
+      "sha256": "285c32c925959d5c30aedf13bd958d5194a6ef45e2285e1ae37ef0095dc942c8",
+      "lines": 533,
+      "baseline_test_attributes": 10,
+      "current_test_attributes": 10,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/cast_chat/tests.rs",
+      "exists": true,
+      "sha256": "1095ab61184e12a24a6e6f8ed149ce5e996d9b6b3036eb86d897973dcd1e59c4",
+      "lines": 63,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/cast_viewer/tests.rs",
+      "exists": true,
+      "sha256": "d380ede2591be58cb8827228bddbac261490e6b9a83fe5955a6cdb09ba424e9a",
+      "lines": 147,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/chat_extended_tests.rs",
+      "exists": true,
+      "sha256": "70e677f6b7aa5c0fdadfa755f0d110ac0c463dbd91e316fe21ca491875663582",
+      "lines": 117,
+      "baseline_test_attributes": 5,
+      "current_test_attributes": 5,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/container_tree_tests.rs",
+      "exists": true,
+      "sha256": "18f29104be47f833cd1681f843024748b96fdac35c0449cece4144b983826d12",
+      "lines": 221,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/e2e_c16d.rs",
+      "exists": true,
+      "sha256": "ef43a0325a4bf84c23b79f2a7dffc330e10a07036de5bee06835dce553dc939c",
+      "lines": 69,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0004-item-view-move/protocol.rs",
+      "exists": true,
+      "sha256": "d79c115019b33cc0ca3682b83aa98edab596733db487c5f1ddca11e8db24f5f5",
+      "lines": 155,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0004-item-view-move/tests.rs",
+      "exists": true,
+      "sha256": "c168352264c3960429e0b0771fd486666d0c6b53e0dc53b452fa7991144006d7",
+      "lines": 192,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0004-item-view-move/tests/e2e_i05.rs",
+      "exists": true,
+      "sha256": "16d138c6bfb7a1c951a5d2e57c0df556b82ae892a69bc95119a9606128c54e77",
+      "lines": 120,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0004-item-view-move/tests/e2e_i13.rs",
+      "exists": true,
+      "sha256": "886ac8fc5433e03768a90337b3366706469561bfd2b1aeba8213ff9ad9704256",
+      "lines": 137,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/features/0011-world-interaction/protocol.rs",
+      "exists": true,
+      "sha256": "11d0959e0051d9307f667869c7efdda880fe0b38f84647504b289ced46183db1",
+      "lines": 39,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0011-world-interaction/tests.rs",
+      "exists": true,
+      "sha256": "17f7dbbf9ffcd9852b9fcc675eca7e16576e1c99faca47c493024a21329c18b5",
+      "lines": 52,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0014-container-tree/tests/e2e_i01.rs",
+      "exists": true,
+      "sha256": "870c679bd980a79151878dc28a94f4757f9322e08b0434d66a3c8f3d13838d7d",
+      "lines": 112,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/features/0019-world-light/tests.rs",
+      "exists": true,
+      "sha256": "79907d2f7f1e9e3bfa59dc40d341bf25ba18a5fd489829c866bd6a55caafcbac",
+      "lines": 77,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0026-world-weather/tests.rs",
+      "exists": true,
+      "sha256": "86bb0c41784fb87e22ceb28c8faf4f700a7a89e11d00527af3ed765d334a3b41",
+      "lines": 126,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0037-depot/protocol.rs",
+      "exists": true,
+      "sha256": "a196bd05caf0a9ea72cb6a32d2604915c7c2a177ee36bc838eb36ea0c859cb77",
+      "lines": 106,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0064-target-move/protocol.rs",
+      "exists": true,
+      "sha256": "1d1527abac17d6106fbd30132f917d55df91338a74da1ebaae68f95ef257dd27",
+      "lines": 75,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0064-target-move/tests.rs",
+      "exists": true,
+      "sha256": "073cdcd110b2d9622734208af1b27a57cc76ef50e9e126500b7253644af91fd3",
+      "lines": 32,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0083-channel-list/tests.rs",
+      "exists": true,
+      "sha256": "b2c0a2cd05529bd4615b32d0c6bb9a531d24d8871a7a884d5458a038aa8b3bc8",
+      "lines": 130,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/features/0097-character-info/protocol.rs",
+      "exists": true,
+      "sha256": "6f20fc9227fbbbf56d8b1a66d05572dde8ee80aec81ec5333a17b467afb23806",
+      "lines": 170,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/features/0287-actor-spell-catalog/tests.rs",
+      "exists": true,
+      "sha256": "5a0c79672be1f2a025bcaa0affd6954f461d9abc05bc5b9d5d8fe290f90ed1f1",
+      "lines": 161,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/guild_chat_tests.rs",
+      "exists": true,
+      "sha256": "ecdbe92510de6929f9d69627e395036112bb0ce0ba72047520180e9803ffa7f2",
+      "lines": 154,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/presentation.rs",
+      "exists": true,
+      "sha256": "d8b5c173c3cb7dc76613cab67526230ff3d02c54b61bd18d60f4d74ab95c8ccd",
+      "lines": 254,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/presentation_tests.rs",
+      "exists": true,
+      "sha256": "d078bd7a9b8ab7edb209911ae65b703ecce328d70ccc8feded1c84510174cbb1",
+      "lines": 334,
+      "baseline_test_attributes": 4,
+      "current_test_attributes": 4,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/private_channels_tests.rs",
+      "exists": true,
+      "sha256": "03e1479cae1afeae435f81cb705a07856cf97b198a77865af2e90189238c8be2",
+      "lines": 248,
+      "baseline_test_attributes": 4,
+      "current_test_attributes": 4,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/property_services/house_transfer_tests.rs",
+      "exists": true,
+      "sha256": "4ee5293597e1aecd94ef899af1ecb8b4a36074d20e468398205063a98ee959bb",
+      "lines": 340,
+      "baseline_test_attributes": 4,
+      "current_test_attributes": 4,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/public_channels_tests.rs",
+      "exists": true,
+      "sha256": "a06bfe19e96b06692bb2841861d628562d90830fef4f686f6045b711427fdbd8",
+      "lines": 356,
+      "baseline_test_attributes": 5,
+      "current_test_attributes": 5,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/quest_log_transport/tests.rs",
+      "exists": true,
+      "sha256": "f67342ce285a74c9897658ddab4f0c39654830969641080df2e0438e1015ae70",
+      "lines": 111,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/server_messages_tests.rs",
+      "exists": true,
+      "sha256": "414b19e9517096c90a82aa042a561995e8f51956b1b671029fa3a6e096a0aeeb",
+      "lines": 91,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_admission.rs",
+      "exists": true,
+      "sha256": "501f92d7c40d9c16dd1833233b6bcfdd4a18fb36d0e30a0e64787f61ddfa4a1c",
+      "lines": 324,
+      "baseline_test_attributes": 7,
+      "current_test_attributes": 7,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/session_tests_admission_cast.rs",
+      "exists": true,
+      "sha256": "f3ec69e807621114c99dea86ba0535955bc7e33a42f6c6305c7ba26cd84c9c23",
+      "lines": 171,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/session_tests_browse_field.rs",
+      "exists": true,
+      "sha256": "2a116116fd11a23209e1de735a712f18e5ff04e98f53712e983c7ddafafc4f6a",
+      "lines": 71,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_capabilities.rs",
+      "exists": true,
+      "sha256": "d9d83377b04485d20750e6c6d7845ea23a75f83a18a2c02491789c9650406e5b",
+      "lines": 315,
+      "baseline_test_attributes": 4,
+      "current_test_attributes": 4,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_capabilities/gated_routes.rs",
+      "exists": true,
+      "sha256": "fb0424c0b62aac93dfaed864b6c5710915501e1bab26f6a115f68cc0ddb57b31",
+      "lines": 159,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_capability_movement.rs",
+      "exists": true,
+      "sha256": "fedd7f9e1762c3c07754119d09fadce1f42eb426db9b6de269c96eaff4d16f34",
+      "lines": 360,
+      "baseline_test_attributes": 11,
+      "current_test_attributes": 11,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_capability_native.rs",
+      "exists": true,
+      "sha256": "7cb4468aa57a5eff35dadb5f935ebedd175fb31d38d49a8b72f211f5f652756c",
+      "lines": 723,
+      "baseline_test_attributes": 8,
+      "current_test_attributes": 8,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_chat.rs",
+      "exists": true,
+      "sha256": "aa1cd406b19981b67232f2e87cb1dd37fcd84750187c9426e81adc9b073608d4",
+      "lines": 407,
+      "baseline_test_attributes": 5,
+      "current_test_attributes": 5,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_chat_messages.rs",
+      "exists": true,
+      "sha256": "32374275c306b29994be0512a7890f22618b93504062ce6f3276b13e195e4641",
+      "lines": 275,
+      "baseline_test_attributes": 7,
+      "current_test_attributes": 7,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_coin_history.rs",
+      "exists": true,
+      "sha256": "d557b2358f0f1ca54845d0d41ad8930bbe89e5f9150ea8b4bac70b45ad38d834",
+      "lines": 80,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_combat_logout.rs",
+      "exists": true,
+      "sha256": "60260bb09d482545c40892b976a6ed007838cd01b4db527e64f76b593bf7fa8b",
+      "lines": 365,
+      "baseline_test_attributes": 6,
+      "current_test_attributes": 6,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_entities.rs",
+      "exists": true,
+      "sha256": "bd57519b2966bb7b809d495f5b9abd951d949f6e56382a52be66e4a2644d2caa",
+      "lines": 949,
+      "baseline_test_attributes": 14,
+      "current_test_attributes": 14,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/session_tests_items.rs",
+      "exists": true,
+      "sha256": "1e12de0927372144cbbf74f5ca6f4aabf1a1570276c192b37b50a3b8414d98e4",
+      "lines": 979,
+      "baseline_test_attributes": 18,
+      "current_test_attributes": 18,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_market_details.rs",
+      "exists": true,
+      "sha256": "2622376125d29c7852f5421d549ad546df8e73a04f0622353480f759849b30b5",
+      "lines": 120,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_player_trade.rs",
+      "exists": true,
+      "sha256": "5634bb57c3bc213beb3195a6617965ee279c38da10f624871692fbc3ffb0e938",
+      "lines": 97,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_push.rs",
+      "exists": true,
+      "sha256": "c8fc98196e7bc78995f5ab6b089af9985625cda73855256fc4e384a788589867",
+      "lines": 678,
+      "baseline_test_attributes": 16,
+      "current_test_attributes": 16,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/session_tests_recovery.rs",
+      "exists": true,
+      "sha256": "35ef076aca8a4b3bdab9fa0588bb78ff52d17afc6847dad81e6e0b97a24f2cf7",
+      "lines": 211,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/session_tests_refusal_details.rs",
+      "exists": true,
+      "sha256": "cb4f1dd77e2d71bc388814d8ae1983fbb0c150e78a5af97ea7fca4762f43fc31",
+      "lines": 125,
+      "baseline_test_attributes": 4,
+      "current_test_attributes": 4,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/session_tests_vitals.rs",
+      "exists": true,
+      "sha256": "37c6e936d9ac0702f3e1f94cf51f7aa1d05ab0bc8a4388c2a6fe7c32df81518e",
+      "lines": 209,
+      "baseline_test_attributes": 4,
+      "current_test_attributes": 4,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests.rs",
+      "exists": true,
+      "sha256": "e062cca9d36dc1bedf172d2107ad6eae075fcc0fbdf4f270ef84ebd0207f851c",
+      "lines": 363,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/account_achievements.rs",
+      "exists": true,
+      "sha256": "d32f11d6cb11934e631c38691ef148e28e6dc04290a47961378b920d27f4e7a1",
+      "lines": 132,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/activity_handoff.rs",
+      "exists": true,
+      "sha256": "fc777bfda4e2f9e3885cd8b5ef61f12f2e191c4c32043d1599fb16455eea27ca",
+      "lines": 540,
+      "baseline_test_attributes": 5,
+      "current_test_attributes": 5,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/activity_scope.rs",
+      "exists": true,
+      "sha256": "ad03e5e3079212f6e01f35a782b62bce806f6ab1484392a55a08dd1b3507f694",
+      "lines": 325,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/activity_scope_initial.rs",
+      "exists": true,
+      "sha256": "45810ab2378ad4cc74494fdfed65476b6c1d9e86724d73a1091c122200acecca",
+      "lines": 98,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/activity_scope_recovery.rs",
+      "exists": true,
+      "sha256": "81ed9d1e82f8c4a0244a5275095041b3572bcca436bee8eb60710f5a976509b9",
+      "lines": 139,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/analyser.rs",
+      "exists": true,
+      "sha256": "e1ac9e192be926062f0c130f5ae06f6dc0d07a5bfffc389b315145b2e51a7c41",
+      "lines": 166,
+      "baseline_test_attributes": 4,
+      "current_test_attributes": 4,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/appearance_session_tests.rs",
+      "exists": true,
+      "sha256": "2895748c8da4791fcd4f7dc438c7ca705f4f91362ad9b904b7a8ffba174f1094",
+      "lines": 285,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/appearance_session_tests/item_dictionary_tests.rs",
+      "exists": true,
+      "sha256": "7ee23d4cba624d83bc1ef38151dd994c41ab374e58e990e0b12dfb5b106e5c1d",
+      "lines": 97,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/appearance_session_tests/native_icons.rs",
+      "exists": true,
+      "sha256": "7052022a8a2ca19faa061590f56f97b2d3d201734c0c504462ce79103dd8989f",
+      "lines": 88,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/depot_map_tests.rs",
+      "exists": true,
+      "sha256": "3357694dccb71745579bab8d0ea1b23c99dd7105d79d88491f2081703542a8d1",
+      "lines": 255,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/depot_open_tests.rs",
+      "exists": true,
+      "sha256": "4a67b923db4d2b38af502ba7f415ec2befed4e23ba29e0ffb65011dd43c7043e",
+      "lines": 115,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c01.rs",
+      "exists": true,
+      "sha256": "bf3205b02a662c8d1e3595a4e366673fbe0cf2082adf9878252dfda3ef3a5375",
+      "lines": 106,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c02.rs",
+      "exists": true,
+      "sha256": "69dd50317991d0ac9fd46a8e631b60b4f369805fb7cfd879b31bc579d6f1ca3c",
+      "lines": 117,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c06.rs",
+      "exists": true,
+      "sha256": "09e31bab17bf96da831e55402d42911500bb98393c2776a35b2e02a0d04d9f1e",
+      "lines": 114,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c07.rs",
+      "exists": true,
+      "sha256": "a1c039922fff15a30df31c4505a9ce7408594792614fa583d111ebf59da6e102",
+      "lines": 184,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c08.rs",
+      "exists": true,
+      "sha256": "64c24af99b20da67f48881d2ab93467dd63e2a1c768065feb548d2742d8a864f",
+      "lines": 194,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c09.rs",
+      "exists": true,
+      "sha256": "fa11b99f5947a4e08f72dbe6dda0d9cc16a25b0916467fdbbf3b211d1d5883de",
+      "lines": 156,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c10.rs",
+      "exists": true,
+      "sha256": "205ab5d66baa27452c0ef9fa1a7153f702051c0bac946062acec4aadd412eda3",
+      "lines": 79,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c12.rs",
+      "exists": true,
+      "sha256": "f1f3f2f699df52e8ea0c340ff1ef58ad32d2695b15b25f794a242f273491a88a",
+      "lines": 119,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c13.rs",
+      "exists": true,
+      "sha256": "fa4ae8f49460c35c88013b2b519908da61c0023178c18c046cafc88bb7c068e8",
+      "lines": 235,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c16a.rs",
+      "exists": true,
+      "sha256": "2e62aca9540ca56f7c318cd5cb49126c412538337c73af9ca5e859fa7a451fff",
+      "lines": 261,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c16c.rs",
+      "exists": true,
+      "sha256": "de9d3fa7cb34c157da1d9ce9e9beff9172e22fc02af3e7da6a812acd08c25a21",
+      "lines": 160,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c17b.rs",
+      "exists": true,
+      "sha256": "b2f61f0d4bc48a507a44821daf9aff26e1b7403a83bf7d023737966cbc57f031",
+      "lines": 128,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c17c.rs",
+      "exists": true,
+      "sha256": "209a1dd93e58df7b158c07bd1760972dbedc2c4836d916fd38b5d18f1608e4b7",
+      "lines": 190,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c17d.rs",
+      "exists": true,
+      "sha256": "844feab45054a7e269aa7b511345e716bba40ed386d2f90a21fb0b071203a95b",
+      "lines": 185,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c18b.rs",
+      "exists": true,
+      "sha256": "c02b794180718f401fb829c98da7127544950ff2e297833da56c02676fee3790",
+      "lines": 215,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c19a.rs",
+      "exists": true,
+      "sha256": "df7329963907528be7b9493f0569f452061f6feda0a803500d93f1f507cfb514",
+      "lines": 161,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c20b.rs",
+      "exists": true,
+      "sha256": "c119218095cc7bc68fa59569fa81f13f44a84c4db4cd432d4caf2e6e4fe9b794",
+      "lines": 108,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c20d.rs",
+      "exists": true,
+      "sha256": "3f408bfc55e6729983714f68f7be5b20f54e7e344051ffbf91f62bad973cdd68",
+      "lines": 87,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_e02.rs",
+      "exists": true,
+      "sha256": "f6df7838856e8d4c9f94a4946351c798d8c33e1be9580048286afc58db31399c",
+      "lines": 199,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_e03.rs",
+      "exists": true,
+      "sha256": "b0bd9fde1c0a506693d6ac51e519e6982b296752a9403d963007f3a1f80e0ccc",
+      "lines": 199,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_i06.rs",
+      "exists": true,
+      "sha256": "26ae5cd5c1bb97fea4ac83f5041af8f3d8d30545371f314ad4f1d06073c6c3af",
+      "lines": 113,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_i08.rs",
+      "exists": true,
+      "sha256": "c9c6b6a62d83dfb87edc61247f88e6e89c4c44c013931860e8702b50d3e5435e",
+      "lines": 118,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_i09.rs",
+      "exists": true,
+      "sha256": "0c8fa232f04724d026fd6f06ee4f1e7ee21ec753c0c09c78ce4f034106d32a91",
+      "lines": 211,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_i11.rs",
+      "exists": true,
+      "sha256": "2bb3a1c99db235045fde403e940fb432f506f12516edfa10242e3a902c81bf06",
+      "lines": 181,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_i12.rs",
+      "exists": true,
+      "sha256": "58b31588da1f80f89b8a8c9e105b5adb9643be993bf94eba0108816f4146b6a2",
+      "lines": 117,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_i14.rs",
+      "exists": true,
+      "sha256": "d7ba38514eee7a516d1f98dd84744904085e266d04c718ec0a1acbb8cf501b5c",
+      "lines": 96,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_i15.rs",
+      "exists": true,
+      "sha256": "e00c2402f14539dff5bc3d586f99d1533712abff9d4bfb2361a93f031a886994",
+      "lines": 68,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m02.rs",
+      "exists": true,
+      "sha256": "1057250d16600b3816ae58b2aad4ca298e3ba5b53f36dfcd2858392fc4740512",
+      "lines": 88,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m03.rs",
+      "exists": true,
+      "sha256": "8cef65639f846487a40252de33dfcd723057c00f5f6ad0b85f5025975216d5b9",
+      "lines": 167,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m04.rs",
+      "exists": true,
+      "sha256": "bf52ae4021680650399bacf08579c5b5b19bebfac6a796b5ed34f11233950d77",
+      "lines": 152,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m05.rs",
+      "exists": true,
+      "sha256": "96240c3e4060061eed54191d844254948a9af24fabb243df4f513a15f055d091",
+      "lines": 139,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m06.rs",
+      "exists": true,
+      "sha256": "52930b0a7547c8b008a3831a08ef39b0d3893fdace077611ad7a582d608b5aff",
+      "lines": 90,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m07.rs",
+      "exists": true,
+      "sha256": "39ffd6e2986800793c186cf90c1c1efaf14e4ce3f35df57510aaf12fa14f1c07",
+      "lines": 133,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m08.rs",
+      "exists": true,
+      "sha256": "5937c73b5d5e32c564ebb94a0e31b4073c32feb7fd878d5b0a62e65250b002e4",
+      "lines": 169,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m09.rs",
+      "exists": true,
+      "sha256": "53ad8c43ff56218440d216a47fe664f011f5d6d68d92b9dccac40fcdbbe84286",
+      "lines": 101,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m10.rs",
+      "exists": true,
+      "sha256": "49fdb548bdc7d799f7a6233745898b6725d81e8bd9c7c438c72621386637a76d",
+      "lines": 193,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m11a.rs",
+      "exists": true,
+      "sha256": "b534fda1d803b44eda02c1d3adc3ddaa3858bbe9adc9cbf84b9156019e4b3beb",
+      "lines": 174,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_m11b.rs",
+      "exists": true,
+      "sha256": "59bb5692941a0196d50bd7947d4a481ce7f62ac947ede2215738c7e691242fc9",
+      "lines": 123,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_p11.rs",
+      "exists": true,
+      "sha256": "9e3a702cdc8ae704326807226e88042737894bed2ce7ad10eddbfdfb562bc56f",
+      "lines": 190,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_s04b.rs",
+      "exists": true,
+      "sha256": "af8fcc2e923e81b362f0f7645e63a5cd72b69c0d6ccd2fbacf7ff52e650a24d4",
+      "lines": 160,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_s04c.rs",
+      "exists": true,
+      "sha256": "3b49835856405426f351c4846866cd91976666c162dcebbe285a7a4ebe48c610",
+      "lines": 212,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_s09.rs",
+      "exists": true,
+      "sha256": "68a5f2711ea5a0b036d73b52c17401a55a8330cf66121bd0e52c52b005898661",
+      "lines": 68,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_s10.rs",
+      "exists": true,
+      "sha256": "5b7a4942d8fcacb7363fbbc2624a482329f8c338c17e1e921dd08f14132931e0",
+      "lines": 46,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_s13a.rs",
+      "exists": true,
+      "sha256": "f5bba10240e6d9dfac7372dbb9110953583e93463867fd6b4fed27a0891a67b5",
+      "lines": 203,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_s13b.rs",
+      "exists": true,
+      "sha256": "8899ccd47d988a6e0f1658678c0a5807c41757893db09f10fbf205c787ca39c9",
+      "lines": 141,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_s15b.rs",
+      "exists": true,
+      "sha256": "36f5ff471640f602ddece21549d1056d365d9278f2b03df947baf12b96a7da9c",
+      "lines": 89,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_s16a.rs",
+      "exists": true,
+      "sha256": "066a8bce3575f4bdb98f6a9fa02fb619c3e5270ca06c5e39ec46fdb7a136c77c",
+      "lines": 43,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_s18.rs",
+      "exists": true,
+      "sha256": "bafceb02b98f257884ff9955f246b3ba82856d46412e9b1a166b1931b83d6271",
+      "lines": 164,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w01a.rs",
+      "exists": true,
+      "sha256": "bfc154e885362f24001217d9fca121713c069011061a4fac87d91343657a38bc",
+      "lines": 229,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w01b.rs",
+      "exists": true,
+      "sha256": "79024652504b350f9996c6d263b0c090944abf4dc8ac73f461573807a4344faf",
+      "lines": 246,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w01c.rs",
+      "exists": true,
+      "sha256": "88bebe683726aa38693dfac4bb455f903c23ba72fad2b76aebd7dc979f84a0a7",
+      "lines": 96,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w05a.rs",
+      "exists": true,
+      "sha256": "f40cc18d970027eeb00fb442accbf192324654b7e6e492aade9f4d790450e3cd",
+      "lines": 140,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w15b.rs",
+      "exists": true,
+      "sha256": "53909f36a6db0bb028a77229e9402c417a601e60d6fc2a09a4974f166c749a9b",
+      "lines": 310,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w16.rs",
+      "exists": true,
+      "sha256": "13e1a8894590cbdcc237219dec596f2d34e9d1a3b03bd6af98c3dddd9ad282d0",
+      "lines": 54,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w19a.rs",
+      "exists": true,
+      "sha256": "dfa93914f97482c9318dc0c73dc3f27d4966d6c8818ee4427e5a33b4b05601c9",
+      "lines": 124,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w20a.rs",
+      "exists": true,
+      "sha256": "440f217ba8464717ca4945cccecb836cfdcf0e45d0ab9b500adb74d9fab4ffcf",
+      "lines": 147,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w20b.rs",
+      "exists": true,
+      "sha256": "2aa769da99f3aa46ef60379c7f50867ff639e94a01191763d7673e0a622aa208",
+      "lines": 167,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w22a.rs",
+      "exists": true,
+      "sha256": "4abf930fe9f79b41bd2c8570b79f4e029da9d583c1b733b6f3823fa90989e503",
+      "lines": 158,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w23.rs",
+      "exists": true,
+      "sha256": "b071c68260d458ea39cf70dff13a9578cba2b2e397d942ee6edc39630a886096",
+      "lines": 102,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_w24.rs",
+      "exists": true,
+      "sha256": "92c93cc9e8bb2ffbc4ba39445782a77b020dd8f2924e93de37740326e04245c6",
+      "lines": 131,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/gem_presentation_gated.rs",
+      "exists": true,
+      "sha256": "d7effb70461efb108fbf85ca711abd9a2de03eea45726a9de9e83a3fb545ff08",
+      "lines": 61,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/item_appearance.rs",
+      "exists": true,
+      "sha256": "591a60d27de38f35484cd4526d29d1efa749de4e4ce786e35ae07b1f7ba6af6c",
+      "lines": 100,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/property_services.rs",
+      "exists": true,
+      "sha256": "e6a17650a1e65bbd2c733d6e3d6091aec319ea0cacaf3274bd3f3fbb451f9d58",
+      "lines": 105,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/pvp_expert.rs",
+      "exists": true,
+      "sha256": "ec8f36bd490cd30a5e81a26c3b0ff89e438b14863e4d42b6451d5396c1693cff",
+      "lines": 195,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/replacement_snapshot.rs",
+      "exists": true,
+      "sha256": "ce41569ab5be14b714c6ae6f7c112f47fbb35755b2d9e985924a2d0af76bb1c3",
+      "lines": 513,
+      "baseline_test_attributes": 6,
+      "current_test_attributes": 6,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/spell_aim_mode.rs",
+      "exists": true,
+      "sha256": "30e8165bcf2c1c00b221f46aa9886765fed62f6a39bd85b42f989ea464f35de7",
+      "lines": 130,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/status_projection_tests.rs",
+      "exists": true,
+      "sha256": "570a946d72af75473ad3810600bd3aa24e769990bdd31a2eb70eb4b4a06c1f6c",
+      "lines": 61,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tests/wheel_presentation_gated.rs",
+      "exists": true,
+      "sha256": "cccfdf18531e8bb23547cb26aa1316406f555faecef1dc3841fb9494afbf04ac",
+      "lines": 61,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/tutorial_notices_tests.rs",
+      "exists": true,
+      "sha256": "6fb4d061cb27865f626db90dc7fee103367bfb1442d09efd62977643a475be8a",
+      "lines": 122,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/src/vip_presence.rs",
+      "exists": true,
+      "sha256": "98565a6b944f0dbbcc925b7e7c65a64b7d460fda010dd29c638a41f4300d0920",
+      "lines": 109,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/session/tests/admission_queue.rs",
+      "exists": true,
+      "sha256": "7b2bc847192d02092b660c184352c24f8baa84a543d335093f7f6b9d0b5b3fc9",
+      "lines": 32,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "reviewed_in_semantic_review.json"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/actor_ref.rs",
+      "exists": true,
+      "sha256": "7fb2c25696e1fdd7280e43e86ad7fbac2ff0b43fd2736e2b9bead848ced1263b",
+      "lines": 290,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_authority_publication.rs",
+      "exists": true,
+      "sha256": "2ad5a8760a5d03129fb2868891e4d06c5197feb62ce466ae6a8acb5bc6e515be",
+      "lines": 3277,
+      "baseline_test_attributes": 22,
+      "current_test_attributes": 22,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_recovery_inner/tests/durability_reconnect_v1_tests.rs",
+      "exists": true,
+      "sha256": "e00aff2a7852b45e1bc3dadd0113e36bb5559773a773497841d652754ef29187",
+      "lines": 158,
+      "baseline_test_attributes": 8,
+      "current_test_attributes": 8,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_recovery_inner/tests/durability_reconnect_v2_commit_phase_regression_tests.rs",
+      "exists": true,
+      "sha256": "9f763f7c3a24ea6be75e4af68847c16a3013b09e525f29ea8c706812de86352d",
+      "lines": 225,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_tests/tests_fresh_and_encoding.rs",
+      "exists": true,
+      "sha256": "acb9f6a2a6331a8dfc51f5320440ede97c8b121c3f7fe3a1c5aea3d1eba25b67",
+      "lines": 244,
+      "baseline_test_attributes": 10,
+      "current_test_attributes": 10,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_tests/tests_reconnect_fences.rs",
+      "exists": true,
+      "sha256": "053702325b3f3b45d2ba3f34bbfc40d1a0cd4c70daf36a39bfaffe5f697ad28d",
+      "lines": 413,
+      "baseline_test_attributes": 13,
+      "current_test_attributes": 13,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_tests/tests_reconnect_history.rs",
+      "exists": true,
+      "sha256": "84be986ffd7bd6630734aa2e07c2cf46a767617fa42527151962f6c11a185165",
+      "lines": 439,
+      "baseline_test_attributes": 19,
+      "current_test_attributes": 19,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_agony_ramp_tests.rs",
+      "exists": true,
+      "sha256": "2df36d8cb1435fa0be3e168e7cb1998a054b4d7fc1e4e3fff67f5f3159716aab",
+      "lines": 54,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_attribute_slot_tests.rs",
+      "exists": true,
+      "sha256": "c89c83cda21ef913eb7fc63f2452b155465741a8e0804fc33129326d4b267b76",
+      "lines": 252,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_cake_regen_tests.rs",
+      "exists": true,
+      "sha256": "7ee74bc1fde2fc5ba546d6c7c242b2f0754833be3663a58baa14ae4830cc5962",
+      "lines": 349,
+      "baseline_test_attributes": 8,
+      "current_test_attributes": 8,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_gate_tests.rs",
+      "exists": true,
+      "sha256": "e074ddbc47ad99070e89f606b51a5d2b8a4aa4fd41b963920bd1a5cfc9479742",
+      "lines": 656,
+      "baseline_test_attributes": 16,
+      "current_test_attributes": 16,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_persistence.rs",
+      "exists": true,
+      "sha256": "c8189dba7ab85ecf7099251ccfff71bd0ec1d9b95d743260920eb8ad0bd0d137",
+      "lines": 407,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_soulpit_hex_tests.rs",
+      "exists": true,
+      "sha256": "a2591ac9845531c7381a815dfa007c135eced5a365e2c78c7e18dd4c036ec075",
+      "lines": 323,
+      "baseline_test_attributes": 10,
+      "current_test_attributes": 10,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_spell.rs",
+      "exists": true,
+      "sha256": "5c0a9641402dafcef5b6a84ef8f8c1f2be8ed06d174b14a6f8ee497f90e4dfb8",
+      "lines": 737,
+      "baseline_test_attributes": 6,
+      "current_test_attributes": 6,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_status.rs",
+      "exists": true,
+      "sha256": "b3fe7857ebebf0daca60abece43becb257213210d731c9232a1db312a05b8e7e",
+      "lines": 321,
+      "baseline_test_attributes": 4,
+      "current_test_attributes": 4,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_suppression_tests.rs",
+      "exists": true,
+      "sha256": "668b0f552ecead27149871272e10502c904b39aadf6b59927108463cec4c2bd4",
+      "lines": 94,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/condition_tests.rs",
+      "exists": true,
+      "sha256": "0b0707eeb8c41d5259285f65152b865ce59442e6ae9c37641f09dd8d1965d04d",
+      "lines": 2016,
+      "baseline_test_attributes": 45,
+      "current_test_attributes": 45,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/control_loss_durability_tests.rs",
+      "exists": true,
+      "sha256": "e30a5f4207e70c2c5ae82b657b0bd80141996f80f075813fefb0de9d32a8e48d",
+      "lines": 878,
+      "baseline_test_attributes": 14,
+      "current_test_attributes": 14,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/control_loss_reconnect_bridge_tests.rs",
+      "exists": true,
+      "sha256": "dbbe80f2250e5f6a48fbe428d954d9e70712f3102fb72cf05a46acdbf6e1b135",
+      "lines": 3296,
+      "baseline_test_attributes": 38,
+      "current_test_attributes": 38,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/damage_schedule_crystal_parity_tests.rs",
+      "exists": true,
+      "sha256": "c753df2bf2f4599e2d2022785c289ec7ecf6fcae5ffa050bbfd3ad24725ef1f9",
+      "lines": 110,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/fnd04_verifier.rs",
+      "exists": true,
+      "sha256": "5a6d5c20343ab761a36800a1b5eea51f6ff9852fcff7ca89b0abd99a1afe9a8e",
+      "lines": 2988,
+      "baseline_test_attributes": 27,
+      "current_test_attributes": 27,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/fresh_admission_durability_tests.rs",
+      "exists": true,
+      "sha256": "6f6016f1092743e381d95c8708637d46b024ecc74edf88f5805ad83a1856a448",
+      "lines": 1894,
+      "baseline_test_attributes": 31,
+      "current_test_attributes": 31,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/mod.rs",
+      "exists": true,
+      "sha256": "918874b262d20ecaa86073ba4f14a6692dce6b0374bb40ea25591779c8eeb469",
+      "lines": 1505,
+      "baseline_test_attributes": 16,
+      "current_test_attributes": 16,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/owner_timer.rs",
+      "exists": true,
+      "sha256": "6697507c1a851c985b574a120182b428f14388c4b333fcfe10cdc6473dd1bd56",
+      "lines": 1691,
+      "baseline_test_attributes": 29,
+      "current_test_attributes": 29,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/planned_world_reset_tests.rs",
+      "exists": true,
+      "sha256": "4a5355c8d73e263f05533b7849a271b2bc9f230ea46fcf1136e050ec4ca33a1b",
+      "lines": 79,
+      "baseline_test_attributes": 1,
+      "current_test_attributes": 1,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs",
+      "exists": true,
+      "sha256": "c997c52b8e21730db7c820bd9d2c16abf3199a32c5b86049e918f837f919ee05",
+      "lines": 2383,
+      "baseline_test_attributes": 37,
+      "current_test_attributes": 37,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/protocol.rs",
+      "exists": true,
+      "sha256": "9d18f903fb08416ea7bb1c23ece6974cb495ea9a1fc1e6002dae52bdfa087069",
+      "lines": 615,
+      "baseline_test_attributes": 12,
+      "current_test_attributes": 12,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/reconciled_condition_tests.rs",
+      "exists": true,
+      "sha256": "51e3b0523d3786d5142107b626320a9835fbdbb2861e9e22a4c2953babdaf4ef",
+      "lines": 105,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/reconciled_schedule_tests.rs",
+      "exists": true,
+      "sha256": "9fd67c0bca4d886b6c0bfd8774b119b653941359977e11af95fe6d4842f3625f",
+      "lines": 90,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/snapshot_facade.rs",
+      "exists": true,
+      "sha256": "a313a24c7e5a87f3c1d74169f30d447a1aa47787b993f6c57a30488eb2d0b8eb",
+      "lines": 262,
+      "baseline_test_attributes": 3,
+      "current_test_attributes": 3,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/speech.rs",
+      "exists": true,
+      "sha256": "083f3de3570abec1813d56c1feeead94dd6835f430afa7d7998a8b4262f6fe79",
+      "lines": 178,
+      "baseline_test_attributes": 2,
+      "current_test_attributes": 2,
+      "status": "pending_semantic_review"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/scheduled_events.rs",
+      "exists": true,
+      "sha256": "00323b11ca29bcbcc6958c163f4456df1bcba104f6202b2b78bc6ae02448134b",
+      "lines": 493,
+      "baseline_test_attributes": 6,
+      "current_test_attributes": 5,
+      "status": "reviewed_in_semantic_review.json"
+    }
+  ]
+}

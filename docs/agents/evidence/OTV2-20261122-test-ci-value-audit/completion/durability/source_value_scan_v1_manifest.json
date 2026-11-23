@@ -1,0 +1,26 @@
+{
+  "schema": "SOURCE_AST_EVIDENCE_NOT_SEMANTIC_COMPLETION",
+  "raw_sha256": "a65887b3cc3c28e0fb74ad907fd4d87ce99a640b9713080b6ffd32731f47f466",
+  "compressed_sha256": "411d3d185196c1db65ef80a5c6490a62fdf52ba6ba33b09ecf40b0b57ec5cc99",
+  "scanner_sha256": "71c99f4ab420500dbea251dd44ea7625cdfcd8040bb2a1fc5c40e0d79644e6df",
+  "summary": {
+    "assigned_paths": 1377,
+    "parsed_test_functions": 6716,
+    "paths_with_parse_errors": 39,
+    "paths_without_ordinary_tests": 0,
+    "risk_counts": {
+      "self_equality": 13,
+      "text_input_or_source_oracle": 112,
+      "no_direct_assertion": 441,
+      "all_quantifier_needs_nonempty_fixture": 187,
+      "successful_early_return": 514,
+      "environment_dependency": 69,
+      "ignored_attribute": 24
+    },
+    "duplicate_groups": 45
+  },
+  "raw_bytes": 21701316,
+  "compressed_bytes": 2457645,
+  "method_review": "Independent full scanner read: suitable for bounded source candidates. V1 limitations include nested-callable assertion accounting, macro opacity, generic-comma assertion splitting, module-level text includes and doc-comment token traversal. Updated root scanner will receive separate snapshot; existing45duplicate/13self-equality body reads remain hash-bound to this snapshot.",
+  "runtime_claim": "NONE"
+}

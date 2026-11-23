@@ -35,39 +35,11 @@ pub fn encode_view(view: &DailyBoostView) -> Result<Vec<u8>, DailyBoostCodecErro
 }
 
 #[cfg(test)]
-fn decode_view(mut bytes: &[u8]) -> Result<DailyBoostView, DailyBoostCodecError> {
-    fn take(bytes: &mut &[u8]) -> Result<String, DailyBoostCodecError> {
-        let (&len, rest) = bytes.split_first().ok_or(DailyBoostCodecError)?;
-        let (value, rest) = rest
-            .split_at_checked(usize::from(len))
-            .ok_or(DailyBoostCodecError)?;
-        *bytes = rest;
-        if value.is_empty() {
-            return Err(DailyBoostCodecError);
-        }
-        String::from_utf8(value.to_vec()).map_err(|_| DailyBoostCodecError)
-    }
-    let (epoch, rest) = bytes.split_at_checked(8).ok_or(DailyBoostCodecError)?;
-    bytes = rest;
-    let reset_epoch = u64::from_be_bytes(epoch.try_into().map_err(|_| DailyBoostCodecError)?);
-    let creature_key = take(&mut bytes)?;
-    let boss_key = take(&mut bytes)?;
-    if !bytes.is_empty() {
-        return Err(DailyBoostCodecError);
-    }
-    Ok(DailyBoostView {
-        reset_epoch,
-        creature_key,
-        boss_key,
-    })
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn query_and_view_round_trip() -> Result<(), DailyBoostCodecError> {
+    fn query_and_view_match_the_documented_wire_layout() -> Result<(), DailyBoostCodecError> {
         assert!(decode_query(&[]).is_ok());
         assert!(decode_query(&[0]).is_err());
         let view = DailyBoostView {
@@ -76,7 +48,12 @@ mod tests {
             boss_key: "ferumbras".into(),
         };
         let encoded = encode_view(&view)?;
-        assert_eq!(decode_view(&encoded), Ok(view));
+        // daily-boost-v1.md: big-endian u64, then two UTF-8 keys with u8 byte lengths.
+        const EXPECTED: &[u8] = &[
+            0, 0, 0, 0, 0, 0, 0, 9, 3, b'r', b'a', b't', 9, b'f', b'e', b'r', b'u', b'm', b'b',
+            b'r', b'a', b's',
+        ];
+        assert_eq!(encoded.as_slice(), EXPECTED);
         Ok(())
     }
 }

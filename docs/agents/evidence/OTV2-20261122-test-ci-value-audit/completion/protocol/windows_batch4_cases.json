@@ -1,0 +1,9 @@
+[
+  {
+    "label": "cyclopedia_encoder_point_count",
+    "path": "crates/protocol-oteryn/src/cyclopedia.rs",
+    "old": "        || result.visible.len() > 8\n",
+    "new": "",
+    "test": "cyclopedia::tests::cyclopedia_codec_rejects_invalid_and_bounds_results"
+  }
+]

@@ -1,0 +1,130 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "rust_toolchain": "1.100.0",
+  "target": "aarch64-unknown-linux-gnu",
+  "runs": [
+    {
+      "label": "baseline_mutant_mount_limit",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "appearance_catalogue_palette_and_list_bounds_are_symmetric"
+      ],
+      "returncode": 0,
+      "seconds": 10.694,
+      "summaries": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.01s"
+      ]
+    },
+    {
+      "label": "candidate_mutant_mount_limit",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "appearance_catalogue_palette_and_list_bounds_are_symmetric"
+      ],
+      "returncode": 101,
+      "seconds": 13.37,
+      "summaries": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.02s"
+      ]
+    },
+    {
+      "label": "format_changed",
+      "command": [
+        "rustfmt",
+        "+1.100.0",
+        "--config-path",
+        "rustfmt.toml",
+        "crates/protocol-oteryn/src/appearance_tests/mappings_tests.rs"
+      ],
+      "returncode": 0,
+      "seconds": 0.018,
+      "summaries": []
+    },
+    {
+      "label": "candidate_unit",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib"
+      ],
+      "returncode": 0,
+      "seconds": 9.123,
+      "summaries": [
+        "test result: ok. 911 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.26s"
+      ]
+    },
+    {
+      "label": "candidate_clippy",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "clippy",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "returncode": 0,
+      "seconds": 14.254,
+      "summaries": []
+    },
+    {
+      "label": "format_changed_check",
+      "command": [
+        "rustfmt",
+        "+1.100.0",
+        "--config-path",
+        "rustfmt.toml",
+        "--check",
+        "crates/protocol-oteryn/src/appearance_tests/mappings_tests.rs"
+      ],
+      "returncode": 0,
+      "seconds": 0.017,
+      "summaries": []
+    },
+    {
+      "label": "candidate_diff_check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "returncode": 0,
+      "seconds": 1.191,
+      "summaries": []
+    }
+  ],
+  "candidate_sha256": {
+    "crates/protocol-oteryn/src/appearance_tests/mappings_tests.rs": "3e37038ec5d7d94a610968f64cf56c81b11b29433304625c8935532ad21a0681"
+  },
+  "production_restored_sha256": {
+    "crates/protocol-oteryn/src/appearance/catalogue.rs": "15e2429a1292262d693d19e22dfb5993f93a2195641bbafb7c8c25e8679b8c8c"
+  }
+}

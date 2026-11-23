@@ -1,0 +1,18 @@
+{
+  "status": "PASS_REPRODUCED_ZERO_SELECTION_EXIT_ZERO",
+  "scope": "Actual libtest ignored/exact selector semantics on previously built native integration binary; not a full S3-A topology execution",
+  "argv": [
+    "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+    "--exact",
+    "__test_ci_value_audit_nonexistent_s3a_selector__",
+    "--ignored",
+    "--nocapture",
+    "--color",
+    "never"
+  ],
+  "rc": 0,
+  "seconds": 0.068,
+  "output": "\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.00s\n\n",
+  "output_sha256": "0ab3841a5797ffba0a783d2aeea0f2711094272b254c39642eef3391c2ba22c0",
+  "source_boundary": "S3-A current exact names exist. Its bare exit-status checks would not detect a future missing exact selector; this probe does not claim current S3-A executed zero tests."
+}

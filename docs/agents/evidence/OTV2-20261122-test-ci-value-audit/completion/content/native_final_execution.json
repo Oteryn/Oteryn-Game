@@ -1,0 +1,268 @@
+{
+  "limits": "Execution only; no inferred semantic review or hosted CI proof.",
+  "results": [
+    {
+      "path": "tools/content-schema/native-gameplay/test_monster_attack_authoring.py",
+      "source_sha256": "061e1d8a34bc9bb058f77e987d8c1d9ec4754a55fb42b7b2ab3b71acde444cf4",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_monster_attack_authoring"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 20.436,
+      "timeout_seconds": 50.0,
+      "exit_code": 1,
+      "status": "FAIL",
+      "unittest_case_count": 14,
+      "case_results": [
+        "test_authored_damage_requires_element_and_ordered_range (test_monster_attack_authoring.CommittedAuthoring.test_authored_damage_requires_element_and_ordered_range) ... ok",
+        "test_authored_requires_evidence_and_matching_schedule (test_monster_attack_authoring.CommittedAuthoring.test_authored_requires_evidence_and_matching_schedule) ... ok",
+        "test_committed_files_equal_regeneration (test_monster_attack_authoring.CommittedAuthoring.test_committed_files_equal_regeneration) ... FAIL",
+        "test_corrupted_archive_pin_fails (test_monster_attack_authoring.CommittedAuthoring.test_corrupted_archive_pin_fails) ... FAIL",
+        "test_every_attack_reference_has_authoring_or_an_explicit_reason (test_monster_attack_authoring.CommittedAuthoring.test_every_attack_reference_has_authoring_or_an_explicit_reason) ... FAIL",
+        "test_heal_effects_carry_resolved_magnitudes (test_monster_attack_authoring.CommittedAuthoring.test_heal_effects_carry_resolved_magnitudes) ... ok",
+        "test_missing_reference_fails (test_monster_attack_authoring.CommittedAuthoring.test_missing_reference_fails) ... ok",
+        "test_stale_artifact_digest_fails (test_monster_attack_authoring.CommittedAuthoring.test_stale_artifact_digest_fails) ... ok",
+        "test_unavailable_reasons_are_closed (test_monster_attack_authoring.CommittedAuthoring.test_unavailable_reasons_are_closed) ... ok",
+        "test_unavailable_stays_explicit (test_monster_attack_authoring.CommittedAuthoring.test_unavailable_stays_explicit) ... ok",
+        "test_caster_magnitude_needs_schedule_magnitude (test_monster_attack_authoring.DerivationRules.test_caster_magnitude_needs_schedule_magnitude) ... ok",
+        "test_melee_skill_matches_the_pinned_engine_edge (test_monster_attack_authoring.DerivationRules.test_melee_skill_matches_the_pinned_engine_edge) ... ok",
+        "test_range_area_element_and_evidence_are_exported (test_monster_attack_authoring.DerivationRules.test_range_area_element_and_evidence_are_exported) ... ok",
+        "test_unknown_formula_and_schedule_drift_stay_unavailable (test_monster_attack_authoring.DerivationRules.test_unknown_formula_and_schedule_drift_stay_unavailable) ... ok"
+      ],
+      "output_tail": "d_bookworm.attack-1\",\"revision\":\"definition[5104340 chars]\"}\\n'\n\n======================================================================\nFAIL: test_corrupted_archive_pin_fails (test_monster_attack_authoring.CommittedAuthoring.test_corrupted_archive_pin_fails)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/test_monster_attack_authoring.py\", line 40, in test_corrupted_archive_pin_fails\n    self.assertEqual(validator.validate(self.profiles_raw, self.rows_raw, self.pin, archive), [])\nAssertionError: Lists differ: ['pin does not match the creature profile [2732 chars]ers'] != []\n\nFirst list contains 30 additional elements.\nFirst extra element 0:\n'pin does not match the creature profile artifact digest; regenerate the authoring'\n\nDiff is 3036 characters long. Set self.maxDiff to None to see it.\n\n======================================================================\nFAIL: test_every_attack_reference_has_authoring_or_an_explicit_reason (test_monster_attack_authoring.CommittedAuthoring.test_every_attack_reference_has_authoring_or_an_explicit_reason)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/test_monster_attack_authoring.py\", line 27, in test_every_attack_reference_has_authoring_or_an_explicit_reason\n    self.assertEqual(validator.validate_repository(), [])\nAssertionError: Lists differ: ['pin does not match the creature profile [2732 chars]ers'] != []\n\nFirst list contains 30 additional elements.\nFirst extra element 0:\n'pin does not match the creature profile artifact digest; regenerate the authoring'\n\nDiff is 3036 characters long. Set self.maxDiff to None to see it.\n\n----------------------------------------------------------------------\nRan 14 tests in 20.278s\n\nFAILED (failures=3)\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 11,
+      "suite_result": "FAIL"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_monster_melee_profiles.py",
+      "source_sha256": "07b5f809fdfc325a69170d0deb0faac037662191a8dda956f1176cea441908ae",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_monster_melee_profiles"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.078,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 9,
+      "case_results": [
+        "test_changed_identity_health_and_missing_closure_refuse (test_monster_melee_profiles.DisabledFallbackMerge.test_changed_identity_health_and_missing_closure_refuse) ... ok",
+        "test_disabled_only_is_filled_and_primary_provenance_preserved (test_monster_melee_profiles.DisabledFallbackMerge.test_disabled_only_is_filled_and_primary_provenance_preserved) ... ok",
+        "test_failed_fallback_stays_disabled_with_both_receipts (test_monster_melee_profiles.DisabledFallbackMerge.test_failed_fallback_stays_disabled_with_both_receipts) ... ok",
+        "test_active_reference_and_donor_reference_are_preserved (test_monster_melee_profiles.MeleeClosureSelection.test_active_reference_and_donor_reference_are_preserved) ... ok",
+        "test_advanced_or_incomplete_closures_are_disabled (test_monster_melee_profiles.MeleeClosureSelection.test_advanced_or_incomplete_closures_are_disabled) ... ok",
+        "test_melee_skill_endpoints_match_source_binary64_ceil_and_refuse_bad_inputs (test_monster_melee_profiles.MeleeClosureSelection.test_melee_skill_endpoints_match_source_binary64_ceil_and_refuse_bad_inputs) ... ok",
+        "test_schedule_slot_and_source_interval_must_match (test_monster_melee_profiles.MeleeClosureSelection.test_schedule_slot_and_source_interval_must_match) ... ok",
+        "test_secondary_conditions_are_retained_disabled_and_unknown_effects_refuse (test_monster_melee_profiles.MeleeClosureSelection.test_secondary_conditions_are_retained_disabled_and_unknown_effects_refuse) ... ok",
+        "test_source_skill_formula_is_preserved_and_requires_explicit_qualified_lane (test_monster_melee_profiles.MeleeClosureSelection.test_source_skill_formula_is_preserved_and_requires_explicit_qualified_lane) ... ok"
+      ],
+      "output_tail": "test_changed_identity_health_and_missing_closure_refuse (test_monster_melee_profiles.DisabledFallbackMerge.test_changed_identity_health_and_missing_closure_refuse) ... ok\ntest_disabled_only_is_filled_and_primary_provenance_preserved (test_monster_melee_profiles.DisabledFallbackMerge.test_disabled_only_is_filled_and_primary_provenance_preserved) ... ok\ntest_failed_fallback_stays_disabled_with_both_receipts (test_monster_melee_profiles.DisabledFallbackMerge.test_failed_fallback_stays_disabled_with_both_receipts) ... ok\ntest_active_reference_and_donor_reference_are_preserved (test_monster_melee_profiles.MeleeClosureSelection.test_active_reference_and_donor_reference_are_preserved) ... ok\ntest_advanced_or_incomplete_closures_are_disabled (test_monster_melee_profiles.MeleeClosureSelection.test_advanced_or_incomplete_closures_are_disabled) ... ok\ntest_melee_skill_endpoints_match_source_binary64_ceil_and_refuse_bad_inputs (test_monster_melee_profiles.MeleeClosureSelection.test_melee_skill_endpoints_match_source_binary64_ceil_and_refuse_bad_inputs) ... ok\ntest_schedule_slot_and_source_interval_must_match (test_monster_melee_profiles.MeleeClosureSelection.test_schedule_slot_and_source_interval_must_match) ... ok\ntest_secondary_conditions_are_retained_disabled_and_unknown_effects_refuse (test_monster_melee_profiles.MeleeClosureSelection.test_secondary_conditions_are_retained_disabled_and_unknown_effects_refuse) ... ok\ntest_source_skill_formula_is_preserved_and_requires_explicit_qualified_lane (test_monster_melee_profiles.MeleeClosureSelection.test_source_skill_formula_is_preserved_and_requires_explicit_qualified_lane) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.001s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 9,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py",
+      "source_sha256": "2e76da210322abe40876f49a94b32b580dccf051e31158dceefc81d6291c5b38",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_presentation_bindings"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 7.581,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 15,
+      "case_results": [
+        "test_colour_race_damage_and_creature_coverage (test_presentation_bindings.CheckTests.test_colour_race_damage_and_creature_coverage) ... ok",
+        "test_dynamic_keys_are_only_the_weapon_missile (test_presentation_bindings.CheckTests.test_dynamic_keys_are_only_the_weapon_missile) ... ok",
+        "test_fixture_passes (test_presentation_bindings.CheckTests.test_fixture_passes) ... ok",
+        "test_id_missing_from_appearances (test_presentation_bindings.CheckTests.test_id_missing_from_appearances) ... ok",
+        "test_kind_must_match_key (test_presentation_bindings.CheckTests.test_kind_must_match_key) ... ok",
+        "test_null_id_only_for_undefined_member (test_presentation_bindings.CheckTests.test_null_id_only_for_undefined_member) ... ok",
+        "test_spell_cues_disagreement (test_presentation_bindings.CheckTests.test_spell_cues_disagreement) ... ok",
+        "test_stale_creature_revision (test_presentation_bindings.CheckTests.test_stale_creature_revision) ... ok",
+        "test_unbound_and_stale_keys (test_presentation_bindings.CheckTests.test_unbound_and_stale_keys) ... ok",
+        "test_colours_parse_from_protocol (test_presentation_bindings.CommittedTests.test_colours_parse_from_protocol) ... ok",
+        "test_committed_bindings_validate (test_presentation_bindings.CommittedTests.test_committed_bindings_validate) ... ok",
+        "test_malformed_presentation_keys_are_rejected (test_presentation_bindings.ContentKeyTests.test_malformed_presentation_keys_are_rejected) ... ok",
+        "test_explicit_commented_and_default (test_presentation_bindings.RaceTests.test_explicit_commented_and_default) ... ok",
+        "test_primal_variant_reads_its_registering_file (test_presentation_bindings.RaceTests.test_primal_variant_reads_its_registering_file) ... ok",
+        "test_rejects_unknown_or_repeated_race (test_presentation_bindings.RaceTests.test_rejects_unknown_or_repeated_race) ... ok"
+      ],
+      "output_tail": "test_colour_race_damage_and_creature_coverage (test_presentation_bindings.CheckTests.test_colour_race_damage_and_creature_coverage) ... ok\ntest_dynamic_keys_are_only_the_weapon_missile (test_presentation_bindings.CheckTests.test_dynamic_keys_are_only_the_weapon_missile) ... ok\ntest_fixture_passes (test_presentation_bindings.CheckTests.test_fixture_passes) ... ok\ntest_id_missing_from_appearances (test_presentation_bindings.CheckTests.test_id_missing_from_appearances) ... ok\ntest_kind_must_match_key (test_presentation_bindings.CheckTests.test_kind_must_match_key) ... ok\ntest_null_id_only_for_undefined_member (test_presentation_bindings.CheckTests.test_null_id_only_for_undefined_member) ... ok\ntest_spell_cues_disagreement (test_presentation_bindings.CheckTests.test_spell_cues_disagreement) ... ok\ntest_stale_creature_revision (test_presentation_bindings.CheckTests.test_stale_creature_revision) ... ok\ntest_unbound_and_stale_keys (test_presentation_bindings.CheckTests.test_unbound_and_stale_keys) ... ok\ntest_colours_parse_from_protocol (test_presentation_bindings.CommittedTests.test_colours_parse_from_protocol) ... ok\ntest_committed_bindings_validate (test_presentation_bindings.CommittedTests.test_committed_bindings_validate) ... ok\ntest_malformed_presentation_keys_are_rejected (test_presentation_bindings.ContentKeyTests.test_malformed_presentation_keys_are_rejected) ... ok\ntest_explicit_commented_and_default (test_presentation_bindings.RaceTests.test_explicit_commented_and_default) ... ok\ntest_primal_variant_reads_its_registering_file (test_presentation_bindings.RaceTests.test_primal_variant_reads_its_registering_file) ... ok\ntest_rejects_unknown_or_repeated_race (test_presentation_bindings.RaceTests.test_rejects_unknown_or_repeated_race) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 7.489s\n\nOK\nPASS presentation bindings records=423 creatures=1865\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 15,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_spell_cues.py",
+      "source_sha256": "6644bf615c7ffd7481335133a737bdb39e7b6d3f3480f8ec685c92b4a78347ae",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_spell_cues"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.121,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 4,
+      "case_results": [
+        "test_enum_expressions_duplicates_and_width_overflow_refused (test_spell_cues.CueQualificationTests.test_enum_expressions_duplicates_and_width_overflow_refused) ... ok",
+        "test_real_enum_kinds_registered_values_and_lua_provenance (test_spell_cues.CueQualificationTests.test_real_enum_kinds_registered_values_and_lua_provenance) ... ok",
+        "test_unregistered_or_comment_only_lua_sound_is_refused (test_spell_cues.CueQualificationTests.test_unregistered_or_comment_only_lua_sound_is_refused) ... ok",
+        "test_unrelated_enum_names_cannot_supply_effect_or_sound_ids (test_spell_cues.CueQualificationTests.test_unrelated_enum_names_cannot_supply_effect_or_sound_ids) ... ok"
+      ],
+      "output_tail": "test_enum_expressions_duplicates_and_width_overflow_refused (test_spell_cues.CueQualificationTests.test_enum_expressions_duplicates_and_width_overflow_refused) ... ok\ntest_real_enum_kinds_registered_values_and_lua_provenance (test_spell_cues.CueQualificationTests.test_real_enum_kinds_registered_values_and_lua_provenance) ... ok\ntest_unregistered_or_comment_only_lua_sound_is_refused (test_spell_cues.CueQualificationTests.test_unregistered_or_comment_only_lua_sound_is_refused) ... ok\ntest_unrelated_enum_names_cannot_supply_effect_or_sound_ids (test_spell_cues.CueQualificationTests.test_unrelated_enum_names_cannot_supply_effect_or_sound_ids) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.003s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 4,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_spell_item_identities.py",
+      "source_sha256": "52f9f5f1ab2bf28a8a06d74a2f75fd44ff468603a3f00c46bcb2e931d3191a6e",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_spell_item_identities"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.667,
+      "timeout_seconds": 50.0,
+      "exit_code": 1,
+      "status": "FAIL",
+      "unittest_case_count": 15,
+      "case_results": [
+        "test_ambiguous_or_foreign_binding_is_rejected (test_spell_item_identities.ItemIdentityTests.test_ambiguous_or_foreign_binding_is_rejected) ... ok",
+        "test_binding_digest_is_verified_before_consumption (test_spell_item_identities.ItemIdentityTests.test_binding_digest_is_verified_before_consumption) ... ERROR",
+        "test_changed_identity_cannot_overwrite_existing_binding (test_spell_item_identities.ItemIdentityTests.test_changed_identity_cannot_overwrite_existing_binding) ... ok",
+        "test_explicit_target_revision_survives_import (test_spell_item_identities.ItemIdentityTests.test_explicit_target_revision_survives_import) ... ok",
+        "test_generic_factory_identity_requires_complete_qualification (test_spell_item_identities.ItemIdentityTests.test_generic_factory_identity_requires_complete_qualification) ... ok",
+        "test_generic_flag_substitution_and_inventory_grant_are_rejected (test_spell_item_identities.ItemIdentityTests.test_generic_flag_substitution_and_inventory_grant_are_rejected) ... ok",
+        "test_generic_provenance_substitution_is_rejected (test_spell_item_identities.ItemIdentityTests.test_generic_provenance_substitution_is_rejected) ... ok",
+        "test_independent_membership_cannot_replace_or_invent_a_binding_revision (test_spell_item_identities.ItemIdentityTests.test_independent_membership_cannot_replace_or_invent_a_binding_revision) ... ok",
+        "test_independent_membership_does_not_rewrite_an_admitted_identity (test_spell_item_identities.ItemIdentityTests.test_independent_membership_does_not_rewrite_an_admitted_identity) ... ok",
+        "test_independent_source_requires_its_exact_committed_xml_bytes (test_spell_item_identities.ItemIdentityTests.test_independent_source_requires_its_exact_committed_xml_bytes) ... ok",
+        "test_membership_alone_does_not_supply_source_policy (test_spell_item_identities.ItemIdentityTests.test_membership_alone_does_not_supply_source_policy) ... ok",
+        "test_missing_binding_cannot_be_derived_from_numeric_id (test_spell_item_identities.ItemIdentityTests.test_missing_binding_cannot_be_derived_from_numeric_id) ... ok",
+        "test_returned_binding_is_independent_of_donor_index (test_spell_item_identities.ItemIdentityTests.test_returned_binding_is_independent_of_donor_index) ... ok",
+        "test_scoped_binding_reuse_rechecks_pins_and_isolates_consumers (test_spell_item_identities.ItemIdentityTests.test_scoped_binding_reuse_rechecks_pins_and_isolates_consumers) ... ok",
+        "test_unqualified_revision_does_not_inherit_old_policy (test_spell_item_identities.ItemIdentityTests.test_unqualified_revision_does_not_inherit_old_policy) ... ok"
+      ],
+      "output_tail": "l_bytes) ... ok\ntest_membership_alone_does_not_supply_source_policy (test_spell_item_identities.ItemIdentityTests.test_membership_alone_does_not_supply_source_policy) ... ok\ntest_missing_binding_cannot_be_derived_from_numeric_id (test_spell_item_identities.ItemIdentityTests.test_missing_binding_cannot_be_derived_from_numeric_id) ... ok\ntest_returned_binding_is_independent_of_donor_index (test_spell_item_identities.ItemIdentityTests.test_returned_binding_is_independent_of_donor_index) ... ok\ntest_scoped_binding_reuse_rechecks_pins_and_isolates_consumers (test_spell_item_identities.ItemIdentityTests.test_scoped_binding_reuse_rechecks_pins_and_isolates_consumers) ... ok\ntest_unqualified_revision_does_not_inherit_old_policy (test_spell_item_identities.ItemIdentityTests.test_unqualified_revision_does_not_inherit_old_policy) ... ok\n\n======================================================================\nERROR: test_binding_digest_is_verified_before_consumption (test_spell_item_identities.ItemIdentityTests.test_binding_digest_is_verified_before_consumption)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/test_spell_item_identities.py\", line 89, in test_binding_digest_is_verified_before_consumption\n    binding_index(b\"{}\", \"0\"*64)\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/build_spell_item_identities.py\", line 67, in binding_index\n    historical_binding_bytes(data, expected_sha)\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/build_spell_item_identities.py\", line 53, in historical_binding_bytes\n    rows = [r for r in document['bindings'] if r['external_id'] == '48227']\n                       ~~~~~~~~^^^^^^^^^^^^\nKeyError: 'bindings'\n\n----------------------------------------------------------------------\nRan 15 tests in 0.531s\n\nFAILED (errors=1)\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 14,
+      "suite_result": "FAIL"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_omrafir_attacks.py",
+      "source_sha256": "938e215260ca7b6cb740c32dbfdf56936c750dce8e6fcd7563b3e7c2e95c1f85",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_srx3_omrafir_attacks"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 6.652,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 5,
+      "case_results": [
+        "test_actual_complete_vectors_and_pinned_sources (test_srx3_omrafir_attacks.OmrafirSourceTests.test_actual_complete_vectors_and_pinned_sources) ... ok",
+        "test_changed_event_child_body_cannot_be_blessed_by_new_root (test_srx3_omrafir_attacks.OmrafirSourceTests.test_changed_event_child_body_cannot_be_blessed_by_new_root) ... ok",
+        "test_changed_native_body_cannot_be_blessed_by_new_root (test_srx3_omrafir_attacks.OmrafirSourceTests.test_changed_native_body_cannot_be_blessed_by_new_root) ... ok",
+        "test_event_closure_retains_all_existing_overlay_fields (test_srx3_omrafir_attacks.OmrafirSourceTests.test_event_closure_retains_all_existing_overlay_fields) ... ok",
+        "test_exact_beam_matrices_and_literal_item_heal_rules (test_srx3_omrafir_attacks.OmrafirSourceTests.test_exact_beam_matrices_and_literal_item_heal_rules) ... ok"
+      ],
+      "output_tail": "test_actual_complete_vectors_and_pinned_sources (test_srx3_omrafir_attacks.OmrafirSourceTests.test_actual_complete_vectors_and_pinned_sources) ... ok\ntest_changed_event_child_body_cannot_be_blessed_by_new_root (test_srx3_omrafir_attacks.OmrafirSourceTests.test_changed_event_child_body_cannot_be_blessed_by_new_root) ... ok\ntest_changed_native_body_cannot_be_blessed_by_new_root (test_srx3_omrafir_attacks.OmrafirSourceTests.test_changed_native_body_cannot_be_blessed_by_new_root) ... ok\ntest_event_closure_retains_all_existing_overlay_fields (test_srx3_omrafir_attacks.OmrafirSourceTests.test_event_closure_retains_all_existing_overlay_fields) ... ok\ntest_exact_beam_matrices_and_literal_item_heal_rules (test_srx3_omrafir_attacks.OmrafirSourceTests.test_exact_beam_matrices_and_literal_item_heal_rules) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 6.577s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 5,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_world_change_item_profiles.py",
+      "source_sha256": "c499af7a89c0c09b61770b07fd778bfb9096534c7164848bd5e2111f98f179f7",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_world_change_item_profiles"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 15.899,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 15,
+      "case_results": [
+        "test_carpet_taxonomy_requires_one_exact_canonical_identity (test_world_change_item_profiles.WorldChangeEarlierOwners.test_carpet_taxonomy_requires_one_exact_canonical_identity) ... ok",
+        "test_prior_owner_drift_and_duplicate_keys_refuse_without_writes (test_world_change_item_profiles.WorldChangeEarlierOwners.test_prior_owner_drift_and_duplicate_keys_refuse_without_writes) ... ok",
+        "test_qengine_projection_cannot_override_world_identity_or_custody (test_world_change_item_profiles.WorldChangeEarlierOwners.test_qengine_projection_cannot_override_world_identity_or_custody) ... ok",
+        "test_real_source_gate_quick_loot_and_qengine_owners_are_preserved (test_world_change_item_profiles.WorldChangeEarlierOwners.test_real_source_gate_quick_loot_and_qengine_owners_are_preserved) ... ok",
+        "test_captured_wolf_reuses_existing_owner_and_rejects_conflicting_custody (test_world_change_item_profiles.WorldChangeItemProfiles.test_captured_wolf_reuses_existing_owner_and_rejects_conflicting_custody) ... ok",
+        "test_committed_overlay_reproduces_exact_pinned_sources (test_world_change_item_profiles.WorldChangeItemProfiles.test_committed_overlay_reproduces_exact_pinned_sources) ... ok",
+        "test_existing_registry_admission_regenerates_manifest_and_rejects_duplicate (test_world_change_item_profiles.WorldChangeItemProfiles.test_existing_registry_admission_regenerates_manifest_and_rejects_duplicate) ... ok",
+        "test_feroxa_trap_states_keep_exact_source_custody_and_have_no_invented_decay (test_world_change_item_profiles.WorldChangeItemProfiles.test_feroxa_trap_states_keep_exact_source_custody_and_have_no_invented_decay) ... ok",
+        "test_m31_royal_carpet_is_walkable_without_portable_custody (test_world_change_item_profiles.WorldChangeItemProfiles.test_m31_royal_carpet_is_walkable_without_portable_custody) ... ok",
+        "test_missing_duplicate_reserved_and_fabricated_physical_profiles_refuse (test_world_change_item_profiles.WorldChangeItemProfiles.test_missing_duplicate_reserved_and_fabricated_physical_profiles_refuse) ... ok",
+        "test_names_ground_speeds_and_tool_portability_come_from_sources (test_world_change_item_profiles.WorldChangeItemProfiles.test_names_ground_speeds_and_tool_portability_come_from_sources) ... ok",
+        "test_overhunting_trap_and_captured_wolf_are_exact_source_facts (test_world_change_item_profiles.WorldChangeItemProfiles.test_overhunting_trap_and_captured_wolf_are_exact_source_facts) ... ok",
+        "test_shared_mission_tools_and_objects_keep_actual_source_physics (test_world_change_item_profiles.WorldChangeItemProfiles.test_shared_mission_tools_and_objects_keep_actual_source_physics) ... ok",
+        "test_three_loot_source_corpses_preserve_full_decay_and_source_capacity (test_world_change_item_profiles.WorldChangeItemProfiles.test_three_loot_source_corpses_preserve_full_decay_and_source_capacity) ... ok",
+        "test_unpinned_source_bytes_and_substituted_provenance_refuse (test_world_change_item_profiles.WorldChangeItemProfiles.test_unpinned_source_bytes_and_substituted_provenance_refuse) ... ok"
+      ],
+      "output_tail": "em_profiles.WorldChangeItemProfiles.test_committed_overlay_reproduces_exact_pinned_sources) ... ok\ntest_existing_registry_admission_regenerates_manifest_and_rejects_duplicate (test_world_change_item_profiles.WorldChangeItemProfiles.test_existing_registry_admission_regenerates_manifest_and_rejects_duplicate) ... ok\ntest_feroxa_trap_states_keep_exact_source_custody_and_have_no_invented_decay (test_world_change_item_profiles.WorldChangeItemProfiles.test_feroxa_trap_states_keep_exact_source_custody_and_have_no_invented_decay) ... ok\ntest_m31_royal_carpet_is_walkable_without_portable_custody (test_world_change_item_profiles.WorldChangeItemProfiles.test_m31_royal_carpet_is_walkable_without_portable_custody) ... ok\ntest_missing_duplicate_reserved_and_fabricated_physical_profiles_refuse (test_world_change_item_profiles.WorldChangeItemProfiles.test_missing_duplicate_reserved_and_fabricated_physical_profiles_refuse) ... ok\ntest_names_ground_speeds_and_tool_portability_come_from_sources (test_world_change_item_profiles.WorldChangeItemProfiles.test_names_ground_speeds_and_tool_portability_come_from_sources) ... ok\ntest_overhunting_trap_and_captured_wolf_are_exact_source_facts (test_world_change_item_profiles.WorldChangeItemProfiles.test_overhunting_trap_and_captured_wolf_are_exact_source_facts) ... ok\ntest_shared_mission_tools_and_objects_keep_actual_source_physics (test_world_change_item_profiles.WorldChangeItemProfiles.test_shared_mission_tools_and_objects_keep_actual_source_physics) ... ok\ntest_three_loot_source_corpses_preserve_full_decay_and_source_capacity (test_world_change_item_profiles.WorldChangeItemProfiles.test_three_loot_source_corpses_preserve_full_decay_and_source_capacity) ... ok\ntest_unpinned_source_bytes_and_substituted_provenance_refuse (test_world_change_item_profiles.WorldChangeItemProfiles.test_unpinned_source_bytes_and_substituted_provenance_refuse) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 15.750s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 15,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_world_change_loot_inputs.py",
+      "source_sha256": "a6b78eb150b9d0b18618708428ea85f80afb1c34e1f6c99b72fb2e1dae0ae107",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_world_change_loot_inputs"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 12.063,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 2,
+      "case_results": [
+        "test_exact_three_rows_35_outputs_and_38_facts_with_unchanged_drops (test_world_change_loot_inputs.WorldChangeLootInputs.test_exact_three_rows_35_outputs_and_38_facts_with_unchanged_drops) ... ok",
+        "test_missing_unadmitted_item_changed_drops_and_capacity_clamp_refuse (test_world_change_loot_inputs.WorldChangeLootInputs.test_missing_unadmitted_item_changed_drops_and_capacity_clamp_refuse) ... ok"
+      ],
+      "output_tail": "test_exact_three_rows_35_outputs_and_38_facts_with_unchanged_drops (test_world_change_loot_inputs.WorldChangeLootInputs.test_exact_three_rows_35_outputs_and_38_facts_with_unchanged_drops) ... ok\ntest_missing_unadmitted_item_changed_drops_and_capacity_clamp_refuse (test_world_change_loot_inputs.WorldChangeLootInputs.test_missing_unadmitted_item_changed_drops_and_capacity_clamp_refuse) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 11.462s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 2,
+      "suite_result": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "purpose": "Recover only the disposable validation checkout remote-tracking main reference after fetch rejected unrelated incomplete shared history. No remote ref or candidate commit changed.",
+  "remote_advertisement": [
+    "d1d44e717cbe327c6348932921671ff6803df4de",
+    "refs/heads/main"
+  ],
+  "github_verified_head": "d1d44e717cbe327c6348932921671ff6803df4de",
+  "github_verified_tree": "fc3447eb02715e7e8c83cbb0c964cdad68aa6474",
+  "main_tree_objects_checked": 38413,
+  "missing_current_main_objects": 0,
+  "original_source_shallow_boundaries_restored": 4,
+  "fetch_failures": [
+    "one unresolved delta",
+    "missing historical parent922a2f583de3b171ec3ebb57f83fc825718d245d",
+    "87 unresolved deltas",
+    "missing historical blob463696f26bfa3bd889989d70c9ef766e6bb92843"
+  ],
+  "tracking_ref_readback": "d1d44e717cbe327c6348932921671ff6803df4de"
+}

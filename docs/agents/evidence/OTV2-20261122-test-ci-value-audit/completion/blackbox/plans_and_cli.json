@@ -1,0 +1,41 @@
+{
+  "reference": {
+    "shards": 1,
+    "expected_row_count": 14,
+    "terminal_scope": "indexed rows only",
+    "build_variants": [
+      "qualification-spawn",
+      "qualification-clock",
+      "world-compiler"
+    ],
+    "compact_plan_bytes": 624
+  },
+  "pr": {
+    "shards": 7,
+    "expected_row_count": 14,
+    "terminal_scope": "indexed rows only",
+    "build_variants": [
+      "qualification-spawn",
+      "qualification-clock",
+      "world-compiler"
+    ],
+    "compact_plan_bytes": 1966
+  },
+  "full": {
+    "shards": 37,
+    "expected_row_count": 302,
+    "terminal_scope": "indexed rows only",
+    "build_variants": [
+      "default",
+      "qualification-spawn",
+      "qualification-clock",
+      "world-compiler"
+    ],
+    "compact_plan_bytes": 19325
+  },
+  "capture_only_cli": {
+    "returncode": 1,
+    "diagnostic": "missing terminal verdict for S09.client (capture only)",
+    "missing_informational": true
+  }
+}

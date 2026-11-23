@@ -1,0 +1,370 @@
+{
+  "run_id": 45075887150,
+  "job_id": 137384086699,
+  "head_sha": "bd9a8d384164b4b78da975b761de1a87de81b053",
+  "url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45075887150/job/137384086699",
+  "log_source": "GitHub connector job logs; selected actual e2e_all/e2e_capture/NODE_BOOT_RESULT lines; runner timestamps removed; no command echoes",
+  "historical_conclusion": "failure",
+  "new_runtime_execution": false,
+  "current_plan_base": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "current_expected_rows": [
+    "C03.full",
+    "C12.full",
+    "C09.full",
+    "C06.full",
+    "C02.full",
+    "C01.full",
+    "W22b.full",
+    "C05.full",
+    "C04.full",
+    "W18.full",
+    "C11.full",
+    "W19a.full",
+    "W01b.full",
+    "W23.full"
+  ],
+  "current_expected_observed": {
+    "C03.full": "FAIL",
+    "C12.full": "FAIL",
+    "C09.full": "FAIL",
+    "C06.full": "FAIL",
+    "C02.full": "FAIL",
+    "C01.full": "FAIL",
+    "W22b.full": "FAIL",
+    "C05.full": "FAIL",
+    "C04.full": "FAIL",
+    "W18.full": "FAIL",
+    "C11.full": "FAIL",
+    "W19a.full": "FAIL",
+    "W01b.full": "FAIL",
+    "W23.full": "FAIL"
+  },
+  "result": {
+    "shard": "reference",
+    "entry": "node_boot",
+    "exit_code": 1,
+    "seconds": 7474,
+    "result": "NODE_BOOT_FAIL",
+    "incomplete": false,
+    "scenarios": [
+      {
+        "id": "C19a.full",
+        "status": "PASS",
+        "seconds": 9.059
+      },
+      {
+        "id": "S11.full",
+        "status": "FAIL",
+        "seconds": 5.786
+      },
+      {
+        "id": "W20a.full",
+        "status": "PASS",
+        "seconds": 57.924
+      },
+      {
+        "id": "W20b.full",
+        "status": "FAIL",
+        "seconds": 2.957
+      },
+      {
+        "id": "S13a.full",
+        "status": "FAIL",
+        "seconds": 9.713
+      },
+      {
+        "id": "S13b.full",
+        "status": "FAIL",
+        "seconds": 9.713
+      },
+      {
+        "id": "S08.full",
+        "status": "FAIL",
+        "seconds": 221.915
+      },
+      {
+        "id": "P21.full",
+        "status": "FAIL",
+        "seconds": 216.403
+      },
+      {
+        "id": "P19.full",
+        "status": "FAIL",
+        "seconds": 20.741
+      },
+      {
+        "id": "C20d.full",
+        "status": "FAIL",
+        "seconds": 75.91
+      },
+      {
+        "id": "S16a.full",
+        "status": "FAIL",
+        "seconds": 96.432
+      },
+      {
+        "id": "C20a.full",
+        "status": "FAIL",
+        "seconds": 0.0
+      },
+      {
+        "id": "C20b.full",
+        "status": "FAIL",
+        "seconds": 95.906
+      },
+      {
+        "id": "P16.full",
+        "status": "FAIL",
+        "seconds": 20.997
+      },
+      {
+        "id": "C20c.full",
+        "status": "FAIL",
+        "seconds": 96.429
+      },
+      {
+        "id": "P10.full",
+        "status": "FAIL",
+        "seconds": 20.643
+      },
+      {
+        "id": "C03.full",
+        "status": "FAIL",
+        "seconds": 21.265
+      },
+      {
+        "id": "C12.full",
+        "status": "FAIL",
+        "seconds": 20.585
+      },
+      {
+        "id": "C09.full",
+        "status": "FAIL",
+        "seconds": 21.162
+      },
+      {
+        "id": "C06.full",
+        "status": "FAIL",
+        "seconds": 20.839
+      },
+      {
+        "id": "C02.full",
+        "status": "FAIL",
+        "seconds": 20.895
+      },
+      {
+        "id": "C01.full",
+        "status": "FAIL",
+        "seconds": 20.864
+      },
+      {
+        "id": "W22b.full",
+        "status": "FAIL",
+        "seconds": 20.769
+      },
+      {
+        "id": "C05.full",
+        "status": "FAIL",
+        "seconds": 20.709
+      },
+      {
+        "id": "C04.full",
+        "status": "FAIL",
+        "seconds": 21.167
+      },
+      {
+        "id": "W18.full",
+        "status": "FAIL",
+        "seconds": 20.758
+      },
+      {
+        "id": "C11.full",
+        "status": "FAIL",
+        "seconds": 21.039
+      },
+      {
+        "id": "W19a.full",
+        "status": "FAIL",
+        "seconds": 20.613
+      },
+      {
+        "id": "W01b.full",
+        "status": "FAIL",
+        "seconds": 21.152
+      },
+      {
+        "id": "W23.full",
+        "status": "FAIL",
+        "seconds": 21.139
+      },
+      {
+        "id": "C17a.full",
+        "status": "FAIL",
+        "seconds": 20.689
+      },
+      {
+        "id": "C17c.full",
+        "status": "FAIL",
+        "seconds": 95.849
+      },
+      {
+        "id": "C16b.full",
+        "status": "FAIL",
+        "seconds": 96.582
+      },
+      {
+        "id": "C16a.full",
+        "status": "FAIL",
+        "seconds": 95.358
+      },
+      {
+        "id": "C18a.full",
+        "status": "FAIL",
+        "seconds": 95.598
+      },
+      {
+        "id": "C17d.full",
+        "status": "FAIL",
+        "seconds": 20.801
+      },
+      {
+        "id": "C13.full",
+        "status": "FAIL",
+        "seconds": 75.339
+      },
+      {
+        "id": "C16c.full",
+        "status": "FAIL",
+        "seconds": 97.365
+      },
+      {
+        "id": "C16d.full",
+        "status": "FAIL",
+        "seconds": 95.41
+      },
+      {
+        "id": "MP01.full",
+        "status": "FAIL",
+        "seconds": 95.654
+      },
+      {
+        "id": "MP09.full",
+        "status": "FAIL",
+        "seconds": 1304.471
+      },
+      {
+        "id": "M01.full",
+        "status": "PASS",
+        "seconds": 40.066
+      },
+      {
+        "id": "M02.full",
+        "status": "FAIL",
+        "seconds": 37.644
+      },
+      {
+        "id": "M03.full",
+        "status": "FAIL",
+        "seconds": 50.104
+      },
+      {
+        "id": "M04.full",
+        "status": "PASS",
+        "seconds": 451.699
+      },
+      {
+        "id": "M05.full",
+        "status": "FAIL",
+        "seconds": 154.467
+      },
+      {
+        "id": "M07.full",
+        "status": "PASS",
+        "seconds": 186.44
+      },
+      {
+        "id": "M01.turn-result",
+        "status": "PASS",
+        "seconds": 1.549
+      },
+      {
+        "id": "S18.say-echo",
+        "status": "PASS",
+        "seconds": 0.694
+      },
+      {
+        "id": "S18.whisper-echo",
+        "status": "PASS",
+        "seconds": 0.464
+      },
+      {
+        "id": "W15a.list-relogin",
+        "status": "PASS",
+        "seconds": 0.164
+      },
+      {
+        "id": "M01.step-relogin",
+        "status": "PASS",
+        "seconds": 4.299
+      },
+      {
+        "id": "I01.full",
+        "status": "FAIL",
+        "seconds": 3.865
+      },
+      {
+        "id": "I16.full",
+        "status": "FAIL",
+        "seconds": 177.088
+      },
+      {
+        "id": "I09.full",
+        "status": "PASS",
+        "seconds": 55.969
+      },
+      {
+        "id": "I04.full",
+        "status": "FAIL",
+        "seconds": 393.223
+      },
+      {
+        "id": "I06.full",
+        "status": "FAIL",
+        "seconds": 120.609
+      },
+      {
+        "id": "I07.full",
+        "status": "FAIL",
+        "seconds": 2.083
+      },
+      {
+        "id": "I08.full",
+        "status": "FAIL",
+        "seconds": 0.0
+      },
+      {
+        "id": "I13.full",
+        "status": "FAIL",
+        "seconds": 0.0
+      },
+      {
+        "id": "I12.full",
+        "status": "FAIL",
+        "seconds": 0.331
+      },
+      {
+        "id": "I15.full",
+        "status": "FAIL",
+        "seconds": 0.352
+      }
+    ],
+    "captures": []
+  },
+  "summary_problems": [],
+  "historical_dispatcher_identity_map_equal": true,
+  "historical_dispatcher_scope": "world.rs and four legacy direct emitters read at historical SHA; no claim of all historical client_phases files read",
+  "historical_current_row_contract_count": [
+    302,
+    302
+  ]
+}

@@ -36,8 +36,19 @@ fn boss_catalogue_bounds_filters_stages_and_portrait_identity() {
     bad.entries[0].category = 0;
     assert!(bad.encode().is_none());
     let mut bad = page.clone();
-    bad.entries = vec![bad.entries[0].clone(); PER_PAGE + 1];
-    assert!(bad.encode().is_none());
+    bad.entries = (0..PER_PAGE)
+        .map(|index| Entry {
+            key: format!("oteryn:creature.fixture_{index}"),
+            ..page.entries[0].clone()
+        })
+        .collect();
+    let full_page = bad.encode().expect("full page with distinct valid keys");
+    assert_eq!(Page::decode(&full_page), Some(bad.clone()));
+    bad.entries.push(Entry {
+        key: format!("oteryn:creature.fixture_{PER_PAGE}"),
+        ..page.entries[0].clone()
+    });
+    assert_eq!(bad.encode(), None);
     assert!(
         Query {
             after: 0,

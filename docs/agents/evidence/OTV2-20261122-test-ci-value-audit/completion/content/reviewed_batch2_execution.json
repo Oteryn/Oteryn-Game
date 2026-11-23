@@ -1,0 +1,354 @@
+{
+  "modules": [
+    {
+      "path": "tools/content-migration/test_questpc2_ladder_composition.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc2_ladder_composition"
+      ],
+      "cwd": ".",
+      "seconds": 2.961,
+      "exit_code": 0,
+      "output": "test_ladder_retains_type_without_mint_authority_and_refuses_other_changes (test_questpc2_ladder_composition.StationaryComposition.test_ladder_retains_type_without_mint_authority_and_refuses_other_changes) ... ok\ntest_tool_only_accepts_exact_stationary_overlap (test_questpc2_ladder_composition.StationaryComposition.test_tool_only_accepts_exact_stationary_overlap) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 2.408s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_prepare_loot_completion.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_prepare_loot_completion"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.07,
+      "exit_code": 0,
+      "output": "test_addition_creates_missing_loot_preserving_other_fields_and_input (test_prepare_loot_completion.CheckedLootCompletionTests.test_addition_creates_missing_loot_preserving_other_fields_and_input) ... ok\ntest_before_entry_guard_rejects_drift (test_prepare_loot_completion.CheckedLootCompletionTests.test_before_entry_guard_rejects_drift) ... ok\ntest_duplicate_addition_rejected (test_prepare_loot_completion.CheckedLootCompletionTests.test_duplicate_addition_rejected) ... ok\ntest_exact_item_change_rejected (test_prepare_loot_completion.CheckedLootCompletionTests.test_exact_item_change_rejected) ... ok\ntest_rejects_tampered_statistics_and_probability (test_prepare_loot_completion.CheckedLootCompletionTests.test_rejects_tampered_statistics_and_probability) ... ok\ntest_sort_moves_pairing_and_keeps_unique_gate (test_prepare_loot_completion.CheckedLootCompletionTests.test_sort_moves_pairing_and_keeps_unique_gate) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.001s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_qmech_npcfix2_item_profiles.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_qmech_npcfix2_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 5.86,
+      "exit_code": 1,
+      "output": "test_default_reward_owner_packet_is_unchanged (test_qmech_npcfix2_item_profiles.TalismanQualification.test_default_reward_owner_packet_is_unchanged) ... ok\ntest_selected_output_reproduces_its_retained_source_packet (test_qmech_npcfix2_item_profiles.TalismanQualification.test_selected_output_reproduces_its_retained_source_packet) ... FAIL\ntest_stackable_output_fails_qualification (test_qmech_npcfix2_item_profiles.TalismanQualification.test_stackable_output_fails_qualification) ... ok\ntest_wrong_item_never_reaches_native_admission (test_qmech_npcfix2_item_profiles.TalismanQualification.test_wrong_item_never_reaches_native_admission) ... ok\n\n======================================================================\nFAIL: test_selected_output_reproduces_its_retained_source_packet (test_qmech_npcfix2_item_profiles.TalismanQualification.test_selected_output_reproduces_its_retained_source_packet)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_qmech_npcfix2_item_profiles.py\", line 15, in test_selected_output_reproduces_its_retained_source_packet\n    self.assertEqual(actual, expected)\nAssertionError: {'sch[723 chars]r21'}, 'taxonomy': {'primary': 'Quest Items'}}[7146 chars]ne}]} != {'sch[723 chars]r21'}}, 'semantics': {'presentation': {'state'[2206 chars]ne}]}\nDiff is 19590 characters long. Set self.maxDiff to None to see it.\n\n----------------------------------------------------------------------\nRan 4 tests in 5.649s\n\nFAILED (failures=1)\n"
+    },
+    {
+      "path": "tools/content-migration/test_refresh_reward_stack_weight_proof.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_refresh_reward_stack_weight_proof"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.103,
+      "exit_code": 0,
+      "output": "test_accepts_only_the_verified_global_weight_leaf (test_refresh_reward_stack_weight_proof.RewardStackWeightProof.test_accepts_only_the_verified_global_weight_leaf) ... ok\ntest_rejects_a_changed_baseline (test_refresh_reward_stack_weight_proof.RewardStackWeightProof.test_rejects_a_changed_baseline) ... ok\ntest_rejects_a_non_global_weight (test_refresh_reward_stack_weight_proof.RewardStackWeightProof.test_rejects_a_non_global_weight) ... ok\ntest_rejects_other_physical_and_stack_changes (test_refresh_reward_stack_weight_proof.RewardStackWeightProof.test_rejects_other_physical_and_stack_changes) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.001s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_monk_reward_profiles.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_monk_reward_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.284,
+      "exit_code": 0,
+      "output": "test_amber_and_rewards_are_portable_leaves_with_known_equipment_facts (test_monk_reward_profiles.MonkRewardProfiles.test_amber_and_rewards_are_portable_leaves_with_known_equipment_facts) ... ok\ntest_registration_preserves_every_profile_and_updates_the_manifest_pin (test_monk_reward_profiles.MonkRewardProfiles.test_registration_preserves_every_profile_and_updates_the_manifest_pin) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.006s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_quick_loot_item_profiles.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quick_loot_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.904,
+      "exit_code": 0,
+      "output": "test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy (test_quick_loot_item_profiles.QuickLootProfiles.test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy) ... ok\ntest_quick_loot_profiles_have_no_speed_bonus (test_quick_loot_item_profiles.QuickLootProfiles.test_quick_loot_profiles_have_no_speed_bonus) ... ok\ntest_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.453s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_key_door_item_profiles.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_key_door_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.368,
+      "exit_code": 0,
+      "output": "test_duplicate_identity_refuses_without_partially_changing_output (test_key_door_item_profiles.KeyDoorProfileTests.test_duplicate_identity_refuses_without_partially_changing_output) ... ok\ntest_native_provider_contains_the_actual_key_and_door_physics (test_key_door_item_profiles.KeyDoorProfileTests.test_native_provider_contains_the_actual_key_and_door_physics) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.294s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_questpc5_parchment_profile.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc5_parchment_profile"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 3.079,
+      "exit_code": 0,
+      "output": "test_exact_portable_source_facts_promote_without_inventing_write_target (test_questpc5_parchment_profile.ParchmentCustody.test_exact_portable_source_facts_promote_without_inventing_write_target) ... ok\ntest_other_identity_or_admission_or_conflicting_fact_is_rejected (test_questpc5_parchment_profile.ParchmentCustody.test_other_identity_or_admission_or_conflicting_fact_is_rejected) ... ok\ntest_repository_profile_preserves_existing_native_owner_facts (test_questpc5_parchment_profile.ParchmentCustody.test_repository_profile_preserves_existing_native_owner_facts) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 2.897s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_questpc8_wrath_profile_expectation.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc8_wrath_profile_expectation"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.065,
+      "exit_code": 0,
+      "output": "test_donor_replica_cannot_replace_selected_sceptre (test_questpc8_wrath_profile_expectation.WrathProfileExpectationTests.test_donor_replica_cannot_replace_selected_sceptre) ... ok\ntest_exact_accepted_tool_is_independent_of_generated_profiles (test_questpc8_wrath_profile_expectation.WrathProfileExpectationTests.test_exact_accepted_tool_is_independent_of_generated_profiles) ... ok\ntest_recipe_quota_cannot_be_silently_changed (test_questpc8_wrath_profile_expectation.WrathProfileExpectationTests.test_recipe_quota_cannot_be_silently_changed) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_source_loot_stack_promotions.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_source_loot_stack_promotions"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 10.617,
+      "exit_code": 0,
+      "output": "test_only_finite_typed_native_stack_limit_is_promotable (test_source_loot_stack_promotions.SourceLootStackPromotionProof.test_only_finite_typed_native_stack_limit_is_promotable) ... ok\ntest_real_pinned_loot_scope_does_not_admit_unrelated_or_nonstackable_items (test_source_loot_stack_promotions.SourceLootStackPromotionProof.test_real_pinned_loot_scope_does_not_admit_unrelated_or_nonstackable_items) ... ok\ntest_unknown_or_nonstackable_facts_never_promote (test_source_loot_stack_promotions.SourceLootStackPromotionProof.test_unknown_or_nonstackable_facts_never_promote) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 10.294s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_srx1_profile_updates.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_srx1_profile_updates"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 1.033,
+      "exit_code": 0,
+      "output": "test_changed_owner_fact_still_refuses (test_srx1_profile_updates.SourceOwnerCoalescing.test_changed_owner_fact_still_refuses) ... ok\ntest_exact_source_plus_verified_top_metadata_coalesces (test_srx1_profile_updates.SourceOwnerCoalescing.test_exact_source_plus_verified_top_metadata_coalesces) ... ok\ntest_unverified_top_metadata_still_refuses (test_srx1_profile_updates.SourceOwnerCoalescing.test_unverified_top_metadata_still_refuses) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.827s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_tool_item_profiles.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_tool_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.074,
+      "exit_code": 0,
+      "output": "test_duplicate_native_identity_is_refused_without_a_partial_write (test_tool_item_profiles.ToolItemProfileTests.test_duplicate_native_identity_is_refused_without_a_partial_write) ... ok\ntest_missing_source_record_is_refused_without_a_partial_write (test_tool_item_profiles.ToolItemProfileTests.test_missing_source_record_is_refused_without_a_partial_write) ... ok\ntest_source_profile_replay_is_bounded_and_has_required_physics (test_tool_item_profiles.ToolItemProfileTests.test_source_profile_replay_is_bounded_and_has_required_physics) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.004s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_normalize_optional_core_packet.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_normalize_optional_core_packet"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.069,
+      "exit_code": 0,
+      "output": "test_local_loot_catalog_duplicate_removed_but_external_item_preserved (test_normalize_optional_core_packet.ReceiptNormalizationTests.test_local_loot_catalog_duplicate_removed_but_external_item_preserved) ... ok\ntest_preserves_patches_named_target_and_original (test_normalize_optional_core_packet.ReceiptNormalizationTests.test_preserves_patches_named_target_and_original) ... ok\ntest_unknown_or_ambiguous_receipt_fails_closed (test_normalize_optional_core_packet.ReceiptNormalizationTests.test_unknown_or_ambiguous_receipt_fails_closed) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_quests_2_emperor_dialogues.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quests_2_emperor_dialogues"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.108,
+      "exit_code": 0,
+      "output": "test_capture_retains_static_child_greeting_voices_and_dynamic_fragments (test_quests_2_emperor_dialogues.EmperorSpeechCapture.test_capture_retains_static_child_greeting_voices_and_dynamic_fragments) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.007s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_forge_item_profiles.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_forge_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 3.424,
+      "exit_code": 0,
+      "output": "test_conflicting_or_unowned_profile_cannot_be_admitted (test_forge_item_profiles.NativeForgeProfilesTests.test_conflicting_or_unowned_profile_cannot_be_admitted) ... ok\ntest_overlay_keeps_native_membership_and_copies_only_authoritative_profiles (test_forge_item_profiles.NativeForgeProfilesTests.test_overlay_keeps_native_membership_and_copies_only_authoritative_profiles) ... ok\ntest_playable_forge_uses_existing_admitted_item_classifications (test_forge_item_profiles.NativeForgeProfilesTests.test_playable_forge_uses_existing_admitted_item_classifications) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 2.871s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_party_rite_item_profiles.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_party_rite_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.082,
+      "exit_code": 0,
+      "output": "test_duplicate_item_refuses_before_output_mutation (test_party_rite_item_profiles.PartyRiteItemProfiles.test_duplicate_item_refuses_before_output_mutation) ... ok\ntest_exact_four_source_items_retain_their_collision (test_party_rite_item_profiles.PartyRiteItemProfiles.test_exact_four_source_items_retain_their_collision) ... ok\ntest_missing_item_or_foreign_source_refuses_atomically (test_party_rite_item_profiles.PartyRiteItemProfiles.test_missing_item_or_foreign_source_refuses_atomically) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.004s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_engnpc2_perfume_profiles.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_engnpc2_perfume_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 9.718,
+      "exit_code": 0,
+      "output": "test_guardcatcher_has_source_qualified_portable_custody (test_engnpc2_perfume_profiles.PerfumeCustody.test_guardcatcher_has_source_qualified_portable_custody) ... ok\ntest_paint_vial_has_exact_native_portable_facts (test_engnpc2_perfume_profiles.PerfumeCustody.test_paint_vial_has_exact_native_portable_facts) ... ok\ntest_perfume_inputs_and_outputs_keep_exact_portable_source_facts (test_engnpc2_perfume_profiles.PerfumeCustody.test_perfume_inputs_and_outputs_keep_exact_portable_source_facts) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 9.501s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_newhaven_starter_profiles.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_newhaven_starter_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.397,
+      "exit_code": 0,
+      "output": "test_duplicate_profile_refuses_before_changing_generated_bytes (test_newhaven_starter_profiles.NewhavenStarterProfilesTests.test_duplicate_profile_refuses_before_changing_generated_bytes) ... ok\ntest_missing_profile_refuses_before_changing_generated_bytes (test_newhaven_starter_profiles.NewhavenStarterProfilesTests.test_missing_profile_refuses_before_changing_generated_bytes) ... ok\ntest_newhaven_starter_definitions_are_carriable_native_equipment (test_newhaven_starter_profiles.NewhavenStarterProfilesTests.test_newhaven_starter_definitions_are_carriable_native_equipment) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.278s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_quest_registration_preservation.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quest_registration_preservation"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.28,
+      "exit_code": 0,
+      "output": "test_disagreement_between_index_and_manifest_fails_closed (test_quest_registration_preservation.QuestRegistrationPreservation.test_disagreement_between_index_and_manifest_fails_closed) ... ok\ntest_missing_shard_records_do_not_preserve_a_false_family_count (test_quest_registration_preservation.QuestRegistrationPreservation.test_missing_shard_records_do_not_preserve_a_false_family_count) ... ok\ntest_retains_registration_index_and_shards_without_touching_authored_bytes (test_quest_registration_preservation.QuestRegistrationPreservation.test_retains_registration_index_and_shards_without_touching_authored_bytes) ... ok\ntest_source_import_path_cannot_be_registered_as_quest_shard (test_quest_registration_preservation.QuestRegistrationPreservation.test_source_import_path_cannot_be_registered_as_quest_shard) ... ok\ntest_unregistered_family_is_not_synthesized_from_source_files (test_quest_registration_preservation.QuestRegistrationPreservation.test_unregistered_family_is_not_synthesized_from_source_files) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.004s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_weapon_equip_requirements.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_weapon_equip_requirements"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 1.405,
+      "exit_code": 0,
+      "output": "test_fills_only_unknown_fields_and_is_idempotent (test_weapon_equip_requirements.WeaponEquipRequirements.test_fills_only_unknown_fields_and_is_idempotent) ... ok\ntest_known_conflict_refuses (test_weapon_equip_requirements.WeaponEquipRequirements.test_known_conflict_refuses) ... ok\ntest_shipped_profile_carries_every_fact (test_weapon_equip_requirements.WeaponEquipRequirements.test_shipped_profile_carries_every_fact) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 1.337s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_npc_quest_dialogue_followup.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_npc_quest_dialogue_followup"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 4.301,
+      "exit_code": 0,
+      "output": "test_actual_quest_dialogue_packet_replays_exactly (test_npc_quest_dialogue_followup.QuestDialogueFollowupTests.test_actual_quest_dialogue_packet_replays_exactly) ... ok\ntest_all_profiles_services_roles_movement_and_previous_history_are_preserved (test_npc_quest_dialogue_followup.QuestDialogueFollowupTests.test_all_profiles_services_roles_movement_and_previous_history_are_preserved) ... ok\ntest_blue_stone_prices_are_documentary_only (test_npc_quest_dialogue_followup.QuestDialogueFollowupTests.test_blue_stone_prices_are_documentary_only) ... ok\ntest_exact_speaker_scope_and_no_actions_are_enforced (test_npc_quest_dialogue_followup.QuestDialogueFollowupTests.test_exact_speaker_scope_and_no_actions_are_enforced) ... ok\ntest_player_normalization_is_only_explicit_exact_substitution (test_npc_quest_dialogue_followup.QuestDialogueFollowupTests.test_player_normalization_is_only_explicit_exact_substitution) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 3.853s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_npc_visual_invisible_stage.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_npc_visual_invisible_stage"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 1.404,
+      "exit_code": 0,
+      "output": "test_actual_derived_visual_packet_replays_exactly (test_npc_visual_invisible_stage.VisualInvisibleTests.test_actual_derived_visual_packet_replays_exactly) ... ok\ntest_closed_two_actor_scope_rejects_foreign_or_missing_choice (test_npc_visual_invisible_stage.VisualInvisibleTests.test_closed_two_actor_scope_rejects_foreign_or_missing_choice) ... ok\ntest_invisible_selection_flags_are_explicit_inference_not_source_truth (test_npc_visual_invisible_stage.VisualInvisibleTests.test_invisible_selection_flags_are_explicit_inference_not_source_truth) ... ok\ntest_only_two_presentations_change_and_all_other_authoring_is_preserved (test_npc_visual_invisible_stage.VisualInvisibleTests.test_only_two_presentations_change_and_all_other_authoring_is_preserved) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.894s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_mining_item_profiles.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_mining_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 15.938,
+      "exit_code": 0,
+      "output": "test_exact_three_profiles_have_reference_stack_and_weight_facts (test_mining_item_profiles.MiningItemProfilesTest.test_exact_three_profiles_have_reference_stack_and_weight_facts) ... ok\ntest_substituted_reference_revision_is_rejected (test_mining_item_profiles.MiningItemProfilesTest.test_substituted_reference_revision_is_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 15.813s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_seasonal_raids.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_seasonal_raids"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.752,
+      "exit_code": 0,
+      "output": "test_cake_source_projects_twenty_independent_golems_in_each_city (test_seasonal_raids.SeasonalRaidTest.test_cake_source_projects_twenty_independent_golems_in_each_city) ... ok\ntest_captured_source_coordinates_cannot_be_changed_with_new_self_hashes (test_seasonal_raids.SeasonalRaidTest.test_captured_source_coordinates_cannot_be_changed_with_new_self_hashes) ... ok\ntest_missing_canonical_creature_never_activates_native_profile_only (test_seasonal_raids.SeasonalRaidTest.test_missing_canonical_creature_never_activates_native_profile_only) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.308s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_prepare_candy_decay_item.py",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_prepare_candy_decay_item"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.209,
+      "exit_code": 0,
+      "output": "test_keeps_original_stats_loot_corpse_and_capacity_without_mutating_input (test_prepare_candy_decay_item.CandyCorrectionTests.test_keeps_original_stats_loot_corpse_and_capacity_without_mutating_input) ... ok\ntest_rejects_different_corpse_and_timer (test_prepare_candy_decay_item.CandyCorrectionTests.test_rejects_different_corpse_and_timer) ... ok\ntest_rejects_hidden_loot_use_of_missing_target (test_prepare_candy_decay_item.CandyCorrectionTests.test_rejects_hidden_loot_use_of_missing_target) ... ok\ntest_rejects_incomplete_or_identity_minting_proof (test_prepare_candy_decay_item.CandyCorrectionTests.test_rejects_incomplete_or_identity_minting_proof) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.001s\n\nOK\n"
+    }
+  ]
+}

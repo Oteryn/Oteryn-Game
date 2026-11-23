@@ -69,10 +69,16 @@ mod reward_chest_query_tests {
         assert!(decode_reward_chest_query(&wrong_field).is_err());
         let mut trailing = bytes.clone();
         trailing.push(0);
-        assert!(decode_reward_chest_query(&trailing).is_err());
+        assert_eq!(
+            decode_reward_chest_query(&trailing),
+            Err(Error::LimitExceeded)
+        );
         let mut repeated = bytes.clone();
         repeated.extend_from_slice(&bytes);
-        assert!(decode_reward_chest_query(&repeated).is_err());
+        assert_eq!(
+            decode_reward_chest_query(&repeated),
+            Err(Error::LimitExceeded)
+        );
         let mut zero = bytes;
         zero[2..].fill(0);
         assert!(decode_reward_chest_query(&zero).is_err());
@@ -290,11 +296,13 @@ mod reward_tests {
             death: [7; 16],
             boss_key: "oteryn:boss.fixture".into(),
             minted_at_unix_ms: minted,
-            expires_at_unix_ms: now,
+            expires_at_unix_ms: minted + BOSS_REWARD_EXPIRY_MS,
             item_count: 2,
         };
+        let deadline = expired.expires_at_unix_ms;
+        assert!(encode_reward_chest(deadline - 1, &[expired.clone()]).is_ok());
         assert_eq!(
-            encode_reward_chest(now, &[expired.clone()]),
+            encode_reward_chest(deadline, &[expired.clone()]),
             Err(Error::Malformed)
         );
         expired.expires_at_unix_ms = minted + BOSS_REWARD_EXPIRY_MS - 1;

@@ -32,16 +32,19 @@ case "${WP5_QUALIFICATION:-s3b}" in
     TEST_TARGET=(--test wp5_s3b_composition)
     TEST_NAME=real_owners_compose_fresh_admission_and_fence_replacement
     PASS_RESULT=COMPOSED_PASS
+    PASS_EVIDENCE='S3B_EVIDENCE composition=complete'
     ;;
   seam)
     TEST_TARGET=(--lib)
     TEST_NAME=qualification::server_seam_real_owners_over_tcp_tls
     PASS_RESULT=SEAM_PASS
+    PASS_EVIDENCE='SEAM_EVIDENCE shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED'
     ;;
   spell-seam)
     TEST_TARGET=(--lib)
     TEST_NAME=qualification::server_seam_real_owners_over_tcp_tls
     PASS_RESULT=SPELL_SEAM_PASS
+    PASS_EVIDENCE='SEAM_EVIDENCE spell_seam shutdown=drained scope=real_owner_tcp_tls gameplay_complete=false'
     ;;
   *)
     echo 'S3B_RESULT=BLOCKED reason=unknown_qualification'
@@ -178,13 +181,16 @@ evidence "platform_intents=issued count=2 path=operator_command ttl_seconds=300"
   WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
     "${SEAM_TEST_COMMAND[@]}"
-) | tee "$WORK/seam-test.log"
+) 2>&1 | tee "$WORK/seam-test.log"
 unset FRESH_SEED_HEX RECOVERY_SEED_HEX
 # An exact filter also exits zero when no test matched. The single selected
-# libtest must really pass; multiple/missing summaries are not qualification.
+# libtest must really pass with its selected name and terminal body marker.
+# Multiple/missing summaries or unrelated body output are not qualification.
 if [[ "$(grep -c '^test result:' "$WORK/seam-test.log")" != 1 ]] ||
-   ! grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; [0-9]+ filtered out; finished in [0-9]+(\.[0-9]+)?s$' "$WORK/seam-test.log"; then
-  echo 'S3B qualification did not execute exactly one passing test' >&2
+   ! grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; [0-9]+ filtered out; finished in [0-9]+(\.[0-9]+)?s$' "$WORK/seam-test.log" ||
+   ! grep -Eq "^test $TEST_NAME \.\.\. " "$WORK/seam-test.log" ||
+   ! grep -Fxq "$PASS_EVIDENCE" "$WORK/seam-test.log"; then
+  echo 'S3B qualification did not prove exactly one passing selected test and its terminal body evidence' >&2
   exit 1
 fi
 result="$PASS_RESULT"

@@ -1,0 +1,16 @@
+[
+  {
+    "label": "attack_result_byte_limit",
+    "path": "crates/protocol-oteryn/src/attack.rs",
+    "old": "    let value = read_result_enum(payload, MAX_ATTACK_INTENT_RESULT_BYTES)?;\n",
+    "new": "    let value = read_result_enum(payload, usize::MAX)?;\n",
+    "test": "attack::tests::results_carry_every_disposition_and_fail_closed"
+  },
+  {
+    "label": "boss_reward_reader_byte_limits",
+    "path": "crates/protocol-oteryn/src/boss_rewards.rs",
+    "old": "        if bytes.len() > max {\n            return Err(Error::LimitExceeded);\n        }\n",
+    "new": "        let _ = max;\n",
+    "test": "boss_rewards::tests::"
+  }
+]

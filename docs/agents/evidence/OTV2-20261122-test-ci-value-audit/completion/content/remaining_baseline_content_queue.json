@@ -1,0 +1,1596 @@
+{
+  "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+  "description": "Assignment remainder excluding inherited 59 historical receipts and current 356 fully read migration/quest paths; queue is not completed review. Fourteen omissions and other tooling still require exact receipt reconciliation.",
+  "files": [
+    {
+      "path": "tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/g4_item_binding_pilot_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/g4_item_crystal_binding_generator_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/g4_item_source_capture_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/g4_item_wave1_capture_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/g4_item_wave1_stage_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/g4_non_item_source_capture_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/g4_nonitem_revision_revalidation_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/global_source_overlap_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/item_id_alias_table_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/item_key_references_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/item_wiki_stats_capture_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/source_family_classification_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/source_universe_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/stage_appearance_tables_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/stage_map_areas_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/stage_proficiencies_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/stage_staticdata_creatures_bosses_quests_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/stage_staticdata_houses_achievements_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/stage_tibiawiki_achievements_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/unknown_closure_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-census/unknown_disposition_ledger_self_test.py",
+      "group": "tools/content-census",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-format-spike/self_test.py",
+      "group": "tools/content-format-spike",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-migration/test_native_world_canonicalization.py",
+      "group": "tools/content-migration",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-migration/test_parallel_checks.py",
+      "group": "tools/content-migration",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-migration/test_world_compiler_artifact.py",
+      "group": "tools/content-migration",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+      "group": "tools/content-migration",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/achievement-authoring/test_validate_achievements.py",
+      "group": "tools/content-schema/achievement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/area-authoring/test_validate_areas.py",
+      "group": "tools/content-schema/area-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/character-progression/test_progression.py",
+      "group": "tools/content-schema/character-progression",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/charm-authoring/test_charm_authoring.py",
+      "group": "tools/content-schema/charm-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/charm-authoring/test_charm_mechanics.py",
+      "group": "tools/content-schema/charm-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/charm-authoring/test_tibiapal_evidence.py",
+      "group": "tools/content-schema/charm-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/condition-authoring/test_condition_authoring.py",
+      "group": "tools/content-schema/condition-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/cosmetics-authoring/test_cosmetics_authoring.py",
+      "group": "tools/content-schema/cosmetics-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/cosmetics-authoring/test_grant_mappings.py",
+      "group": "tools/content-schema/cosmetics-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/cosmetics-authoring/test_item_acquisitions.py",
+      "group": "tools/content-schema/cosmetics-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/cosmetics-authoring/test_nx5_catalogue.py",
+      "group": "tools/content-schema/cosmetics-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/cosmetics-authoring/test_outfit_aliases.py",
+      "group": "tools/content-schema/cosmetics-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/craft-authoring/test_craft_authoring.py",
+      "group": "tools/content-schema/craft-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/craft-authoring/test_digging.py",
+      "group": "tools/content-schema/craft-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/craft-authoring/test_tainted_souls.py",
+      "group": "tools/content-schema/craft-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/encounter-authoring/test_max_health_attribute.py",
+      "group": "tools/content-schema/encounter-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/encounter-authoring/test_prepare_custom_spell_drafts.py",
+      "group": "tools/content-schema/encounter-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/encounter-authoring/test_prepare_encounter_completion.py",
+      "group": "tools/content-schema/encounter-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/encounter-authoring/test_prepare_soul_war_accepted.py",
+      "group": "tools/content-schema/encounter-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/encounter-authoring/test_soul_war_crystal_reconstruction.py",
+      "group": "tools/content-schema/encounter-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/encounters/test_boss_source_closure.py",
+      "group": "tools/content-schema/encounters",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/encounters/test_capture_endgame_regions.py",
+      "group": "tools/content-schema/encounters",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/encounters/test_capture_primal_region.py",
+      "group": "tools/content-schema/encounters",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/encounters/test_import_boss_levers.py",
+      "group": "tools/content-schema/encounters",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/encounters/test_m26_endgame_capture.py",
+      "group": "tools/content-schema/encounters",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/house-authoring/test_validate_beds.py",
+      "group": "tools/content-schema/house-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_access_evidence.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_behavior_answers.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_binding_evidence.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_capture_bounds.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_combat_evidence.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_eligibility_evidence.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_global_rules_evidence.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_imbuement_authoring.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_imbuement_content.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_missing_item_proposals.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_newbranch_evidence.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_owner_policy.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_refresh_binding_evidence_pin.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/imbuement-authoring/test_research_closure.py",
+      "group": "tools/content-schema/imbuement-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_appearance_membership.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_client_appearance_census.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_donor_census.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_engine_appearance_scope.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_engine_items.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_imbuement_limits.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_item_weapon_proficiency.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_key_ring5801_source_selection.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_leech_fields.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_bed_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_client_market_crystal_parity_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_client_market_d289_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_client_market_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_client_physical_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_elemental_magic_modifier_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_equip_abilities_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_consumption_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_description_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_description_wiki_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_document_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_forge289_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_forge3332_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_hit_magic_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_name15_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_name_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_use_observation_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_item_weapon_metadata_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_mantra_bond_modifier_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_numeric_modifier17_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_promotion_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_ranged_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_timed_item_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_capacity_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_movable_d289_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_movable_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_stack_default_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_stack_false_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_stack_historical_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_lower_wiki_stats_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_navigation_supplement.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_raw_fx_audio_reimport.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_shield_hand_equipment.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_stack_default_historical_context.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_stack_default_successor8.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_wiki_modifiers_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_wiki_resistances_packet.py",
+      "group": "tools/content-schema/item-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/map-content-linking/test_fill_links.py",
+      "group": "tools/content-schema/map-content-linking",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_corpse_decay.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_crystal_batch.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_display_name.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_faction_preservation.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_familiar_source_costs.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_independent_source_coverage.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_loot_source_semantics.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_mitigation_adoption_scope.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_monster_presentation_closure.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_outfit_missing_registration.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_partial_source_preservation.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_prepare_custom_patterns.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_prepare_deferred_crystal.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_prepare_familiar_abilities.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_prepare_missing_visible_evidence.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_prepare_reference_creatures.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_remove_items_probe.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_secondary_mitigation.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_source_disposition_closure.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_verify_runtime_readiness.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_visible_fields.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_wiki_bestiary_matrix.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_wiki_creature_identity.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_wiki_empty_source_binding.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_wiki_horse_mitigation.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_wiki_loot_item_quantities.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_wiki_mitigation_variants.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_wiki_staticdata_identity.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/test_windup_template.py",
+      "group": "tools/content-schema/monster-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_activity_source_regions.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_activity_source_top_order.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_brain_head_source_room.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_canonical_monster_profiles.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_companion_population_profiles.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_corpse_loot_admission.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_creature_races.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_disabled_monster_profiles.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_encounter_corpse_items.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_full_spell_artifact.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_item_spell_augments.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_m25_corpse_items.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_m25_source_rooms.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_monster_attack_authoring.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_monster_melee_profiles.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_native_callback_witness.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_native_goal_corpse_items.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_native_goal_loot_items.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_native_item_thing_orders.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_native_witness_pin_refresh.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_primal_corpse_items.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_primal_pod_item.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_questpc2_book_speed_fingerprint.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_questpc2_rotten_loot_items.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_questpc2_soul_loot_items.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_quests_2_soul_dialogues.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_regeneration_marker_audit.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_soul_war_source_items.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_source_world.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_spell_appearances.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_spell_cues.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_spell_item_identities.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_bakragore_capture.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_callback_registered_flags.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_ebb_maps.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_omrafir_attacks.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_primal_witness.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_ragiaz_spawn.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_rotten_blood_witness.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_rotten_death_events.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_appearances.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_attacks.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_entries.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_spite_global_event.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_spite_spawns.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_w01_prepare_death.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_summer_corpse_items.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_world_change_item_profiles.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_world_change_loot_inputs.py",
+      "group": "tools/content-schema/native-gameplay",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/manual-tests/test_wiki_outfit_fit_groups.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_authored_placements.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_class_profile_bridge.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_convert_placements.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_m38_minzy.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_m38_zarifan.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_native_placement_overrides.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_npc_authoring.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_npc_dialogue_stage.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_official_map_markers.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_palette_and_inventory_repairs.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_promotion.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_qb_barbarian_placements.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_qb_outfit_placements.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_qh_missing_tile_cell.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_questpc3_collector_cells.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_questpc7_rafzan_placement.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_rendered_wiki_prices.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_schema_regressions.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_service_relations.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_trade_variant_repairs.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_travel_semantics.py",
+      "group": "tools/content-schema/npc-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/proficiency-authoring/test_proficiency_authoring.py",
+      "group": "tools/content-schema/proficiency-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_npc_progress_retention.py",
+      "group": "tools/content-schema/quest-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_progress_enrichment.py",
+      "group": "tools/content-schema/quest-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_reward_only_binding_candidates.py",
+      "group": "tools/content-schema/quest-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_albinius_rules.py",
+      "group": "tools/content-schema/quest-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_gerimor_rules.py",
+      "group": "tools/content-schema/quest-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_gnomus_rules.py",
+      "group": "tools/content-schema/quest-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_henricus_rules.py",
+      "group": "tools/content-schema/quest-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_charge_native.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_container_native.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_container_source.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_native_container_fluids.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_poison_daggers.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_reward_claim_authoring.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_reward_claim_variant_authoring.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_reward_claim_variant_migration.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_source_charged_admission.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_source_quest_rewards.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/reward-claim-authoring/test_variant_stack_serialization.py",
+      "group": "tools/content-schema/reward-claim-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_audit_rune_carriers.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_blocked_completions.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_completion_schema.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_current_source_inventory.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_current_spell_adapter.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_executable_catalog.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_field_item_conversion.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_field_profiles.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_formula_corrections_healing.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_formula_corrections_magic.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_formula_corrections_monk.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_formula_corrections_runes.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_formula_corrections_skill.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_guildstats_spells.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_actor_states.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_barrier_schema.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_catalog.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_combat.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_companions.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_delayed.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_house_movement.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_presentation_sync.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_profiles.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_source_projection.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_native_world_items.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_player_presentation.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_retrieve_completion_fixtures.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_source_model_lowering.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_spell_avail_1.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_spell_conversion.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_verify_spells.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_wiki_capture_manifest.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_wiki_gap_completion.py",
+      "group": "tools/content-schema/spell-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/starter-kit-authoring/test_starter_kit_authoring.py",
+      "group": "tools/content-schema/starter-kit-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/step-speed/test_generate_step_speed_table.py",
+      "group": "tools/content-schema/step-speed",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/store-authoring/test_catalogue_revision.py",
+      "group": "tools/content-schema/store-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/store-authoring/test_convert_store.py",
+      "group": "tools/content-schema/store-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/store-authoring/test_runtime_catalogue.py",
+      "group": "tools/content-schema/store-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/test_materialized_authored_props.py",
+      "group": "tools/content-schema/test_materialized_authored_props.py",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/test_validate_full_game_content_tree.py",
+      "group": "tools/content-schema/test_validate_full_game_content_tree.py",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/test_validate_item_master_schema.py",
+      "group": "tools/content-schema/test_validate_item_master_schema.py",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_atelier_reference.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_client_icons.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_evidence_completion.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_followup.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_item_delivery_reference.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_numeric_boundaries.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_official_perks.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_predecessor_binding.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_server_import.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_successor_completion.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/wheel-authoring/test_wheel_authoring.py",
+      "group": "tools/content-schema/wheel-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_donor_overlay_totals.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_edron_rework.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_islands.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_last_creep_arena.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_m01c_key_doors.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_minimap_draft.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_npcfix2_shared_sources.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_qh_jimmy_stub.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_qready2_chest_bindings.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_quest_access_bindings.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_quest_chest_bindings.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_quest_door_bindings.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_quest_startup_bindings.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_questl2_chest_bindings.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_refresh_palette_capture.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_world_authoring.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_world_base.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_world_record.py",
+      "group": "tools/content-schema/world-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_activity_static.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_elemental_ground.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_engnpc2_ram_world.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_feroxa_static.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_grizzly_ground.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_official_corpses.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_qm50_ground.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_qualified_world.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_soulpit_static.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_sugar_room.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_summer_ground.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    },
+    {
+      "path": "tools/content-schema/world-object-authoring/test_world_objects.py",
+      "group": "tools/content-schema/world-object-authoring",
+      "baseline_semantic_status": "UNREVIEWED_STATIC_SCAN"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "finding": "CURRENT_FIXTURE_HAS_NO_HELD_BRANCH_EXAMPLES",
+  "test_path": "tools/content-schema/quest-authoring/donor_sources/refinements/dialogue/test_quest_dialogue_links_all.py",
+  "test_sha256": "7d3dbe966e0f16adbb5d79c6fb0268199764855cc0f46b4e51f015ea640e86a0",
+  "fixture_path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+  "fixture_sha256": "0e4145f77363c0df0c1ee052a760110aaf9fc90ce3bec64c8bf5866d8d5a2c22",
+  "exact_joins": 4379,
+  "held_joins": 0,
+  "actual_case_execution": [
+    {
+      "case_id": "AllControls.test_source_hold_candidates_do_not_fake_success",
+      "tests_run": 1,
+      "successful": true,
+      "unittest_assertion_method_calls": []
+    },
+    {
+      "case_id": "AllControls.test_remaining_holds_are_source_target_proofs_not_missing_files",
+      "tests_run": 1,
+      "successful": true,
+      "unittest_assertion_method_calls": []
+    }
+  ],
+  "scope": "Two current held-path-only test methods execute successfully with zero unittest assertion calls. Existing schema/count/positive-link tests retain independent value. No producer mutation, no proof of native runtime defect, no source edit. Future synthetic held-case fixture requires a separately reviewed source witness."
+}

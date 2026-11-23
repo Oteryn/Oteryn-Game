@@ -1,0 +1,28 @@
+--- a/tools/synthetic-client-harness/src/main.rs
++++ b/tools/synthetic-client-harness/src/main.rs
+@@ -4,8 +4,9 @@
+ use oteryn_client_simulation::ClientSimulation;
+ use oteryn_foundation::{ClientSessionEpoch, ProcessGeneration};
+ use oteryn_input_actions::{
+-    ActionId, ActionPhase, Binding, BindingMap, ButtonState, ContextDefinition, ContextId, ContextKind,
+-    InputAtom, InputChord, InputRouter, KeyCode, Modifiers, NormalizedInputEvent, RepeatPolicy,
++    ActionId, ActionPhase, Binding, BindingMap, ButtonState, ContextDefinition, ContextId,
++    ContextKind, InputAtom, InputChord, InputRouter, KeyCode, Modifiers, NormalizedInputEvent,
++    RepeatPolicy,
+ };
+ use oteryn_renderer::{SurfaceDecision, SurfaceEvent, SurfaceSize, SurfaceState};
+ use oteryn_synthetic_assets::SyntheticImage;
+@@ -121,7 +122,12 @@
+         || expected_entities.iter().any(|(id, x, name)| {
+             snapshot.entities.get(id).is_none_or(|entity| {
+                 entity.entity_ref != *id
+-                    || entity.position != (Position { x: *x, y: 200, floor: 7 })
++                    || entity.position
++                        != (Position {
++                            x: *x,
++                            y: 200,
++                            floor: 7,
++                        })
+                     || entity.display_name != *name
+             })
+         })

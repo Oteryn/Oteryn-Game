@@ -1,0 +1,26 @@
+{
+  "finding": "TRUNCATED_CHOSEN_COMPLETION_ATTACHMENT_ESCAPES_ZIP_PRESERVATION_ORACLE",
+  "test_path": "tools/content-schema/quest-authoring/test_quest_completion_authoring.py",
+  "source_sha256": "bda86c3031ad41a1aecb3791504bf04bb771966c5eca95739f7a4e1a8a64b556",
+  "case_id": "QuestCompletionTests.test_exact242_complete_without_duplicate_definitions_or_source_loss",
+  "mutation": "Run actual attach including source validation and enrichment; delete only its last returned row.",
+  "deleted_quest_ids": [
+    "oteryn:quest.within_the_tides_quest"
+  ],
+  "baseline": {
+    "tests_run": 1,
+    "success": true,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_exact242_complete_without_duplicate_definitions_or_source_loss (test_quest_completion_authoring.QuestCompletionTests.test_exact242_complete_without_duplicate_definitions_or_source_loss) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 9.957s\n\nOK\n"
+  },
+  "mutant": {
+    "tests_run": 1,
+    "success": true,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_exact242_complete_without_duplicate_definitions_or_source_loss (test_quest_completion_authoring.QuestCompletionTests.test_exact242_complete_without_duplicate_definitions_or_source_loss) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 9.661s\n\nOK\n"
+  },
+  "scope": "One existing preservation case; no full-module mutant or production reachability claim; source unchanged. Full unmutated nine-case module separately executed.",
+  "proposal": "Assert complete ordered before/after definition identities and count before zip comparison."
+}

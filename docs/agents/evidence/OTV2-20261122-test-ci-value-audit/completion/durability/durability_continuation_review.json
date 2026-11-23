@@ -1,0 +1,400 @@
+{
+  "base": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "state": "SOURCE_REVIEW_ONLY; NO_SOURCE_EDITS",
+  "counts": {
+    "case_bodies": 14,
+    "context_ranges": 17,
+    "actual_runtime_executions_in_this_batch": 0
+  },
+  "case_reviews": [
+    {
+      "path": "crates/gameplay/durability/src/durability/bank_audit.rs",
+      "case": "hireling_house_scope_is_explicit_and_closed",
+      "oracle": "Absent optional house round-trips as None; valid named-house extension passes full shape/encode/decode equality; empty key and nil hireling ID independently refuse. Old value stays byte-identical.",
+      "boundary": "Wire schema/shape validation only; no actual House authorization or bank transaction.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank_audit.rs",
+      "case": "worst_case_payload_and_envelope_are_the_registered_rows",
+      "oracle": "Actual maximum-shaped protobuf fixture has exact registered payload/envelope lengths; smaller shapes remain below; excess input and one-byte excess decode return CapacityExceeded.",
+      "boundary": "Schema fixture, not runtime event delivery. Input-count rejection can be enforced by more than one semantic bound; no single-guard sensitivity is claimed.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "case": "change_facts_need_fresh_slots_the_two_change_coins_and_a_bounded_capacity",
+      "oracle": "Valid fixture plus independently changed duplicate/transaction-colliding slots, wrong coin/family definitions, capacity21 and missing container each fail.",
+      "boundary": "Pure request predicate. It does not exhaust every slot or capacity defect.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "case": "bank_only_prepare_is_closed_to_hireling_without_fabricated_item_facts",
+      "oracle": "Bank-only Hireling facts are absent and valid; bank pays literal15000; no change is minted; swapping to carried fixture preserves request identity; duplicate slots and ordinary cause refuse.",
+      "boundary": "No SQL execution. Existing native fee tests own transactional debit; historical request binding intentionally excludes current backpack execution facts.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "case": "change_is_platinum_then_gold_in_consecutive_entries",
+      "oracle": "Independent complete tuples pin7660 as76 platinum+60 gold in slots11/12 at3/4; gold-only uses gold slot, zero yields none, ordinal overflow yields0.",
+      "boundary": "Caller execute path explicitly refuses0 with ChangeDoesNotFit before writes; this test is the planner convention, not that SQL caller behavior.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "case": "binding_covers_cause_character_world_and_fee_but_not_retry_identity",
+      "oracle": "Changing transaction/event/time/build together preserves digest; fee, Charm key and Character independently change it.",
+      "boundary": "The body never changes World, despite its name. Production request_binding includes world bytes, but that inclusion is not independently exercised here.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_current_authority.rs",
+      "case": "v2_final_revalidation_requires_current_world_and_live_candidate_binding",
+      "oracle": "Exact flow authorizes; missing/reassigned world, missing candidate, rebound transport and changed attempt each specifically return StaleAuthority.",
+      "boundary": "Pure owner flow with controlled current-fact constructor; no DB authorization read or actual installed controller.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_current_authority.rs",
+      "case": "v2_committed_reconciliation_requires_current_world_and_live_candidate_binding",
+      "oracle": "Exact committed snapshot allows InstallController; missing current eligibility or candidate specifically gives ReconciliationMismatch.",
+      "boundary": "Checks projection decision, not actual controller installation. Returned generation/transport fields are not compared in this case.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_current_authority.rs",
+      "case": "v2_terminal_reconciliation_survives_scope_advance_but_committed_stays_fenced",
+      "oracle": "Advanced scope11 versus retained10 still returns exact terminal collision and permits budget replacement; committed snapshot with same changed authority is refused.",
+      "boundary": "Separates historical terminal outcome from current committed authority; in-memory state-machine proof.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_reconciliation.rs",
+      "case": "terminal_replacement_rejects_same_world_generation_different_current_runtime_scope",
+      "oracle": "Same World/generation with predecessor current Channel14 versus candidate13 specifically refuses StaleAuthority.",
+      "boundary": "Fixture retains distinct typed World and Channel IDs; no database.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_reconciliation.rs",
+      "case": "final_revalidation_requires_complete_current_authority_facts",
+      "oracle": "Exact current facts permit commit, while changed Channel, predecessor connection generation, epoch and recovery proof independently yield StaleAuthority.",
+      "boundary": "Does not claim every authority field is enumerated; complementary cases cover world/live candidate and original grace.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_reconciliation.rs",
+      "case": "final_revalidation_requires_current_original_grace_deadline",
+      "oracle": "Exact original deadline permits commit, one shorter original deadline gives StaleAuthority, and exact committed reconciliation returns InstallController.",
+      "boundary": "Negative deadline case covers authorize_commit; no shortened-deadline reconciliation assertion. Shared production predicate traced.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_reconciliation.rs",
+      "case": "legacy_prepare_rejects_receipt_backed_replacement_candidate",
+      "oracle": "Creates a real V2 signed replacement receipt and requires legacy V1 prepare of the same candidate to return InvalidStoredState.",
+      "boundary": "Configured-PG component with isolated migrated database; helper returns success without running body when admin URL absent. Not executed on PG in this review.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_reconciliation.rs",
+      "case": "terminal_replacement_preserves_committed_predecessor_reconciliation",
+      "oracle": "Commits predecessor via legacy API, prepares signed successor, then requires exact terminal reconciliation snapshot of original predecessor.",
+      "boundary": "Configured-PG component; test-support root constructors and privileged predecessor fixture, no process restart or real Platform. Not executed on PG in this review.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY"
+    }
+  ],
+  "source_scopes": [
+    {
+      "path": "crates/gameplay/durability/src/durability/bank_audit.rs",
+      "scope": "hireling_house_scope_is_explicit_and_closed",
+      "start_line": 994,
+      "end_line": 1019,
+      "file_sha256": "9fdaca49b19d4ec2381ad0ae7a09beb6839e573588f7f0061eddf31ba775f2aa",
+      "body_sha256": "5ebaeb04effb7b95f7cbd8c60f7da8e7a4372f9a4c1a0060babe51cabae37300",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank_audit.rs",
+      "scope": "worst_case_payload_and_envelope_are_the_registered_rows",
+      "start_line": 1022,
+      "end_line": 1056,
+      "file_sha256": "9fdaca49b19d4ec2381ad0ae7a09beb6839e573588f7f0061eddf31ba775f2aa",
+      "body_sha256": "468239d999e06d94d916461a6ef1d340a1e673830c24d8247dcb1cbcf34a123c",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "scope": "change_facts_need_fresh_slots_the_two_change_coins_and_a_bounded_capacity",
+      "start_line": 1282,
+      "end_line": 1309,
+      "file_sha256": "6beabe1be583f6127eb94b0d82720b75216226f6d165db11e223e75075f42486",
+      "body_sha256": "166cbb79b8d3d437834763042c1eb263afae176efd3e8545d06fffeaf8c08d03",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "scope": "bank_only_prepare_is_closed_to_hireling_without_fabricated_item_facts",
+      "start_line": 1312,
+      "end_line": 1351,
+      "file_sha256": "6beabe1be583f6127eb94b0d82720b75216226f6d165db11e223e75075f42486",
+      "body_sha256": "1e52a260753e8abc8c98fabefad39349faa052ee3e270918204c41df398eaa25",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "scope": "change_is_platinum_then_gold_in_consecutive_entries",
+      "start_line": 1354,
+      "end_line": 1376,
+      "file_sha256": "6beabe1be583f6127eb94b0d82720b75216226f6d165db11e223e75075f42486",
+      "body_sha256": "4912435182f4d5d561b0991836d6b75d656b0bdb04f05b3b852a9a85b01e8c96",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "scope": "binding_covers_cause_character_world_and_fee_but_not_retry_identity",
+      "start_line": 1379,
+      "end_line": 1399,
+      "file_sha256": "6beabe1be583f6127eb94b0d82720b75216226f6d165db11e223e75075f42486",
+      "body_sha256": "c79204bb58c925d59b4ed16c50ee043107844f262518f24de02f8e1cffd22906",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_current_authority.rs",
+      "scope": "v2_final_revalidation_requires_current_world_and_live_candidate_binding",
+      "start_line": 85,
+      "end_line": 231,
+      "file_sha256": "43a1893a4864e3024708991b031f1dea263c31762d1ff933969e9072dd2a9154",
+      "body_sha256": "8466a14e874934b5e4f82d31d31131e372b991c6f725686213b8fac43886943f",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_current_authority.rs",
+      "scope": "v2_committed_reconciliation_requires_current_world_and_live_candidate_binding",
+      "start_line": 234,
+      "end_line": 301,
+      "file_sha256": "43a1893a4864e3024708991b031f1dea263c31762d1ff933969e9072dd2a9154",
+      "body_sha256": "e37902302c0d1560b6a29180c572dbc11da6bd4a967511f8d20eef33c1e19f66",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_current_authority.rs",
+      "scope": "v2_terminal_reconciliation_survives_scope_advance_but_committed_stays_fenced",
+      "start_line": 304,
+      "end_line": 397,
+      "file_sha256": "43a1893a4864e3024708991b031f1dea263c31762d1ff933969e9072dd2a9154",
+      "body_sha256": "2fbf165568ca1438c4a6cfb6de7d86abc132e2a581b30575742832c55d906a86",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_reconciliation.rs",
+      "scope": "terminal_replacement_rejects_same_world_generation_different_current_runtime_scope",
+      "start_line": 2,
+      "end_line": 15,
+      "file_sha256": "6c0175cd120e48250e8b22e7d939aabf9b86da359767b0627f483d29be0c5f51",
+      "body_sha256": "a5824568dc647aaa3f85122960c86ecb5e29418594aa0e060a4381f721e15a92",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_reconciliation.rs",
+      "scope": "final_revalidation_requires_complete_current_authority_facts",
+      "start_line": 18,
+      "end_line": 90,
+      "file_sha256": "6c0175cd120e48250e8b22e7d939aabf9b86da359767b0627f483d29be0c5f51",
+      "body_sha256": "5ede5bbde97bb01fe1935e060b91225d7ce852f5cbdf5e474e7dc3efe4e7a487",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_reconciliation.rs",
+      "scope": "final_revalidation_requires_current_original_grace_deadline",
+      "start_line": 93,
+      "end_line": 171,
+      "file_sha256": "6c0175cd120e48250e8b22e7d939aabf9b86da359767b0627f483d29be0c5f51",
+      "body_sha256": "fe158082e82427489aea82bc7fac2dd335aaefaba642b5965faa7299bf3fe4bc",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_reconciliation.rs",
+      "scope": "legacy_prepare_rejects_receipt_backed_replacement_candidate",
+      "start_line": 254,
+      "end_line": 281,
+      "file_sha256": "6c0175cd120e48250e8b22e7d939aabf9b86da359767b0627f483d29be0c5f51",
+      "body_sha256": "7ba5e60cef9e8b6c51f6308a96d69cda44b93436e9fb09ceeefcd9fc9f3c0f68",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_reconciliation.rs",
+      "scope": "terminal_replacement_preserves_committed_predecessor_reconciliation",
+      "start_line": 284,
+      "end_line": 341,
+      "file_sha256": "6c0175cd120e48250e8b22e7d939aabf9b86da359767b0627f483d29be0c5f51",
+      "body_sha256": "a895db78d7fbd6fe949eaf044c21fcfb39e6d27e86331f5ff4384904229ab329",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank_audit.rs",
+      "scope": "Closed bank shape and payload gate",
+      "start_line": 413,
+      "end_line": 461,
+      "file_sha256": "9fdaca49b19d4ec2381ad0ae7a09beb6839e573588f7f0061eddf31ba775f2aa",
+      "range_sha256": "7762e3430fee4fb07fe9edb743c8d53c6a56796f86b298a531fd903f1b0cebb4",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank_audit.rs",
+      "scope": "Bank shape/identity/registry fixtures",
+      "start_line": 605,
+      "end_line": 789,
+      "file_sha256": "9fdaca49b19d4ec2381ad0ae7a09beb6839e573588f7f0061eddf31ba775f2aa",
+      "range_sha256": "5a37f3aeb6237b9ef2826fb282653c271e0a0c8dbfb91190e5b4c4f4965672cb",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank_audit.rs",
+      "scope": "Actual worst-case fixture",
+      "start_line": 936,
+      "end_line": 990,
+      "file_sha256": "9fdaca49b19d4ec2381ad0ae7a09beb6839e573588f7f0061eddf31ba775f2aa",
+      "range_sha256": "728cd16771a9c603309b99ccfa12c38ddaad9716ea1519666c3376440c8601c5",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "scope": "Request validation, identity and durable replay branch",
+      "start_line": 470,
+      "end_line": 535,
+      "file_sha256": "6beabe1be583f6127eb94b0d82720b75216226f6d165db11e223e75075f42486",
+      "range_sha256": "2b047ebab34d1696e125a10e182488dcd0bd7621add307fe68199b4f35cbf86e",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "scope": "Caller rejects planner ordinal overflow before writes",
+      "start_line": 630,
+      "end_line": 657,
+      "file_sha256": "6beabe1be583f6127eb94b0d82720b75216226f6d165db11e223e75075f42486",
+      "range_sha256": "07cf3b8f1ec047fe7a8da0aa0f9db5776ff76cb10a51f3a21da8df366864112e",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "scope": "Change planner, input validation and request-binding consumer",
+      "start_line": 1073,
+      "end_line": 1147,
+      "file_sha256": "6beabe1be583f6127eb94b0d82720b75216226f6d165db11e223e75075f42486",
+      "range_sha256": "2cb00c124ca22231ed698a5fbb5a1ea943855923a9d0489cf0beedc45db0d4af",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+      "scope": "Pure Character/World/Channel/request/change fixtures",
+      "start_line": 1220,
+      "end_line": 1279,
+      "file_sha256": "6beabe1be583f6127eb94b0d82720b75216226f6d165db11e223e75075f42486",
+      "range_sha256": "170fd7f69c8a178e6f1c75a2cbe6dddd4f4aeb2a20d21667518347ec9ca5e561",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_support.rs",
+      "scope": "Current-fact helper, opt-in PG setup and bounded candidate fixture",
+      "start_line": 1,
+      "end_line": 272,
+      "file_sha256": "19395209c1f4c4046117ff598fb7d2b3c3dd64e3b96c3424efdb70b7d60dccc1",
+      "range_sha256": "c6514bdc0550212b0a4da1bf9cb32e3b42b419cfd2b37a98505bee046e6092a0",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/runtime_scope_identity_red_tests_support.rs",
+      "scope": "Predecessor, prepared flow and current binding fixtures",
+      "start_line": 448,
+      "end_line": 574,
+      "file_sha256": "19395209c1f4c4046117ff598fb7d2b3c3dd64e3b96c3424efdb70b7d60dccc1",
+      "range_sha256": "596456d6e5072bd0635ddbac972a8068a0854dfa83ca54ad8980e4b164a64def",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs",
+      "scope": "Terminal replacement current-authority predicate",
+      "start_line": 285,
+      "end_line": 343,
+      "file_sha256": "67c9c03ec032110a515184f1ff001f03f762ef822de84ed44c98e6a6e71c7e07",
+      "range_sha256": "2cb71ac8b6b643402a1cddc06d884166476293e930460cb0923ccaca18eda218",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs",
+      "scope": "Current-facts constructor permits independent missing bindings",
+      "start_line": 1652,
+      "end_line": 1705,
+      "file_sha256": "67c9c03ec032110a515184f1ff001f03f762ef822de84ed44c98e6a6e71c7e07",
+      "range_sha256": "3f66218c68a2feaeb4d0a6a8387d0331af0aa8c390a6900d816553386f07e452",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs",
+      "scope": "V2 reconciliation outcome and terminal budget transitions",
+      "start_line": 2128,
+      "end_line": 2186,
+      "file_sha256": "67c9c03ec032110a515184f1ff001f03f762ef822de84ed44c98e6a6e71c7e07",
+      "range_sha256": "d88be71099f9dc2f99437d096bd8e40b1870c5f51e0f25f8ff0a17448ca7d273",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs",
+      "scope": "V2 final commit authorization",
+      "start_line": 2338,
+      "end_line": 2368,
+      "file_sha256": "67c9c03ec032110a515184f1ff001f03f762ef822de84ed44c98e6a6e71c7e07",
+      "range_sha256": "4d54fe9896551fa0ecd48bac86863ac064de62fca6cb344211884cca4d8244ef",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_recovery_inner.rs",
+      "scope": "Shared exact current authority predicate",
+      "start_line": 2398,
+      "end_line": 2455,
+      "file_sha256": "67c9c03ec032110a515184f1ff001f03f762ef822de84ed44c98e6a6e71c7e07",
+      "range_sha256": "4a2b07bbe49740fc3547eb46353c3d6d984418eaeb2c441048bd8fb6aa19e3ff",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/core_modules.rs",
+      "scope": "V2 owner replacement routing and receipt replay",
+      "start_line": 433,
+      "end_line": 565,
+      "file_sha256": "f644fc480a3a2d54770bb2689071b305c3702e14b63fc6ebfe350735484f1c69",
+      "range_sha256": "f14258589398809bcc8f15289328ddd5060f4e33cc1996299657eff825800fe6",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/core_modules.rs",
+      "scope": "Public reconcile and durable receipt checks",
+      "start_line": 771,
+      "end_line": 835,
+      "file_sha256": "f644fc480a3a2d54770bb2689071b305c3702e14b63fc6ebfe350735484f1c69",
+      "range_sha256": "6e50d506a56cb43f7f48d5d545e2a2ab74e1919dd2a028a81e61cd902ba45c0a",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/core_modules.rs",
+      "scope": "Legacy typed prepare bridge",
+      "start_line": 892,
+      "end_line": 952,
+      "file_sha256": "f644fc480a3a2d54770bb2689071b305c3702e14b63fc6ebfe350735484f1c69",
+      "range_sha256": "e619a533827d94625d4eb103ee31cb74453334484feb52b6667ad2b016cf9691",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    }
+  ],
+  "unapplied_findings": [
+    {
+      "id": "DUR-CONT-01",
+      "fact": "binding_covers_cause_character_world_and_fee_but_not_retry_identity changes Character but never changes World; request_binding independently hashes fence.runtime_scope.world_id().",
+      "inference": "This body alone cannot detect loss of the World component. No runtime mutant was executed; no claim about all fee tests.",
+      "recommendation": "Later add a same-Character/different-World fixture and require a different binding, with a targeted World-component mutation before publication."
+    }
+  ],
+  "closure_boundary": "Existing exact receipts cover the other bodies in these files. Source paths remain partial until all relevant fixture/caller scopes are reconciled; this receipt does not automatically close a whole file.",
+  "whole_assignment_completion": false
+}

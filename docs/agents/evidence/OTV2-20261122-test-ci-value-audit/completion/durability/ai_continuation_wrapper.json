@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "python3",
+    "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/continue_ai_gates.py"
+  ],
+  "rc": 0,
+  "seconds": 1830.803,
+  "boundary": "Final AI/server gates after actual 167 owner pass/4 ignored and 7 integration pass; exact identifier tuples normalized across JSON receipt serialization."
+}

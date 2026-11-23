@@ -1,0 +1,484 @@
+{
+  "run_id": 45158952176,
+  "job_id": 137639046275,
+  "url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45158952176",
+  "head_sha": "d1d44e717cbe327c6348932921671ff6803df4de",
+  "retrieved_at": "2026-11-23T12:29:24Z",
+  "raw_characters": 591915,
+  "raw_lines": 4328,
+  "scenario_rows": 59,
+  "distinct_scenarios": 59,
+  "counts": {
+    "PASS": 8,
+    "FAIL": 50,
+    "MISSING-SERVER": 1
+  },
+  "rows": [
+    {
+      "scenario": "C19a.full",
+      "status": "PASS",
+      "seconds": "9.254",
+      "line": "2026-11-23T11:09:00.4548950Z SEAM_EVIDENCE e2e_all scenario=C19a.full status=PASS seconds=9.254"
+    },
+    {
+      "scenario": "S11.full",
+      "status": "FAIL",
+      "seconds": "5.775",
+      "cause": "assertion",
+      "root": "S11/categories",
+      "line": "2026-11-23T11:09:06.2307449Z SEAM_EVIDENCE e2e_all scenario=S11.full status=FAIL seconds=5.775 cause=assertion root=S11/categories"
+    },
+    {
+      "scenario": "W20a.full",
+      "status": "FAIL",
+      "seconds": "185.415",
+      "cause": "no-progress",
+      "root": "W20a/day",
+      "line": "2026-11-23T11:12:11.6457030Z SEAM_EVIDENCE e2e_all scenario=W20a.full status=FAIL seconds=185.415 cause=no-progress root=W20a/day"
+    },
+    {
+      "scenario": "W20b.full",
+      "status": "FAIL",
+      "seconds": "3.397",
+      "cause": "assertion",
+      "root": "W20b/admission",
+      "line": "2026-11-23T11:12:15.0438325Z SEAM_EVIDENCE e2e_all scenario=W20b.full status=FAIL seconds=3.397 cause=assertion root=W20b/admission"
+    },
+    {
+      "scenario": "S13a.full",
+      "status": "FAIL",
+      "seconds": "79.370",
+      "cause": "assertion",
+      "root": "S13a/solo-refusal",
+      "line": "2026-11-23T11:13:34.4132755Z SEAM_EVIDENCE e2e_all scenario=S13a.full status=FAIL seconds=79.370 cause=assertion root=S13a/solo-refusal"
+    },
+    {
+      "scenario": "S13b.full",
+      "status": "FAIL",
+      "seconds": "79.370",
+      "cause": "assertion",
+      "root": "S13b/solo-zero-charge",
+      "line": "2026-11-23T11:13:34.4137730Z SEAM_EVIDENCE e2e_all scenario=S13b.full status=FAIL seconds=79.370 cause=assertion root=S13b/solo-zero-charge"
+    },
+    {
+      "scenario": "S08.full",
+      "status": "FAIL",
+      "seconds": "232.742",
+      "cause": "assertion",
+      "root": "S08/earned-levels",
+      "line": "2026-11-23T11:17:27.1580130Z SEAM_EVIDENCE e2e_all scenario=S08.full status=FAIL seconds=232.742 cause=assertion root=S08/earned-levels"
+    },
+    {
+      "scenario": "P21.full",
+      "status": "FAIL",
+      "seconds": "241.712",
+      "cause": "assertion",
+      "root": "P21/player-acquisition",
+      "line": "2026-11-23T11:21:28.8686563Z SEAM_EVIDENCE e2e_all scenario=P21.full status=FAIL seconds=241.712 cause=assertion root=P21/player-acquisition"
+    },
+    {
+      "scenario": "P19.full",
+      "status": "FAIL",
+      "seconds": "4.194",
+      "cause": "assertion",
+      "root": "P19/influenced-selection-combat",
+      "line": "2026-11-23T11:21:33.0629330Z SEAM_EVIDENCE e2e_all scenario=P19.full status=FAIL seconds=4.194 cause=assertion root=P19/influenced-selection-combat"
+    },
+    {
+      "scenario": "C20d.full",
+      "status": "FAIL",
+      "seconds": "73.255",
+      "cause": "assertion",
+      "root": "C20d/away-from-temple",
+      "line": "2026-11-23T11:22:46.3177399Z SEAM_EVIDENCE e2e_all scenario=C20d.full status=FAIL seconds=73.255 cause=assertion root=C20d/away-from-temple"
+    },
+    {
+      "scenario": "S16a.full",
+      "status": "FAIL",
+      "seconds": "2.935",
+      "cause": "assertion",
+      "root": "S16a/oressa-reachable",
+      "line": "2026-11-23T11:22:49.2553936Z SEAM_EVIDENCE e2e_all scenario=S16a.full status=FAIL seconds=2.935 cause=assertion root=S16a/oressa-reachable"
+    },
+    {
+      "scenario": "C20a.full",
+      "status": "FAIL",
+      "seconds": "0.000",
+      "cause": "blocked-by",
+      "root": "S16a/oressa-reachable",
+      "line": "2026-11-23T11:22:49.2560876Z SEAM_EVIDENCE e2e_all scenario=C20a.full status=FAIL seconds=0.000 cause=blocked-by root=S16a/oressa-reachable"
+    },
+    {
+      "scenario": "C20b.full",
+      "status": "FAIL",
+      "seconds": "3.263",
+      "cause": "assertion",
+      "root": "C20b/earned-loss-eligible-level",
+      "line": "2026-11-23T11:22:52.5162855Z SEAM_EVIDENCE e2e_all scenario=C20b.full status=FAIL seconds=3.263 cause=assertion root=C20b/earned-loss-eligible-level"
+    },
+    {
+      "scenario": "P16.full",
+      "status": "FAIL",
+      "seconds": "3.441",
+      "cause": "assertion",
+      "root": "P16/adventurer-earned-prerequisites",
+      "line": "2026-11-23T11:22:55.9583215Z SEAM_EVIDENCE e2e_all scenario=P16.full status=FAIL seconds=3.441 cause=assertion root=P16/adventurer-earned-prerequisites"
+    },
+    {
+      "scenario": "C20c.full",
+      "status": "FAIL",
+      "seconds": "2.933",
+      "cause": "assertion",
+      "root": "C20c/adventurer-earned-prerequisites",
+      "line": "2026-11-23T11:22:58.8905128Z SEAM_EVIDENCE e2e_all scenario=C20c.full status=FAIL seconds=2.933 cause=assertion root=C20c/adventurer-earned-prerequisites"
+    },
+    {
+      "scenario": "P10.full",
+      "status": "FAIL",
+      "seconds": "3.287",
+      "cause": "assertion",
+      "root": "P10/shrine-open-and-claim",
+      "line": "2026-11-23T11:23:02.1780420Z SEAM_EVIDENCE e2e_all scenario=P10.full status=FAIL seconds=3.287 cause=assertion root=P10/shrine-open-and-claim"
+    },
+    {
+      "scenario": "C03.full",
+      "status": "FAIL",
+      "seconds": "7.491",
+      "cause": "assertion",
+      "root": "C03.full/row-check",
+      "line": "2026-11-23T11:24:25.4816804Z SEAM_EVIDENCE e2e_all scenario=C03.full status=FAIL seconds=7.491 evidence=failed:tabs:character-tab-Offence-status:Rejected;-combat-snapshot-unavailable--attack/cyclopedia.rs:113-;not-run:baseline,critical,leech,reflect,cleave,perfect-shot,fatal,refusal-relog cause=assertion root=C03.full/row-check"
+    },
+    {
+      "scenario": "C12.full",
+      "status": "FAIL",
+      "seconds": "2.903",
+      "cause": "assertion",
+      "root": "C12.full/admission",
+      "line": "2026-11-23T11:25:43.3317237Z SEAM_EVIDENCE e2e_all scenario=C12.full status=FAIL seconds=2.903 evidence=step:baseline-cast;observed:need=platform-created-premium-monk-or-exalted-monk-spell=exori-nia-cast-min-level=18-item-50271-min-level=20-observed=absent-from-served-spell-catalogue;not-run:acquire-50271,augmented-cast,unequip,unequipped-cast,fresh-admission,augment-attribution cause=assertion root=C12.full/admission"
+    },
+    {
+      "scenario": "C09.full",
+      "status": "FAIL",
+      "seconds": "3.365",
+      "cause": "assertion",
+      "root": "C09.full/bounded-observation",
+      "line": "2026-11-23T11:27:01.5855551Z SEAM_EVIDENCE e2e_all scenario=C09.full status=FAIL seconds=3.365 evidence=runtime-step-failed-see-C09_GAP cause=assertion root=C09.full/bounded-observation"
+    },
+    {
+      "scenario": "C06.full",
+      "status": "FAIL",
+      "seconds": "3.011",
+      "cause": "assertion",
+      "root": "C06.full/bounded-observation",
+      "line": "2026-11-23T11:28:19.5719374Z SEAM_EVIDENCE e2e_all scenario=C06.full status=FAIL seconds=3.011 evidence=required-actions-unproven-see-C06_GAP cause=assertion root=C06.full/bounded-observation"
+    },
+    {
+      "scenario": "C02.full",
+      "status": "FAIL",
+      "seconds": "3.043",
+      "cause": "assertion",
+      "root": "C02.full/bounded-observation",
+      "line": "2026-11-23T11:29:38.6203517Z SEAM_EVIDENCE e2e_all scenario=C02.full status=FAIL seconds=3.043 evidence=required-step-failed-see-C02_GAP cause=assertion root=C02.full/bounded-observation"
+    },
+    {
+      "scenario": "C01.full",
+      "status": "FAIL",
+      "seconds": "3.022",
+      "cause": "assertion",
+      "root": "C01.full/admission",
+      "line": "2026-11-23T11:30:57.8695927Z SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=3.022 cause=assertion root=C01.full/admission"
+    },
+    {
+      "scenario": "W22b.full",
+      "status": "FAIL",
+      "seconds": "10.137",
+      "cause": "assertion",
+      "root": "W22b.full/fixture-release",
+      "line": "2026-11-23T11:32:23.7677167Z SEAM_EVIDENCE e2e_all scenario=W22b.full status=FAIL seconds=10.137 evidence=steps=1,2,3,4,6,7;step-1:prey_reroll_did_not_offer_oteryn:creature.rat|step-2:no_reachable_oteryn:creature.rat_spawn_within_town_route_budget|step-3:daily_boost_selects_oteryn:creature.braindeath;_authored_spawn_route_failed:_no_reachable_oteryn:creature.braindeath_spawn_within_town_route_budget|step-4:Gut_could_not_be_activated_on_Rat:_unlock=Unlock(NotEnoughMinorCharmEchoes)_assign=Assign(CharmLocked);_need_player-earned_Minor_Charm_Echoes_and_the_Rat_Bestiary_discovery_stage|step-5:blocked:starter_carries_no_Wealth_Duplex_(oteryn:item.tibia.i36727);_need_a_player_acquisition_route|step-6:no_reachable_oteryn:creature.rat_spawn_within_town_route_budget|step-7:fresh_admission_durability_prerequisites_missing:_active_wealth_duplex=false_looted=false;_need_active_timer_and_prior_corpse-to-backpack_custody cause=assertion root=W22b.full/fixture-release"
+    },
+    {
+      "scenario": "C05.full",
+      "status": "FAIL",
+      "seconds": "6.323",
+      "cause": "assertion",
+      "root": "C05.full/row-check",
+      "line": "2026-11-23T11:33:46.3655453Z SEAM_EVIDENCE e2e_all scenario=C05.full status=FAIL seconds=6.323 evidence=step-locate-eligibility-observed-exiva-unavailable-required-level-8-learned-false-need-player-earned-exiva-eligibility cause=assertion root=C05.full/row-check"
+    },
+    {
+      "scenario": "C04.full",
+      "status": "FAIL",
+      "seconds": "3.523",
+      "cause": "assertion",
+      "root": "C04.full/admission",
+      "line": "2026-11-23T11:35:04.7611902Z SEAM_EVIDENCE e2e_all scenario=C04.full status=FAIL seconds=3.523 evidence=step-1-observed-protection-zone-refusal:-no-reachable-PZ-boundary-with-an-adjacent-non-PZ-tile cause=assertion root=C04.full/admission"
+    },
+    {
+      "scenario": "W18.full",
+      "status": "FAIL",
+      "seconds": "2.375",
+      "cause": "assertion",
+      "root": "W18.full/admission",
+      "line": "2026-11-23T11:36:22.6119351Z SEAM_EVIDENCE e2e_all scenario=W18.full status=FAIL seconds=2.375 evidence=step-1_HOUSE_QUERY_observed_Accepted/Ok_with_0_rows_and_0_owned/open-auction_houses;_server_needs_an_open_auction_or_a_house_already_won_by_the_player cause=assertion root=W18.full/admission"
+    },
+    {
+      "scenario": "C11.full",
+      "status": "FAIL",
+      "seconds": "3.543",
+      "cause": "assertion",
+      "root": "C11.full/player-monk-choice",
+      "line": "2026-11-23T11:36:26.4008351Z SEAM_EVIDENCE e2e_all scenario=C11.full status=FAIL seconds=3.543 evidence=step=player-monk-choice-observed=vocation-id=4-level=1;-need=unassigned-level-8-character-for-Oressa-or-admitted-Monk-for-Harmony_step=battle-instinct-snapshot-observed=active=false;-need=separate-eligible-Knight-and-inactive-to-active-committed-Wheel-allocation cause=assertion root=C11.full/player-monk-choice"
+    },
+    {
+      "scenario": "W19a.full",
+      "status": "FAIL",
+      "seconds": "2.869",
+      "cause": "assertion",
+      "root": "W19a.full/admission",
+      "line": "2026-11-23T11:37:44.5407046Z SEAM_EVIDENCE e2e_all scenario=W19a.full status=FAIL seconds=2.869 evidence=step_2:_compiled_world_has_no_Messenger_of_Santa_acquisition_actor cause=assertion root=W19a.full/admission"
+    },
+    {
+      "scenario": "W01b.full",
+      "status": "FAIL",
+      "seconds": "2.562",
+      "cause": "assertion",
+      "root": "W01b.full/initial-spawn",
+      "line": "2026-11-23T11:39:03.3137817Z SEAM_EVIDENCE e2e_all scenario=W01b.full status=FAIL seconds=2.562 cause=assertion root=W01b.full/initial-spawn"
+    },
+    {
+      "scenario": "W23.full",
+      "status": "FAIL",
+      "seconds": "2.911",
+      "cause": "assertion",
+      "root": "W23.full/admission",
+      "line": "2026-11-23T11:40:21.4421203Z SEAM_EVIDENCE e2e_all scenario=W23.full status=FAIL seconds=2.911 evidence=step-citizenship-route-observed-no-walking-route-need-reachable-shipped-citizen-tile-for-different-home-town cause=assertion root=W23.full/admission"
+    },
+    {
+      "scenario": "C17a.full",
+      "status": "FAIL",
+      "seconds": "2.809",
+      "cause": "assertion",
+      "root": "C17a/haste-cast",
+      "line": "2026-11-23T11:40:24.2518962Z SEAM_EVIDENCE e2e_all scenario=C17a.full status=FAIL seconds=2.809 evidence=required-actions-unproven-see-E2EF5_GAP cause=assertion root=C17a/haste-cast"
+    },
+    {
+      "scenario": "C17c.full",
+      "status": "FAIL",
+      "seconds": "77.842",
+      "cause": "assertion",
+      "root": "C17c/cast-rat",
+      "line": "2026-11-23T11:41:42.0944559Z SEAM_EVIDENCE e2e_all scenario=C17c.full status=FAIL seconds=77.842 evidence=required-actions-unproven-see-E2EF5_GAP cause=assertion root=C17c/cast-rat"
+    },
+    {
+      "scenario": "C16b.full",
+      "status": "FAIL",
+      "seconds": "78.811",
+      "cause": "assertion",
+      "root": "C16b/acquire-paralyze",
+      "line": "2026-11-23T11:43:00.9052180Z SEAM_EVIDENCE e2e_all scenario=C16b.full status=FAIL seconds=78.811 evidence=required-actions-unproven-see-E2EF5_GAP cause=assertion root=C16b/acquire-paralyze"
+    },
+    {
+      "scenario": "C16a.full",
+      "status": "FAIL",
+      "seconds": "2.890",
+      "cause": "assertion",
+      "root": "C16a/acquire-magic-wall",
+      "line": "2026-11-23T11:43:03.7960105Z SEAM_EVIDENCE e2e_all scenario=C16a.full status=FAIL seconds=2.890 evidence=required-actions-unproven-see-E2EF5_GAP cause=assertion root=C16a/acquire-magic-wall"
+    },
+    {
+      "scenario": "C18a.full",
+      "status": "FAIL",
+      "seconds": "2.804",
+      "cause": "assertion",
+      "root": "C18a/player-spell-access",
+      "line": "2026-11-23T11:43:06.5994521Z SEAM_EVIDENCE e2e_all scenario=C18a.full status=FAIL seconds=2.804 evidence=required-actions-unproven-see-E2EF5_GAP cause=assertion root=C18a/player-spell-access"
+    },
+    {
+      "scenario": "C17d.full",
+      "status": "FAIL",
+      "seconds": "2.867",
+      "cause": "assertion",
+      "root": "C17d/player-challenge-access",
+      "line": "2026-11-23T11:43:09.4662759Z SEAM_EVIDENCE e2e_all scenario=C17d.full status=FAIL seconds=2.867 evidence=required-actions-unproven-see-E2EF5_GAP cause=assertion root=C17d/player-challenge-access"
+    },
+    {
+      "scenario": "C13.full",
+      "status": "FAIL",
+      "seconds": "3.355",
+      "cause": "assertion",
+      "root": "C13/summon-payment-spawn",
+      "line": "2026-11-23T11:43:12.8220148Z SEAM_EVIDENCE e2e_all scenario=C13.full status=FAIL seconds=3.355 evidence=required-actions-unproven-see-E2EF5_GAP cause=assertion root=C13/summon-payment-spawn"
+    },
+    {
+      "scenario": "C16c.full",
+      "status": "FAIL",
+      "seconds": "4.298",
+      "cause": "assertion",
+      "root": "C16c/buy-convince",
+      "line": "2026-11-23T11:43:17.1199815Z SEAM_EVIDENCE e2e_all scenario=C16c.full status=FAIL seconds=4.298 evidence=required-actions-unproven-see-E2EF5_GAP cause=assertion root=C16c/buy-convince"
+    },
+    {
+      "scenario": "C16d.full",
+      "status": "FAIL",
+      "seconds": "3.201",
+      "cause": "assertion",
+      "root": "C16d/buy-chameleon",
+      "line": "2026-11-23T11:43:20.3252704Z SEAM_EVIDENCE e2e_all scenario=C16d.full status=FAIL seconds=3.201 evidence=required-actions-unproven-see-E2EF5_GAP cause=assertion root=C16d/buy-chameleon"
+    },
+    {
+      "scenario": "E01.full",
+      "status": "FAIL",
+      "seconds": "0.029",
+      "cause": "assertion",
+      "root": "E01/greet",
+      "line": "2026-11-23T11:43:22.5535902Z SEAM_EVIDENCE e2e_all scenario=E01.full status=FAIL seconds=0.029 evidence=source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1 cause=assertion root=E01/greet"
+    },
+    {
+      "scenario": "E03.full",
+      "status": "FAIL",
+      "seconds": "0.071",
+      "cause": "assertion",
+      "root": "E03/gold-up",
+      "line": "2026-11-23T11:43:22.6248152Z SEAM_EVIDENCE e2e_all scenario=E03.full status=FAIL seconds=0.071 evidence=source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1 cause=assertion root=E03/gold-up"
+    },
+    {
+      "scenario": "E04.full",
+      "status": "FAIL",
+      "seconds": "17.293",
+      "cause": "assertion",
+      "root": "E04/relog-custody",
+      "line": "2026-11-23T11:43:39.9173580Z SEAM_EVIDENCE e2e_all scenario=E04.full status=FAIL seconds=17.293 evidence=source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1 cause=assertion root=E04/relog-custody"
+    },
+    {
+      "scenario": "E05.full",
+      "status": "FAIL",
+      "seconds": "0.029",
+      "cause": "assertion",
+      "root": "E05/browse",
+      "line": "2026-11-23T11:43:39.9469977Z SEAM_EVIDENCE e2e_all scenario=E05.full status=FAIL seconds=0.029 evidence=source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1 cause=assertion root=E05/browse"
+    },
+    {
+      "scenario": "E07.full",
+      "status": "FAIL",
+      "seconds": "0.029",
+      "cause": "assertion",
+      "root": "E07/depot",
+      "line": "2026-11-23T11:43:39.9769840Z SEAM_EVIDENCE e2e_all scenario=E07.full status=FAIL seconds=0.029 evidence=source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1 cause=assertion root=E07/depot"
+    },
+    {
+      "scenario": "S01.full",
+      "status": "FAIL",
+      "seconds": "0.028",
+      "cause": "assertion",
+      "root": "S01/invite",
+      "line": "2026-11-23T11:43:40.0042171Z SEAM_EVIDENCE e2e_all scenario=S01.full status=FAIL seconds=0.028 evidence=source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1 cause=assertion root=S01/invite"
+    },
+    {
+      "scenario": "S03.full",
+      "status": "MISSING-SERVER",
+      "seconds": "0.351",
+      "line": "2026-11-23T11:43:40.3556980Z SEAM_EVIDENCE e2e_all scenario=S03.full status=MISSING-SERVER seconds=0.351 evidence=source:crates/protocol-oteryn/src/guild.rs:17"
+    },
+    {
+      "scenario": "S09.full",
+      "status": "FAIL",
+      "seconds": "6.450",
+      "cause": "assertion",
+      "root": "S09/fight-refusal",
+      "line": "2026-11-23T11:43:46.8050641Z SEAM_EVIDENCE e2e_all scenario=S09.full status=FAIL seconds=6.450 evidence=source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1 cause=assertion root=S09/fight-refusal"
+    },
+    {
+      "scenario": "S18.full",
+      "status": "FAIL",
+      "seconds": "90.654",
+      "cause": "assertion",
+      "root": "S18/yell",
+      "line": "2026-11-23T11:45:17.4612735Z SEAM_EVIDENCE e2e_all scenario=S18.full status=FAIL seconds=90.654 evidence=source:apps/game-server/src/qualification/client_phases/full_e2ef4.rs:1 cause=assertion root=S18/yell"
+    },
+    {
+      "scenario": "MP01.full",
+      "status": "FAIL",
+      "seconds": "192.490",
+      "cause": "assertion",
+      "root": "MP01.full/pvp-combat",
+      "line": "2026-11-23T11:48:31.9662023Z SEAM_EVIDENCE e2e_all scenario=MP01.full status=FAIL seconds=192.490 cause=assertion root=MP01.full/pvp-combat"
+    },
+    {
+      "scenario": "MP09.full",
+      "status": "FAIL",
+      "seconds": "38.469",
+      "cause": "assertion",
+      "root": "MP09.full/admissions",
+      "line": "2026-11-23T11:49:10.4322241Z SEAM_EVIDENCE e2e_all scenario=MP09.full status=FAIL seconds=38.469 cause=assertion root=MP09.full/admissions"
+    },
+    {
+      "scenario": "M01.full",
+      "status": "PASS",
+      "seconds": "31.794",
+      "line": "2026-11-23T11:50:09.5249055Z SEAM_EVIDENCE e2e_all scenario=M01.full status=PASS seconds=31.794 evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs"
+    },
+    {
+      "scenario": "M02.full",
+      "status": "FAIL",
+      "seconds": "43.038",
+      "cause": "assertion",
+      "root": "M02/far-use-retry",
+      "line": "2026-11-23T11:50:52.9896159Z SEAM_EVIDENCE e2e_all scenario=M02.full status=FAIL seconds=43.038 evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs cause=assertion root=M02/far-use-retry"
+    },
+    {
+      "scenario": "M03.full",
+      "status": "FAIL",
+      "seconds": "52.314",
+      "cause": "assertion",
+      "root": "M03/teleport",
+      "line": "2026-11-23T11:52:16.9291364Z SEAM_EVIDENCE e2e_all scenario=M03.full status=FAIL seconds=52.314 evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs cause=assertion root=M03/teleport"
+    },
+    {
+      "scenario": "M04.full",
+      "status": "PASS",
+      "seconds": "475.566",
+      "line": "2026-11-23T12:00:58.6199491Z SEAM_EVIDENCE e2e_all scenario=M04.full status=PASS seconds=475.566 evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs"
+    },
+    {
+      "scenario": "M05.full",
+      "status": "PASS",
+      "seconds": "196.971",
+      "line": "2026-11-23T12:04:15.5886769Z SEAM_EVIDENCE e2e_all scenario=M05.full status=PASS seconds=196.971 evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs"
+    },
+    {
+      "scenario": "M07.full",
+      "status": "PASS",
+      "seconds": "201.024",
+      "line": "2026-11-23T12:07:36.6132210Z SEAM_EVIDENCE e2e_all scenario=M07.full status=PASS seconds=201.024 evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs"
+    },
+    {
+      "scenario": "M01.turn-result",
+      "status": "PASS",
+      "seconds": "0.740",
+      "line": "2026-11-23T12:11:15.9045729Z SEAM_EVIDENCE e2e_all scenario=M01.turn-result status=PASS seconds=0.740"
+    },
+    {
+      "scenario": "S18.say-echo",
+      "status": "PASS",
+      "seconds": "1.439",
+      "line": "2026-11-23T12:11:17.3439196Z SEAM_EVIDENCE e2e_all scenario=S18.say-echo status=PASS seconds=1.439"
+    },
+    {
+      "scenario": "S18.whisper-echo",
+      "status": "PASS",
+      "seconds": "0.587",
+      "line": "2026-11-23T12:11:17.9320970Z SEAM_EVIDENCE e2e_all scenario=S18.whisper-echo status=PASS seconds=0.587"
+    }
+  ],
+  "terminal_evidence": [
+    "2026-11-23T11:02:29.3486602Z SEAM_EVIDENCE stage=use_wire",
+    "2026-11-23T11:03:47.2734705Z SEAM_EVIDENCE stage=dev_client",
+    "2026-11-23T11:05:21.6260645Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1155 filtered out; finished in 309.15s",
+    "2026-11-23T11:05:33.8997288Z NODE_BOOT_RESULT=NODE_BOOT_PASS",
+    "2026-11-23T11:08:08.7145581Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1155 filtered out; finished in 1.86s",
+    "2026-11-23T12:11:21.5057275Z Error: \"core fresh admission did not load the saved non-spawn position\"",
+    "2026-11-23T12:11:21.5105680Z test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1155 filtered out; finished in 3786.48s",
+    "2026-11-23T12:11:21.5700965Z error: test failed, to rerun pass `-p oteryn-game-server --lib`",
+    "2026-11-23T12:12:35.6281615Z NODE_BOOT_RESULT=NODE_BOOT_FAIL"
+  ],
+  "limits": "Current main nightly, not PR3430 head qualification. Actual logs show behavioral failures; no lane removal or green-runtime claim follows."
+}

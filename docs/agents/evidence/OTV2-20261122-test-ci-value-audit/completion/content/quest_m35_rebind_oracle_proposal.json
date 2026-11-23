@@ -1,0 +1,23 @@
+{
+  "status": "CONFIRMED_UNAPPLIED_ORACLE_GAP",
+  "source_path": "tools/content-schema/quest-authoring/test_m35_reward_use_rebind.py",
+  "source_sha256": "b9bd011df462d3648f6196595c2b8103a4f4b60d014024504ab3d9552fc967f1",
+  "producer_path": "tools/content-schema/quest-authoring/qready1_reward_use_proofs.py",
+  "mutation": "Wrap actual rebind_m35_completion: retain all validation/metadata but discard every returned cases row. All three actual test methods execute.",
+  "real_case_count": 23,
+  "baseline": {
+    "tests_run": 3,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_changed_reward_or_placement_needs_new_pg_evidence (test_m35_reward_use_rebind.M35RewardUseRebindTests.test_changed_reward_or_placement_needs_new_pg_evidence) ... ok\ntest_changed_test_or_skipped_proof_is_rejected (test_m35_reward_use_rebind.M35RewardUseRebindTests.test_changed_test_or_skipped_proof_is_rejected) ... ok\ntest_only_completion_reference_changes_and_recorded_pg_evidence_is_retained (test_m35_reward_use_rebind.M35RewardUseRebindTests.test_only_completion_reference_changes_and_recorded_pg_evidence_is_retained) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.259s\n\nOK\n"
+  },
+  "mutant": {
+    "tests_run": 3,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_changed_reward_or_placement_needs_new_pg_evidence (test_m35_reward_use_rebind.M35RewardUseRebindTests.test_changed_reward_or_placement_needs_new_pg_evidence) ... ok\ntest_changed_test_or_skipped_proof_is_rejected (test_m35_reward_use_rebind.M35RewardUseRebindTests.test_changed_test_or_skipped_proof_is_rejected) ... ok\ntest_only_completion_reference_changes_and_recorded_pg_evidence_is_retained (test_m35_reward_use_rebind.M35RewardUseRebindTests.test_only_completion_reference_changes_and_recorded_pg_evidence_is_retained) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.195s\n\nOK\n"
+  },
+  "scope": "Per-file preservation oracle gap from zip without identity/cardinality equality. No source/fixture edit, no whole-suite or production reachability claim. Future test should compare exact previous/current case identities and full retained metadata."
+}

@@ -224,7 +224,7 @@ mod tests {
         for length in 0..bytes.len() {
             assert!(decode_result(&bytes[..length]).is_err());
         }
-        r.visible.push((1, 2, 7));
+        r.visible.push((9, 2, 7));
         assert!(encode_wire_result(&r).is_err());
     }
 }

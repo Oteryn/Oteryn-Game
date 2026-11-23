@@ -1,4 +1,4 @@
-// RC5: the admission relation fence is one statement and keeps every lock and its mode.
+// RC5: the admission relation fence keeps the required lock set and EXCLUSIVE mode.
 
 #[test]
 fn inventory_capacity_observation_rejects_mutation_locks_postgres() -> TestResult {
@@ -23,7 +23,7 @@ fn inventory_capacity_observation_rejects_mutation_locks_postgres() -> TestResul
 }
 
 #[test]
-fn admission_relation_fence_locks_every_relation_exclusive_in_one_statement() -> TestResult {
+fn admission_relation_fence_locks_the_required_relations_exclusively() -> TestResult {
     run_postgres_test(async {
         let (database, url) = migrated_database("holder_fence_one_stmt").await?;
         let root = ready_root(&url).await?;
@@ -46,14 +46,34 @@ fn admission_relation_fence_locks_every_relation_exclusive_in_one_statement() ->
                 })
             })
             .await?;
-        let expected: Vec<&str> = super::ADMISSION_RELATIONS_LOCK
+        // The shared native/SQL fence also appears in migrations 0095 (House shapes)
+        // and 0148 (World reset). Keep this expectation independent of the executed SQL.
+        let expected = [
+            "game_durability_admission_account_guards",
+            "game_durability_admission_character_guards",
+            "game_durability_admission_guard_history",
+            "game_durability_admission_lifecycle_receipts",
+            "game_durability_admission_runtime_guards",
+            "game_durability_admission_signing_trust_guards",
+            "game_durability_control_loss_continuity",
+            "game_durability_executor_custody",
+            "game_durability_fresh_admission_receipts",
+            "game_durability_reconnect_attempts",
+            "game_durability_reconnect_pending_commands",
+            "game_durability_reconnect_sessions",
+            "game_durability_recovery_grant_consumptions",
+            "game_durability_session_replacements",
+            "game_durability_session_use_ledgers",
+            "game_durability_session_use_memberships",
+            "game_durability_transport_ref_reservations",
+        ];
+        let declared: Vec<&str> = super::ADMISSION_RELATIONS_LOCK
             .trim_start_matches("LOCK TABLE ")
             .trim_end_matches(" IN EXCLUSIVE MODE")
             .split(", ")
             .collect();
-        assert_eq!(expected.len(), 17);
-        assert!(expected.windows(2).all(|pair| pair[0] < pair[1]), "lexical lock order");
-        assert_eq!(locked, expected);
+        assert_eq!(declared, expected, "required relations in lexical lock order");
+        assert_eq!(locked, expected, "the holder owns every required EXCLUSIVE lock");
         database.cleanup().await
     })
 }

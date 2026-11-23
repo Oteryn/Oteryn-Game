@@ -1,0 +1,234 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "rust_toolchain": "1.100.0",
+  "target": "aarch64-unknown-linux-gnu",
+  "scope": "synthetic CLI; no live server or native window",
+  "runs": [
+    {
+      "label": "format_changed",
+      "command": [
+        "rustfmt",
+        "+1.100.0",
+        "--config-path",
+        "rustfmt.toml",
+        "crates/input-platform/tests/native_winit.rs",
+        "crates/client-runtime/src/features/0064-target-move/tests/e2e_m01.rs",
+        "tools/synthetic-client-harness/src/main.rs"
+      ],
+      "returncode": 0,
+      "seconds": 0.099,
+      "summaries": []
+    },
+    {
+      "label": "client_runtime_unit",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-client-runtime"
+      ],
+      "returncode": 0,
+      "seconds": 25.326,
+      "summaries": [
+        "test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "client_runtime_clippy",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "clippy",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-client-runtime",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "returncode": 0,
+      "seconds": 16.046,
+      "summaries": []
+    },
+    {
+      "label": "baseline_synthetic",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "run",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-synthetic-client-harness"
+      ],
+      "returncode": 0,
+      "seconds": 83.892,
+      "summaries": [
+        "synthetic-ok revision=1 entities=2 asset=checker actions=1"
+      ]
+    },
+    {
+      "label": "baseline_synthetic_drop_actions",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "run",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-synthetic-client-harness"
+      ],
+      "returncode": 0,
+      "seconds": 2.63,
+      "summaries": [
+        "synthetic-ok revision=1 entities=2 asset=checker actions=0"
+      ]
+    },
+    {
+      "label": "baseline_synthetic_omit_target",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "run",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-synthetic-client-harness"
+      ],
+      "returncode": 0,
+      "seconds": 2.569,
+      "summaries": [
+        "synthetic-ok revision=1 entities=1 asset=checker actions=1"
+      ]
+    },
+    {
+      "label": "candidate_synthetic",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "run",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-synthetic-client-harness"
+      ],
+      "returncode": 0,
+      "seconds": 2.467,
+      "summaries": [
+        "synthetic-ok revision=1 entities=2 asset=checker actions=1"
+      ]
+    },
+    {
+      "label": "candidate_synthetic_drop_actions",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "run",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-synthetic-client-harness"
+      ],
+      "returncode": 1,
+      "seconds": 2.552,
+      "summaries": [
+        "Error: \"unexpected synthetic input action\""
+      ]
+    },
+    {
+      "label": "candidate_synthetic_omit_target",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "run",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-synthetic-client-harness"
+      ],
+      "returncode": 1,
+      "seconds": 2.42,
+      "summaries": [
+        "Error: \"unexpected synthetic world projection\""
+      ]
+    },
+    {
+      "label": "harness_build",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "build",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-synthetic-client-harness"
+      ],
+      "returncode": 0,
+      "seconds": 2.21,
+      "summaries": []
+    },
+    {
+      "label": "harness_clippy",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "clippy",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-synthetic-client-harness",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "returncode": 0,
+      "seconds": 130.21,
+      "summaries": []
+    },
+    {
+      "label": "format_changed_check",
+      "command": [
+        "rustfmt",
+        "+1.100.0",
+        "--config-path",
+        "rustfmt.toml",
+        "--check",
+        "crates/input-platform/tests/native_winit.rs",
+        "crates/client-runtime/src/features/0064-target-move/tests/e2e_m01.rs",
+        "tools/synthetic-client-harness/src/main.rs"
+      ],
+      "returncode": 0,
+      "seconds": 0.108,
+      "summaries": []
+    },
+    {
+      "label": "candidate_diff_check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "returncode": 0,
+      "seconds": 1.072,
+      "summaries": []
+    }
+  ],
+  "candidate_sha256": {
+    "crates/input-platform/tests/native_winit.rs": "c80929f7bdf0241f0f6a778449f343de81903f5afb1f559a4a5ccc7c7d71dcce",
+    "crates/client-runtime/src/features/0064-target-move/tests/e2e_m01.rs": "79c9d79e0e90f7e723303893da5159501c87b08f3e2096897af32817829e630c",
+    "tools/synthetic-client-harness/src/main.rs": "15e5d8f716e64c0a4ec55f24231e7ad5602335a839dd2951eae9273bda196778"
+  }
+}

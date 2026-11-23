@@ -1,0 +1,22 @@
+{
+  "finding": "COMMITTED_OTHER_COMPONENT_PACKET_SKIPPED_BY_STALE_BESIDE_TEST_LOOKUP",
+  "test_path": "tools/content-schema/quest-authoring/donor_sources/components/other/test_builder.py",
+  "test_sha256": "8d503a133a4e303b5a08cdd1b4337c3e836509110890188e05720f35ed38b7ec",
+  "existing_packet": "tools/content-schema/quest-authoring/samples/donor-source/components248/other.json.gz",
+  "packet_sha256": "a7edb8de8d357912d69a40f6c3b8ae588d62091aa70c4ec9a02f2ab660ec878b",
+  "original_batch": "quest_batch_144_155_execution.json:12cases,10PASS+2SKIP",
+  "rebound_two_cases": {
+    "returncode": 0,
+    "output": "{\"tests_run\": 2, \"success\": true, \"skips\": [], \"failures\": 0, \"errors\": 0, \"output\": \"test_checked_packet_schema_and_coverage (other_tests_audit.SourceBehaviorTests.test_checked_packet_schema_and_coverage) ... ok\\ntest_schema_blocks_native_promotion (other_tests_audit.SourceBehaviorTests.test_schema_blocks_native_promotion) ... ok\\n\\n----------------------------------------------------------------------\\nRan 2 tests in 26.702s\\n\\nOK\\n\"}\n",
+    "details": {
+      "tests_run": 2,
+      "success": true,
+      "skips": [],
+      "failures": 0,
+      "errors": 0,
+      "output": "test_checked_packet_schema_and_coverage (other_tests_audit.SourceBehaviorTests.test_checked_packet_schema_and_coverage) ... ok\ntest_schema_blocks_native_promotion (other_tests_audit.SourceBehaviorTests.test_schema_blocks_native_promotion) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 26.702s\n\nOK\n"
+    }
+  },
+  "elapsed_seconds": 26.872,
+  "scope": "Existing two skipped cases only,55-second bound, exact committed packet bytes and schema copied into temporary expected filename. No source/fixture/skip edits. An earlier unbounded12case probe completed but failed evidence serialization; its outcome is not claimed."
+}

@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "container_name": "oteryn-test-ci-value-audit-durability-20261123",
+  "verified_container_id_before_stop": "49e7f9bf1f143487aa31c06cc158a2eef5abe8c23b702bada0ad244c5a133a3f",
+  "stop_argv": [
+    "sudo",
+    "-n",
+    "docker",
+    "stop",
+    "oteryn-test-ci-value-audit-durability-20261123"
+  ],
+  "stop_rc": 0,
+  "container_absent_after_auto_remove": true,
+  "removed_task_secret_files": [
+    "admin-url",
+    "postgres.env"
+  ],
+  "automation_note": "The first immediate post-stop absence assertion raced Docker auto-removal and saw short ID49e7f9bf1f14; wrapper232055 exited1 after the successful stop. Read-only follow-up235467 found no such object and an empty docker ps filter. No second stop was issued.",
+  "boundary": "Only this task-created PostgreSQL container and its task-local credential files were stopped/removed; no existing services or daemon settings changed."
+}

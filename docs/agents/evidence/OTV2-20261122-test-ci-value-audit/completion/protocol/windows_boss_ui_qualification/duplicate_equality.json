@@ -1,0 +1,20 @@
+{
+  "path": "crates/client-ui/src/features/0117-boss-encounter/tests/state.rs",
+  "baseline_sha256": "bdf46a27a152c43d1a5347d67e95770307e063a90c4ff9ac69204450469fac0b",
+  "candidate_sha256": "a08947ccd0b93908526c5976683d13ab538b85e8e5ec9d595044e9ac2187c9de",
+  "kept_test": "endgame_chain_selection_covers_both_chains_without_claiming_progress",
+  "removed_test": "endgame_chain_selection_preserves_confirmed_progress_boundary",
+  "body_equality": "Exact bytes including attributes/signature/body after replacing only function name and stripping trailing blank lines",
+  "normalized_body_sha256": "263320b9e6135bc4159c95c55aa89cd7ca1182bdf28f5b34e9f34b1a31fa954b",
+  "normalized_body_bytes": 1706,
+  "kept_range": [
+    232,
+    280
+  ],
+  "removed_range": [
+    386,
+    434
+  ],
+  "test_attributes_before": 15,
+  "test_attributes_after": 14
+}

@@ -1,0 +1,200 @@
+{
+  "scope": "Actual existing module executions with current committed fixtures; 50-second per-module bound; no full game runtime or complete CI selection claim",
+  "results": [
+    {
+      "queue_index": 120,
+      "path": "tools/content-schema/quest-authoring/test_questpc2_effect_authoring.py",
+      "sha256": "a55fd75a8b83350c140b4d739fa27fd6d45d98d29b74fef1fb1d170ca8c86dc7",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_questpc2_effect_authoring.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 13.545,
+      "output": "test_party_rite_refuses_partial_and_unbounded_definitions (__main__.QuestPC2SourceEffects.test_party_rite_refuses_partial_and_unbounded_definitions) ... ok\ntest_reward_door_matches_pinned_source_and_refuses_shadow_progress (__main__.QuestPC2SourceEffects.test_reward_door_matches_pinned_source_and_refuses_shadow_progress) ... ok\ntest_source_four_stations_and_return_phase_are_pinned (__main__.QuestPC2SourceEffects.test_source_four_stations_and_return_phase_are_pinned) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 13.432s\n\nOK\n"
+    },
+    {
+      "queue_index": 121,
+      "path": "tools/content-schema/quest-authoring/test_source_fix_guard.py",
+      "sha256": "b3586a856c30a451e5b1c68ea9fbdb29572ea310da869b9500936552c795a9e0",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_source_fix_guard.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 17.882,
+      "output": "test_actual_twenty_six_reviewed_core_changes_pass (__main__.SourceFixGuardTests.test_actual_twenty_six_reviewed_core_changes_pass) ... ok\ntest_bad_caller_baseline_digest (__main__.SourceFixGuardTests.test_bad_caller_baseline_digest) ... ok\ntest_bad_immutable_baseline_sha (__main__.SourceFixGuardTests.test_bad_immutable_baseline_sha) ... ok\ntest_bad_to_digest (__main__.SourceFixGuardTests.test_bad_to_digest) ... ok\ntest_false_native_receipt_flag_rejects_true (__main__.SourceFixGuardTests.test_false_native_receipt_flag_rejects_true) ... ok\ntest_native_admission_rejected_after_resealed_signature (__main__.SourceFixGuardTests.test_native_admission_rejected_after_resealed_signature) ... ok\ntest_proof_or_compiler_bytes_cannot_change (__main__.SourceFixGuardTests.test_proof_or_compiler_bytes_cannot_change) ... ok\ntest_recipe_bytes_cannot_change (__main__.SourceFixGuardTests.test_recipe_bytes_cannot_change) ... ok\ntest_source_donor_revision_rejected_after_resealed_signature (__main__.SourceFixGuardTests.test_source_donor_revision_rejected_after_resealed_signature) ... ok\ntest_source_owner_rejected_after_resealed_signature (__main__.SourceFixGuardTests.test_source_owner_rejected_after_resealed_signature) ... ok\ntest_unlisted_core_mutation (__main__.SourceFixGuardTests.test_unlisted_core_mutation) ... ok\ntest_unrelated_core_field_rejected_after_resealed_signature (__main__.SourceFixGuardTests.test_unrelated_core_field_rejected_after_resealed_signature) ... ok\n\n----------------------------------------------------------------------\nRan 12 tests in 17.476s\n\nOK\n"
+    },
+    {
+      "queue_index": 122,
+      "path": "tools/content-schema/quest-authoring/test_tile_copy_proof.py",
+      "sha256": "c39e0d5a8b5d2f1ca0963d22f9ac8bef645ca1b2b6ae933d0a4918c084629776",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_tile_copy_proof.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 0.207,
+      "output": "test_alias_and_function_escape_remain_held (__main__.TileCopyProofTests.test_alias_and_function_escape_remain_held) ... ok\ntest_bare_tile_coordinate_copy_preserves_known_create (__main__.TileCopyProofTests.test_bare_tile_coordinate_copy_preserves_known_create) ... ok\ntest_fresh_pure_coordinate_table_copy_is_not_an_unknown_escape (__main__.TileCopyProofTests.test_fresh_pure_coordinate_table_copy_is_not_an_unknown_escape) ... ok\ntest_impure_duplicate_constructor_fields_are_not_collapsed_to_proof (__main__.TileCopyProofTests.test_impure_duplicate_constructor_fields_are_not_collapsed_to_proof) ... ok\ntest_later_member_mutation_and_inline_else_remain_held (__main__.TileCopyProofTests.test_later_member_mutation_and_inline_else_remain_held) ... ok\ntest_mutating_tile_constructor_is_not_a_copy (__main__.TileCopyProofTests.test_mutating_tile_constructor_is_not_a_copy) ... ok\ntest_position_constructor_shadow_is_not_literal_proof (__main__.TileCopyProofTests.test_position_constructor_shadow_is_not_literal_proof) ... ok\ntest_same_named_qualified_calls_cannot_borrow_global_proof (__main__.TileCopyProofTests.test_same_named_qualified_calls_cannot_borrow_global_proof) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.064s\n\nOK\n"
+    },
+    {
+      "queue_index": 123,
+      "path": "tools/content-schema/quest-authoring/test_quest_enrichment_authoring.py",
+      "sha256": "f3fada697505374f87ddd0e60f64dcb4c5af4752bef2e352578d6471da82d815",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_quest_enrichment_authoring.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 18.449,
+      "output": "test_capture_rebinding_requires_record_proof (__main__.EnrichmentTests.test_capture_rebinding_requires_record_proof) ... ok\ntest_capture_without_local_wiki_or_donors (__main__.EnrichmentTests.test_capture_without_local_wiki_or_donors) ... ok\ntest_exact242_and5418_portable (__main__.EnrichmentTests.test_exact242_and5418_portable) ... ok\ntest_import_rejects_unaccepted_original (__main__.EnrichmentTests.test_import_rejects_unaccepted_original) ... ok\ntest_novelty_counter_mutation (__main__.EnrichmentTests.test_novelty_counter_mutation) ... ok\ntest_output_tampering (__main__.EnrichmentTests.test_output_tampering) ... ok\ntest_reducer_references_and_counts (__main__.EnrichmentTests.test_reducer_references_and_counts) ... ok\ntest_schema_closed_deep_and_native_flags (__main__.EnrichmentTests.test_schema_closed_deep_and_native_flags) ... ok\ntest_scope_missing_foreign_or_duplicate (__main__.EnrichmentTests.test_scope_missing_foreign_or_duplicate) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 18.275s\n\nOK\n"
+    },
+    {
+      "queue_index": 124,
+      "path": "tools/content-schema/quest-authoring/test_quest_reward_followup.py",
+      "sha256": "855d4cd9b25612fc4cf1c6f7a06bbaef338b77b49d4dee5a6ff0cd1e958390aa",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_quest_reward_followup.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 1.503,
+      "output": "test_changed_recipe_rejected (__main__.RewardFollowupTests.test_changed_recipe_rejected) ... ok\ntest_duplicate_owner_rejected (__main__.RewardFollowupTests.test_duplicate_owner_rejected) ... ok\ntest_exact_two_rewards_preserve_source_core (__main__.RewardFollowupTests.test_exact_two_rewards_preserve_source_core) ... ok\ntest_excludes_other_spectulus_quest_grants (__main__.RewardFollowupTests.test_excludes_other_spectulus_quest_grants) ... ok\ntest_guarded_source_span_tamper_rejected (__main__.RewardFollowupTests.test_guarded_source_span_tamper_rejected) ... ok\ntest_incomplete_donor_coverage_rejected (__main__.RewardFollowupTests.test_incomplete_donor_coverage_rejected) ... ok\ntest_runtime_promotion_rejected (__main__.RewardFollowupTests.test_runtime_promotion_rejected) ... ok\ntest_source_raw_tamper_rejected (__main__.RewardFollowupTests.test_source_raw_tamper_rejected) ... ok\ntest_wrong_sum_rejected (__main__.RewardFollowupTests.test_wrong_sum_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 1.403s\n\nOK\n"
+    },
+    {
+      "queue_index": 125,
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/composition/test_builder.py",
+      "sha256": "f1b26abdc53f63d9d69aed140fb4c1fcb837d7b99450a3fe0367c90f00a35833",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/donor_sources/refinements/composition/test_builder.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/donor_sources/refinements/composition",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 0.148,
+      "output": "test_compare_retains_types_and_metamethod_errors (__main__.CompositionTests.test_compare_retains_types_and_metamethod_errors) ... ok\ntest_field_operand_refs_are_replaced_recursively (__main__.CompositionTests.test_field_operand_refs_are_replaced_recursively) ... ok\ntest_helper_arguments_are_centrally_recomposed (__main__.CompositionTests.test_helper_arguments_are_centrally_recomposed) ... ok\ntest_incomplete_nested_specs_never_count_complete (__main__.CompositionTests.test_incomplete_nested_specs_never_count_complete) ... ok\ntest_large_integer_not_silently_converted (__main__.CompositionTests.test_large_integer_not_silently_converted) ... ok\ntest_long_bracket_initial_newline_not_assumed_from_parser_bytes (__main__.CompositionTests.test_long_bracket_initial_newline_not_assumed_from_parser_bytes) ... ok\ntest_method_lookup_precedes_argument_evaluation (__main__.CompositionTests.test_method_lookup_precedes_argument_evaluation) ... ok\ntest_mixed_constructor_implicit_indices_do_not_count_keyed_fields (__main__.CompositionTests.test_mixed_constructor_implicit_indices_do_not_count_keyed_fields) ... ok\ntest_named_key_and_square_name_key_are_distinct (__main__.CompositionTests.test_named_key_and_square_name_key_are_distinct) ... ok\ntest_not_does_not_apply_python_truthiness (__main__.CompositionTests.test_not_does_not_apply_python_truthiness) ... ok\ntest_short_circuit_keeps_original_values_and_right_conditional (__main__.CompositionTests.test_short_circuit_keeps_original_values_and_right_conditional) ... ok\ntest_subtract_keeps_clock_and_last_end_order (__main__.CompositionTests.test_subtract_keeps_clock_and_last_end_order) ... ok\ntest_unknown_method_and_grammar_retained_unresolved (__main__.CompositionTests.test_unknown_method_and_grammar_retained_unresolved) ... ok\ntest_child_expression_must_be_an_object (__main__.RecursiveSchemaTests.test_child_expression_must_be_an_object) ... ok\ntest_closed_unknown_expression_property_rejected (__main__.RecursiveSchemaTests.test_closed_unknown_expression_property_rejected) ... ok\ntest_complete_expression_cannot_hide_unresolved_operation (__main__.RecursiveSchemaTests.test_complete_expression_cannot_hide_unresolved_operation) ... ok\ntest_nested_native_promotion_and_operand_reference_rejected (__main__.RecursiveSchemaTests.test_nested_native_promotion_and_operand_reference_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 17 tests in 0.051s\n\nOK\n"
+    },
+    {
+      "queue_index": 126,
+      "path": "tools/content-schema/quest-authoring/test_qengine_effect_authoring.py",
+      "sha256": "29c6d02c559cef96fefa54710604b10994e2ffbf9d6acb835ee2d1b56f23bbe2",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_qengine_effect_authoring.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 15.372,
+      "output": "test_all_source_effect_shapes_validate (__main__.SharedEffectAuthoring.test_all_source_effect_shapes_validate) ... ok\ntest_encounter_bounds_and_atomic_effect_composition (__main__.SharedEffectAuthoring.test_encounter_bounds_and_atomic_effect_composition) ... ok\ntest_invalid_shared_effects_are_refused (__main__.SharedEffectAuthoring.test_invalid_shared_effects_are_refused) ... ok\ntest_scripted_landing_requires_explicit_native_player_destination (__main__.SharedEffectAuthoring.test_scripted_landing_requires_explicit_native_player_destination) ... ok\ntest_source_plate_stepout_and_paired_portals_are_authorable (__main__.SharedEffectAuthoring.test_source_plate_stepout_and_paired_portals_are_authorable) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 15.293s\n\nOK\n"
+    },
+    {
+      "queue_index": 127,
+      "path": "tools/content-schema/quest-authoring/test_quest_chosen_journal.py",
+      "sha256": "6eedc1766793e86d78da3b365c2672123b907fe59e9ab6b22d2ba48918fbdc37",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_quest_chosen_journal.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 11.407,
+      "output": "test_distinct_task_and_new_death_fences (__main__.ChosenTests.test_distinct_task_and_new_death_fences) ... ok\ntest_finite_schema_and_raw_source_replay (__main__.ChosenTests.test_finite_schema_and_raw_source_replay) ... ok\ntest_missing_packet_fail_closed (__main__.ChosenTests.test_missing_packet_fail_closed) ... ok\ntest_mission_and_stage_drift_rejected (__main__.ChosenTests.test_mission_and_stage_drift_rejected) ... ok\ntest_packet_unknown_promotion_choice_rejected (__main__.ChosenTests.test_packet_unknown_promotion_choice_rejected) ... ok\ntest_source_rewards_and_title_map_preserved (__main__.ChosenTests.test_source_rewards_and_title_map_preserved) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 11.291s\n\nOK\n"
+    },
+    {
+      "queue_index": 128,
+      "path": "tools/content-schema/quest-authoring/donor_sources/components/joins/test_component_crosswalk.py",
+      "sha256": "ebddd45ec19142727d29989e2a96554177a29dabd0b6ad764eb4246be6de6e5a",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/donor_sources/components/joins/test_component_crosswalk.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/donor_sources/components/joins",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 3.526,
+      "output": "test_accessor_only (__main__.LexicalEvidenceTests.test_accessor_only) ... ok\ntest_comments_and_strings_do_not_join (__main__.LexicalEvidenceTests.test_comments_and_strings_do_not_join) ... ok\ntest_offsets (__main__.LexicalEvidenceTests.test_offsets) ... ok\ntest_shadowed_accessor_remains_lexical_only (__main__.LexicalEvidenceTests.test_shadowed_accessor_remains_lexical_only) ... ok\ntest_all_components_and_quests (__main__.RealPacketTests.test_all_components_and_quests) ... ok\ntest_directory_does_not_promote (__main__.RealPacketTests.test_directory_does_not_promote) ... ok\ntest_no_completeness_promotion (__main__.RealPacketTests.test_no_completeness_promotion) ... ok\ntest_pinned_proof_span (__main__.RealPacketTests.test_pinned_proof_span) ... ok\ntest_schema_rejects_extra_and_promoted_quest (__main__.RealPacketTests.test_schema_rejects_extra_and_promoted_quest) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 3.426s\n\nOK\n"
+    },
+    {
+      "queue_index": 129,
+      "path": "tools/content-schema/quest-authoring/test_donor_semantic_conditions.py",
+      "sha256": "5b225518e30cb7d94bbf20f9d67a1cc2b46d0578b089337419070538b9d2812e",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_donor_semantic_conditions.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 0.28,
+      "output": "test_boolean_siblings_exact_unknown_retained (__main__.Conditions.test_boolean_siblings_exact_unknown_retained) ... ok\ntest_clock_exact_operand_and_operator (__main__.Conditions.test_clock_exact_operand_and_operator) ... ok\ntest_crlf_unicode_exact_opaque_sibling_span (__main__.Conditions.test_crlf_unicode_exact_opaque_sibling_span) ... ok\ntest_fixture_lookup_rejects_unknown_or_mutated_source (__main__.Conditions.test_fixture_lookup_rejects_unknown_or_mutated_source) ... ok\ntest_no_false_clock_from_string (__main__.Conditions.test_no_false_clock_from_string) ... ok\ntest_position_literal (__main__.Conditions.test_position_literal) ... ok\ntest_reject_clock_args_arithmetic_snapshot (__main__.Conditions.test_reject_clock_args_arithmetic_snapshot) ... ok\ntest_reject_clock_shadow_mutation_escape_reflection (__main__.Conditions.test_reject_clock_shadow_mutation_escape_reflection) ... ok\ntest_reject_player_mutation_or_wrong_actor (__main__.Conditions.test_reject_player_mutation_or_wrong_actor) ... ok\ntest_reject_position_shadow_computed_bad_coordinates (__main__.Conditions.test_reject_position_shadow_computed_bad_coordinates) ... ok\ntest_reject_source_object_shadow_mutation_escape (__main__.Conditions.test_reject_source_object_shadow_mutation_escape) ... ok\ntest_reversed_clock_keeps_order (__main__.Conditions.test_reversed_clock_keeps_order) ... ok\ntest_same_bytes_two_donors_keep_world_state_namespace (__main__.Conditions.test_same_bytes_two_donors_keep_world_state_namespace) ... ok\ntest_schema_rejects_runtime_upgrade_or_wrong_operand_pair (__main__.Conditions.test_schema_rejects_runtime_upgrade_or_wrong_operand_pair) ... ok\ntest_world_state_clock (__main__.Conditions.test_world_state_clock) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 0.115s\n\nOK\n"
+    },
+    {
+      "queue_index": 130,
+      "path": "tools/content-schema/quest-authoring/test_galthen_native_kills.py",
+      "sha256": "d84b23032c0006b1fe3f14ab4da3807c330d221810a8f68c773119fb5b13dee9",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_galthen_native_kills.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 0.727,
+      "output": "test_actual_authoring_lowering_preserves_exact_boss_predecessors_and_separate_completion (__main__.GalthenNativeKillLowering.test_actual_authoring_lowering_preserves_exact_boss_predecessors_and_separate_completion) ... ok\ntest_completion_plan_binds_two_kills_and_does_not_activate_other_stages (__main__.GalthenNativeKillLowering.test_completion_plan_binds_two_kills_and_does_not_activate_other_stages) ... ok\ntest_selected_source_guards_fail_closed_on_recipe_drift (__main__.GalthenNativeKillLowering.test_selected_source_guards_fail_closed_on_recipe_drift) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.654s\n\nOK\n"
+    },
+    {
+      "queue_index": 131,
+      "path": "tools/content-schema/quest-authoring/donor_sources/refinements/entity_predicates/test_engine.py",
+      "sha256": "24c035ea4bde17e16da9748a41e26042929c6b69b0c9ca878f9d34b264662b7d",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/donor_sources/refinements/entity_predicates/test_engine.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/donor_sources/refinements/entity_predicates",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 3.21,
+      "output": "test_changed_node_rejected (__main__.EntityProjectionTests.test_changed_node_rejected) ... ok\ntest_closed_packet_schema_and_predicate_defaults (__main__.EntityProjectionTests.test_closed_packet_schema_and_predicate_defaults) ... ok\ntest_cpp_brace_mask_ignores_comments_strings (__main__.EntityProjectionTests.test_cpp_brace_mask_ignores_comments_strings) ... ok\ntest_expression_receiver_not_guessed (__main__.EntityProjectionTests.test_expression_receiver_not_guessed) ... ok\ntest_no_lexical_binding_not_projected (__main__.EntityProjectionTests.test_no_lexical_binding_not_projected) ... ok\ntest_projection_preserves_lookup_errors_and_unknown_runtime_class (__main__.EntityProjectionTests.test_projection_preserves_lookup_errors_and_unknown_runtime_class) ... ok\ntest_schema_prevents_native_or_proven_dispatch_promotion (__main__.EntityProjectionTests.test_schema_prevents_native_or_proven_dispatch_promotion) ... ok\ntest_unknown_method_not_projected (__main__.EntityProjectionTests.test_unknown_method_not_projected) ... ok\ntest_wrong_arity_not_projected (__main__.EntityProjectionTests.test_wrong_arity_not_projected) ... ok\ntest_wrong_ast_pointer_rejected (__main__.EntityProjectionTests.test_wrong_ast_pointer_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 10 tests in 2.923s\n\nOK\n"
+    },
+    {
+      "queue_index": 132,
+      "path": "tools/content-schema/quest-authoring/test_scoped_interaction_storage.py",
+      "sha256": "6a8d8dd0457181d412f8894854833e4cc052249c0ef33f7b2f739c90eafc16de",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_scoped_interaction_storage.py",
+        "-v"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring",
+      "returncode": 0,
+      "status": "PASS",
+      "elapsed_seconds": 0.252,
+      "output": "test_after_closed_function_named_alias_adds_exact_condition_and_write (__main__.ScopedInteractionStorageTests.test_after_closed_function_named_alias_adds_exact_condition_and_write) ... ok\ntest_alias_mutation_shadow_escape_and_reflection_stay_opaque (__main__.ScopedInteractionStorageTests.test_alias_mutation_shadow_escape_and_reflection_stay_opaque) ... ok\ntest_callback_numeric_alias_does_not_join_world_namespace (__main__.ScopedInteractionStorageTests.test_callback_numeric_alias_does_not_join_world_namespace) ... ok\ntest_computed_selector_and_unknown_write_value_remain_separate_holds (__main__.ScopedInteractionStorageTests.test_computed_selector_and_unknown_write_value_remain_separate_holds) ... ok\ntest_receiver_reassign_shadow_escape_and_foreign_player_stay_opaque (__main__.ScopedInteractionStorageTests.test_receiver_reassign_shadow_escape_and_foreign_player_stay_opaque) ... ok\ntest_same_actor_factory_alias_is_scoped_and_getter_snapshot_safe (__main__.ScopedInteractionStorageTests.test_same_actor_factory_alias_is_scoped_and_getter_snapshot_safe) ... ok\ntest_scope_forward_sibling_and_callback_separation (__main__.ScopedInteractionStorageTests.test_scope_forward_sibling_and_callback_separation) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 0.079s\n\nOK\n"
+    }
+  ]
+}

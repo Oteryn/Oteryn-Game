@@ -339,7 +339,10 @@ mod tests {
         invalid = page;
         invalid.categories.clear();
         assert!(encode_page(&invalid).is_err());
-        assert!(decode_page(&vec![0; MAX_BYTES + 1]).is_err());
+        assert_eq!(
+            decode_page(&vec![0; MAX_BYTES + 1]),
+            Err(Error::LimitExceeded)
+        );
         Ok(())
     }
 }

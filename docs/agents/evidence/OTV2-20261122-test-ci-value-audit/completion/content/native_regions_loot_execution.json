@@ -1,0 +1,197 @@
+{
+  "limits": "Execution only; no inferred semantic review or hosted CI proof.",
+  "results": [
+    {
+      "path": "tools/content-schema/native-gameplay/test_activity_source_regions.py",
+      "source_sha256": "3f46887bf3582c8143ad177e820459971d2a404340556fbcccce50c174b46c36",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_activity_source_regions"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.238,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 4,
+      "case_results": [
+        "test_anomaly_restoration_has_exact_source_item_policy (test_activity_source_regions.SourceRegions.test_anomaly_restoration_has_exact_source_item_policy) ... ok",
+        "test_every_capture_retains_exact_producer_regions_and_all_real_tiles (test_activity_source_regions.SourceRegions.test_every_capture_retains_exact_producer_regions_and_all_real_tiles) ... ok",
+        "test_ichgahal_exit_keeps_raw_teleport_and_captures_its_exact_arrival (test_activity_source_regions.SourceRegions.test_ichgahal_exit_keeps_raw_teleport_and_captures_its_exact_arrival) ... ok",
+        "test_primal_disjoint_gap_does_not_become_proved_absent (test_activity_source_regions.SourceRegions.test_primal_disjoint_gap_does_not_become_proved_absent) ... ok"
+      ],
+      "output_tail": "test_anomaly_restoration_has_exact_source_item_policy (test_activity_source_regions.SourceRegions.test_anomaly_restoration_has_exact_source_item_policy) ... ok\ntest_every_capture_retains_exact_producer_regions_and_all_real_tiles (test_activity_source_regions.SourceRegions.test_every_capture_retains_exact_producer_regions_and_all_real_tiles) ... ok\ntest_ichgahal_exit_keeps_raw_teleport_and_captures_its_exact_arrival (test_activity_source_regions.SourceRegions.test_ichgahal_exit_keeps_raw_teleport_and_captures_its_exact_arrival) ... ok\ntest_primal_disjoint_gap_does_not_become_proved_absent (test_activity_source_regions.SourceRegions.test_primal_disjoint_gap_does_not_become_proved_absent) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.138s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 4,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_m25_source_rooms.py",
+      "source_sha256": "d13ddf4dc29cbbd2cc3a97ad3c1d44238bdbd895675870cb0eae9ef6883201c2",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_m25_source_rooms"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.105,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 2,
+      "case_results": [
+        "test_ahau_keeps_external_teleport_and_waiting_cells_separate (test_m25_source_rooms.M25SourceRooms.test_ahau_keeps_external_teleport_and_waiting_cells_separate) ... ok",
+        "test_mitmah_keeps_distinct_use_exit_and_destination (test_m25_source_rooms.M25SourceRooms.test_mitmah_keeps_distinct_use_exit_and_destination) ... ok"
+      ],
+      "output_tail": "test_ahau_keeps_external_teleport_and_waiting_cells_separate (test_m25_source_rooms.M25SourceRooms.test_ahau_keeps_external_teleport_and_waiting_cells_separate) ... ok\ntest_mitmah_keeps_distinct_use_exit_and_destination (test_m25_source_rooms.M25SourceRooms.test_mitmah_keeps_distinct_use_exit_and_destination) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.000s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 2,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_source_world.py",
+      "source_sha256": "93d7e3e7880d245c2c3f356c7edc5a0830ad7f7948f45f1f71fe783e36ea22b6",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_source_world"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.18,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 5,
+      "case_results": [
+        "test_actual_source_rectangle_has_genuine_temple_rope_and_multifloor_ground (test_source_world.SourceWorldTests.test_actual_source_rectangle_has_genuine_temple_rope_and_multifloor_ground) ... ok",
+        "test_item_movement_attributes_override_type_exactly (test_source_world.SourceWorldTests.test_item_movement_attributes_override_type_exactly) ... ok",
+        "test_mutable_native_bindings_are_explicit_and_preserve_both_source_pins (test_source_world.SourceWorldTests.test_mutable_native_bindings_are_explicit_and_preserve_both_source_pins) ... ok",
+        "test_mutable_source_stacks_are_unavailable_never_empty_current_world (test_source_world.SourceWorldTests.test_mutable_source_stacks_are_unavailable_never_empty_current_world) ... ok",
+        "test_protobuf_truncation_and_source_unknowns_are_rejected (test_source_world.SourceWorldTests.test_protobuf_truncation_and_source_unknowns_are_rejected) ... ok"
+      ],
+      "output_tail": "test_actual_source_rectangle_has_genuine_temple_rope_and_multifloor_ground (test_source_world.SourceWorldTests.test_actual_source_rectangle_has_genuine_temple_rope_and_multifloor_ground) ... ok\ntest_item_movement_attributes_override_type_exactly (test_source_world.SourceWorldTests.test_item_movement_attributes_override_type_exactly) ... ok\ntest_mutable_native_bindings_are_explicit_and_preserve_both_source_pins (test_source_world.SourceWorldTests.test_mutable_native_bindings_are_explicit_and_preserve_both_source_pins) ... ok\ntest_mutable_source_stacks_are_unavailable_never_empty_current_world (test_source_world.SourceWorldTests.test_mutable_source_stacks_are_unavailable_never_empty_current_world) ... ok\ntest_protobuf_truncation_and_source_unknowns_are_rejected (test_source_world.SourceWorldTests.test_protobuf_truncation_and_source_unknowns_are_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.101s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 5,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_regeneration_marker_audit.py",
+      "source_sha256": "df3a6b1b029c05540df519a0ddb5771c2f897b851f7ddab9ea911b03a88e4664",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_regeneration_marker_audit"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.104,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 4,
+      "case_results": [
+        "test_cache_corruption_refuses_pinned_git_identity (test_regeneration_marker_audit.MarkerAuditTests.test_cache_corruption_refuses_pinned_git_identity) ... ok",
+        "test_literal_shared_regeneration_condition_retains_full_subid_and_zero_integer_gain (test_regeneration_marker_audit.MarkerAuditTests.test_literal_shared_regeneration_condition_retains_full_subid_and_zero_integer_gain) ... ok",
+        "test_spell_registration_and_speech_do_not_invent_monster_vector_callers (test_regeneration_marker_audit.MarkerAuditTests.test_spell_registration_and_speech_do_not_invent_monster_vector_callers) ... ok",
+        "test_storage_and_damage_literals_do_not_become_condition_markers (test_regeneration_marker_audit.MarkerAuditTests.test_storage_and_damage_literals_do_not_become_condition_markers) ... ok"
+      ],
+      "output_tail": "test_cache_corruption_refuses_pinned_git_identity (test_regeneration_marker_audit.MarkerAuditTests.test_cache_corruption_refuses_pinned_git_identity) ... ok\ntest_literal_shared_regeneration_condition_retains_full_subid_and_zero_integer_gain (test_regeneration_marker_audit.MarkerAuditTests.test_literal_shared_regeneration_condition_retains_full_subid_and_zero_integer_gain) ... ok\ntest_spell_registration_and_speech_do_not_invent_monster_vector_callers (test_regeneration_marker_audit.MarkerAuditTests.test_spell_registration_and_speech_do_not_invent_monster_vector_callers) ... ok\ntest_storage_and_damage_literals_do_not_become_condition_markers (test_regeneration_marker_audit.MarkerAuditTests.test_storage_and_damage_literals_do_not_become_condition_markers) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.009s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 4,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_summer_corpse_items.py",
+      "source_sha256": "12dc34c4bea9d61136882cb049f8d15872bfcebf8843ddedd1ad3bea8c418c89",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_summer_corpse_items"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 6.388,
+      "timeout_seconds": 50.0,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 3,
+      "case_results": [
+        "test_committed_shards_are_deterministic_output (test_summer_corpse_items.SummerItemOwnershipTests.test_committed_shards_are_deterministic_output) ... ok",
+        "test_loot_admission_excludes_existing_imbuement_and_refinement_owners (test_summer_corpse_items.SummerItemOwnershipTests.test_loot_admission_excludes_existing_imbuement_and_refinement_owners) ... ok",
+        "test_utility_records_are_plain_materializable_loot_and_unchanged (test_summer_corpse_items.SummerItemOwnershipTests.test_utility_records_are_plain_materializable_loot_and_unchanged) ... ok"
+      ],
+      "output_tail": "test_committed_shards_are_deterministic_output (test_summer_corpse_items.SummerItemOwnershipTests.test_committed_shards_are_deterministic_output) ... ok\ntest_loot_admission_excludes_existing_imbuement_and_refinement_owners (test_summer_corpse_items.SummerItemOwnershipTests.test_loot_admission_excludes_existing_imbuement_and_refinement_owners) ... ok\ntest_utility_records_are_plain_materializable_loot_and_unchanged (test_summer_corpse_items.SummerItemOwnershipTests.test_utility_records_are_plain_materializable_loot_and_unchanged) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 6.178s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 3,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_corpse_loot_admission.py",
+      "source_sha256": "050da33b079543cd3e537681869eb7bd9e50c3f5e97c74a6a1c8c5491d942463",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_corpse_loot_admission"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 18.224,
+      "timeout_seconds": 50.0,
+      "exit_code": 1,
+      "status": "FAIL",
+      "unittest_case_count": 6,
+      "case_results": [
+        "test_actual_ground_only_minotaur_corpse_reaches_production_loot_facts (test_corpse_loot_admission.CorpseLootAdmissionTests.test_actual_ground_only_minotaur_corpse_reaches_production_loot_facts) ... ok",
+        "test_actual_minotaur_loot_closure_reuses_qualified_native_inventory_facts (test_corpse_loot_admission.CorpseLootAdmissionTests.test_actual_minotaur_loot_closure_reuses_qualified_native_inventory_facts) ... ERROR",
+        "test_fresh_candidate_item_profiles_close_loot_before_disk_registration (test_corpse_loot_admission.CorpseLootAdmissionTests.test_fresh_candidate_item_profiles_close_loot_before_disk_registration) ... ok",
+        "test_reference_only_corpse_cannot_be_promoted_as_a_regular_loot_yield (test_corpse_loot_admission.CorpseLootAdmissionTests.test_reference_only_corpse_cannot_be_promoted_as_a_regular_loot_yield) ... ok",
+        "test_source_ground_container_facts_are_reused_without_inventory_grant (test_corpse_loot_admission.CorpseLootAdmissionTests.test_source_ground_container_facts_are_reused_without_inventory_grant) ... ok",
+        "test_unknown_or_mismatched_native_facts_keep_corpse_closed (test_corpse_loot_admission.CorpseLootAdmissionTests.test_unknown_or_mismatched_native_facts_keep_corpse_closed) ... ok"
+      ],
+      "output_tail": "t_facts (test_corpse_loot_admission.CorpseLootAdmissionTests.test_actual_ground_only_minotaur_corpse_reaches_production_loot_facts) ... ok\ntest_actual_minotaur_loot_closure_reuses_qualified_native_inventory_facts (test_corpse_loot_admission.CorpseLootAdmissionTests.test_actual_minotaur_loot_closure_reuses_qualified_native_inventory_facts) ... ERROR\ntest_fresh_candidate_item_profiles_close_loot_before_disk_registration (test_corpse_loot_admission.CorpseLootAdmissionTests.test_fresh_candidate_item_profiles_close_loot_before_disk_registration) ... ok\ntest_reference_only_corpse_cannot_be_promoted_as_a_regular_loot_yield (test_corpse_loot_admission.CorpseLootAdmissionTests.test_reference_only_corpse_cannot_be_promoted_as_a_regular_loot_yield) ... ok\ntest_source_ground_container_facts_are_reused_without_inventory_grant (test_corpse_loot_admission.CorpseLootAdmissionTests.test_source_ground_container_facts_are_reused_without_inventory_grant) ... ok\ntest_unknown_or_mismatched_native_facts_keep_corpse_closed (test_corpse_loot_admission.CorpseLootAdmissionTests.test_unknown_or_mismatched_native_facts_keep_corpse_closed) ... ok\n\n======================================================================\nERROR: test_actual_minotaur_loot_closure_reuses_qualified_native_inventory_facts (test_corpse_loot_admission.CorpseLootAdmissionTests.test_actual_minotaur_loot_closure_reuses_qualified_native_inventory_facts)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/test_corpse_loot_admission.py\", line 41, in test_actual_minotaur_loot_closure_reuses_qualified_native_inventory_facts\n    self.assertTrue(facts['oteryn:item.tibia.i11472']['stackable'])\n                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nKeyError: 'stackable'\n\n----------------------------------------------------------------------\nRan 6 tests in 17.709s\n\nFAILED (errors=1)\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 5,
+      "suite_result": "FAIL"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_native_goal_loot_items.py",
+      "source_sha256": "9be7a5850fe2bfb487e42a2e18f04f0a10087ee565c21163d37c6c7d17c71f52",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_native_goal_loot_items"
+      ],
+      "cwd": "tools/content-schema/native-gameplay",
+      "elapsed_seconds": 25.322,
+      "timeout_seconds": 50.0,
+      "exit_code": 1,
+      "status": "FAIL",
+      "unittest_case_count": 7,
+      "case_results": [
+        "test_book_speed_requires_qualified_source_and_refuses_atomically (test_native_goal_loot_items.NativeGoalLootProof.test_book_speed_requires_qualified_source_and_refuses_atomically) ... ok",
+        "test_exact_full_charge_admission_preserves_source_definition_and_unowned_data (test_native_goal_loot_items.NativeGoalLootProof.test_exact_full_charge_admission_preserves_source_definition_and_unowned_data) ... FAIL",
+        "test_existing_admitted_native_physical_facts_are_preserved (test_native_goal_loot_items.NativeGoalLootProof.test_existing_admitted_native_physical_facts_are_preserved) ... ok",
+        "test_existing_book_gets_qualified_speed_without_retuning_known_attributes (test_native_goal_loot_items.NativeGoalLootProof.test_existing_book_gets_qualified_speed_without_retuning_known_attributes) ... ok",
+        "test_selected_source_tables_have_complete_finite_custody (test_native_goal_loot_items.NativeGoalLootProof.test_selected_source_tables_have_complete_finite_custody) ... ok",
+        "test_trophy_alternate_source_is_exact_and_not_a_general_pin_bypass (test_native_goal_loot_items.NativeGoalLootProof.test_trophy_alternate_source_is_exact_and_not_a_general_pin_bypass) ... ok",
+        "test_wrong_charge_fact_refuses_all_pending_admissions_atomically (test_native_goal_loot_items.NativeGoalLootProof.test_wrong_charge_fact_refuses_all_pending_admissions_atomically) ... ok"
+      ],
+      "output_tail": "n_and_unowned_data (test_native_goal_loot_items.NativeGoalLootProof.test_exact_full_charge_admission_preserves_source_definition_and_unowned_data) ... FAIL\ntest_existing_admitted_native_physical_facts_are_preserved (test_native_goal_loot_items.NativeGoalLootProof.test_existing_admitted_native_physical_facts_are_preserved) ... ok\ntest_existing_book_gets_qualified_speed_without_retuning_known_attributes (test_native_goal_loot_items.NativeGoalLootProof.test_existing_book_gets_qualified_speed_without_retuning_known_attributes) ... ok\ntest_selected_source_tables_have_complete_finite_custody (test_native_goal_loot_items.NativeGoalLootProof.test_selected_source_tables_have_complete_finite_custody) ... ok\ntest_trophy_alternate_source_is_exact_and_not_a_general_pin_bypass (test_native_goal_loot_items.NativeGoalLootProof.test_trophy_alternate_source_is_exact_and_not_a_general_pin_bypass) ... ok\ntest_wrong_charge_fact_refuses_all_pending_admissions_atomically (test_native_goal_loot_items.NativeGoalLootProof.test_wrong_charge_fact_refuses_all_pending_admissions_atomically) ... ok\n\n======================================================================\nFAIL: test_exact_full_charge_admission_preserves_source_definition_and_unowned_data (test_native_goal_loot_items.NativeGoalLootProof.test_exact_full_charge_admission_preserves_source_definition_and_unowned_data)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/test_native_goal_loot_items.py\", line 110, in test_exact_full_charge_admission_preserves_source_definition_and_unowned_data\n    self.assertEqual(item['semantics'][group], before['semantics'][group])\nAssertionError: {'state': 'NOT_APPLICABLE'} != {'state': 'UNKNOWN'}\n- {'state': 'NOT_APPLICABLE'}\n+ {'state': 'UNKNOWN'}\n\n----------------------------------------------------------------------\nRan 7 tests in 25.186s\n\nFAILED (failures=1)\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 6,
+      "suite_result": "FAIL"
+    }
+  ]
+}

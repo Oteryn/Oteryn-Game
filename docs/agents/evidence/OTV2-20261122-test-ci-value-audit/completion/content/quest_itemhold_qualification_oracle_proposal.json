@@ -1,0 +1,34 @@
+{
+  "scope": "Actual full existing module before and after in-memory removal of producer enumeration. No source files changed, no fresh PG proof claimed.",
+  "path": "tools/content-schema/quest-authoring/test_quest_claim_qualification.py",
+  "sha256": "ba00928d685a4ff607a85a51625c28e2c4b00601e9224c4f575b615d216d6085",
+  "producer": "tools/content-schema/quest-authoring/check_quest_claim_qualification.py",
+  "original_independent_contract": [
+    "oteryn:reward-claim.kv.draconia1",
+    "oteryn:reward-claim.kv.fireaxe1",
+    "oteryn:reward-claim.kv.goblintemple2",
+    "oteryn:reward-claim.kv.ornamentedshield",
+    "oteryn:reward-claim.kv.powerring2",
+    "oteryn:reward-claim.kv.triangletower",
+    "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine"
+  ],
+  "results": [
+    {
+      "mode": "baseline",
+      "tests_run": 8,
+      "failures": 0,
+      "errors": 0,
+      "successful": true,
+      "output": "test_checked_in_ledger_is_valid (test_quest_claim_qualification.QualificationTests.test_checked_in_ledger_is_valid) ... ok\ntest_denominator_change_is_rejected (test_quest_claim_qualification.QualificationTests.test_denominator_change_is_rejected) ... ok\ntest_duplicate_claim_key_is_rejected (test_quest_claim_qualification.QualificationTests.test_duplicate_claim_key_is_rejected) ... ok\ntest_invalid_callback_dependency_is_rejected (test_quest_claim_qualification.QualificationTests.test_invalid_callback_dependency_is_rejected) ... ok\ntest_invented_test_is_rejected (test_quest_claim_qualification.QualificationTests.test_invented_test_is_rejected) ... ok\ntest_itemhold_admissions_retain_their_qualified_source_witnesses (test_quest_claim_qualification.QualificationTests.test_itemhold_admissions_retain_their_qualified_source_witnesses) ... ok\ntest_missing_row_is_rejected (test_quest_claim_qualification.QualificationTests.test_missing_row_is_rejected) ... ok\ntest_stale_source_witness_is_rejected (test_quest_claim_qualification.QualificationTests.test_stale_source_witness_is_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.220s\n\nOK\n"
+    },
+    {
+      "mode": "empty_itemhold_admissions",
+      "tests_run": 8,
+      "failures": 0,
+      "errors": 0,
+      "successful": true,
+      "output": "test_checked_in_ledger_is_valid (test_quest_claim_qualification.QualificationTests.test_checked_in_ledger_is_valid) ... ok\ntest_denominator_change_is_rejected (test_quest_claim_qualification.QualificationTests.test_denominator_change_is_rejected) ... ok\ntest_duplicate_claim_key_is_rejected (test_quest_claim_qualification.QualificationTests.test_duplicate_claim_key_is_rejected) ... ok\ntest_invalid_callback_dependency_is_rejected (test_quest_claim_qualification.QualificationTests.test_invalid_callback_dependency_is_rejected) ... ok\ntest_invented_test_is_rejected (test_quest_claim_qualification.QualificationTests.test_invented_test_is_rejected) ... ok\ntest_itemhold_admissions_retain_their_qualified_source_witnesses (test_quest_claim_qualification.QualificationTests.test_itemhold_admissions_retain_their_qualified_source_witnesses) ... ok\ntest_missing_row_is_rejected (test_quest_claim_qualification.QualificationTests.test_missing_row_is_rejected) ... ok\ntest_stale_source_witness_is_rejected (test_quest_claim_qualification.QualificationTests.test_stale_source_witness_is_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.212s\n\nOK\n"
+    }
+  ],
+  "proposal": "Anchor all seven Itemhold admission identities in the test, independently of producer ITEMHOLD_ADMISSIONS; keep existing exact source-witness reasons and coverage assertions. Source edits currently paused."
+}

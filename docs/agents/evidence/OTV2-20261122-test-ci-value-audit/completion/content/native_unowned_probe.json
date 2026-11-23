@@ -1,0 +1,62 @@
+{
+  "limits": "In-memory Python test-oracle probe, no product/source edit, no hosted CI claim.",
+  "mutation": "After successful admission, remove explicit unowned fixture identity39530 from input list.",
+  "results": [
+    {
+      "module": "test_encounter_corpse_items",
+      "mutant": false,
+      "source_sha256": "7b88ecfa2b718012f68b40fa074519a5611c7ac0642e9021729c59e6bcf2870e",
+      "producer_sha256": "780b1ba1ec8b1ce418902c4fae0497c2dcbd2f17bb6d80875382d62f02e9313e",
+      "testsRun": 3,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "successful": true,
+      "removed_unowned_ids": [],
+      "output": "test_admission_preserves_unowned_items_and_unknown_semantic_groups (test_encounter_corpse_items.EncounterCorpseItemsTests.test_admission_preserves_unowned_items_and_unknown_semantic_groups) ... ok\ntest_invalid_independent_worldobject_proof_cannot_partially_admit_items (test_encounter_corpse_items.EncounterCorpseItemsTests.test_invalid_independent_worldobject_proof_cannot_partially_admit_items) ... ok\ntest_source_capacity_and_complete_decay_chains_are_preserved (test_encounter_corpse_items.EncounterCorpseItemsTests.test_source_capacity_and_complete_decay_chains_are_preserved) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 1.683s\n\nOK\n"
+    },
+    {
+      "module": "test_encounter_corpse_items",
+      "mutant": true,
+      "source_sha256": "7b88ecfa2b718012f68b40fa074519a5611c7ac0642e9021729c59e6bcf2870e",
+      "producer_sha256": "780b1ba1ec8b1ce418902c4fae0497c2dcbd2f17bb6d80875382d62f02e9313e",
+      "testsRun": 3,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "successful": true,
+      "removed_unowned_ids": [
+        "oteryn:item.tibia.i39530"
+      ],
+      "output": "test_admission_preserves_unowned_items_and_unknown_semantic_groups (test_encounter_corpse_items.EncounterCorpseItemsTests.test_admission_preserves_unowned_items_and_unknown_semantic_groups) ... ok\ntest_invalid_independent_worldobject_proof_cannot_partially_admit_items (test_encounter_corpse_items.EncounterCorpseItemsTests.test_invalid_independent_worldobject_proof_cannot_partially_admit_items) ... ok\ntest_source_capacity_and_complete_decay_chains_are_preserved (test_encounter_corpse_items.EncounterCorpseItemsTests.test_source_capacity_and_complete_decay_chains_are_preserved) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 1.577s\n\nOK\n"
+    },
+    {
+      "module": "test_native_goal_corpse_items",
+      "mutant": false,
+      "source_sha256": "2a1dc57363f362102cfb72b7f7f5a2811a8efe1d567745814622810c19b24767",
+      "producer_sha256": "f07460fbac370bc177997c9beae398d6aff54ca68094c37923c30220eb1688cd",
+      "testsRun": 6,
+      "errors": 0,
+      "failures": 1,
+      "skipped": 0,
+      "successful": false,
+      "removed_unowned_ids": [],
+      "output": "test_admission_preserves_unowned_items_and_unrelated_semantics (test_native_goal_corpse_items.NativeGoalCorpseProof.test_admission_preserves_unowned_items_and_unrelated_semantics) ... ok\ntest_full_decay_closure_keeps_source_weights_and_capacities (test_native_goal_corpse_items.NativeGoalCorpseProof.test_full_decay_closure_keeps_source_weights_and_capacities) ... FAIL\ntest_known_fact_conflict_refuses_without_partial_admission (test_native_goal_corpse_items.NativeGoalCorpseProof.test_known_fact_conflict_refuses_without_partial_admission) ... ok\ntest_merged_portable_source_corpses_keep_exact_main_facts (test_native_goal_corpse_items.NativeGoalCorpseProof.test_merged_portable_source_corpses_keep_exact_main_facts) ... ok\ntest_portable_native_profiles_remain_exact_and_conflicts_are_atomic (test_native_goal_corpse_items.NativeGoalCorpseProof.test_portable_native_profiles_remain_exact_and_conflicts_are_atomic) ... ok\ntest_wrong_worldobject_corpse_class_refuses_before_any_write (test_native_goal_corpse_items.NativeGoalCorpseProof.test_wrong_worldobject_corpse_class_refuses_before_any_write) ... ok\n\n======================================================================\nFAIL: test_full_decay_closure_keeps_source_weights_and_capacities (test_native_goal_corpse_items.NativeGoalCorpseProof.test_full_decay_closure_keeps_source_weights_and_capacities)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/test_native_goal_corpse_items.py\", line 52, in test_full_decay_closure_keeps_source_weights_and_capacities\n    self.assertEqual(len(policies), 20)\nAssertionError: 24 != 20\n\n----------------------------------------------------------------------\nRan 6 tests in 71.225s\n\nFAILED (failures=1)\n"
+    },
+    {
+      "module": "test_native_goal_corpse_items",
+      "mutant": true,
+      "source_sha256": "2a1dc57363f362102cfb72b7f7f5a2811a8efe1d567745814622810c19b24767",
+      "producer_sha256": "f07460fbac370bc177997c9beae398d6aff54ca68094c37923c30220eb1688cd",
+      "testsRun": 6,
+      "errors": 0,
+      "failures": 1,
+      "skipped": 0,
+      "successful": false,
+      "removed_unowned_ids": [
+        "oteryn:item.tibia.i39530"
+      ],
+      "output": "test_admission_preserves_unowned_items_and_unrelated_semantics (test_native_goal_corpse_items.NativeGoalCorpseProof.test_admission_preserves_unowned_items_and_unrelated_semantics) ... ok\ntest_full_decay_closure_keeps_source_weights_and_capacities (test_native_goal_corpse_items.NativeGoalCorpseProof.test_full_decay_closure_keeps_source_weights_and_capacities) ... FAIL\ntest_known_fact_conflict_refuses_without_partial_admission (test_native_goal_corpse_items.NativeGoalCorpseProof.test_known_fact_conflict_refuses_without_partial_admission) ... ok\ntest_merged_portable_source_corpses_keep_exact_main_facts (test_native_goal_corpse_items.NativeGoalCorpseProof.test_merged_portable_source_corpses_keep_exact_main_facts) ... ok\ntest_portable_native_profiles_remain_exact_and_conflicts_are_atomic (test_native_goal_corpse_items.NativeGoalCorpseProof.test_portable_native_profiles_remain_exact_and_conflicts_are_atomic) ... ok\ntest_wrong_worldobject_corpse_class_refuses_before_any_write (test_native_goal_corpse_items.NativeGoalCorpseProof.test_wrong_worldobject_corpse_class_refuses_before_any_write) ... ok\n\n======================================================================\nFAIL: test_full_decay_closure_keeps_source_weights_and_capacities (test_native_goal_corpse_items.NativeGoalCorpseProof.test_full_decay_closure_keeps_source_weights_and_capacities)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay/test_native_goal_corpse_items.py\", line 52, in test_full_decay_closure_keeps_source_weights_and_capacities\n    self.assertEqual(len(policies), 20)\nAssertionError: 24 != 20\n\n----------------------------------------------------------------------\nRan 6 tests in 70.485s\n\nFAILED (failures=1)\n"
+    }
+  ]
+}

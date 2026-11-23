@@ -1,0 +1,12 @@
+--- a/crates/client-ui/tests/chat_log.rs
++++ b/crates/client-ui/tests/chat_log.rs
+@@ -12,8 +12,7 @@
+     let mut bytes = Vec::new();
+     write_log(&panel, &mut bytes)?;
+     assert!(
+-        std::str::from_utf8(&bytes)
+-            .is_ok_and(|text| text.contains("Żółw: Zażółć gęślą jaźń 🐉"))
++        std::str::from_utf8(&bytes).is_ok_and(|text| text.contains("Żółw: Zażółć gęślą jaźń 🐉"))
+     );
+     let once = bytes.clone();
+     write_log(&panel, &mut bytes)?;

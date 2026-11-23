@@ -136,7 +136,10 @@ mod tests {
                 Ok(value)
             );
         }
-        assert!(decode_guild_war_intent(&[0; 65]).is_err());
+        assert_eq!(
+            decode_guild_war_intent(&[0; 65]),
+            Err(CyclopediaWireError::LimitExceeded)
+        );
         Ok(())
     }
 }

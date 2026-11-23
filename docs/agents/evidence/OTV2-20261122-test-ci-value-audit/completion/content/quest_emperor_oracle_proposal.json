@@ -1,0 +1,31 @@
+{
+  "status": "CONFIRMED_UNAPPLIED_ORACLE_GAP",
+  "source_path": "tools/content-schema/quest-authoring/test_quests_2_emperor_state.py",
+  "source_sha256": "009d811c704859c4d1c7cbde3a586b78293d8d93d795f70ce5a32045a0f00f7a",
+  "producer_path": "tools/content-schema/quest-authoring/quests_2_emperor_state.py",
+  "mutation": "Remove the first declared flag (Mission14) and derive KEYS exactly as production import does; all three actual cases still pass.",
+  "removed_flag": [
+    "the_gravedigger_of_drefia",
+    "u10_10",
+    "Mission14",
+    2013,
+    44215,
+    "data-global/npc/omrabas.lua",
+    430
+  ],
+  "baseline": {
+    "tests_run": 3,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_every_callback_source_flag_has_the_existing_quest_owner (test_quests_2_emperor_state.EmperorTracks.test_every_callback_source_flag_has_the_existing_quest_owner) ... ok\ntest_existing_source_or_initial_state_is_never_overwritten (test_quests_2_emperor_state.EmperorTracks.test_existing_source_or_initial_state_is_never_overwritten) ... ok\ntest_missing_quest_is_an_error_without_partial_mutation (test_quests_2_emperor_state.EmperorTracks.test_missing_quest_is_an_error_without_partial_mutation) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.320s\n\nOK\n"
+  },
+  "mutant": {
+    "tests_run": 3,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_every_callback_source_flag_has_the_existing_quest_owner (test_quests_2_emperor_state.EmperorTracks.test_every_callback_source_flag_has_the_existing_quest_owner) ... ok\ntest_existing_source_or_initial_state_is_never_overwritten (test_quests_2_emperor_state.EmperorTracks.test_existing_source_or_initial_state_is_never_overwritten) ... ok\ntest_missing_quest_is_an_error_without_partial_mutation (test_quests_2_emperor_state.EmperorTracks.test_missing_quest_is_an_error_without_partial_mutation) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.206s\n\nOK\n"
+  },
+  "scope": "Test-only future proposal; product and test source unchanged. Producer describes seven finite flags and actual tests derive enumeration from producer KEYS. Requires independently owned expected flag identity set before repair."
+}

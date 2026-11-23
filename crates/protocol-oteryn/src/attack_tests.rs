@@ -188,7 +188,10 @@ fn results_carry_every_disposition_and_fail_closed() {
     for payload in [&[][..], &[0x08, 0x00], &[0x08, 0x07], &[0x10, 0x01]] {
         assert!(decode_attack_intent_result(payload).is_err(), "{payload:?}");
     }
-    assert!(decode_attack_intent_result(&[0x08, 0x01, 0x08, 0x01]).is_err());
+    assert_eq!(
+        decode_attack_intent_result(&[0x08, 0x01, 0x08, 0x01]),
+        Err(AttackWireError::LimitExceeded)
+    );
 }
 
 #[test]

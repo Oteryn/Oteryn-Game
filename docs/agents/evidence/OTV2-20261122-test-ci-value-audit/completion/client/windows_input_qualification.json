@@ -1,0 +1,127 @@
+{
+  "source_base": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "file": "crates/input-platform/tests/native_winit.rs",
+  "baseline_sha256": "829955baa4cc95f9d9bcc2262e5973488e45bf507e48ff683ea5441ed8899365",
+  "candidate_sha256": "c80929f7bdf0241f0f6a778449f343de81903f5afb1f559a4a5ccc7c7d71dcce",
+  "platform": "x86_64-pc-windows-msvc",
+  "toolchain": "1.100.0",
+  "scope": "Public Winit adapter integration using constructed events; no physical keyboard or native event-loop claim",
+  "baseline": {
+    "command": [
+      "cargo",
+      "+1.100.0",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-input-platform",
+      "--target",
+      "x86_64-pc-windows-msvc",
+      "--test",
+      "native_winit",
+      "--",
+      "--list"
+    ],
+    "exit_code": 0,
+    "selected_tests": 0
+  },
+  "candidate": {
+    "unit_tests": 22,
+    "integration_tests": 1,
+    "failed": 0,
+    "ignored": 0,
+    "source_hash_verified_against_remote": true,
+    "commands": [
+      {
+        "argv": [
+          "+1.100.0",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-input-platform",
+          "--target",
+          "x86_64-pc-windows-msvc"
+        ],
+        "name": "tests",
+        "log": "C:\\Users\\barte\\work\\oteryn-input-candidate-tests-20261123.log",
+        "exit_code": 0
+      },
+      {
+        "argv": [
+          "+1.100.0",
+          "clippy",
+          "--locked",
+          "-p",
+          "oteryn-input-platform",
+          "--all-targets",
+          "--target",
+          "x86_64-pc-windows-msvc",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "name": "clippy",
+        "log": "C:\\Users\\barte\\work\\oteryn-input-candidate-clippy-20261123.log",
+        "exit_code": 0
+      },
+      {
+        "argv": [
+          "+1.100.0",
+          "build",
+          "--locked",
+          "-p",
+          "oteryn-input-platform",
+          "--target",
+          "x86_64-pc-windows-msvc"
+        ],
+        "name": "build",
+        "log": "C:\\Users\\barte\\work\\oteryn-input-candidate-build-20261123.log",
+        "exit_code": 0
+      },
+      {
+        "argv": [
+          "+1.100.0",
+          "fmt",
+          "--check",
+          "-p",
+          "oteryn-input-platform"
+        ],
+        "name": "fmt",
+        "log": "C:\\Users\\barte\\work\\oteryn-input-candidate-fmt-20261123.log",
+        "exit_code": 1
+      }
+    ]
+  },
+  "format_environment": {
+    "initial_failure": "Seven unchanged source files had CRLF checkout bytes; repository rustfmt expects LF",
+    "remedy": "Verified CRLF-normalized bytes equal HEAD Git blobs, restored those canonical bytes in the validation copy, reran fmt",
+    "result": {
+      "canonicalized_unchanged_paths": [
+        "crates/input-platform/src/adapter.rs",
+        "crates/input-platform/src/audit_regressions.rs",
+        "crates/input-platform/src/error.rs",
+        "crates/input-platform/src/lib.rs",
+        "crates/input-platform/src/tests.rs",
+        "crates/input-platform/src/winit_adapter.rs",
+        "crates/input-platform/src/winit_reset_tests.rs"
+      ],
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "fmt",
+        "--check",
+        "-p",
+        "oteryn-input-platform"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  },
+  "logs": {
+    "oteryn-input-baseline-20261123.log": "cargo.exe :     Updating crates.io index\nAt line:1 char:300\n+ ... JOBS = '4'; & cargo +1.100.0 test --locked -p oteryn-input-platform - ...\n+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : NotSpecified: (    Updating crates.io index:String) [], RemoteException\n    + FullyQualifiedErrorId : NativeCommandError\n \n   Compiling windows_x86_64_msvc v0.52.6\n   Compiling cfg_aliases v0.2.2\n   Compiling tracing-core v0.1.36\n   Compiling pin-project-lite v0.2.17\n   Compiling winit v0.30.13\n   Compiling cursor-icon v1.2.0\n   Compiling raw-window-handle v0.6.2\n   Compiling tracing v0.1.44\n   Compiling unicode-segmentation v1.13.3\n   Compiling dpi v0.1.2\n   Compiling bitflags v2.13.1\n   Compiling smol_str v0.2.2\n   Compiling windows-targets v0.52.6\n   Compiling windows-sys v0.52.0\n   Compiling oteryn-input-actions v0.1.0 (C:\\Users\\barte\\work\\oteryn-test-value-20261123\\crates\\input-actions)\n   Compiling oteryn-input-platform v0.1.0 (C:\\Users\\barte\\work\\oteryn-test-value-20261123\\crates\\input-platform)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 15.51s\n     Running tests\\native_winit.rs (C:\\Users\\barte\\work\\oteryn-test-value-20261123-target\\x86_64-pc-windows-msvc\\debug\\\nbuild\\oteryn-input-platform/2c25fadc1faa5f25\\out\\native_winit-2c25fadc1faa5f25.exe)\n0 tests, 0 benchmarks",
+    "oteryn-input-candidate-tests-20261123.log": "cargo.exe :    Compiling oteryn-input-platform v0.1.0 (C:\\Users\\barte\\work\\oteryn-test-value-20261123\\crates\\input-plat\nform)\nAt line:1 char:798\n+ ... 61123.log'; $cargoArgs=$case.argv; & cargo @cargoArgs *> $log; $rc=$L ...\n+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : NotSpecified: (   Compiling ot...input-platform):String) [], RemoteException\n    + FullyQualifiedErrorId : NativeCommandError\n \n    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.46s\n     Running unittests src\\lib.rs (C:\\Users\\barte\\work\\oteryn-test-value-20261123-target\\x86_64-pc-windows-msvc\\debug\\b\nuild\\oteryn-input-platform/ae1d4c62ec9d9e08\\out\\oteryn_input_platform-ae1d4c62ec9d9e08.exe)\n\nrunning 22 tests\ntest audit_regressions::binding_atoms_reject_all_modifier_positions ... ok\ntest tests::ime_commit_is_bounded_and_never_reclassified_as_a_key ... ok\ntest tests::synthetic_and_background_input_are_ignored_before_validation ... ok\ntest tests::capture_loss_clears_mouse_actions_and_lifecycle_order_is_explicit ... ok\ntest audit_regressions::complete_control_chord_starts_and_modifier_release_cancels ... ok\ntest audit_regressions::last_shift_side_release_cancels_but_first_side_does_not ... ok\ntest audit_regressions::modifier_change_does_not_rearm_held_letter ... ok\ntest tests::focus_loss_clears_router_state_and_is_duplicate_safe ... ok\ntest audit_regressions::each_modifier_side_preserves_normal_release_and_non_modifier_held_set ... ok\ntest tests::keyboard_and_non_ime_text_are_distinct_events ... ok\ntest audit_regressions::modifier_does_not_consume_the_four_atom_chord_limit ... ok\ntest tests::side_specific_modifier_transitions_override_stale_snapshots ... ok\ntest tests::unsupported_controls_reset_router_state_without_aliasing ... ok\ntest tests::wheel_output_routes_as_reachable_start_end_impulse ... ok\ntest tests::pointer_values_are_bounded_and_large_jumps_rebase ... ok\ntest tests::device_loss_cancels_all_router_state_without_a_device_identifier ... ok\ntest winit_adapter::reset_tests::reset_after_window_events_clears_transients_when_focus_is_unchanged ... ok\ntest tests::wheel_units_are_deterministic_bounded_impulses ... ok\ntest winit_adapter::reset_tests::reset_after_window_events_retains_focus_gain_without_replaying_actions ... ok\ntest winit_adapter::reset_tests::reset_after_window_events_retains_focus_loss ... ok\ntest winit_adapter::tests::named_mouse_buttons_are_stable_and_other_is_unsupported ... ok\ntest winit_adapter::tests::stable_keyboard_subset_uses_usb_hid_usage_codes ... ok\n\ntest result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n     Running tests\\native_winit.rs (C:\\Users\\barte\\work\\oteryn-test-value-20261123-target\\x86_64-pc-windows-msvc\\debug\\\nbuild\\oteryn-input-platform/2c25fadc1faa5f25\\out\\native_winit-2c25fadc1faa5f25.exe)\n\nrunning 1 test\ntest public_native_ingress_preserves_button_focus_reset_and_ime_commit ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n   Doc-tests oteryn_input_platform\n\nrunning 0 tests\n\ntest result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n",
+    "oteryn-input-candidate-clippy-20261123.log": "cargo.exe :     Checking pin-project-lite v0.2.17\nAt line:1 char:798\n+ ... 61123.log'; $cargoArgs=$case.argv; & cargo @cargoArgs *> $log; $rc=$L ...\n+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : NotSpecified: (    Checking pin-project-lite v0.2.17:String) [], RemoteException\n    + FullyQualifiedErrorId : NativeCommandError\n \n    Checking tracing-core v0.1.36\n    Checking windows_x86_64_msvc v0.52.6\n    Checking raw-window-handle v0.6.2\n    Checking windows-targets v0.52.6\n    Checking smol_str v0.2.2\n    Checking windows-sys v0.52.0\n    Checking bitflags v2.13.1\n    Checking unicode-segmentation v1.13.3\n    Checking tracing v0.1.44\n    Checking cursor-icon v1.2.0\n    Checking dpi v0.1.2\n    Checking oteryn-input-actions v0.1.0 (C:\\Users\\barte\\work\\oteryn-test-value-20261123\\crates\\input-actions)\n    Checking winit v0.30.13\n    Checking oteryn-input-platform v0.1.0 (C:\\Users\\barte\\work\\oteryn-test-value-20261123\\crates\\input-platform)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.43s",
+    "oteryn-input-candidate-build-20261123.log": "cargo.exe :     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.48s\nAt line:1 char:798\n+ ... 61123.log'; $cargoArgs=$case.argv; & cargo @cargoArgs *> $log; $rc=$L ...\n+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : NotSpecified: (    Finished `d...get(s) in 0.48s:String) [], RemoteException\n    + FullyQualifiedErrorId : NativeCommandError\n ",
+    "oteryn-input-candidate-fmt-canonical-20261123.json": "{\n  \"canonicalized_unchanged_paths\": [\n    \"crates/input-platform/src/adapter.rs\",\n    \"crates/input-platform/src/audit_regressions.rs\",\n    \"crates/input-platform/src/error.rs\",\n    \"crates/input-platform/src/lib.rs\",\n    \"crates/input-platform/src/tests.rs\",\n    \"crates/input-platform/src/winit_adapter.rs\",\n    \"crates/input-platform/src/winit_reset_tests.rs\"\n  ],\n  \"command\": [\n    \"cargo\",\n    \"+1.100.0\",\n    \"fmt\",\n    \"--check\",\n    \"-p\",\n    \"oteryn-input-platform\"\n  ],\n  \"exit_code\": 0,\n  \"stdout\": \"\",\n  \"stderr\": \"\"\n}"
+  }
+}

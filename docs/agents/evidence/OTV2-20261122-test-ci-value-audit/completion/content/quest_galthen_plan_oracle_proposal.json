@@ -1,0 +1,35 @@
+{
+  "finding": "TRUNCATED_COMPLETION_PLAN_ESCAPES_ZIP_PRESERVATION_ORACLE",
+  "test_path": "tools/content-schema/quest-authoring/test_galthen_native_kills.py",
+  "source_sha256": "d84b23032c0006b1fe3f14ab4da3807c330d221810a8f68c773119fb5b13dee9",
+  "mutation": "Run the actual bind_selected_plan including every existing source/owner validation, then remove only its final unrelated quest record.",
+  "deleted_quest_ids": [
+    "oteryn:quest.wrath_of_the_emperor_quest"
+  ],
+  "baseline": {
+    "tests_run": 3,
+    "success": true,
+    "case_ids": [
+      "test_galthen_native_kills.GalthenNativeKillLowering.test_actual_authoring_lowering_preserves_exact_boss_predecessors_and_separate_completion",
+      "test_galthen_native_kills.GalthenNativeKillLowering.test_completion_plan_binds_two_kills_and_does_not_activate_other_stages",
+      "test_galthen_native_kills.GalthenNativeKillLowering.test_selected_source_guards_fail_closed_on_recipe_drift"
+    ],
+    "failures": 0,
+    "errors": 0,
+    "output": "test_actual_authoring_lowering_preserves_exact_boss_predecessors_and_separate_completion (test_galthen_native_kills.GalthenNativeKillLowering.test_actual_authoring_lowering_preserves_exact_boss_predecessors_and_separate_completion) ... ok\ntest_completion_plan_binds_two_kills_and_does_not_activate_other_stages (test_galthen_native_kills.GalthenNativeKillLowering.test_completion_plan_binds_two_kills_and_does_not_activate_other_stages) ... ok\ntest_selected_source_guards_fail_closed_on_recipe_drift (test_galthen_native_kills.GalthenNativeKillLowering.test_selected_source_guards_fail_closed_on_recipe_drift) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.700s\n\nOK\n"
+  },
+  "mutant": {
+    "tests_run": 3,
+    "success": true,
+    "case_ids": [
+      "test_galthen_native_kills.GalthenNativeKillLowering.test_actual_authoring_lowering_preserves_exact_boss_predecessors_and_separate_completion",
+      "test_galthen_native_kills.GalthenNativeKillLowering.test_completion_plan_binds_two_kills_and_does_not_activate_other_stages",
+      "test_galthen_native_kills.GalthenNativeKillLowering.test_selected_source_guards_fail_closed_on_recipe_drift"
+    ],
+    "failures": 0,
+    "errors": 0,
+    "output": "test_actual_authoring_lowering_preserves_exact_boss_predecessors_and_separate_completion (test_galthen_native_kills.GalthenNativeKillLowering.test_actual_authoring_lowering_preserves_exact_boss_predecessors_and_separate_completion) ... ok\ntest_completion_plan_binds_two_kills_and_does_not_activate_other_stages (test_galthen_native_kills.GalthenNativeKillLowering.test_completion_plan_binds_two_kills_and_does_not_activate_other_stages) ... ok\ntest_selected_source_guards_fail_closed_on_recipe_drift (test_galthen_native_kills.GalthenNativeKillLowering.test_selected_source_guards_fail_closed_on_recipe_drift) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.602s\n\nOK\n"
+  },
+  "scope": "Bounded three-case Python module oracle gap; no production reachability or full pipeline claim; source unchanged.",
+  "proposal": "Assert ordered before/after quest identities and cardinality before zip preservation comparisons; preserve existing field assertions."
+}

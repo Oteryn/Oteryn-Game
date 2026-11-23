@@ -1,0 +1,33 @@
+{
+  "head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "argv": [
+    "python3",
+    "tools/content-migration/test_m42_cooking_receipt_keys_postgres.py"
+  ],
+  "source_sha256": {
+    "tools/content-migration/test_m42_cooking_receipt_keys_postgres.py": "198516e23cbb4191970b89ff5f1c77a425603eed449cbc4c5886c36418be3e33",
+    "apps/game-server/migrations/2080_quest_utc_cooking_receipts.sql": "cfc46add354fee4f9edc3193bb3483d97ab2052bfe5ad7b17a2248d5ab7dea66"
+  },
+  "rc": 0,
+  "seconds": 1.019,
+  "stdout_stderr": "M42_RECEIPT_SQL POSTGRES_STARTED version=18.6 (Debian 18.6-1.pgdg12+2)\nM42_RECEIPT_SQL native_unique_occurrences=10000 legacy_once=preserved malformed=refused\nM42_RECEIPT_SQL POSTGRES_CASE_COMPLETED duration=0.896124016s success=true\n",
+  "psql_wrapper_sha256": "a2a55cf1789d84be120b90aec8dab470d651b77ff45ff066512617a1505f1738",
+  "psql_wrapper_scope": "Allows only this new task admin URL; executes the actual psql inside the isolated PG18.6 container over its local socket, with original SQL on stdin",
+  "postgres": {
+    "name": "oteryn-test-ci-value-audit-durability-20261123",
+    "container_id": "49e7f9bf1f143487aa31c06cc158a2eef5abe8c23b702bada0ad244c5a133a3f",
+    "image": "postgres:18.6-bookworm",
+    "image_id": "sha256:5c4783a8cc3f0074912164f94dfa1be4e043438f0f707cf968d7af9a0d31a2c8",
+    "port": 32869,
+    "server_version_num": "180006",
+    "current_user": "oteryn_test_admin",
+    "credentials": "generated solely for this isolated validation; omitted",
+    "cleanup": [
+      "sudo",
+      "-n",
+      "docker",
+      "stop",
+      "oteryn-test-ci-value-audit-durability-20261123"
+    ]
+  }
+}

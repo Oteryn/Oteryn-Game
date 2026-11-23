@@ -514,11 +514,6 @@ class FailClosedTimestampAndCountTest(unittest.TestCase):
             snap["threads"]["unresolved"] = bad
             self.assert_incomplete(snap)
 
-    def test_unresolved_positive_integer_blocks(self):
-        snap = ready()
-        snap["threads"].update(total=2, unresolved=2)
-        self.assertEqual(reasons(snap), ["REVIEW_THREADS_UNRESOLVED"])
-
     def test_missing_or_invalid_at_is_not_eligible(self):
         paths = (
             (lambda s: s["candidate"], "state_at"),

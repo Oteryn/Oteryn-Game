@@ -1,0 +1,468 @@
+{
+  "base": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "state": "SOURCE_REVIEW_ONLY; ALL_NEW_PROPOSALS_HELD",
+  "counts": {
+    "case_bodies": 14,
+    "server_pg_case_bodies": 9,
+    "dispatch_case_bodies": 5,
+    "context_ranges": 22
+  },
+  "case_reviews": [
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "case": "accepted_command_survives_no_prompt_reload_and_replays_exact_custody_once",
+      "oracle": "Enqueue leaves balance 100 and only the funding operation. A second maintained native Root drains the stored request, whose fields equal the original except the explicitly absent backpack-weight fact; balance becomes 90, frozen bytes stay identical, replay is Replayed(Ok) and six-table counts stay fixed.",
+      "limits": "In-process Root reopen, not OS-process restart. SQL bootstrap seeds current custody. Count footprint is not complete row equality.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "case": "enqueue_requires_current_native_fences_and_original_command_binding",
+      "oracle": "Independent connection, character-lease and scope generations are rejected with AuthorityRejected and zero confirmations. A valid enqueue succeeds; changed amount or NPC generation for the same command is ConflictingOccurrence. Runtime UPDATE frozen_request is SQLSTATE 42501; marking completion without an operation is deferred SQLSTATE 23514.",
+      "limits": "Refusal coverage is three named generation fields and two binding changes, not every fence/source field. The two SQL privilege/proof cases use explicit fixture transactions.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "case": "failed_money_transaction_retains_original_request_without_value_then_retry",
+      "oracle": "A real deferred outbox trigger aborts the money transaction. Exact Unavailable, unchanged six-table counts and frozen bytes, balance 100, and completed=false precede trigger removal; retry then yields Some and balance 90.",
+      "limits": "This is a distinct deferred commit failure, not five write-prefix crashes. Retry does not assert the full returned receipt; its state effect is independently observed.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "case": "two_native_roots_drain_one_original_occurrence_with_exact_replay",
+      "oracle": "Two maintained Roots run concurrently through join_two. Both return Some successful outcomes, exactly one is Committed, balance is 90, confirmation count is 1, and operations count is 2 including funding. BankOperationOutcome has only Committed and Replayed, so exactly one committed also establishes one replay.",
+      "limits": "No equality assertion between the two returned BankOperationRecord values. No forced interleaving; the dedicated inflight case provides observed lock scheduling.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "case": "actual_npc_buy_uses_coins_then_bank_in_one_native_trade_and_single_event",
+      "oracle": "Before activation a native buy cannot spend bank balance. After explicit fixture activation, bank-only 25 and mixed 40 (10 coins plus 30 bank) produce exact balances 75/45, spent coin state and independent summary tuples. Decoded audit debit equals SQL entry and there is one item-audit event per transaction before replay. Replay is AlreadyCommitted, selected footprint and balance remain; insufficient 46 refuses.",
+      "limits": "Direct native trade API with a privileged activation seed. Footprint omits game_npc_trades, game_npc_trade_lines and game_item_audit_outbox, so its replay snapshot does not itself verify those rows remain unchanged.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "case": "preview_uses_actual_account_world_custody_and_private_recipient_resolution",
+      "oracle": "Native preview reads funded balance 100 and zero eligible coins; same-account and unresolved names yield distinct fixed refusals with no resolved recipient. Stale lease is AuthorityRejected and no confirmation is enqueued.",
+      "limits": "No explicit other-World recipient is created in this body; it does not independently qualify the documented cross-World privacy branch.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "case": "held_original_occurrence_times_out_without_value_then_locked_absence_can_resume",
+      "oracle": "A held native occurrence advisory lock causes Unavailable in under five seconds without count/frozen-byte/balance changes. After rollback, a second maintained Root commits the original and then replays with unchanged counts, balance 90.",
+      "limits": "Upper timing bound and held lock qualify bounded refusal; there is no independent pg_blocking_pids observation or lower wait bound in this case.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "case": "inflight_native_bank_commit_is_replayed_before_any_new_money_execution",
+      "oracle": "A BEFORE INSERT trigger blocks the native writer on a fixture advisory lock; the isolated DB must expose at least one then two ungranted locks before release. Actual writer returns Committed(Ok), retained command returns Replayed(Ok), balance is 90 and operation count is 2.",
+      "limits": "wait_for_blocked observes database-wide ungranted-lock counts, not exact backend identity or a specific lock edge. The fixture installs a scheduling trigger without disabling native transaction guards.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "case": "ordinary_npc_trades_respect_the_carried_tree_limit",
+      "oracle": "Literal 499-entry starting tree refuses buy/sell requests requiring overflow with DoesNotFit and unchanged selected counts/balance 200. A smaller buy commits to exactly 500 entries and balance 100.",
+      "limits": "The large item tree is seeded with session_replication_role=replica; test execution restores ordinary role via transaction scope. Native mint/deposit funds money, but this tree construction bypasses ordinary item creation guards. This body relies on the common PG18 check rather than calling the exact-version helper itself.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "case": "original_bank_command_precedes_replacement_text_npc_and_command_type",
+      "oracle": "Four replacement command kinds/payloads, each with transfer guard deferred or open, still invoke exactly one original command (ID 1 and exact session), invoke no step, emit exact accepted NPC result frames and advance next ID to 2.",
+      "limits": "Historical outcome fixture supplies no current NPC, item fence or money authority; arbitrary replacement payloads are intentionally not accepted as new work.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "case": "unresolved_original_bank_work_never_sequences_a_replacement_command",
+      "oracle": "An unknown retained result emits baseline only, invokes no replacement step, and leaves next ID at 1.",
+      "limits": "No database or actual retained bank transaction; transport classification fixture only.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "case": "closed_input_gate_holds_unclassified_original_bank_command",
+      "oracle": "Closed input gate invokes neither retained-money callback nor step, emits baseline only and leaves next ID at 1.",
+      "limits": "Pure transport gate boundary with injected None permit.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "case": "fresh_session_first_command_skips_retained_bank_lookup",
+      "oracle": "Both open and closed input gates avoid any historical bank lookup. Only the open gate calls step; both emit one result after baseline and advance next ID to 2.",
+      "limits": "This body checks frame count/baseline and invocation counts, not the exact terminal result payload. The adjacent deferred-step case separately decodes a typed refusal.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "case": "deferred_step_reaches_session_as_typed_refusal",
+      "oracle": "A deferred transfer guard invokes no step; generated server frames are fed to the actual client Session, whose step() decodes Rejected status and Rejected disposition.",
+      "limits": "The client consumes precomputed frames through a second duplex stream, not a concurrently running server or physical network.",
+      "disposition": "KEEP_WITH_EXPLICIT_BOUNDARY",
+      "runtime_in_this_batch": "NOT_EXECUTED"
+    }
+  ],
+  "source_scopes": [
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "accepted_command_survives_no_prompt_reload_and_replays_exact_custody_once",
+      "start_line": 164,
+      "end_line": 190,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "body_sha256": "252cd6fc17d3f7c4813908980620ccc0691dd3fed44287e90c0b81ddc178f631",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "enqueue_requires_current_native_fences_and_original_command_binding",
+      "start_line": 193,
+      "end_line": 285,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "body_sha256": "37fb617fdc1888eb2bb9bd06cf497a7c88666a43db7831316f270da40fd18e83",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "failed_money_transaction_retains_original_request_without_value_then_retry",
+      "start_line": 288,
+      "end_line": 305,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "body_sha256": "150deb71a8a26136bf5dae780ea1d19e07c8b15e9394e3f45a173b6a2e8f72c2",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "two_native_roots_drain_one_original_occurrence_with_exact_replay",
+      "start_line": 308,
+      "end_line": 349,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "body_sha256": "f26c01f234b3410811be574a71ac3a76722c108f3bdfd3c0e1eef22060c6858b",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "actual_npc_buy_uses_coins_then_bank_in_one_native_trade_and_single_event",
+      "start_line": 405,
+      "end_line": 442,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "body_sha256": "9947cef9138f2e7016f30df52e9c7aea0cf19220c05f9162a62c455e1ad778d2",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "preview_uses_actual_account_world_custody_and_private_recipient_resolution",
+      "start_line": 445,
+      "end_line": 495,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "body_sha256": "f5cb8745b535edbaf96dfdd9cd4d5da968295e2b11c5e21cf835bb893340f0a1",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "held_original_occurrence_times_out_without_value_then_locked_absence_can_resume",
+      "start_line": 498,
+      "end_line": 529,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "body_sha256": "e0213ab467cc4fffb2aa48e3e99475e1932e7cb32e14e8e6ed68221588a786bd",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "inflight_native_bank_commit_is_replayed_before_any_new_money_execution",
+      "start_line": 543,
+      "end_line": 572,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "body_sha256": "66f940091a154db70dd4f3afe7008a8465694b2b7d1f2632ae3e21c1174ab186",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "ordinary_npc_trades_respect_the_carried_tree_limit",
+      "start_line": 575,
+      "end_line": 643,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "body_sha256": "0b8017dec3809d307dff2ba641180beed830db5748ff2ba5cb041df6388477d6",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "scope": "original_bank_command_precedes_replacement_text_npc_and_command_type",
+      "start_line": 58,
+      "end_line": 116,
+      "file_sha256": "0c939ac9425b2a1e3b8866135bcd57df6eedd3bb16084ecab365fbf47264ac13",
+      "body_sha256": "c6d03fb3bcdede7706052ec9811b539d1b4e64557a873284866ba02ba5fbc623",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "scope": "unresolved_original_bank_work_never_sequences_a_replacement_command",
+      "start_line": 119,
+      "end_line": 147,
+      "file_sha256": "0c939ac9425b2a1e3b8866135bcd57df6eedd3bb16084ecab365fbf47264ac13",
+      "body_sha256": "212806d6569535c080250bcded89aad1b71123134ef8ff78cd3edd2b14825bbb",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "scope": "closed_input_gate_holds_unclassified_original_bank_command",
+      "start_line": 150,
+      "end_line": 178,
+      "file_sha256": "0c939ac9425b2a1e3b8866135bcd57df6eedd3bb16084ecab365fbf47264ac13",
+      "body_sha256": "b0dcb6581c6658e805054a36675a8bfb641373b927e5229a11b8119929b331bd",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "scope": "fresh_session_first_command_skips_retained_bank_lookup",
+      "start_line": 185,
+      "end_line": 219,
+      "file_sha256": "0c939ac9425b2a1e3b8866135bcd57df6eedd3bb16084ecab365fbf47264ac13",
+      "body_sha256": "da248b09247ddf6a1bede684702313ba31b9b22b895d6d4bb7e07c5455fee1d0",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "scope": "deferred_step_reaches_session_as_typed_refusal",
+      "start_line": 223,
+      "end_line": 280,
+      "file_sha256": "0c939ac9425b2a1e3b8866135bcd57df6eedd3bb16084ecab365fbf47264ac13",
+      "body_sha256": "3d91305196e34d0992b114a5c82e0e7c1f2497a0f44a802937b1249451baaa47",
+      "kind": "MANUAL_CASE_BODY_REVIEW"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "request, funding, exact-version, balance, footprint and frozen-request helpers",
+      "start_line": 1,
+      "end_line": 162,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "range_sha256": "8095506a86a5bdd2b8c3b492257ed60cf992162fc64fa793b79ada63e68dd368",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "trade_request fixture",
+      "start_line": 351,
+      "end_line": 403,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "range_sha256": "f9168f8a40b259eae9208265200a8bfbae1f16fb7522a3e1f5b567ad5ea0b693",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs",
+      "scope": "wait_for_blocked fixture barrier",
+      "start_line": 531,
+      "end_line": 540,
+      "file_sha256": "1520834743a07ff9937d3bd859cbd558b3bfc29ab670b684940d7e9372866797",
+      "range_sha256": "757bfe880aeb3bb08b36bd95ce7f41fee9ffe6c9513e3828e398b9456e603b57",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/bank_resume.rs",
+      "scope": "RetainedBankOutcomeFixture authority implementation",
+      "start_line": 1,
+      "end_line": 55,
+      "file_sha256": "0c939ac9425b2a1e3b8866135bcd57df6eedd3bb16084ecab365fbf47264ac13",
+      "range_sha256": "6905a8287e95d53e8cda20e58d7aba7615fce3f67860dc3bafaded502a5ca1fe",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/npc_econ_bank_postgres.rs",
+      "scope": "standalone shared-body and fixture mounts",
+      "start_line": 1,
+      "end_line": 32,
+      "file_sha256": "ab5f817e094243d3c1b5bf5c6a57c5df104c48d6fe6590bea8721c3402e303c7",
+      "range_sha256": "ab5f817e094243d3c1b5bf5c6a57c5df104c48d6fe6590bea8721c3402e303c7",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/character_authority_postgres.rs",
+      "scope": "protected aggregate shared-body mount",
+      "start_line": 2380,
+      "end_line": 2415,
+      "file_sha256": "fb7aafc50067f7c160824da7c484697988d02e431e86b450891c34e433d71151",
+      "range_sha256": "b03cfa3d4cf14f887fd5d1e3e05fc5b3d15018a9fb05ccbe9612640e02c594c9",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": ".github/workflows/postgres-test-partitions.yml",
+      "scope": "registered aggregate archive construction",
+      "start_line": 290,
+      "end_line": 335,
+      "file_sha256": "63227f9e891db9e4cf5f256cd8740045a47332371ec1e8dc0416beda1b0298e5",
+      "range_sha256": "adf8c2dad6b8f404f39b917863aad5c54d72dcf8a325071cc67cd624e0ed58cf",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/support/item_transfer_postgres_cases.rs",
+      "scope": "shared fixture re-export",
+      "start_line": 1,
+      "end_line": 43,
+      "file_sha256": "736cad3d54423c90deb391927fad7f6eb995bcf5d7558aa74745f10b57a91887",
+      "range_sha256": "97798ef969ac20f44410197c995b15697eb1132f3559ac9b5dd333b23054fa08",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/support/item_transfer_postgres_harness.rs",
+      "scope": "identities, two-future driver, PG gate/migrations, registration and privileged Character/session seed",
+      "start_line": 1,
+      "end_line": 438,
+      "file_sha256": "96010d5e205c0c1486aca293ba43a3e8a44f200044233fd4298972748134322c",
+      "range_sha256": "3eff6a366405769c25ad6f439719f475c37a98ca7f570b4f000c11e9d3bed991",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/support/item_transfer_postgres_harness.rs",
+      "scope": "Harness create and native mint/transfer/count",
+      "start_line": 440,
+      "end_line": 590,
+      "file_sha256": "96010d5e205c0c1486aca293ba43a3e8a44f200044233fd4298972748134322c",
+      "range_sha256": "78dc3e75fdf368debb4b6fbd1aa16f9a22169b26fdc54c1fe669cfac2c0f2788",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/tests/support/item_transfer_postgres_harness.rs",
+      "scope": "cleanup, fixture backpack, command and current fence",
+      "start_line": 652,
+      "end_line": 744,
+      "file_sha256": "96010d5e205c0c1486aca293ba43a3e8a44f200044233fd4298972748134322c",
+      "range_sha256": "c0d17b35d089e292af868f0c7c78de507e032220a8fd49497fde59279c45068c",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests.rs",
+      "scope": "include owner and support mount",
+      "start_line": 1,
+      "end_line": 62,
+      "file_sha256": "58fcaced9a45cef71e2e6ea65fae1d43cda2aa8f4a3fac6e61a332b22e7904e1",
+      "range_sha256": "a6c7f9211e7cbe7f72acff8ebb245188e76b8b89a84df28206d6d31c51538845",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/support.rs",
+      "scope": "runtime and step-frame helpers",
+      "start_line": 146,
+      "end_line": 180,
+      "file_sha256": "56bd83e68ed80a902229de49e30e3f7ac2ff337ec99f8bded9ba2d4fd036de6c",
+      "range_sha256": "72f9bf3307e4f23b24e4afed4b95d765a7a0697f9e5c0aef4586de238749e69a",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/tests/support.rs",
+      "scope": "serve_admitted duplex driver, expected baseline and resumed generation fixture",
+      "start_line": 271,
+      "end_line": 364,
+      "file_sha256": "56bd83e68ed80a902229de49e30e3f7ac2ff337ec99f8bded9ba2d4fd036de6c",
+      "range_sha256": "39eed91ea0ee4ffd91ca2c86f2468eb9cc7c125c8d027d08867b983bf147b18c",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/command.rs",
+      "scope": "actual command generation/ingress/input gate and retained-bank classification branch",
+      "start_line": 1,
+      "end_line": 360,
+      "file_sha256": "2f5429f99572f9737a314293c6e64571f680077989b03e1a466588fb6927eb79",
+      "range_sha256": "59b1aea6801d84583a3d4be2343a996810cd7e3c218aca77590300a3ad44dbd8",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/setup.rs",
+      "scope": "initial retained-bank reconciliation predicate",
+      "start_line": 345,
+      "end_line": 390,
+      "file_sha256": "fec17ff4cf11c7d155fc7befb5bcae9168f6c714436ed1528cb1c83f2b0fbdc5",
+      "range_sha256": "efc19856ed897fe338fa0944303aed837aeef6319ad53d9de182090751139730",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/authority/composed.rs",
+      "scope": "native retained-work retry adapter",
+      "start_line": 556,
+      "end_line": 584,
+      "file_sha256": "b4ad219c0869a68e61fb427b68d4968a7bea693e0c53ed940b1f87ded657ccf2",
+      "range_sha256": "4bd99a6bf4639670b2b2bc2c24d15a4219a135f451ce86ed7ab57990b46ba57d",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/connection/authority.rs",
+      "scope": "authority callback contract and default",
+      "start_line": 1499,
+      "end_line": 1530,
+      "file_sha256": "8b3d4cb370cf27565894ff45a1c20c9c7635e3bc4ae672c675e6943e4cc5d1b2",
+      "range_sha256": "71a13a3ec47fbaa3e95b73b4cebede159a32bd9c60f25191887e60f15d594b7e",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank.rs",
+      "scope": "BankOperationRecord and closed two-variant outcome",
+      "start_line": 177,
+      "end_line": 205,
+      "file_sha256": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+      "range_sha256": "bfecb23d3b7b91e2bdace2e7f6467c41393c744402c947cc870e724010ee24ab",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank.rs",
+      "scope": "native enqueue, resume, command lock and frozen row read",
+      "start_line": 504,
+      "end_line": 643,
+      "file_sha256": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+      "range_sha256": "764b15281789cd36619fa341a845c93b3d68b0ef6d3bb29b94cd4d460aed4cc3",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank.rs",
+      "scope": "replay-before-new-write owner branch",
+      "start_line": 965,
+      "end_line": 1000,
+      "file_sha256": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+      "range_sha256": "8aae9b4126e04ce597800d5f8ae949e54526a3d5a2581a8d27a6af956086cdc4",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    },
+    {
+      "path": "apps/game-server/migrations/0114_npc_bank_confirmation.sql",
+      "scope": "pending-work shape, immutable terminal transition, deferred exact-native-outcome proof and runtime grant",
+      "start_line": 1,
+      "end_line": 68,
+      "file_sha256": "85a50b833833f1add7f35426ef6e599b7ca61ebae443fbd778ea31b48b15e34f",
+      "range_sha256": "4f4d0ffa4919450e052a0a5d704c080115b11063ee0b80879cb003c9e7befc38",
+      "kind": "MANUAL_CONTEXT_RANGE"
+    }
+  ],
+  "actual_runtime_executions_in_this_batch": 0,
+  "consumer_boundary": "NPC bank bodies are shared by standalone npc_econ_bank_postgres and registered character_authority_postgres aggregate. No actual compiled ID comparison or duplicate-target removal was performed. Transport cases are included by the dispatch owner tests module.",
+  "fixture_boundary": "Nine PG cases return Ok when configured_admin is absent. Common Database creates/migrates an isolated local role-controlled DB; Harness seeds Character/session/admission rows using privileged SQL, while node registration, runtime assignment/readiness and subsequent bank/item writes use native APIs. This does not execute fresh Platform admission.",
+  "unapplied_observations": [
+    {
+      "id": "BANK-B-01",
+      "fact": "The NPC buy test checks one game_item_audit_outbox row per transaction before replay, but its footprint helper does not include that table or NPC trade rows.",
+      "inference": "The replay footprint does not independently prove those event/receipt rows unchanged; this is an oracle boundary, not an executed surviving mutant or a whole-suite gap.",
+      "recommendation": "In a later qualified follow-up, compare the exact relevant event/receipt rows before and after replay if the case is intended to establish a single event across replay."
+    },
+    {
+      "id": "BANK-B-02",
+      "fact": "Concurrent drains enforce one Committed and one Replayed via a two-variant enum, but do not compare returned records.",
+      "inference": "The values and row counts prove one money effect, while the exact equality of replayed receipt payloads is untested in this particular concurrency body.",
+      "recommendation": "Retain the case; consider exact record equality in a later qualified change rather than describing count checks as complete receipt equality."
+    }
+  ],
+  "whole_repository_or_fixture_completion": false
+}

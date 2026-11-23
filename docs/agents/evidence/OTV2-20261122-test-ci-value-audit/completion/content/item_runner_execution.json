@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+    "tools/content-schema/item-authoring/test_engine_items.py"
+  ],
+  "cwd": ".",
+  "exit_code": 0,
+  "seconds": 10.905,
+  "stdout": "PASS 603 checks\n{'cohort': 'engine', 'status': 'PASS', 'scope': 'explicit old165/411 input views; selected current3332/current103 guards independently live'}\n",
+  "stderr": "...\n----------------------------------------------------------------------\nRan 3 tests in 0.242s\n\nOK\n...\n----------------------------------------------------------------------\nRan 3 tests in 0.672s\n\nOK\n....\n----------------------------------------------------------------------\nRan 4 tests in 0.001s\n\nOK\n"
+}

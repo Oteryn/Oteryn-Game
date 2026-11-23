@@ -1,0 +1,41 @@
+{
+  "limits": "Execution only; no inferred semantic review or hosted CI proof.",
+  "results": [
+    {
+      "path": "tools/content-format-spike/self_test.py",
+      "source_sha256": "756582378c84ade3bb35ffbb73cef0559c31fff8d4daae4c8475991a595f6a93",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-format-spike/self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-format-spike",
+      "elapsed_seconds": 0.324,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 16,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 16,
+      "suite_result": "PASS",
+      "case_results": [
+        "test_binary_bundle_is_deterministic_and_client_safe (__main__.ContentFormatSpikeTests.test_binary_bundle_is_deterministic_and_client_safe) ... ok",
+        "test_binary_corruption_is_rejected (__main__.ContentFormatSpikeTests.test_binary_corruption_is_rejected) ... ok",
+        "test_chunked_json_is_deterministic_and_round_trips_one_chunk (__main__.ContentFormatSpikeTests.test_chunked_json_is_deterministic_and_round_trips_one_chunk) ... ok",
+        "test_cli_can_write_results_and_dossier_together (__main__.ContentFormatSpikeTests.test_cli_can_write_results_and_dossier_together) ... ok",
+        "test_d3_client_projection_and_negative_boundaries_fail_closed (__main__.ContentFormatSpikeTests.test_d3_client_projection_and_negative_boundaries_fail_closed) ... ok",
+        "test_d3_identity_is_enumeration_and_rechunk_independent (__main__.ContentFormatSpikeTests.test_d3_identity_is_enumeration_and_rechunk_independent) ... ok",
+        "test_d3_one_record_update_changes_manifest_and_one_chunk (__main__.ContentFormatSpikeTests.test_d3_one_record_update_changes_manifest_and_one_chunk) ... ok",
+        "test_d3_two_carriers_share_logical_index_and_round_trip (__main__.ContentFormatSpikeTests.test_d3_two_carriers_share_logical_index_and_round_trip) ... ok",
+        "test_decompression_ratio_limit_is_fail_closed (__main__.ContentFormatSpikeTests.test_decompression_ratio_limit_is_fail_closed) ... ok",
+        "test_dossier_renders_invariant_candidates_and_owner_gate (__main__.ContentFormatSpikeTests.test_dossier_renders_invariant_candidates_and_owner_gate) ... ok",
+        "test_json_chunk_path_cannot_escape_project_root (__main__.ContentFormatSpikeTests.test_json_chunk_path_cannot_escape_project_root) ... ok",
+        "test_json_source_is_multiline_for_reviewable_diff (__main__.ContentFormatSpikeTests.test_json_source_is_multiline_for_reviewable_diff) ... ok",
+        "test_malformed_json_manifest_shape_is_rejected_as_spike_error (__main__.ContentFormatSpikeTests.test_malformed_json_manifest_shape_is_rejected_as_spike_error) ... ok",
+        "test_small_benchmark_emits_three_candidates_and_invariant (__main__.ContentFormatSpikeTests.test_small_benchmark_emits_three_candidates_and_invariant) ... ok",
+        "test_sqlite_is_deterministic_and_round_trips_one_chunk (__main__.ContentFormatSpikeTests.test_sqlite_is_deterministic_and_round_trips_one_chunk) ... ok",
+        "test_unknown_critical_feature_is_rejected (__main__.ContentFormatSpikeTests.test_unknown_critical_feature_is_rejected) ... ok"
+      ],
+      "output_tail": "ve_boundaries_fail_closed (__main__.ContentFormatSpikeTests.test_d3_client_projection_and_negative_boundaries_fail_closed) ... ok\ntest_d3_identity_is_enumeration_and_rechunk_independent (__main__.ContentFormatSpikeTests.test_d3_identity_is_enumeration_and_rechunk_independent) ... ok\ntest_d3_one_record_update_changes_manifest_and_one_chunk (__main__.ContentFormatSpikeTests.test_d3_one_record_update_changes_manifest_and_one_chunk) ... ok\ntest_d3_two_carriers_share_logical_index_and_round_trip (__main__.ContentFormatSpikeTests.test_d3_two_carriers_share_logical_index_and_round_trip) ... ok\ntest_decompression_ratio_limit_is_fail_closed (__main__.ContentFormatSpikeTests.test_decompression_ratio_limit_is_fail_closed) ... ok\ntest_dossier_renders_invariant_candidates_and_owner_gate (__main__.ContentFormatSpikeTests.test_dossier_renders_invariant_candidates_and_owner_gate) ... ok\ntest_json_chunk_path_cannot_escape_project_root (__main__.ContentFormatSpikeTests.test_json_chunk_path_cannot_escape_project_root) ... ok\ntest_json_source_is_multiline_for_reviewable_diff (__main__.ContentFormatSpikeTests.test_json_source_is_multiline_for_reviewable_diff) ... ok\ntest_malformed_json_manifest_shape_is_rejected_as_spike_error (__main__.ContentFormatSpikeTests.test_malformed_json_manifest_shape_is_rejected_as_spike_error) ... ok\ntest_small_benchmark_emits_three_candidates_and_invariant (__main__.ContentFormatSpikeTests.test_small_benchmark_emits_three_candidates_and_invariant) ... ok\ntest_sqlite_is_deterministic_and_round_trips_one_chunk (__main__.ContentFormatSpikeTests.test_sqlite_is_deterministic_and_round_trips_one_chunk) ... ok\ntest_unknown_critical_feature_is_rejected (__main__.ContentFormatSpikeTests.test_unknown_critical_feature_is_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 16 tests in 0.195s\n\nOK\nSPIKE_RESULT != OWNER_FORMAT_DECISION\nmeasurements=3\nresults=/tmp/tmp3u8n44lz/cli-results.json\ndossier=/tmp/tmp3u8n44lz/cli-dossier.md\n"
+    }
+  ]
+}

@@ -429,16 +429,36 @@ fn fresh_and_recovery_account_security_share_one_floor_across_restart()
                     102,
                     vec![3],
                 );
-                root.accept_native_source_observation(&node, fresh_12)
+                root.accept_native_source_observation(&node, fresh_12.clone())
                     .await?;
                 assert!(matches!(
-                    root.accept_native_source_observation(&node, recovery_11)
+                    root.accept_native_source_observation(&node, recovery_11.clone())
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
                 drop(root);
 
                 let restarted = ready_root(&database_url).await?;
+                // Observe the retained floor before any new write can replace it.
+                let mut observer = sqlx::PgConnection::connect(&database_url).await?;
+                let retained: String = sqlx::query_scalar(
+                    "SELECT source_revision::text FROM game_durability_native_source_floors \
+                     WHERE registration_id=1 AND source_authority='platform' AND floor_subject=$1",
+                )
+                .bind(format!("account:{ACCOUNT_ID}"))
+                .fetch_one(&mut observer)
+                .await?;
+                assert_eq!(retained, "12");
+                observer.close().await?;
+                assert!(matches!(
+                    restarted
+                        .accept_native_source_observation(&node, recovery_11)
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                restarted
+                    .accept_native_source_observation(&node, fresh_12)
+                    .await?;
                 let maximum = account_observation(
                     NativeSourceOperation::ReadRecoveryAccountSecurityV2,
                     u64::MAX,
@@ -783,6 +803,13 @@ fn lost_response_two_max_slots_exact_clear_and_reuse_survive_restart()
                 let after_replay = restarted.pending_native_source_publications(&node).await?;
                 let replayed = pending(&after_replay, &first).ok_or("missing replayed slot")?;
                 assert_eq!(replayed.checkpointed_at, 300);
+                // One slot is still free, so capacity cannot mask this size rejection.
+                assert!(matches!(
+                    restarted
+                        .checkpoint_native_source_publication(&node, vec![4; 16_385], 303)
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
                 let second_slot = restarted
                     .checkpoint_native_source_publication(&node, second.clone(), 301)
                     .await?;
@@ -796,12 +823,6 @@ fn lost_response_two_max_slots_exact_clear_and_reuse_survive_restart()
                 assert!(matches!(
                     restarted
                         .checkpoint_native_source_publication(&node, third.clone(), 302)
-                        .await,
-                    Err(DurabilityError::Unavailable)
-                ));
-                assert!(matches!(
-                    restarted
-                        .checkpoint_native_source_publication(&node, vec![4; 16_385], 303)
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));

@@ -1,0 +1,35 @@
+{
+  "scanner": "source_value_scan.py",
+  "source_scan_sha256": "3c4fa2fe0f814b7f6b53161031d3d04e35ddf6fcd7f76e66e9e0be45b7257197",
+  "method": "Resolve all flagged self-equalities and ignores from real bodies and callees, not flag names. No source changes.",
+  "resolutions": [
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_spell_tests/tests_casting.rs",
+      "test": "the_occurrence_and_its_draws_are_bound_to_the_command",
+      "flag": "self_equality",
+      "verdict": "REAL-P2 oracle gap",
+      "basis": "Occurrence test compares two independently rebuilt identical calls, not literal-expression tautology, but never changes command ID and casts heal on full HP; arbitrary/constant draw can yield identical capped visible result. No distinct-command binding proof; proposal held."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/charm.rs",
+      "test": "the_occurrence_is_bound_to_the_fnd02_command_identity",
+      "flag": "self_equality",
+      "verdict": "Useful determinism but redundant with independent vector; no required repair",
+      "basis": "Full514-line implementation+8tests; FakePort records exact single calls and typed arguments. Literal malformed bytes require exact rejected payload and zero port calls; routing ignores unrelated kinds. Full sorted views and unavailable/malformed failures. Occurrence has fixed independent16-byte digest plus distinct command/session inequalities and UUID bit checks."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/canonical_monster_successor_tests.rs",
+      "test": "canonical_monster_successor_reseal_and_preservation",
+      "flag": "ignored_attribute",
+      "verdict": "BY DESIGN explicit authoring action; no default test coverage",
+      "basis": "Full181-line driver: required trusted/merged/output roots, output must not exist/equal input; canonical writer and re-admission, literal record/item/creature/import bounds, complete item/declaration preservation and idempotent bytes; writes only requested fresh output. #[ignore] deliberate because this is a local authoring action."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/hireling.rs",
+      "test": "client_e2e_hireling",
+      "flag": "ignored_attribute",
+      "verdict": "P2 stale reason/current qualification missing",
+      "basis": "Full103-line test/prepare/exercise plus support scenario/body/exchange scopes. Real house-resident fixture prepares custody/fence and registeredcap165, serve-admitted command220 Query expects acceptedfalse and zerohirelings. Current Query calls query_legacy_hireling/query_hirelings_scope; cited old position/dismiss guard is absent from that path."
+    }
+  ]
+}

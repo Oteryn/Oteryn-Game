@@ -46,8 +46,14 @@ fn appearance_catalogue_palette_and_list_bounds_are_symmetric() {
     catalogue.outfits.push(catalogue.outfits[0].clone());
     assert!(catalogue.encode().is_err());
     catalogue.outfits.clear();
-    catalogue.mounts = vec!["x".into(); 257];
-    assert!(catalogue.encode().is_err());
+    catalogue.mounts = (0..256).map(|index| format!("mount_{index:03}")).collect();
+    assert_eq!(
+        Catalogue::decode(&catalogue.encode().expect("256 distinct mounts"))
+            .expect("bounded mount catalogue"),
+        catalogue
+    );
+    catalogue.mounts.push("mount_256".into());
+    assert_eq!(catalogue.encode(), Err(AppearanceError::LimitExceeded));
 }
 #[test]
 fn appearance_mapping_rejects_mixed_context_repeated_refs_and_kind_fields() {

@@ -1,0 +1,42 @@
+{
+  "finding": "MISSING_THAIS_PLATE_IDENTITIES_NOT_REJECTED_BY_EFFECT_AUTHORING_MODULE",
+  "test_path": "tools/content-schema/quest-authoring/test_qengine_effect_authoring.py",
+  "source_sha256": "29c6d02c559cef96fefa54710604b10994e2ffbf9d6acb835ee2d1b56f23bbe2",
+  "mutation": "Return one actual generated document with only the two exact Thais step-in/step-out callback rows deleted; all other callbacks and validators unchanged. Each test receives a fresh copy.",
+  "removed_ids": [
+    "oteryn:quest-callback/thais-lighthouse-plate",
+    "oteryn:quest-callback/thais-lighthouse-plate-out"
+  ],
+  "actual_callback_count": 73,
+  "mutant_callback_count": 71,
+  "baseline_real_generated_document": {
+    "tests_run": 5,
+    "success": true,
+    "case_ids": [
+      "test_qengine_effect_authoring.SharedEffectAuthoring.test_all_source_effect_shapes_validate",
+      "test_qengine_effect_authoring.SharedEffectAuthoring.test_encounter_bounds_and_atomic_effect_composition",
+      "test_qengine_effect_authoring.SharedEffectAuthoring.test_invalid_shared_effects_are_refused",
+      "test_qengine_effect_authoring.SharedEffectAuthoring.test_scripted_landing_requires_explicit_native_player_destination",
+      "test_qengine_effect_authoring.SharedEffectAuthoring.test_source_plate_stepout_and_paired_portals_are_authorable"
+    ],
+    "failures": 0,
+    "errors": 0,
+    "output": "test_all_source_effect_shapes_validate (test_qengine_effect_authoring.SharedEffectAuthoring.test_all_source_effect_shapes_validate) ... ok\ntest_encounter_bounds_and_atomic_effect_composition (test_qengine_effect_authoring.SharedEffectAuthoring.test_encounter_bounds_and_atomic_effect_composition) ... ok\ntest_invalid_shared_effects_are_refused (test_qengine_effect_authoring.SharedEffectAuthoring.test_invalid_shared_effects_are_refused) ... ok\ntest_scripted_landing_requires_explicit_native_player_destination (test_qengine_effect_authoring.SharedEffectAuthoring.test_scripted_landing_requires_explicit_native_player_destination) ... ok\ntest_source_plate_stepout_and_paired_portals_are_authorable (test_qengine_effect_authoring.SharedEffectAuthoring.test_source_plate_stepout_and_paired_portals_are_authorable) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.009s\n\nOK\n"
+  },
+  "mutant": {
+    "tests_run": 5,
+    "success": true,
+    "case_ids": [
+      "test_qengine_effect_authoring.SharedEffectAuthoring.test_all_source_effect_shapes_validate",
+      "test_qengine_effect_authoring.SharedEffectAuthoring.test_encounter_bounds_and_atomic_effect_composition",
+      "test_qengine_effect_authoring.SharedEffectAuthoring.test_invalid_shared_effects_are_refused",
+      "test_qengine_effect_authoring.SharedEffectAuthoring.test_scripted_landing_requires_explicit_native_player_destination",
+      "test_qengine_effect_authoring.SharedEffectAuthoring.test_source_plate_stepout_and_paired_portals_are_authorable"
+    ],
+    "failures": 0,
+    "errors": 0,
+    "output": "test_all_source_effect_shapes_validate (test_qengine_effect_authoring.SharedEffectAuthoring.test_all_source_effect_shapes_validate) ... ok\ntest_encounter_bounds_and_atomic_effect_composition (test_qengine_effect_authoring.SharedEffectAuthoring.test_encounter_bounds_and_atomic_effect_composition) ... ok\ntest_invalid_shared_effects_are_refused (test_qengine_effect_authoring.SharedEffectAuthoring.test_invalid_shared_effects_are_refused) ... ok\ntest_scripted_landing_requires_explicit_native_player_destination (test_qengine_effect_authoring.SharedEffectAuthoring.test_scripted_landing_requires_explicit_native_player_destination) ... ok\ntest_source_plate_stepout_and_paired_portals_are_authorable (test_qengine_effect_authoring.SharedEffectAuthoring.test_source_plate_stepout_and_paired_portals_are_authorable) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.008s\n\nOK\n"
+  },
+  "scope": "Bounded Python module oracle gap; no whole-suite or production reachability claim; no source edit. Independent expected IDs are explicitly emitted in qengine_access.document and present in the committed callback registry.",
+  "proposal": "Anchor the three explicit Thais callback identities before validating each distinct shape."
+}

@@ -1,0 +1,53 @@
+{
+  "authoring_predecessor": "0623fbd59c372bbf479f3965031f47393c42cd39",
+  "method": "Exact qualified source hashes verified before copy; root reviewed all five diffs. Runtime gates and doc-only delta retain separate receipts.",
+  "source_files": [
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "sha256": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "test_target_import",
+      "before_integration_sha256": "4f2b102eb66cec2988f4db8539db0ebc827a6baafedc0323992cae1d3b977ea7"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/mod.rs",
+      "sha256": "bddab355674c61af52100638e0799a6b6d45dabf990144848fe1985a88fef29f",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "documentation_only",
+      "before_integration_sha256": "c49f7c560969cab16f9d872be0600989775a325d3ec7f06ec7a88c642669fe56"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think.rs",
+      "sha256": "5f5a032d3d72e96ca0fdc41c4b57185c55c71d1cc7e4ef1e7949af0384dd910c",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "documentation_only",
+      "before_integration_sha256": "76467c5d07dddf50423f1704e03c09ae693aa32aa8bc4b11f33a367c0888a030"
+    },
+    {
+      "path": "tools/repository/check_duplicate_test_sources.py",
+      "sha256": "2f3af05c1957c61fd0844761982d449a5ebdf80167f596a28be3ff8453e65817",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "one_proven_duplicate_allowlist_entry_removed",
+      "before_integration_sha256": "478872c25d72f4d337585eed99aa4c3ca968d6850c5b78829009941a6cd5f5ac"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/perception.rs",
+      "sha256": "386755946bd6c5f9fc4f7a8ff5daccb6dc6330d6980acc9032250d91c017639d",
+      "qualification": "ai5_doc_validation.json",
+      "change_kind": "documentation_only",
+      "before_integration_sha256": "3d5c281fd3ba2987a914a773f1bff1bb08a515ee7432d125eac925633cac731f"
+    }
+  ],
+  "evidence_snapshot": {
+    "files_copied": 327,
+    "bytes": 11107516,
+    "dirs": [
+      "client",
+      "content",
+      "protocol",
+      "durability",
+      "blackbox"
+    ],
+    "limits": "Point-in-time snapshot; live audit lanes continue. Reconciled-only records and root README/task remain untouched."
+  }
+}

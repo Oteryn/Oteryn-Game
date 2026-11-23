@@ -1,0 +1,191 @@
+{
+  "scope": "Extracted exact production enum/codec bodies, audit constants and old/new unit oracle; not full crate or PostgreSQL execution",
+  "variants": {
+    "baseline": "65055b2eb11c325874664008c8dd95f67db28ac54405deca1c027c372ec74233",
+    "result_meanings_swapped": "bc4ef6ffd3c537e67c3947ddda514319207fff5a0ad7b08728f72f8919fff351",
+    "operation_meanings_swapped": "f1c83e8c9d2246789db16e7d97d0992e99f615ccdf42e28fe61a9e1e082f7f08",
+    "ledger_meanings_swapped": "bb0b22dbc02d5eae2740de46464958ad43e498fc0ace1ea493e13c1f51684a99"
+  },
+  "status": "PASS",
+  "commands": [
+    {
+      "label": "bank_compile_baseline",
+      "argv": [
+        "rustc",
+        "+1.100.0",
+        "--edition=2024",
+        "--test",
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_baseline.rs",
+        "-o",
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_baseline"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.424,
+      "output": ""
+    },
+    {
+      "label": "bank_baseline_stored_codes_round_trip",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_baseline",
+        "--exact",
+        "stored_codes_round_trip",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.006,
+      "output": "\nrunning 1 test\ntest stored_codes_round_trip ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\n"
+    },
+    {
+      "label": "bank_baseline_stored_codes_match_migration_0071",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_baseline",
+        "--exact",
+        "stored_codes_match_migration_0071",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.003,
+      "output": "\nrunning 1 test\ntest stored_codes_match_migration_0071 ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\n"
+    },
+    {
+      "label": "bank_compile_result_meanings_swapped",
+      "argv": [
+        "rustc",
+        "+1.100.0",
+        "--edition=2024",
+        "--test",
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_result_meanings_swapped.rs",
+        "-o",
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_result_meanings_swapped"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.294,
+      "output": ""
+    },
+    {
+      "label": "bank_result_meanings_swapped_stored_codes_round_trip",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_result_meanings_swapped",
+        "--exact",
+        "stored_codes_round_trip",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.004,
+      "output": "\nrunning 1 test\ntest stored_codes_round_trip ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\n"
+    },
+    {
+      "label": "bank_result_meanings_swapped_stored_codes_match_migration_0071",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_result_meanings_swapped",
+        "--exact",
+        "stored_codes_match_migration_0071",
+        "--nocapture"
+      ],
+      "rc": 101,
+      "expected_rc": 101,
+      "seconds": 0.002,
+      "output": "\nrunning 1 test\ntest stored_codes_match_migration_0071 ... FAILED\n\nfailures:\n\nfailures:\n    stored_codes_match_migration_0071\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\n\nthread 'stored_codes_match_migration_0071' (143209) panicked at /home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_result_meanings_swapped.rs:143:13:\nassertion `left == right` failed: JuniorAccount\n  left: 7\n right: 5\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    },
+    {
+      "label": "bank_compile_operation_meanings_swapped",
+      "argv": [
+        "rustc",
+        "+1.100.0",
+        "--edition=2024",
+        "--test",
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_operation_meanings_swapped.rs",
+        "-o",
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_operation_meanings_swapped"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.317,
+      "output": ""
+    },
+    {
+      "label": "bank_operation_meanings_swapped_stored_codes_round_trip",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_operation_meanings_swapped",
+        "--exact",
+        "stored_codes_round_trip",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.004,
+      "output": "\nrunning 1 test\ntest stored_codes_round_trip ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\n"
+    },
+    {
+      "label": "bank_operation_meanings_swapped_stored_codes_match_migration_0071",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_operation_meanings_swapped",
+        "--exact",
+        "stored_codes_match_migration_0071",
+        "--nocapture"
+      ],
+      "rc": 101,
+      "expected_rc": 101,
+      "seconds": 0.003,
+      "output": "\nrunning 1 test\ntest stored_codes_match_migration_0071 ... FAILED\n\nfailures:\n\nfailures:\n    stored_codes_match_migration_0071\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\n\nthread 'stored_codes_match_migration_0071' (143241) panicked at /home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_operation_meanings_swapped.rs:154:13:\nassertion `left == right` failed: Deposit\n  left: 2\n right: 1\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    },
+    {
+      "label": "bank_compile_ledger_meanings_swapped",
+      "argv": [
+        "rustc",
+        "+1.100.0",
+        "--edition=2024",
+        "--test",
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_ledger_meanings_swapped.rs",
+        "-o",
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_ledger_meanings_swapped"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.321,
+      "output": ""
+    },
+    {
+      "label": "bank_ledger_meanings_swapped_stored_codes_round_trip",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_ledger_meanings_swapped",
+        "--exact",
+        "stored_codes_round_trip",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.004,
+      "output": "\nrunning 1 test\ntest stored_codes_round_trip ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\n"
+    },
+    {
+      "label": "bank_ledger_meanings_swapped_stored_codes_match_migration_0071",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_ledger_meanings_swapped",
+        "--exact",
+        "stored_codes_match_migration_0071",
+        "--nocapture"
+      ],
+      "rc": 101,
+      "expected_rc": 101,
+      "seconds": 0.002,
+      "output": "\nrunning 1 test\ntest stored_codes_match_migration_0071 ... FAILED\n\nfailures:\n\nfailures:\n    stored_codes_match_migration_0071\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s\n\n\nthread 'stored_codes_match_migration_0071' (143258) panicked at /home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/bank_oracle_ledger_meanings_swapped.rs:166:13:\nassertion `left == right` failed: TransferOut\n  left: 4\n right: 3\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n"
+    }
+  ],
+  "probe_inputs": {
+    "baseline": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankResult {\n    Ok,\n    /// A deposit's credit above `BANK0-RL-01`.\n    BalanceLimit,\n    InsufficientBalance,\n    /// The main backpack's coins cannot pay a deposit.\n    InsufficientCoins,\n    /// A deposit's change or a withdrawal's coins do not fit the main backpack.\n    NoRoom,\n    JuniorAccount,\n    UnknownRecipient,\n    /// A junior recipient, or a credit above `BANK0-RL-01` on the recipient's balance.\n    RecipientCannotReceiveTransfers,\n    SameAccount,\n}\nimpl BankResult {\n    pub fn code(self) -> i16 {\n        match self {\n            Self::Ok => 0,\n            Self::BalanceLimit => 1,\n            Self::InsufficientBalance => 2,\n            Self::InsufficientCoins => 3,\n            Self::NoRoom => 4,\n            Self::JuniorAccount => 5,\n            Self::UnknownRecipient => 6,\n            Self::RecipientCannotReceiveTransfers => 7,\n            Self::SameAccount => 8,\n        }\n    }\n\n    pub fn from_code(code: i16) -> Option<Self> {\n        [\n            Self::Ok,\n            Self::BalanceLimit,\n            Self::InsufficientBalance,\n            Self::InsufficientCoins,\n            Self::NoRoom,\n            Self::JuniorAccount,\n            Self::UnknownRecipient,\n            Self::RecipientCannotReceiveTransfers,\n            Self::SameAccount,\n        ]\n        .into_iter()\n        .find(|result| result.code() == code)\n    }\n}\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankOperationKind {\n    Deposit,\n    Withdraw,\n    Transfer,\n}\nimpl BankOperationKind {\n    fn code(self) -> i16 {\n        match self {\n            Self::Deposit => 1,\n            Self::Withdraw => 2,\n            Self::Transfer => 3,\n        }\n    }\n\n    fn from_code(code: i16) -> Option<Self> {\n        match code {\n            1 => Some(Self::Deposit),\n            2 => Some(Self::Withdraw),\n            3 => Some(Self::Transfer),\n            _ => None,\n        }\n    }\n}\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankLedgerKind {\n    Deposit,\n    Withdraw,\n    TransferOut,\n    TransferIn,\n}\nimpl BankLedgerKind {\n    fn code(self) -> u32 {\n        match self {\n            Self::Deposit => audit::LEDGER_DEPOSIT,\n            Self::Withdraw => audit::LEDGER_WITHDRAW,\n            Self::TransferOut => audit::LEDGER_TRANSFER_OUT,\n            Self::TransferIn => audit::LEDGER_TRANSFER_IN,\n        }\n    }\n\n    fn from_code(code: i16) -> Option<Self> {\n        [\n            Self::Deposit,\n            Self::Withdraw,\n            Self::TransferOut,\n            Self::TransferIn,\n        ]\n        .into_iter()\n        .find(|kind| i64::from(kind.code()) == i64::from(code))\n    }\n}\n\nmod audit {\npub const LEDGER_DEPOSIT: u32 = 1;\npub const LEDGER_WITHDRAW: u32 = 2;\npub const LEDGER_TRANSFER_OUT: u32 = 3;\npub const LEDGER_TRANSFER_IN: u32 = 4;\n}\n#[test]\nfn stored_codes_round_trip() {\n        for code in 0..=8 {\n            assert_eq!(\n                BankResult::from_code(code).map(BankResult::code),\n                Some(code)\n            );\n        }\n        assert_eq!(BankResult::from_code(9), None);\n        for code in 1..=3 {\n            assert_eq!(\n                BankOperationKind::from_code(code).map(BankOperationKind::code),\n                Some(code)\n            );\n        }\n        for code in 1..=4_i16 {\n            assert_eq!(\n                BankLedgerKind::from_code(code).map(|kind| i16::try_from(kind.code()).unwrap()),\n                Some(code)\n            );\n        }\n    }\n#[test]\nfn stored_codes_match_migration_0071() {\n        // Persisted meanings from 0071_account_bank.sql, independent of the codec.\n        for (result, code) in [\n            (BankResult::Ok, 0),\n            (BankResult::BalanceLimit, 1),\n            (BankResult::InsufficientBalance, 2),\n            (BankResult::InsufficientCoins, 3),\n            (BankResult::NoRoom, 4),\n            (BankResult::JuniorAccount, 5),\n            (BankResult::UnknownRecipient, 6),\n            (BankResult::RecipientCannotReceiveTransfers, 7),\n            (BankResult::SameAccount, 8),\n        ] {\n            assert_eq!(result.code(), code, \"{result:?}\");\n            assert_eq!(BankResult::from_code(code), Some(result));\n        }\n        for code in [i16::MIN, -1, 9, i16::MAX] {\n            assert_eq!(BankResult::from_code(code), None);\n        }\n        for (kind, code) in [\n            (BankOperationKind::Deposit, 1),\n            (BankOperationKind::Withdraw, 2),\n            (BankOperationKind::Transfer, 3),\n        ] {\n            assert_eq!(kind.code(), code, \"{kind:?}\");\n            assert_eq!(BankOperationKind::from_code(code), Some(kind));\n        }\n        for code in [i16::MIN, -1, 0, 4, i16::MAX] {\n            assert_eq!(BankOperationKind::from_code(code), None);\n        }\n        for (kind, code) in [\n            (BankLedgerKind::Deposit, 1),\n            (BankLedgerKind::Withdraw, 2),\n            (BankLedgerKind::TransferOut, 3),\n            (BankLedgerKind::TransferIn, 4),\n        ] {\n            assert_eq!(i16::try_from(kind.code()).unwrap(), code, \"{kind:?}\");\n            assert_eq!(BankLedgerKind::from_code(code), Some(kind));\n        }\n        for code in [i16::MIN, -1, 0, 5, i16::MAX] {\n            assert_eq!(BankLedgerKind::from_code(code), None);\n        }\n    }\n",
+    "ledger_meanings_swapped": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankResult {\n    Ok,\n    /// A deposit's credit above `BANK0-RL-01`.\n    BalanceLimit,\n    InsufficientBalance,\n    /// The main backpack's coins cannot pay a deposit.\n    InsufficientCoins,\n    /// A deposit's change or a withdrawal's coins do not fit the main backpack.\n    NoRoom,\n    JuniorAccount,\n    UnknownRecipient,\n    /// A junior recipient, or a credit above `BANK0-RL-01` on the recipient's balance.\n    RecipientCannotReceiveTransfers,\n    SameAccount,\n}\nimpl BankResult {\n    pub fn code(self) -> i16 {\n        match self {\n            Self::Ok => 0,\n            Self::BalanceLimit => 1,\n            Self::InsufficientBalance => 2,\n            Self::InsufficientCoins => 3,\n            Self::NoRoom => 4,\n            Self::JuniorAccount => 5,\n            Self::UnknownRecipient => 6,\n            Self::RecipientCannotReceiveTransfers => 7,\n            Self::SameAccount => 8,\n        }\n    }\n\n    pub fn from_code(code: i16) -> Option<Self> {\n        [\n            Self::Ok,\n            Self::BalanceLimit,\n            Self::InsufficientBalance,\n            Self::InsufficientCoins,\n            Self::NoRoom,\n            Self::JuniorAccount,\n            Self::UnknownRecipient,\n            Self::RecipientCannotReceiveTransfers,\n            Self::SameAccount,\n        ]\n        .into_iter()\n        .find(|result| result.code() == code)\n    }\n}\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankOperationKind {\n    Deposit,\n    Withdraw,\n    Transfer,\n}\nimpl BankOperationKind {\n    fn code(self) -> i16 {\n        match self {\n            Self::Deposit => 1,\n            Self::Withdraw => 2,\n            Self::Transfer => 3,\n        }\n    }\n\n    fn from_code(code: i16) -> Option<Self> {\n        match code {\n            1 => Some(Self::Deposit),\n            2 => Some(Self::Withdraw),\n            3 => Some(Self::Transfer),\n            _ => None,\n        }\n    }\n}\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankLedgerKind {\n    Deposit,\n    Withdraw,\n    TransferOut,\n    TransferIn,\n}\nimpl BankLedgerKind {\n    fn code(self) -> u32 {\n        match self {\n            Self::Deposit => audit::LEDGER_DEPOSIT,\n            Self::Withdraw => audit::LEDGER_WITHDRAW,\n            Self::TransferOut => audit::LEDGER_TRANSFER_OUT,\n            Self::TransferIn => audit::LEDGER_TRANSFER_IN,\n        }\n    }\n\n    fn from_code(code: i16) -> Option<Self> {\n        [\n            Self::Deposit,\n            Self::Withdraw,\n            Self::TransferOut,\n            Self::TransferIn,\n        ]\n        .into_iter()\n        .find(|kind| i64::from(kind.code()) == i64::from(code))\n    }\n}\n\nmod audit {\npub const LEDGER_DEPOSIT: u32 = 1;\npub const LEDGER_WITHDRAW: u32 = 2;\npub const LEDGER_TRANSFER_OUT: u32 = 4;\npub const LEDGER_TRANSFER_IN: u32 = 3;\n}\n#[test]\nfn stored_codes_round_trip() {\n        for code in 0..=8 {\n            assert_eq!(\n                BankResult::from_code(code).map(BankResult::code),\n                Some(code)\n            );\n        }\n        assert_eq!(BankResult::from_code(9), None);\n        for code in 1..=3 {\n            assert_eq!(\n                BankOperationKind::from_code(code).map(BankOperationKind::code),\n                Some(code)\n            );\n        }\n        for code in 1..=4_i16 {\n            assert_eq!(\n                BankLedgerKind::from_code(code).map(|kind| i16::try_from(kind.code()).unwrap()),\n                Some(code)\n            );\n        }\n    }\n#[test]\nfn stored_codes_match_migration_0071() {\n        // Persisted meanings from 0071_account_bank.sql, independent of the codec.\n        for (result, code) in [\n            (BankResult::Ok, 0),\n            (BankResult::BalanceLimit, 1),\n            (BankResult::InsufficientBalance, 2),\n            (BankResult::InsufficientCoins, 3),\n            (BankResult::NoRoom, 4),\n            (BankResult::JuniorAccount, 5),\n            (BankResult::UnknownRecipient, 6),\n            (BankResult::RecipientCannotReceiveTransfers, 7),\n            (BankResult::SameAccount, 8),\n        ] {\n            assert_eq!(result.code(), code, \"{result:?}\");\n            assert_eq!(BankResult::from_code(code), Some(result));\n        }\n        for code in [i16::MIN, -1, 9, i16::MAX] {\n            assert_eq!(BankResult::from_code(code), None);\n        }\n        for (kind, code) in [\n            (BankOperationKind::Deposit, 1),\n            (BankOperationKind::Withdraw, 2),\n            (BankOperationKind::Transfer, 3),\n        ] {\n            assert_eq!(kind.code(), code, \"{kind:?}\");\n            assert_eq!(BankOperationKind::from_code(code), Some(kind));\n        }\n        for code in [i16::MIN, -1, 0, 4, i16::MAX] {\n            assert_eq!(BankOperationKind::from_code(code), None);\n        }\n        for (kind, code) in [\n            (BankLedgerKind::Deposit, 1),\n            (BankLedgerKind::Withdraw, 2),\n            (BankLedgerKind::TransferOut, 3),\n            (BankLedgerKind::TransferIn, 4),\n        ] {\n            assert_eq!(i16::try_from(kind.code()).unwrap(), code, \"{kind:?}\");\n            assert_eq!(BankLedgerKind::from_code(code), Some(kind));\n        }\n        for code in [i16::MIN, -1, 0, 5, i16::MAX] {\n            assert_eq!(BankLedgerKind::from_code(code), None);\n        }\n    }\n",
+    "result_meanings_swapped": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankResult {\n    Ok,\n    /// A deposit's credit above `BANK0-RL-01`.\n    BalanceLimit,\n    InsufficientBalance,\n    /// The main backpack's coins cannot pay a deposit.\n    InsufficientCoins,\n    /// A deposit's change or a withdrawal's coins do not fit the main backpack.\n    NoRoom,\n    JuniorAccount,\n    UnknownRecipient,\n    /// A junior recipient, or a credit above `BANK0-RL-01` on the recipient's balance.\n    RecipientCannotReceiveTransfers,\n    SameAccount,\n}\nimpl BankResult {\n    pub fn code(self) -> i16 {\n        match self {\n            Self::Ok => 0,\n            Self::BalanceLimit => 1,\n            Self::InsufficientBalance => 2,\n            Self::InsufficientCoins => 3,\n            Self::NoRoom => 4,\n            Self::JuniorAccount => 7,\n            Self::UnknownRecipient => 6,\n            Self::RecipientCannotReceiveTransfers => 5,\n            Self::SameAccount => 8,\n        }\n    }\n\n    pub fn from_code(code: i16) -> Option<Self> {\n        [\n            Self::Ok,\n            Self::BalanceLimit,\n            Self::InsufficientBalance,\n            Self::InsufficientCoins,\n            Self::NoRoom,\n            Self::JuniorAccount,\n            Self::UnknownRecipient,\n            Self::RecipientCannotReceiveTransfers,\n            Self::SameAccount,\n        ]\n        .into_iter()\n        .find(|result| result.code() == code)\n    }\n}\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankOperationKind {\n    Deposit,\n    Withdraw,\n    Transfer,\n}\nimpl BankOperationKind {\n    fn code(self) -> i16 {\n        match self {\n            Self::Deposit => 1,\n            Self::Withdraw => 2,\n            Self::Transfer => 3,\n        }\n    }\n\n    fn from_code(code: i16) -> Option<Self> {\n        match code {\n            1 => Some(Self::Deposit),\n            2 => Some(Self::Withdraw),\n            3 => Some(Self::Transfer),\n            _ => None,\n        }\n    }\n}\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankLedgerKind {\n    Deposit,\n    Withdraw,\n    TransferOut,\n    TransferIn,\n}\nimpl BankLedgerKind {\n    fn code(self) -> u32 {\n        match self {\n            Self::Deposit => audit::LEDGER_DEPOSIT,\n            Self::Withdraw => audit::LEDGER_WITHDRAW,\n            Self::TransferOut => audit::LEDGER_TRANSFER_OUT,\n            Self::TransferIn => audit::LEDGER_TRANSFER_IN,\n        }\n    }\n\n    fn from_code(code: i16) -> Option<Self> {\n        [\n            Self::Deposit,\n            Self::Withdraw,\n            Self::TransferOut,\n            Self::TransferIn,\n        ]\n        .into_iter()\n        .find(|kind| i64::from(kind.code()) == i64::from(code))\n    }\n}\n\nmod audit {\npub const LEDGER_DEPOSIT: u32 = 1;\npub const LEDGER_WITHDRAW: u32 = 2;\npub const LEDGER_TRANSFER_OUT: u32 = 3;\npub const LEDGER_TRANSFER_IN: u32 = 4;\n}\n#[test]\nfn stored_codes_round_trip() {\n        for code in 0..=8 {\n            assert_eq!(\n                BankResult::from_code(code).map(BankResult::code),\n                Some(code)\n            );\n        }\n        assert_eq!(BankResult::from_code(9), None);\n        for code in 1..=3 {\n            assert_eq!(\n                BankOperationKind::from_code(code).map(BankOperationKind::code),\n                Some(code)\n            );\n        }\n        for code in 1..=4_i16 {\n            assert_eq!(\n                BankLedgerKind::from_code(code).map(|kind| i16::try_from(kind.code()).unwrap()),\n                Some(code)\n            );\n        }\n    }\n#[test]\nfn stored_codes_match_migration_0071() {\n        // Persisted meanings from 0071_account_bank.sql, independent of the codec.\n        for (result, code) in [\n            (BankResult::Ok, 0),\n            (BankResult::BalanceLimit, 1),\n            (BankResult::InsufficientBalance, 2),\n            (BankResult::InsufficientCoins, 3),\n            (BankResult::NoRoom, 4),\n            (BankResult::JuniorAccount, 5),\n            (BankResult::UnknownRecipient, 6),\n            (BankResult::RecipientCannotReceiveTransfers, 7),\n            (BankResult::SameAccount, 8),\n        ] {\n            assert_eq!(result.code(), code, \"{result:?}\");\n            assert_eq!(BankResult::from_code(code), Some(result));\n        }\n        for code in [i16::MIN, -1, 9, i16::MAX] {\n            assert_eq!(BankResult::from_code(code), None);\n        }\n        for (kind, code) in [\n            (BankOperationKind::Deposit, 1),\n            (BankOperationKind::Withdraw, 2),\n            (BankOperationKind::Transfer, 3),\n        ] {\n            assert_eq!(kind.code(), code, \"{kind:?}\");\n            assert_eq!(BankOperationKind::from_code(code), Some(kind));\n        }\n        for code in [i16::MIN, -1, 0, 4, i16::MAX] {\n            assert_eq!(BankOperationKind::from_code(code), None);\n        }\n        for (kind, code) in [\n            (BankLedgerKind::Deposit, 1),\n            (BankLedgerKind::Withdraw, 2),\n            (BankLedgerKind::TransferOut, 3),\n            (BankLedgerKind::TransferIn, 4),\n        ] {\n            assert_eq!(i16::try_from(kind.code()).unwrap(), code, \"{kind:?}\");\n            assert_eq!(BankLedgerKind::from_code(code), Some(kind));\n        }\n        for code in [i16::MIN, -1, 0, 5, i16::MAX] {\n            assert_eq!(BankLedgerKind::from_code(code), None);\n        }\n    }\n",
+    "operation_meanings_swapped": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankResult {\n    Ok,\n    /// A deposit's credit above `BANK0-RL-01`.\n    BalanceLimit,\n    InsufficientBalance,\n    /// The main backpack's coins cannot pay a deposit.\n    InsufficientCoins,\n    /// A deposit's change or a withdrawal's coins do not fit the main backpack.\n    NoRoom,\n    JuniorAccount,\n    UnknownRecipient,\n    /// A junior recipient, or a credit above `BANK0-RL-01` on the recipient's balance.\n    RecipientCannotReceiveTransfers,\n    SameAccount,\n}\nimpl BankResult {\n    pub fn code(self) -> i16 {\n        match self {\n            Self::Ok => 0,\n            Self::BalanceLimit => 1,\n            Self::InsufficientBalance => 2,\n            Self::InsufficientCoins => 3,\n            Self::NoRoom => 4,\n            Self::JuniorAccount => 5,\n            Self::UnknownRecipient => 6,\n            Self::RecipientCannotReceiveTransfers => 7,\n            Self::SameAccount => 8,\n        }\n    }\n\n    pub fn from_code(code: i16) -> Option<Self> {\n        [\n            Self::Ok,\n            Self::BalanceLimit,\n            Self::InsufficientBalance,\n            Self::InsufficientCoins,\n            Self::NoRoom,\n            Self::JuniorAccount,\n            Self::UnknownRecipient,\n            Self::RecipientCannotReceiveTransfers,\n            Self::SameAccount,\n        ]\n        .into_iter()\n        .find(|result| result.code() == code)\n    }\n}\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankOperationKind {\n    Deposit,\n    Withdraw,\n    Transfer,\n}\nimpl BankOperationKind {\n    fn code(self) -> i16 {\n        match self {\n            Self::Deposit => 2,\n            Self::Withdraw => 1,\n            Self::Transfer => 3,\n        }\n    }\n\n    fn from_code(code: i16) -> Option<Self> {\n        match code {\n            1 => Some(Self::Withdraw),\n            2 => Some(Self::Deposit),\n            3 => Some(Self::Transfer),\n            _ => None,\n        }\n    }\n}\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum BankLedgerKind {\n    Deposit,\n    Withdraw,\n    TransferOut,\n    TransferIn,\n}\nimpl BankLedgerKind {\n    fn code(self) -> u32 {\n        match self {\n            Self::Deposit => audit::LEDGER_DEPOSIT,\n            Self::Withdraw => audit::LEDGER_WITHDRAW,\n            Self::TransferOut => audit::LEDGER_TRANSFER_OUT,\n            Self::TransferIn => audit::LEDGER_TRANSFER_IN,\n        }\n    }\n\n    fn from_code(code: i16) -> Option<Self> {\n        [\n            Self::Deposit,\n            Self::Withdraw,\n            Self::TransferOut,\n            Self::TransferIn,\n        ]\n        .into_iter()\n        .find(|kind| i64::from(kind.code()) == i64::from(code))\n    }\n}\n\nmod audit {\npub const LEDGER_DEPOSIT: u32 = 1;\npub const LEDGER_WITHDRAW: u32 = 2;\npub const LEDGER_TRANSFER_OUT: u32 = 3;\npub const LEDGER_TRANSFER_IN: u32 = 4;\n}\n#[test]\nfn stored_codes_round_trip() {\n        for code in 0..=8 {\n            assert_eq!(\n                BankResult::from_code(code).map(BankResult::code),\n                Some(code)\n            );\n        }\n        assert_eq!(BankResult::from_code(9), None);\n        for code in 1..=3 {\n            assert_eq!(\n                BankOperationKind::from_code(code).map(BankOperationKind::code),\n                Some(code)\n            );\n        }\n        for code in 1..=4_i16 {\n            assert_eq!(\n                BankLedgerKind::from_code(code).map(|kind| i16::try_from(kind.code()).unwrap()),\n                Some(code)\n            );\n        }\n    }\n#[test]\nfn stored_codes_match_migration_0071() {\n        // Persisted meanings from 0071_account_bank.sql, independent of the codec.\n        for (result, code) in [\n            (BankResult::Ok, 0),\n            (BankResult::BalanceLimit, 1),\n            (BankResult::InsufficientBalance, 2),\n            (BankResult::InsufficientCoins, 3),\n            (BankResult::NoRoom, 4),\n            (BankResult::JuniorAccount, 5),\n            (BankResult::UnknownRecipient, 6),\n            (BankResult::RecipientCannotReceiveTransfers, 7),\n            (BankResult::SameAccount, 8),\n        ] {\n            assert_eq!(result.code(), code, \"{result:?}\");\n            assert_eq!(BankResult::from_code(code), Some(result));\n        }\n        for code in [i16::MIN, -1, 9, i16::MAX] {\n            assert_eq!(BankResult::from_code(code), None);\n        }\n        for (kind, code) in [\n            (BankOperationKind::Deposit, 1),\n            (BankOperationKind::Withdraw, 2),\n            (BankOperationKind::Transfer, 3),\n        ] {\n            assert_eq!(kind.code(), code, \"{kind:?}\");\n            assert_eq!(BankOperationKind::from_code(code), Some(kind));\n        }\n        for code in [i16::MIN, -1, 0, 4, i16::MAX] {\n            assert_eq!(BankOperationKind::from_code(code), None);\n        }\n        for (kind, code) in [\n            (BankLedgerKind::Deposit, 1),\n            (BankLedgerKind::Withdraw, 2),\n            (BankLedgerKind::TransferOut, 3),\n            (BankLedgerKind::TransferIn, 4),\n        ] {\n            assert_eq!(i16::try_from(kind.code()).unwrap(), code, \"{kind:?}\");\n            assert_eq!(BankLedgerKind::from_code(code), Some(kind));\n        }\n        for code in [i16::MIN, -1, 0, 5, i16::MAX] {\n            assert_eq!(BankLedgerKind::from_code(code), None);\n        }\n    }\n"
+  },
+  "wrapper": {
+    "pid": 143021,
+    "exit_code": 0
+  },
+  "qualified_bank_test_file_sha256": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd"
+}

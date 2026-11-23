@@ -1,0 +1,23 @@
+{
+  "status": "CONFIRMED_UNAPPLIED_ORACLE_GAP",
+  "source_path": "tools/content-schema/quest-authoring/test_qready1_native_rewards.py",
+  "source_sha256": "5535662758591b8714ec674e63f3f53c7f95d4cbe508f88756239a522f9027c4",
+  "mutated_fixture": "tools/content-schema/world-authoring/samples/quest-chest-bindings/qready1.json",
+  "real_binding_count": 24,
+  "mutation": "In-memory exact-path read replacement removes every capture binding; all other file reads use original bytes.",
+  "baseline": {
+    "tests_run": 3,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_all_owned_claim_rewards_have_native_inventory_profiles (test_qready1_native_rewards.Qready1NativeRewardTest.test_all_owned_claim_rewards_have_native_inventory_profiles) ... ok\ntest_reused_profiles_requalify_without_changing_existing_native_facts (test_qready1_native_rewards.Qready1NativeRewardTest.test_reused_profiles_requalify_without_changing_existing_native_facts) ... ok\ntest_shipped_world_has_every_exact_owned_claim_binding (test_qready1_native_rewards.Qready1NativeRewardTest.test_shipped_world_has_every_exact_owned_claim_binding) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 5.043s\n\nOK\n"
+  },
+  "mutant": {
+    "tests_run": 3,
+    "successful": true,
+    "failures": 0,
+    "errors": 0,
+    "output": "test_all_owned_claim_rewards_have_native_inventory_profiles (test_qready1_native_rewards.Qready1NativeRewardTest.test_all_owned_claim_rewards_have_native_inventory_profiles) ... ok\ntest_reused_profiles_requalify_without_changing_existing_native_facts (test_qready1_native_rewards.Qready1NativeRewardTest.test_reused_profiles_requalify_without_changing_existing_native_facts) ... ok\ntest_shipped_world_has_every_exact_owned_claim_binding (test_qready1_native_rewards.Qready1NativeRewardTest.test_shipped_world_has_every_exact_owned_claim_binding) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 2.684s\n\nOK\n"
+  },
+  "scope": "Per-file capture identity gap; no source/fixture edit and no suite-wide detection or production reachability claim. Independent QREADY1 claim binding contract needed before a test-only repair."
+}

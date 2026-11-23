@@ -1,0 +1,74 @@
+{
+  "baseline_commit": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "changed_source_count": 16,
+  "diff_check_exit": 0,
+  "paths": [
+    {
+      "path": "tools/content-migration/test_boss_corpse_terminal_reference.py",
+      "sha256": "58bc15ac45a4b924b2f2e8f360cf2248650c2d877a1e9dc48032db68671248db"
+    },
+    {
+      "path": "tools/content-migration/test_cake_bridge_reference.py",
+      "sha256": "c73cc0244c71c4f5cca283fcb98470ebb5956786c60b9a19d3d5635f471ec65d"
+    },
+    {
+      "path": "tools/content-migration/test_coin_converter_profiles.py",
+      "sha256": "e84f3a0a509e6d31141ea330f9dea0b9036b558207135cca6047cd35ece541d6"
+    },
+    {
+      "path": "tools/content-migration/test_creature_level_rating.py",
+      "sha256": "746f3133ef4e3066261f1fc93427486cea4c64113f12501bc2637b730b43fe12"
+    },
+    {
+      "path": "tools/content-migration/test_forge_sql_admission.py",
+      "sha256": "1aa2257a939315744c164bbc3fde916db3dd3830cc3146e81dfd75a540007d78"
+    },
+    {
+      "path": "tools/content-migration/test_harvest_item_profiles.py",
+      "sha256": "90583fa08df2e471964f216e7f4e5605762210d32a38887b64bc8ea8deb8bbad"
+    },
+    {
+      "path": "tools/content-migration/test_itemhold_q.py",
+      "sha256": "23705fecd7b8a9bdc0c088dbf951fc5872b6dc07c67c01649fac9ff3502ef5d4"
+    },
+    {
+      "path": "tools/content-migration/test_monster_reference_level.py",
+      "sha256": "479956b4bf4c05c82139799747afd6c00b863ab28c04d41b4b6658c356f234dd"
+    },
+    {
+      "path": "tools/content-migration/test_official_creature_balance.py",
+      "sha256": "7745968439378ae9072f0241697444feb7a0aebbbe145069c1197b3dbd09441a"
+    },
+    {
+      "path": "tools/content-migration/test_parallel_checks.py",
+      "sha256": "29fbb4bb4ac7a8abbe3d70603f0b3782636ca6faa279a5f693291102389acb0a"
+    },
+    {
+      "path": "tools/content-migration/test_qengine_reward_item_profiles.py",
+      "sha256": "fde9a229f7d1d8d977607389949d455c67441e1e095117a68bc37033220a15c5"
+    },
+    {
+      "path": "tools/content-migration/test_questpc4_treasure_reward_profiles.py",
+      "sha256": "fe4901129560612c611ec187ce31ce72a3a430759cd0d51b14f5f6587313fcf7"
+    },
+    {
+      "path": "tools/content-migration/test_quick_loot_item_profiles.py",
+      "sha256": "16eb07db23dd4289b90f754d0e928461883907f57cc1a75a704a6317959b1d90"
+    },
+    {
+      "path": "tools/content-migration/test_regenerate_content.py",
+      "sha256": "140a51f54a2b62ceaa4a25e861b9f1ffa21f9a2cb5d4c8431294c0807d95d9e8"
+    },
+    {
+      "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+      "sha256": "228da7ef95341c9d9fad7b43e7904232675b1f922c6dd35e775053fcd6e6f7a6"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_engine_items.py",
+      "sha256": "ee782152b449d88bf3ef69ca55014fd318ad6461a6f41e81ba492adb32be4c72"
+    }
+  ],
+  "selected_inventory_count": 13,
+  "selected_case_count": 68,
+  "runner_regression_count": 5
+}

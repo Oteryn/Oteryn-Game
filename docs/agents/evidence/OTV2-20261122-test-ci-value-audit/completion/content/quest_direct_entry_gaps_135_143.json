@@ -1,0 +1,44 @@
+{
+  "finding": "DIRECT_ENTRY_EXECUTES_ZERO_CASES_WITHOUT_MAIN",
+  "scope": "Two complete test sources have no unittest.main; actual direct invocation exits0 with empty output. Explicit unittest executes7/4cases respectively. No exact selector found by bounded rg over tools/.github/workflows; no claim all external CI collectors were reviewed. No source edits.",
+  "records": [
+    {
+      "path": "tools/content-schema/quest-authoring/test_batch3_world.py",
+      "source_sha256": "705f18db8da65d5aa0fe570c8f65c3c08c7ce6b76dec73bb3f81e2c39a386a7f",
+      "direct_command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_batch3_world.py",
+        "-v"
+      ],
+      "direct_exit": 0,
+      "direct_output": "",
+      "explicit_unittest_command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_batch3_world"
+      ],
+      "explicit_unittest_output": "test_conditional_set_is_preserved_and_invalid_conditions_are_rejected (test_batch3_world.Batch3WorldTests.test_conditional_set_is_preserved_and_invalid_conditions_are_rejected) ... ok\ntest_declined_fields_cannot_enter_the_existing_runtime_contract (test_batch3_world.Batch3WorldTests.test_declined_fields_cannot_enter_the_existing_runtime_contract) ... ok\ntest_duplicate_foreign_key_and_unpinned_input_are_refused (test_batch3_world.Batch3WorldTests.test_duplicate_foreign_key_and_unpinned_input_are_refused) ... ok\ntest_existing_runtime_altar_keeps_its_reserved_slot (test_batch3_world.Batch3WorldTests.test_existing_runtime_altar_keeps_its_reserved_slot) ... ok\ntest_native_read_only_gate_and_success_message_are_preserved (test_batch3_world.Batch3WorldTests.test_native_read_only_gate_and_success_message_are_preserved) ... ok\ntest_regeneration_preserves_foreign_rows_and_removes_only_recorded_owned_keys (test_batch3_world.Batch3WorldTests.test_regeneration_preserves_foreign_rows_and_removes_only_recorded_owned_keys) ... ok\ntest_returning_step_preserves_explicit_failure_landing (test_batch3_world.Batch3WorldTests.test_returning_step_preserves_explicit_failure_landing) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 0.002s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_rotten_item_facts.py",
+      "source_sha256": "15d85bd51266fc7c12cffb5286f4fe315871c97e671a6600b85a9ea2d5fd6435",
+      "direct_command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/quest-authoring/test_questpc2_rotten_item_facts.py",
+        "-v"
+      ],
+      "direct_exit": 0,
+      "direct_output": "",
+      "explicit_unittest_command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc2_rotten_item_facts"
+      ],
+      "explicit_unittest_output": "test_archive_tampering_cannot_supply_source_facts (test_questpc2_rotten_item_facts.RottenItemFactsTests.test_archive_tampering_cannot_supply_source_facts) ... ok\ntest_exact_six_source_items_are_candidates_without_runtime_admission (test_questpc2_rotten_item_facts.RottenItemFactsTests.test_exact_six_source_items_are_candidates_without_runtime_admission) ... ok\ntest_historical_and_approved_successor_bindings_preserve_exact_facts (test_questpc2_rotten_item_facts.RottenItemFactsTests.test_historical_and_approved_successor_bindings_preserve_exact_facts) ... ok\ntest_unapproved_binding_changes_remain_refused (test_questpc2_rotten_item_facts.RottenItemFactsTests.test_unapproved_binding_changes_remain_refused) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 14.231s\n\nOK\n"
+    }
+  ]
+}

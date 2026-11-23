@@ -1,0 +1,317 @@
+{
+  "modules": [
+    {
+      "path": "tools/content-migration/test_npc_bulk_finish.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_npc_bulk_finish"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.604,
+      "exit_code": 0,
+      "output": "test_closed_basics_preserve_source_unknowns_and_deferred_runtime (test_npc_bulk_finish.FinishTests.test_closed_basics_preserve_source_unknowns_and_deferred_runtime) ... ok\ntest_donor_profile_and_movement_are_preserved (test_npc_bulk_finish.FinishTests.test_donor_profile_and_movement_are_preserved) ... ok\ntest_known_role_cannot_be_overridden (test_npc_bulk_finish.FinishTests.test_known_role_cannot_be_overridden) ... ok\ntest_missing_component_and_wrong_actor_are_rejected (test_npc_bulk_finish.FinishTests.test_missing_component_and_wrong_actor_are_rejected) ... ok\ntest_rewritten_quote_or_false_original_attribution_is_rejected (test_npc_bulk_finish.FinishTests.test_rewritten_quote_or_false_original_attribution_is_rejected) ... ok\ntest_template_rewrite_and_actor_equivalence_claim_are_rejected (test_npc_bulk_finish.FinishTests.test_template_rewrite_and_actor_equivalence_claim_are_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.516s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_qualify_creature_assets.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_qualify_creature_assets"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.449,
+      "exit_code": 0,
+      "output": "test_absent_look_resolves_only_accepted_familiar_default (test_qualify_creature_assets.AssetEvidenceTests.test_absent_look_resolves_only_accepted_familiar_default) ... ok\ntest_declared_source_object_id_takes_priority_without_remapping (test_qualify_creature_assets.AssetEvidenceTests.test_declared_source_object_id_takes_priority_without_remapping) ... ok\ntest_duplicate_id_fails_closed (test_qualify_creature_assets.AssetEvidenceTests.test_duplicate_id_fails_closed) ... ok\ntest_effects_require_exact_enum_constant (test_qualify_creature_assets.AssetEvidenceTests.test_effects_require_exact_enum_constant) ... ok\ntest_missing_id_fails_closed (test_qualify_creature_assets.AssetEvidenceTests.test_missing_id_fails_closed) ... ok\ntest_names_and_unsupported_tokens_do_not_resolve (test_qualify_creature_assets.AssetEvidenceTests.test_names_and_unsupported_tokens_do_not_resolve) ... ok\ntest_numeric_identity_uses_family_not_names (test_qualify_creature_assets.AssetEvidenceTests.test_numeric_identity_uses_family_not_names) ... ok\ntest_packed_and_unpacked_ids_have_same_values (test_qualify_creature_assets.AssetEvidenceTests.test_packed_and_unpacked_ids_have_same_values) ... ok\ntest_protocol_evidence_is_exact_revision_and_required_semantics (test_qualify_creature_assets.AssetEvidenceTests.test_protocol_evidence_is_exact_revision_and_required_semantics) ... ok\ntest_sprite_range_requires_one_exact_file (test_qualify_creature_assets.AssetEvidenceTests.test_sprite_range_requires_one_exact_file) ... ok\n\n----------------------------------------------------------------------\nRan 10 tests in 0.002s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_native_profile_composition.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_native_profile_composition"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.099,
+      "exit_code": 0,
+      "output": "test_conflicting_values_types_states_and_pattern_identities_are_refused (test_native_profile_composition.NativeProfileComposition.test_conflicting_values_types_states_and_pattern_identities_are_refused) ... ok\ntest_nested_ordered_patterns_only_enrich_unknown_facts (test_native_profile_composition.NativeProfileComposition.test_nested_ordered_patterns_only_enrich_unknown_facts) ... ok\ntest_compact_encoding_preserves_order_values_and_final_digest (test_native_profile_composition.NativeProfileEncoding.test_compact_encoding_preserves_order_values_and_final_digest) ... ok\ntest_exception_restores_encoding_and_unrelated_context_is_isolated (test_native_profile_composition.NativeProfileEncoding.test_exception_restores_encoding_and_unrelated_context_is_isolated) ... ok\ntest_nested_scope_restores_outer_and_standalone_encodings (test_native_profile_composition.NativeProfileEncoding.test_nested_scope_restores_outer_and_standalone_encodings) ... ok\ntest_standalone_encoding_keeps_exact_pretty_bytes_and_input (test_native_profile_composition.NativeProfileEncoding.test_standalone_encoding_keeps_exact_pretty_bytes_and_input) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.001s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_repair_primal_source_references.py",
+      "executed": false,
+      "reason": "Missing pinned immutable /workspace research inputs; existing skip would not constitute qualification"
+    },
+    {
+      "path": "tools/content-migration/test_gathering_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_gathering_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 1.245,
+      "exit_code": 0,
+      "output": "test_changed_canonical_weight_or_wiki_revision_requires_new_qualification (test_gathering_item_profiles.GatheringItemProfileTests.test_changed_canonical_weight_or_wiki_revision_requires_new_qualification) ... ok\ntest_mechanical_rod_keeps_existing_qualified_weight_and_identity (test_gathering_item_profiles.GatheringItemProfileTests.test_mechanical_rod_keeps_existing_qualified_weight_and_identity) ... ok\ntest_mutated_rod_weight_or_binding_is_rejected_without_partial_output (test_gathering_item_profiles.GatheringItemProfileTests.test_mutated_rod_weight_or_binding_is_rejected_without_partial_output) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 1.168s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_merge_completion_packets.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_merge_completion_packets"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.313,
+      "exit_code": 0,
+      "output": "test_completion_cannot_erase_estimate_qualification (test_merge_completion_packets.CompletionPacketMergeTests.test_completion_cannot_erase_estimate_qualification) ... ok\ntest_cross_baseline_packet_fails_before_creating_output (test_merge_completion_packets.CompletionPacketMergeTests.test_cross_baseline_packet_fails_before_creating_output) ... ok\ntest_derived_types_cannot_reuse_parent_source_identity (test_merge_completion_packets.CompletionPacketMergeTests.test_derived_types_cannot_reuse_parent_source_identity) ... ok\ntest_only_declared_resolved_flags_are_removed (test_merge_completion_packets.CompletionPacketMergeTests.test_only_declared_resolved_flags_are_removed) ... ok\ntest_overlapping_writers_fail_before_installing_any_bundle (test_merge_completion_packets.CompletionPacketMergeTests.test_overlapping_writers_fail_before_installing_any_bundle) ... ok\ntest_registered_type_fragments_are_distinct_and_fully_admitted (test_merge_completion_packets.CompletionPacketMergeTests.test_registered_type_fragments_are_distinct_and_fully_admitted) ... ok\ntest_symlink_input_is_rejected (test_merge_completion_packets.CompletionPacketMergeTests.test_symlink_input_is_rejected) ... ok\ntest_unchanged_encounter_bytes_are_preserved (test_merge_completion_packets.CompletionPacketMergeTests.test_unchanged_encounter_bytes_are_preserved) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.005s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_import_cyclopedia_global.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_import_cyclopedia_global"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 1.61,
+      "exit_code": 1,
+      "output": "test_capture_weights_match_client (test_import_cyclopedia_global.ClientWeightAdmission.test_capture_weights_match_client) ... ok\ntest_generated_native_profiles_carry_client_weights (test_import_cyclopedia_global.ClientWeightAdmission.test_generated_native_profiles_carry_client_weights) ... FAIL\ntest_generated_tree_carries_client_weights (test_import_cyclopedia_global.ClientWeightAdmission.test_generated_tree_carries_client_weights) ... ok\ntest_legacy_weight_is_replaced_and_unknown_is_left (test_import_cyclopedia_global.ClientWeightAdmission.test_legacy_weight_is_replaced_and_unknown_is_left) ... ok\ntest_only_weight_changed_accepts_weight_leaf_alone (test_import_cyclopedia_global.ClientWeightAdmission.test_only_weight_changed_accepts_weight_leaf_alone) ... ok\ntest_overlay_refresh_preserves_donor_captures (test_import_cyclopedia_global.ClientWeightAdmission.test_overlay_refresh_preserves_donor_captures) ... ok\ntest_profile_weights_replace_known_weight_only (test_import_cyclopedia_global.ClientWeightAdmission.test_profile_weights_replace_known_weight_only) ... ok\n\n======================================================================\nFAIL: test_generated_native_profiles_carry_client_weights (test_import_cyclopedia_global.ClientWeightAdmission.test_generated_native_profiles_carry_client_weights)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_import_cyclopedia_global.py\", line 65, in test_generated_native_profiles_carry_client_weights\n    self.assertEqual(stale, [])\nAssertionError: Lists differ: [43860, 50255] != []\n\nFirst list contains 2 additional elements.\nFirst extra element 0:\n43860\n\n- [43860, 50255]\n+ []\n\n----------------------------------------------------------------------\nRan 7 tests in 1.540s\n\nFAILED (failures=1)\n"
+    },
+    {
+      "path": "tools/content-migration/test_prebuilt.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_prebuilt"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.119,
+      "exit_code": 0,
+      "output": "test_accepts_only_the_bound_executable_inventory (test_prebuilt.WorldPrebuilt.test_accepts_only_the_bound_executable_inventory) ... ok\ntest_changed_bytes_and_symlink_cannot_borrow_a_valid_manifest (test_prebuilt.WorldPrebuilt.test_changed_bytes_and_symlink_cannot_borrow_a_valid_manifest) ... ok\ntest_incomplete_duplicate_or_wrong_feature_build_cannot_publish (test_prebuilt.WorldPrebuilt.test_incomplete_duplicate_or_wrong_feature_build_cannot_publish) ... ok\ntest_single_build_collects_both_compatible_targets (test_prebuilt.WorldPrebuilt.test_single_build_collects_both_compatible_targets) ... ok\ntest_source_move_during_build_cannot_issue_a_manifest (test_prebuilt.WorldPrebuilt.test_source_move_during_build_cannot_issue_a_manifest) ... ok\ntest_wrong_source_profile_features_or_inventory_is_refused (test_prebuilt.WorldPrebuilt.test_wrong_source_profile_features_or_inventory_is_refused) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.007s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_questpc4_stag_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc4_stag_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 2.052,
+      "exit_code": 0,
+      "output": "test_conflicting_canonical_armor_is_rejected (test_questpc4_stag_item_profiles.StagPhysicalItemTests.test_conflicting_canonical_armor_is_rejected) ... ok\ntest_custom_script_and_wrong_slot_remain_closed (test_questpc4_stag_item_profiles.StagPhysicalItemTests.test_custom_script_and_wrong_slot_remain_closed) ... ok\ntest_exact_neutral_source_keeps_armor_and_ammo_semantics (test_questpc4_stag_item_profiles.StagPhysicalItemTests.test_exact_neutral_source_keeps_armor_and_ammo_semantics) ... ok\ntest_nonexact_binding_is_rejected (test_questpc4_stag_item_profiles.StagPhysicalItemTests.test_nonexact_binding_is_rejected) ... ok\ntest_nonzero_armor_is_not_dropped (test_questpc4_stag_item_profiles.StagPhysicalItemTests.test_nonzero_armor_is_not_dropped) ... ok\ntest_other_identity_cannot_borrow_this_qualification (test_questpc4_stag_item_profiles.StagPhysicalItemTests.test_other_identity_cannot_borrow_this_qualification) ... ok\ntest_unknown_attribute_remains_closed (test_questpc4_stag_item_profiles.StagPhysicalItemTests.test_unknown_attribute_remains_closed) ... ok\ntest_world_only_item_cannot_become_an_inventory_reward (test_questpc4_stag_item_profiles.StagPhysicalItemTests.test_world_only_item_cannot_become_an_inventory_reward) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 1.821s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_forge_core_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_forge_core_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 1.635,
+      "exit_code": 0,
+      "output": "test_admission_refreshes_digest_and_rejects_a_second_core_profile (test_forge_core_profiles.ForgeCoreProfiles.test_admission_refreshes_digest_and_rejects_a_second_core_profile) ... ok\ntest_exact_existing_core_identity_and_pinned_physical_stack_facts (test_forge_core_profiles.ForgeCoreProfiles.test_exact_existing_core_identity_and_pinned_physical_stack_facts) ... ok\ntest_shared_soulpit_core_preserves_provenance_and_rejects_policy_conflicts (test_forge_core_profiles.ForgeCoreProfiles.test_shared_soulpit_core_preserves_provenance_and_rejects_policy_conflicts) ... ok\ntest_source_and_materialization_drift_fail_before_modifying_generated_bytes (test_forge_core_profiles.ForgeCoreProfiles.test_source_and_materialization_drift_fail_before_modifying_generated_bytes) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 1.469s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_source_gate_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_source_gate_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 18.14,
+      "exit_code": 0,
+      "output": "test_approved_addition_preserves_exact_historical_capture (test_source_gate_item_profiles.SourceGateItemProfiles.test_approved_addition_preserves_exact_historical_capture) ... ok\ntest_existing_profiles_preserved_and_conflicts_refuse (test_source_gate_item_profiles.SourceGateItemProfiles.test_existing_profiles_preserved_and_conflicts_refuse) ... ok\ntest_source_courtyard_grass_and_archway_are_static_walkable (test_source_gate_item_profiles.SourceGateItemProfiles.test_source_courtyard_grass_and_archway_are_static_walkable) ... ok\ntest_source_ladder_is_walkable_ground_only_and_exactly_bound (test_source_gate_item_profiles.SourceGateItemProfiles.test_source_ladder_is_walkable_ground_only_and_exactly_bound) ... ok\ntest_source_pair_is_exact_ground_only_door_with_level_base (test_source_gate_item_profiles.SourceGateItemProfiles.test_source_pair_is_exact_ground_only_door_with_level_base) ... ok\ntest_source_red_carpet_family_is_static_walkable_with_exact_bindings (test_source_gate_item_profiles.SourceGateItemProfiles.test_source_red_carpet_family_is_static_walkable_with_exact_bindings) ... ok\ntest_unrelated_historical_binding_change_remains_refused (test_source_gate_item_profiles.SourceGateItemProfiles.test_unrelated_historical_binding_change_remains_refused) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 17.850s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_quest_loot_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quest_loot_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 10.286,
+      "exit_code": 0,
+      "output": "test_actual_animal_loot_bridge_preserves_all_entries_and_source_quantities (test_quest_loot_profiles.NativeQuestLootFacts.test_actual_animal_loot_bridge_preserves_all_entries_and_source_quantities) ... ok\ntest_charge_projection_requires_the_exact_qualified_full_definition (test_quest_loot_profiles.NativeQuestLootFacts.test_charge_projection_requires_the_exact_qualified_full_definition) ... ok\ntest_full_typed_identity_binding_and_native_qualification_are_mandatory (test_quest_loot_profiles.NativeQuestLootFacts.test_full_typed_identity_binding_and_native_qualification_are_mandatory) ... ok\ntest_missing_native_admission_refuses_without_partial_cohort_mutation (test_quest_loot_profiles.NativeQuestLootFacts.test_missing_native_admission_refuses_without_partial_cohort_mutation) ... ok\ntest_ordinary_source_charge_absence_cannot_replace_an_existing_charge_fact (test_quest_loot_profiles.NativeQuestLootFacts.test_ordinary_source_charge_absence_cannot_replace_an_existing_charge_fact) ... ok\ntest_source_table_identity_substitution_is_refused (test_quest_loot_profiles.NativeQuestLootFacts.test_source_table_identity_substitution_is_refused) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 9.025s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_questpc7_merge_audit_callbacks.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc7_merge_audit_callbacks"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.269,
+      "exit_code": 0,
+      "output": "test_current_two_owners_and_replay_preserve_the_original_fixture (test_questpc7_merge_audit_callbacks.CallbackOwnerInventoryTests.test_current_two_owners_and_replay_preserve_the_original_fixture) ... ok\ntest_foreign_keys_cannot_keep_the_same_counts (test_questpc7_merge_audit_callbacks.CallbackOwnerInventoryTests.test_foreign_keys_cannot_keep_the_same_counts) ... ok\ntest_missing_and_duplicate_rows_are_refused_in_each_owner (test_questpc7_merge_audit_callbacks.CallbackOwnerInventoryTests.test_missing_and_duplicate_rows_are_refused_in_each_owner) ... ok\ntest_missing_commented_or_monolithic_runtime_guards_are_refused (test_questpc7_merge_audit_callbacks.CallbackOwnerInventoryTests.test_missing_commented_or_monolithic_runtime_guards_are_refused) ... ok\ntest_original_named_cohorts_cannot_be_removed_or_substituted (test_questpc7_merge_audit_callbacks.CallbackOwnerInventoryTests.test_original_named_cohorts_cannot_be_removed_or_substituted) ... ok\ntest_overlap_and_count_preserving_owner_swaps_are_refused (test_questpc7_merge_audit_callbacks.CallbackOwnerInventoryTests.test_overlap_and_count_preserving_owner_swaps_are_refused) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.191s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_npc_source_refine.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_npc_source_refine"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 2.221,
+      "exit_code": 0,
+      "output": "test_actual_packet_replay_preserves_raw_history_services_and_behavior (test_npc_source_refine.SourceRefineTests.test_actual_packet_replay_preserves_raw_history_services_and_behavior) ... ok\ntest_missing_full_capture_sha_is_rejected (test_npc_source_refine.SourceRefineTests.test_missing_full_capture_sha_is_rejected) ... ok\ntest_only_explicit_player_placeholder_normalization_is_allowed (test_npc_source_refine.SourceRefineTests.test_only_explicit_player_placeholder_normalization_is_allowed) ... ok\ntest_original_role_alignment_is_separate_from_source_quotes (test_npc_source_refine.SourceRefineTests.test_original_role_alignment_is_separate_from_source_quotes) ... ok\ntest_protected_donor_foreign_actor_and_palette_bridge_are_rejected (test_npc_source_refine.SourceRefineTests.test_protected_donor_foreign_actor_and_palette_bridge_are_rejected) ... ok\ntest_rewritten_empty_oversized_or_action_speech_is_rejected (test_npc_source_refine.SourceRefineTests.test_rewritten_empty_oversized_or_action_speech_is_rejected) ... ok\ntest_wrong_source_speaker_is_rejected (test_npc_source_refine.SourceRefineTests.test_wrong_source_speaker_is_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 1.670s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_primal_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_primal_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.193,
+      "exit_code": 0,
+      "output": "test_capture_preserves_all_five_ground_only_source_identities_and_decay_chain (test_primal_item_profiles.PrimalItemProfiles.test_capture_preserves_all_five_ground_only_source_identities_and_decay_chain) ... ok\ntest_cohort_receipt_rejects_foreign_keys_and_unowned_existing_rows (test_primal_item_profiles.PrimalItemProfiles.test_cohort_receipt_rejects_foreign_keys_and_unowned_existing_rows) ... ok\ntest_existing_identity_custody_and_physical_conflicts_refuse (test_primal_item_profiles.PrimalItemProfiles.test_existing_identity_custody_and_physical_conflicts_refuse) ... ok\ntest_generated_cohort_receipt_preserves_every_other_row_and_exact_assertion (test_primal_item_profiles.PrimalItemProfiles.test_generated_cohort_receipt_preserves_every_other_row_and_exact_assertion) ... ok\ntest_provider_admits_exactly_five_and_repins_manifest_idempotently (test_primal_item_profiles.PrimalItemProfiles.test_provider_admits_exactly_five_and_repins_manifest_idempotently) ... ok\ntest_source_hash_and_capture_mutations_refuse (test_primal_item_profiles.PrimalItemProfiles.test_source_hash_and_capture_mutations_refuse) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.012s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_qengine_reward_equipment_pin.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_qengine_reward_equipment_pin"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.466,
+      "exit_code": 0,
+      "output": "test_checked_in_witness_matches_source_ids (test_qengine_reward_equipment_pin.QengineRewardPinTests.test_checked_in_witness_matches_source_ids) ... ok\ntest_source_identity_pin_rejects_missing_or_duplicate_rows (test_qengine_reward_equipment_pin.QengineRewardPinTests.test_source_identity_pin_rejects_missing_or_duplicate_rows) ... ok\ntest_every_declared_source_identity_is_pinned_without_removing_raw_checks (test_qengine_reward_equipment_pin.RewardIdentityPin.test_every_declared_source_identity_is_pinned_without_removing_raw_checks) ... ok\ntest_missing_foreign_and_duplicate_records_cannot_regenerate_a_lower_pin (test_qengine_reward_equipment_pin.RewardIdentityPin.test_missing_foreign_and_duplicate_records_cannot_regenerate_a_lower_pin) ... ok\ntest_missing_producer_metadata_cannot_bypass_identity_proof (test_qengine_reward_equipment_pin.RewardIdentityPin.test_missing_producer_metadata_cannot_bypass_identity_proof) ... ok\ntest_refuses_a_changed_source_pin (test_qengine_reward_equipment_pin.SourceCohortTests.test_refuses_a_changed_source_pin) ... ok\ntest_refuses_a_missing_source_identity (test_qengine_reward_equipment_pin.SourceCohortTests.test_refuses_a_missing_source_identity) ... ok\ntest_refuses_an_extra_or_duplicated_identity (test_qengine_reward_equipment_pin.SourceCohortTests.test_refuses_an_extra_or_duplicated_identity) ... ok\ntest_regenerates_stale_cardinality_from_the_producer_cohort (test_qengine_reward_equipment_pin.SourceCohortTests.test_regenerates_stale_cardinality_from_the_producer_cohort) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.055s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_prepare_canonical_corpse_item_candidates.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_prepare_canonical_corpse_item_candidates"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.202,
+      "exit_code": 0,
+      "output": "test_appearance_flags_false_and_xml_override (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_appearance_flags_false_and_xml_override) ... ok\ntest_authoritative_decay_closure_self_removal_and_cycle_fail_closed (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_authoritative_decay_closure_self_removal_and_cycle_fail_closed) ... ok\ntest_exact_binding_rejects_wrong_family (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_exact_binding_rejects_wrong_family) ... ok\ntest_exact_epoch_preserves_capacity_and_false_without_promoting (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_exact_epoch_preserves_capacity_and_false_without_promoting) ... ok\ntest_invalid_source_range_preserved_diagnostic_without_invented_items (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_invalid_source_range_preserved_diagnostic_without_invented_items) ... ok\ntest_known_and_conflict_fields_preserved_and_input_not_mutated (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_known_and_conflict_fields_preserved_and_input_not_mutated) ... ok\ntest_missing_xml_and_duplicate_xml_remain_unqualified (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_missing_xml_and_duplicate_xml_remain_unqualified) ... ok\ntest_native_decoder_bounds_and_utf8_bytes (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_native_decoder_bounds_and_utf8_bytes) ... ok\ntest_negative_duration_not_coerced_and_repeated_scalars_not_collapsed (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_negative_duration_not_coerced_and_repeated_scalars_not_collapsed) ... ok\ntest_no_numeric_identity_shortcut_or_cross_epoch_binding (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_no_numeric_identity_shortcut_or_cross_epoch_binding) ... ok\ntest_summer_capacity_boundary_preserves_values_without_admission (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_summer_capacity_boundary_preserves_values_without_admission) ... ok\ntest_transform_requires_same_epoch_native_target_revision (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_transform_requires_same_epoch_native_target_revision) ... ok\ntest_unbound_appearance_only_retains_unknown_semantics (test_prepare_canonical_corpse_item_candidates.CanonicalCorpseCandidatesTests.test_unbound_appearance_only_retains_unknown_semantics) ... ok\n\n----------------------------------------------------------------------\nRan 13 tests in 0.002s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_quests_2_emperor_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quests_2_emperor_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 5.326,
+      "exit_code": 0,
+      "output": "test_admission_adds_only_selected_quest_items_and_pins_real_bytes (test_quests_2_emperor_item_profiles.EmperorItemProfiles.test_admission_adds_only_selected_quest_items_and_pins_real_bytes) ... ok\ntest_callback_qualification_cannot_use_changed_canonical_or_unrelated_item (test_quests_2_emperor_item_profiles.EmperorItemProfiles.test_callback_qualification_cannot_use_changed_canonical_or_unrelated_item) ... ok\ntest_callback_qualification_preserves_canonical_facts_and_needs_exact_native_record (test_quests_2_emperor_item_profiles.EmperorItemProfiles.test_callback_qualification_preserves_canonical_facts_and_needs_exact_native_record) ... ok\ntest_dragon_fetish_has_exact_plain_custody_and_no_charges_or_lifetime (test_quests_2_emperor_item_profiles.EmperorItemProfiles.test_dragon_fetish_has_exact_plain_custody_and_no_charges_or_lifetime) ... ok\ntest_existing_authority_conflict_fails_closed (test_quests_2_emperor_item_profiles.EmperorItemProfiles.test_existing_authority_conflict_fails_closed) ... ok\ntest_source_letterbag_is_portable_nonstackable_without_invented_capacity (test_quests_2_emperor_item_profiles.EmperorItemProfiles.test_source_letterbag_is_portable_nonstackable_without_invented_capacity) ... ok\ntest_source_packet_cannot_replace_accepted_identity (test_quests_2_emperor_item_profiles.EmperorItemProfiles.test_source_packet_cannot_replace_accepted_identity) ... ok\ntest_three_dragon_tears_use_actual_source_stack_limit (test_quests_2_emperor_item_profiles.EmperorItemProfiles.test_three_dragon_tears_use_actual_source_stack_limit) ... ok\ntest_wrong_donor_pin_or_extra_item_is_not_admitted (test_quests_2_emperor_item_profiles.EmperorItemProfiles.test_wrong_donor_pin_or_extra_item_is_not_admitted) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 5.117s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_threatened_dreams_dialogue.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_threatened_dreams_dialogue"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.165,
+      "exit_code": 0,
+      "output": "test_callback_interceptions_preserve_literal_and_alias_keyword_lists (test_threatened_dreams_dialogue.ThreatenedDreamsAuthoring.test_callback_interceptions_preserve_literal_and_alias_keyword_lists) ... ok\ntest_callback_interceptions_reject_conditional_dynamic_or_effectful_speech (test_threatened_dreams_dialogue.ThreatenedDreamsAuthoring.test_callback_interceptions_reject_conditional_dynamic_or_effectful_speech) ... ok\ntest_conflicting_read_flag_is_rejected_without_overwriting_it (test_threatened_dreams_dialogue.ThreatenedDreamsAuthoring.test_conflicting_read_flag_is_rejected_without_overwriting_it) ... ok\ntest_kroazur_exit_has_exact_position_and_aid_without_entry_requirements (test_threatened_dreams_dialogue.ThreatenedDreamsAuthoring.test_kroazur_exit_has_exact_position_and_aid_without_entry_requirements) ... ok\ntest_missing_source_read_flags_keep_unset_and_do_not_change_existing_tracks (test_threatened_dreams_dialogue.ThreatenedDreamsAuthoring.test_missing_source_read_flags_keep_unset_and_do_not_change_existing_tracks) ... ok\ntest_poacher_discovery_uses_all_three_exact_fields_and_preserves_stage_guard (test_threatened_dreams_dialogue.ThreatenedDreamsAuthoring.test_poacher_discovery_uses_all_three_exact_fields_and_preserves_stage_guard) ... ok\ntest_source_start_and_non_inventory_steps_fit_the_existing_atomic_contract (test_threatened_dreams_dialogue.ThreatenedDreamsAuthoring.test_source_start_and_non_inventory_steps_fit_the_existing_atomic_contract) ... ok\ntest_static_keyword_capture_keeps_source_text_and_dynamic_rules_non_executable (test_threatened_dreams_dialogue.ThreatenedDreamsAuthoring.test_static_keyword_capture_keeps_source_text_and_dynamic_rules_non_executable) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.085s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_prepare_creature_item_fact_packets.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_prepare_creature_item_fact_packets"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 0.175,
+      "exit_code": 0,
+      "output": "test_d3_overflow_retains_capacity_and_does_not_admit (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_d3_overflow_retains_capacity_and_does_not_admit) ... ok\ntest_duration_boolean_zero_and_negative_are_not_silently_valid (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_duration_boolean_zero_and_negative_are_not_silently_valid) ... ok\ntest_false_zero_unknown_conflict_are_preserved (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_false_zero_unknown_conflict_are_preserved) ... ok\ntest_missing_target_source_or_binding_is_incomplete (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_missing_target_source_or_binding_is_incomplete) ... ok\ntest_multi_item_cycle_is_diagnostic_not_terminal (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_multi_item_cycle_is_diagnostic_not_terminal) ... ok\ntest_oz_fragment_is_exact_without_native_unit_guess (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_oz_fragment_is_exact_without_native_unit_guess) ... ok\ntest_revision_substitution_is_not_accepted (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_revision_substitution_is_not_accepted) ... ok\ntest_self_decay_cannot_normalize_wrong_family_or_revision (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_self_decay_cannot_normalize_wrong_family_or_revision) ... ok\ntest_self_decay_normalization_retains_raw_loop_and_duration (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_self_decay_normalization_retains_raw_loop_and_duration) ... ok\ntest_source_item_without_binding_is_not_numerically_bound (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_source_item_without_binding_is_not_numerically_bound) ... ok\ntest_terminal_chain_preserves_all_stages_and_durations (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_terminal_chain_preserves_all_stages_and_durations) ... ok\ntest_unclassified_field_fails_closed (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_unclassified_field_fails_closed) ... ok\ntest_unclassified_group_fails_closed (test_prepare_creature_item_fact_packets.ItemFactPreparationTests.test_unclassified_group_fails_closed) ... ok\n\n----------------------------------------------------------------------\nRan 13 tests in 0.001s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_galthen_boss_loot.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_galthen_boss_loot"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 1.598,
+      "exit_code": 0,
+      "output": "test_actual_galthen_boss_tables_have_no_inadmissible_yields (test_galthen_boss_loot.GalthenBossLootTests.test_actual_galthen_boss_tables_have_no_inadmissible_yields) ... ok\ntest_captured_boot_speed_and_resistances_reach_native_abilities (test_galthen_boss_loot.GalthenBossLootTests.test_captured_boot_speed_and_resistances_reach_native_abilities) ... ok\ntest_complete_source_records_survive_registration (test_galthen_boss_loot.GalthenBossLootTests.test_complete_source_records_survive_registration) ... ok\ntest_crystal_paralysis_name_uses_existing_canonical_family (test_galthen_boss_loot.GalthenBossLootTests.test_crystal_paralysis_name_uses_existing_canonical_family) ... ok\ntest_current_tibia_boot_sockets_do_not_import_crystal_tier_ten (test_galthen_boss_loot.GalthenBossLootTests.test_current_tibia_boot_sockets_do_not_import_crystal_tier_ten) ... ok\ntest_known_policy_is_never_replaced (test_galthen_boss_loot.GalthenBossLootTests.test_known_policy_is_never_replaced) ... ok\ntest_late_boot_completion_preserves_qualified_galthen_records (test_galthen_boss_loot.GalthenBossLootTests.test_late_boot_completion_preserves_qualified_galthen_records) ... ok\ntest_late_boot_completion_requires_exact_crystal_cross_check (test_galthen_boss_loot.GalthenBossLootTests.test_late_boot_completion_requires_exact_crystal_cross_check) ... ok\ntest_unmapped_or_malformed_ability_never_partially_publishes (test_galthen_boss_loot.GalthenBossLootTests.test_unmapped_or_malformed_ability_never_partially_publishes) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 1.386s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_primal_reference_overlay.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_primal_reference_overlay"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 4.052,
+      "exit_code": 0,
+      "output": "test_changed_creature_body_binding_or_nonempty_existing_table_refuses (test_primal_reference_overlay.PrimalReferenceTests.test_changed_creature_body_binding_or_nonempty_existing_table_refuses) ... ok\ntest_mutated_witness_fails_before_any_reference_write (test_primal_reference_overlay.PrimalReferenceTests.test_mutated_witness_fails_before_any_reference_write) ... ok\ntest_native_projection_admits_provider_before_repository_input_pinning (test_primal_reference_overlay.PrimalReferenceTests.test_native_projection_admits_provider_before_repository_input_pinning) ... ok\ntest_native_projection_preserves_every_unrelated_table_binding_and_item (test_primal_reference_overlay.PrimalReferenceTests.test_native_projection_preserves_every_unrelated_table_binding_and_item) ... ok\ntest_native_projection_rejects_conflicting_reference_table_and_corpse_atomically (test_primal_reference_overlay.PrimalReferenceTests.test_native_projection_rejects_conflicting_reference_table_and_corpse_atomically) ... ok\ntest_native_projection_requires_pinned_witness_before_writing (test_primal_reference_overlay.PrimalReferenceTests.test_native_projection_requires_pinned_witness_before_writing) ... ok\ntest_only_exact_primal_gets_explicit_empty_table_and_replay_is_idempotent (test_primal_reference_overlay.PrimalReferenceTests.test_only_exact_primal_gets_explicit_empty_table_and_replay_is_idempotent) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 3.980s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-migration/test_wheel_gem_item_profiles.py",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_wheel_gem_item_profiles"
+      ],
+      "cwd": "tools/content-migration",
+      "seconds": 14.674,
+      "exit_code": 0,
+      "output": "test_all_seventeen_inputs_keep_source_weights_and_existing_profiles (test_wheel_gem_item_profiles.WheelGemProfilesTests.test_all_seventeen_inputs_keep_source_weights_and_existing_profiles) ... ok\ntest_marketability_requires_explicit_primary_market_metadata (test_wheel_gem_item_profiles.WheelGemProfilesTests.test_marketability_requires_explicit_primary_market_metadata) ... ok\ntest_source_capture_rejects_substituted_bytes_before_parsing (test_wheel_gem_item_profiles.WheelGemProfilesTests.test_source_capture_rejects_substituted_bytes_before_parsing) ... ok\ntest_wrong_source_identity_stack_weight_and_admission_refuse_before_outputs (test_wheel_gem_item_profiles.WheelGemProfilesTests.test_wrong_source_identity_stack_weight_and_admission_refuse_before_outputs) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 14.581s\n\nOK\n"
+    }
+  ]
+}

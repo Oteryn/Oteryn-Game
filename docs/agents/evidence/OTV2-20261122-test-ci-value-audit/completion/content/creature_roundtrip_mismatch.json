@@ -1,0 +1,35 @@
+{
+  "legacy_count": 1865,
+  "migrated_count": 1865,
+  "identity_order_equal": true,
+  "missing": [],
+  "extra": [],
+  "difference_count": 1,
+  "differences": [
+    {
+      "path": "oteryn:creature.the_primal_menace/loot",
+      "legacy": null,
+      "migrated": {
+        "family": "Loot",
+        "key": "oteryn:loot.creature.the_primal_menace",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "classification": "STALE_TEST_CALLER_MISSING_EXISTING_SOURCE_PINNED_OVERLAY",
+  "consumer": "validate_world_project_v2_to_tree._main and world_project_v2_to_tree apply primal_reference_overlay.apply_reference before strict equivalence; test now prepares its in-memory reference identically.",
+  "repaired_module_execution": {
+    "command": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+      "-m",
+      "unittest",
+      "-v",
+      "test_monster_reference_level"
+    ],
+    "cwd": "tools/content-migration",
+    "exit_code": 0,
+    "seconds": 12.872,
+    "stdout": "Derived content regenerated. Review `git status` and commit.\n",
+    "stderr": "test_creature_roundtrip_requires_the_explicit_default (test_monster_reference_level.MonsterReferenceLevelTests.test_creature_roundtrip_requires_the_explicit_default) ... ok\ntest_every_generated_creature_has_explicit_nullable_positive_cap (test_monster_reference_level.MonsterReferenceLevelTests.test_every_generated_creature_has_explicit_nullable_positive_cap) ... ok\ntest_resolve_no_stage_never_mutates_git_index (test_monster_reference_level.MonsterReferenceLevelTests.test_resolve_no_stage_never_mutates_git_index) ... ok\ntest_summer_closure_accepts_explicit_null_but_rejects_a_changed_cap (test_monster_reference_level.MonsterReferenceLevelTests.test_summer_closure_accepts_explicit_null_but_rejects_a_changed_cap) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 12.195s\n\nOK\n"
+  }
+}

@@ -1,0 +1,258 @@
+{
+  "baseline_inventory_count": 709,
+  "original_remaining_queue_count": 695,
+  "difference_count": 14,
+  "difference": [
+    {
+      "path": "tools/content-migration/test_native_world_canonicalization.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-migration/test_native_world_canonicalization.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-273",
+        "total_lines": "273",
+        "sha256": "7d3820ccd418a8ac07a38b2ad9ae91fbd3baa3e54ca985ab8c25e481783c218e",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_COMPONENT_BOUNDARY_FAILURES; RETAIN_REAL_NATIVE_CI_COMPLEMENT",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "7d3820ccd418a8ac07a38b2ad9ae91fbd3baa3e54ca985ab8c25e481783c218e",
+      "historical_sha256_equals_current": true
+    },
+    {
+      "path": "tools/content-migration/test_parallel_checks.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-migration/test_parallel_checks.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-135",
+        "total_lines": "135",
+        "sha256": "845e04855fb0ad4bfa928791698c55c72d0725391130ec4ff2b200c1d1fbc483",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_FAILURE_AGGREGATION_AND_INVENTORY_GUARDS",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "29fbb4bb4ac7a8abbe3d70603f0b3782636ca6faa279a5f693291102389acb0a",
+      "historical_sha256_equals_current": false
+    },
+    {
+      "path": "tools/content-migration/test_world_compiler_artifact.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-migration/test_world_compiler_artifact.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-337",
+        "total_lines": "337",
+        "sha256": "dea8075de55e73bc89329b9bebd617f4f00c220fca622d78a66c9eea40c97b59",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_ARTIFACT_IDENTITY_CHECKSUM_AND_NO_STALE_FALLBACK",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "dea8075de55e73bc89329b9bebd617f4f00c220fca622d78a66c9eea40c97b59",
+      "historical_sha256_equals_current": true
+    },
+    {
+      "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-828",
+        "total_lines": "828",
+        "sha256": "dcca590aaed8df321ecd1d7ccb2d7092291663e48bc035311c42e67a8611bede",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_ADMISSION_NEGATIVES_AND_CURRENT_SCHEDULER",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "228da7ef95341c9d9fad7b43e7904232675b1f922c6dd35e775053fcd6e6f7a6",
+      "historical_sha256_equals_current": false
+    },
+    {
+      "path": "tools/content-schema/craft-authoring/test_craft_authoring.py",
+      "historical_wave2_record": null,
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion"
+    },
+    {
+      "path": "tools/content-schema/craft-authoring/test_digging.py",
+      "historical_wave2_record": null,
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion"
+    },
+    {
+      "path": "tools/content-schema/craft-authoring/test_tainted_souls.py",
+      "historical_wave2_record": null,
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_npc_progress_retention.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-schema/quest-authoring/test_npc_progress_retention.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-80",
+        "total_lines": "80",
+        "sha256": "c60744dfd3c6f4a1c69ae0e8409699192641f31ee51e047b04f6198cb66f2577",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_DISTINCT_INFERRED_PROGRESS_FIXTURE",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "c60744dfd3c6f4a1c69ae0e8409699192641f31ee51e047b04f6198cb66f2577",
+      "historical_sha256_equals_current": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_progress_enrichment.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-schema/quest-authoring/test_progress_enrichment.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-179",
+        "total_lines": "179",
+        "sha256": "48d34c8c810349d9848bc13cf6df4f31d6e1c95d2dd9e122a3e5b2f842282f77",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_DECLARED_PROGRESS_AND_WRITER_CONFLICT_GUARDS",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "48d34c8c810349d9848bc13cf6df4f31d6e1c95d2dd9e122a3e5b2f842282f77",
+      "historical_sha256_equals_current": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_reward_only_binding_candidates.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-schema/quest-authoring/test_quest_reward_only_binding_candidates.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-107",
+        "total_lines": "107",
+        "sha256": "a926e067a3e50a8969de06a5d1952b08ff8799980b23f6603c644ee532690210",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_POLICY_ASSERTIONS; CONSIDER_SINGLE_OWNER_BYTE_REPLAY",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "a926e067a3e50a8969de06a5d1952b08ff8799980b23f6603c644ee532690210",
+      "historical_sha256_equals_current": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_albinius_rules.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-schema/quest-authoring/test_questpc2_albinius_rules.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-49",
+        "total_lines": "49",
+        "sha256": "02ec0912d30681c669009d06531430b79f7926935c1d61b0337c88619471f648",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_DISTINCT_GENERATOR_AND_LITERAL_GAMEPLAY_GUARDS",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "02ec0912d30681c669009d06531430b79f7926935c1d61b0337c88619471f648",
+      "historical_sha256_equals_current": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_gerimor_rules.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-schema/quest-authoring/test_questpc2_gerimor_rules.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-36",
+        "total_lines": "36",
+        "sha256": "2c442df2a7a54ab7fa1db933df4c4951291b2b2f345ed80910cd0dd840d8a61b",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_DISTINCT_GENERATOR_AND_LITERAL_GAMEPLAY_GUARDS",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "2c442df2a7a54ab7fa1db933df4c4951291b2b2f345ed80910cd0dd840d8a61b",
+      "historical_sha256_equals_current": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_gnomus_rules.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-schema/quest-authoring/test_questpc2_gnomus_rules.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-38",
+        "total_lines": "38",
+        "sha256": "e5dce5155ddd6e3f89056aaebecd4779a20bb14cbd4ed6351784d28182bc3715",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_DISTINCT_GENERATOR_AND_LITERAL_GAMEPLAY_GUARDS",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "e5dce5155ddd6e3f89056aaebecd4779a20bb14cbd4ed6351784d28182bc3715",
+      "historical_sha256_equals_current": true
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_questpc2_henricus_rules.py",
+      "historical_wave2_record": {
+        "baseline": "8e9f0e16631aab1beb8416f8d5ca707aa3031083",
+        "path": "tools/content-schema/quest-authoring/test_questpc2_henricus_rules.py",
+        "review_kind": "FULL_TEST_SOURCE",
+        "reviewed_scope": "Whole source file, including fixtures/imports/entrypoint",
+        "reviewed_lines": "1-23",
+        "total_lines": "23",
+        "sha256": "d5affeffe3997fbebda7b2db279baede3889c78c692f7eee0af953fffc3da013",
+        "base_blob_matches": "True",
+        "disposition": "KEEP_DISTINCT_GENERATOR_AND_LITERAL_GAMEPLAY_GUARDS",
+        "runtime_validation": "SOURCE_REVIEW_ONLY",
+        "unreviewed_remainder": "none within this source file; runtime behavior not executed"
+      },
+      "disposition": "CURRENT_REVALIDATION_QUEUED; no deletion or automatic semantic promotion",
+      "current_sha256": "d5affeffe3997fbebda7b2db279baede3889c78c692f7eee0af953fffc3da013",
+      "historical_sha256_equals_current": true
+    }
+  ],
+  "newly_assigned_extra_groups": [
+    "tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py",
+    "tools/content-census/g4_item_binding_pilot_self_test.py",
+    "tools/content-census/g4_item_crystal_binding_generator_self_test.py",
+    "tools/content-census/g4_item_source_capture_self_test.py",
+    "tools/content-census/g4_item_wave1_capture_self_test.py",
+    "tools/content-census/g4_item_wave1_stage_self_test.py",
+    "tools/content-census/g4_non_item_source_capture_self_test.py",
+    "tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py",
+    "tools/content-census/g4_nonitem_revision_revalidation_self_test.py",
+    "tools/content-census/global_source_overlap_self_test.py",
+    "tools/content-census/item_id_alias_table_self_test.py",
+    "tools/content-census/item_key_references_self_test.py",
+    "tools/content-census/item_wiki_stats_capture_self_test.py",
+    "tools/content-census/source_family_classification_self_test.py",
+    "tools/content-census/source_universe_self_test.py",
+    "tools/content-census/stage_appearance_tables_self_test.py",
+    "tools/content-census/stage_map_areas_self_test.py",
+    "tools/content-census/stage_proficiencies_self_test.py",
+    "tools/content-census/stage_staticdata_creatures_bosses_quests_self_test.py",
+    "tools/content-census/stage_staticdata_houses_achievements_self_test.py",
+    "tools/content-census/stage_tibiawiki_achievements_self_test.py",
+    "tools/content-census/unknown_closure_self_test.py",
+    "tools/content-census/unknown_disposition_ledger_self_test.py",
+    "tools/content-format-spike/self_test.py"
+  ],
+  "scope_limit": "695 is the inherited remaining content queue, not the entire baseline content-migration/content-schema candidate inventory. Full inventory is709; extra24tools candidates newly assigned. Historical full-source receipts remain bounded to their recorded commit/scope."
+}

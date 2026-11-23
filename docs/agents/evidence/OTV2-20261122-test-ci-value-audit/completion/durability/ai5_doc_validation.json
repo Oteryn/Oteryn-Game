@@ -1,0 +1,50 @@
+{
+  "status": "PASS",
+  "path": "crates/gameplay/monster-ai/src/ai/perception.rs",
+  "before_sha256": "3d5c281fd3ba2987a914a773f1bff1bb08a515ee7432d125eac925633cac731f",
+  "after_sha256": "386755946bd6c5f9fc4f7a8ff5daccb6dc6330d6980acc9032250d91c017639d",
+  "only_exact_doc_comment_changed": true,
+  "executable_and_attribute_bytes_outside_comment_unchanged": true,
+  "commands": [
+    {
+      "label": "candidate_id_doc_fmt",
+      "argv": [
+        "rustfmt",
+        "+1.100.0",
+        "--check",
+        "crates/gameplay/monster-ai/src/ai/perception.rs"
+      ],
+      "rc": 0,
+      "seconds": 0.016,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/candidate_id_doc_fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ai5_diff_check",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "apps/game-server/tests/ai_bootstrap.rs",
+        "crates/gameplay/monster-ai/src/ai/mod.rs",
+        "crates/gameplay/monster-ai/src/ai_think.rs",
+        "tools/repository/check_duplicate_test_sources.py",
+        "crates/gameplay/monster-ai/src/ai/perception.rs"
+      ],
+      "rc": 0,
+      "seconds": 0.02,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/ai5_diff_check.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "semantic_runtime_boundary": "AI4 owner/integration tests and owner/server Clippy/build completed before this documentation-only delta. No semantic code or allow(dead_code) change; no additional semantic test execution claimed.",
+  "final_ai5_sha256": {
+    "apps/game-server/tests/ai_bootstrap.rs": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+    "crates/gameplay/monster-ai/src/ai/mod.rs": "bddab355674c61af52100638e0799a6b6d45dabf990144848fe1985a88fef29f",
+    "crates/gameplay/monster-ai/src/ai_think.rs": "5f5a032d3d72e96ca0fdc41c4b57185c55c71d1cc7e4ef1e7949af0384dd910c",
+    "tools/repository/check_duplicate_test_sources.py": "2f3af05c1957c61fd0844761982d449a5ebdf80167f596a28be3ff8453e65817",
+    "crates/gameplay/monster-ai/src/ai/perception.rs": "386755946bd6c5f9fc4f7a8ff5daccb6dc6330d6980acc9032250d91c017639d"
+  },
+  "prior_receipt_sha256": "738e70eb56b26424e163f9c6d050e94196be67b9de9eadf1d05fe4ac86e18c6c"
+}

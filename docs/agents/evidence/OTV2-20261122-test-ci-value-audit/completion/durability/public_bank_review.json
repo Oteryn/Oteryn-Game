@@ -1,0 +1,436 @@
+{
+  "base": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "state": "READ_ONLY_PUBLIC_BANK_BATCH_A",
+  "logical_case_reviews": [
+    {
+      "case": "a_retained_bank_lookup_without_a_current_fence_is_held_unsequenced",
+      "boundary": "Pure dispatch helper",
+      "oracle": "Missing fence produces BankLookupHeld and unknown outcome without UI/inventory completion; command 0 has no retained work; valid fence preserves exact CommandRef.",
+      "disposition": "KEEP"
+    },
+    {
+      "case": "actual_chat_reengagement_and_npc_generation_retire_unsent_confirmation",
+      "boundary": "Actual in-process ChatRuntime/ChannelRuntime with fixture catalogue; no bank mutation",
+      "oracle": "Reengagement changes conversation generation and invalidates the old prompt; changed NPC generation cannot resolve current bank context.",
+      "disposition": "KEEP"
+    },
+    {
+      "case": "s10_eva_postgres_bank_deposit_and_withdraw",
+      "boundary": "Public dispatch npc_talk calls with current durable fences and real content catalogue; no serialized client stream",
+      "oracle": "Deposit 20 then withdrawal 5 yield independent balances 20/15 and exactly 2 ledger entries.",
+      "limits": "No independent physical-coin or outbox check in this case; no PG URL means early return.",
+      "disposition": "KEEP_BOUNDED_NPC_POPULATION_CASE"
+    },
+    {
+      "case": "s2_economy_npc_bank_market_inbox_depot_conserves_and_relogs",
+      "boundary": "Protocol-over-duplex market route mixed with direct owner calls; bank uses fenced bank_deposit; relog uses fixture-only commit and harness source rows",
+      "oracle": "Exact bank commit/replay; unchanged selected row snapshot on replay; bank+fixed fee and item-quantity conservation; depot count 10 after relog; saved position readback.",
+      "limits": "Snapshot omits bank operations/entries/outbox. Gold helper counts the gold denomination in its known-gold fixture. No actual Platform issuer or TCP fresh admission.",
+      "disposition": "KEEP_COMPOSED_VALUE_SCENARIO_WITH_EXPLICIT_BOUNDARIES"
+    },
+    {
+      "case": "hireling_postgres_scoped_bank_deposit_withdraw_and_replay",
+      "boundary": "Real command 7 encoding and serve_admitted over duplex; fixture TLS source signs recovery. Pending enqueue is a separate direct native-owner continuation seam.",
+      "oracle": "Balances 10/5/2, recipient 3, 3 operations/3 envelopes, 15 physical gold, reciprocal transfer pair and fixed audit lines. Pending enqueue leaves balance 2/no receipt; isolated stale connection/lease fail; admit_frame recovery produces newer generation; current continuation commits to 4 and replay adds no audit; immutable confirmation changes only completed.",
+      "limits": "Initial entitlement/recipient/House fixture rows use privileged seed paths. Not the whole House/Store fixture graph and not the real desktop client.",
+      "disposition": "KEEP_DISTINCT_WIRE_AND_DURABLE_CONTINUATION_ORACLES"
+    }
+  ],
+  "source_scopes": [
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "scope": "a_retained_bank_lookup_without_a_current_fence_is_held_unsequenced",
+      "start_line": 1596,
+      "end_line": 1655,
+      "file_sha256": "e95f0771723df67c2ade373dfbe117b9b4fd00b0101105d7064cf4dd22d4edc5",
+      "body_sha256": "19f57edd1295a849a0dbcdc8916b46b739caeeb1c2b4fb0d60bf2dffa89599fa"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "scope": "actual_chat_reengagement_and_npc_generation_retire_unsent_confirmation",
+      "start_line": 1658,
+      "end_line": 1767,
+      "file_sha256": "e95f0771723df67c2ade373dfbe117b9b4fd00b0101105d7064cf4dd22d4edc5",
+      "body_sha256": "a9e0aa9a7b901b9a5c7625840e071e68b9d040af10c942c0e5eac7bf9425c90f"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "scope": "npc_bank_talk",
+      "start_line": 746,
+      "end_line": 1351,
+      "file_sha256": "e95f0771723df67c2ade373dfbe117b9b4fd00b0101105d7064cf4dd22d4edc5",
+      "body_sha256": "2e83a8bda281f8a6356840932f7bf16a6bc9a557026f75dac4cb0cfd53f1df3f"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "scope": "resume_bank_talk",
+      "start_line": 1352,
+      "end_line": 1393,
+      "file_sha256": "e95f0771723df67c2ade373dfbe117b9b4fd00b0101105d7064cf4dd22d4edc5",
+      "body_sha256": "fd76e43cc63473cff266ca732540ba379362ec14e1026f60e1345b41a6386bfb"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "scope": "retained_bank_key",
+      "start_line": 1414,
+      "end_line": 1433,
+      "file_sha256": "e95f0771723df67c2ade373dfbe117b9b4fd00b0101105d7064cf4dd22d4edc5",
+      "body_sha256": "b37131dc44104a459b9dce0de951c0261e07a37b916a3107941edbe23f996f33"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "scope": "held_bank_outcome",
+      "start_line": 1397,
+      "end_line": 1402,
+      "file_sha256": "e95f0771723df67c2ade373dfbe117b9b4fd00b0101105d7064cf4dd22d4edc5",
+      "body_sha256": "3f892629842c5666927c5341b43406ce4b23fff664955e8c14b7af8fcd4fb4bf"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "scope": "bank_coin_definitions",
+      "start_line": 1435,
+      "end_line": 1457,
+      "file_sha256": "e95f0771723df67c2ade373dfbe117b9b4fd00b0101105d7064cf4dd22d4edc5",
+      "body_sha256": "221849bcff3dfbd1ea5873b66441362234533eaf3c368d048c544424849fba8d"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "scope": "bank_request",
+      "start_line": 1459,
+      "end_line": 1512,
+      "file_sha256": "e95f0771723df67c2ade373dfbe117b9b4fd00b0101105d7064cf4dd22d4edc5",
+      "body_sha256": "cd96f3ec274eba42fcbafc997bc1d1510e6554d80602fe3fc71d9e4f32f5b42c"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "scope": "completed_bank_talk",
+      "start_line": 1513,
+      "end_line": 1541,
+      "file_sha256": "e95f0771723df67c2ade373dfbe117b9b4fd00b0101105d7064cf4dd22d4edc5",
+      "body_sha256": "6562d51511e6bc6eae41dc83be0acc880ad82cdc171a7109256509f1aa6c2482"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs",
+      "scope": "bank_completion_reply",
+      "start_line": 1542,
+      "end_line": 1564,
+      "file_sha256": "e95f0771723df67c2ade373dfbe117b9b4fd00b0101105d7064cf4dd22d4edc5",
+      "body_sha256": "97064ed7c827fc4ea4595aa186f2e0f3f2d2eaf652a27eb346bfca8829f409fa"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/s10_bank.rs",
+      "scope": "s10_eva_postgres_bank_deposit_and_withdraw",
+      "start_line": 14,
+      "end_line": 29,
+      "file_sha256": "3ef344fe122ecfd989eeb2d6b66011fc12b30e99b29730541ddbf2bce2b2e0af",
+      "body_sha256": "15dba4f99f65897add84d80fd7ef47ec8eefe2cf230c652a6af807c8fd749231"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/s10_bank.rs",
+      "scope": "scenario",
+      "start_line": 31,
+      "end_line": 135,
+      "file_sha256": "3ef344fe122ecfd989eeb2d6b66011fc12b30e99b29730541ddbf2bce2b2e0af",
+      "body_sha256": "c220f6376ae0b3ef10f6c4e0c5c4350090c6a28d4c7907dc84c231e09b1d600d"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/npc_paid_travel_fixtures.rs",
+      "scope": "talk",
+      "start_line": 33,
+      "end_line": 67,
+      "file_sha256": "7b1dc1e216907101fec40a5c08748d38f9b5e20ff6705bf4958b39e70fa4d4ae",
+      "body_sha256": "626fe708fb8eeac5a47e271a69e03028dc141a5a891c9678f057b402d09ff6be"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s2_economy.rs",
+      "scope": "s2_economy_npc_bank_market_inbox_depot_conserves_and_relogs",
+      "start_line": 11,
+      "end_line": 13,
+      "file_sha256": "043d59b427c9174148260c61d4b788ed8bc509f7e2a267a02fc29155e9ef4123",
+      "body_sha256": "52486e6172597d202c06a2bf988b2a77c37e11a7a7d34ed2539350617b5d5cd7"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s2_economy.rs",
+      "scope": "scenario",
+      "start_line": 15,
+      "end_line": 298,
+      "file_sha256": "043d59b427c9174148260c61d4b788ed8bc509f7e2a267a02fc29155e9ef4123",
+      "body_sha256": "c233e54e5463dbde27d9e322f1e93a4cc3832073a11f84143e559f92e62765ad"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s2_economy.rs",
+      "scope": "deposit_bank",
+      "start_line": 317,
+      "end_line": 372,
+      "file_sha256": "043d59b427c9174148260c61d4b788ed8bc509f7e2a267a02fc29155e9ef4123",
+      "body_sha256": "4e4eae1b02938516f993f22660ed0a3bdb5dd51fb23c39b3594871a8a8af3480"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s2_economy.rs",
+      "scope": "seed_peer_bank_and_bag",
+      "start_line": 300,
+      "end_line": 315,
+      "file_sha256": "043d59b427c9174148260c61d4b788ed8bc509f7e2a267a02fc29155e9ef4123",
+      "body_sha256": "94214824f7673ca4bd1567e1f2b991647a76fb33e1b78916720d80c14a9f0c10"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/mod.rs",
+      "scope": "timed",
+      "start_line": 10,
+      "end_line": 19,
+      "file_sha256": "ba2c7f78bc505cd3d9db808c30399d2b30c001e6ead2e4bd78fc1f1c4f640b2e",
+      "body_sha256": "6da30d0520fa30bcac91e727f31faf9df5155379383c9b4bc4c6083bda1a42a1"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/mod.rs",
+      "scope": "snapshot",
+      "start_line": 21,
+      "end_line": 35,
+      "file_sha256": "ba2c7f78bc505cd3d9db808c30399d2b30c001e6ead2e4bd78fc1f1c4f640b2e",
+      "body_sha256": "77948fc47f5edd6ef4d601d5dd2373ca296bbab326b1d9b19065f159c7d8fe54"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/mod.rs",
+      "scope": "exchange",
+      "start_line": 51,
+      "end_line": 96,
+      "file_sha256": "ba2c7f78bc505cd3d9db808c30399d2b30c001e6ead2e4bd78fc1f1c4f640b2e",
+      "body_sha256": "26d755f9c6df21bb8ea2fcd5183d8b77b3565fcfcf4e44658226f02e4eb7f28c"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/mod.rs",
+      "scope": "logout_relogin",
+      "start_line": 98,
+      "end_line": 115,
+      "file_sha256": "ba2c7f78bc505cd3d9db808c30399d2b30c001e6ead2e4bd78fc1f1c4f640b2e",
+      "body_sha256": "cfc15d2b3b6c6018b2e31cbde5e9e4c0959c89fbe4f34cf13dba5b64187bef2f"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/mod.rs",
+      "scope": "admit_successor",
+      "start_line": 117,
+      "end_line": 186,
+      "file_sha256": "ba2c7f78bc505cd3d9db808c30399d2b30c001e6ead2e4bd78fc1f1c4f640b2e",
+      "body_sha256": "f2392b81d1892d81f08cb797a2cbde6db7628be0f876372483c99d66bf892d8a"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/full_world_support.rs",
+      "scope": "ledger",
+      "start_line": 123,
+      "end_line": 170,
+      "file_sha256": "26c8be190ae10602a93cdf8f614471b31757b9dad969673484238d6ec58c0cfa",
+      "body_sha256": "7e4b1bd6dcdc01e06591b6d3f9012a0b82d8bd8794d125d7e6214c4c8b56f252"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/full_world_support.rs",
+      "scope": "gold",
+      "start_line": 172,
+      "end_line": 179,
+      "file_sha256": "26c8be190ae10602a93cdf8f614471b31757b9dad969673484238d6ec58c0cfa",
+      "body_sha256": "5a0e348582b0699c91b78d16a248b1b1be1a4c618861637082935606eb16e2fc"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/full_world_support.rs",
+      "scope": "relogin",
+      "start_line": 210,
+      "end_line": 212,
+      "file_sha256": "26c8be190ae10602a93cdf8f614471b31757b9dad969673484238d6ec58c0cfa",
+      "body_sha256": "153fd16fedbc782dad8363c17939caea3dbea654388aa4ed9c375915026d5e2b"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/full_world_support.rs",
+      "scope": "relogin_as",
+      "start_line": 214,
+      "end_line": 223,
+      "file_sha256": "26c8be190ae10602a93cdf8f614471b31757b9dad969673484238d6ec58c0cfa",
+      "body_sha256": "db91f01fc383688e58ddf8afd433543693d3191133c85ecd6e437bae9ca78410"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/full_world_support.rs",
+      "scope": "relogin_into",
+      "start_line": 235,
+      "end_line": 355,
+      "file_sha256": "26c8be190ae10602a93cdf8f614471b31757b9dad969673484238d6ec58c0cfa",
+      "body_sha256": "19026c8ac3dce36409ed55650a565aa845dc9eb8fa576912bfedfc6beec02312"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs",
+      "scope": "hireling_postgres_scoped_bank_deposit_withdraw_and_replay",
+      "start_line": 31,
+      "end_line": 33,
+      "file_sha256": "020c1653e3d7976df1bd003d813cdbee178766463b93517b3aef9ee0dca16f25",
+      "body_sha256": "e0a7de58565708d01dfd566376e9878eeaa0e28bd3c4cc107ff14c590cacde7c"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/hireling_lifecycle/bank.rs",
+      "scope": "scenario",
+      "start_line": 18,
+      "end_line": 155,
+      "file_sha256": "49b60942999fbfc18cdc370e0535abaeb791d9e8060e711f4c4d1a8e0a281a78",
+      "body_sha256": "9c59d252671794e2a054052819b79ea0e1fd16528e14959e54b2637575a40832"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/hireling_lifecycle/bank.rs",
+      "scope": "balance",
+      "start_line": 157,
+      "end_line": 160,
+      "file_sha256": "49b60942999fbfc18cdc370e0535abaeb791d9e8060e711f4c4d1a8e0a281a78",
+      "body_sha256": "f3ff3f3d026b8ed6324f2c28b2962a1250edf0b07333d36917a5bc02a6b19d80"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/hireling_lifecycle/bank.rs",
+      "scope": "enqueue_pending",
+      "start_line": 168,
+      "end_line": 215,
+      "file_sha256": "49b60942999fbfc18cdc370e0535abaeb791d9e8060e711f4c4d1a8e0a281a78",
+      "body_sha256": "9b7ad3dae608a4bb9fef9dfed8ab094be6edaf8a77e36e953115938a53f779e1"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/hireling_lifecycle/bank.rs",
+      "scope": "continue_after_resume",
+      "start_line": 217,
+      "end_line": 267,
+      "file_sha256": "49b60942999fbfc18cdc370e0535abaeb791d9e8060e711f4c4d1a8e0a281a78",
+      "body_sha256": "99512cb2f50b18888b24faddb35664b1ac66a4a2dcb23a15c9ad23c9f40f040c"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/hireling_lifecycle/position.rs",
+      "scope": "resume",
+      "start_line": 555,
+      "end_line": 587,
+      "file_sha256": "065f58aa3449695c806ee930def1f535c27d5a755d59acd6b97f47a57d9e2cd2",
+      "body_sha256": "3b046a636909734e62283ef9b127c2d1992999d547d5272c6a911faff0df7336"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank.rs",
+      "scope": "enqueue_npc_bank",
+      "start_line": 509,
+      "end_line": 565,
+      "file_sha256": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+      "body_sha256": "8e1903868dccf8b4da01517cd97cb76ef98f92ada124099d19f2ea2082ffee47"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank.rs",
+      "scope": "resume_npc_bank",
+      "start_line": 571,
+      "end_line": 601,
+      "file_sha256": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+      "body_sha256": "4fdc1e54b7ca5d19b7e596316ac7023736dfacb18b8bd0701f4b358e91268e40"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank.rs",
+      "scope": "read_npc_bank_command",
+      "start_line": 613,
+      "end_line": 645,
+      "file_sha256": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+      "body_sha256": "3b99db8d1bce6802f3e0e5b644c8d7376e11500681b075b50c7ae280c0434ad8"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank.rs",
+      "scope": "bank_operation_with_npc",
+      "start_line": 965,
+      "end_line": 998,
+      "file_sha256": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+      "body_sha256": "c3559037cf8f36fe8ba84c8d00a9c709f4069793c5eef397832e4946d0fc9c9a"
+    },
+    {
+      "path": "apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs",
+      "scope": "run<F>",
+      "start_line": 992,
+      "end_line": 1006,
+      "file_sha256": "cf933afebacc780febe184f19019ef86d1afabd44ce93fbcf8cb4fb82fd4d725",
+      "body_sha256": "d3011ebf5012859ba1fa6dc9a2f1808c84740cbd133203fe6a7de4654cbba7bd"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/full_world_support.rs",
+      "scope": "world_scenario macro and native purse setup",
+      "start_line": 357,
+      "end_line": 705,
+      "file_sha256": "26c8be190ae10602a93cdf8f614471b31757b9dad969673484238d6ec58c0cfa",
+      "scope_sha256": "c7daf61d092302befd05ab96ef376cf9183aee14ed415483aeb7fde6fe5c8d0d"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/hireling_lifecycle/cook.rs",
+      "scope": "actual protocol Client and serve_admitted driver",
+      "start_line": 297,
+      "end_line": 440,
+      "file_sha256": "5959e289439cfe7d62cbf350fd409e1bbd6ad0e3569adaf1feace517f22bfb66",
+      "scope_sha256": "5c3d8bcb36d4634e5041b93fa33218323c8b5547d61b122ae9fd81730d4ef21d"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/hireling_lifecycle_fixtures.rs",
+      "scope": "configured-PG wrapper and completion marker",
+      "start_line": 127,
+      "end_line": 164,
+      "file_sha256": "9c576d1ba695e53b0b9566a962f38195fd5d382b0bbd025e76ac263da4571879",
+      "scope_sha256": "844a32483ab1e7d06da80cd71a18da3a1ad78485b5edb4c914516ab5fb0babbe"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/hireling_lifecycle_fixtures.rs",
+      "scope": "common fixture path through Case::Bank dispatch; other branch implementations not followed",
+      "start_line": 166,
+      "end_line": 926,
+      "file_sha256": "9c576d1ba695e53b0b9566a962f38195fd5d382b0bbd025e76ac263da4571879",
+      "scope_sha256": "0f1a84b3d448d39777f73d0e02ff19358cd4ef340f5f376b3f6f7e4ff6503b16"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/house_transfer_fixtures.rs",
+      "scope": "local TLS source and platform-test descriptor",
+      "start_line": 69,
+      "end_line": 115,
+      "file_sha256": "13ec252aa07618b41efab2699230e8331aed797989870b82aa1673071b63b6dd",
+      "scope_sha256": "0e7ee259f7a9112e8ef7745415b81016d35fa4ed5363e09e43a1b247d665bd71"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/house_transfer_fixtures.rs",
+      "scope": "fixture signing trust response and recovery token",
+      "start_line": 210,
+      "end_line": 273,
+      "file_sha256": "13ec252aa07618b41efab2699230e8331aed797989870b82aa1673071b63b6dd",
+      "scope_sha256": "ca281554655e56684c4dde7b0feaac6a33e8e3ceae71f19a7fd6aa7c276432cf"
+    },
+    {
+      "path": "apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs",
+      "scope": "missing-PG branch",
+      "start_line": 836,
+      "end_line": 847,
+      "file_sha256": "cf933afebacc780febe184f19019ef86d1afabd44ce93fbcf8cb4fb82fd4d725",
+      "scope_sha256": "1c5e3ccedb3f8baadb485dbcc208ebcffbfd3c0b5f058c9282349bba5eef9a37"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/fresh_admission/commit.rs",
+      "scope": "fixture-only commit and exact receipt retry classification",
+      "start_line": 242,
+      "end_line": 284,
+      "file_sha256": "06c852e26bb49aa08c98d89054ae36073dacdb7b3d5730b59251f036ec40d7b2",
+      "scope_sha256": "49c53e208e8939dd70c6ee88f553447f9e0ada030783babb7efb4b9c362cac1e"
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/fresh_admission_durability.rs",
+      "scope": "exact replay outcome contract",
+      "start_line": 287,
+      "end_line": 321,
+      "file_sha256": "115de440fa089520b5f024ed8dd5acb8adf8289c23bb9797f3e883f0c88c6c0a",
+      "scope_sha256": "eda28d21434ee1396d8f7d2cf2e402981cd704d710c98b5e28c6cb9a29308450"
+    }
+  ],
+  "unapplied_findings": [
+    {
+      "id": "BANK-A-01",
+      "status": "SOURCE_DERIVED_SCOPE_LIMIT; NO_SOURCE_EDIT; NO_RUNTIME_MUTANT",
+      "fact": "timed emits result=ok when scenario returns Ok; common run returns Ok immediately without a configured PG URL.",
+      "implication": "The outer marker alone cannot establish PostgreSQL execution. A consumer needs configured service and observed body/database evidence; no current CI false-pass is asserted."
+    },
+    {
+      "id": "BANK-A-02",
+      "status": "SOURCE_DERIVED_ORACLE_GAP; NO_SOURCE_EDIT; NO_RUNTIME_MUTANT",
+      "fact": "relogin_into discards the second identical store.commit result and only checks lease generation 3.",
+      "contract": "Fixture commit delegates commit_revalidated(...,None); exact stored operations classify as ExistingCommitted.",
+      "implication": "No extra lease is observed, but exact replay classification is unproved. An error/wrong refusal from the duplicate commit can satisfy this part.",
+      "recommendation": "If this helper is meant to qualify exact durable replay, assert ExistingCommitted and the original receipt in a qualified follow-up; retain lease/value checks."
+    }
+  ],
+  "actual_runtime_executions_in_this_batch": 0,
+  "whole_repository_or_whole_fixture_completion": false,
+  "boundary": "Manual body/oracle/consumer review only. Hashes do not establish execution. Separate from the initial bank PG repair and not evidence closing current-main real-clock admission/readback failures."
+}

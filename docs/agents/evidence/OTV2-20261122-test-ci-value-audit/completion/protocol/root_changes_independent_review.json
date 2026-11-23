@@ -1,0 +1,94 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "reviewer": "ci_live_audit",
+  "review_kind": "independent manual review of changed test/validation logic and adjacent stated implementation",
+  "result": "No material issues found in the bounded12-file changed-source scope.",
+  "source_edits_performed": false,
+  "runtime_qualification": "Separate receipts; this review itself does not claim execution.",
+  "files": [
+    {
+      "path": "tools/repository/test_repository_tests_run.py",
+      "sha256": "0189671ff5a824d0c5eb55e35fbd8d89aef5ec02c91758da68d31f140a55d44c",
+      "disposition": "approve-bounded-scope",
+      "basis": "The actual merge-gate governance shell body is extracted and executed against temporary named files with a tracing Python stub. Expected calls come from the current test-file inventory minus explicitly delegated test names. The second invocation observes exit 42 and absence of the subsequent file after a failing call. Reviewed the current workflow shell body and the extraction helper usage.",
+      "limits": "Shell dispatch and early exit only; does not execute every repository Python test in this fixture."
+    },
+    {
+      "path": "tools/repository/test_protected_main_cache.py",
+      "sha256": "74193415c8324d3bdf4532a3fa19b531ae1f56d1c8b0965cc1f95f3984b809c2",
+      "disposition": "approve-bounded-scope",
+      "basis": "The pinned linker step is selected through its digest declaration. Current command-based selection covers all five actual cargo/catalogue compilation steps in rust.yml; each must follow installation and carry LD_PRELOAD. Existing real install-script digest mismatch and trim-script checks remain.",
+      "limits": "Bounded current workflow contract; not a proof of arbitrary future shell parsing."
+    },
+    {
+      "path": "tools/agents/tests/test_enqueue_readiness.py",
+      "sha256": "c11ca72616ae372656532b687754a82b0a784f6388f4e5247e6f28db0191c4db",
+      "disposition": "approve-bounded-scope",
+      "basis": "Deleted positive unresolved-thread case is identical in fixture and exact reason to retained EnqueueReadinessTest.test_unresolved_threads_block. The actual evaluator count-validation branch remains covered.",
+      "limits": "Deletion review only, not a complete independent audit of all readiness behavior."
+    },
+    {
+      "path": "crates/client-runtime/src/features/0064-target-move/tests/e2e_m01.rs",
+      "sha256": "79c9d79e0e90f7e723303893da5159501c87b08f3e2096897af32817829e630c",
+      "disposition": "approve-bounded-scope",
+      "basis": "Deleted comparison reads an unchanged local String. project only receives an immutable GatedCommandResult and returns a WalkResponse or error. Existing exact receipts and malformed accepted/rejected result assertion remain.",
+      "limits": "Component replay, not movement-delta application or live game-server proof."
+    },
+    {
+      "path": "crates/client-runtime/src/features/0287-actor-spell-catalog/tests/e2e_c14.rs",
+      "sha256": "a07de8d5730ac8f5cb1285a29a37bd720a854958d7cdb7b29e4a2206688618f7",
+      "disposition": "approve-bounded-scope",
+      "basis": "Deleted comparison reads local CatalogState that replacement cannot access. replacement receives only an immutable SessionEvent and decodes the contained snapshot. Positive state replacement/projection and malformed rejection remain.",
+      "limits": "No assertion is added about state mutation on rejected events."
+    },
+    {
+      "path": "crates/client-runtime/src/features/local-spell-action-bar/tests/e2e_c04.rs",
+      "sha256": "7589347be634412419d12a161ccff9dd6d001c4195b1360c9a09b9cf62f1cd4a",
+      "disposition": "approve-bounded-scope",
+      "basis": "Deleted remaining_ms comparison follows a decoder call with a literal byte slice and no reference to the bar. The cooldown decoder returns a new value. Existing positive spell/group projection and malformed refusal remain; revised documentation describes the observed component boundary.",
+      "limits": "Does not validate PZ refusal dispatch, live server behavior or end-to-end networking."
+    },
+    {
+      "path": "crates/client-runtime/tests/gap_house.rs",
+      "sha256": "33c4c82214d4d0f0b9689e9c33afb4097f9b65f7a7aa2600e910d3a9efb458d3",
+      "disposition": "approve-bounded-scope",
+      "basis": "200 boundary members plus the 201st differ in the first byte while retaining valid UUIDv7 version/variant bytes. They remain independently valid and unique under mutation validation. Positive 200-member guests and exact count error for 201 isolate the guard; existing largest door request remains.",
+      "limits": "The count mutation was separately compiled and tested in Windows receipts."
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/main.rs",
+      "sha256": "15e5d8f716e64c0a4ec55f24231e7ad5602335a839dd2951eae9273bda196778",
+      "disposition": "approve-bounded-scope",
+      "basis": "Expected two entities are independently named and positioned; checks inspect ClientSimulation.snapshot after apply and require epoch/revision, exact map cardinality, each identity and each field. Routed action must be a single move.east Started action in gameplay. Adjacent apply/snapshot implementation was read.",
+      "limits": "Synthetic CLI only; no live networking, GPU or authoritative world execution."
+    },
+    {
+      "path": "crates/input-platform/tests/native_winit.rs",
+      "sha256": "c80929f7bdf0241f0f6a778449f343de81903f5afb1f559a4a5ccc7c7d71dcce",
+      "disposition": "approve-bounded-scope",
+      "basis": "Integration-test cfg now exactly matches the production winit_adapter cfg. Cargo has unconditional Windows winit dependency and optional non-Windows feature dependency.",
+      "limits": "Static platform-selection review; root owns Windows compilation receipt."
+    },
+    {
+      "path": "crates/renderer/src/batch.rs",
+      "sha256": "a2327cd5e866e73b51112c1f3dc626dfd46f9861be786752912a06882317d546",
+      "disposition": "approve-bounded-scope",
+      "basis": "Correctly sized RGBA buffers at max and max+1 separately exercise each dimension. Adjacent AtlasImage::new verifies dimension bounds before pixel length. Existing zero-dimension, incorrect pixel length and checked multiplication overflow cases remain.",
+      "limits": "CPU constructor boundary, not GPU allocation or rendering execution."
+    },
+    {
+      "path": "crates/client-ui/tests/chat_log.rs",
+      "sha256": "ef84a79b75de54b714ddd644f285813f968a3e1e9b6338d7078566a53f440a66",
+      "disposition": "approve-bounded-scope",
+      "basis": "A real private line with Polish characters and emoji must survive as an independent literal speaker/message substring in valid UTF-8. is_ok_and combines UTF-8 validity and content without the denied expect call. panel_text private-line formatting and write_log write_all/flush implementation were read. Existing append and I/O-error behavior remain.",
+      "limits": "Codec/UI export test scope; baseline ASCII-drop mutation survives, final candidate fails, and729 package tests/strict all-target Clippy/build/fmt pass under ui_followup_qualification/results.json. Initial denied-expect assertion was corrected and the failure retained."
+    },
+    {
+      "path": "crates/client-ui/src/features/0165-hireling/mod.rs",
+      "sha256": "061a3c719bc7a297c7ffb10550bfc114663330ceb8719b913388d9713146b7bb",
+      "disposition": "approve-bounded-scope",
+      "basis": "Read full current module, baseline diff and adjacent request/apply_result behavior. Replacing let-else return with Result+ok_or makes missing Summon command an actual test failure while retaining codec and rejection-feedback checks; production function unchanged.",
+      "limits": "Current test requires a command but does not independently pin returned Request variant/coordinates. Scoped missing-command mutant oldPASS/newFAIL and restored729 tests/defaultbuild/strictClippy/fmt are recorded separately in windows_hireling_ui_qualification/results.json."
+    }
+  ]
+}

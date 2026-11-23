@@ -47,8 +47,11 @@ class ItemholdQTests(unittest.TestCase):
         path = ROOT / 'content/interactions/reward_claims/reward-claim-variants-00000-00099.json'
         claim = next(row['definition'] for row in json.loads(path.read_bytes())['records']
                      if row['definition']['identity']['key'].endswith('.kv.ornamentedshield'))
-        self.assertEqual(claim['data_holds'], [{'category': 'source', 'code': 'SOURCE_CHARGE_MISMATCH',
-                          'placement_index': 0, 'reward_field': 'items', 'reward_index': 2}])
+        # UID6063's qualified donor recipe grants exactly one charge. The
+        # canonical variant clears its live hold while keeping the conflicting
+        # Item-default witness below; it never replaces raw 1 with default 150.
+        self.assertEqual(claim['data_holds'], [])
+        self.assertEqual(claim['readiness'], 'waiting_implementation')
         self.assertTrue(any(c['reason'] == 'SOURCE_CHARGE_MISMATCH'
                             for c in claim['source_variant']['charge_dispositions']))
         self.assertTrue(claim['native_contents']['placements'])

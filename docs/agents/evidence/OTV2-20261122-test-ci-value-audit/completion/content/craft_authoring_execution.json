@@ -1,0 +1,14 @@
+{
+  "command": "/workspace/scratch/738970310ba7/content-audit-venv/bin/python -m unittest -v test_craft_authoring test_digging test_tainted_souls",
+  "cwd": "tools/content-schema/craft-authoring",
+  "exit_code": 0,
+  "case_count": 18,
+  "unittest_elapsed_seconds": 2.613,
+  "output_summary": "Ran 18 tests; OK; PASS item_conversion records=130 check=True",
+  "source_hashes": {
+    "tools/content-schema/craft-authoring/test_craft_authoring.py": "b57c760748974c89b1a2242afdafa553a4d2befd5e59efbe4337069d6b409c3a",
+    "tools/content-schema/craft-authoring/test_digging.py": "9340b3ea336510be932b3274f964089b371258c8f7f138a1cec5ca309e5d87a4",
+    "tools/content-schema/craft-authoring/test_tainted_souls.py": "f7a6c2c523017d8f844394694b665e116e4bea07fc146b5cd37350954703ff53"
+  },
+  "limits": "Local existing tests and read-only content check; no native build or hosted CI claim."
+}

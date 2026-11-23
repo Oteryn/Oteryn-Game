@@ -1,0 +1,2342 @@
+{
+  "schema": "source-risk-manual-resolution-v2",
+  "input": {
+    "path": "/workspace/scratch/738970310ba7/source_value_blackbox_completion_v2.json",
+    "sha256": "18aa184f8aa186864c34d713630b55c20fd051627cfdac3cb0ba23e58e680c18",
+    "scanner_sha256": "0e67c6e8ed72d096878b0b660a26c9fda33aea1ca862c0010ad6c37477a9a116",
+    "observed_worktree_head": "245ba7838e58318a2d851857b6c2b2d7c757aa09"
+  },
+  "method": [
+    "All 1377 assigned source paths have reproducible AST evidence in the input; this receipt resolves the listed risk groups, not all enclosing source files.",
+    "All 45 duplicate representative bodies and relevant bindings/fixtures were inspected. Exact token identity extends the body observation to listed copies; binding-sensitive differences are recorded explicitly.",
+    "All 13 self-equality bodies and 39 parser-error source excerpts were inspected. Repeated function calls are distinguished from identical constructor/value tautologies.",
+    "Syntactic calls and include/module edges do not establish a complete call graph, compiled selection or execution. Rust macro token trees remain opaque.",
+    "No additional Rust/PostgreSQL execution was performed for these risk resolutions. Proposed removals remain unapplied and require actual retained compiled IDs and qualification."
+  ],
+  "method_review": {
+    "shared_scanner": "Independent source review found nested-callable assertion attribution and comment-token issues in v1; parent v2 corrected them. Later nested-future correction requires a final snapshot reconciliation.",
+    "macro_arguments": "Generic commas/opaque token trees can affect extracted arguments; self-equality verdicts use actual source bodies, not extracted strings alone.",
+    "coverage_boundary": "No-direct-assertion is not no-oracle: PG/thread/future/helper wrappers require caller/result-propagation review. Those remaining groups are tracked separately, not marked clean here."
+  },
+  "summary": {
+    "assigned_source_paths": 1377,
+    "duplicate_groups_resolved": 45,
+    "self_equality_cases_resolved": 13,
+    "parser_error_files_explained": 39,
+    "new_runtime_executions": 0,
+    "duplicate_dispositions": {
+      "DISTINCT_STAGE_FIXTURES": 9,
+      "SAME_PUBLIC_LEAF_DUPLICATE_PROPOSAL": 1,
+      "DISTINCT_DURABILITY_ADAPTER": 3,
+      "DISTINCT_LOCAL_PIN_BINDINGS_STATIC_ONLY": 1,
+      "SAME_PUBLIC_MAPPING_DUPLICATE_PROPOSAL": 1,
+      "SAME_CALLEE_AND_INPUT_DUPLICATE_PROPOSAL": 1,
+      "CLONED_REQUEST_HELPER_WITH_LOCAL_COMMENT": 1,
+      "DISTINCT_MISSING_DRIVER_CONSTANTS": 1,
+      "DISTINCT_SOURCE_CONSTANTS_STATIC_ONLY": 1,
+      "CLONED_LOCAL_FORMATTERS": 4,
+      "SIMILAR_FORMATTERS_DIFFERENT_BOUND": 1,
+      "DISTINCT_NEEDED_CONSTANTS_STATIC_ONLY": 1,
+      "SAME_PUBLIC_STAMINA_OWNER_DUPLICATE_PROPOSAL": 8,
+      "DISTINCT_POSTGRES_PROJECTION_HELPERS": 1,
+      "DISTINCT_HELPERS": 4,
+      "PARTIAL_RETAINED_LANE_OVERLAP_PROPOSAL": 1,
+      "DISTINCT_HOUSING_ADAPTER_TYPES": 5,
+      "SAME_IMPORTED_NPC_OWNER_DUPLICATE_PROPOSAL": 1
+    },
+    "self_equality_dispositions": {
+      "REPEATED_CALL_DETERMINISM": 1,
+      "REPEATED_CALL_WITH_SEMANTIC_ASSERTIONS": 4,
+      "REPEATED_CALL_WITH_DISTINGUISHING_INPUTS": 5,
+      "WEAK_DETERMINISM_ONLY": 1,
+      "TAUTOLOGY_PROPOSAL": 1,
+      "REPEATED_CONSTRUCTION_WITH_DISTINGUISHING_INPUT": 1
+    }
+  },
+  "duplicate_groups": [
+    {
+      "group_id": "D01",
+      "body_token_sha256": "16e17f4f9656f4c523b3cc922247a62803b3741cd15efe79043d6da562ec8cea",
+      "cases": [
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_bounded.rs",
+          "test": "substituted_current_source_import_and_revision_reject_atomically",
+          "line": 688,
+          "end_line": 698,
+          "file_sha256": "712220ce73692f657459fb44365affd0a52cad6241c7c2b54e13f2202822dc45",
+          "body_sha256": "3e0ca865d3c6fd9face9b83eddffafc6091ded6b56fcc6f31536c006b599eca8"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_nine.rs",
+          "test": "substituted_current_source_import_and_revision_reject_atomically",
+          "line": 668,
+          "end_line": 678,
+          "file_sha256": "ed89a7ed98eb22b653bb4b8441f9968b9706f572a0387c5b09a2bc907a09fa91",
+          "body_sha256": "3e0ca865d3c6fd9face9b83eddffafc6091ded6b56fcc6f31536c006b599eca8"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_playerbots.rs",
+          "test": "substituted_current_source_import_and_revision_reject_atomically",
+          "line": 505,
+          "end_line": 515,
+          "file_sha256": "4cdfa1317af17a0c80c5ed2b568a8d446c2582a19d632a3328b21ee6570ce105",
+          "body_sha256": "3e0ca865d3c6fd9face9b83eddffafc6091ded6b56fcc6f31536c006b599eca8"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_summer_object.rs",
+          "test": "substituted_current_source_import_and_revision_reject_atomically",
+          "line": 535,
+          "end_line": 545,
+          "file_sha256": "2f0282196b051288d964297394c86cac887744d734731e46eb6689f91ba703d4",
+          "body_sha256": "3e0ca865d3c6fd9face9b83eddffafc6091ded6b56fcc6f31536c006b599eca8"
+        }
+      ],
+      "disposition": "DISTINCT_STAGE_FIXTURES",
+      "finding": "Identical test text binds local PACKET/FROM/TO/fixture/rejects/apply definitions. The five materializer modules qualify different frozen packets or predecessor stages. The inspected rejects helper invokes apply_packet and checks unchanged state after refusal. Body identity alone does not establish duplicated stage coverage.",
+      "recommendation": "Retain the stage-specific qualification. If consolidating later, parameterize the full packet, predecessor and fixture bindings; do not delete cases on body hashes alone."
+    },
+    {
+      "group_id": "D02",
+      "body_token_sha256": "a4df275bc7a33e192a1a51458b9c10cb0141367a2252e65ff00da86686225f12",
+      "cases": [
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_bounded.rs",
+          "test": "full_predecessor_wrapper_rejects_substituted_package_atomically",
+          "line": 700,
+          "end_line": 716,
+          "file_sha256": "712220ce73692f657459fb44365affd0a52cad6241c7c2b54e13f2202822dc45",
+          "body_sha256": "56741edfc80dcbec51b32717d33c6eee67e2c2b16916d0da3863a0a70fe8286a"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_nine.rs",
+          "test": "full_predecessor_wrapper_rejects_substituted_package_atomically",
+          "line": 680,
+          "end_line": 696,
+          "file_sha256": "ed89a7ed98eb22b653bb4b8441f9968b9706f572a0387c5b09a2bc907a09fa91",
+          "body_sha256": "56741edfc80dcbec51b32717d33c6eee67e2c2b16916d0da3863a0a70fe8286a"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_summer_object.rs",
+          "test": "full_predecessor_wrapper_rejects_substituted_package_atomically",
+          "line": 547,
+          "end_line": 563,
+          "file_sha256": "2f0282196b051288d964297394c86cac887744d734731e46eb6689f91ba703d4",
+          "body_sha256": "56741edfc80dcbec51b32717d33c6eee67e2c2b16916d0da3863a0a70fe8286a"
+        }
+      ],
+      "disposition": "DISTINCT_STAGE_FIXTURES",
+      "finding": "Identical test text binds local PACKET/FROM/TO/fixture/rejects/apply definitions. The five materializer modules qualify different frozen packets or predecessor stages. The inspected rejects helper invokes apply_packet and checks unchanged state after refusal. Body identity alone does not establish duplicated stage coverage.",
+      "recommendation": "Retain the stage-specific qualification. If consolidating later, parameterize the full packet, predecessor and fixture bindings; do not delete cases on body hashes alone."
+    },
+    {
+      "group_id": "D03",
+      "body_token_sha256": "7202aceca37928a2b56f04e04a7e7e2a6d5fdd75e572914fda879d9340eb2dc7",
+      "cases": [
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_bounded.rs",
+          "test": "late_binding_namespace_target_and_actor_id_reject_atomically",
+          "line": 718,
+          "end_line": 734,
+          "file_sha256": "712220ce73692f657459fb44365affd0a52cad6241c7c2b54e13f2202822dc45",
+          "body_sha256": "b641ddab303107c0d05a07b0e01a42890ec0243dd539b9eff184d494c8d85244"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_nine.rs",
+          "test": "late_binding_namespace_target_and_actor_id_reject_atomically",
+          "line": 698,
+          "end_line": 714,
+          "file_sha256": "ed89a7ed98eb22b653bb4b8441f9968b9706f572a0387c5b09a2bc907a09fa91",
+          "body_sha256": "b641ddab303107c0d05a07b0e01a42890ec0243dd539b9eff184d494c8d85244"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_playerbots.rs",
+          "test": "late_binding_namespace_target_and_actor_id_reject_atomically",
+          "line": 525,
+          "end_line": 541,
+          "file_sha256": "4cdfa1317af17a0c80c5ed2b568a8d446c2582a19d632a3328b21ee6570ce105",
+          "body_sha256": "b641ddab303107c0d05a07b0e01a42890ec0243dd539b9eff184d494c8d85244"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_summer_object.rs",
+          "test": "late_binding_namespace_target_and_actor_id_reject_atomically",
+          "line": 565,
+          "end_line": 581,
+          "file_sha256": "2f0282196b051288d964297394c86cac887744d734731e46eb6689f91ba703d4",
+          "body_sha256": "b641ddab303107c0d05a07b0e01a42890ec0243dd539b9eff184d494c8d85244"
+        }
+      ],
+      "disposition": "DISTINCT_STAGE_FIXTURES",
+      "finding": "Identical test text binds local PACKET/FROM/TO/fixture/rejects/apply definitions. The five materializer modules qualify different frozen packets or predecessor stages. The inspected rejects helper invokes apply_packet and checks unchanged state after refusal. Body identity alone does not establish duplicated stage coverage.",
+      "recommendation": "Retain the stage-specific qualification. If consolidating later, parameterize the full packet, predecessor and fixture bindings; do not delete cases on body hashes alone."
+    },
+    {
+      "group_id": "D04",
+      "body_token_sha256": "5882f316ab82d6838e4d8daaa449583082fbacdad8efe6add1c63a73332fead1",
+      "cases": [
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_bounded.rs",
+          "test": "new_source_evidence_and_existing_identity_collisions_reject_atomically",
+          "line": 761,
+          "end_line": 775,
+          "file_sha256": "712220ce73692f657459fb44365affd0a52cad6241c7c2b54e13f2202822dc45",
+          "body_sha256": "64d956f9a95d4a726db63d491a72c606df7686e0ec6654c2c490ca73a96bbb22"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_nine.rs",
+          "test": "new_source_evidence_and_existing_identity_collisions_reject_atomically",
+          "line": 741,
+          "end_line": 755,
+          "file_sha256": "ed89a7ed98eb22b653bb4b8441f9968b9706f572a0387c5b09a2bc907a09fa91",
+          "body_sha256": "64d956f9a95d4a726db63d491a72c606df7686e0ec6654c2c490ca73a96bbb22"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_playerbots.rs",
+          "test": "new_source_evidence_and_existing_identity_collisions_reject_atomically",
+          "line": 568,
+          "end_line": 582,
+          "file_sha256": "4cdfa1317af17a0c80c5ed2b568a8d446c2582a19d632a3328b21ee6570ce105",
+          "body_sha256": "64d956f9a95d4a726db63d491a72c606df7686e0ec6654c2c490ca73a96bbb22"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_summer_object.rs",
+          "test": "new_source_evidence_and_existing_identity_collisions_reject_atomically",
+          "line": 608,
+          "end_line": 622,
+          "file_sha256": "2f0282196b051288d964297394c86cac887744d734731e46eb6689f91ba703d4",
+          "body_sha256": "64d956f9a95d4a726db63d491a72c606df7686e0ec6654c2c490ca73a96bbb22"
+        }
+      ],
+      "disposition": "DISTINCT_STAGE_FIXTURES",
+      "finding": "Identical test text binds local PACKET/FROM/TO/fixture/rejects/apply definitions. The five materializer modules qualify different frozen packets or predecessor stages. The inspected rejects helper invokes apply_packet and checks unchanged state after refusal. Body identity alone does not establish duplicated stage coverage.",
+      "recommendation": "Retain the stage-specific qualification. If consolidating later, parameterize the full packet, predecessor and fixture bindings; do not delete cases on body hashes alone."
+    },
+    {
+      "group_id": "D05",
+      "body_token_sha256": "706d4c0b69267a1255cd2cc1d13405af25a49c275c70b855279e892c61a04017",
+      "cases": [
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_bounded.rs",
+          "test": "packet_envelope_rejects_unrecognized_authority_fields",
+          "line": 777,
+          "end_line": 781,
+          "file_sha256": "712220ce73692f657459fb44365affd0a52cad6241c7c2b54e13f2202822dc45",
+          "body_sha256": "62b8bcc8d80c695789e4b679f10863c81845f9218bebaaf7f264ed10ccc2480e"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_nine.rs",
+          "test": "packet_envelope_rejects_unrecognized_authority_fields",
+          "line": 757,
+          "end_line": 761,
+          "file_sha256": "ed89a7ed98eb22b653bb4b8441f9968b9706f572a0387c5b09a2bc907a09fa91",
+          "body_sha256": "62b8bcc8d80c695789e4b679f10863c81845f9218bebaaf7f264ed10ccc2480e"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_playerbots.rs",
+          "test": "packet_envelope_rejects_unrecognized_authority_fields",
+          "line": 584,
+          "end_line": 588,
+          "file_sha256": "4cdfa1317af17a0c80c5ed2b568a8d446c2582a19d632a3328b21ee6570ce105",
+          "body_sha256": "62b8bcc8d80c695789e4b679f10863c81845f9218bebaaf7f264ed10ccc2480e"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_summer_object.rs",
+          "test": "packet_envelope_rejects_unrecognized_authority_fields",
+          "line": 624,
+          "end_line": 628,
+          "file_sha256": "2f0282196b051288d964297394c86cac887744d734731e46eb6689f91ba703d4",
+          "body_sha256": "62b8bcc8d80c695789e4b679f10863c81845f9218bebaaf7f264ed10ccc2480e"
+        }
+      ],
+      "disposition": "DISTINCT_STAGE_FIXTURES",
+      "finding": "Identical test text binds local PACKET/FROM/TO/fixture/rejects/apply definitions. The five materializer modules qualify different frozen packets or predecessor stages. The inspected rejects helper invokes apply_packet and checks unchanged state after refusal. Body identity alone does not establish duplicated stage coverage.",
+      "recommendation": "Retain the stage-specific qualification. If consolidating later, parameterize the full packet, predecessor and fixture bindings; do not delete cases on body hashes alone."
+    },
+    {
+      "group_id": "D06",
+      "body_token_sha256": "94c8550ff515bd5628f309223d93748f836ccfbab95ecaabf5105ceafe4f49fc",
+      "cases": [
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_bounded.rs",
+          "test": "new_import_mapper_generation_and_donor_revision_drift_reject_atomically",
+          "line": 783,
+          "end_line": 794,
+          "file_sha256": "712220ce73692f657459fb44365affd0a52cad6241c7c2b54e13f2202822dc45",
+          "body_sha256": "edee6a8f1cfe94e39590544918eeb2a0e55e54de1d3b8286cebbf231744fa4b5"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_nine.rs",
+          "test": "new_import_mapper_generation_and_donor_revision_drift_reject_atomically",
+          "line": 763,
+          "end_line": 774,
+          "file_sha256": "ed89a7ed98eb22b653bb4b8441f9968b9706f572a0387c5b09a2bc907a09fa91",
+          "body_sha256": "edee6a8f1cfe94e39590544918eeb2a0e55e54de1d3b8286cebbf231744fa4b5"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_summer_object.rs",
+          "test": "new_import_mapper_generation_and_donor_revision_drift_reject_atomically",
+          "line": 630,
+          "end_line": 641,
+          "file_sha256": "2f0282196b051288d964297394c86cac887744d734731e46eb6689f91ba703d4",
+          "body_sha256": "edee6a8f1cfe94e39590544918eeb2a0e55e54de1d3b8286cebbf231744fa4b5"
+        }
+      ],
+      "disposition": "DISTINCT_STAGE_FIXTURES",
+      "finding": "Identical test text binds local PACKET/FROM/TO/fixture/rejects/apply definitions. The five materializer modules qualify different frozen packets or predecessor stages. The inspected rejects helper invokes apply_packet and checks unchanged state after refusal. Body identity alone does not establish duplicated stage coverage.",
+      "recommendation": "Retain the stage-specific qualification. If consolidating later, parameterize the full packet, predecessor and fixture bindings; do not delete cases on body hashes alone."
+    },
+    {
+      "group_id": "D07",
+      "body_token_sha256": "850293d187194b05ba7389b69edca67f742ca28fcaa2809fb0bb27cd8de2b37c",
+      "cases": [
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_bounded.rs",
+          "test": "generic_projection_and_profile_duplicates_reject_atomically",
+          "line": 796,
+          "end_line": 814,
+          "file_sha256": "712220ce73692f657459fb44365affd0a52cad6241c7c2b54e13f2202822dc45",
+          "body_sha256": "b572f10f2a058e3b568a165438685bf37a8fda89ba45df86bccb09de4c2abd0b"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_nine.rs",
+          "test": "generic_projection_and_profile_duplicates_reject_atomically",
+          "line": 776,
+          "end_line": 794,
+          "file_sha256": "ed89a7ed98eb22b653bb4b8441f9968b9706f572a0387c5b09a2bc907a09fa91",
+          "body_sha256": "b572f10f2a058e3b568a165438685bf37a8fda89ba45df86bccb09de4c2abd0b"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_summer_object.rs",
+          "test": "generic_projection_and_profile_duplicates_reject_atomically",
+          "line": 643,
+          "end_line": 661,
+          "file_sha256": "2f0282196b051288d964297394c86cac887744d734731e46eb6689f91ba703d4",
+          "body_sha256": "b572f10f2a058e3b568a165438685bf37a8fda89ba45df86bccb09de4c2abd0b"
+        }
+      ],
+      "disposition": "DISTINCT_STAGE_FIXTURES",
+      "finding": "Identical test text binds local PACKET/FROM/TO/fixture/rejects/apply definitions. The five materializer modules qualify different frozen packets or predecessor stages. The inspected rejects helper invokes apply_packet and checks unchanged state after refusal. Body identity alone does not establish duplicated stage coverage.",
+      "recommendation": "Retain the stage-specific qualification. If consolidating later, parameterize the full packet, predecessor and fixture bindings; do not delete cases on body hashes alone."
+    },
+    {
+      "group_id": "D08",
+      "body_token_sha256": "80d8ff8334206186b5a81921d6cd17e204e7cf3f34bf7a7b40b52aff59c69997",
+      "cases": [
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_playerbots.rs",
+          "test": "closed_scope_preserves_all_other_authoring_state",
+          "line": 482,
+          "end_line": 503,
+          "file_sha256": "4cdfa1317af17a0c80c5ed2b568a8d446c2582a19d632a3328b21ee6570ce105",
+          "body_sha256": "ffaa78f3a4fcae37e86ff24e440cf01c5c3c3124f96dc0bb03c21d2c2aba9a6d"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_summer_object.rs",
+          "test": "closed_scope_preserves_all_other_authoring_state",
+          "line": 512,
+          "end_line": 533,
+          "file_sha256": "2f0282196b051288d964297394c86cac887744d734731e46eb6689f91ba703d4",
+          "body_sha256": "ffaa78f3a4fcae37e86ff24e440cf01c5c3c3124f96dc0bb03c21d2c2aba9a6d"
+        }
+      ],
+      "disposition": "DISTINCT_STAGE_FIXTURES",
+      "finding": "Identical test text binds local PACKET/FROM/TO/fixture/rejects/apply definitions. The five materializer modules qualify different frozen packets or predecessor stages. The inspected rejects helper invokes apply_packet and checks unchanged state after refusal. Body identity alone does not establish duplicated stage coverage.",
+      "recommendation": "Retain the stage-specific qualification. If consolidating later, parameterize the full packet, predecessor and fixture bindings; do not delete cases on body hashes alone."
+    },
+    {
+      "group_id": "D09",
+      "body_token_sha256": "77b9202f856510123ca1a02a1596352a009118b874a30bc03aebdce3d1517b44",
+      "cases": [
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_playerbots.rs",
+          "test": "full_predecessor_wrapper_rejects_substituted_package_atomically",
+          "line": 517,
+          "end_line": 523,
+          "file_sha256": "4cdfa1317af17a0c80c5ed2b568a8d446c2582a19d632a3328b21ee6570ce105",
+          "body_sha256": "1d8cb23106eea26fc8575ad8675303e39b4681ac76c68455b4f56eb3aded682f"
+        },
+        {
+          "path": "apps/game-server/examples/npc_materializer/qualified_summer.rs",
+          "test": "complete_predecessor_wrapper_rejects_substituted_package_atomically",
+          "line": 326,
+          "end_line": 332,
+          "file_sha256": "92d4132d50b0b29498634048e066f8cdb651e42865318b17a30e48efae2418e0",
+          "body_sha256": "1d8cb23106eea26fc8575ad8675303e39b4681ac76c68455b4f56eb3aded682f"
+        }
+      ],
+      "disposition": "DISTINCT_STAGE_FIXTURES",
+      "finding": "Identical test text binds local PACKET/FROM/TO/fixture/rejects/apply definitions. The five materializer modules qualify different frozen packets or predecessor stages. The inspected rejects helper invokes apply_packet and checks unchanged state after refusal. Body identity alone does not establish duplicated stage coverage.",
+      "recommendation": "Retain the stage-specific qualification. If consolidating later, parameterize the full packet, predecessor and fixture bindings; do not delete cases on body hashes alone."
+    },
+    {
+      "group_id": "D10",
+      "body_token_sha256": "ef8775610b3867428bd43fb34ae406763b88c85a667b4e9f1f12c2e72e34d8e8",
+      "cases": [
+        {
+          "path": "apps/game-server/src/lifted_tests/domain_market_tests.rs",
+          "test": "market_checked_total_and_fee_limits",
+          "line": 74,
+          "end_line": 91,
+          "file_sha256": "608e1bbb9ff6314a18de1bdaf8639d05202a8ade663a6934985dd6217c4b478f",
+          "body_sha256": "ad57235e39d4e9a503856257ffda0cf26433e0dd7a9dfa10642bd75b2fbae625"
+        },
+        {
+          "path": "crates/gameplay/economy/src/market_tests.rs",
+          "test": "market_checked_total_and_fee_limits",
+          "line": 46,
+          "end_line": 63,
+          "file_sha256": "6a947f56386b208f2f3c541990b452c29283282d8c458d0ecc30d410cc0e6f71",
+          "body_sha256": "ad57235e39d4e9a503856257ffda0cf26433e0dd7a9dfa10642bd75b2fbae625"
+        }
+      ],
+      "disposition": "SAME_PUBLIC_LEAF_DUPLICATE_PROPOSAL",
+      "finding": "Both bodies exercise the same economic offer_total/placement_fee reexports with the same inputs and limits; the server copy adds no durable adapter operation in this body.",
+      "recommendation": "Propose consolidating at the economy owner only after compiled test IDs and owner selection are preserved. No removal or additional runtime qualification in this review."
+    },
+    {
+      "group_id": "D11",
+      "body_token_sha256": "982c3413d3e60b6faebba603ea840e5ae6f518468423f9208447255b40122ff0",
+      "cases": [
+        {
+          "path": "apps/game-server/src/lifted_tests/domain_market_tests.rs",
+          "test": "market_state_custody_guards_fail_closed",
+          "line": 93,
+          "end_line": 119,
+          "file_sha256": "608e1bbb9ff6314a18de1bdaf8639d05202a8ade663a6934985dd6217c4b478f",
+          "body_sha256": "a26f57e2a0a43bb76903acda4c7e60bc0ab043f5b34c0a1d64c9f927c81ee5b8"
+        },
+        {
+          "path": "crates/gameplay/economy/src/market_tests.rs",
+          "test": "market_state_custody_guards_fail_closed",
+          "line": 65,
+          "end_line": 91,
+          "file_sha256": "6a947f56386b208f2f3c541990b452c29283282d8c458d0ecc30d410cc0e6f71",
+          "body_sha256": "a26f57e2a0a43bb76903acda4c7e60bc0ab043f5b34c0a1d64c9f927c81ee5b8"
+        }
+      ],
+      "disposition": "DISTINCT_DURABILITY_ADAPTER",
+      "finding": "The server fixture constructs the durable Offer wrapper and invokes its mapping into the economic rules; the library fixture uses economic Offer directly. The mapped identifiers and returned wrappers are an additional boundary despite matching test text.",
+      "recommendation": "Retain adapter coverage; a later cleanup may narrow the server copy to mapping-specific assertions while keeping policy examples at the economy owner."
+    },
+    {
+      "group_id": "D12",
+      "body_token_sha256": "87784a39b515badfb55f2d35d45d8f8ff0358ee9da41b507cc2ba1002a9d8475",
+      "cases": [
+        {
+          "path": "apps/game-server/src/lifted_tests/domain_market_tests.rs",
+          "test": "market_match_maker_price_and_exact_refund_without_compatibility_claim",
+          "line": 121,
+          "end_line": 159,
+          "file_sha256": "608e1bbb9ff6314a18de1bdaf8639d05202a8ade663a6934985dd6217c4b478f",
+          "body_sha256": "7f62a8f237322d2a634eeddce825b1c0091062bc02ea5e479c958cf6ff536e45"
+        },
+        {
+          "path": "crates/gameplay/economy/src/market_tests.rs",
+          "test": "market_match_maker_price_and_exact_refund_without_compatibility_claim",
+          "line": 93,
+          "end_line": 131,
+          "file_sha256": "6a947f56386b208f2f3c541990b452c29283282d8c458d0ecc30d410cc0e6f71",
+          "body_sha256": "7f62a8f237322d2a634eeddce825b1c0091062bc02ea5e479c958cf6ff536e45"
+        }
+      ],
+      "disposition": "DISTINCT_DURABILITY_ADAPTER",
+      "finding": "The server fixture constructs the durable Offer wrapper and invokes its mapping into the economic rules; the library fixture uses economic Offer directly. The mapped identifiers and returned wrappers are an additional boundary despite matching test text.",
+      "recommendation": "Retain adapter coverage; a later cleanup may narrow the server copy to mapping-specific assertions while keeping policy examples at the economy owner."
+    },
+    {
+      "group_id": "D13",
+      "body_token_sha256": "4c72ce0a6c2370971748cd051c5b8fa610e289b746501b0866b31cb7062465ed",
+      "cases": [
+        {
+          "path": "apps/game-server/src/lifted_tests/domain_market_tests.rs",
+          "test": "market_cancel_expiry_and_held_credit_are_noncommitting_exact_requirements",
+          "line": 161,
+          "end_line": 192,
+          "file_sha256": "608e1bbb9ff6314a18de1bdaf8639d05202a8ade663a6934985dd6217c4b478f",
+          "body_sha256": "f33854bd4d4a66a3e0b6f4e6a92ce2991f2b5477e5d2be7c1fff36eb2656324b"
+        },
+        {
+          "path": "crates/gameplay/economy/src/market_tests.rs",
+          "test": "market_cancel_expiry_and_held_credit_are_noncommitting_exact_requirements",
+          "line": 133,
+          "end_line": 164,
+          "file_sha256": "6a947f56386b208f2f3c541990b452c29283282d8c458d0ecc30d410cc0e6f71",
+          "body_sha256": "f33854bd4d4a66a3e0b6f4e6a92ce2991f2b5477e5d2be7c1fff36eb2656324b"
+        }
+      ],
+      "disposition": "DISTINCT_DURABILITY_ADAPTER",
+      "finding": "The server fixture constructs the durable Offer wrapper and invokes its mapping into the economic rules; the library fixture uses economic Offer directly. The mapped identifiers and returned wrappers are an additional boundary despite matching test text.",
+      "recommendation": "Retain adapter coverage; a later cleanup may narrow the server copy to mapping-specific assertions while keeping policy examples at the economy owner."
+    },
+    {
+      "group_id": "D14",
+      "body_token_sha256": "cd4d304513119068413be09a43ad3e11ca247e929e3517bcaf253f57b560a998",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification.rs",
+          "test": "seam_qualification_uses_the_node_boot_platform_pin",
+          "line": 3125,
+          "end_line": 3137,
+          "file_sha256": "b7abcf58ffa49053e3225b85461ce2e7879fc0d8bbe46eb28718e5d124e83393",
+          "body_sha256": "d833d8c51a1f219831d1f81c5bfe390fe5122034ffe2d8f69f2e8444d33e647b"
+        },
+        {
+          "path": "apps/game-server/tests/wp5_s3b_composition.rs",
+          "test": "s3b_qualification_uses_the_node_boot_platform_pin",
+          "line": 1073,
+          "end_line": 1085,
+          "file_sha256": "a440e57fd80fd16f8c6579ced43807d186ae21e637dc415dd52d6d349acb404a",
+          "body_sha256": "d833d8c51a1f219831d1f81c5bfe390fe5122034ffe2d8f69f2e8444d33e647b"
+        }
+      ],
+      "disposition": "DISTINCT_LOCAL_PIN_BINDINGS_STATIC_ONLY",
+      "finding": "The two bodies compare shell-script pins against separate module-local PLATFORM_SOURCE values. This is static pin consistency, not a Platform or server-seam journey. Each local constant can drift independently.",
+      "recommendation": "Retain until the pin has one shared owner; keep the evidence claim limited to source pin equality."
+    },
+    {
+      "group_id": "D15",
+      "body_token_sha256": "b01262e608d5719e44726775f97b7be78e5242c975ddba29c0e3f5bc0f8a005d",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/client_row_c07.rs",
+          "test": "field_ids_resolve_from_the_production_item_index",
+          "line": 266,
+          "end_line": 266,
+          "file_sha256": "c4a84f5eb95baee78b5f37211d5d75fc5f677aa76d4bf17506ba88afd3a21f60",
+          "body_sha256": "b90a403ff74d437931d8a295598931d24f7782d49a97edbfbaefa51032dc6271"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_c07.rs",
+          "test": "field_ids_resolve_from_the_production_item_index",
+          "line": 222,
+          "end_line": 222,
+          "file_sha256": "342c30adfa926dca28f52359a474e43f784727eacf091df33ec223191475da1a",
+          "body_sha256": "b90a403ff74d437931d8a295598931d24f7782d49a97edbfbaefa51032dc6271"
+        }
+      ],
+      "disposition": "SAME_PUBLIC_MAPPING_DUPLICATE_PROPOSAL",
+      "finding": "Both C07 files use the same RUNE_ID 3188 and FIELD_ID 21465 and the same production item-index/reference helpers. This body proves mapping consistency and does not execute either client row journey.",
+      "recommendation": "Propose one shared mapping test after compiled owner/selection checks; preserve distinct actual row journeys."
+    },
+    {
+      "group_id": "D16",
+      "body_token_sha256": "0cd5d4776bd9eeaf3514d5427b96bf8ba3492c26b0c6b3caa099ff0e7e3b8ac4",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_e2ef7_hunt_corpse_tests.rs",
+          "test": "hunt_corpse_replay_accepts_ranged_moving_target_death",
+          "line": 389,
+          "end_line": 391,
+          "file_sha256": "5256363aebedcf8ccda91fa9db79f04ec17f59fd3e439cc2a1a3e5cbdbfd9d4a",
+          "body_sha256": "05dddf43395cf579fe2a696db64d586ce6cebb4d048c7d872aa5f472a0ba7eb4"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_e2ef7_hunt_corpse_tests.rs",
+          "test": "hunt_corpse_replay_approaches_accepted_ranged_corpse_before_looting",
+          "line": 432,
+          "end_line": 434,
+          "file_sha256": "5256363aebedcf8ccda91fa9db79f04ec17f59fd3e439cc2a1a3e5cbdbfd9d4a",
+          "body_sha256": "05dddf43395cf579fe2a696db64d586ce6cebb4d048c7d872aa5f472a0ba7eb4"
+        }
+      ],
+      "disposition": "SAME_CALLEE_AND_INPUT_DUPLICATE_PROPOSAL",
+      "finding": "Two names in the same file both call run_replay(Replay::Ranged). The shared replay checks accepted corpse 12 and approach before loot, and its worker result is joined/propagated. Both labels therefore execute the same complete assertion path.",
+      "recommendation": "Propose one descriptive ranged replay case; require actual old/new compiled IDs before removing either name."
+    },
+    {
+      "group_id": "D17",
+      "body_token_sha256": "4dc373133370d920fc5225f70ca58105acecbf94cf2d73ba108bbbbd731bc7a7",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g04.rs",
+          "test": "map_bug_request_is_valid_and_unknown_category_is_not",
+          "line": 165,
+          "end_line": 174,
+          "file_sha256": "b795c52eef6239b054e5d80305e383b464c51441b850602fd4f19cfa78e12070",
+          "body_sha256": "1c45240a898fb1c3e00dae202cebf7b10df727439b5d90f4a6f218e2ba39f404"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g32.rs",
+          "test": "map_bug_request_is_valid_and_unknown_category_is_not",
+          "line": 225,
+          "end_line": 234,
+          "file_sha256": "e7b818580705ac238f7cfb8bd38e2dfb9da48b98b9e3982f18252a8243ef130d",
+          "body_sha256": "1c45240a898fb1c3e00dae202cebf7b10df727439b5d90f4a6f218e2ba39f404"
+        }
+      ],
+      "disposition": "CLONED_REQUEST_HELPER_WITH_LOCAL_COMMENT",
+      "finding": "G04 and G32 own separate token and request helpers with identical token bodies. Their COMMENT constants differ (G04 versus G32); the test checks valid/invalid report categories and token formatting. G32 additionally owns an imbuement journey outside this body.",
+      "recommendation": "Consolidate the report request/format helper and its unit tests together if desired; retain separate scenario journey checks and do not count this body as durable report evidence."
+    },
+    {
+      "group_id": "D18",
+      "body_token_sha256": "8be174bcf6a375778c94b06de074b8efdad59cbf7cd38cf4caf62a96fdaaf750",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g05.rs",
+          "test": "verdict_names_the_needed_driver_without_spaces",
+          "line": 40,
+          "end_line": 45,
+          "file_sha256": "88d0a7784427c131e4da04f56d5ae9986f705605f409ed2f84de8014f144338d",
+          "body_sha256": "4cd5b78269b3006b780e268f59da2f516967ef970d395a3520a140bbb194a352"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g31.rs",
+          "test": "verdict_names_the_needed_driver_without_spaces",
+          "line": 35,
+          "end_line": 40,
+          "file_sha256": "68c2438e606cd4fb61d57f840711ea874b619d2a470b352f92bc862424486eaa",
+          "body_sha256": "4cd5b78269b3006b780e268f59da2f516967ef970d395a3520a140bbb194a352"
+        }
+      ],
+      "disposition": "DISTINCT_MISSING_DRIVER_CONSTANTS",
+      "finding": "Both inspected verdict implementations always report FAIL and name different NEEDED native-client drivers. The identical tests check truthful failure formatting; they do not turn capture-only evidence into PASS.",
+      "recommendation": "Retain the fail-closed row contract. A common formatter can replace the cloned implementations and their generic formatting checks, while retaining each row-specific missing-driver value."
+    },
+    {
+      "group_id": "D19",
+      "body_token_sha256": "bdc8c903f9a2d1df4bc169f7af500cc1f380b76a0897ef960d63ecf45aa495d2",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g06.rs",
+          "test": "source_token_has_no_spaces",
+          "line": 51,
+          "end_line": 54,
+          "file_sha256": "565435013b4317dadbbdfc6dead667c62646d9dce8f8da0cc3a9fe8f4ea75816",
+          "body_sha256": "5a6b508f62c9aa40ea020cdf955afc77b9aaa6162f879cd6a43b25b91b9dbd4c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g38.rs",
+          "test": "source_token_has_no_spaces",
+          "line": 68,
+          "end_line": 71,
+          "file_sha256": "1171860ad41cd4bb9b013f238ed12df6b794c57d6e84b4fbf3978bc09d2adff2",
+          "body_sha256": "5a6b508f62c9aa40ea020cdf955afc77b9aaa6162f879cd6a43b25b91b9dbd4c"
+        }
+      ],
+      "disposition": "DISTINCT_SOURCE_CONSTANTS_STATIC_ONLY",
+      "finding": "G06 SOURCE names the native-login contract, whereas G38 SOURCE names the touch-controls input source. The local token functions are identical. Tests check token syntax, not that the referenced behavior runs or that line numbers remain semantically current.",
+      "recommendation": "Keep source-token checks labeled static; consolidate generic token formatting with its helper, and separately qualify the actual client paths."
+    },
+    {
+      "group_id": "D20",
+      "body_token_sha256": "d0d4d895ebdf314bcd16e56e78e6bde0f212be67bea21c16727c03e61968970c",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g11.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 182,
+          "end_line": 189,
+          "file_sha256": "59fb12d2d1db7f5877442399bba63baf93f9e8d3900c9ad211c11432b912c50c",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g12.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 229,
+          "end_line": 236,
+          "file_sha256": "8d025c1938a29ff93fb809d687d84b0a1d52bce533d7f6fead8a66cd229a0ff5",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g13.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 200,
+          "end_line": 207,
+          "file_sha256": "5db7aa07324fed8bc90cc050d88e68e10262a0b7727bcdcd97e78c75f34b7b5f",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g14.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 220,
+          "end_line": 227,
+          "file_sha256": "52c2ca1e724dfa0f75e17ba65171976529ee2c201253588c3fe3b2d700192377",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g15.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 330,
+          "end_line": 337,
+          "file_sha256": "a882a373e34a875a067fa67a7d5afa48f28c12caad9ed4020284d8893a8724c2",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g16.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 346,
+          "end_line": 353,
+          "file_sha256": "402a14c4f5be24cc2d23ab4c55674e614b1d1cfc2f6adf7b2afd4ce593c528a2",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g17.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 200,
+          "end_line": 207,
+          "file_sha256": "1466aab6dc66994ec8331ac4262314ea790f1eb7f6072c6e0692a8edd3721c5d",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g18.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 137,
+          "end_line": 144,
+          "file_sha256": "3665a9e742da3b2f44f095b696f8a9c89bccfea5b480cdb7208d950eed16eba3",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g19.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 238,
+          "end_line": 245,
+          "file_sha256": "5b53b8b7461361868da38f1144df8cff6b2636319b6206fcf3c56b1800aef4df",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g20.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 217,
+          "end_line": 224,
+          "file_sha256": "95d2dd50ed5eb85319f565a4af2a3bad91dd67b5e3fb9030b017a8d0c46dcc3c",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g21.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 146,
+          "end_line": 153,
+          "file_sha256": "9b3b25753e51e516a8208ab6a48dc85882feac8eba3f8d5bd56dfabb52b38608",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g22.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 141,
+          "end_line": 148,
+          "file_sha256": "7336a8dca148d3b854ae63c2c5255a49869c278ed3f4a6e6e0fcf18fe4f641af",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g23.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 185,
+          "end_line": 192,
+          "file_sha256": "d0fa7016ac8e666afcc652dcd69ab67b08d78875d1331cfc7f3bd271e6353c6a",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_g24.rs",
+          "test": "compact_is_one_bounded_token",
+          "line": 199,
+          "end_line": 206,
+          "file_sha256": "b11cc23dfa894b7c139f90a94465525ae2bd20aa36ba5eb83f627582d72e709a",
+          "body_sha256": "62ccc0ab1d3d7f9270a9a949625b1438d84c90920365fd2666a5517f7c79526c"
+        }
+      ],
+      "disposition": "CLONED_LOCAL_FORMATTERS",
+      "finding": "All fourteen local compact helpers have the same token body: split whitespace, join with hyphens, take 400 characters. The repeated tests check ASCII whitespace/bounds. These are unit checks for fourteen independently editable helper definitions, not fourteen game journeys.",
+      "recommendation": "Propose one shared formatter and one focused unit suite, retaining row-specific outputs. Do not merely remove tests while leaving duplicated implementations independently editable."
+    },
+    {
+      "group_id": "D21",
+      "body_token_sha256": "327586342622061579034b00ae253ac59a94127b6d2a509eee71f28897f1ab43",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_p12b.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 207,
+          "end_line": 212,
+          "file_sha256": "8a32e8a49bcf7ee9e414bbecd5146aacf5e8b76a9401cb321c060c9574d7a899",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_p22a.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 192,
+          "end_line": 197,
+          "file_sha256": "32e7a3f58b8b1b20ffbdd62b1dc281ca6801ed57bf373dd8177f94c6c77692bd",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_p22b.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 201,
+          "end_line": 206,
+          "file_sha256": "d9a678f3f158cbd0408e2d7cb4e485a674e423296618731521843ef864615396",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_p22c.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 188,
+          "end_line": 193,
+          "file_sha256": "0d3cab5990ff953ad0e91042f3c23df9f4d121b1d30c6ec9c1d51a6df2f9f5d3",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_p22d.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 226,
+          "end_line": 231,
+          "file_sha256": "7c0c043196da46209107d3d0f6e82459bc55ce8805f37c4d95962d2c37c27668",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_s14a.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 268,
+          "end_line": 273,
+          "file_sha256": "fd9e9ce10e19707e03d89b8f60f14163aa92a6349c2bde76ae5bd3b45f924ada",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_s14b.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 300,
+          "end_line": 305,
+          "file_sha256": "88027d27f1aa814855cacde9281b90671961d590df168162a7cc4854f8287607",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_s14c.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 396,
+          "end_line": 401,
+          "file_sha256": "bbaf5d3387289248a21f8aff8d047040b4e07072a29228becb6b51c4c2beeae1",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_s15a.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 235,
+          "end_line": 240,
+          "file_sha256": "9fcd6142920312ad6d0e51e34a3985d6c60d364be9cfb8dd7d0cbf0d30be100a",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_s16c.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 295,
+          "end_line": 300,
+          "file_sha256": "c44923ed9cff6c1ea611a5c1e8ae27b7e365d13e270ca8460a16ad762a447f55",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_s16d.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 295,
+          "end_line": 300,
+          "file_sha256": "9cf619a20fcd4dcc40ae76f7dccb0d1e2a1276742c989bd2b3bc12ddfec30d9b",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_s17a.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 136,
+          "end_line": 141,
+          "file_sha256": "cd0bb062ae62e93a7f97166784f15fd6b4e09fa4a9e3b7f59c4ab4ded1d80843",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_s17b.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 136,
+          "end_line": 141,
+          "file_sha256": "6c2abf51049ccc4f4ea146972f67c70fa4a99013694eab922382ca8e7b00539b",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_s17c.rs",
+          "test": "token_has_no_whitespace_and_is_bounded",
+          "line": 146,
+          "end_line": 151,
+          "file_sha256": "bb088684d839ee022a22c98b82004127beebfb7ae8841f08b06c1af5affbaefb",
+          "body_sha256": "40a30219cada02e60ca98b1d01145af4f3e7d6d7a7b68173e2fd5bc17d984b2f"
+        }
+      ],
+      "disposition": "CLONED_LOCAL_FORMATTERS",
+      "finding": "All fourteen local token helpers have identical bodies: retain ASCII alphanumeric or -_.:/=<>,; characters, replace others, then take 240 characters. The repeated body checks this local formatting contract only.",
+      "recommendation": "Propose extracting the shared formatter and its unit suite together; retain scenario-specific behavioral oracles."
+    },
+    {
+      "group_id": "D22",
+      "body_token_sha256": "c5033e781838be2d80f0c040168365febf5ded8a566bbffe899fccc966276083",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w05b.rs",
+          "test": "compact_is_one_token",
+          "line": 136,
+          "end_line": 138,
+          "file_sha256": "30a581791700299e67eb46daa92c6dd955e66b93944cb3f09856557575d485ed",
+          "body_sha256": "7a7e1966a82fdc9a65ba3299686e8ab86107cfdb6cb5e00398c7e6cc5a1a741c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w06.rs",
+          "test": "compact_is_one_token",
+          "line": 109,
+          "end_line": 111,
+          "file_sha256": "0c7b7f089d180a005adcb7480e7ead983b33a11de8a32de4da942b857b98572f",
+          "body_sha256": "7a7e1966a82fdc9a65ba3299686e8ab86107cfdb6cb5e00398c7e6cc5a1a741c"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w15c.rs",
+          "test": "tokens_are_stable",
+          "line": 277,
+          "end_line": 279,
+          "file_sha256": "c84a448c047410e933ef806ee742214e3c32b563606da4c62c642692470aa24a",
+          "body_sha256": "7a7e1966a82fdc9a65ba3299686e8ab86107cfdb6cb5e00398c7e6cc5a1a741c"
+        }
+      ],
+      "disposition": "SIMILAR_FORMATTERS_DIFFERENT_BOUND",
+      "finding": "All three bodies assert only a two-word whitespace example. W05b/W06 compact use a 400-character limit; W15c uses 300. They are not identical implementations despite identical test bodies, and this repeated body does not independently check either limit.",
+      "recommendation": "If consolidating, use an explicit bound parameter and test both 300 and 400 independently; no deletion solely on body identity."
+    },
+    {
+      "group_id": "D23",
+      "body_token_sha256": "e4d59c7f5396ef75cfaebd5fbba02f019c132858179e7ac1d7941116917e6cb2",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w05d.rs",
+          "test": "compact_is_one_token",
+          "line": 166,
+          "end_line": 169,
+          "file_sha256": "7ab72f51c20b5366e709afbf8745341e8bb1bf1b3580ab00fdd2d67b587afb44",
+          "body_sha256": "146e10206881492b6a74092dff838bc4f4de0fa09b7713bf1f570049ac1111c5"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w19c.rs",
+          "test": "compact_is_one_token",
+          "line": 286,
+          "end_line": 289,
+          "file_sha256": "880dacddaa6f2429d3301b7c26d4450f48f6ca692cf36bddebd8e02b0ae33dda",
+          "body_sha256": "146e10206881492b6a74092dff838bc4f4de0fa09b7713bf1f570049ac1111c5"
+        }
+      ],
+      "disposition": "CLONED_LOCAL_FORMATTERS",
+      "finding": "The referenced local compact helpers use the same 400-character, whitespace-joining and empty-to-unknown implementation. The bodies check generic helper behavior and add no scenario protocol or durability evidence.",
+      "recommendation": "Consolidate implementation and focused unit suite together; retain scenario outputs and input-specific behavior."
+    },
+    {
+      "group_id": "D24",
+      "body_token_sha256": "0275de39af4c87569537479cb3e2c87a11cbd81341522b38b33cedf70abae09a",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w07.rs",
+          "test": "needed_precondition_is_one_report_token",
+          "line": 148,
+          "end_line": 151,
+          "file_sha256": "847412fb7db4d9038f4153a7c3421051231624f764bb46928e6f859d18f2b2a9",
+          "body_sha256": "41ec4b5bd5043a03ba51a66b85f9ac8fd1ca547de4cea6e0dac6c74fe0f46970"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w09.rs",
+          "test": "needed_precondition_is_one_report_token",
+          "line": 135,
+          "end_line": 138,
+          "file_sha256": "375adbe1804c8ad3aff52e3bc96bb7e60085c22c2593a3587ffd62fb4f87807e",
+          "body_sha256": "41ec4b5bd5043a03ba51a66b85f9ac8fd1ca547de4cea6e0dac6c74fe0f46970"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w19b.rs",
+          "test": "needed_precondition_is_one_report_token",
+          "line": 134,
+          "end_line": 137,
+          "file_sha256": "156bd7a84f10b98cb16cd0289437184575ecf88bac63a691f650df1d51f09fdb",
+          "body_sha256": "41ec4b5bd5043a03ba51a66b85f9ac8fd1ca547de4cea6e0dac6c74fe0f46970"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w19d.rs",
+          "test": "needed_precondition_is_one_report_token",
+          "line": 134,
+          "end_line": 137,
+          "file_sha256": "47a83406f925ee20002a6fff3d108dd99c2aeab3b7124f2c39bfb885c2efff1b",
+          "body_sha256": "41ec4b5bd5043a03ba51a66b85f9ac8fd1ca547de4cea6e0dac6c74fe0f46970"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w19e.rs",
+          "test": "needed_precondition_is_one_report_token",
+          "line": 134,
+          "end_line": 137,
+          "file_sha256": "d2126659fbda692800e101d8eac7301bb53591a1a90d677fc0aae4eff357109a",
+          "body_sha256": "41ec4b5bd5043a03ba51a66b85f9ac8fd1ca547de4cea6e0dac6c74fe0f46970"
+        }
+      ],
+      "disposition": "DISTINCT_NEEDED_CONSTANTS_STATIC_ONLY",
+      "finding": "The five NEEDED strings name different unavailable gameplay preconditions. Their compact helpers are cloned, but this body also checks each local constant prefix. It does not prove the stated gameplay precondition or source attribution.",
+      "recommendation": "Retain row-specific precondition diagnostics; move generic formatting checks with a shared formatter and keep semantic precondition verification separate."
+    },
+    {
+      "group_id": "D25",
+      "body_token_sha256": "866de8d637fa7b12dad2fcadf41ffb4b49fda3e42d79d70094652a63ed55f23f",
+      "cases": [
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w07.rs",
+          "test": "compact_bounds_and_joins",
+          "line": 154,
+          "end_line": 158,
+          "file_sha256": "847412fb7db4d9038f4153a7c3421051231624f764bb46928e6f859d18f2b2a9",
+          "body_sha256": "db2e915bc53d1aee78e3d897117879c6b460199dbea683ad7f3c7e3402334e4a"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w09.rs",
+          "test": "compact_bounds_and_joins",
+          "line": 141,
+          "end_line": 145,
+          "file_sha256": "375adbe1804c8ad3aff52e3bc96bb7e60085c22c2593a3587ffd62fb4f87807e",
+          "body_sha256": "db2e915bc53d1aee78e3d897117879c6b460199dbea683ad7f3c7e3402334e4a"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w19b.rs",
+          "test": "compact_bounds_and_joins",
+          "line": 140,
+          "end_line": 144,
+          "file_sha256": "156bd7a84f10b98cb16cd0289437184575ecf88bac63a691f650df1d51f09fdb",
+          "body_sha256": "db2e915bc53d1aee78e3d897117879c6b460199dbea683ad7f3c7e3402334e4a"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w19d.rs",
+          "test": "compact_bounds_and_joins",
+          "line": 140,
+          "end_line": 144,
+          "file_sha256": "47a83406f925ee20002a6fff3d108dd99c2aeab3b7124f2c39bfb885c2efff1b",
+          "body_sha256": "db2e915bc53d1aee78e3d897117879c6b460199dbea683ad7f3c7e3402334e4a"
+        },
+        {
+          "path": "apps/game-server/src/qualification/client_phases/full_row_w19e.rs",
+          "test": "compact_bounds_and_joins",
+          "line": 140,
+          "end_line": 144,
+          "file_sha256": "d2126659fbda692800e101d8eac7301bb53591a1a90d677fc0aae4eff357109a",
+          "body_sha256": "db2e915bc53d1aee78e3d897117879c6b460199dbea683ad7f3c7e3402334e4a"
+        }
+      ],
+      "disposition": "CLONED_LOCAL_FORMATTERS",
+      "finding": "The referenced local compact helpers use the same 400-character, whitespace-joining and empty-to-unknown implementation. The bodies check generic helper behavior and add no scenario protocol or durability evidence.",
+      "recommendation": "Consolidate implementation and focused unit suite together; retain scenario outputs and input-specific behavior."
+    },
+    {
+      "group_id": "D26",
+      "body_token_sha256": "9fde9af897ed7960ca0ab53ae6f9cbb24ea9f5bb35c27f33dbaa1228b213cabc",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/loop_vitals_stamina.rs",
+          "test": "invalid_stamina_is_refused_even_when_no_gain_or_full_recovery_would_apply",
+          "line": 8,
+          "end_line": 17,
+          "file_sha256": "dee7bd7896ea8db0ccb717a3ec09123163135f722474bbc8566e926ed2be380b",
+          "body_sha256": "0e71da6445a6f8a417a928be282d7d7a48696bae5daf2f337b6ddace6c44d1a4"
+        },
+        {
+          "path": "crates/gameplay/characters/src/stamina.rs",
+          "test": "invalid_stamina_is_refused_even_when_no_gain_or_full_recovery_would_apply",
+          "line": 120,
+          "end_line": 129,
+          "file_sha256": "8677be7b1cb639305f692d3ca9b21e85aeaac7f8c37f3a4da4231c949422a89b",
+          "body_sha256": "ab7b54b0b393bdaf3e9d022dd5d67c39d2b4114000b4b4a3536ed2150f2555ba"
+        }
+      ],
+      "disposition": "SAME_PUBLIC_STAMINA_OWNER_DUPLICATE_PROPOSAL",
+      "finding": "The integration target imports the same public stamina leaf tested by the characters owner. Eight exact test bodies and the independent period oracle are copied; no game-server composition is exercised by those bodies.",
+      "recommendation": "Propose retaining the complete boundary/oracle suite at the characters owner and removing the redundant integration target only after compiled IDs and CI owner selection are demonstrated."
+    },
+    {
+      "group_id": "D27",
+      "body_token_sha256": "042679d85c02ed7d7a9ee66637c83e3bcca00a9c5164e113a78ea4db2d164dce",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/loop_vitals_stamina.rs",
+          "test": "ten_minute_delay_precedes_three_minute_recovery_periods",
+          "line": 20,
+          "end_line": 34,
+          "file_sha256": "dee7bd7896ea8db0ccb717a3ec09123163135f722474bbc8566e926ed2be380b",
+          "body_sha256": "932b863aa5007a5bea98e445b23d078cd4d3ecdb5d6ce0a05872762c54e9b809"
+        },
+        {
+          "path": "crates/gameplay/characters/src/stamina.rs",
+          "test": "ten_minute_delay_precedes_three_minute_recovery_periods",
+          "line": 132,
+          "end_line": 146,
+          "file_sha256": "8677be7b1cb639305f692d3ca9b21e85aeaac7f8c37f3a4da4231c949422a89b",
+          "body_sha256": "23e688308cb9337cf98e442a8b255efba8c1ae53bad6d147e9386febf74bf045"
+        }
+      ],
+      "disposition": "SAME_PUBLIC_STAMINA_OWNER_DUPLICATE_PROPOSAL",
+      "finding": "The integration target imports the same public stamina leaf tested by the characters owner. Eight exact test bodies and the independent period oracle are copied; no game-server composition is exercised by those bodies.",
+      "recommendation": "Propose retaining the complete boundary/oracle suite at the characters owner and removing the redundant integration target only after compiled IDs and CI owner selection are demonstrated."
+    },
+    {
+      "group_id": "D28",
+      "body_token_sha256": "5da27790e44e86a1680917eb2701081937842269da94f0010adf3f231dd53e85",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/loop_vitals_stamina.rs",
+          "test": "crossing_thirty_nine_hours_spends_the_fast_period_before_the_slow_period",
+          "line": 37,
+          "end_line": 53,
+          "file_sha256": "dee7bd7896ea8db0ccb717a3ec09123163135f722474bbc8566e926ed2be380b",
+          "body_sha256": "c29ecf0a9507e723cb0269ecfd43d8ec5edb9bc2634d2bfbafd275b398f5d15d"
+        },
+        {
+          "path": "crates/gameplay/characters/src/stamina.rs",
+          "test": "crossing_thirty_nine_hours_spends_the_fast_period_before_the_slow_period",
+          "line": 149,
+          "end_line": 165,
+          "file_sha256": "8677be7b1cb639305f692d3ca9b21e85aeaac7f8c37f3a4da4231c949422a89b",
+          "body_sha256": "c0c19601b559c4fc01f04bca2d4a41de8f923861127aff9e2e0f1110c5fd1f47"
+        }
+      ],
+      "disposition": "SAME_PUBLIC_STAMINA_OWNER_DUPLICATE_PROPOSAL",
+      "finding": "The integration target imports the same public stamina leaf tested by the characters owner. Eight exact test bodies and the independent period oracle are copied; no game-server composition is exercised by those bodies.",
+      "recommendation": "Propose retaining the complete boundary/oracle suite at the characters owner and removing the redundant integration target only after compiled IDs and CI owner selection are demonstrated."
+    },
+    {
+      "group_id": "D29",
+      "body_token_sha256": "a8bfa4e8bbf4b50b2cb2cd0bba9b18fecccc4da8d2c103ee3db36bd80e4e5c15",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/loop_vitals_stamina.rs",
+          "test": "at_and_above_thirty_nine_hours_each_gain_needs_six_minutes_after_the_delay",
+          "line": 56,
+          "end_line": 66,
+          "file_sha256": "dee7bd7896ea8db0ccb717a3ec09123163135f722474bbc8566e926ed2be380b",
+          "body_sha256": "d8789d55cd4242b3faf7a033ab3cc7525fbd46d35fc0768519ac2936e0bcf64e"
+        },
+        {
+          "path": "crates/gameplay/characters/src/stamina.rs",
+          "test": "at_and_above_thirty_nine_hours_each_gain_needs_six_minutes_after_the_delay",
+          "line": 168,
+          "end_line": 178,
+          "file_sha256": "8677be7b1cb639305f692d3ca9b21e85aeaac7f8c37f3a4da4231c949422a89b",
+          "body_sha256": "9a8db1997cdc4471fff9e46b19f0b0d96a59e7387a1afb2989bddeb3cc66388e"
+        }
+      ],
+      "disposition": "SAME_PUBLIC_STAMINA_OWNER_DUPLICATE_PROPOSAL",
+      "finding": "The integration target imports the same public stamina leaf tested by the characters owner. Eight exact test bodies and the independent period oracle are copied; no game-server composition is exercised by those bodies.",
+      "recommendation": "Propose retaining the complete boundary/oracle suite at the characters owner and removing the redundant integration target only after compiled IDs and CI owner selection are demonstrated."
+    },
+    {
+      "group_id": "D30",
+      "body_token_sha256": "80e5b01f09a27229d3a274f69be0f9286f49cb6964ebd7fad47468d0a4887d32",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/loop_vitals_stamina.rs",
+          "test": "empty_stamina_recovers_to_exactly_forty_two_hours_without_rounding_up",
+          "line": 69,
+          "end_line": 76,
+          "file_sha256": "dee7bd7896ea8db0ccb717a3ec09123163135f722474bbc8566e926ed2be380b",
+          "body_sha256": "3c374bf2135e63edc28561f5ca848b99b9f4da95fe73ea3ca562ed5bcf0f5d17"
+        },
+        {
+          "path": "crates/gameplay/characters/src/stamina.rs",
+          "test": "empty_stamina_recovers_to_exactly_forty_two_hours_without_rounding_up",
+          "line": 181,
+          "end_line": 188,
+          "file_sha256": "8677be7b1cb639305f692d3ca9b21e85aeaac7f8c37f3a4da4231c949422a89b",
+          "body_sha256": "536f10f592c935c56cad33b1100bc394678dbdb4583c080a10252b3781155ad2"
+        }
+      ],
+      "disposition": "SAME_PUBLIC_STAMINA_OWNER_DUPLICATE_PROPOSAL",
+      "finding": "The integration target imports the same public stamina leaf tested by the characters owner. Eight exact test bodies and the independent period oracle are copied; no game-server composition is exercised by those bodies.",
+      "recommendation": "Propose retaining the complete boundary/oracle suite at the characters owner and removing the redundant integration target only after compiled IDs and CI owner selection are demonstrated."
+    },
+    {
+      "group_id": "D31",
+      "body_token_sha256": "f7e1fe93b51337b5219408f8e4d2bcfcaed2a3e3a52c9da71a640aeb9b08c183",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/loop_vitals_stamina.rs",
+          "test": "duration_cap_and_maximum_integer_inputs_never_overflow_or_exceed_the_stamina_cap",
+          "line": 79,
+          "end_line": 95,
+          "file_sha256": "dee7bd7896ea8db0ccb717a3ec09123163135f722474bbc8566e926ed2be380b",
+          "body_sha256": "ab06718ce440f8c46a32505fdd3833e52288c64dfa559389446bae93ee5d4966"
+        },
+        {
+          "path": "crates/gameplay/characters/src/stamina.rs",
+          "test": "duration_cap_and_maximum_integer_inputs_never_overflow_or_exceed_the_stamina_cap",
+          "line": 191,
+          "end_line": 207,
+          "file_sha256": "8677be7b1cb639305f692d3ca9b21e85aeaac7f8c37f3a4da4231c949422a89b",
+          "body_sha256": "e44344cf9659d45bcb4e9f3d00feb904f04bb8f668a042d48e7f45a4e9725720"
+        }
+      ],
+      "disposition": "SAME_PUBLIC_STAMINA_OWNER_DUPLICATE_PROPOSAL",
+      "finding": "The integration target imports the same public stamina leaf tested by the characters owner. Eight exact test bodies and the independent period oracle are copied; no game-server composition is exercised by those bodies.",
+      "recommendation": "Propose retaining the complete boundary/oracle suite at the characters owner and removing the redundant integration target only after compiled IDs and CI owner selection are demonstrated."
+    },
+    {
+      "group_id": "D32",
+      "body_token_sha256": "ffc6ee9ee5a73f98e782f1a80f6c8b15eeccf4af41e2c1ecb929973b471480c7",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/loop_vitals_stamina.rs",
+          "test": "closed_formula_matches_an_independent_period_oracle_at_boundary_neighborhoods",
+          "line": 112,
+          "end_line": 144,
+          "file_sha256": "dee7bd7896ea8db0ccb717a3ec09123163135f722474bbc8566e926ed2be380b",
+          "body_sha256": "8d09e988e593e332ce74afaf2e3cb4e2130ce23d67bb7ee99ef6f0e3b8899597"
+        },
+        {
+          "path": "crates/gameplay/characters/src/stamina.rs",
+          "test": "closed_formula_matches_an_independent_period_oracle_at_boundary_neighborhoods",
+          "line": 224,
+          "end_line": 256,
+          "file_sha256": "8677be7b1cb639305f692d3ca9b21e85aeaac7f8c37f3a4da4231c949422a89b",
+          "body_sha256": "f1da8cb81fd2834c6bea556a07f412b949b50c0cb3332ecb2abda36c5f89709b"
+        }
+      ],
+      "disposition": "SAME_PUBLIC_STAMINA_OWNER_DUPLICATE_PROPOSAL",
+      "finding": "The integration target imports the same public stamina leaf tested by the characters owner. Eight exact test bodies and the independent period oracle are copied; no game-server composition is exercised by those bodies.",
+      "recommendation": "Propose retaining the complete boundary/oracle suite at the characters owner and removing the redundant integration target only after compiled IDs and CI owner selection are demonstrated."
+    },
+    {
+      "group_id": "D33",
+      "body_token_sha256": "329f8ed727c39ad48253c9b94430dc16110b641288aaec1e7c37c097e9a3c4a7",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/loop_vitals_stamina.rs",
+          "test": "every_valid_start_is_bounded_and_monotonic_over_increasing_raw_durations",
+          "line": 147,
+          "end_line": 158,
+          "file_sha256": "dee7bd7896ea8db0ccb717a3ec09123163135f722474bbc8566e926ed2be380b",
+          "body_sha256": "8f7a40e37e929c3d381030c617d7103b820ba1f0efc3e921d26d6331e461821d"
+        },
+        {
+          "path": "crates/gameplay/characters/src/stamina.rs",
+          "test": "every_valid_start_is_bounded_and_monotonic_over_increasing_raw_durations",
+          "line": 259,
+          "end_line": 270,
+          "file_sha256": "8677be7b1cb639305f692d3ca9b21e85aeaac7f8c37f3a4da4231c949422a89b",
+          "body_sha256": "9ad429c68912f80adc257470c64fb34016f4c35b84d82ec06088bdaa6d0984e4"
+        }
+      ],
+      "disposition": "SAME_PUBLIC_STAMINA_OWNER_DUPLICATE_PROPOSAL",
+      "finding": "The integration target imports the same public stamina leaf tested by the characters owner. Eight exact test bodies and the independent period oracle are copied; no game-server composition is exercised by those bodies.",
+      "recommendation": "Propose retaining the complete boundary/oracle suite at the characters owner and removing the redundant integration target only after compiled IDs and CI owner selection are demonstrated."
+    },
+    {
+      "group_id": "D34",
+      "body_token_sha256": "a913dd57e1e839ec904d9452b42796aeb72f446c828c911a68afe19a513920fc",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/account_characters_projection_postgres_cases.rs",
+          "test": "account_characters_projection_outbox_is_atomic_with_the_character_write",
+          "line": 168,
+          "end_line": 182,
+          "file_sha256": "ed8415ad30b233a1a59e904330f21b9e6c31df49a0d34d8712037a0cfc4673b7",
+          "body_sha256": "b7917268974612ad14202c4175bdeae93d4ce67f1b806c258ab4675cb94b0388"
+        },
+        {
+          "path": "apps/game-server/tests/support/public_projections_postgres_cases.rs",
+          "test": "public_projections_outboxes_epoch_and_privileges",
+          "line": 337,
+          "end_line": 351,
+          "file_sha256": "e5b93133bb82e0b369aaa3fbeb0e40120047a881f5c4fb4f3d154d93ab819d49",
+          "body_sha256": "b7917268974612ad14202c4175bdeae93d4ce67f1b806c258ab4675cb94b0388"
+        }
+      ],
+      "disposition": "DISTINCT_POSTGRES_PROJECTION_HELPERS",
+      "finding": "Identical wrappers resolve projection_cases in different files: account-character LCFA-0024/0028 versus public profile/highscore migration 0091. Database prefixes, SQL fixtures and assertions differ.",
+      "recommendation": "Retain both projection boundaries; no duplicate execution follows from wrapper identity."
+    },
+    {
+      "group_id": "D35",
+      "body_token_sha256": "2f6dc4ab98b33daf2a0c848462f87901baff59ff47912565e3e4c63485cbaf6f",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/authority_cases/engitem_tool_custody.rs",
+          "test": "engitem_goblin_capture_is_atomic_single_target_and_replayed",
+          "line": 22,
+          "end_line": 24,
+          "file_sha256": "828565b11469afbb452e6808bc37c3e18257b3e4686066f39462b2931848de26",
+          "body_sha256": "aba796183b4a08033938878eb6feaa6c5daf0a788b9f570b2384fdba0785d41a"
+        },
+        {
+          "path": "apps/game-server/tests/support/authority_cases/s17_cast_runtime_postgres_cases.rs",
+          "test": "s17_cast_postgres_admission_limits",
+          "line": 97,
+          "end_line": 99,
+          "file_sha256": "f219b5192582989afd74722ac15ff581ae589f69d2034f378d1e727f73167303",
+          "body_sha256": "aba796183b4a08033938878eb6feaa6c5daf0a788b9f570b2384fdba0785d41a"
+        }
+      ],
+      "disposition": "DISTINCT_HELPERS",
+      "finding": "run(1)/run(2) bind unrelated module-local helpers: goblin tool custody versus S17 cast-runtime cases. They share a PG harness but exercise different operations and state.",
+      "recommendation": "Retain both; evaluate scenario coverage in the callees, not by wrapper text."
+    },
+    {
+      "group_id": "D36",
+      "body_token_sha256": "476613acff07572dc0f99d209ba67bb63a091acfd2e7330ce97257b16ad04e9f",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/authority_cases/engitem_tool_custody.rs",
+          "test": "engitem_goblin_corpse_sampling_is_source_bound_fresh_and_replayed",
+          "line": 27,
+          "end_line": 29,
+          "file_sha256": "828565b11469afbb452e6808bc37c3e18257b3e4686066f39462b2931848de26",
+          "body_sha256": "ca7d61546ab29a60a632102ff00bd10056b7a449592de072e50909636a3b82b3"
+        },
+        {
+          "path": "apps/game-server/tests/support/authority_cases/s17_cast_runtime_postgres_cases.rs",
+          "test": "s17_cast_postgres_password_policy_rotation",
+          "line": 101,
+          "end_line": 103,
+          "file_sha256": "f219b5192582989afd74722ac15ff581ae589f69d2034f378d1e727f73167303",
+          "body_sha256": "ca7d61546ab29a60a632102ff00bd10056b7a449592de072e50909636a3b82b3"
+        }
+      ],
+      "disposition": "DISTINCT_HELPERS",
+      "finding": "run(1)/run(2) bind unrelated module-local helpers: goblin tool custody versus S17 cast-runtime cases. They share a PG harness but exercise different operations and state.",
+      "recommendation": "Retain both; evaluate scenario coverage in the callees, not by wrapper text."
+    },
+    {
+      "group_id": "D37",
+      "body_token_sha256": "3c689fae250ad189880320ca08ee24399dc2e8087c8f95dda6f2f36c912b51e6",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/authority_cases/engnpc2_ice_seals.rs",
+          "test": "engnpc2_ice_seals_postgres_distinct_atomic_completion_and_replay",
+          "line": 13,
+          "end_line": 15,
+          "file_sha256": "331937ff271fc2c19d6a77962be8ca6bf496cd2429f1c93cbe861a0cbe944da6",
+          "body_sha256": "81bc9246d19106b364de24083f19d3d95c75845b73e0c4002652ee9d2318b957"
+        },
+        {
+          "path": "apps/game-server/tests/support/authority_cases/qn5_feroxa_occurrence.rs",
+          "test": "qn5_feroxa_unset_chance_selects_first_due_full_moon_check",
+          "line": 9,
+          "end_line": 11,
+          "file_sha256": "aa5ea86038276c78b3d398944373d3d49b019fab19cd391e00a85b21688bb205",
+          "body_sha256": "81bc9246d19106b364de24083f19d3d95c75845b73e0c4002652ee9d2318b957"
+        },
+        {
+          "path": "crates/gameplay/entities/src/carrier/native_null_health/tests.rs",
+          "test": "srx3_native_null_health_time_pair_signed_delta_and_stale_snapshot",
+          "line": 70,
+          "end_line": 73,
+          "file_sha256": "224016f26d8cb19cd33330bc683816e058bdff98a95a9e00d2287f56849e0edc",
+          "body_sha256": "81bc9246d19106b364de24083f19d3d95c75845b73e0c4002652ee9d2318b957"
+        }
+      ],
+      "disposition": "DISTINCT_HELPERS",
+      "finding": "run_case(false/true) binds ice-seal PG completion, Feroxa PG occurrence and native-null-health pure owner helpers in different modules. Their result propagation and fixtures are distinct.",
+      "recommendation": "Retain these different boundaries. Configured PG execution and pure native health execution remain separate evidence classes."
+    },
+    {
+      "group_id": "D38",
+      "body_token_sha256": "642c297aa907278b8bf8f0350b1d8c89f50dbcf9c2af16ec215e959067eac0f1",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/authority_cases/engnpc2_ice_seals.rs",
+          "test": "engnpc2_ice_seals_postgres_paint_retained_until_atomic_completion",
+          "line": 18,
+          "end_line": 20,
+          "file_sha256": "331937ff271fc2c19d6a77962be8ca6bf496cd2429f1c93cbe861a0cbe944da6",
+          "body_sha256": "5502bf2d415b818aa150aecfdc7fbd918c8b788823b299486995acfdb1706f23"
+        },
+        {
+          "path": "apps/game-server/tests/support/authority_cases/qn5_feroxa_occurrence.rs",
+          "test": "qn5_feroxa_active_clock_is_fenced_and_independent_of_pending_delivery",
+          "line": 14,
+          "end_line": 16,
+          "file_sha256": "aa5ea86038276c78b3d398944373d3d49b019fab19cd391e00a85b21688bb205",
+          "body_sha256": "5502bf2d415b818aa150aecfdc7fbd918c8b788823b299486995acfdb1706f23"
+        },
+        {
+          "path": "crates/gameplay/entities/src/carrier/native_null_health/tests.rs",
+          "test": "srx3_native_null_health_outburst_source_zero_is_real_uncredited_lethal",
+          "line": 75,
+          "end_line": 78,
+          "file_sha256": "224016f26d8cb19cd33330bc683816e058bdff98a95a9e00d2287f56849e0edc",
+          "body_sha256": "5502bf2d415b818aa150aecfdc7fbd918c8b788823b299486995acfdb1706f23"
+        }
+      ],
+      "disposition": "DISTINCT_HELPERS",
+      "finding": "run_case(false/true) binds ice-seal PG completion, Feroxa PG occurrence and native-null-health pure owner helpers in different modules. Their result propagation and fixtures are distinct.",
+      "recommendation": "Retain these different boundaries. Configured PG execution and pure native health execution remain separate evidence classes."
+    },
+    {
+      "group_id": "D39",
+      "body_token_sha256": "64c7209b71a22880710a7d2bc65e716d4f328f6081d3896d83add0c320742047",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/authority_cases/engnpc_m04_completion.rs",
+          "test": "m04_npc_completion_is_canonical_atomic_fenced_and_replay_bound",
+          "line": 53,
+          "end_line": 80,
+          "file_sha256": "9ac88bce400c552243d65567f6db2d2f1ab6d581ec67267df1d5810d5f1ade8f",
+          "body_sha256": "06ddf8c151cec3169789fd1a4d71f375c8320e12e879c6f170a68282720cd109"
+        },
+        {
+          "path": "apps/game-server/tests/support/authority_cases/engnpc_m04_completion.rs",
+          "test": "m04_npc_completion_is_canonical_atomic_fenced_and_replay_bound",
+          "line": 656,
+          "end_line": 683,
+          "file_sha256": "9ac88bce400c552243d65567f6db2d2f1ab6d581ec67267df1d5810d5f1ade8f",
+          "body_sha256": "06ddf8c151cec3169789fd1a4d71f375c8320e12e879c6f170a68282720cd109"
+        }
+      ],
+      "disposition": "PARTIAL_RETAINED_LANE_OVERLAP_PROPOSAL",
+      "finding": "Same-named wrappers live at root and in retained_lane_case, so path/name alone is ambiguous. Their local exercise functions differ: root additionally covers five shipped NPC finales, while retained_lane_case repeats the synthetic normal/zero completion loop. programme/snapshot and the synthetic assertions overlap; Content implementations differ. The wrapper hash is not sufficient to remove the root or declare full equivalence.",
+      "recommendation": "Review whether the retained synthetic loop supplies a distinct content-refusal contract. A future cleanup can give the shared synthetic loop one owner while preserving all shipped-finale assertions; require actual PG IDs/execution before removal."
+    },
+    {
+      "group_id": "D40",
+      "body_token_sha256": "5f8daced713329fce26b3b43da9a0c9867fd151d69f3707fdc23fbf929f3879c",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/house_interior_postgres_cases.rs",
+          "test": "house_interior_accepted_effects_and_role_table",
+          "line": 91,
+          "end_line": 128,
+          "file_sha256": "0dc9dcecc5b4b80d6a02e12e0aeec760f687ab29d4e2df2db42767059a4d5802",
+          "body_sha256": "d1a08e80e917f45cd6b3641d573915f7b254647fe76f5a8f87281993dc5dc586"
+        },
+        {
+          "path": "crates/gameplay/housing/src/house_interior_tests.rs",
+          "test": "house_interior_accepted_effects_and_role_table",
+          "line": 89,
+          "end_line": 126,
+          "file_sha256": "69569eb2c120bca73e36f3283efb4e19827e8908a32556bef2440949a8a0457d",
+          "body_sha256": "d1a08e80e917f45cd6b3641d573915f7b254647fe76f5a8f87281993dc5dc586"
+        }
+      ],
+      "disposition": "DISTINCT_HOUSING_ADAPTER_TYPES",
+      "finding": "The server fixture uses durable HouseInteriorAuditChange validation and foundation identities; the housing owner uses its local audit fixture/domain types. Matching policy assertions cross an additional durable adapter/type boundary.",
+      "recommendation": "Retain adapter validation; any cleanup should keep a focused type/mapping contract while leaving policy tables at their owner, rather than deleting all copied bodies."
+    },
+    {
+      "group_id": "D41",
+      "body_token_sha256": "71d5f405f983ead32c3e17065b42227451f4dc5b21c3df053c82ed2f6abc3d99",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/house_interior_postgres_cases.rs",
+          "test": "house_interior_unknown_access_role_is_closed",
+          "line": 131,
+          "end_line": 147,
+          "file_sha256": "0dc9dcecc5b4b80d6a02e12e0aeec760f687ab29d4e2df2db42767059a4d5802",
+          "body_sha256": "a309073611bd14fe1200662cf0de11677223f021e734abaf6c88a0022f7e9376"
+        },
+        {
+          "path": "crates/gameplay/housing/src/house_interior_tests.rs",
+          "test": "house_interior_unknown_access_role_is_closed",
+          "line": 129,
+          "end_line": 145,
+          "file_sha256": "69569eb2c120bca73e36f3283efb4e19827e8908a32556bef2440949a8a0457d",
+          "body_sha256": "a309073611bd14fe1200662cf0de11677223f021e734abaf6c88a0022f7e9376"
+        }
+      ],
+      "disposition": "DISTINCT_HOUSING_ADAPTER_TYPES",
+      "finding": "The server fixture uses durable HouseInteriorAuditChange validation and foundation identities; the housing owner uses its local audit fixture/domain types. Matching policy assertions cross an additional durable adapter/type boundary.",
+      "recommendation": "Retain adapter validation; any cleanup should keep a focused type/mapping contract while leaving policy tables at their owner, rather than deleting all copied bodies."
+    },
+    {
+      "group_id": "D42",
+      "body_token_sha256": "f5f19fe51a8c81390fadc71eb90749fdced52521e3099832a5f197483e6ea4bb",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/house_interior_postgres_cases.rs",
+          "test": "house_interior_location_bounds",
+          "line": 150,
+          "end_line": 172,
+          "file_sha256": "0dc9dcecc5b4b80d6a02e12e0aeec760f687ab29d4e2df2db42767059a4d5802",
+          "body_sha256": "e566f7b0669054e51c5f93c88529d4e9ac4abda867aa81c801186f3b5618e560"
+        },
+        {
+          "path": "crates/gameplay/housing/src/house_interior_tests.rs",
+          "test": "house_interior_location_bounds",
+          "line": 148,
+          "end_line": 170,
+          "file_sha256": "69569eb2c120bca73e36f3283efb4e19827e8908a32556bef2440949a8a0457d",
+          "body_sha256": "e566f7b0669054e51c5f93c88529d4e9ac4abda867aa81c801186f3b5618e560"
+        }
+      ],
+      "disposition": "DISTINCT_HOUSING_ADAPTER_TYPES",
+      "finding": "The server fixture uses durable HouseInteriorAuditChange validation and foundation identities; the housing owner uses its local audit fixture/domain types. Matching policy assertions cross an additional durable adapter/type boundary.",
+      "recommendation": "Retain adapter validation; any cleanup should keep a focused type/mapping contract while leaving policy tables at their owner, rather than deleting all copied bodies."
+    },
+    {
+      "group_id": "D43",
+      "body_token_sha256": "eb9aca6a576db594e572678fe5ebb6be24e4fb2abf4b0a9a5e66d2e8e0137421",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/house_interior_postgres_cases.rs",
+          "test": "house_interior_tile_move_cannot_substitute_reclaim_or_generation",
+          "line": 202,
+          "end_line": 229,
+          "file_sha256": "0dc9dcecc5b4b80d6a02e12e0aeec760f687ab29d4e2df2db42767059a4d5802",
+          "body_sha256": "ce2f2e7538773840aab0ecca9b563e640d0afdfdec001170f36b4779e0c5ae3f"
+        },
+        {
+          "path": "crates/gameplay/housing/src/house_interior_tests.rs",
+          "test": "house_interior_tile_move_cannot_substitute_reclaim_or_generation",
+          "line": 200,
+          "end_line": 227,
+          "file_sha256": "69569eb2c120bca73e36f3283efb4e19827e8908a32556bef2440949a8a0457d",
+          "body_sha256": "ce2f2e7538773840aab0ecca9b563e640d0afdfdec001170f36b4779e0c5ae3f"
+        }
+      ],
+      "disposition": "DISTINCT_HOUSING_ADAPTER_TYPES",
+      "finding": "The server fixture uses durable HouseInteriorAuditChange validation and foundation identities; the housing owner uses its local audit fixture/domain types. Matching policy assertions cross an additional durable adapter/type boundary.",
+      "recommendation": "Retain adapter validation; any cleanup should keep a focused type/mapping contract while leaving policy tables at their owner, rather than deleting all copied bodies."
+    },
+    {
+      "group_id": "D44",
+      "body_token_sha256": "d982f8c16340993a3b972074e0888033a600f2c2a0ad1bff0590cbba6018ded7",
+      "cases": [
+        {
+          "path": "apps/game-server/tests/support/house_interior_postgres_cases.rs",
+          "test": "house_interior_provenance_revision_cannot_wrap",
+          "line": 259,
+          "end_line": 272,
+          "file_sha256": "0dc9dcecc5b4b80d6a02e12e0aeec760f687ab29d4e2df2db42767059a4d5802",
+          "body_sha256": "c554e65346404088d7b9ace31b0c40b70779634c803a2b6e3e0ce8f5585a51ee"
+        },
+        {
+          "path": "crates/gameplay/housing/src/house_interior_tests.rs",
+          "test": "house_interior_provenance_revision_cannot_wrap",
+          "line": 257,
+          "end_line": 270,
+          "file_sha256": "69569eb2c120bca73e36f3283efb4e19827e8908a32556bef2440949a8a0457d",
+          "body_sha256": "c554e65346404088d7b9ace31b0c40b70779634c803a2b6e3e0ce8f5585a51ee"
+        }
+      ],
+      "disposition": "DISTINCT_HOUSING_ADAPTER_TYPES",
+      "finding": "The server fixture uses durable HouseInteriorAuditChange validation and foundation identities; the housing owner uses its local audit fixture/domain types. Matching policy assertions cross an additional durable adapter/type boundary.",
+      "recommendation": "Retain adapter validation; any cleanup should keep a focused type/mapping contract while leaving policy tables at their owner, rather than deleting all copied bodies."
+    },
+    {
+      "group_id": "D45",
+      "body_token_sha256": "ee4fe3b267418c823c0207bcea474e1d4c31b0eab4c1f10964d7302bcc6fed43",
+      "cases": [
+        {
+          "path": "crates/gameplay/npc/src/npc_talk.rs",
+          "test": "qengine_reward_npcs_open_only_source_conversations",
+          "line": 1090,
+          "end_line": 1114,
+          "file_sha256": "abc18f6c6e04eeebe63a5de85976894f7ee68d057b5e38f695143bac79a7e727",
+          "body_sha256": "4e8406285e204be18a5042061798c428966dcc5ed4891515b846ae57cb4493ba"
+        },
+        {
+          "path": "crates/gameplay/npc/src/npc_talk/questpc8_source_tests.rs",
+          "test": "lane_qengine_reward_npcs_open_only_source_conversations",
+          "line": 4,
+          "end_line": 28,
+          "file_sha256": "aadc7e047b6952bb19e5450ef3b3b50c46bcb72952ea39c12fc7448f3e57ac97",
+          "body_sha256": "fa78fbff2f80c62fec61d4eaaa7f0858dbbcf6e72c577d52d81fde56355438b8"
+        }
+      ],
+      "disposition": "SAME_IMPORTED_NPC_OWNER_DUPLICATE_PROPOSAL",
+      "finding": "questpc8_source_tests imports its parent with use super::* and is mounted by npc_talk.rs. The two exact bodies use the same catalogue, source/public book and five NPC expectations in the same owner module tree.",
+      "recommendation": "Propose one owner case after compiled duplicate IDs and retained selection are verified. No code change in this review."
+    }
+  ],
+  "self_equality": [
+    {
+      "case": {
+        "path": "apps/game-server/examples/dur03_native_one_item_audit.rs",
+        "test": "repeat_and_reverse_are_identical",
+        "line": 2236,
+        "end_line": 2239,
+        "file_sha256": "9563c31e9c13532ba4e669b7da3e8a752e340831ba408c2d085f3866f21c97aa",
+        "body_sha256": "c53d9f5f113d47715cf20a7999912806a95c2b351df68a304dee27093da85334"
+      },
+      "disposition": "REPEATED_CALL_DETERMINISM",
+      "finding": "Calls report(false) twice and compares reverse-order reporting. A deterministic constant implementation could still pass this body; report semantic assertions elsewhere remain necessary."
+    },
+    {
+      "case": {
+        "path": "apps/game-server/examples/dur03_reference_one_item_resource_prototype.rs",
+        "test": "normalization_is_byte_stable_under_reordered_fixture_presentation",
+        "line": 4578,
+        "end_line": 4589,
+        "file_sha256": "18dd66f2ca2404e5aba30f930db23ad5e12aab854df69bf96cc3bf7b6f3a2702",
+        "body_sha256": "1ce847b6bb9c57c90430eada190147bff4c7f9a4040d589c703631982b35e2dd"
+      },
+      "disposition": "REPEATED_CALL_WITH_SEMANTIC_ASSERTIONS",
+      "finding": "Repeated normalized report and reversed input are compared; explicit UNKNOWN/null field expectations add independent normalized-output constraints."
+    },
+    {
+      "case": {
+        "path": "apps/game-server/src/qualification/client_phases/full_e2ef7.rs",
+        "test": "forge_occurrences_are_session_scoped_and_valid_v7",
+        "line": 6944,
+        "end_line": 6952,
+        "file_sha256": "eb18ac438272a717f2b299e541d6fa0b622686d07f4981d9e03ce2750815385e",
+        "body_sha256": "b3f14cdfbd5d26fbc4d3819cb0091a47f44d6901b1c94e69b516995f45a4d571"
+      },
+      "disposition": "REPEATED_CALL_WITH_DISTINGUISHING_INPUTS",
+      "finding": "Checks repeatability plus changed session/ordinal inequality and UUID validity; the repeated-call equality is deliberate determinism evidence."
+    },
+    {
+      "case": {
+        "path": "apps/game-server/src/qualification/client_phases/full_row_p07.rs",
+        "test": "occurrences_are_stable_and_distinct",
+        "line": 416,
+        "end_line": 421,
+        "file_sha256": "5dc72696933fd4e775e1f322d6f37eb97be73cd21013eeb394ea9b6e8d12c272",
+        "body_sha256": "176a310a6cfb26b45095e3b78b145a21b1005b122e2c0650537078536332bef3"
+      },
+      "disposition": "REPEATED_CALL_WITH_DISTINGUISHING_INPUTS",
+      "finding": "Repeat equality is complemented by a changed ordinal inequality."
+    },
+    {
+      "case": {
+        "path": "apps/game-server/src/qualification/client_phases/full_row_p18.rs",
+        "test": "occurrences_are_v7_session_scoped",
+        "line": 277,
+        "end_line": 291,
+        "file_sha256": "9221565477c0a62c21e428c6d0939501f7fd74f88966c8d066aa5012c1074024",
+        "body_sha256": "3bd2c69a373ba39f2abee788fda2553d2f63edae2e935954ee193d3d6c93d30d"
+      },
+      "disposition": "REPEATED_CALL_WITH_DISTINGUISHING_INPUTS",
+      "finding": "Checks repeated occurrence, different session/ordinal and UUID version constraints."
+    },
+    {
+      "case": {
+        "path": "apps/game-server/src/qualification/client_phases/map_model_tests.rs",
+        "test": "map_journey_synthetic_bundle_stairs_hole_collision_and_seeded_samples",
+        "line": 20,
+        "end_line": 58,
+        "file_sha256": "b4104c5d5f31177b7961242c5e62ef292b8029ec5dde2f4de8547cc0426ce404",
+        "body_sha256": "66c36e7a6821d73c0ca6a67f99dfb9c6807e0c01089deb06261fdfdd61db3cb4"
+      },
+      "disposition": "REPEATED_CALL_WITH_SEMANTIC_ASSERTIONS",
+      "finding": "Seeded sample equality accompanies explicit synthetic path/stair/collision assertions and a nonempty stair observation."
+    },
+    {
+      "case": {
+        "path": "apps/game-server/tests/integration_rest/reference_character_progression_calc.rs",
+        "test": "identical_scalar_inputs_are_deterministic",
+        "line": 313,
+        "end_line": 320,
+        "file_sha256": "536b6818e8dbe9c3356e20a3fe63e71842bd9f57bf7f3e6970a552b04fdd8aa5",
+        "body_sha256": "8ec028a28d844c7cee8cc4ea59b3e0ed6b4e3d48defb18b6bce3466728a63099"
+      },
+      "disposition": "WEAK_DETERMINISM_ONLY",
+      "finding": "Only repeated scalar calculation results are compared. It can detect nondeterminism but does not independently establish the correct progression result. Keep the claim narrow or fold into independent example/boundary assertions."
+    },
+    {
+      "case": {
+        "path": "apps/game-server/tests/native_admission_source_real_interop.rs",
+        "test": "failure_shape_remains_closed",
+        "line": 262,
+        "end_line": 267,
+        "file_sha256": "c6590c9c2150149359b9262c97610069c1d86a77d1e152f95957b07638454fdc",
+        "body_sha256": "ce137c98198e5e4180e72b3195ac27f8b8636b6e0a837aea4c77fec61706d287"
+      },
+      "disposition": "TAUTOLOGY_PROPOSAL",
+      "finding": "Compares identical NativeAdmissionSourceError::Unavailable constructors. No request, refusal path or producer is exercised. Previously recorded S3A-01; propose replacing with an actual producer/error-shape assertion."
+    },
+    {
+      "case": {
+        "path": "apps/game-server/tests/support/dawnport_vocation_cases.rs",
+        "test": "repeated_input_preserves_occurrence_and_every_request_field",
+        "line": 103,
+        "end_line": 111,
+        "file_sha256": "7b3b12bfa47a38db9e83efbedad3852cb0f6abb5289bed46be720dbe7780989d",
+        "body_sha256": "e7991cf375ffc474e4e95be4d5c4aac6224980d7f31303e424a3192ea4a2e2b1"
+      },
+      "disposition": "REPEATED_CONSTRUCTION_WITH_DISTINGUISHING_INPUT",
+      "finding": "Repeats request construction and checks a changed occurrence separately. This is request identity/field construction, not durable replay execution."
+    },
+    {
+      "case": {
+        "path": "crates/gameplay/combat-rules/src/resolution.rs",
+        "test": "defence_applies_only_to_a_blocked_hit_and_armor_draws_in_its_bounds",
+        "line": 363,
+        "end_line": 391,
+        "file_sha256": "9e1e749d1cbf7f6785ccfa8954a00adabae28a4f436390972b41a2d36604a140",
+        "body_sha256": "319814a355ac4abb7a68d601fae4516d2a75bc49a811cf530b1ddac6ed71666d"
+      },
+      "disposition": "REPEATED_CALL_WITH_SEMANTIC_ASSERTIONS",
+      "finding": "A repeat check accompanies explicit defence/blocking expectations, 64 draw constraints and no-heal bounds."
+    },
+    {
+      "case": {
+        "path": "crates/gameplay/durability/src/durability/boss_encounter/tests.rs",
+        "test": "boss_spawn_world_epoch_stream_and_chance_bounds",
+        "line": 110,
+        "end_line": 137,
+        "file_sha256": "9df78664aaa62a83e1a48f4ef95d2478eef4cae67f650640facf3170d66dd9e1",
+        "body_sha256": "108ef3c0feb64d3b8f6e3240f9eafc0fbb0f611f4452d329b30550f693ae896e"
+      },
+      "disposition": "REPEATED_CALL_WITH_DISTINGUISHING_INPUTS",
+      "finding": "Repeat stream is complemented by channel invariance, changed world/epoch/spawn distinctions, and chance endpoints."
+    },
+    {
+      "case": {
+        "path": "crates/gameplay/durability/src/durability/item_craft/soulpit.rs",
+        "test": "core_selection_is_repeatable_and_separates_decisions",
+        "line": 631,
+        "end_line": 649,
+        "file_sha256": "5bb7ac754bd085c1fb7d523bee7a95bed90fd58ca29620f423bfdb2bab4c6467",
+        "body_sha256": "5e043700f9b314b1e1bbcab38647430b67c94fd28a72ff91916cd135e2668b69"
+      },
+      "disposition": "REPEATED_CALL_WITH_DISTINGUISHING_INPUTS",
+      "finding": "Repeats a draw and verifies distinct decision labels/targets; checks deterministic decision separation rather than two identical stored values."
+    },
+    {
+      "case": {
+        "path": "crates/gameplay/world-change/tests/worldchg_owner.rs",
+        "test": "worldchg_selection_replays_and_snapshot_retains_the_committed_epoch",
+        "line": 125,
+        "end_line": 142,
+        "file_sha256": "a98c8132eb7c5a27711d8d76d2c3914b263e4ded19d210037e9556a5d22680bd",
+        "body_sha256": "91808e94217fbdeb0c3df42aa64e9f89a1ba0a289e54538f1839738fd0806df0"
+      },
+      "disposition": "REPEATED_CALL_WITH_SEMANTIC_ASSERTIONS",
+      "finding": "Repeats selection, checks an immutable serialized snapshot projection and a changed committed epoch."
+    }
+  ],
+  "parser_errors": [
+    {
+      "path": "apps/game-server/examples/runtime_actor_carrier_prototype.rs",
+      "file_sha256": "a997ca87299ee487a4f54e73bf40b606e050a5f0caa2a496c692aee3fc9b2227",
+      "errors": [
+        {
+          "line": 566,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "file_sha256": "c25df59b572d112f93f7a878dcd46da80ef465bf69637d8e6b6545f28973148e",
+      "errors": [
+        {
+          "line": 407,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs",
+      "file_sha256": "1a11a6dd604333c8b824f7ca21c95ba13f4a8a37f3c1670d2a6c83149c9b1121",
+      "errors": [
+        {
+          "line": 624,
+          "type": "ERROR"
+        },
+        {
+          "line": 684,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/src/lifted_tests/foundation_ability_exact_actor_resolution_tests.rs",
+      "file_sha256": "3a408f33b08c03022a568ca8af402c7e577f96f243f8011ff774d556cbe8baa2",
+      "errors": [
+        {
+          "line": 12,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/src/node/serve.rs",
+      "file_sha256": "bb5508beee28f8ebfc1f1f886d9bdf8b581e5cb4d749501bad021c56d3db153a",
+      "errors": [
+        {
+          "line": 4034,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/src/qualification.rs",
+      "file_sha256": "b7abcf58ffa49053e3225b85461ce2e7879fc0d8bbe46eb28718e5d124e83393",
+      "errors": [
+        {
+          "line": 380,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/content_native_entry_room.rs",
+      "file_sha256": "8b61152bc285bf5b828486a5147ca74bebceb172f0e977ca7f7456723e28c353",
+      "errors": [
+        {
+          "line": 134,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/durability_postgres.rs",
+      "file_sha256": "b63d7c630446be69539b3edc7084b3ea1f9438f8fab91ead9cdaf31e2e77d73d",
+      "errors": [
+        {
+          "line": 1981,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/integration_rest/map_overlay_channel.rs",
+      "file_sha256": "51e9af1d4cb758a0352394d811ff54876b71b41b9071173028826e51622d9331",
+      "errors": [
+        {
+          "line": 127,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/integration_rest/spell_lane_key33_pin.rs",
+      "file_sha256": "ae9de9ccb9a91dad46bbca0d0e608c235d03e006336ad5ad1ab26043bc3496db",
+      "errors": [
+        {
+          "line": 303,
+          "type": "ERROR"
+        },
+        {
+          "line": 471,
+          "type": "ERROR"
+        },
+        {
+          "line": 513,
+          "type": "ERROR"
+        },
+        {
+          "line": 576,
+          "type": "ERROR"
+        },
+        {
+          "line": 615,
+          "type": "ERROR"
+        },
+        {
+          "line": 650,
+          "type": "ERROR"
+        },
+        {
+          "line": 670,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_transport.rs",
+      "file_sha256": "4ebed4025390d7c0defc36d65e6619fa4892ba6a6a7672a13d3a352fd3bd9719",
+      "errors": [
+        {
+          "line": 1208,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/support/authority_cases/account_deletion.rs",
+      "file_sha256": "497a7c6ccb01f419847a060085c80c6e20f431e5ed2e54b1fbfbeb88bed089d2",
+      "errors": [
+        {
+          "line": 681,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/support/authority_cases/account_deletion_finalization_audit.rs",
+      "file_sha256": "e1f9aa4d82e65c9167e441c699c5bc6163aca8bf3cecb68aad62eebb591fa4df",
+      "errors": [
+        {
+          "line": 118,
+          "type": "ERROR"
+        },
+        {
+          "line": 134,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/support/authority_cases/character_services_node_replay.rs",
+      "file_sha256": "cfe5d5be2ac5288bb783293b3fa2d65295c9e5fd517c0596a09fec42507fab9c",
+      "errors": [
+        {
+          "line": 47,
+          "type": "ERROR"
+        },
+        {
+          "line": 56,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/support/authority_cases/t94_producer.rs",
+      "file_sha256": "ca111a02f1c269b913cbbe7f1ce6a2ca2f91294a190cc84a76acd566f61c922d",
+      "errors": [
+        {
+          "line": 531,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/support/character_wheel_cast_postgres_cases.rs",
+      "file_sha256": "5f82af2f9e7ce97bded8bbba24a7291265724c153f06839171535f9213d45833",
+      "errors": [
+        {
+          "line": 440,
+          "type": "ERROR"
+        },
+        {
+          "line": 470,
+          "type": "ERROR"
+        },
+        {
+          "line": 628,
+          "type": "ERROR"
+        },
+        {
+          "line": 671,
+          "type": "ERROR"
+        },
+        {
+          "line": 675,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/support/map_item_mint_postgres_cases.rs",
+      "file_sha256": "8bf077dba954017dd9d54b087a470a8c09fd301927afa410d08276a321f97f7d",
+      "errors": [
+        {
+          "line": 1612,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "apps/game-server/tests/wp5_s3b_composition.rs",
+      "file_sha256": "a440e57fd80fd16f8c6579ced43807d186ae21e637dc415dd52d6d349acb404a",
+      "errors": [
+        {
+          "line": 221,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/combat/src/ability/charm_desc_fence_gate_tests.rs",
+      "file_sha256": "0daa5cd5501bc151c47ca8d536bd8d06efad50bddd92cc6a65d3b748b211b6e6",
+      "errors": [
+        {
+          "line": 461,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/character_bootstrap_intent/tests.rs",
+      "file_sha256": "6e6ce8fd25cfddb808cce410f79d0cdab1c0921670e2971063419d9b21de5c9f",
+      "errors": [
+        {
+          "line": 165,
+          "type": "ERROR"
+        },
+        {
+          "line": 168,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bazaar/characters.rs",
+      "file_sha256": "8bc0dc0432be0837e9759c785d82492d54a647e599cb9c348872dafacbdd5b4d",
+      "errors": [
+        {
+          "line": 334,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bazaar/mod.rs",
+      "file_sha256": "174c11b07ea830da3db889b236f880dfd5c257a30b4f24ba6077b03f7bd7cd6d",
+      "errors": [
+        {
+          "line": 155,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/character_command/tests.rs",
+      "file_sha256": "db09fb8fdc5b88417d7b6c283eff7967f745dcb2531ecb413b46fbeb1f793810",
+      "errors": [
+        {
+          "line": 205,
+          "type": "ERROR"
+        },
+        {
+          "line": 207,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/core_modules_tests/terminal_replacement_foundation_red_tests_authority.rs",
+      "file_sha256": "2da086770113fbd2985db16e37bb3d775be255d85eab4da854b7643dee531dfb",
+      "errors": [
+        {
+          "line": 107,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/house_hireling/model.rs",
+      "file_sha256": "4ac1c24e75e68ea24fa498e5a3d79f45715cf23d9344d9783083db9fdb968e57",
+      "errors": [
+        {
+          "line": 74,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/item_text/tests/carried_tests/write_once.rs",
+      "file_sha256": "3946a3464e37f9f14760e027f2eb64511a8deebd09f8bdcd7e36353db0a12a0f",
+      "errors": [
+        {
+          "line": 75,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags the closure cast `as fn(&mut _)`; source excerpt inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": false
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/party_kill_xp.rs",
+      "file_sha256": "577799a0d8dbd645693a82bee97a9ab8eb1364c21601721f80c1c0babedc0dcb",
+      "errors": [
+        {
+          "line": 449,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/world_event_outcomes/native.rs",
+      "file_sha256": "dee0d2bc434b0a36a6efb4d5905df9dc5ead1c2ab2983931ac154aec94de35a0",
+      "errors": [
+        {
+          "line": 53,
+          "type": "ERROR"
+        },
+        {
+          "line": 218,
+          "type": "ERROR"
+        },
+        {
+          "line": 221,
+          "type": "ERROR"
+        },
+        {
+          "line": 236,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/gaz_haragoth/native_owner_tests.rs",
+      "file_sha256": "9db131e0519830eab98929e4bfa6a2a6b1eee1be2575e5f20d56b5f7573a55f4",
+      "errors": [
+        {
+          "line": 4,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/encounters/src/bosses/smelly_cheese/native_source.rs",
+      "file_sha256": "900b3c78a287bee77cb4ee0097f8568b238f5935dae5c419e40d662ef28feb1c",
+      "errors": [
+        {
+          "line": 71,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/entities/src/carrier/damage_contributors_tests.rs",
+      "file_sha256": "f4440df0d590093ae20e3e8bf47b544baa0dc37b778373e4a9644f0b1a1b91dd",
+      "errors": [
+        {
+          "line": 138,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/bazaar/transport.rs",
+      "file_sha256": "a1af48a8b88dec38b32eef981eaf4ef4a5fe2e1b59bbcf837b54d28c699afe48",
+      "errors": [
+        {
+          "line": 429,
+          "type": "ERROR"
+        },
+        {
+          "line": 442,
+          "type": "ERROR"
+        },
+        {
+          "line": 469,
+          "type": "ERROR"
+        },
+        {
+          "line": 487,
+          "type": "ERROR"
+        },
+        {
+          "line": 500,
+          "type": "ERROR"
+        },
+        {
+          "line": 544,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/native-admission-source/src/store_tests.rs",
+      "file_sha256": "44f8e183aedf8d2aceb8b868c7b155e51fdedfa173cba66f3dde8802eabcb348",
+      "errors": [
+        {
+          "line": 335,
+          "type": "ERROR"
+        },
+        {
+          "line": 360,
+          "type": "ERROR"
+        },
+        {
+          "line": 363,
+          "type": "ERROR"
+        },
+        {
+          "line": 417,
+          "type": "ERROR"
+        },
+        {
+          "line": 532,
+          "type": "ERROR"
+        },
+        {
+          "line": 723,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/social/src/chat/relay/tests.rs",
+      "file_sha256": "91170a6459da1b506622e43c6b855c07d6ae93aff55f27cde27bd9f2d87388eb",
+      "errors": [
+        {
+          "line": 776,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/social/src/platform_streams/enforcement.rs",
+      "file_sha256": "e6bf2c3cdbf9172cfff6789c2df438160f5325fe7cc20a1269a93a8bebdc1e9f",
+      "errors": [
+        {
+          "line": 56,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/social/src/platform_streams/enforcement/worker/tests.rs",
+      "file_sha256": "994b1a2c7e760455d6252c6743761fb41430ddc1ec6b8468aeffa68af6efaf31",
+      "errors": [
+        {
+          "line": 134,
+          "type": "ERROR"
+        },
+        {
+          "line": 154,
+          "type": "ERROR"
+        },
+        {
+          "line": 214,
+          "type": "ERROR"
+        },
+        {
+          "line": 598,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/social/src/platform_streams/profile_b/tests.rs",
+      "file_sha256": "6095d5714116472adc7e0f3a430bdef1747d3f22267b5d148ee0e71769a3d878",
+      "errors": [
+        {
+          "line": 19,
+          "type": "ERROR"
+        },
+        {
+          "line": 325,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/social/src/platform_streams/tests.rs",
+      "file_sha256": "7ee1e98234bb932521ecd1c75aff5e29bf6a77c17a35a43db81527920c03f4f9",
+      "errors": [
+        {
+          "line": 35,
+          "type": "ERROR"
+        },
+        {
+          "line": 63,
+          "type": "ERROR"
+        },
+        {
+          "line": 82,
+          "type": "ERROR"
+        },
+        {
+          "line": 182,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    },
+    {
+      "path": "crates/gameplay/world/src/movement.rs",
+      "file_sha256": "09e49b9d1af625d46bb1d0594e780f34453433231ace87320f42be71ff2a7612",
+      "errors": [
+        {
+          "line": 534,
+          "type": "ERROR"
+        }
+      ],
+      "disposition": "PARSER_LIMITATION_MANUALLY_INSPECTED",
+      "explanation": "Grammar flags borrowed local `raw` (`&raw`) as incomplete raw-pointer syntax; source excerpts inspected, not a Rust compiler failure.",
+      "borrowed_raw_present": true
+    }
+  ]
+}

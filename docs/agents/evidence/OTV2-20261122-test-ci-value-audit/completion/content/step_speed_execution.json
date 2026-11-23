@@ -1,0 +1,33 @@
+{
+  "limits": "Execution only; no inferred semantic review or hosted CI proof.",
+  "results": [
+    {
+      "path": "tools/content-schema/step-speed/test_generate_step_speed_table.py",
+      "source_sha256": "5f22c29d8f127b517694f9ab13656fd54ccd46a210dcc5b96eb9bc9c25c3b7b5",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_generate_step_speed_table"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/step-speed",
+      "elapsed_seconds": 0.212,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 5,
+      "case_results": [
+        "test_a_speed_outside_the_formula_range_is_refused (test_generate_step_speed_table.StepSpeedTableTest.test_a_speed_outside_the_formula_range_is_refused) ... ok",
+        "test_committed_file_is_the_generated_table (test_generate_step_speed_table.StepSpeedTableTest.test_committed_file_is_the_generated_table) ... ok",
+        "test_no_value_sits_on_a_rounding_boundary (test_generate_step_speed_table.StepSpeedTableTest.test_no_value_sits_on_a_rounding_boundary) ... ok",
+        "test_range_digest_and_samples (test_generate_step_speed_table.StepSpeedTableTest.test_range_digest_and_samples) ... ok",
+        "test_table_is_positive_and_non_decreasing (test_generate_step_speed_table.StepSpeedTableTest.test_table_is_positive_and_non_decreasing) ... ok"
+      ],
+      "output_tail": "test_a_speed_outside_the_formula_range_is_refused (test_generate_step_speed_table.StepSpeedTableTest.test_a_speed_outside_the_formula_range_is_refused) ... ok\ntest_committed_file_is_the_generated_table (test_generate_step_speed_table.StepSpeedTableTest.test_committed_file_is_the_generated_table) ... ok\ntest_no_value_sits_on_a_rounding_boundary (test_generate_step_speed_table.StepSpeedTableTest.test_no_value_sits_on_a_rounding_boundary) ... ok\ntest_range_digest_and_samples (test_generate_step_speed_table.StepSpeedTableTest.test_range_digest_and_samples) ... ok\ntest_table_is_positive_and_non_decreasing (test_generate_step_speed_table.StepSpeedTableTest.test_table_is_positive_and_non_decreasing) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.130s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 5,
+      "suite_result": "PASS"
+    }
+  ]
+}

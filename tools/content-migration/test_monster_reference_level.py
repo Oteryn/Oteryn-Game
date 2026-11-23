@@ -1,6 +1,8 @@
 """MRL generated-data and no-staging regression tests; no Git mutations."""
 import json
 from pathlib import Path
+import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -47,7 +49,10 @@ class MonsterReferenceLevelTests(unittest.TestCase):
     def test_creature_roundtrip_requires_the_explicit_default(self):
         import copy
         import validate_world_project_v2_to_tree as validation
+        from primal_reference_overlay import apply_reference
         reference = json.loads((ROOT / "content/world/definitions/reference.json").read_text())
+        # Match the validator entrypoint's source-pinned tree-first admission.
+        apply_reference(reference["records"], ROOT)
         declarations = json.loads((ROOT / "content/world/definitions/declarations.json").read_text())
         sources = json.loads((ROOT / "content/world/provenance/sources.json").read_text())
         validation.validate_creature_families(reference, declarations, sources)
@@ -66,15 +71,27 @@ class MonsterReferenceLevelTests(unittest.TestCase):
 
     def test_resolve_no_stage_never_mutates_git_index(self):
         commands = []
-        with patch("sys.argv", ["regenerate_content.py", "--resolve", "--skip-checks", "--no-stage"]), \
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(regeneration, "ROOT", Path(directory)), \
+                patch.object(regeneration, "WORLD", Path(directory) / "content/world"), \
+                patch("sys.argv", ["regenerate_content.py", "--resolve", "--skip-checks", "--no-stage"]), \
                 patch.object(regeneration, "resolve_conflicts", return_value=[]), \
+                patch.object(regeneration, "unresolved_worktree_paths", return_value=[]), \
+                patch.object(regeneration, "refresh_quest_callback_proof"), \
                 patch.object(regeneration, "materialize_world"), \
+                patch("questpc7_thaian_authoring.install"), \
+                patch("buddel_travel.install_buddel"), \
+                patch.object(regeneration, "canonicalize_world"), \
+                patch.object(regeneration, "refresh_source_cohort_extent"), \
                 patch.object(regeneration, "repin_rust_inventory"), \
+                patch.object(regeneration, "refresh_world_metadata"), \
+                patch.object(regeneration, "refresh_quest_donor_capture"), \
                 patch.object(regeneration, "derived_paths", return_value=set()), \
                 patch.object(regeneration, "git", return_value=""), \
-                patch.object(regeneration, "run", side_effect=commands.append):
+                patch.object(regeneration, "run", side_effect=commands.append), \
+                patch.object(subprocess, "run", side_effect=AssertionError("unexpected subprocess")):
             self.assertEqual(regeneration.main(), 0)
-        self.assertTrue(any("pin-refresh" in command for command in commands))
+        self.assertEqual(sum("pin-refresh" in command for command in commands), 1)
         self.assertFalse(any(command[0] == "git" for command in commands))
 
 

@@ -1,0 +1,161 @@
+{
+  "scope": "root-owned renderer test repair; production guard removed only in isolated counterfactual probes and restored",
+  "base_sha256": "2667a66f96a6b656be218d20f4da93c6e0df475e15e1fec491c423ae70f1448f",
+  "candidate_sha256": "7f1f805486f39b9cd61d9d444e4480dc0698a095fdb7b886f09fa0b3fba28539",
+  "commands": [
+    {
+      "label": "renderer_old_guard_deleted",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-renderer",
+        "--lib",
+        "batch::tests::atlas_validates_dimensions_and_pixel_length",
+        "--",
+        "--exact",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 4.014,
+      "tail": [
+        "",
+        "running 1 test",
+        "test batch::tests::atlas_validates_dimensions_and_pixel_length ... ok",
+        "",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 48 filtered out; finished in 0.00s",
+        ""
+      ]
+    },
+    {
+      "label": "renderer_new_guard_deleted",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-renderer",
+        "--lib",
+        "batch::tests::atlas_validates_dimensions_and_pixel_length",
+        "--",
+        "--exact",
+        "--nocapture"
+      ],
+      "rc": 101,
+      "expected_rc": 101,
+      "seconds": 1.025,
+      "tail": [
+        "failures:",
+        "    batch::tests::atlas_validates_dimensions_and_pixel_length",
+        "",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 48 filtered out; finished in 0.00s",
+        "",
+        "error: test failed, to rerun pass `-p oteryn-renderer --lib`"
+      ]
+    },
+    {
+      "label": "renderer_lib",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-renderer",
+        "--lib",
+        "--",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 2.066,
+      "tail": [
+        "test batch::tests::the_page_evicts_the_least_recently_drawn_cell ... ok",
+        "test world::tests::atlas_capacity_leaves_excess_slots_black_without_reading_them ... ok",
+        "test batch::tests::atlas_page_admits_at_most_n_uploads_per_frame_then_placeholders ... ok",
+        "",
+        "test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s",
+        ""
+      ]
+    },
+    {
+      "label": "renderer_clippy",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-renderer",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 1.29,
+      "tail": [
+        "    |     ^^^^^^^^^^^^",
+        "",
+        "warning: `tokio` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p tokio -- -D warnings` to apply 1 suggestion)",
+        "    Checking oteryn-client-domain v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/client-domain)",
+        "    Checking oteryn-renderer v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/renderer)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.23s"
+      ]
+    },
+    {
+      "label": "renderer_build",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "build",
+        "--locked",
+        "-p",
+        "oteryn-renderer",
+        "--lib"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 1.034,
+      "tail": [
+        "  9 |     missing_docs,",
+        "    |     ^^^^^^^^^^^^",
+        "",
+        "warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)",
+        "   Compiling oteryn-renderer v0.1.0 (/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/renderer)",
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.00s"
+      ]
+    },
+    {
+      "label": "renderer_fmt",
+      "argv": [
+        "rustfmt",
+        "+1.100.0",
+        "--edition",
+        "2024",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/crates/renderer/src/batch.rs"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.033,
+      "tail": []
+    }
+  ],
+  "status": "PASS",
+  "format_changed": true,
+  "qualified_sha256": "a2327cd5e866e73b51112c1f3dc626dfd46f9861be786752912a06882317d546",
+  "wrapper": {
+    "pid": 84366,
+    "exit_code": 0
+  },
+  "base_head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "boundary": "Linux CPU renderer qualification; does not run Windows wgpu backend"
+}

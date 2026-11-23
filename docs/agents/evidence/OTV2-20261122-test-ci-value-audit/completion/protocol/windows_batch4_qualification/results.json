@@ -1,0 +1,149 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "rust_toolchain": "1.100.0",
+  "target": "x86_64-pc-windows-msvc",
+  "protected_input_sha256": "c80929f7bdf0241f0f6a778449f343de81903f5afb1f559a4a5ccc7c7d71dcce",
+  "retained_candidate_sha256": {
+    "crates/protocol-oteryn/src/analyser_catalogue.rs": "0cadd2224571cbf702f5cdb27bbd6097344d3601c076af73c49d4bc53268513e",
+    "crates/protocol-oteryn/src/analyser_party.rs": "c26a72c267330d5b2b81204ca4ad905608ab79c14619f14484020268f6c7cf87",
+    "crates/protocol-oteryn/src/appearance_tests/mappings_tests.rs": "3e37038ec5d7d94a610968f64cf56c81b11b29433304625c8935532ad21a0681",
+    "crates/protocol-oteryn/src/atelier.rs": "53a477050738b2a95d5355e85d8f91b2e71ee4776eed5042aceea581e6d14679",
+    "crates/protocol-oteryn/src/attack_tests.rs": "9b363a1ff83fe9d39d4566509c3495ffe4aa4dd9f29889fc8f6286e48a653438",
+    "crates/protocol-oteryn/src/battle_metadata/tests.rs": "5e548de120a433a0897200fdf419369e26a701319224e56cc081f401d08836e6",
+    "crates/protocol-oteryn/src/bestiary.rs": "4790424728cadb4b1061566c520c2dcb4dd752bc3e4de1f58557e5516bde035c",
+    "crates/protocol-oteryn/src/bestiary_catalogue.rs": "3d9ddcb14edbc248c576ac5b1321d7276dc73f1664d0ad764c6880da79627e92",
+    "crates/protocol-oteryn/src/boss_difficulty_tests.rs": "a3d76126c271f8dea165813e69ad7570409bfa95790cf94e9d83de8b4fbf7d84",
+    "crates/protocol-oteryn/src/boss_encounter.rs": "5a52f38c503c84359d49b5e36801d7b6d8aae300af9b5b9883fbf0cc9a608ac0",
+    "crates/protocol-oteryn/src/boss_encounter/catalogue_tests.rs": "ba74f0017a69a874fd455fb28f72601c1a983164fec8fb7f40dda03f9c92fcb1",
+    "crates/protocol-oteryn/src/boss_encounter_tests.rs": "a9772f9d87a5faeefabe2cb48dd73fc707f024719624c5cc7eac070dff09008d",
+    "crates/protocol-oteryn/src/boss_rewards_tests.rs": "2ea74efa68eb5f19740ac08e31de503b54997f6d1831f8610532a0c199c7a278",
+    "crates/protocol-oteryn/src/contract_registries.rs": "e7de501635419065aa81a7e993d1ff388c34223789b5398dcaada4d4a4f4d528",
+    "crates/protocol-oteryn/src/daily_boost.rs": "910f6d6d3e61d4c6d445eed716ab9335f088298b86300805f73a8c91e0114e26",
+    "crates/protocol-oteryn/src/guild_war.rs": "5a905f634449bc8316771f057ec30e01ae13f2168453a7d7a5898dde028e218a"
+  },
+  "runs": [
+    {
+      "label": "baseline_mutant_cyclopedia_encoder_point_count",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "cyclopedia::tests::cyclopedia_codec_rejects_invalid_and_bounds_results"
+      ],
+      "returncode": 0,
+      "seconds": 12.219,
+      "summaries": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "candidate_mutant_cyclopedia_encoder_point_count",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib",
+        "cyclopedia::tests::cyclopedia_codec_rejects_invalid_and_bounds_results"
+      ],
+      "returncode": 101,
+      "seconds": 6.625,
+      "summaries": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 910 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "format_changed",
+      "command": [
+        "rustfmt",
+        "+1.100.0",
+        "--config-path",
+        "rustfmt.toml",
+        "crates/protocol-oteryn/src/cyclopedia.rs"
+      ],
+      "returncode": 0,
+      "seconds": 0.14,
+      "summaries": []
+    },
+    {
+      "label": "candidate_unit",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "test",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--lib"
+      ],
+      "returncode": 0,
+      "seconds": 9.157,
+      "summaries": [
+        "test result: ok. 911 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.01s"
+      ]
+    },
+    {
+      "label": "candidate_clippy",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "clippy",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "returncode": 0,
+      "seconds": 5.406,
+      "summaries": []
+    },
+    {
+      "label": "format_package_check",
+      "command": [
+        "cargo",
+        "+1.100.0",
+        "fmt",
+        "--check",
+        "-p",
+        "oteryn-protocol-oteryn"
+      ],
+      "returncode": 0,
+      "seconds": 1.328,
+      "summaries": []
+    },
+    {
+      "label": "candidate_diff_check",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "crates/protocol-oteryn"
+      ],
+      "returncode": 0,
+      "seconds": 0.5,
+      "summaries": []
+    }
+  ],
+  "canonicalized_unchanged_paths": [],
+  "candidate_sha256": {
+    "crates/protocol-oteryn/src/cyclopedia.rs": "c5e2f104e981c3ded0bbbb39adb3aac6be6505de7eafdfaca7fb44239ba7de05"
+  },
+  "restored_production_sha256": {},
+  "protected_input_unchanged": true,
+  "completed": true
+}
+

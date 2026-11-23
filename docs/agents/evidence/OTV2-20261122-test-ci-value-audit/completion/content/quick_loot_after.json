@@ -1,0 +1,23 @@
+{
+  "original": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "successful": true,
+    "output": "test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy (test_quick_loot_item_profiles.QuickLootProfiles.test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy) ... ok\ntest_quick_loot_profiles_have_no_speed_bonus (test_quick_loot_item_profiles.QuickLootProfiles.test_quick_loot_profiles_have_no_speed_bonus) ... ok\ntest_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.262s\n\nOK\n"
+  },
+  "singleton": {
+    "tests": 3,
+    "failures": 1,
+    "errors": 0,
+    "successful": false,
+    "output": "test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy (test_quick_loot_item_profiles.QuickLootProfiles.test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy) ... ok\ntest_quick_loot_profiles_have_no_speed_bonus (test_quick_loot_item_profiles.QuickLootProfiles.test_quick_loot_profiles_have_no_speed_bonus) ... ok\ntest_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots) ... FAIL\n\n======================================================================\nFAIL: test_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_quick_loot_item_profiles.py\", line 17, in test_quivers_keep_bound_identities_and_both_global_slots\n    self.assertEqual(quick.IDS, {23721, 35524, 35562, 35848, 35849,\nAssertionError: Items in the second set but not the first:\n35524\n35848\n35849\n23721\n45644\n39150\n39160\n36666\n\n----------------------------------------------------------------------\nRan 3 tests in 0.255s\n\nFAILED (failures=1)\n"
+  },
+  "empty": {
+    "tests": 3,
+    "failures": 1,
+    "errors": 0,
+    "successful": false,
+    "output": "test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy (test_quick_loot_item_profiles.QuickLootProfiles.test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy) ... ok\ntest_quick_loot_profiles_have_no_speed_bonus (test_quick_loot_item_profiles.QuickLootProfiles.test_quick_loot_profiles_have_no_speed_bonus) ... ok\ntest_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots) ... FAIL\n\n======================================================================\nFAIL: test_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration/test_quick_loot_item_profiles.py\", line 17, in test_quivers_keep_bound_identities_and_both_global_slots\n    self.assertEqual(quick.IDS, {23721, 35524, 35562, 35848, 35849,\nAssertionError: Items in the second set but not the first:\n35524\n35848\n35849\n35562\n23721\n45644\n39150\n39160\n36666\n\n----------------------------------------------------------------------\nRan 3 tests in 0.272s\n\nFAILED (failures=1)\n"
+  }
+}

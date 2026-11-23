@@ -313,7 +313,14 @@ mod tests {
         let mut trailing = reply;
         trailing.push(0);
         assert!(decode_reply(&trailing).is_err());
-        assert!(encode_request(&vec![prices[0].clone(); MAX_PRICES + 1]).is_err());
+        let oversized: Vec<_> = (1..=MAX_PRICES as u32 + 1)
+            .map(|item| Price {
+                item,
+                loot: Some(1),
+                supply: None,
+            })
+            .collect();
+        assert!(encode_request(&oversized).is_err());
         Ok(())
     }
 }

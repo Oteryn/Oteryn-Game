@@ -4,8 +4,9 @@ use oteryn_client_domain::{
 use oteryn_client_simulation::ClientSimulation;
 use oteryn_foundation::{ClientSessionEpoch, ProcessGeneration};
 use oteryn_input_actions::{
-    ActionId, Binding, BindingMap, ButtonState, ContextDefinition, ContextId, ContextKind,
-    InputAtom, InputChord, InputRouter, KeyCode, Modifiers, NormalizedInputEvent, RepeatPolicy,
+    ActionId, ActionPhase, Binding, BindingMap, ButtonState, ContextDefinition, ContextId,
+    ContextKind, InputAtom, InputChord, InputRouter, KeyCode, Modifiers, NormalizedInputEvent,
+    RepeatPolicy,
 };
 use oteryn_renderer::{SurfaceDecision, SurfaceEvent, SurfaceSize, SurfaceState};
 use oteryn_synthetic_assets::SyntheticImage;
@@ -108,6 +109,37 @@ fn synthetic() -> Result<(), Box<dyn Error>> {
     })?;
     if decision != SurfaceDecision::Configure(SurfaceSize::new(960, 540)) {
         return Err("unexpected synthetic renderer decision".into());
+    }
+
+    let snapshot = simulation.snapshot();
+    let expected_entities = [
+        (ClientEntityRef::new(1), 100, "Synthetic Player"),
+        (ClientEntityRef::new(2), 101, "Synthetic Rat"),
+    ];
+    if snapshot.session_epoch != ClientSessionEpoch::new(1)
+        || snapshot.revision != 1
+        || snapshot.entities.len() != expected_entities.len()
+        || expected_entities.iter().any(|(id, x, name)| {
+            snapshot.entities.get(id).is_none_or(|entity| {
+                entity.entity_ref != *id
+                    || entity.position
+                        != (Position {
+                            x: *x,
+                            y: 200,
+                            floor: 7,
+                        })
+                    || entity.display_name != *name
+            })
+        })
+    {
+        return Err("unexpected synthetic world projection".into());
+    }
+    if !matches!(actions.as_slice(), [action]
+        if action.action().as_str() == "move.east"
+            && action.context() == &gameplay
+            && action.phase() == ActionPhase::Started)
+    {
+        return Err("unexpected synthetic input action".into());
     }
 
     println!(

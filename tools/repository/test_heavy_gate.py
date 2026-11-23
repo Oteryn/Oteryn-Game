@@ -776,25 +776,29 @@ class HeavyGateTests(unittest.TestCase):
 
     def run_aggregate(self, filename, *, plan="success", mode="shared", build="success", shards="success",
                       status="PASS", scenarios=True, platform=None, world="success", default_required=False,
-                      default="skipped", omit_required_row=False):
+                      default="skipped", row_evidence="complete", omit_required_row=False):
         sys.path.insert(0, str(ROOT / "tools/qualification/node_boot"))
         import matrix
         aggregate = indented_yaml_mapping_block((ROOT / ".github/workflows" / filename).read_text(), "node_boot", 2)
         script = textwrap.dedent(aggregate.split("        run: |\n")[-1])
         self.assertNotIn("${{", script)
         planned = matrix.plan("pr")
-        omitted = None
-        if omit_required_row:
-            omitted = next(item["expected_rows"][0]["scenario"] for item in planned if item["expected_rows"])
+        omitted = next((row["scenario"] for item in planned for row in item["expected_rows"]), None) if omit_required_row else None
         with tempfile.TemporaryDirectory() as temp:
             temp = Path(temp)
             prefix = "node-boot-1-1-"
             for item in planned:
                 folder = temp / "shards" / f"{prefix}{item['name']}"
                 folder.mkdir(parents=True)
-                identities = [row["scenario"] for row in item["expected_rows"]] or [f"{item['name']}-s"]
-                rows = [{"id": identity, "status": status, "seconds": 1.0}
-                        for identity in identities if identity != omitted] if item["world"] and scenarios else []
+                rows = []
+                if item["world"] and scenarios:
+                    identities = [row["scenario"] for row in item["expected_rows"]] or [f"{item['name']}-s"]
+                    if item["expected_rows"] and row_evidence == "missing":
+                        identities = identities[:-1]
+                    elif item["expected_rows"] and row_evidence == "wrong":
+                        identities[0] = "unselected.fixture"
+                    row_status = "CAPTURED" if item["expected_rows"] and row_evidence == "capture" else status
+                    rows = [{"id": identity, "status": row_status, "seconds": 1.0} for identity in identities if identity != omitted]
                 folder.joinpath("result.json").write_text(json.dumps({
                     "shard": item["name"], "entry": item["entry"], "exit_code": 0, "seconds": 60,
                     "result": "NODE_BOOT_PASS", "incomplete": False, "scenarios": rows}))
@@ -808,7 +812,14 @@ class HeavyGateTests(unittest.TestCase):
     def test_node_boot_aggregate_fails_closed(self):
         for filename in ("pr-postgres-harness.yml", "merge-group-gate.yml"):
             with self.subTest(workflow=filename):
-                self.assertEqual(self.run_aggregate(filename).returncode, 0)
+                complete = self.run_aggregate(filename)
+                self.assertEqual(complete.returncode, 0, complete.stdout + complete.stderr)
+                for row_evidence in ("missing", "wrong", "capture"):
+                    result = self.run_aggregate(filename, row_evidence=row_evidence)
+                    self.assertNotEqual(result.returncode, 0, (row_evidence, result.stdout + result.stderr))
+                missing_row = self.run_aggregate(filename, omit_required_row=True)
+                self.assertNotEqual(missing_row.returncode, 0, missing_row.stdout + missing_row.stderr)
+                self.assertIn("missing terminal verdict for", missing_row.stdout)
                 for build in ("failure", "cancelled", "skipped", ""):
                     self.assertNotEqual(self.run_aggregate(filename, build=build).returncode, 0, build)
                 for platform in ("failure", "cancelled", "skipped", ""):
@@ -836,9 +847,6 @@ class HeavyGateTests(unittest.TestCase):
                 # A World shard that ran nothing fails; FAIL and MISSING rows are reported only, as in
                 # the single-machine run (per-shard NODE_BOOT_PASS stays the verdict).
                 self.assertNotEqual(self.run_aggregate(filename, scenarios=False).returncode, 0)
-                missing_row = self.run_aggregate(filename, omit_required_row=True)
-                self.assertNotEqual(missing_row.returncode, 0, missing_row.stdout + missing_row.stderr)
-                self.assertIn("missing terminal verdict for", missing_row.stdout)
                 for status in ("FAIL", "MISSING-SERVER"):
                     result = self.run_aggregate(filename, status=status)
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

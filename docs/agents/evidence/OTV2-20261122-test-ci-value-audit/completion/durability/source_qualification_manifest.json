@@ -1,0 +1,104 @@
+{
+  "status": "QUALIFIED_BOUNDED_SOURCE_CHECKPOINT",
+  "base_head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "files": [
+    {
+      "path": "crates/gameplay/durability/src/durability/core_modules_linkage_tests.rs",
+      "sha256": "834b82c938310fcd6544eb835149c189e457c06841179731d15e986563d28f31"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/bank.rs",
+      "sha256": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_tests/holder_round_trip_tests.rs",
+      "sha256": "e93940544720f60f632cd9f55816b22b95b66455cc0d36f8ac5493020e7aa099"
+    },
+    {
+      "path": "apps/game-server/tests/support/bank_postgres_cases.rs",
+      "sha256": "95e2862cd0e7694874e5101f6d85d18b442d17451ebaecd9abc9b9fe35a7017d"
+    },
+    {
+      "path": "crates/gameplay/durability/src/durability/db_holder_wait_tests.rs",
+      "sha256": "5bfab2a627d1f70ffd96805beead44616b7f356f044816a6b356dc7efd2f1a09"
+    },
+    {
+      "path": "apps/game-server/tests/native_admission_source_postgres.rs",
+      "sha256": "338c46afa64b65bf27ee21c24e5e45333bcf78b000a44e83da51daf6d9d154a7"
+    },
+    {
+      "path": "apps/game-server/tests/ai_bootstrap.rs",
+      "sha256": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "test_target_import"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/mod.rs",
+      "sha256": "bddab355674c61af52100638e0799a6b6d45dabf990144848fe1985a88fef29f",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "documentation_only"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai_think.rs",
+      "sha256": "5f5a032d3d72e96ca0fdc41c4b57185c55c71d1cc7e4ef1e7949af0384dd910c",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "documentation_only"
+    },
+    {
+      "path": "tools/repository/check_duplicate_test_sources.py",
+      "sha256": "2f3af05c1957c61fd0844761982d449a5ebdf80167f596a28be3ff8453e65817",
+      "qualification": "ai_dedup_validation.json",
+      "change_kind": "one_proven_duplicate_allowlist_entry_removed"
+    },
+    {
+      "path": "crates/gameplay/monster-ai/src/ai/perception.rs",
+      "sha256": "386755946bd6c5f9fc4f7a8ff5daccb6dc6330d6980acc9032250d91c017639d",
+      "qualification": "ai5_doc_validation.json",
+      "change_kind": "documentation_only"
+    }
+  ],
+  "source_file_count": 11,
+  "receipts": [
+    {
+      "path": "vps_initial_repairs_validation.json",
+      "sha256": "d00c1b0e1e6abbce5a1a0054b72019095a434b04b606e6c116a2f99162207d6f",
+      "status": "PASS"
+    },
+    {
+      "path": "bank_code_oracle_validation.json",
+      "sha256": "77800a7da50ff90bc7fa28bc06d931741855e98e1e2c924e28b92baad00df2fe",
+      "status": "PASS"
+    },
+    {
+      "path": "holder_wait_validation.json",
+      "sha256": "3185c38816e738a2e6c121de44090462e39f1b906152286c276fb3436d271c86",
+      "status": "PASS"
+    },
+    {
+      "path": "native_source_validation.json",
+      "sha256": "29984113f137a837ac81a824bfa4d27b8d5de695330ff6d7e49c0c3d94350dca",
+      "status": "PASS"
+    },
+    {
+      "path": "postgres_cleanup_validation.json",
+      "sha256": "9b10ae92305addff603f5fa3ba8b6e2c2e000ba390eb61c60aebba00f4304e55",
+      "status": "PASS"
+    },
+    {
+      "path": "ai_dedup_validation.json",
+      "sha256": "738e70eb56b26424e163f9c6d050e94196be67b9de9eadf1d05fe4ac86e18c6c",
+      "status": "PASS"
+    },
+    {
+      "path": "ai5_doc_validation.json",
+      "sha256": "e586e150d7daee7792e5d9874992539bcad1d8f8b1d9b7d1fa582f97e9b9e29e",
+      "status": "PASS"
+    }
+  ],
+  "restoration": {
+    "holder_wait_production_restored": true,
+    "native_source_production_restored": true,
+    "isolated_postgres_cleanup_receipt": "postgres_cleanup_validation.json"
+  },
+  "boundary": "Eleven approved source files ready for parent integration. This is not whole-repository runtime qualification, complete PostgreSQL matrix, ignored/manual qualification, or publication."
+}

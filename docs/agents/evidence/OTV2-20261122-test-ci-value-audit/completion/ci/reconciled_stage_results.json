@@ -1,0 +1,41 @@
+[
+  {
+    "command": [
+      "python3",
+      "/home/ubuntu/oteryn-work/oteryn-reconciled-libtest-probe-20261123.py",
+      "--repo",
+      "/home/ubuntu/oteryn-work/oteryn-test-ci-reconciled-20261123",
+      "--output",
+      "/home/ubuntu/oteryn-work/oteryn-reconciled-libtest-20261123.json"
+    ],
+    "exit_code": 0,
+    "seconds": 3.691,
+    "log": "/home/ubuntu/oteryn-work/oteryn-reconciled-stage-0-20261123.log"
+  },
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tools/qualification/node_boot"
+    ],
+    "exit_code": 0,
+    "seconds": 23.388,
+    "log": "/home/ubuntu/oteryn-work/oteryn-reconciled-stage-1-20261123.log"
+  },
+  {
+    "command": [
+      "python3",
+      "/home/ubuntu/oteryn-work/oteryn-reconciled-checkpoints-20261123.py",
+      "--repo",
+      "/home/ubuntu/oteryn-work/oteryn-test-ci-reconciled-20261123",
+      "--output",
+      "/home/ubuntu/oteryn-work/oteryn-reconciled-checkpoints-20261123.json"
+    ],
+    "exit_code": 0,
+    "seconds": 185.257,
+    "log": "/home/ubuntu/oteryn-work/oteryn-reconciled-stage-2-20261123.log"
+  }
+]

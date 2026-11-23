@@ -1,0 +1,42 @@
+{
+  "classification": "REAL_COMMITTED_NATIVE_PROFILE_AND_REGISTRATION_ORDER_MISMATCH",
+  "changed_keys": [
+    "oteryn:item.tibia.i40535"
+  ],
+  "same_identity_set": true,
+  "changes": [
+    {
+      "key": "oteryn:item.tibia.i40535",
+      "before_authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/40535",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Axe Weapons"
+        }
+      },
+      "after_authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/40535",
+          "revision": "spell-p2-r21"
+        },
+        "ranged": {
+          "attack": 1,
+          "element": "PHYSICAL",
+          "elemental_attack": 0,
+          "hit_chance": 0,
+          "kind": "THROWING",
+          "max_hit_chance": 75,
+          "range_cells": 3
+        },
+        "taxonomy": {
+          "primary": "Axe Weapons"
+        }
+      }
+    }
+  ],
+  "source_consumer": "register_spell_families.py invokes ranged_item_profiles.apply_native at line 541, then galthen_boss_loot.admit at line 661. galthen_boss_loot.IDS explicitly includes40535. Test exact regeneration assertion retained. This focused replay does not constitute full pipeline execution."
+}

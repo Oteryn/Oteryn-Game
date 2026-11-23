@@ -1,0 +1,409 @@
+{
+  "limits": "Execution only; no inferred semantic review or hosted CI proof.",
+  "results": [
+    {
+      "path": "tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py",
+      "source_sha256": "e40b3ceca447a41b35113105f3a0ed5b2ca87539019443d5119a1e11e41756b1",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.104,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "g4-direct-nonitem-family-crosswalk-self-test: PASS\n"
+    },
+    {
+      "path": "tools/content-census/g4_item_binding_pilot_self_test.py",
+      "source_sha256": "9b2ed706f54ba9a9fc042029733b08ad0edf09cfcb1c76d6b6d822e175d70512",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/g4_item_binding_pilot_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.056,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "G4 Item binding pilot synthetic self-test: PASS\n"
+    },
+    {
+      "path": "tools/content-census/g4_item_crystal_binding_generator_self_test.py",
+      "source_sha256": "dcb7fd42840c2f8f9ed7b541bb054b87e3d93f46974c17e40405a3b380dc943b",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/g4_item_crystal_binding_generator_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 6.164,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "g4_item_crystal_binding_generator synthetic self-test: PASS\n"
+    },
+    {
+      "path": "tools/content-census/g4_item_source_capture_self_test.py",
+      "source_sha256": "ee541ee20987783c571239b728efb2da6abf396d6f05734f7ef10ce006006952",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/g4_item_source_capture_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.049,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "g4 item source capture self-test: PASS\n"
+    },
+    {
+      "path": "tools/content-census/g4_item_wave1_capture_self_test.py",
+      "source_sha256": "709a52fe78427c21fb26f013df264b82c6529a425705678b4202ac6efbc88458",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/g4_item_wave1_capture_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.079,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "PASS g4 item wave1 capture self-test\n"
+    },
+    {
+      "path": "tools/content-census/g4_item_wave1_stage_self_test.py",
+      "source_sha256": "7ac4ecc2795c2f1058a2807abd0c7d9fb11ceffa198875d172c434ab71b07700",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/g4_item_wave1_stage_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.038,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "PASS g4 item wave1 stage self-test\n"
+    },
+    {
+      "path": "tools/content-census/g4_non_item_source_capture_self_test.py",
+      "source_sha256": "04710d1f165c4222aa0e81ad102922087b20341e26710f3fb92fc8874123bfc6",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/g4_non_item_source_capture_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.068,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "g4-non-item-source-capture-self-test: PASS\n"
+    },
+    {
+      "path": "tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py",
+      "source_sha256": "32d78bca1d1582d07a3a956bc773f983b4403c4a313e81a5c056cebd9b74b389",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.065,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "G4 Non-Item bulk crosswalk self-test: PASS (6 tests)\n"
+    },
+    {
+      "path": "tools/content-census/g4_nonitem_revision_revalidation_self_test.py",
+      "source_sha256": "932f37e7cb8eab3801a305c4f64e040d6a7e371b9c71c7397610153c1beda780",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/g4_nonitem_revision_revalidation_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.066,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "PASS: 14 focused G4 non-Item revision-revalidation cases\n"
+    },
+    {
+      "path": "tools/content-census/global_source_overlap_self_test.py",
+      "source_sha256": "acea73f4c3d6e357e61380399bd4ef693f810dbb5507c17fdc3ec00767120904",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/global_source_overlap_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.082,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 4,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 4,
+      "suite_result": "PASS",
+      "case_results": [
+        "test_cross_lane_title_divergence_is_preserved_as_observation (__main__.GlobalOverlapTest.test_cross_lane_title_divergence_is_preserved_as_observation) ... ok",
+        "test_duplicate_page_ids_fail_closed (__main__.GlobalOverlapTest.test_duplicate_page_ids_fail_closed) ... ok",
+        "test_exact_id_union_preserves_provenance_without_identity_promotion (__main__.GlobalOverlapTest.test_exact_id_union_preserves_provenance_without_identity_promotion) ... ok",
+        "test_unlinked_protected_digest_fails_closed (__main__.GlobalOverlapTest.test_unlinked_protected_digest_fails_closed) ... ok"
+      ],
+      "output_tail": "test_cross_lane_title_divergence_is_preserved_as_observation (__main__.GlobalOverlapTest.test_cross_lane_title_divergence_is_preserved_as_observation) ... ok\ntest_duplicate_page_ids_fail_closed (__main__.GlobalOverlapTest.test_duplicate_page_ids_fail_closed) ... ok\ntest_exact_id_union_preserves_provenance_without_identity_promotion (__main__.GlobalOverlapTest.test_exact_id_union_preserves_provenance_without_identity_promotion) ... ok\ntest_unlinked_protected_digest_fails_closed (__main__.GlobalOverlapTest.test_unlinked_protected_digest_fails_closed) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.001s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-census/item_id_alias_table_self_test.py",
+      "source_sha256": "9d7297091395b60ce87d7282155de4793ea8cc25bfaf67939c2cc52f256f738f",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/item_id_alias_table_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 2.991,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "item_id_alias_table self-test: PASS retired_keys=38562 named=65\n"
+    },
+    {
+      "path": "tools/content-census/item_key_references_self_test.py",
+      "source_sha256": "40db9f7cd80de0baf997d2bcf6bfb5a83cfb40549eb9abf9e1bf62bbb234e2ec",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/item_key_references_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.202,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 4,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n"
+    },
+    {
+      "path": "tools/content-census/item_wiki_stats_capture_self_test.py",
+      "source_sha256": "968325228a57ff3d6e43902131f20ea783e6438df112b617c8bd016e0cfc748a",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/item_wiki_stats_capture_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.511,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "item_wiki_stats_capture self-test: PASS records=13826\n"
+    },
+    {
+      "path": "tools/content-census/source_family_classification_self_test.py",
+      "source_sha256": "49be461b338c51cc08ccf2d836490f63fe8bd34563119cddfb08e93bd8cf04e5",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/source_family_classification_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.033,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "PASS: 9 focused G3 source-family tests\n"
+    },
+    {
+      "path": "tools/content-census/source_universe_self_test.py",
+      "source_sha256": "28bbae96343867ede8b697538a695fc9b8c2af5aeca282d74db000e5c5f2c326",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/source_universe_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.063,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "full-content-source-discovery self-test: PASS tests=19\n"
+    },
+    {
+      "path": "tools/content-census/stage_appearance_tables_self_test.py",
+      "source_sha256": "001939c028e37faa3b879ee2a1dc777ee7567d8c439b13ba58c66c248bedba39",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/stage_appearance_tables_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.723,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "appearance table staging check: ok (17 files)\nappearance table staging self-test: ok\n"
+    },
+    {
+      "path": "tools/content-census/stage_map_areas_self_test.py",
+      "source_sha256": "3525f39ea2567226ee03fd776f458c5bdf63ce4bfb5b75476ea2f924e87ff839",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/stage_map_areas_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.284,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "stage_map_areas self-test: ok\n"
+    },
+    {
+      "path": "tools/content-census/stage_proficiencies_self_test.py",
+      "source_sha256": "f68ed0d6a73bc38c1cc4a1ce29e030e6d7aff72588db03dff37efb0c9e853749",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/stage_proficiencies_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.409,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "stage_proficiencies self-test: ok\n"
+    },
+    {
+      "path": "tools/content-census/stage_staticdata_creatures_bosses_quests_self_test.py",
+      "source_sha256": "d09be11473f6a1e9b26ae123e74463776f3e0f17d9959b4c43d62c3e70f231a1",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/stage_staticdata_creatures_bosses_quests_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.065,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "stage_staticdata_creatures_bosses_quests self-test: ok\n"
+    },
+    {
+      "path": "tools/content-census/stage_staticdata_houses_achievements_self_test.py",
+      "source_sha256": "56a9b8081497d2542b7021f45fec5e5a1e166dde9c32b92254019007d8a9d9d4",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/stage_staticdata_houses_achievements_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.579,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": null,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": "stage_staticdata_houses_achievements self-test: ok\n"
+    },
+    {
+      "path": "tools/content-census/stage_tibiawiki_achievements_self_test.py",
+      "source_sha256": "f6ce5e0c91df82c010e79b784caeb40bd89e847d15a9a9cb51f845de83b267ce",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census/stage_tibiawiki_achievements_self_test.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-census",
+      "elapsed_seconds": 0.103,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 4,
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 0,
+      "suite_result": "PASS",
+      "case_results": [],
+      "output_tail": ".stale or tampered: staticdata-join.json\nstale or tampered: tibiawiki-achievements-facts.json\n...\n----------------------------------------------------------------------\nRan 4 tests in 0.008s\n\nOK\nok (2 files)\nok (2 files)\n"
+    }
+  ]
+}

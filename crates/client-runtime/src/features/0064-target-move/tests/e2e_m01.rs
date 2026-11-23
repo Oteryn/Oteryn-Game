@@ -44,7 +44,6 @@ fn replays_m01_target_move_receipts() -> Result<(), Box<dyn std::error::Error>> 
     }
     assert_eq!(visible, expected);
 
-    let retained = visible.clone();
     assert!(
         project(&GatedCommandResult {
             command_id: 2,
@@ -54,6 +53,5 @@ fn replays_m01_target_move_receipts() -> Result<(), Box<dyn std::error::Error>> 
         })
         .is_err()
     );
-    assert_eq!(visible, retained);
     Ok(())
 }

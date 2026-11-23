@@ -1,0 +1,17 @@
+{
+  "classification": "CONFIRMED_SHARED_EXPECTATION_ORACLE_GAP_PROPOSAL_ONLY",
+  "mutated_marker": "kv/adoreduh",
+  "original_quest": "oteryn:quest.adorned_uh_rune_quest",
+  "mutated_quest": "oteryn:quest.unrelated_but_syntactically_valid",
+  "limits": "Test constructs canonical records and expected identities from production BINDINGS, so the same foreign replacement is self-consistent. No source edit; independentcanonicalmapping proof is required before a repair.",
+  "baseline": {
+    "tests_run": 2,
+    "success": true,
+    "output": "test_each_owned_claim_completes_only_its_own_once_track (test_questpc_chest_completion.StandaloneCompletionTests.test_each_owned_claim_completes_only_its_own_once_track) ... ok\ntest_missing_definition_and_existing_programme_are_refused (test_questpc_chest_completion.StandaloneCompletionTests.test_missing_definition_and_existing_programme_are_refused) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.000s\n\nOK\n"
+  },
+  "foreign_quest_binding": {
+    "tests_run": 2,
+    "success": true,
+    "output": "test_each_owned_claim_completes_only_its_own_once_track (test_questpc_chest_completion.StandaloneCompletionTests.test_each_owned_claim_completes_only_its_own_once_track) ... ok\ntest_missing_definition_and_existing_programme_are_refused (test_questpc_chest_completion.StandaloneCompletionTests.test_missing_definition_and_existing_programme_are_refused) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.000s\n\nOK\n"
+  }
+}

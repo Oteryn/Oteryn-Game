@@ -94,7 +94,7 @@ fn gap_house_malformed_truncated_and_bounded_pages() -> Result<(), &'static str>
 #[test]
 fn gap_house_members_and_largest_door_request_stay_bounded() -> Result<(), &'static str> {
     let w = world();
-    let members: Vec<_> = (0..200)
+    let mut members: Vec<_> = (0..200)
         .map(|n| {
             let mut member = w;
             member[0] = n;
@@ -110,11 +110,18 @@ fn gap_house_members_and_largest_door_request_stay_bounded() -> Result<(), &'sta
             y: u16::MAX,
             floor: 15,
             revision: u64::MAX,
-            members,
+            members: members.clone(),
         },
     )?;
     assert!(command.payload.len() <= 4168);
-    assert!(house::mutation(w, "hom", 9, &Action::Guests(vec![w; 201])).is_err());
+    assert!(house::mutation(w, "hom", 9, &Action::Guests(members.clone())).is_ok());
+    let mut extra = w;
+    extra[0] = 200;
+    members.push(extra);
+    assert_eq!(
+        house::mutation(w, "hom", 9, &Action::Guests(members)).err(),
+        Some("At most 200 members")
+    );
     assert!(house::query(w, "thais", None).is_err());
     assert!(house::query(w, "oteryn:content.area.city.thais", Some(&"a".repeat(513))).is_err());
     Ok(())

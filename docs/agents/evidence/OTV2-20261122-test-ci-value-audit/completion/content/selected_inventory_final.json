@@ -1,0 +1,175 @@
+{
+  "selection_contract": "Exact repaired module identities each occur once in actual workflow inventory. Commands are executed by parallel_checks.run_checks without substitution.",
+  "inventory": [
+    {
+      "name": "test_boss_corpse_terminal_reference",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_boss_corpse_terminal_reference"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_cake_bridge_reference",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_cake_bridge_reference"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_coin_converter_profiles",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_coin_converter_profiles"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_creature_level_rating",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_creature_level_rating"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_forge_sql_admission",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_forge_sql_admission"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_forge_sql_admission_forward",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_forge_sql_admission_forward"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_harvest_item_profiles",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_harvest_item_profiles"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_itemhold_q",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_itemhold_q"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_monster_reference_level",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_monster_reference_level"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_official_creature_balance",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_official_creature_balance"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_qengine_reward_item_profiles",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_qengine_reward_item_profiles"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_questpc4_treasure_reward_profiles",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_questpc4_treasure_reward_profiles"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    },
+    {
+      "name": "test_quick_loot_item_profiles",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_quick_loot_item_profiles"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration"
+    }
+  ],
+  "selected_inventory": {
+    "command": [
+      "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+      "-c",
+      "import sys; sys.path.insert(0, \"tools/content-migration\"); import parallel_checks, test_world_project_v2_to_tree as i; selected={'test_itemhold_q', 'test_boss_corpse_terminal_reference', 'test_cake_bridge_reference', 'test_forge_sql_admission', 'test_creature_level_rating', 'test_official_creature_balance', 'test_forge_sql_admission_forward', 'test_harvest_item_profiles', 'test_qengine_reward_item_profiles', 'test_coin_converter_profiles', 'test_quick_loot_item_profiles', 'test_monster_reference_level', 'test_questpc4_treasure_reward_profiles'}; c=[x for x in i.check_inventory(workflow_checks=True) if x.name in selected]; assert len(c)==len(selected) and {x.name for x in c}==selected; parallel_checks.run_checks(c,jobs=2)"
+    ],
+    "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game",
+    "exit_code": 0,
+    "seconds": 74.31,
+    "stdout": "START migration-check=test_boss_corpse_terminal_reference\nSTART migration-check=test_cake_bridge_reference\nPASS migration-check=test_cake_bridge_reference exit=0\nSTART migration-check=test_coin_converter_profiles\nPASS migration-check=test_boss_corpse_terminal_reference exit=0\nSTART migration-check=test_creature_level_rating\nPASS migration-check=test_coin_converter_profiles exit=0\nSTART migration-check=test_forge_sql_admission\nPASS migration-check=test_forge_sql_admission exit=0\nSTART migration-check=test_forge_sql_admission_forward\nPASS migration-check=test_forge_sql_admission_forward exit=0\nSTART migration-check=test_harvest_item_profiles\nPASS migration-check=test_harvest_item_profiles exit=0\nSTART migration-check=test_itemhold_q\nPASS migration-check=test_creature_level_rating exit=0\nSTART migration-check=test_monster_reference_level\nDerived content regenerated. Review `git status` and commit.\nPASS migration-check=test_monster_reference_level exit=0\nSTART migration-check=test_official_creature_balance\nPASS migration-check=test_official_creature_balance exit=0\nSTART migration-check=test_qengine_reward_item_profiles\nPASS migration-check=test_itemhold_q exit=0\nSTART migration-check=test_questpc4_treasure_reward_profiles\nPASS migration-check=test_questpc4_treasure_reward_profiles exit=0\nSTART migration-check=test_quick_loot_item_profiles\nPASS migration-check=test_quick_loot_item_profiles exit=0\nPASS migration-check=test_qengine_reward_item_profiles exit=0\nPASS migration-checks=13 workers=2\n",
+    "stderr": "test_existing_canonical_reference_is_retained_without_second_allocation (test_boss_corpse_terminal_reference.ExistingElderReferenceTests.test_existing_canonical_reference_is_retained_without_second_allocation) ... test_exact_map_reference_is_idempotent_and_not_materializable (test_cake_bridge_reference.CakeBridgeReferenceTests.test_exact_map_reference_is_idempotent_and_not_materializable) ... ok\ntest_existing_semantic_facts_cannot_be_overwritten (test_cake_bridge_reference.CakeBridgeReferenceTests.test_existing_semantic_facts_cannot_be_overwritten) ... ok\ntest_inventory_admission_or_source_substitution_is_rejected (test_cake_bridge_reference.CakeBridgeReferenceTests.test_inventory_admission_or_source_substitution_is_rejected) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.864s\n\nOK\nok\n\n----------------------------------------------------------------------\nRan 1 test in 0.949s\n\nOK\ntest_converters_are_carried_nonstackable_tools_with_500_charges (test_coin_converter_profiles.CoinConverterProfiles.test_converters_are_carried_nonstackable_tools_with_500_charges) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.369s\n\nOK\ntest_committed_projection_matches_all_admitted_profiles_and_prices (test_forge_sql_admission.ForgeSqlAdmissionTests.test_committed_projection_matches_all_admitted_profiles_and_prices) ... ok\ntest_current_native_class_caps_and_exact_transfer_prices_are_preserved (test_forge_sql_admission.ForgeSqlAdmissionTests.test_current_native_class_caps_and_exact_transfer_prices_are_preserved) ... test_calibration_within_ten_percent (test_creature_level_rating.CreatureLevelRatingTests.test_calibration_within_ten_percent) ... ok\ntest_deterministic (test_creature_level_rating.CreatureLevelRatingTests.test_deterministic) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 1.458s\n\nOK\ntest_explicit_forward_projection_keeps_published_migration_and_checks_latest (test_forge_sql_admission_forward.ForwardForgeAdmissionTests.test_explicit_forward_projection_keeps_published_migration_and_checks_latest) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nOK\ntest_duplicate_is_rejected_before_writing (test_harvest_item_profiles.HarvestItemProfileTests.test_duplicate_is_rejected_before_writing) ... ok\ntest_production_provider_contains_the_complete_harvest_closure (test_harvest_item_profiles.HarvestItemProfileTests.test_production_provider_contains_the_complete_harvest_closure) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.974s\n\nOK\ntest_charged_definitions_keep_exact_donor_counts (test_itemhold_q.ItemholdQTests.test_charged_definitions_keep_exact_donor_counts) ... ok\ntest_full_charge_source_projection_is_closed_to_exact_power_ring (test_itemhold_q.ItemholdQTests.test_full_charge_source_projection_is_closed_to_exact_power_ring) ... ok\ntest_ornamented_shield_exact_source_charge_keeps_conflicting_witness (test_itemhold_q.ItemholdQTests.test_ornamented_shield_exact_source_charge_keeps_conflicting_witness) ... ok\ntest_remaining_holds_still_reject (test_itemhold_q.ItemholdQTests.test_remaining_holds_still_reject) ... ok\ntest_remaining_loader_defaults_reject_a_changed_constructor (test_itemhold_q.ItemholdQTests.test_remaining_loader_defaults_reject_a_changed_constructor) ... ok\ntest_every_creature_is_rated (test_creature_level_rating.CreatureLevelRatingTests.test_every_creature_is_rated) ... ok\ntest_missing_attacks_are_null_safe (test_creature_level_rating.CreatureLevelRatingTests.test_missing_attacks_are_null_safe) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 4.356s\n\nOK\ntest_creature_roundtrip_requires_the_explicit_default (test_monster_reference_level.MonsterReferenceLevelTests.test_creature_roundtrip_requires_the_explicit_default) ... ok\ntest_remaining_sources_apply_precedence_and_reject_corruption (test_itemhold_q.ItemholdQTests.test_remaining_sources_apply_precedence_and_reject_corruption) ... ok\ntest_every_generated_creature_has_explicit_nullable_positive_cap (test_monster_reference_level.MonsterReferenceLevelTests.test_every_generated_creature_has_explicit_nullable_positive_cap) ... ok\ntest_resolve_no_stage_never_mutates_git_index (test_monster_reference_level.MonsterReferenceLevelTests.test_resolve_no_stage_never_mutates_git_index) ... ok\ntest_summer_closure_accepts_explicit_null_but_rejects_a_changed_cap (test_monster_reference_level.MonsterReferenceLevelTests.test_summer_closure_accepts_explicit_null_but_rejects_a_changed_cap) ... ok\ntest_resolved_items_materialize_at_catalogue_level (test_itemhold_q.ItemholdQTests.test_resolved_items_materialize_at_catalogue_level) ... ok\ntest_shared_shard_repin_rejects_any_changed_shop_definition (test_itemhold_q.ItemholdQTests.test_shared_shard_repin_rejects_any_changed_shop_definition) ... ok\ntest_source_overlay_is_idempotent_and_rejects_conflicting_accepted_facts (test_itemhold_q.ItemholdQTests.test_source_overlay_is_idempotent_and_rejects_conflicting_accepted_facts) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 10.921s\n\nOK\ntest_news_overrides_preserve_every_unrelated_profile_field (test_official_creature_balance.OfficialCreatureBalanceTests.test_news_overrides_preserve_every_unrelated_profile_field) ... ok\ntest_no_gold_coin_tables_are_invented (test_official_creature_balance.OfficialCreatureBalanceTests.test_no_gold_coin_tables_are_invented) ... ok\ntest_percentage_xp_uses_nearest_integer_on_base_values (test_official_creature_balance.OfficialCreatureBalanceTests.test_percentage_xp_uses_nearest_integer_on_base_values) ... ok\ntest_runtime_native_profiles_have_the_final_news_values (test_official_creature_balance.OfficialCreatureBalanceTests.test_runtime_native_profiles_have_the_final_news_values) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 1.859s\n\nOK\ntest_arena_goblets_promote_only_pinned_portable_custody (test_qengine_reward_item_profiles.MainNativeFactJoin.test_arena_goblets_promote_only_pinned_portable_custody) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 17.905s\n\nOK\ntest_accepted_trade_restrictions_survive_importer_defaults (test_questpc4_treasure_reward_profiles.TreasureRewardTests.test_accepted_trade_restrictions_survive_importer_defaults) ... ok\ntest_daily_roots_source_profile_is_portable_and_bounded (test_qengine_reward_item_profiles.MainNativeFactJoin.test_daily_roots_source_profile_is_portable_and_bounded) ... ok\ntest_changed_read_flag_and_rotation_target_are_rejected (test_questpc4_treasure_reward_profiles.TreasureRewardTests.test_changed_read_flag_and_rotation_target_are_rejected) ... ok\ntest_check_mode_rejects_a_missing_cohort_without_writing (test_questpc4_treasure_reward_profiles.TreasureRewardTests.test_check_mode_rejects_a_missing_cohort_without_writing) ... ok\ntest_conflicting_known_canonical_readability_is_rejected (test_questpc4_treasure_reward_profiles.TreasureRewardTests.test_conflicting_known_canonical_readability_is_rejected) ... ok\ntest_custom_script_and_special_instance_flags_are_rejected (test_questpc4_treasure_reward_profiles.TreasureRewardTests.test_custom_script_and_special_instance_flags_are_rejected) ... ok\ntest_four_rotations_keep_exact_target_identity_and_unknown_other_operations (test_questpc4_treasure_reward_profiles.TreasureRewardTests.test_four_rotations_keep_exact_target_identity_and_unknown_other_operations) ... ok\ntest_fanfare_copper_key_has_native_portable_nonstackable_facts (test_qengine_reward_item_profiles.MainNativeFactJoin.test_fanfare_copper_key_has_native_portable_nonstackable_facts) ... ok\ntest_pin_rejects_duplicate_and_foreign_reward_identities (test_questpc4_treasure_reward_profiles.TreasureRewardTests.test_pin_rejects_duplicate_and_foreign_reward_identities) ... ok\ntest_poem_qualifies_readability_without_inventing_text_or_writeability (test_questpc4_treasure_reward_profiles.TreasureRewardTests.test_poem_qualifies_readability_without_inventing_text_or_writeability) ... ok\ntest_reward_capture_cannot_overwrite_input_evidence (test_questpc4_treasure_reward_profiles.TreasureRewardTests.test_reward_capture_cannot_overwrite_input_evidence) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 3.393s\n\nOK\ntest_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy (test_quick_loot_item_profiles.QuickLootProfiles.test_pouch_is_not_admitted_to_ground_and_sorting_uses_taxonomy) ... ok\ntest_quick_loot_profiles_have_no_speed_bonus (test_quick_loot_item_profiles.QuickLootProfiles.test_quick_loot_profiles_have_no_speed_bonus) ... ok\ntest_quivers_keep_bound_identities_and_both_global_slots (test_quick_loot_item_profiles.QuickLootProfiles.test_quivers_keep_bound_identities_and_both_global_slots) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.246s\n\nOK\nok\ntest_goblin_tools_preserve_their_source_identity_and_portable_facts (test_qengine_reward_item_profiles.MainNativeFactJoin.test_goblin_tools_preserve_their_source_identity_and_portable_facts) ... ok\ntest_grimvale_blossoms_have_native_bounded_stack_facts (test_qengine_reward_item_profiles.MainNativeFactJoin.test_grimvale_blossoms_have_native_bounded_stack_facts) ... ok\ntest_known_identity_custody_and_physical_conflicts_fail (test_qengine_reward_item_profiles.MainNativeFactJoin.test_known_identity_custody_and_physical_conflicts_fail) ... ok\ntest_lion_flower_exception_is_finite_and_rejects_new_instance_mechanisms (test_qengine_reward_item_profiles.MainNativeFactJoin.test_lion_flower_exception_is_finite_and_rejects_new_instance_mechanisms) ... ok\ntest_lion_flower_preserves_source_duration_as_absolute_deadline (test_qengine_reward_item_profiles.MainNativeFactJoin.test_lion_flower_preserves_source_duration_as_absolute_deadline)\nCrystal 201189f8 data/items/items.xml:42586-42590 sets duration=3600. ... ok\ntest_lion_holy_water_source_profile_has_exact_portable_custody (test_qengine_reward_item_profiles.MainNativeFactJoin.test_lion_holy_water_source_profile_has_exact_portable_custody) ... ok\ntest_m07_fire_bug_has_exact_portable_source_custody (test_qengine_reward_item_profiles.MainNativeFactJoin.test_m07_fire_bug_has_exact_portable_source_custody) ... ok\ntest_m07_realm_key_and_repair_kit_have_exact_portable_source_facts (test_qengine_reward_item_profiles.MainNativeFactJoin.test_m07_realm_key_and_repair_kit_have_exact_portable_source_facts) ... ok\ntest_m07_too_hot_tools_have_exact_portable_source_custody (test_qengine_reward_item_profiles.MainNativeFactJoin.test_m07_too_hot_tools_have_exact_portable_source_custody) ... ok\ntest_m44_flower_and_holy_water_keep_exact_portable_source_facts (test_qengine_reward_item_profiles.MainNativeFactJoin.test_m44_flower_and_holy_water_keep_exact_portable_source_facts) ... ok\ntest_m56_wax_is_an_exact_portable_non_stackable_source (test_qengine_reward_item_profiles.MainNativeFactJoin.test_m56_wax_is_an_exact_portable_non_stackable_source) ... ok\ntest_source_can_fill_unknown_without_changing_owner (test_qengine_reward_item_profiles.MainNativeFactJoin.test_source_can_fill_unknown_without_changing_owner) ... ok\ntest_m09_flask_matches_source_and_runtime_custody (test_qengine_reward_item_profiles.NativeFactJoin.test_m09_flask_matches_source_and_runtime_custody) ... ok\ntest_slug_corpse_retains_source_ground_custody_and_complete_decay_chain (test_qengine_reward_item_profiles.NativeFactJoin.test_slug_corpse_retains_source_ground_custody_and_complete_decay_chain) ... ok\ntest_source_paint_is_portable_nonstackable_and_keeps_its_weight (test_qengine_reward_item_profiles.SealPaintAdmission.test_source_paint_is_portable_nonstackable_and_keeps_its_weight) ... ok\ntest_capture_keeps_the_mining_owned_pick_speed_unknown (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_capture_keeps_the_mining_owned_pick_speed_unknown) ... ok\ntest_conflicting_known_weight_is_never_replaced (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_conflicting_known_weight_is_never_replaced) ... ok\ntest_custody_completion_keeps_existing_unknown_speed (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_custody_completion_keeps_existing_unknown_speed) ... ok\ntest_newer_manifest_schema_is_preserved (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_newer_manifest_schema_is_preserved) ... ok\ntest_only_exact_existing_purified_soul_weight_is_reconciled (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_only_exact_existing_purified_soul_weight_is_reconciled) ... ok\ntest_purified_soul_retains_only_the_exact_canonical_weight_pair (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_purified_soul_retains_only_the_exact_canonical_weight_pair) ... ok\ntest_unknown_custody_completion_keeps_known_charge_policy (test_qengine_reward_item_profiles.SharedPhysicalAdmission.test_unknown_custody_completion_keeps_known_charge_policy) ... ok\n\n----------------------------------------------------------------------\nRan 25 tests in 54.541s\n\nOK\n"
+  },
+  "runner_regressions": {
+    "command": [
+      "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+      "-m",
+      "unittest",
+      "-v",
+      "test_parallel_checks"
+    ],
+    "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-migration",
+    "exit_code": 0,
+    "seconds": 0.24,
+    "stdout": "START migration-check=fails\nFAIL migration-check=fails exit=7\nSTART migration-check=still-runs\nPASS migration-check=still-runs exit=0\nSTART migration-check=one\nSTART migration-check=two\nPASS migration-check=one exit=0\nPASS migration-check=two exit=0\nPASS migration-checks=2 workers=2\n",
+    "stderr": "test_failure_does_not_skip_the_remaining_inventory (test_parallel_checks.ParallelChecks.test_failure_does_not_skip_the_remaining_inventory) ... ok\ntest_independent_processes_overlap_without_sharing_state (test_parallel_checks.ParallelChecks.test_independent_processes_overlap_without_sharing_state) ... ok\ntest_invalid_plan_fails_before_launching_a_process (test_parallel_checks.ParallelChecks.test_invalid_plan_fails_before_launching_a_process) ... ok\ntest_inventory_has_every_existing_check_once (test_parallel_checks.ParallelChecks.test_inventory_has_every_existing_check_once) ... ok\ntest_workflow_aggregate_requires_every_qualification_to_succeed (test_parallel_checks.ParallelChecks.test_workflow_aggregate_requires_every_qualification_to_succeed) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.130s\n\nOK\n"
+  },
+  "pass": true
+}

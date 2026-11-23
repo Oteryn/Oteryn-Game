@@ -1,0 +1,126 @@
+{
+  "reviewer": "recover_audit_state (independent of blackbox implementation lane)",
+  "baseline_commit": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "review_kind": "READ_ONLY_DIFF_AND_CALLER_CONTRACT_REVIEW",
+  "reviewed_deltas": [
+    {
+      "path": "tools/qualification/node_boot/matrix.py",
+      "sha256": "25bcbc8e94d49fc3d7a928415cf3b8bdcd46b77ed38ba8a33d2f6b96636fbbc8"
+    },
+    {
+      "path": "tools/qualification/node_boot/test_matrix.py",
+      "sha256": "fae000f225ba62033aa88c4877079f09a6b4a1a25999760637fe2421b98e1b53"
+    },
+    {
+      "path": "tools/qualification/node_boot/test_prebuilt.py",
+      "sha256": "897b396acd7aa3a57b4a7e5e1022ffce4e28b48c58c3491727374e973726f967"
+    },
+    {
+      "path": "tools/qualification/wp5_s3b/run.sh",
+      "sha256": "3763f442861190aea9f36d8e4b4be7b68f9e03c42a436d456d85960f771bdb55"
+    },
+    {
+      "path": "tools/repository/test_heavy_gate.py",
+      "sha256": "e4a6908a5f66eadb6588f96ab42cc91c3df2758d9eb126e8375098a8be588306"
+    }
+  ],
+  "caller_and_consumer_sources": [
+    {
+      "path": ".github/workflows/node-boot-qualification.yml",
+      "sha256": "12fcacd9f7a88c8189bbd04e0bd0ec14ab251675ae4e5bcfec919cca1862f6ce"
+    },
+    {
+      "path": ".github/workflows/pr-postgres-harness.yml",
+      "sha256": "253311344bf0037fda6abe34e17cdcded6e23cd0b2680c065c265b1b98fdd25e"
+    },
+    {
+      "path": ".github/workflows/merge-group-gate.yml",
+      "sha256": "d80ebed3b8993da45880281e253c54660db95f6ae47b537f3e89c557a861e58e"
+    },
+    {
+      "path": ".github/workflows/gameplay-server-seam.yml",
+      "sha256": "0b9197165753d612e3be821a2c3cd56d5bebc8ad2f0b625d747db71fa97c0f67"
+    },
+    {
+      "path": ".github/workflows/wp5-s3b-composition.yml",
+      "sha256": "7e579b516da8f2cd061d9c279aa5cff642d525f0217998ae3c57fb8ce660c6d1"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/world.rs",
+      "sha256": "4a901a3e19d88ef311f1ce88d832d3ccfe55617b0aae94555e3d16ae5291e1ca"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/e2e_row_batch.rs",
+      "sha256": "17ab6e032c78089c08488fa363badcf3fa7de20363bce453d0377cea731a7d30"
+    },
+    {
+      "path": "apps/game-server/src/qualification/client_phases/indexed_verdict.rs",
+      "sha256": "105b0490cc29b6e788fae999fc64b2f10013646bb4e7e1e5f7bd26292b2267dd"
+    },
+    {
+      "path": "apps/game-server/src/qualification.rs",
+      "sha256": "b7abcf58ffa49053e3225b85461ce2e7879fc0d8bbe46eb28718e5d124e83393"
+    },
+    {
+      "path": "apps/game-server/tests/wp5_s3b_composition.rs",
+      "sha256": "a440e57fd80fd16f8c6579ced43807d186ae21e637dc415dd52d6d349acb404a"
+    }
+  ],
+  "decision": "NO_MATERIAL_DEFECT_FOUND_IN_BOUNDED_DELTA",
+  "findings": [],
+  "verified_contracts": [
+    "Every indexed selector in world.rs maps to an explicit scenario; four pre-indexed emitters are cross-checked against their literal Rust source. Unexpected selector/dispatcher shapes fail planning.",
+    "Expected identities are carried in the actual workflow matrix, revalidated on export/summarize, and compared to exactly one terminal verdict. Capture-only, different slices/IDs, duplicates and incomplete batches cannot satisfy those identities.",
+    "Reference default batch (0,15) matches e2e_row_batch.rs. indexed_verdict.rs buffers its own row verdict, rewrites optimistic outcomes after cleanup failures and emits missing failure evidence on interrupted reporters.",
+    "Existing FAIL/MISSING status policy is retained: extract returns failure from node boot result/exit and workflow summary separately requires successful shard jobs. This does not claim new completeness checks for groups/basic/spells/game-platform.",
+    "All three S3B PASS_EVIDENCE strings match terminal Rust body markers. The wrapper retains --ignored --exact --nocapture selection, requires successful one-test libtest summary, selected-case line and mode-specific terminal marker, and preserves child failure through pipefail.",
+    "New S3B regression tests execute the actual caller tail/cleanup/mode selection with only the child test process substituted; they cover real positive shapes, zero/wrong/duplicate/ignored/incomplete evidence and failed children.",
+    "Follow-up root fixture repair: run_aggregate now supplies every actual planned indexed scenario while retaining generic identities only for non-indexed groups. Both actual PR and MQ aggregate shell bodies reject missing/wrong/capture-only row evidence. Existing independent build/platform/shard/World/default-image gates and MISSING informational policy remain asserted. Using the plan for valid fixture identities is paired with deliberate incomplete/wrong-status mutations, not an oracle replacing the gate result."
+  ],
+  "observed_checks": [
+    {
+      "command": [
+        "python3",
+        "tools/qualification/node_boot/test_matrix.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game",
+      "exit_code": 0,
+      "tests_run": 33,
+      "seconds_reported_by_unittest": 4.452,
+      "result": "OK"
+    },
+    {
+      "command": [
+        "python3",
+        "tools/qualification/node_boot/test_prebuilt.py"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game",
+      "exit_code": 0,
+      "tests_run": 9,
+      "seconds_reported_by_unittest": 3.678,
+      "result": "OK"
+    },
+    {
+      "command": [
+        "env",
+        "PYTHONPATH=tools/repository",
+        "python3",
+        "-m",
+        "unittest",
+        "-v",
+        "test_heavy_gate.HeavyGateTests.test_node_boot_aggregate_fails_closed"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game",
+      "exit_code": 0,
+      "tests_run": 1,
+      "seconds_reported_by_unittest": 9.869,
+      "result": "OK",
+      "scope": "Actual PR and MQ aggregate scripts with positive and all existing/new negative subcases; full heavy-gate module run is root-owned."
+    }
+  ],
+  "limits": [
+    "Review covered the four changed diffs and targeted caller/consumer contracts, not complete semantic review of every caller file.",
+    "No source edits, Rust builds, live PostgreSQL/service qualification or full indexed-row runtime were performed by this reviewer.",
+    "This is offline contract/selection approval, not live S3B or full blackbox completion."
+  ]
+}

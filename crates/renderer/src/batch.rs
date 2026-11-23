@@ -715,10 +715,18 @@ mod tests {
             AtlasImage::new(2, 4, 2, vec![0; 3]),
             Err(BatchError::InvalidAtlas)
         );
-        assert_eq!(
-            AtlasImage::new(MAX_ATLAS_DIMENSION, 2, 1, vec![]),
-            Err(BatchError::InvalidAtlas)
-        );
+        // Correct pixel lengths isolate the dimension guard from the size check.
+        for (columns, rows) in [(MAX_ATLAS_DIMENSION, 1), (1, MAX_ATLAS_DIMENSION)] {
+            assert!(
+                AtlasImage::new(1, columns, rows, vec![0; (columns * rows * 4) as usize]).is_ok()
+            );
+        }
+        for (columns, rows) in [(MAX_ATLAS_DIMENSION + 1, 1), (1, MAX_ATLAS_DIMENSION + 1)] {
+            assert_eq!(
+                AtlasImage::new(1, columns, rows, vec![0; (columns * rows * 4) as usize]),
+                Err(BatchError::InvalidAtlas)
+            );
+        }
         assert_eq!(
             AtlasImage::new(u32::MAX, 2, 1, vec![]),
             Err(BatchError::InvalidAtlas)

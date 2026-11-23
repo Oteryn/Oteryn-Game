@@ -53,15 +53,13 @@ fn malformed_and_action_incompatible_requests_fail_closed() -> Result<(), Error>
         duplicate.extend_from_slice(suffix);
         assert!(decode_request(&duplicate).is_err());
     }
-    for payload in [
-        vec![],
-        vec![8, 9],
-        vec![8, 3],
-        vec![8, 1, 32, 0],
-        vec![0; MAX_REQUEST_BYTES + 1],
-    ] {
+    for payload in [vec![], vec![8, 9], vec![8, 3], vec![8, 1, 32, 0]] {
         assert!(decode_request(&payload).is_err());
     }
+    assert_eq!(
+        decode_request(&[0; MAX_REQUEST_BYTES + 1]),
+        Err(Error::LimitExceeded)
+    );
     assert!(
         encode_request(&Request::Open {
             boss_key: "invalid".into()

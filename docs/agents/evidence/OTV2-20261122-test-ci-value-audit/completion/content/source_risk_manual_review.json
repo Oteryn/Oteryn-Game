@@ -1,0 +1,555 @@
+{
+  "snapshot_scanner_sha256": "71c99f4ab420500dbea251dd44ea7625cdfcd8040bb2a1fc5c40e0d79644e6df",
+  "scope": "Original scan duplicate and self-equality risk adjudication. Exact bodies and module/import/fixture contexts reviewed; this does not promote every containing file to a full-file review. Corrected scan may discover additional comment-only duplicate bodies.",
+  "duplicate_groups": [
+    {
+      "body_token_sha256": "6938f2dd0668954e2b00d56e048db23ec7659fdaf96e798b50c8e9feb6372f6e",
+      "cases": [
+        {
+          "path": "crates/gameplay/content/src/content/creature_reward.rs",
+          "test": "private_boss_corpse_capacity_does_not_admit_ordinary_or_unmaterializable_corpses",
+          "line": 1098
+        },
+        {
+          "path": "crates/gameplay/content/src/content/creature_reward.rs",
+          "test": "private_boss_corpse_capacity_does_not_admit_ordinary_or_unmaterializable_corpses",
+          "line": 1210
+        }
+      ],
+      "disposition": "EXACT_REDUNDANT_CASE_PROPOSAL_NO_SOURCE_CHANGE",
+      "review_basis": "Same parent row() consumer, locally constructed identical ProjectV2CreatureAuthoring and SectionItemFacts, same cfg(test) and use super::* in two sibling modules. Both assert 64-capacity reward boss succeeds and ordinary/zero-capacity/unmaterializable refuse. Consolidation candidate retains one complete copy.",
+      "source_sha256": {
+        "crates/gameplay/content/src/content/creature_reward.rs": "76ffdb639e38e47a9cd3b1c5d6cbddf0c8fb5ad338253b990a720c0661432d68"
+      }
+    },
+    {
+      "body_token_sha256": "35d7a9c5948eb966dac25125b43a7acb3bd31fdf0e41fb3e5b3a5245b9b7e858",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/seam_wheel_admission.rs",
+          "test": "seam_missing_progression_wheel_query_keeps_connection",
+          "line": 9
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soulpit_boot.rs",
+          "test": "soulpit_empty_world_runtime_role_boot_cadence_postgres",
+          "line": 6
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_admission_deferred.rs",
+          "test": "wheel_admission_missing_progression_loads_empty_allocation",
+          "line": 7
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Local scenario functions differ in each module. Full three sources inspected: seam checks two physical wire command responses and live connection; Soulpit checks empty boot owner cadence with runtime DB role and contention; Wheel checks deferred reset/current empty allocation and retry recovery. Bodies are wrapper coincidences; KEEP all.",
+      "source_sha256": {
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/seam_wheel_admission.rs": "b9e3cf076ef532e13064e6b4fe0a59dcaa690774e346e11c38d5ad91a747a6d3",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soulpit_boot.rs": "fef9f5a5baeafa50bb3e7be03944c95b1719cecb15c569b28073d1e00f197a28",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_admission_deferred.rs": "12b131d060731f67cf41b6ef6781043968e6bb6ba9837d7a1bf1161628db6984"
+      }
+    },
+    {
+      "body_token_sha256": "3224519f5d214192e12ad01b796848cfcf404c555b2855bc8e5a8f61e733047b",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/seam_wheel_admission.rs",
+          "test": "seam_busy_admission_wheel_query_keeps_connection",
+          "line": 14
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soulpit_boot.rs",
+          "test": "soulpit_boot_read_contention_does_not_retire_channel_postgres",
+          "line": 11
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_admission_deferred.rs",
+          "test": "wheel_admission_busy_root_retries_on_owner_cadence",
+          "line": 12
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "As above, the true flag activates distinct contention paths in each independently defined scenario. KEEP all.",
+      "source_sha256": {
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/seam_wheel_admission.rs": "b9e3cf076ef532e13064e6b4fe0a59dcaa690774e346e11c38d5ad91a747a6d3",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soulpit_boot.rs": "fef9f5a5baeafa50bb3e7be03944c95b1719cecb15c569b28073d1e00f197a28",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_admission_deferred.rs": "12b131d060731f67cf41b6ef6781043968e6bb6ba9837d7a1bf1161628db6984"
+      }
+    },
+    {
+      "body_token_sha256": "10426e482d63e4bf890eb059f78b49db4d3eae8dffcecd0eda46b48ade084cdc",
+      "cases": [
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_cruelty_callbacks.rs",
+          "test": "srx3_cruelty_actual_source_entry_and_native_defense_chain_postgres",
+          "line": 7
+        },
+        {
+          "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_greed_callbacks.rs",
+          "test": "srx3_greed_actual_source_entry_and_native_minion_chain_postgres",
+          "line": 7
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Distinct imported run_source_entry helpers: srx3_cruelty_callbacks_fixtures versus srx3_greed_callbacks_fixtures. Different participant/body/defense-versus-minion contracts. KEEP; helper oracle review belongs to their family, not a duplicate deletion.",
+      "source_sha256": {
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_cruelty_callbacks.rs": "de0382a7c955e8424059c1d35547c9baf207626fd1e5690d8ea1d3e289ee1b16",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx3_greed_callbacks.rs": "d66ba23e418b5dfd1bf905b2880bd419f35545d0ed467eb2a55144a92ce240f7"
+      }
+    },
+    {
+      "body_token_sha256": "f9f22359ab2c06b10394a78349e9c4a14ba911754de84e95fe718837ea6eebd9",
+      "cases": [
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/questpc2_albinius_source_tests.rs",
+          "test": "albinius_exact_retained_source_program_is_admitted",
+          "line": 8
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/questpc2_gerimor_source_tests.rs",
+          "test": "gerimor_exact_retained_source_program_is_admitted",
+          "line": 8
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/questpc2_gnomus_source_tests.rs",
+          "test": "gnomus_exact_retained_source_program_is_admitted",
+          "line": 8
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/questpc2_henricus_source_tests.rs",
+          "test": "henricus_exact_retained_source_program_is_admitted",
+          "line": 8
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/questpc2_oldrak_source_tests.rs",
+          "test": "oldrak_exact_retained_source_program_is_admitted",
+          "line": 8
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Distinct DOC include_str paths for Albinius, Gerimor, Gnomus, Henricus and Oldrak. Fallible catalogue parser invocation is the success oracle. KEEP each fixture admission; not dialogue execution coverage.",
+      "source_sha256": {
+        "crates/gameplay/quests/src/quest/npc_rules/questpc2_albinius_source_tests.rs": "f8d83dc1870895fab60ac8218cbb5b2ec0026935fbe106c4e62d9476003a320e",
+        "crates/gameplay/quests/src/quest/npc_rules/questpc2_gerimor_source_tests.rs": "f79196da9f435446583f200c84dbcfbb86188d3fbb12050293d0eac37b346548",
+        "crates/gameplay/quests/src/quest/npc_rules/questpc2_gnomus_source_tests.rs": "7569b9577d8781029a19c36345342c6dcead89e93f07a8cc30815ffd9ba9ce8e",
+        "crates/gameplay/quests/src/quest/npc_rules/questpc2_henricus_source_tests.rs": "ea2b42c27e47507513865fd42ed2c8c9fcbb0738631b17a0b9a1bded305d2e84",
+        "crates/gameplay/quests/src/quest/npc_rules/questpc2_oldrak_source_tests.rs": "c7a6b96fc95ecfb65aa663a6df7031e362a637a8a93c2019f77610f93ba78379"
+      }
+    },
+    {
+      "body_token_sha256": "77c0c2fc10f7945e78243ae56d93c0f49601a0600e2a97fe9701fb2f9286364c",
+      "cases": [
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/tests.rs",
+          "test": "storage_owner_refuses_inventory_dependent_fallbacks",
+          "line": 609
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/tests.rs",
+          "test": "storage_owner_refuses_inventory_dependent_fallbacks_main_source",
+          "line": 1140
+        }
+      ],
+      "disposition": "EXACT_REDUNDANT_CASE_PROPOSAL_NO_SOURCE_CHANGE",
+      "review_basis": "Same top-level module, fixture_rule/fixture_catalog/fixture_document/Facts and plan_storage. Both refuse an inventory-dependent first branch with storage fallback. Exact redundant case; retain one copy.",
+      "source_sha256": {
+        "crates/gameplay/quests/src/quest/npc_rules/tests.rs": "c819ac8aa5d3e948de43dd6fb2590b6dab82e2462423d28d72db06e0f102655c"
+      }
+    },
+    {
+      "body_token_sha256": "c4ff9edf1b3457c8b90ce6959a07bd86f8f02f5697667717a7e21da14e02f3f6",
+      "cases": [
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/tests.rs",
+          "test": "storage_owner_preserves_order_and_rejects_unowned_effects",
+          "line": 630
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/tests.rs",
+          "test": "storage_owner_preserves_order_and_rejects_unowned_effects_main_source",
+          "line": 1161
+        }
+      ],
+      "disposition": "EXACT_REDUNDANT_CASE_PROPOSAL_NO_SOURCE_CHANGE",
+      "review_basis": "Same top-level helpers/input and plan_storage. Both require ordered set+add produces4/topic2/two rule IDs and refuse item grant as an unowned effect. Exact redundant case; retain one copy.",
+      "source_sha256": {
+        "crates/gameplay/quests/src/quest/npc_rules/tests.rs": "c819ac8aa5d3e948de43dd6fb2590b6dab82e2462423d28d72db06e0f102655c"
+      }
+    },
+    {
+      "body_token_sha256": "83b9c276e6660dc2c11c976042f015935d8c29506ac790b3611933187d24558a",
+      "cases": [
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/tests.rs",
+          "test": "storage_owner_plans_exact_father_acceptance_with_shared_cap",
+          "line": 1058
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/npc_rules/tests.rs",
+          "test": "storage_owner_commits_exact_father_acceptance_without_raising_general_cap_main_source",
+          "line": 1355
+        }
+      ],
+      "disposition": "EXACT_REDUNDANT_CASE_PROPOSAL_NO_SOURCE_CHANGE",
+      "review_basis": "Same runtime catalogue and empty Facts input tereban/yes/topic1; same cap16, exact11 changes, exact accepted rule, original tracks empty. One name says commits but both only call plan_storage. Exact redundant planning test, no extra commit coverage.",
+      "source_sha256": {
+        "crates/gameplay/quests/src/quest/npc_rules/tests.rs": "c819ac8aa5d3e948de43dd6fb2590b6dab82e2462423d28d72db06e0f102655c"
+      }
+    },
+    {
+      "body_token_sha256": "0d2b5082eeab671853924c0001dae5a8e2f76f0b809780c55194edbe92f570f9",
+      "cases": [
+        {
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "test": "qengine_shared_access_rejects_ambiguous_or_unbounded_effects",
+          "line": 1840
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "test": "lane_qengine_shared_access_rejects_ambiguous_or_unbounded_effects",
+          "line": 2306
+        }
+      ],
+      "disposition": "EXACT_REDUNDANT_CASE_PROPOSAL_NO_SOURCE_CHANGE",
+      "review_basis": "Same tests module parse() and same shared-access-callbacks.json fixture; identical eight negative mutations of portals/encounter/item-cycle and unknown field. Exact redundant case; retain one copy.",
+      "source_sha256": {
+        "crates/gameplay/quests/src/quest/world_callbacks.rs": "cf34357856384bf49e3bdb948cb9a291ece4d21376b8dd9b73fceddfc7f396ee"
+      }
+    },
+    {
+      "body_token_sha256": "4c882ec273657a0e3a2fa393ab2e554fa3116b640ced2f67a5e3b9167aaae630",
+      "cases": [
+        {
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "test": "qengine_l1_world_outfit_sources_are_narrowly_admitted",
+          "line": 2823
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "test": "lane_qengine_l1_world_outfit_sources_are_narrowly_admitted",
+          "line": 2849
+        }
+      ],
+      "disposition": "EXACT_REDUNDANT_CASE_PROPOSAL_NO_SOURCE_CHANGE",
+      "review_basis": "Same tests module parse(), same shared-outfit-callbacks.json and three negative mutations; identical baseline count2. Exact redundant case; retain one copy.",
+      "source_sha256": {
+        "crates/gameplay/quests/src/quest/world_callbacks.rs": "cf34357856384bf49e3bdb948cb9a291ece4d21376b8dd9b73fceddfc7f396ee"
+      }
+    },
+    {
+      "body_token_sha256": "14ea00d6db43c2c0976200320de6da7dea14a70acf62b990c342b1800c3db506",
+      "cases": [
+        {
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "test": "srv7_world_mount_reward_requires_once_only_progress",
+          "line": 3135
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/world_callbacks.rs",
+          "test": "srv7_world_mount_reward_requires_once_only_progress",
+          "line": 3239
+        }
+      ],
+      "disposition": "EXACT_REDUNDANT_CASE_PROPOSAL_NO_SOURCE_CHANGE",
+      "review_basis": "Sibling cfg(test) modules call the same super::parse and shared-outfit fixture, identical reliable_ram source selector and repeatable storage mutation. Replay module adds no distinct execution oracle. Retain one copy.",
+      "source_sha256": {
+        "crates/gameplay/quests/src/quest/world_callbacks.rs": "cf34357856384bf49e3bdb948cb9a291ece4d21376b8dd9b73fceddfc7f396ee"
+      }
+    },
+    {
+      "body_token_sha256": "fa8fe8db495ad09f03c70440bd20912e540bf461264ad51dcd3139632f95a1f5",
+      "cases": [
+        {
+          "path": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
+          "test": "qm46_public_speech_is_bounded_and_player_only",
+          "line": 1122
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/world_callbacks/effects.rs",
+          "test": "qm46_public_speech_is_bounded_and_player_only",
+          "line": 1169
+        }
+      ],
+      "disposition": "EXACT_REDUNDANT_CASE_PROPOSAL_NO_SOURCE_CHANGE",
+      "review_basis": "Sibling speech_tests/unicode_speech_tests both use super::* and same loader/valid consumer. Same six invalid text samples and Monster actor refusal. The adjacent Unicode 255/256-scalar test is distinct and must remain.",
+      "source_sha256": {
+        "crates/gameplay/quests/src/quest/world_callbacks/effects.rs": "edd2a76e7aa4976a9a61ba94b802b63ea790bae2582a48badc22dd24bb940da9"
+      }
+    },
+    {
+      "body_token_sha256": "7413070c7484901347c4dc3a41618bcc164878e5e33b18e0bc653c6dfbb5b64f",
+      "cases": [
+        {
+          "path": "tools/content-census/stage_proficiencies_self_test.py",
+          "test": "test_committed_bytes_regenerate",
+          "line": 85
+        },
+        {
+          "path": "tools/content-census/stage_staticdata_houses_achievements_self_test.py",
+          "test": "test_committed_bytes_regenerate",
+          "line": 89
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Different dynamically imported stage modules and INPUTS/default output destinations: proficiencies versus houses/achievements. Same replay shape protects different pinned source formats and artifacts; KEEP.",
+      "source_sha256": {
+        "tools/content-census/stage_proficiencies_self_test.py": "f68ed0d6a73bc38c1cc4a1ce29e030e6d7aff72588db03dff37efb0c9e853749",
+        "tools/content-census/stage_staticdata_houses_achievements_self_test.py": "56a9b8081497d2542b7021f45fec5e5a1e166dde9c32b92254019007d8a9d9d4"
+      }
+    },
+    {
+      "body_token_sha256": "56ac4f2f284c0cffd0b28bb944a9732f59a9f93a3c2436cb049480d7d48a008f",
+      "cases": [
+        {
+          "path": "tools/content-schema/native-gameplay/test_srx3_primal_witness.py",
+          "test": "test_actual_bounded_source_closure_and_full_source_digest_are_retained",
+          "line": 39
+        },
+        {
+          "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py",
+          "test": "test_actual_bounded_source_closure_and_full_source_digest_are_retained",
+          "line": 38
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Distinct build_srx3_primal_witness and build_srx3_soul_war_witness modules and committed witnesses, separately reviewed in other_content_semantic_review.json. KEEP independent source participant sets.",
+      "source_sha256": {
+        "tools/content-schema/native-gameplay/test_srx3_primal_witness.py": "4f20d075064010e5ffecf6d9e0a814142a272d91611d73d6450b5affe166159d",
+        "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py": "74ba789b6593bc2b84e011b0fa4d13b8953e20201b40f92105c3c69da29e12aa"
+      }
+    },
+    {
+      "body_token_sha256": "d8450da52f373ef39b54e4fd998104248421e68a52698acd08314b89c0d24d00",
+      "cases": [
+        {
+          "path": "tools/content-schema/native-gameplay/test_srx3_primal_witness.py",
+          "test": "test_rebound_full_source_digest_cannot_bless_changed_callback_body",
+          "line": 51
+        },
+        {
+          "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py",
+          "test": "test_rebound_full_source_digest_cannot_bless_changed_callback_body",
+          "line": 62
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Different native witness producers, records and callback qualification. Changed health plus root digest tests a separate independently pinned producer body; KEEP.",
+      "source_sha256": {
+        "tools/content-schema/native-gameplay/test_srx3_primal_witness.py": "4f20d075064010e5ffecf6d9e0a814142a272d91611d73d6450b5affe166159d",
+        "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py": "74ba789b6593bc2b84e011b0fa4d13b8953e20201b40f92105c3c69da29e12aa"
+      }
+    },
+    {
+      "body_token_sha256": "18ec313c123d330dd9b80beeee5ef73172456795b185271e26271b2a30d0626c",
+      "cases": [
+        {
+          "path": "tools/content-schema/native-gameplay/test_srx3_primal_witness.py",
+          "test": "test_unchanged_names_cannot_substitute_donor_identity_or_revision",
+          "line": 57
+        },
+        {
+          "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py",
+          "test": "test_unchanged_names_cannot_substitute_donor_identity_or_revision",
+          "line": 68
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Different witness source binding vectors and producers. Revision substitution refusal independently required; KEEP.",
+      "source_sha256": {
+        "tools/content-schema/native-gameplay/test_srx3_primal_witness.py": "4f20d075064010e5ffecf6d9e0a814142a272d91611d73d6450b5affe166159d",
+        "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py": "74ba789b6593bc2b84e011b0fa4d13b8953e20201b40f92105c3c69da29e12aa"
+      }
+    },
+    {
+      "body_token_sha256": "e14781da8f7711fbab06e4a8b82331b1f42f752ea66d7f72ae37db92ad8508a2",
+      "cases": [
+        {
+          "path": "tools/content-schema/native-gameplay/test_srx3_primal_witness.py",
+          "test": "test_missing_or_duplicated_native_participant_is_refused",
+          "line": 63
+        },
+        {
+          "path": "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py",
+          "test": "test_missing_or_duplicated_native_participant_is_refused",
+          "line": 74
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Different exact native participant sets. Missing/duplicate record rejection separately required; KEEP.",
+      "source_sha256": {
+        "tools/content-schema/native-gameplay/test_srx3_primal_witness.py": "4f20d075064010e5ffecf6d9e0a814142a272d91611d73d6450b5affe166159d",
+        "tools/content-schema/native-gameplay/test_srx3_soul_war_witness.py": "74ba789b6593bc2b84e011b0fa4d13b8953e20201b40f92105c3c69da29e12aa"
+      }
+    },
+    {
+      "body_token_sha256": "26112fe44edad0b7d1915120c723b50da59e4eb1d6c121f1a8f969319ea45310",
+      "cases": [
+        {
+          "path": "tools/content-schema/native-gameplay/test_srx3_ragiaz_spawn.py",
+          "test": "test_unsigned_fixture_cannot_publish_source_evidence",
+          "line": 25
+        },
+        {
+          "path": "tools/content-schema/native-gameplay/test_srx3_spite_spawns.py",
+          "test": "test_changed_xml_is_not_accepted_as_pinned_spawn_evidence",
+          "line": 46
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Different pinned XML producers for Ragiaz and Spite spawn source contracts. Exact same malformed XML attack is valuable per independent input owner; KEEP.",
+      "source_sha256": {
+        "tools/content-schema/native-gameplay/test_srx3_ragiaz_spawn.py": "62f05fcf17ceb14a9ee6342ff7189ce2f4d7bdb3c3b12decaa4059480f062c61",
+        "tools/content-schema/native-gameplay/test_srx3_spite_spawns.py": "850bf736a60436048e8552544e2cd0f6315f574e9e5723a7e3b218cd1a9c4dcc"
+      }
+    },
+    {
+      "body_token_sha256": "399342f698165eed36e7f90f81547ebd429ac9e0a9609744f5169236bed84893",
+      "cases": [
+        {
+          "path": "tools/content-schema/quest-authoring/test_npc_progress_retention.py",
+          "test": "test_missing_declaration_keeps_explicit_unknown",
+          "line": 65
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/test_progress_enrichment.py",
+          "test": "test_missing_storage_declaration_fails",
+          "line": 62
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Different test setup and build fixture: NPC-only auxiliary track retention versus gate progress enrichment, despite same questlog.auxiliary_tracks consumer. Distinct owner inputs retained; see earlier full source ledgers. KEEP.",
+      "source_sha256": {
+        "tools/content-schema/quest-authoring/test_npc_progress_retention.py": "c60744dfd3c6f4a1c69ae0e8409699192641f31ee51e047b04f6198cb66f2577",
+        "tools/content-schema/quest-authoring/test_progress_enrichment.py": "48d34c8c810349d9848bc13cf6df4f31d6e1c95d2dd9e122a3e5b2f842282f77"
+      }
+    },
+    {
+      "body_token_sha256": "5ecf2d16a16b4e741110b264e526b9881b4b7f4c3b4fbb60908bf4357dde94fa",
+      "cases": [
+        {
+          "path": "tools/content-schema/quest-authoring/test_quest_explore_area_candidates.py",
+          "test": "test_committed_packet_matches_generator",
+          "line": 116
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/test_quest_reward_only_binding_candidates.py",
+          "test": "test_committed_packet_matches_generator",
+          "line": 100
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/test_quest_talk_npc_candidates.py",
+          "test": "test_committed_packet_matches_generator",
+          "line": 111
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Three different imported candidate generators, committed outputs and independent population assertions elsewhere in each file. Exact byte replay is per-artifact; KEEP as bounded generation consistency.",
+      "source_sha256": {
+        "tools/content-schema/quest-authoring/test_quest_explore_area_candidates.py": "389fecd3821e85fa58e1fc7521c9be913348eddffcde19bdc326781d44da3e5e",
+        "tools/content-schema/quest-authoring/test_quest_reward_only_binding_candidates.py": "a926e067a3e50a8969de06a5d1952b08ff8799980b23f6603c644ee532690210",
+        "tools/content-schema/quest-authoring/test_quest_talk_npc_candidates.py": "6f96a8466f25c3350930fec4ece9145808e7b60044c209e76fe3ab420ad4fc85"
+      }
+    },
+    {
+      "body_token_sha256": "b8d931d0536c1f0be77f91518a8d5f8771ce22774cd09af07a974d4c1aacf4c4",
+      "cases": [
+        {
+          "path": "tools/content-schema/quest-authoring/test_questpc2_albinius_rules.py",
+          "test": "test_source_pin_reproduces_exact_runtime_program",
+          "line": 11
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/test_questpc2_gerimor_rules.py",
+          "test": "test_source_pin_reproduces_runtime_assignment_program",
+          "line": 11
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/test_questpc2_gnomus_rules.py",
+          "test": "test_source_pin_reproduces_runtime_program",
+          "line": 11
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/test_questpc2_henricus_rules.py",
+          "test": "test_pinned_source_reproduces_the_exact_runtime_program",
+          "line": 11
+        }
+      ],
+      "disposition": "KEEP_DISTINCT_FIXTURE_OR_HELPER_CONTEXT",
+      "review_basis": "Four different imported source-rule producers and output paths for Albinius/Gerimor/Gnomus/Henricus; each also contains independently anchored contract assertions in prior quest ledger. KEEP separate source contracts.",
+      "source_sha256": {
+        "tools/content-schema/quest-authoring/test_questpc2_albinius_rules.py": "02ec0912d30681c669009d06531430b79f7926935c1d61b0337c88619471f648",
+        "tools/content-schema/quest-authoring/test_questpc2_gerimor_rules.py": "2c442df2a7a54ab7fa1db933df4c4951291b2b2f345ed80910cd0dd840d8a61b",
+        "tools/content-schema/quest-authoring/test_questpc2_gnomus_rules.py": "e5dce5155ddd6e3f89056aaebecd4779a20bb14cbd4ed6351784d28182bc3715",
+        "tools/content-schema/quest-authoring/test_questpc2_henricus_rules.py": "d5affeffe3997fbebda7b2db279baede3889c78c692f7eee0af953fffc3da013"
+      }
+    }
+  ],
+  "self_equality": [
+    {
+      "path": "tools/content-migration/test_creature_level_rating.py",
+      "test": "test_deterministic",
+      "line": 33,
+      "risk_candidates": [
+        "self_equality"
+      ],
+      "disposition": "KEEP_REPEATED_INVOCATION_DETERMINISM",
+      "reason": "Both syntactically identical operands are separate producer function calls. The comparison can detect nondeterministic bytes/results; it is not a same-value variable tautology. It remains a determinism check, not independent domain correctness by itself.",
+      "source_sha256": "746f3133ef4e3066261f1fc93427486cea4c64113f12501bc2637b730b43fe12"
+    },
+    {
+      "path": "tools/content-migration/test_npc_quest_binding_stage.py",
+      "test": "test_repeated_stage_is_byte_identical",
+      "line": 308,
+      "risk_candidates": [
+        "self_equality"
+      ],
+      "disposition": "KEEP_REPEATED_INVOCATION_DETERMINISM",
+      "reason": "Both syntactically identical operands are separate producer function calls. The comparison can detect nondeterministic bytes/results; it is not a same-value variable tautology. It remains a determinism check, not independent domain correctness by itself.",
+      "source_sha256": "958ca6b43f7b20ab37aed27c49471002e8af9ec1091fe916a6600f50d119932e"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_official_map_markers.py",
+      "test": "test_deterministic_compilation",
+      "line": 27,
+      "risk_candidates": [
+        "self_equality"
+      ],
+      "disposition": "KEEP_REPEATED_INVOCATION_DETERMINISM",
+      "reason": "Both syntactically identical operands are separate producer function calls. The comparison can detect nondeterministic bytes/results; it is not a same-value variable tautology. It remains a determinism check, not independent domain correctness by itself.",
+      "source_sha256": "9c18903e6884d605ee5a48f92da3d5dea52a4d6523eee53ed41b3e3e46617454"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_completion_import.py",
+      "test": "test_readonly_determinism_and_pinned_input_drift_rejection",
+      "line": 147,
+      "risk_candidates": [
+        "self_equality"
+      ],
+      "disposition": "KEEP_REPEATED_INVOCATION_DETERMINISM",
+      "reason": "Both syntactically identical operands are separate producer function calls. The comparison can detect nondeterministic bytes/results; it is not a same-value variable tautology. It remains a determinism check, not independent domain correctness by itself.",
+      "source_sha256": "5451f0383bf73b3d4f9b03f7357c313a9cefd975b294afa2f51098ca2443cdd7"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_world_base.py",
+      "test": "test_encoding_is_deterministic",
+      "line": 161,
+      "risk_candidates": [
+        "self_equality"
+      ],
+      "disposition": "KEEP_REPEATED_INVOCATION_DETERMINISM",
+      "reason": "Both syntactically identical operands are separate producer function calls. The comparison can detect nondeterministic bytes/results; it is not a same-value variable tautology. It remains a determinism check, not independent domain correctness by itself.",
+      "source_sha256": "befc90192aa05139e832409c9791a9a12df840ea79c1c3ea9404ed783cb7a952"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/test_world_record.py",
+      "test": "test_fixture_converts_to_a_valid_record_with_exact_bounds",
+      "line": 137,
+      "risk_candidates": [
+        "self_equality"
+      ],
+      "disposition": "KEEP_REPEATED_INVOCATION_DETERMINISM",
+      "reason": "Both syntactically identical operands are separate producer function calls. The comparison can detect nondeterministic bytes/results; it is not a same-value variable tautology. It remains a determinism check, not independent domain correctness by itself.",
+      "source_sha256": "8a51f72b5d66da41220f72dc005a9890852b8d2bcc3b14f74bd8997abfaa4e87"
+    }
+  ]
+}

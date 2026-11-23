@@ -1,0 +1,15 @@
+{
+  "baseline": {
+    "tests_run": 1,
+    "success": true,
+    "output": ".\n----------------------------------------------------------------------\nRan 1 test in 0.046s\n\nOK\n"
+  },
+  "empty_taming_rules": {
+    "tests_run": 1,
+    "success": true,
+    "output": ".\n----------------------------------------------------------------------\nRan 1 test in 0.023s\n\nOK\n"
+  },
+  "actual_input_count": 51,
+  "status": "CONFIRMED_VACUOUS_LOOP_PROPOSAL_ONLY_NO_SOURCE_EDIT",
+  "scope": "Top-level test_srvgap2_taming.py accepts empty taming rules, although current actual source has a nonempty finite cohort. Independent expected identity owner must be chosen before repair."
+}

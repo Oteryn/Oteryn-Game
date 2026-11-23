@@ -1,0 +1,49 @@
+{
+  "test_implementation_ref": "working_tree",
+  "cache": {
+    "unchanged": {
+      "run": 1,
+      "pass": true,
+      "failures": 0,
+      "errors": 0,
+      "log": ".\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nOK\n"
+    },
+    "build_display_label_only": {
+      "run": 1,
+      "pass": true,
+      "failures": 0,
+      "errors": 0,
+      "log": ".\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n"
+    },
+    "mold_display_label_only": {
+      "run": 1,
+      "pass": true,
+      "failures": 0,
+      "errors": 0,
+      "log": ".\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n"
+    },
+    "missing_build_linker": {
+      "run": 1,
+      "pass": false,
+      "failures": 1,
+      "errors": 0,
+      "log": "F\n======================================================================\nFAIL: test_linker_matches_the_archive_producer_without_adding_cargo_flags (test_protected_main_cache.ProtectedMainCache.test_linker_matches_the_archive_producer_without_adding_cargo_flags)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/repository/test_protected_main_cache.py\", line 133, in test_linker_matches_the_archive_producer_without_adding_cargo_flags\n    self.assertIn(\"          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}\\n\", step)\nAssertionError: '          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}\\n' not found in 'Build workspace\\n        env:\\n        run: cargo +1.100.0 build --locked --workspace --lib --bins --examples\\n\\n'\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+    }
+  },
+  "dispatch": {
+    "unchanged": {
+      "run": 1,
+      "pass": true,
+      "failures": 0,
+      "errors": 0,
+      "log": ".\n----------------------------------------------------------------------\nRan 1 test in 0.834s\n\nOK\n"
+    },
+    "skip_every_repository_test": {
+      "run": 1,
+      "pass": false,
+      "failures": 1,
+      "errors": 0,
+      "log": "F\n======================================================================\nFAIL: test_governance_runs_every_repository_test (test_repository_tests_run.RepositoryTestsRunTests.test_governance_runs_every_repository_test)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/scratch/738970310ba7/Oteryn-Game/tools/repository/test_repository_tests_run.py\", line 69, in test_governance_runs_every_repository_test\n    self.assertCountEqual(calls, [name for name in tests if name not in skipped])\nAssertionError: Element counts were not equal:\n\nDiff is 1864 characters long. Set self.maxDiff to None to see it.\n\n----------------------------------------------------------------------\nRan 1 test in 0.011s\n\nFAILED (failures=1)\n"
+    }
+  }
+}

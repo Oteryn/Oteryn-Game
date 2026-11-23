@@ -1,0 +1,33 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "cases": [
+    {
+      "label": "battle_metadata_count",
+      "path": "crates/protocol-oteryn/src/battle_metadata.rs",
+      "old": "    refs.len() <= MAX_ENTRIES\n        && refs\n",
+      "new": "    refs\n",
+      "test": "battle_metadata_codec_is_bounded_and_preserves_generation_and_unknowns"
+    },
+    {
+      "label": "atelier_lock_bool",
+      "path": "crates/protocol-oteryn/src/atelier.rs",
+      "old": "                    1 => true,\n                    _ => return Err(Error::Malformed),",
+      "new": "                    1 => true,\n                    _ => true,",
+      "test": "lock_round_trip_and_query_shape"
+    },
+    {
+      "label": "atelier_request_limit",
+      "path": "crates/protocol-oteryn/src/atelier.rs",
+      "old": "pub fn decode_mutate(bytes: &[u8]) -> Result<MutateRequest, Error> {\n    if bytes.len() > MAX_REQUEST_BYTES {\n        return Err(Error::LimitExceeded);\n    }\n",
+      "new": "pub fn decode_mutate(bytes: &[u8]) -> Result<MutateRequest, Error> {\n",
+      "test": "paid_actions_reject_invalid_shape_enums_and_bounds"
+    },
+    {
+      "label": "bestiary_page_limit",
+      "path": "crates/protocol-oteryn/src/bestiary_catalogue.rs",
+      "old": "pub fn decode_page(body: &[u8]) -> Result<Page> {\n    if body.len() > MAX_BYTES {\n        return Err(Error::LimitExceeded);\n    }\n",
+      "new": "pub fn decode_page(body: &[u8]) -> Result<Page> {\n",
+      "test": "catalogue_wire_checks_bounds_duplicates_and_round_trip"
+    }
+  ]
+}

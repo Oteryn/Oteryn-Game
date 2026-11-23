@@ -1,0 +1,282 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "platform": "aarch64-unknown-linux-gnu",
+  "protected_source_sha256": {
+    "apps/game-server/tests/support/bank_postgres_cases.rs": "95e2862cd0e7694874e5101f6d85d18b442d17451ebaecd9abc9b9fe35a7017d",
+    "crates/client-runtime/src/features/0064-target-move/tests/e2e_m01.rs": "79c9d79e0e90f7e723303893da5159501c87b08f3e2096897af32817829e630c",
+    "crates/gameplay/durability/src/durability/bank.rs": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+    "crates/gameplay/durability/src/durability/core_modules_linkage_tests.rs": "834b82c938310fcd6544eb835149c189e457c06841179731d15e986563d28f31",
+    "crates/gameplay/durability/src/durability/db_tests/holder_round_trip_tests.rs": "e93940544720f60f632cd9f55816b22b95b66455cc0d36f8ac5493020e7aa099",
+    "crates/gameplay/foundation/src/scheduled_events.rs": "00323b11ca29bcbcc6958c163f4456df1bcba104f6202b2b78bc6ae02448134b",
+    "crates/identity/src/lib.rs": "e63df43f6e32e184e92ae8518c994bd4e9994674b07104a519ba48767a321288",
+    "crates/input-platform/tests/native_winit.rs": "c80929f7bdf0241f0f6a778449f343de81903f5afb1f559a4a5ccc7c7d71dcce",
+    "crates/protocol-oteryn/src/analyser_catalogue.rs": "0cadd2224571cbf702f5cdb27bbd6097344d3601c076af73c49d4bc53268513e",
+    "crates/protocol-oteryn/src/analyser_party.rs": "c26a72c267330d5b2b81204ca4ad905608ab79c14619f14484020268f6c7cf87",
+    "crates/protocol-oteryn/src/appearance_tests/mappings_tests.rs": "3e37038ec5d7d94a610968f64cf56c81b11b29433304625c8935532ad21a0681",
+    "crates/protocol-oteryn/src/contract_registries.rs": "e7de501635419065aa81a7e993d1ff388c34223789b5398dcaada4d4a4f4d528",
+    "crates/protocol-oteryn/src/daily_boost.rs": "910f6d6d3e61d4c6d445eed716ab9335f088298b86300805f73a8c91e0114e26",
+    "crates/protocol-oteryn/src/guild_war.rs": "5a905f634449bc8316771f057ec30e01ae13f2168453a7d7a5898dde028e218a",
+    "crates/renderer/src/batch.rs": "a2327cd5e866e73b51112c1f3dc626dfd46f9861be786752912a06882317d546",
+    "tools/qualification/node_boot/matrix.py": "25bcbc8e94d49fc3d7a928415cf3b8bdcd46b77ed38ba8a33d2f6b96636fbbc8",
+    "tools/qualification/node_boot/test_matrix.py": "fae000f225ba62033aa88c4877079f09a6b4a1a25999760637fe2421b98e1b53",
+    "tools/qualification/node_boot/test_prebuilt.py": "897b396acd7aa3a57b4a7e5e1022ffce4e28b48c58c3491727374e973726f967",
+    "tools/qualification/wp5_s3b/run.sh": "3763f442861190aea9f36d8e4b4be7b68f9e03c42a436d456d85960f771bdb55",
+    "tools/synthetic-client-harness/src/main.rs": "15e5d8f716e64c0a4ec55f24231e7ad5602335a839dd2951eae9273bda196778"
+  },
+  "runs": [
+    {
+      "label": "baseline_mutant_ascii_only_log",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-client-ui",
+        "--test",
+        "chat_log"
+      ],
+      "returncode": 0,
+      "seconds": 45.012,
+      "summaries": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "candidate_mutant_ascii_only_log",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-client-ui",
+        "--test",
+        "chat_log"
+      ],
+      "returncode": 101,
+      "seconds": 1.533,
+      "summaries": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "format_changed",
+      "command": [
+        "rustfmt",
+        "--config-path",
+        "rustfmt.toml",
+        "crates/client-ui/tests/chat_log.rs"
+      ],
+      "returncode": 0,
+      "seconds": 0.035,
+      "summaries": []
+    },
+    {
+      "label": "candidate_unit",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-client-ui"
+      ],
+      "returncode": 0,
+      "seconds": 65.104,
+      "summaries": [
+        "test result: ok. 671 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.72s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.76s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "candidate_clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-client-ui",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "returncode": 101,
+      "seconds": 24.939,
+      "summaries": []
+    },
+    {
+      "label": "candidate_mutant_ascii_only_log_final",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-client-ui",
+        "--test",
+        "chat_log"
+      ],
+      "returncode": 101,
+      "seconds": 7.114,
+      "summaries": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "format_changed_final",
+      "command": [
+        "rustfmt",
+        "--config-path",
+        "rustfmt.toml",
+        "crates/client-ui/tests/chat_log.rs"
+      ],
+      "returncode": 0,
+      "seconds": 0.038,
+      "summaries": []
+    },
+    {
+      "label": "candidate_unit_final",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-client-ui"
+      ],
+      "returncode": 0,
+      "seconds": 31.422,
+      "summaries": [
+        "test result: ok. 671 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.30s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.75s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "label": "candidate_clippy_final",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-client-ui",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "returncode": 0,
+      "seconds": 6.972,
+      "summaries": []
+    },
+    {
+      "label": "candidate_build_final",
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-client-ui"
+      ],
+      "returncode": 0,
+      "seconds": 27.549,
+      "summaries": []
+    },
+    {
+      "label": "format_package_check_final",
+      "command": [
+        "cargo",
+        "fmt",
+        "--check",
+        "-p",
+        "oteryn-client-ui"
+      ],
+      "returncode": 0,
+      "seconds": 1.173,
+      "summaries": []
+    },
+    {
+      "label": "candidate_diff_check_final",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "crates/client-ui"
+      ],
+      "returncode": 0,
+      "seconds": 0.156,
+      "summaries": []
+    }
+  ],
+  "candidate_sha256": {
+    "crates/client-ui/tests/chat_log.rs": "ef84a79b75de54b714ddd644f285813f968a3e1e9b6338d7078566a53f440a66"
+  },
+  "production_restored": true,
+  "initial_candidate_sha256": {
+    "crates/client-ui/tests/chat_log.rs": "69b751ff618e4ac9d1da92c5efa2466ddadb1fb31f7c09b809aed22211478f54"
+  },
+  "final_mutation_candidate_sha256": {
+    "crates/client-ui/tests/chat_log.rs": "1a8e85c79836d603f8850c5846a87a7a0420d4fb622febdd874e0ebdda688154"
+  },
+  "other_changed_sources_preserved": true,
+  "resolved_initial_clippy_failure": "Initial candidate_clippy failed on denied expect_used in chat_log.rs. Root replaced expect/contains with is_ok_and; final candidate mutation and package qualification cover the recorded final SHA.",
+  "completed": true
+}
+

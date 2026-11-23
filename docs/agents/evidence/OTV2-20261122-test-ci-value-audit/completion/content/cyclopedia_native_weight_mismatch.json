@@ -1,0 +1,65 @@
+{
+  "classification": "UNRESOLVED_SOURCE_OWNER_PRECEDENCE_OR_NATIVE_OUTPUT_DRIFT",
+  "test": "tools/content-migration/test_import_cyclopedia_global.py:ClientWeightAdmission.test_generated_native_profiles_carry_client_weights",
+  "items": {
+    "43860": {
+      "captured_client_weight": 200,
+      "canonical_weight": {
+        "state": "UNKNOWN"
+      },
+      "native_weight": {
+        "state": "KNOWN",
+        "value": 0
+      },
+      "native_binding": {
+        "disposition": "EXACT",
+        "external_id": "43860",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43860",
+          "revision": "definition-r1"
+        }
+      }
+    },
+    "50255": {
+      "captured_client_weight": 12800,
+      "canonical_weight": {
+        "state": "KNOWN",
+        "value": {
+          "movable": {
+            "state": "KNOWN",
+            "value": true
+          },
+          "pickupable": {
+            "state": "KNOWN",
+            "value": true
+          },
+          "weight": {
+            "state": "KNOWN",
+            "value": 12800
+          }
+        }
+      },
+      "native_weight": {
+        "state": "KNOWN",
+        "value": 128000
+      },
+      "native_binding": {
+        "disposition": "EXACT",
+        "external_id": "50255",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i50255",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  "product_changes": false
+}

@@ -1,4 +1,4 @@
-#![cfg(feature = "native-winit")]
+#![cfg(any(windows, feature = "native-winit"))]
 
 use oteryn_input_actions::{ButtonState, Modifiers, MouseButton, NormalizedInputEvent};
 use oteryn_input_platform::InputPlatformAdapter;

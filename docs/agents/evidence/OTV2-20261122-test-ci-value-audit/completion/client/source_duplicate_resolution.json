@@ -1,0 +1,185 @@
+{
+  "method": "All eight v2 root token-equality groups manually reconciled with actual bodies, lexical ownership, shared imports and known source mounts. No delete decision is inferred from identical text alone.",
+  "groups": [
+    {
+      "body_token_sha256": "089ba676b8fb4f76dff2a7e7cafb159f4bced30ac25e12e689d18e4b882ca2e4",
+      "cases": [
+        {
+          "path": "apps/client/src/bevy_shell/scene/palette_tests.rs",
+          "test": "constant_uv_preserves_texel_tint_clipping_and_dpi",
+          "line": 7
+        },
+        {
+          "path": "apps/client/src/bevy_shell/scene/tests.rs",
+          "test": "constant_uv_preserves_texel_tint_clipping_and_dpi",
+          "line": 603
+        }
+      ],
+      "decision": "PROPOSE_CONSOLIDATION_AFTER_COMPILED_SELECTION_PROOF",
+      "review_basis": "Both palette modules import the same parent scene owner. Exact body, atlas bytes, clipping/DPI inputs and project_quad expectations coincide; scene.rs mounts both under cfg(test). No compiled-ID or deletion qualification is claimed.",
+      "evidence_level": "BOUNDED_TEST_BODIES_AND_BINDINGS_READ_NOT_RUNTIME",
+      "source_sha256": {
+        "apps/client/src/bevy_shell/scene/palette_tests.rs": "d1d587ec0908fcc7fdbcc3701d699a8603a26c6e5c7e12ebd06ce7f718c87ec2",
+        "apps/client/src/bevy_shell/scene/tests.rs": "fd8e3fee0bf6e160ded586bf1635b0d16e74c72d2edb6f6a45f089113eb45885"
+      }
+    },
+    {
+      "body_token_sha256": "3224519f5d214192e12ad01b796848cfcf404c555b2855bc8e5a8f61e733047b",
+      "cases": [
+        {
+          "path": "apps/client/src/features/0014-container-tree/tests/bulk.rs",
+          "test": "move_all_uses_live_container_handles_and_stops_at_first_server_refusal",
+          "line": 201
+        },
+        {
+          "path": "apps/client/tests/staff_nx1.rs",
+          "test": "nx1_full_staff_native_driver_negotiates_tools_and_shows_inspection",
+          "line": 115
+        }
+      ],
+      "decision": "KEEP_DISTINCT_HELPER_BINDINGS",
+      "review_basis": "bulk.rs scenario(true) checks live container requests and stop-after-refusal; staff_nx1 scenario(true) checks negotiated capability330, signed-envelope bytes, tools inspection and teardown. Identical wrapper text does not imply the same operation.",
+      "evidence_level": "BOUNDED_TEST_BODIES_AND_BINDINGS_READ_NOT_RUNTIME",
+      "source_sha256": {
+        "apps/client/src/features/0014-container-tree/tests/bulk.rs": "324a4c7380808a629c0a4def06d570c3e3445aa2236101f0d665a67cbecb12d5",
+        "apps/client/tests/staff_nx1.rs": "cdeedce204ce61017c95dd1591623c0cfbabcaba03db48d1afc9ba10950b4fb4"
+      }
+    },
+    {
+      "body_token_sha256": "35d7a9c5948eb966dac25125b43a7acb3bd31fdf0e41fb3e5b3a5245b9b7e858",
+      "cases": [
+        {
+          "path": "apps/client/src/features/0014-container-tree/tests/bulk.rs",
+          "test": "move_all_moves_every_displayed_stack_when_the_server_accepts",
+          "line": 206
+        },
+        {
+          "path": "apps/client/tests/staff_nx1.rs",
+          "test": "nx1_staff_native_driver_decodes_refusal_and_clears_authority_on_end",
+          "line": 111
+        }
+      ],
+      "decision": "KEEP_DISTINCT_HELPER_BINDINGS",
+      "review_basis": "bulk.rs scenario(false) accepts all three live source handles; staff_nx1 scenario(false) checks capability51 refusal/receipt/malformed reply and authority clearing. Distinct actual helper bodies and peer implementations.",
+      "evidence_level": "BOUNDED_TEST_BODIES_AND_BINDINGS_READ_NOT_RUNTIME",
+      "source_sha256": {
+        "apps/client/src/features/0014-container-tree/tests/bulk.rs": "324a4c7380808a629c0a4def06d570c3e3445aa2236101f0d665a67cbecb12d5",
+        "apps/client/tests/staff_nx1.rs": "cdeedce204ce61017c95dd1591623c0cfbabcaba03db48d1afc9ba10950b4fb4"
+      }
+    },
+    {
+      "body_token_sha256": "468de28837e596b65d6bb042c57324ab9e7876847ddf3035e2dc0ceed0ed9dd9",
+      "cases": [
+        {
+          "path": "apps/client/src/play/tests.rs",
+          "test": "a_hotkey_reaches_the_session_task_in_press_order_and_its_answer_reaches_the_view",
+          "line": 201
+        },
+        {
+          "path": "apps/client/src/play/tests_a_hotkey_reaches_the_session_task_in_press_order_and_its_answer_reaches_the_view_1.rs",
+          "test": "a_hotkey_reaches_the_session_task_in_press_order_and_its_answer_reaches_the_view",
+          "line": 2
+        }
+      ],
+      "decision": "PROPOSE_REMOVE_UNMOUNTED_COPY_AFTER_DEP_INFO_PROOF",
+      "review_basis": "The standalone copied hotkey body equals the mounted play/tests.rs body. No Rust/source build-script reference to its filename was found; audited feature generator includes only feature tests/play.rs. Possible-mount graph cannot establish actual compiler nonselection; retain until dep-info/compiled IDs confirm.",
+      "evidence_level": "BOUNDED_TEST_BODIES_AND_BINDINGS_READ_NOT_RUNTIME",
+      "source_sha256": {
+        "apps/client/src/play/tests.rs": "32ba86a4ad0366574703e8fb17cc14c7da4d9961c9d0f38000c3a98012f56e10",
+        "apps/client/src/play/tests_a_hotkey_reaches_the_session_task_in_press_order_and_its_answer_reaches_the_view_1.rs": "2b4f56689e714d89bf6a96da9dcf43b6241fd27fd7eae7f4a519f96b41b153dc"
+      }
+    },
+    {
+      "body_token_sha256": "68023cc71bb5bb6b5ce6cafb2199f751a946992bbc13fa09867a391676c571de",
+      "cases": [
+        {
+          "path": "apps/client/src/play/tests_a_refused_logout_shows_its_line_and_an_accepted_one_ends_play_1.rs",
+          "test": "a_refused_logout_shows_its_line_and_an_accepted_one_ends_play",
+          "line": 2
+        },
+        {
+          "path": "apps/client/src/play/tests_additional.rs",
+          "test": "a_refused_logout_shows_its_line_and_an_accepted_one_ends_play",
+          "line": 33
+        }
+      ],
+      "decision": "PROPOSE_REMOVE_UNMOUNTED_COPY_AFTER_DEP_INFO_PROOF",
+      "review_basis": "The standalone logout body equals mounted tests_additional.rs. Exact assertions retain refusal delay, pending-request suppression, retry and accepted-session-end. No source mount found for standalone copy; compiler selection remains to verify.",
+      "evidence_level": "BOUNDED_TEST_BODIES_AND_BINDINGS_READ_NOT_RUNTIME",
+      "source_sha256": {
+        "apps/client/src/play/tests_a_refused_logout_shows_its_line_and_an_accepted_one_ends_play_1.rs": "392afe1ac675ed1562ae50fced1321a068d7ef82038be9a63f4e3c32fee31fc1",
+        "apps/client/src/play/tests_additional.rs": "6670f18276a2b91a2085bf0d34b52a56c9d1d30e94c78c38f4631304f00a40cf"
+      }
+    },
+    {
+      "body_token_sha256": "f870a2b8ced3ad7d9f18ad192f8ae0ce3530c6445a123cfe539169783cbd287e",
+      "cases": [
+        {
+          "path": "crates/client-ui/src/features/0057-cyclopedia-map/tests.rs",
+          "test": "pc06_cyclopedia_map_shortcut_and_request_gate",
+          "line": 4
+        },
+        {
+          "path": "crates/client-ui/src/features/0059-house-move-out/tests.rs",
+          "test": "pc04_house_move_out_shortcut_and_request_gate",
+          "line": 4
+        }
+      ],
+      "decision": "KEEP_DISTINCT_FEATURE_OWNERS",
+      "review_basis": "Identical shortcut/pending wrapper applies to cyclopedia-map and house-move-out modules. Each imports its own Panel/request/open_key/panel_text; removing either would remove a distinct feature owner contract.",
+      "evidence_level": "BOUNDED_TEST_BODIES_AND_BINDINGS_READ_NOT_RUNTIME",
+      "source_sha256": {
+        "crates/client-ui/src/features/0057-cyclopedia-map/tests.rs": "d7d4869d71e3eee0b00ec6855b0ec29fb2c0b88f5cde06acc7771bc67559f19a",
+        "crates/client-ui/src/features/0059-house-move-out/tests.rs": "a37ce79e7d59ff99bec5179f63cd1fb3b640adf1ec960538c19a32627ec9a000"
+      }
+    },
+    {
+      "body_token_sha256": "b0c3b7cb0fadebf067e2372b2adf7706373f50e445707369aee6dc3859d7084c",
+      "cases": [
+        {
+          "path": "crates/client-ui/src/features/0086-house-transfer/tests.rs",
+          "test": "pc04_house_transfer_shortcut_and_request_gate",
+          "line": 4
+        },
+        {
+          "path": "crates/client-ui/src/features/0146-container-sort/tests.rs",
+          "test": "pc02_container_sort_shortcut_and_request_gate",
+          "line": 4
+        }
+      ],
+      "decision": "KEEP_DISTINCT_FEATURE_OWNERS",
+      "review_basis": "Identical shortcut/pending wrapper applies to house-transfer and container-sort modules with distinct super owner bindings. Keep both until any common production implementation is established.",
+      "evidence_level": "BOUNDED_TEST_BODIES_AND_BINDINGS_READ_NOT_RUNTIME",
+      "source_sha256": {
+        "crates/client-ui/src/features/0086-house-transfer/tests.rs": "1535ef9c988869b2cf6ade137ec3d285aabdce2a36a9a4b6e68f69d5f0c0fd8d",
+        "crates/client-ui/src/features/0146-container-sort/tests.rs": "faf490c1e23ae19d4fd5798a6eb83e4b6fe96e8eba0e32940ca629b4120b5e49"
+      }
+    },
+    {
+      "body_token_sha256": "0dbf0923124c294d2ef3cc62bbd1efa4fea923870e0560b33c5697a3102b05a8",
+      "cases": [
+        {
+          "path": "tools/synthetic-client-harness/tests/native_equipment.rs",
+          "test": "equip_unequip_container_drop_refusal_and_disconnect",
+          "line": 124
+        },
+        {
+          "path": "tools/synthetic-client-harness/tests/native_item_movement.rs",
+          "test": "drag_split_move_and_refusal_scenario",
+          "line": 78
+        }
+      ],
+      "decision": "KEEP_DISTINCT_HELPER_BINDINGS",
+      "review_basis": "Both wrappers spawn scenario and propagate join plus inner Result. Equipment scenario covers seven destinations/refusals and equipment projections; item-movement scenario covers split7 from20, resulting13, capacity refusal and disconnect. Different local Items peers and scenario bodies.",
+      "evidence_level": "BOUNDED_TEST_BODIES_AND_BINDINGS_READ_NOT_RUNTIME",
+      "source_sha256": {
+        "tools/synthetic-client-harness/tests/native_equipment.rs": "1f5a5c6a36c210054eb1453b0b7674ec8ad90d28c32714f4e1fc73c97c43eb6b",
+        "tools/synthetic-client-harness/tests/native_item_movement.rs": "f806f836eaec11cfc6300976696bd14387952e914a16a3d7fc4cf5cc312b894f"
+      }
+    }
+  ],
+  "limits": [
+    "No apps/client full package execution or compiled-ID equality in this analysis batch.",
+    "The separately implemented boss UI pair has its own actual Windows selection and mutation receipt."
+  ]
+}

@@ -124,34 +124,22 @@ class TreasureRewardTests(unittest.TestCase):
 
         import build_questpc4_treasure_reward_profiles as producer
         import refresh_equipment_profile_pin as cli
-        from test_refresh_equipment_profile_pin import EquipmentPinTests, document
 
-        source = EquipmentPinTests.SOURCE.replace(
-            '&[("QNPCFX", 1)];',
-            '&[("QNPCFX", 1),\n    ("QUESTPC4-STAG-ITEMS", 1),\n];',
-        ).replace("            + npc_additions.len()\n", "")
-        packet = {
-            "schema": producer.SCHEMA,
-            "producer": producer.PRODUCER,
-            "records": [
-                {"production_definition": {"production_key": f"oteryn:item.tibia.i{i}"}}
-                for i in scoped.IDS
-            ],
-        }
-        files = {
-            "content/items/definitions/spell-native-profiles.json": document(
-                0, 1, 2, 3, "stag", *(f"oteryn:item.tibia.i{i}" for i in scoped.IDS)
-            ),
-            "content/items/definitions/srx1-item-updates.json": document(4),
-            "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json": document(
-                0
-            ),
-            "tools/content-schema/native-gameplay/qnpcfx-item-profiles.json": document(
-                1
-            ),
-            "content/items/definitions/starting-loadout-profiles.json": document(),
-            producer.PROOF: packet,
-        }
+        # Retain the current preceding owners' declarations and source packets.
+        # The old one-line fixture stopped at First Dragon's ledger guard before
+        # the Treasure Hunt owner could exercise the requested --check behavior.
+        original = cli.TEST.read_text()
+        cohort = '    ("QUESTPC4-TREASURE-REWARDS", 5),\n'
+        self.assertEqual(original.count(cohort), 1)
+        source = original.replace(cohort, "")
+        paths = (
+            "tools/content-schema/native-gameplay/key-door-item-profiles.json",
+            "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json",
+            producer.PROOF,
+        )
+        files = {name: (cli.ROOT / name).read_bytes() for name in paths}
+        packet = json.loads(files[producer.PROOF])
+        self.assertEqual(cli.questpc4_treasure_reward_equipment_pin.refresh(source, packet), original)
         with tempfile.TemporaryDirectory() as tmp:
             root = fixtures.ROOT.__class__(tmp)
             target = root / "pin.rs"
@@ -159,15 +147,20 @@ class TreasureRewardTests(unittest.TestCase):
             for name, value in files.items():
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(json.dumps(value))
+                path.write_bytes(value)
             with (
                 patch.object(cli, "ROOT", root),
                 patch.object(cli, "TEST", target),
+                patch.object(cli.questpc4_treasure_reward_equipment_pin, "refresh",
+                             wraps=cli.questpc4_treasure_reward_equipment_pin.refresh) as refresh,
                 patch("sys.argv", ["refresh_equipment_profile_pin.py", "--check"]),
                 self.assertRaisesRegex(SystemExit, "equipment cohort pin is stale"),
             ):
                 cli.main()
+            refresh.assert_called_once_with(source, packet)
             self.assertEqual(target.read_text(), source)
+            for name, value in files.items():
+                self.assertEqual((root / name).read_bytes(), value)
 
     def test_pin_rejects_duplicate_and_foreign_reward_identities(self):
         import build_questpc4_treasure_reward_profiles as producer

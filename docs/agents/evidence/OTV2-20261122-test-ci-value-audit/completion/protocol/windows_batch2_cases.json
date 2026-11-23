@@ -1,0 +1,51 @@
+[
+  {
+    "label": "bestiary_encoder_count",
+    "path": "crates/protocol-oteryn/src/bestiary.rs",
+    "old": "    if races.len() > MAX_BESTIARY_VIEW_ENTRIES {\n        return Err(CyclopediaWireError::LimitExceeded);\n    }\n",
+    "new": "",
+    "test": "entry_count_and_byte_bounds_fail_closed"
+  },
+  {
+    "label": "boss_difficulty_request_limit",
+    "path": "crates/protocol-oteryn/src/boss_difficulty.rs",
+    "old": "pub fn decode_request(payload: &[u8]) -> Result<Request, Error> {\n    if payload.len() > MAX_REQUEST_BYTES {\n        return Err(Error::LimitExceeded);\n    }\n",
+    "new": "pub fn decode_request(payload: &[u8]) -> Result<Request, Error> {\n",
+    "test": "boss_difficulty::tests::malformed_and_action_incompatible_requests_fail_closed"
+  },
+  {
+    "label": "boss_catalogue_entry_limit",
+    "path": "crates/protocol-oteryn/src/boss_encounter/catalogue.rs",
+    "old": "            || self.entries.len() > PER_PAGE\n",
+    "new": "",
+    "test": "boss_catalogue_bounds_filters_stages_and_portrait_identity"
+  },
+  {
+    "label": "boss_reward_cursor_limit",
+    "path": "crates/protocol-oteryn/src/boss_encounter.rs",
+    "old": "    if payload.len() > MAX_REWARD_CHEST_QUERY_BYTES {\n        return Err(Error::LimitExceeded);\n    }\n",
+    "new": "",
+    "test": "reward_group_cursor_preserves_legacy_empty_and_refuses_malformed_forms"
+  },
+  {
+    "label": "boss_reward_expiry_boundary",
+    "path": "crates/protocol-oteryn/src/boss_encounter.rs",
+    "old": "            || entry.expires_at_unix_ms <= now_unix_ms\n",
+    "new": "",
+    "test": "reward_chest_encodes_only_live_seven_day_personal_groups"
+  },
+  {
+    "label": "boss_cooldown_entry_count",
+    "path": "crates/protocol-oteryn/src/boss_encounter.rs",
+    "old": "    if entries.len() > COOLDOWN_PAGE_SIZE || (more && entries.len() != COOLDOWN_PAGE_SIZE) {\n",
+    "new": "    if more && entries.len() != COOLDOWN_PAGE_SIZE {\n",
+    "test": "boss_cooldown_codec_bounds"
+  },
+  {
+    "label": "boss_cooldown_query_limit",
+    "path": "crates/protocol-oteryn/src/boss_encounter.rs",
+    "old": "    if payload.len() > MAX_QUERY_BYTES {\n        return Err(Error::LimitExceeded);\n    }\n",
+    "new": "",
+    "test": "boss_cooldown_codec_bounds"
+  }
+]

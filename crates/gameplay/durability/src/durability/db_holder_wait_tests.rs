@@ -17,7 +17,7 @@ fn current_thread() -> Result<tokio::runtime::Runtime, std::io::Error> {
 }
 
 #[test]
-fn a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most() {
+fn a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most() -> Result<(), &'static str> {
     let (waiter, owner, other) = (site(), site(), site());
     let start = Instant::now();
     let mut waits = Vec::new();
@@ -25,11 +25,8 @@ fn a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most() {
     note_wait_refused(&mut waits, waiter, Some(other), start + Duration::from_millis(200));
     note_wait_refused(&mut waits, waiter, Some(owner), start + Duration::from_millis(400));
     let end = start + Duration::from_millis(650);
-    let wait = finish_wait(&mut waits, waiter, end).ok_or("a 650 ms wait is reported");
+    let wait = finish_wait(&mut waits, waiter, end).ok_or("a 650 ms wait is reported")?;
     assert!(waits.is_empty());
-    let Ok(wait) = wait else {
-        return;
-    };
     let text = holder_wait_line(&wait, end.duration_since(wait.first)).render("p", 0);
     for expected in [
         "event=holder_wait".to_owned(),
@@ -40,6 +37,7 @@ fn a_long_wait_reports_its_attempts_and_the_owner_that_refused_it_most() {
     ] {
         assert!(text.contains(&expected), "{expected} missing in {text}");
     }
+    Ok(())
 }
 
 #[test]

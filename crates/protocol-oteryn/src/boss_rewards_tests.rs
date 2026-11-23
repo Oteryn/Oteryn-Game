@@ -15,7 +15,7 @@ fn boss_reward_requests_are_exact_bounded_and_round_trip() {
         }
         let mut extra = bytes.clone();
         extra.push(0);
-        assert!(decode_browse_request(&extra).is_err());
+        assert_eq!(decode_browse_request(&extra), Err(Error::LimitExceeded));
         let mut wrong_version = bytes;
         wrong_version[0] = 2;
         assert!(decode_browse_request(&wrong_version).is_err());
@@ -60,7 +60,10 @@ fn boss_reward_requests_are_exact_bounded_and_round_trip() {
         }
         let mut extra = bytes;
         extra.push(0);
-        assert!(decode_collect_all_request(&extra).is_err());
+        assert_eq!(
+            decode_collect_all_request(&extra),
+            Err(Error::LimitExceeded)
+        );
     }
     assert!(
         encode_collect_all_request(&CollectAllRequest {
@@ -148,5 +151,8 @@ fn boss_reward_rows_are_ordered_and_bounded_and_refusals_are_closed() {
         assert!(BossRewardStatus::try_from(raw).is_err());
     }
     assert!(decode_collect_reply(&[1, 0, 0, 0, 0, 0, 0]).is_err());
-    assert!(decode_collect_reply(&[1, 0, 0, 0, 0, 0, 0, 0, 0]).is_err());
+    assert_eq!(
+        decode_collect_reply(&[1, 0, 0, 0, 0, 0, 0, 0, 0]),
+        Err(Error::LimitExceeded)
+    );
 }

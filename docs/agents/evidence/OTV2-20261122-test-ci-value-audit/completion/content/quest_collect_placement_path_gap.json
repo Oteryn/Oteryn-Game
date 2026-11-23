@@ -1,0 +1,13 @@
+{
+  "scope": "Actual existing targeted test and current committed packet, not a producer mutation; source edits paused",
+  "path": "tools/content-schema/quest-authoring/test_collect_claim_candidates.py",
+  "sha256": "951ca82434be8a2c1b59ff5a901a94a4dbe8df4052d13793479fc63e5fc73b39",
+  "test": "CollectClaimCandidatesTest.test_targets_split_across_placements_are_not_one_acquisition",
+  "actual_multi_target_records": 45,
+  "actual_cover_rows": 0,
+  "assertIn_calls": 0,
+  "tests_run": 1,
+  "successful": true,
+  "output": "test_targets_split_across_placements_are_not_one_acquisition (test_collect_claim_candidates.CollectClaimCandidatesTest.test_targets_split_across_placements_are_not_one_acquisition) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.269s\n\nOK\n",
+  "gap": "The only assertion is nested over cover rows; current packet has 45 multi-target records and zero cover rows, so this method passes without evaluating an assertion. Add independently owned synthetic one-placement vs split-placement positive/negative scenarios through actual builder/consumer if source edits reopen; do not claim current corpus proves split-placement rejection."
+}

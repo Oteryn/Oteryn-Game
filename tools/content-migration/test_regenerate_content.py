@@ -443,6 +443,7 @@ def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> N
         placement_sha = hashlib.sha256((world / "placements/index.json").read_bytes()).hexdigest()
         assert f'pub const PLACEMENT_INDEX_SHA256: &str = "{placement_sha}";' in client.read_text()
 
+@patch("buddel_travel.install_buddel", new=lambda *_: None)
 def test_source_cohort_includes_installed_successors() -> None:
     installed = []
 

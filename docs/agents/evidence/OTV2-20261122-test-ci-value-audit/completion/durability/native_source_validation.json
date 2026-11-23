@@ -1,0 +1,533 @@
+{
+  "scope": "Actual native-source PG component; temporary copies of original oracle and temporary fault injections only in isolated checkout",
+  "commands": [
+    {
+      "label": "native_base_build",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "rustc",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "native_admission_source_postgres",
+        "--message-format=json"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 240.032,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_base_build.log",
+      "log_sha256": "d8695bd6f9e176e51544f223aabb7db199a3c3b1473788642b1547ff58f14871"
+    },
+    {
+      "label": "native_base_ids",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.043,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_base_ids.log",
+      "log_sha256": "26f0a2ac12c868135ad0493a0a2088220957ab3dc7e7c1797513032cda5835cb"
+    },
+    {
+      "label": "native_base_floor_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "fresh_and_recovery_account_security_share_one_floor_across_restart",
+        "--exact",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.003,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_base_floor_list.log",
+      "log_sha256": "e4c58309a5c95ef48b106f437c50a6154750153027601d82f640af21db5ad63f"
+    },
+    {
+      "label": "native_base_floor",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "--exact",
+        "fresh_and_recovery_account_security_share_one_floor_across_restart",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 10.09,
+      "pg_configured": true,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_base_floor.log",
+      "actual_pg_case_connections": [
+        "2026-11-23 12:30:09.096 UTC [264] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437008892707731",
+        "2026-11-23 12:30:18.622 UTC [265] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437008892707731",
+        "2026-11-23 12:30:18.756 UTC [266] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437008892707731"
+      ],
+      "log_sha256": "4f76a222546720785b99f352d1f685f5e77423fdb3cbe93fd23670c170950700"
+    },
+    {
+      "label": "native_base_slots_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "lost_response_two_max_slots_exact_clear_and_reuse_survive_restart",
+        "--exact",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.003,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_base_slots_list.log",
+      "log_sha256": "f7d2f4199b0b8e91b36c3ba031339fa87b33b64579e167279d4e2c0d1222faa2"
+    },
+    {
+      "label": "native_base_slots",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "--exact",
+        "lost_response_two_max_slots_exact_clear_and_reuse_survive_restart",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 9.629,
+      "pg_configured": true,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_base_slots.log",
+      "actual_pg_case_connections": [
+        "2026-11-23 12:30:19.452 UTC [269] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437019071584279",
+        "2026-11-23 12:30:28.276 UTC [270] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437019071584279",
+        "2026-11-23 12:30:28.376 UTC [271] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437019071584279",
+        "2026-11-23 12:30:28.475 UTC [272] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437019071584279"
+      ],
+      "log_sha256": "9c3c678b0b3aaa6f25fe9962dfbe7c20aae1ad1bb5414aec48a1ffda589be7af"
+    },
+    {
+      "label": "native_floor_fault_build",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "rustc",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "native_admission_source_postgres",
+        "--message-format=json"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 24.686,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_floor_fault_build.log",
+      "log_sha256": "0a5c237542dcfc39517c1cde0f7b3cc7456735c44bb666f734fa56395ee60edc"
+    },
+    {
+      "label": "native_old_floor_reset_survives_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "audit_original_fresh_and_recovery_account_security_share_one_floor_across_restart",
+        "--exact",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.008,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_old_floor_reset_survives_list.log",
+      "log_sha256": "dcfc29cf952bf362a25581c0d8eef2d47c6187402cb0b7071f7bb60887db3f74"
+    },
+    {
+      "label": "native_old_floor_reset_survives",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "--exact",
+        "audit_original_fresh_and_recovery_account_security_share_one_floor_across_restart",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 9.202,
+      "pg_configured": true,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_old_floor_reset_survives.log",
+      "actual_pg_case_connections": [
+        "2026-11-23 12:30:53.658 UTC [276] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437053523278662",
+        "2026-11-23 12:31:02.335 UTC [277] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437053523278662",
+        "2026-11-23 12:31:02.466 UTC [278] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437053523278662",
+        "2026-11-23 12:31:02.515 UTC [279] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437053523278662"
+      ],
+      "log_sha256": "cf91646655bc3d5f5015cc0ea7715b207c66e16ed530f6c99e5083e4958d9f90"
+    },
+    {
+      "label": "native_new_floor_reset_refused_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "fresh_and_recovery_account_security_share_one_floor_across_restart",
+        "--exact",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.003,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_new_floor_reset_refused_list.log",
+      "log_sha256": "e4c58309a5c95ef48b106f437c50a6154750153027601d82f640af21db5ad63f"
+    },
+    {
+      "label": "native_new_floor_reset_refused",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "--exact",
+        "fresh_and_recovery_account_security_share_one_floor_across_restart",
+        "--nocapture"
+      ],
+      "rc": 101,
+      "expected_rc": 101,
+      "seconds": 9.193,
+      "pg_configured": true,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_new_floor_reset_refused.log",
+      "actual_pg_case_connections": [
+        "2026-11-23 12:31:02.920 UTC [282] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437062798425232",
+        "2026-11-23 12:31:11.615 UTC [284] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437062798425232",
+        "2026-11-23 12:31:11.746 UTC [285] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437062798425232",
+        "2026-11-23 12:31:11.793 UTC [286] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437062798425232",
+        "2026-11-23 12:31:11.837 UTC [287] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437062798425232"
+      ],
+      "log_sha256": "914a0b46e5b790b54bc6a6dabd9f12440c6aa53efc6f3ec8945ac0962e438be0"
+    },
+    {
+      "label": "native_size_guard_deleted_build",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "rustc",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "native_admission_source_postgres",
+        "--message-format=json"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 241.13,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_size_guard_deleted_build.log",
+      "log_sha256": "3bbe2c8844b86adce536139d6522954d432d49d6ba8e1e92f808c19add60a39b"
+    },
+    {
+      "label": "native_old_size_guard_deleted_survives_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "audit_original_lost_response_two_max_slots_exact_clear_and_reuse_survive_restart",
+        "--exact",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.046,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_old_size_guard_deleted_survives_list.log",
+      "log_sha256": "9a0a167d25ceb4e5fc02218895ecec03007c57ed9189357a253317ce50725f29"
+    },
+    {
+      "label": "native_old_size_guard_deleted_survives",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "--exact",
+        "audit_original_lost_response_two_max_slots_exact_clear_and_reuse_survive_restart",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 8.652,
+      "pg_configured": true,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_old_size_guard_deleted_survives.log",
+      "actual_pg_case_connections": [
+        "2026-11-23 12:35:13.412 UTC [298] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437313284621450",
+        "2026-11-23 12:35:21.598 UTC [299] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437313284621450",
+        "2026-11-23 12:35:21.675 UTC [300] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437313284621450",
+        "2026-11-23 12:35:21.752 UTC [301] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437313284621450"
+      ],
+      "log_sha256": "27eedde14a16d8d198bfaf7fe525ed03782095d0ce795344fa330152ae0cffbd"
+    },
+    {
+      "label": "native_new_size_guard_deleted_refused_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "lost_response_two_max_slots_exact_clear_and_reuse_survive_restart",
+        "--exact",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.002,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_new_size_guard_deleted_refused_list.log",
+      "log_sha256": "f7d2f4199b0b8e91b36c3ba031339fa87b33b64579e167279d4e2c0d1222faa2"
+    },
+    {
+      "label": "native_new_size_guard_deleted_refused",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "--exact",
+        "lost_response_two_max_slots_exact_clear_and_reuse_survive_restart",
+        "--nocapture"
+      ],
+      "rc": 101,
+      "expected_rc": 101,
+      "seconds": 8.098,
+      "pg_configured": true,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_new_size_guard_deleted_refused.log",
+      "actual_pg_case_connections": [
+        "2026-11-23 12:35:22.093 UTC [304] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437321973314785",
+        "2026-11-23 12:35:29.949 UTC [305] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437321973314785",
+        "2026-11-23 12:35:30.033 UTC [306] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437321973314785"
+      ],
+      "log_sha256": "cc7de1e8b16a5fec76cef4a392b266ad847904fb9de95a1de3c132a9978e6e17"
+    },
+    {
+      "label": "native_final_build",
+      "argv": [
+        "cargo",
+        "+1.100.0",
+        "rustc",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "native_admission_source_postgres",
+        "--message-format=json"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 223.998,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_final_build.log",
+      "log_sha256": "66ab45abfd421ed37b7e93d9f8db0c787767a019cc1ece7d2b7717d689f1a3f3"
+    },
+    {
+      "label": "native_final_floor_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "fresh_and_recovery_account_security_share_one_floor_across_restart",
+        "--exact",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.06,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_final_floor_list.log",
+      "log_sha256": "e4c58309a5c95ef48b106f437c50a6154750153027601d82f640af21db5ad63f"
+    },
+    {
+      "label": "native_final_floor",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "--exact",
+        "fresh_and_recovery_account_security_share_one_floor_across_restart",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 10.039,
+      "pg_configured": true,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_final_floor.log",
+      "actual_pg_case_connections": [
+        "2026-11-23 12:39:14.421 UTC [319] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437554240624142",
+        "2026-11-23 12:39:23.328 UTC [321] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437554240624142",
+        "2026-11-23 12:39:23.464 UTC [322] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437554240624142",
+        "2026-11-23 12:39:23.508 UTC [323] LOG:  connection authorized: user=oteryn_test_admin database=native_source_floor_1795437554240624142"
+      ],
+      "log_sha256": "1f18890a59e07c2a5c4d32531a16cbeab80893a2cb7a84f8e3b54a06df5efccb"
+    },
+    {
+      "label": "native_final_slots_list",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "lost_response_two_max_slots_exact_clear_and_reuse_survive_restart",
+        "--exact",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.002,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_final_slots_list.log",
+      "log_sha256": "f7d2f4199b0b8e91b36c3ba031339fa87b33b64579e167279d4e2c0d1222faa2"
+    },
+    {
+      "label": "native_final_slots",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "--exact",
+        "lost_response_two_max_slots_exact_clear_and_reuse_survive_restart",
+        "--nocapture"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 8.167,
+      "pg_configured": true,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_final_slots.log",
+      "actual_pg_case_connections": [
+        "2026-11-23 12:39:24.453 UTC [326] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437564323536541",
+        "2026-11-23 12:39:32.140 UTC [327] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437564323536541",
+        "2026-11-23 12:39:32.238 UTC [328] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437564323536541",
+        "2026-11-23 12:39:32.322 UTC [329] LOG:  connection authorized: user=oteryn_test_admin database=native_source_slots_1795437564323536541"
+      ],
+      "log_sha256": "808f4a1ffab0bf5a25376f32de6351996caae2b0e8534ae804b76d23bc1b33d1"
+    },
+    {
+      "label": "native_final_ids",
+      "argv": [
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-target-20261123/debug/build/oteryn-game-server/5b62e7ac8f285b96/out/native_admission_source_postgres-5b62e7ac8f285b96",
+        "--list",
+        "--format",
+        "terse"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.002,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_final_ids.log",
+      "log_sha256": "26f0a2ac12c868135ad0493a0a2088220957ab3dc7e7c1797513032cda5835cb"
+    },
+    {
+      "label": "native_final_fmt",
+      "argv": [
+        "rustfmt",
+        "+1.100.0",
+        "--edition",
+        "2024",
+        "--config",
+        "skip_children=true",
+        "--check",
+        "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-20261123/apps/game-server/tests/native_admission_source_postgres.rs"
+      ],
+      "rc": 0,
+      "expected_rc": 0,
+      "seconds": 0.12,
+      "pg_configured": false,
+      "log": "/home/ubuntu/oteryn-work/oteryn-test-audit-protocol-evidence-20261123/native_final_fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "source_sha256": {
+    "base": "44302af699933de6753a380814718c8a44798cfad7da3e7a1339502fbe16e4cb",
+    "candidate": "338c46afa64b65bf27ee21c24e5e45333bcf78b000a44e83da51daf6d9d154a7",
+    "production": "d316e5e87847f5cfb072e3c0b02879c027ce00efa5a7f9b3b07e0a3468a8237e"
+  },
+  "status": "PASS",
+  "server_version_num": "180006",
+  "baseline_test_ids": [
+    "character_bootstrap_intent::tests::character_sex_tests::character_sex_is_required_and_bound_by_authenticated_creation: test",
+    "character_bootstrap_intent::tests::every_non_contract_wire_is_rejected: test",
+    "character_bootstrap_intent::tests::exact_producer_wire_decodes_and_binds_every_field: test",
+    "character_bootstrap_intent::tests::platform_v4_bootstrap_goldens: test",
+    "character_bootstrap_intent::tests::read_request_is_the_exact_bounded_producer_request: test",
+    "descriptor_and_floor_rollback_are_rejected_without_losing_current_truth: test",
+    "domain::premium::tests::a_gain_is_capped_exactly_at_the_maximum: test",
+    "domain::premium::tests::a_positive_gain_clamps_retained_soul_but_zero_gain_preserves_it: test",
+    "domain::premium::tests::crystal_premium_lapse_suspends_but_keeps_the_promotion: test",
+    "domain::premium::tests::only_current_status_opens_the_gate: test",
+    "domain::premium::tests::regeneration_never_exceeds_the_maximum: test",
+    "domain::premium::tests::the_premium_gate_is_closed_unless_a_fence_read_proved_current_authority: test",
+    "domain::premium::tests::the_promotion_benefit_needs_both_promotion_and_current_premium: test",
+    "domain::premium::tests::the_soul_maximum_follows_effective_promotion: test",
+    "fresh_and_recovery_account_security_share_one_floor_across_restart: test",
+    "lost_response_two_max_slots_exact_clear_and_reuse_survive_restart: test",
+    "migration_declares_closed_bounded_nonrollback_store: test",
+    "missing_registration_pending_read_fails_closed: test",
+    "recovery_clock_is_sampled_after_registration_wait: test",
+    "recovery_redecode_rejects_independent_body_history_and_time_mutations: test",
+    "recovery_subject_rejects_unbounded_inputs_before_owner_reads: test",
+    "recovery_verification_and_s2_denial_serialize_at_registration: test",
+    "recovery_verification_resolves_current_owners_replay_restart_and_purpose_floors: test",
+    "replaced_stale_and_unregistered_incarnations_cannot_mutate_or_establish_custody: test",
+    "resource_bounds_accept_max_and_reject_max_plus_one_before_retention: test",
+    "revoke_serializes_with_current_custody_and_later_mutations_fail_atomically: test",
+    "typed_inputs_reject_unknown_namespace_and_invalid_account_ids: test",
+    "wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor: test"
+  ],
+  "size_guard_mutant_sha256": "5171e5379afae7a74ea7198dec6e900d76334b457f245b0d598ec2b2d298f822",
+  "size_failure_is_oversize_assertion": true,
+  "production_restored": true,
+  "final_test_ids": [
+    "character_bootstrap_intent::tests::character_sex_tests::character_sex_is_required_and_bound_by_authenticated_creation: test",
+    "character_bootstrap_intent::tests::every_non_contract_wire_is_rejected: test",
+    "character_bootstrap_intent::tests::exact_producer_wire_decodes_and_binds_every_field: test",
+    "character_bootstrap_intent::tests::platform_v4_bootstrap_goldens: test",
+    "character_bootstrap_intent::tests::read_request_is_the_exact_bounded_producer_request: test",
+    "descriptor_and_floor_rollback_are_rejected_without_losing_current_truth: test",
+    "domain::premium::tests::a_gain_is_capped_exactly_at_the_maximum: test",
+    "domain::premium::tests::a_positive_gain_clamps_retained_soul_but_zero_gain_preserves_it: test",
+    "domain::premium::tests::crystal_premium_lapse_suspends_but_keeps_the_promotion: test",
+    "domain::premium::tests::only_current_status_opens_the_gate: test",
+    "domain::premium::tests::regeneration_never_exceeds_the_maximum: test",
+    "domain::premium::tests::the_premium_gate_is_closed_unless_a_fence_read_proved_current_authority: test",
+    "domain::premium::tests::the_promotion_benefit_needs_both_promotion_and_current_premium: test",
+    "domain::premium::tests::the_soul_maximum_follows_effective_promotion: test",
+    "fresh_and_recovery_account_security_share_one_floor_across_restart: test",
+    "lost_response_two_max_slots_exact_clear_and_reuse_survive_restart: test",
+    "migration_declares_closed_bounded_nonrollback_store: test",
+    "missing_registration_pending_read_fails_closed: test",
+    "recovery_clock_is_sampled_after_registration_wait: test",
+    "recovery_redecode_rejects_independent_body_history_and_time_mutations: test",
+    "recovery_subject_rejects_unbounded_inputs_before_owner_reads: test",
+    "recovery_verification_and_s2_denial_serialize_at_registration: test",
+    "recovery_verification_resolves_current_owners_replay_restart_and_purpose_floors: test",
+    "replaced_stale_and_unregistered_incarnations_cannot_mutate_or_establish_custody: test",
+    "resource_bounds_accept_max_and_reject_max_plus_one_before_retention: test",
+    "revoke_serializes_with_current_custody_and_later_mutations_fail_atomically: test",
+    "typed_inputs_reject_unknown_namespace_and_invalid_account_ids: test",
+    "wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor: test"
+  ],
+  "base_head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "selected_case_logs": {
+    "native_base_floor": "\nrunning 1 test\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018636 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018640 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018651 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018660 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018669 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018672 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018675 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018683 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018685 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018687 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018694 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018695 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018696 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018699 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018705 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018708 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018713 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018715 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018719 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018770 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018784 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437018788 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ntest fresh_and_recovery_account_security_share_one_floor_across_restart ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 27 filtered out; finished in 10.08s\n\n",
+    "native_base_slots": "\nrunning 1 test\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028288 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028293 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028313 level=info module=durability event=db_tx_end outcome=ok ms=2 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028318 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028328 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028388 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028398 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028407 level=info module=durability event=db_tx_end outcome=ok ms=2 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028418 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028424 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028429 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028433 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028489 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437028502 level=info module=durability event=db_tx_end outcome=ok ms=2 operation=begin attempts=1\ntest lost_response_two_max_slots_exact_clear_and_reuse_survive_restart ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 27 filtered out; finished in 9.63s\n\n",
+    "native_old_floor_reset_survives": "\nrunning 1 test\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062350 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062355 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062366 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062370 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062378 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062380 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062382 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062390 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062391 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062392 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062397 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062398 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062401 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062405 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062414 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062417 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062423 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062425 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062430 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062529 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062542 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437062546 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ntest audit_original_fresh_and_recovery_account_security_share_one_floor_across_restart ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 9.20s\n\n",
+    "native_new_floor_reset_refused": "\nrunning 1 test\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071631 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071635 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071645 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071649 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071657 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071659 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071661 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071670 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071671 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071673 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071676 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071679 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071680 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071682 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071690 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071694 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071699 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071702 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437071707 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nError: RowNotFound\ntest fresh_and_recovery_account_security_share_one_floor_across_restart ... FAILED\n\nfailures:\n\nfailures:\n    fresh_and_recovery_account_security_share_one_floor_across_restart\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 29 filtered out; finished in 9.19s\n\n",
+    "native_old_size_guard_deleted_survives": "\nrunning 1 test\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321612 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321615 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321625 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321629 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321636 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321689 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321697 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321701 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321707 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321710 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321712 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321714 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321716 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321765 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437321774 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ntest audit_original_lost_response_two_max_slots_exact_clear_and_reuse_survive_restart ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 8.64s\n\n",
+    "native_new_size_guard_deleted_refused": "\nrunning 1 test\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437329962 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437329966 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437329978 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437329983 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437329993 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437330046 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437330055 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437330060 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\n\nthread 'lost_response_two_max_slots_exact_clear_and_reuse_survive_restart' (218181) panicked at apps/game-server/tests/native_admission_source_postgres.rs:807:17:\nassertion failed: matches!(restarted.checkpoint_native_source_publication(&node,\n    vec![4; 16_385], 303).await, Err(DurabilityError::Unavailable))\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest lost_response_two_max_slots_exact_clear_and_reuse_survive_restart ... FAILED\n\nfailures:\n\nfailures:\n    lost_response_two_max_slots_exact_clear_and_reuse_survive_restart\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 29 filtered out; finished in 8.09s\n\n",
+    "native_final_floor": "\nrunning 1 test\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563344 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563349 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563360 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563364 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563373 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563376 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563379 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563387 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563388 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563390 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563394 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563396 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563398 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563401 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563409 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563413 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563418 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563420 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563424 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563512 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563521 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563526 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563532 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437563536 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ntest fresh_and_recovery_account_security_share_one_floor_across_restart ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 27 filtered out; finished in 10.04s\n\n",
+    "native_final_slots": "\nrunning 1 test\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572155 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572159 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572178 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572184 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572195 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572251 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572258 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572263 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572269 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572273 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572276 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572279 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\nDURABILITY_ROOT_REESTABLISHED\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572335 level=info module=durability event=db_tx_end outcome=ok ms=1 operation=begin attempts=1\nnative_admission_source_postgres-5b62e7ac8f285b96 ts=1795437572345 level=info module=durability event=db_tx_end outcome=ok ms=0 operation=begin attempts=1\ntest lost_response_two_max_slots_exact_clear_and_reuse_survive_restart ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 27 filtered out; finished in 8.16s\n\n"
+  },
+  "actual_pg_execution_counts": {
+    "positive": 6,
+    "expected_fault_failures": 2,
+    "final_positive_cases": 2,
+    "unchanged_compiled_ids": 28
+  },
+  "final_source_sha256": {
+    "apps/game-server/tests/native_admission_source_postgres.rs": "338c46afa64b65bf27ee21c24e5e45333bcf78b000a44e83da51daf6d9d154a7",
+    "crates/gameplay/durability/src/durability/native_admission_source.rs": "d316e5e87847f5cfb072e3c0b02879c027ce00efa5a7f9b3b07e0a3468a8237e"
+  },
+  "wrapper": {
+    "pid": 183478,
+    "exit_code": 0,
+    "runtime_seconds": 806.49
+  }
+}

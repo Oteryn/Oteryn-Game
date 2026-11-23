@@ -1,0 +1,278 @@
+{
+  "limits": "Execution only; no inferred semantic review or hosted CI proof.",
+  "results": [
+    {
+      "path": "tools/content-schema/native-gameplay/test_activity_source_top_order.py",
+      "source_sha256": "eca2c7d71283fb8b8e608999ea89c821f781181f17e22654e44661a5a8c7b462",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_activity_source_top_order"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.131,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 1,
+      "case_results": [
+        "test_source_cpp_precedence_and_default (test_activity_source_top_order.SourceTopOrder.test_source_cpp_precedence_and_default) ... ok"
+      ],
+      "output_tail": "test_source_cpp_precedence_and_default (test_activity_source_top_order.SourceTopOrder.test_source_cpp_precedence_and_default) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 1,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_brain_head_source_room.py",
+      "source_sha256": "eec41c629c4ac97acf76b18508e2b3858f73d59f78141325c456fd6805fb7719",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_brain_head_source_room"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.091,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 1,
+      "case_results": [
+        "test_brain_head_has_actual_donor_entry_and_global_heal_anchor (test_brain_head_source_room.BrainHeadSourceRoom.test_brain_head_has_actual_donor_entry_and_global_heal_anchor) ... ok"
+      ],
+      "output_tail": "test_brain_head_has_actual_donor_entry_and_global_heal_anchor (test_brain_head_source_room.BrainHeadSourceRoom.test_brain_head_has_actual_donor_entry_and_global_heal_anchor) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 1,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_creature_races.py",
+      "source_sha256": "8cc39364feb2f97f5ec2f7b3ed079a871611a60670c9db0d63e663f406ebfb5d",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_creature_races"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.098,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 2,
+      "case_results": [
+        "test_cake_source_venom_is_not_the_default_blood_race (test_creature_races.CakeRaceTests.test_cake_source_venom_is_not_the_default_blood_race) ... ok",
+        "test_exact_successor_binding_retains_its_source_revision (test_creature_races.CakeRaceTests.test_exact_successor_binding_retains_its_source_revision) ... ok"
+      ],
+      "output_tail": "test_cake_source_venom_is_not_the_default_blood_race (test_creature_races.CakeRaceTests.test_cake_source_venom_is_not_the_default_blood_race) ... ok\ntest_exact_successor_binding_retains_its_source_revision (test_creature_races.CakeRaceTests.test_exact_successor_binding_retains_its_source_revision) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.000s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 2,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_item_spell_augments.py",
+      "source_sha256": "9f534b735c60d2518dc50a44d1c2e951125115496c162a6a579bcee1cd39f295",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_item_spell_augments"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.082,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 3,
+      "case_results": [
+        "test_absence_disabled_unknown_and_bounds (test_item_spell_augments.ItemSpellAugments.test_absence_disabled_unknown_and_bounds) ... ok",
+        "test_all_numeric_stages_and_cooldown_units (test_item_spell_augments.ItemSpellAugments.test_all_numeric_stages_and_cooldown_units) ... ok",
+        "test_pinned_sanguine_blade_units (test_item_spell_augments.ItemSpellAugments.test_pinned_sanguine_blade_units) ... ok"
+      ],
+      "output_tail": "test_absence_disabled_unknown_and_bounds (test_item_spell_augments.ItemSpellAugments.test_absence_disabled_unknown_and_bounds) ... ok\ntest_all_numeric_stages_and_cooldown_units (test_item_spell_augments.ItemSpellAugments.test_all_numeric_stages_and_cooldown_units) ... ok\ntest_pinned_sanguine_blade_units (test_item_spell_augments.ItemSpellAugments.test_pinned_sanguine_blade_units) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.001s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 3,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_native_item_thing_orders.py",
+      "source_sha256": "0dc196a2b19931ff44e70b66dba1304fa4bd0b3c48295c37db61e88c0bcbc0b8",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_native_item_thing_orders"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.111,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "ZERO_UNITTEST_CASES",
+      "unittest_case_count": 0,
+      "case_results": [
+        "setUpClass (test_native_item_thing_orders.NativeThingOrders) ... skipped 'pinned donor cache absent; no source proof'"
+      ],
+      "output_tail": "setUpClass (test_native_item_thing_orders.NativeThingOrders) ... skipped 'pinned donor cache absent; no source proof'\n\n----------------------------------------------------------------------\nRan 0 tests in 0.000s\n\nOK (skipped=1)\n",
+      "skipped_case_count": 1,
+      "observed_ok_case_count": 0,
+      "suite_result": "ZERO_UNITTEST_CASES"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_primal_pod_item.py",
+      "source_sha256": "609171e9feb0635c152fe5950ad7a7af0093bdd42f2a7ee52738a844be450e54",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_primal_pod_item"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.064,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 1,
+      "case_results": [
+        "test_primal_pod_is_materializable_with_source_nonpickupable_flags (test_primal_pod_item.PrimalPodItemTests.test_primal_pod_is_materializable_with_source_nonpickupable_flags) ... ok"
+      ],
+      "output_tail": "test_primal_pod_is_materializable_with_source_nonpickupable_flags (test_primal_pod_item.PrimalPodItemTests.test_primal_pod_is_materializable_with_source_nonpickupable_flags) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 1,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_soul_war_source_items.py",
+      "source_sha256": "89090972d76732b763248c3237ba62afe9438893fdbc2fd0a42fab2aae90ae99",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_soul_war_source_items"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.647,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 2,
+      "case_results": [
+        "test_native_provider_really_contains_seven_required_source_items (test_soul_war_source_items.SoulWarSourceItems.test_native_provider_really_contains_seven_required_source_items) ... ok",
+        "test_source_profiles_have_exact_chain_and_no_callback_decay (test_soul_war_source_items.SoulWarSourceItems.test_source_profiles_have_exact_chain_and_no_callback_decay) ... ok"
+      ],
+      "output_tail": "test_native_provider_really_contains_seven_required_source_items (test_soul_war_source_items.SoulWarSourceItems.test_native_provider_really_contains_seven_required_source_items) ... ok\ntest_source_profiles_have_exact_chain_and_no_callback_decay (test_soul_war_source_items.SoulWarSourceItems.test_source_profiles_have_exact_chain_and_no_callback_decay) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.566s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 2,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_spell_appearances.py",
+      "source_sha256": "e29851264de3335e27782d945e0fe100bfcaa288a5648998fdb6f91d1448b19e",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_spell_appearances"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.087,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 3,
+      "case_results": [
+        "test_actual_authored_native_outfits_have_complete_qualified_values (test_spell_appearances.AppearanceSourceTests.test_actual_authored_native_outfits_have_complete_qualified_values) ... ok",
+        "test_explicit_zero_is_preserved_and_comments_do_not_supply_fields (test_spell_appearances.AppearanceSourceTests.test_explicit_zero_is_preserved_and_comments_do_not_supply_fields) ... ok",
+        "test_lua_expression_duplicate_and_unknown_fields_are_not_defaults (test_spell_appearances.AppearanceSourceTests.test_lua_expression_duplicate_and_unknown_fields_are_not_defaults) ... ok"
+      ],
+      "output_tail": "test_actual_authored_native_outfits_have_complete_qualified_values (test_spell_appearances.AppearanceSourceTests.test_actual_authored_native_outfits_have_complete_qualified_values) ... ok\ntest_explicit_zero_is_preserved_and_comments_do_not_supply_fields (test_spell_appearances.AppearanceSourceTests.test_explicit_zero_is_preserved_and_comments_do_not_supply_fields) ... ok\ntest_lua_expression_duplicate_and_unknown_fields_are_not_defaults (test_spell_appearances.AppearanceSourceTests.test_lua_expression_duplicate_and_unknown_fields_are_not_defaults) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.001s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 3,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_bakragore_capture.py",
+      "source_sha256": "8af45717e9ce1fc257aff94c5626ce4949b2a2118704ef11d9f7aaf8303f6151",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_srx3_bakragore_capture"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.07,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 1,
+      "case_results": [
+        "test_actual_source_capture_contains_literal_essence_targets (test_srx3_bakragore_capture.BakragoreCaptureTests.test_actual_source_capture_contains_literal_essence_targets) ... ok"
+      ],
+      "output_tail": "test_actual_source_capture_contains_literal_essence_targets (test_srx3_bakragore_capture.BakragoreCaptureTests.test_actual_source_capture_contains_literal_essence_targets) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 1,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_ebb_maps.py",
+      "source_sha256": "fbba9a6414fd131075fdd5e8103a2619652b9b988c4d3c8fb0f17c1d731adaab",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_srx3_ebb_maps"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 0.076,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 3,
+      "case_results": [
+        "test_duplicate_and_unknown_source_facts_refuse (test_srx3_ebb_maps.EbbMapTests.test_duplicate_and_unknown_source_facts_refuse) ... ok",
+        "test_replacement_retains_source_outliers_and_order (test_srx3_ebb_maps.EbbMapTests.test_replacement_retains_source_outliers_and_order) ... ok",
+        "test_wrong_source_blob_refuses (test_srx3_ebb_maps.EbbMapTests.test_wrong_source_blob_refuses) ... ok"
+      ],
+      "output_tail": "test_duplicate_and_unknown_source_facts_refuse (test_srx3_ebb_maps.EbbMapTests.test_duplicate_and_unknown_source_facts_refuse) ... ok\ntest_replacement_retains_source_outliers_and_order (test_srx3_ebb_maps.EbbMapTests.test_replacement_retains_source_outliers_and_order) ... ok\ntest_wrong_source_blob_refuses (test_srx3_ebb_maps.EbbMapTests.test_wrong_source_blob_refuses) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 3,
+      "suite_result": "PASS"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/test_srx3_w01_prepare_death.py",
+      "source_sha256": "94f8ad7a31bd100cf06d92088b2a1fdfeecaa407e51e75aed90ccfe27c1c6337",
+      "command": [
+        "/workspace/scratch/738970310ba7/content-audit-venv/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_srx3_w01_prepare_death"
+      ],
+      "cwd": "/workspace/scratch/738970310ba7/Oteryn-Game/tools/content-schema/native-gameplay",
+      "elapsed_seconds": 4.633,
+      "timeout_seconds": 50,
+      "exit_code": 0,
+      "status": "PASS",
+      "unittest_case_count": 2,
+      "case_results": [
+        "test_actual_two_source_events_retain_distinct_heals_and_shared_marker (test_srx3_w01_prepare_death.PrepareDeathTests.test_actual_two_source_events_retain_distinct_heals_and_shared_marker) ... ok",
+        "test_source_root_tag_does_not_bless_changed_native_body (test_srx3_w01_prepare_death.PrepareDeathTests.test_source_root_tag_does_not_bless_changed_native_body) ... ok"
+      ],
+      "output_tail": "test_actual_two_source_events_retain_distinct_heals_and_shared_marker (test_srx3_w01_prepare_death.PrepareDeathTests.test_actual_two_source_events_retain_distinct_heals_and_shared_marker) ... ok\ntest_source_root_tag_does_not_bless_changed_native_body (test_srx3_w01_prepare_death.PrepareDeathTests.test_source_root_tag_does_not_bless_changed_native_body) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 4.560s\n\nOK\n",
+      "skipped_case_count": 0,
+      "observed_ok_case_count": 2,
+      "suite_result": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,1085 @@
+{
+  "head": "0623fbd59c372bbf479f3965031f47393c42cd39",
+  "phase": "Predecessor status; not unpublished authoring candidate qualification",
+  "observed_utc": "2026-11-23 12:50:27 UTC",
+  "advertised_total": 119,
+  "unique_count": 119,
+  "counts": {
+    "success": 108,
+    "skipped": 11
+  },
+  "checks": [
+    {
+      "id": 137699555826,
+      "name": "game-gate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137699555826",
+      "started_at": "2026-11-23T12:41:18Z",
+      "completed_at": "2026-11-23T12:41:21Z"
+    },
+    {
+      "id": 137699501380,
+      "name": "Merge gate / validate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137699501380",
+      "started_at": "2026-11-23T12:41:11Z",
+      "completed_at": "2026-11-23T12:41:15Z"
+    },
+    {
+      "id": 137699203423,
+      "name": "game-gate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137699203423",
+      "started_at": "2026-11-23T12:40:39Z",
+      "completed_at": "2026-11-23T12:40:43Z"
+    },
+    {
+      "id": 137699129441,
+      "name": "Merge gate / validate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137699129441",
+      "started_at": "2026-11-23T12:40:32Z",
+      "completed_at": "2026-11-23T12:40:37Z"
+    },
+    {
+      "id": 137698819812,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137698819812",
+      "started_at": "2026-11-23T12:39:57Z",
+      "completed_at": "2026-11-23T12:41:09Z"
+    },
+    {
+      "id": 137698819809,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137698819809",
+      "started_at": "2026-11-23T12:39:57Z",
+      "completed_at": "2026-11-23T12:40:57Z"
+    },
+    {
+      "id": 137698819805,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137698819805",
+      "started_at": "2026-11-23T12:39:57Z",
+      "completed_at": "2026-11-23T12:41:08Z"
+    },
+    {
+      "id": 137698819794,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137698819794",
+      "started_at": "2026-11-23T12:39:57Z",
+      "completed_at": "2026-11-23T12:40:52Z"
+    },
+    {
+      "id": 137698819745,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137698819745",
+      "started_at": "2026-11-23T12:39:57Z",
+      "completed_at": "2026-11-23T12:41:09Z"
+    },
+    {
+      "id": 137698415839,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137698415839",
+      "started_at": "2026-11-23T12:39:12Z",
+      "completed_at": "2026-11-23T12:40:29Z"
+    },
+    {
+      "id": 137698415739,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137698415739",
+      "started_at": "2026-11-23T12:39:12Z",
+      "completed_at": "2026-11-23T12:40:27Z"
+    },
+    {
+      "id": 137698415738,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137698415738",
+      "started_at": "2026-11-23T12:39:12Z",
+      "completed_at": "2026-11-23T12:40:14Z"
+    },
+    {
+      "id": 137698415710,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137698415710",
+      "started_at": "2026-11-23T12:39:11Z",
+      "completed_at": "2026-11-23T12:40:12Z"
+    },
+    {
+      "id": 137698415707,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (tests 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137698415707",
+      "started_at": "2026-11-23T12:39:11Z",
+      "completed_at": "2026-11-23T12:40:20Z"
+    },
+    {
+      "id": 137695267976,
+      "name": "Merge gate / Changed-crate archive (lib) / Unit-test archive (lib, 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137695267976",
+      "started_at": "2026-11-23T12:34:01Z",
+      "completed_at": "2026-11-23T12:38:45Z"
+    },
+    {
+      "id": 137695267803,
+      "name": "Merge gate / Changed-crate archive (lib) / Unit-test archive (lib, 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137695267803",
+      "started_at": "2026-11-23T12:33:57Z",
+      "completed_at": "2026-11-23T12:39:09Z"
+    },
+    {
+      "id": 137695267776,
+      "name": "Merge gate / Changed-crate archive (lib) / Unit-test archive (lib, 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137695267776",
+      "started_at": "2026-11-23T12:34:15Z",
+      "completed_at": "2026-11-23T12:38:07Z"
+    },
+    {
+      "id": 137695267744,
+      "name": "Merge gate / Changed-crate archive (lib) / Unit-test archive (lib, 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137695267744",
+      "started_at": "2026-11-23T12:33:51Z",
+      "completed_at": "2026-11-23T12:38:59Z"
+    },
+    {
+      "id": 137695267698,
+      "name": "Merge gate / Changed-crate archive (lib) / Unit-test archive (lib, 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137695267698",
+      "started_at": "2026-11-23T12:33:56Z",
+      "completed_at": "2026-11-23T12:38:13Z"
+    },
+    {
+      "id": 137692804559,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Unit-test archive (dispatch-2, 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137692804559",
+      "started_at": "2026-11-23T12:30:03Z",
+      "completed_at": "2026-11-23T12:31:13Z"
+    },
+    {
+      "id": 137692804558,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Unit-test archive (dispatch-2, 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137692804558",
+      "started_at": "2026-11-23T12:30:00Z",
+      "completed_at": "2026-11-23T12:31:08Z"
+    },
+    {
+      "id": 137692804550,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Unit-test archive (dispatch-2, 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137692804550",
+      "started_at": "2026-11-23T12:30:05Z",
+      "completed_at": "2026-11-23T12:30:54Z"
+    },
+    {
+      "id": 137692804500,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Unit-test archive (dispatch-2, 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137692804500",
+      "started_at": "2026-11-23T12:30:00Z",
+      "completed_at": "2026-11-23T12:30:47Z"
+    },
+    {
+      "id": 137692804456,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Unit-test archive (dispatch-2, 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137692804456",
+      "started_at": "2026-11-23T12:29:53Z",
+      "completed_at": "2026-11-23T12:30:35Z"
+    },
+    {
+      "id": 137691246921,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137691246921",
+      "started_at": "2026-11-23T12:29:11Z",
+      "completed_at": "2026-11-23T12:32:06Z"
+    },
+    {
+      "id": 137691246900,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137691246900",
+      "started_at": "2026-11-23T12:29:11Z",
+      "completed_at": "2026-11-23T12:31:01Z"
+    },
+    {
+      "id": 137691246894,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137691246894",
+      "started_at": "2026-11-23T12:29:07Z",
+      "completed_at": "2026-11-23T12:31:44Z"
+    },
+    {
+      "id": 137691246878,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137691246878",
+      "started_at": "2026-11-23T12:29:20Z",
+      "completed_at": "2026-11-23T12:31:20Z"
+    },
+    {
+      "id": 137691246854,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137691246854",
+      "started_at": "2026-11-23T12:28:55Z",
+      "completed_at": "2026-11-23T12:31:40Z"
+    },
+    {
+      "id": 137691188954,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Unit-test archive (dispatch-3, 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137691188954",
+      "started_at": "2026-11-23T12:28:42Z",
+      "completed_at": "2026-11-23T12:29:25Z"
+    },
+    {
+      "id": 137691188872,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Unit-test archive (dispatch-3, 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137691188872",
+      "started_at": "2026-11-23T12:28:53Z",
+      "completed_at": "2026-11-23T12:30:04Z"
+    },
+    {
+      "id": 137691188858,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Unit-test archive (dispatch-3, 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137691188858",
+      "started_at": "2026-11-23T12:28:47Z",
+      "completed_at": "2026-11-23T12:30:03Z"
+    },
+    {
+      "id": 137691188760,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Unit-test archive (dispatch-3, 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137691188760",
+      "started_at": "2026-11-23T12:28:42Z",
+      "completed_at": "2026-11-23T12:30:01Z"
+    },
+    {
+      "id": 137691188754,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Unit-test archive (dispatch-3, 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137691188754",
+      "started_at": "2026-11-23T12:28:52Z",
+      "completed_at": "2026-11-23T12:29:53Z"
+    },
+    {
+      "id": 137691170214,
+      "name": "Merge gate / Changed-crate archive (lib) / Unit-test archive (lib, 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137691170214",
+      "started_at": "2026-11-23T12:28:36Z",
+      "completed_at": "2026-11-23T12:33:20Z"
+    },
+    {
+      "id": 137691170203,
+      "name": "Merge gate / Changed-crate archive (lib) / Unit-test archive (lib, 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137691170203",
+      "started_at": "2026-11-23T12:28:24Z",
+      "completed_at": "2026-11-23T12:33:06Z"
+    },
+    {
+      "id": 137691170171,
+      "name": "Merge gate / Changed-crate archive (lib) / Unit-test archive (lib, 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137691170171",
+      "started_at": "2026-11-23T12:28:23Z",
+      "completed_at": "2026-11-23T12:39:54Z"
+    },
+    {
+      "id": 137691170141,
+      "name": "Merge gate / Changed-crate archive (lib) / Unit-test archive (lib, 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137691170141",
+      "started_at": "2026-11-23T12:28:06Z",
+      "completed_at": "2026-11-23T12:31:57Z"
+    },
+    {
+      "id": 137691170097,
+      "name": "Merge gate / Changed-crate archive (lib) / Unit-test archive (lib, 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137691170097",
+      "started_at": "2026-11-23T12:28:05Z",
+      "completed_at": "2026-11-23T12:32:42Z"
+    },
+    {
+      "id": 137690363259,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Unit-test archive (dispatch-3, 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137690363259",
+      "started_at": "2026-11-23T12:27:58Z",
+      "completed_at": "2026-11-23T12:28:58Z"
+    },
+    {
+      "id": 137690363052,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Unit-test archive (dispatch-3, 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137690363052",
+      "started_at": "2026-11-23T12:27:18Z",
+      "completed_at": "2026-11-23T12:29:09Z"
+    },
+    {
+      "id": 137690363023,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Unit-test archive (dispatch-3, 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137690363023",
+      "started_at": "2026-11-23T12:27:32Z",
+      "completed_at": "2026-11-23T12:28:50Z"
+    },
+    {
+      "id": 137690363020,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Unit-test archive (dispatch-3, 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137690363020",
+      "started_at": "2026-11-23T12:27:16Z",
+      "completed_at": "2026-11-23T12:28:03Z"
+    },
+    {
+      "id": 137690363016,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Unit-test archive (dispatch-3, 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137690363016",
+      "started_at": "2026-11-23T12:27:56Z",
+      "completed_at": "2026-11-23T12:28:35Z"
+    },
+    {
+      "id": 137689286237,
+      "name": "Merge gate / Changed-crate archive (bins) / Unit-test archive (bins, 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137689286237",
+      "started_at": "2026-11-23T12:27:05Z",
+      "completed_at": "2026-11-23T12:28:40Z"
+    },
+    {
+      "id": 137689286208,
+      "name": "Merge gate / Changed-crate archive (bins) / Unit-test archive (bins, 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137689286208",
+      "started_at": "2026-11-23T12:27:05Z",
+      "completed_at": "2026-11-23T12:27:59Z"
+    },
+    {
+      "id": 137689286199,
+      "name": "Merge gate / Changed-crate archive (bins) / Unit-test archive (bins, 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137689286199",
+      "started_at": "2026-11-23T12:27:05Z",
+      "completed_at": "2026-11-23T12:27:54Z"
+    },
+    {
+      "id": 137689286170,
+      "name": "Merge gate / Changed-crate archive (bins) / Unit-test archive (bins, 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137689286170",
+      "started_at": "2026-11-23T12:26:11Z",
+      "completed_at": "2026-11-23T12:27:04Z"
+    },
+    {
+      "id": 137689286147,
+      "name": "Merge gate / Changed-crate archive (bins) / Unit-test archive (bins, 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137689286147",
+      "started_at": "2026-11-23T12:26:53Z",
+      "completed_at": "2026-11-23T12:27:48Z"
+    },
+    {
+      "id": 137688669832,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Unit-test archive (dispatch-2, 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137688669832",
+      "started_at": "2026-11-23T12:24:47Z",
+      "completed_at": "2026-11-23T12:26:02Z"
+    },
+    {
+      "id": 137688669776,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Unit-test archive (dispatch-2, 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137688669776",
+      "started_at": "2026-11-23T12:25:44Z",
+      "completed_at": "2026-11-23T12:27:03Z"
+    },
+    {
+      "id": 137688669709,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Unit-test archive (dispatch-2, 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137688669709",
+      "started_at": "2026-11-23T12:26:01Z",
+      "completed_at": "2026-11-23T12:26:53Z"
+    },
+    {
+      "id": 137688669668,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Unit-test archive (dispatch-2, 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137688669668",
+      "started_at": "2026-11-23T12:24:11Z",
+      "completed_at": "2026-11-23T12:25:39Z"
+    },
+    {
+      "id": 137688669540,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Unit-test archive (dispatch-2, 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137688669540",
+      "started_at": "2026-11-23T12:23:46Z",
+      "completed_at": "2026-11-23T12:25:02Z"
+    },
+    {
+      "id": 137688026836,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137688026836",
+      "started_at": "2026-11-23T12:22:32Z",
+      "completed_at": "2026-11-23T12:24:30Z"
+    },
+    {
+      "id": 137688026806,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137688026806",
+      "started_at": "2026-11-23T12:23:17Z",
+      "completed_at": "2026-11-23T12:26:10Z"
+    },
+    {
+      "id": 137688026784,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137688026784",
+      "started_at": "2026-11-23T12:21:45Z",
+      "completed_at": "2026-11-23T12:24:17Z"
+    },
+    {
+      "id": 137688026755,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137688026755",
+      "started_at": "2026-11-23T12:21:13Z",
+      "completed_at": "2026-11-23T12:23:44Z"
+    },
+    {
+      "id": 137688026735,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Unit-test archive (dispatch-1, 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137688026735",
+      "started_at": "2026-11-23T12:22:25Z",
+      "completed_at": "2026-11-23T12:24:40Z"
+    },
+    {
+      "id": 137687305625,
+      "name": "Merge gate / Changed-crate archive (bins) / Unit-test archive (bins, 2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137687305625",
+      "started_at": "2026-11-23T12:20:35Z",
+      "completed_at": "2026-11-23T12:21:26Z"
+    },
+    {
+      "id": 137687305511,
+      "name": "Merge gate / Changed-crate archive (bins) / Unit-test archive (bins, 3/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137687305511",
+      "started_at": "2026-11-23T12:20:39Z",
+      "completed_at": "2026-11-23T12:21:54Z"
+    },
+    {
+      "id": 137687305382,
+      "name": "Merge gate / Changed-crate archive (bins) / Unit-test archive (bins, 1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137687305382",
+      "started_at": "2026-11-23T12:19:15Z",
+      "completed_at": "2026-11-23T12:20:35Z"
+    },
+    {
+      "id": 137687305337,
+      "name": "Merge gate / Changed-crate archive (bins) / Unit-test archive (bins, 4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137687305337",
+      "started_at": "2026-11-23T12:20:39Z",
+      "completed_at": "2026-11-23T12:21:44Z"
+    },
+    {
+      "id": 137687305326,
+      "name": "Merge gate / Changed-crate archive (bins) / Unit-test archive (bins, 5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137687305326",
+      "started_at": "2026-11-23T12:18:54Z",
+      "completed_at": "2026-11-23T12:20:00Z"
+    },
+    {
+      "id": 137684652080,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Build unit-test archive (dispatch-1)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137684652080",
+      "started_at": "2026-11-23T12:15:13Z",
+      "completed_at": "2026-11-23T12:25:59Z"
+    },
+    {
+      "id": 137684652044,
+      "name": "Merge gate / Changed-crate archive (bins) / Build unit-test archive (bins)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137684652044",
+      "started_at": "2026-11-23T12:15:18Z",
+      "completed_at": "2026-11-23T12:22:23Z"
+    },
+    {
+      "id": 137684652034,
+      "name": "Merge gate / Changed-crate archive (lib) / Build unit-test archive (lib)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137684652034",
+      "started_at": "2026-11-23T12:15:08Z",
+      "completed_at": "2026-11-23T12:33:22Z"
+    },
+    {
+      "id": 137684651978,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Build unit-test archive (dispatch-3)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137684651978",
+      "started_at": "2026-11-23T12:14:08Z",
+      "completed_at": "2026-11-23T12:25:53Z"
+    },
+    {
+      "id": 137684651977,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Build unit-test archive (dispatch-2)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137684651977",
+      "started_at": "2026-11-23T12:15:26Z",
+      "completed_at": "2026-11-23T12:28:50Z"
+    },
+    {
+      "id": 137684651583,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (clippy)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137684651583",
+      "started_at": "2026-11-23T12:14:05Z",
+      "completed_at": "2026-11-23T12:20:44Z"
+    },
+    {
+      "id": 137684651560,
+      "name": "Merge gate / Rust native client game UI",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137684651560",
+      "started_at": "2026-11-23T12:13:54Z",
+      "completed_at": "2026-11-23T12:21:37Z"
+    },
+    {
+      "id": 137682567655,
+      "name": "Merge gate / World bundle",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137682567655",
+      "started_at": "2026-11-23T12:09:55Z",
+      "completed_at": "2026-11-23T12:09:54Z"
+    },
+    {
+      "id": 137682564418,
+      "name": "Merge gate / Rust policy and metadata",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137682564418",
+      "started_at": "2026-11-23T12:11:51Z",
+      "completed_at": "2026-11-23T12:12:34Z"
+    },
+    {
+      "id": 137682564415,
+      "name": "Merge gate / Molehill runner routing",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137682564415",
+      "started_at": "2026-11-23T12:12:02Z",
+      "completed_at": "2026-11-23T12:13:49Z"
+    },
+    {
+      "id": 137682564306,
+      "name": "Merge gate / Rust supply chain",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137682564306",
+      "started_at": "2026-11-23T12:11:23Z",
+      "completed_at": "2026-11-23T12:12:04Z"
+    },
+    {
+      "id": 137680826222,
+      "name": "Merge gate / Changed-crate archive (bins) / Build unit-test archive (bins)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137680826222",
+      "started_at": "2026-11-23T12:11:41Z",
+      "completed_at": "2026-11-23T12:18:44Z"
+    },
+    {
+      "id": 137680826077,
+      "name": "Merge gate / Changed-crate archive (dispatch-2) / Build unit-test archive (dispatch-2)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137680826077",
+      "started_at": "2026-11-23T12:10:31Z",
+      "completed_at": "2026-11-23T12:21:14Z"
+    },
+    {
+      "id": 137680826066,
+      "name": "Merge gate / Changed-crate archive (dispatch-3) / Build unit-test archive (dispatch-3)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137680826066",
+      "started_at": "2026-11-23T12:12:02Z",
+      "completed_at": "2026-11-23T12:24:22Z"
+    },
+    {
+      "id": 137680826056,
+      "name": "Merge gate / Changed-crate archive (lib) / Build unit-test archive (lib)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137680826056",
+      "started_at": "2026-11-23T12:08:29Z",
+      "completed_at": "2026-11-23T12:25:50Z"
+    },
+    {
+      "id": 137680826048,
+      "name": "Merge gate / Changed-crate archive (dispatch-1) / Build unit-test archive (dispatch-1)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137680826048",
+      "started_at": "2026-11-23T12:09:18Z",
+      "completed_at": "2026-11-23T12:20:05Z"
+    },
+    {
+      "id": 137680825409,
+      "name": "Merge gate / Rust native client game UI",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137680825409",
+      "started_at": "2026-11-23T12:08:33Z",
+      "completed_at": "2026-11-23T12:17:03Z"
+    },
+    {
+      "id": 137680825402,
+      "name": "Merge gate / Rust changed-crate Clippy and unit tests (clippy)",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137680825402",
+      "started_at": "2026-11-23T12:08:52Z",
+      "completed_at": "2026-11-23T12:18:43Z"
+    },
+    {
+      "id": 137680151631,
+      "name": "Merge gate / routing contract",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137680151631",
+      "started_at": "2026-11-23T12:07:51Z",
+      "completed_at": "2026-11-23T12:09:09Z"
+    },
+    {
+      "id": 137680151611,
+      "name": "Merge gate / trusted-base risk lanes",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137680151611",
+      "started_at": "2026-11-23T12:08:25Z",
+      "completed_at": "2026-11-23T12:09:54Z"
+    },
+    {
+      "id": 137680151601,
+      "name": "Merge gate / dependency review",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137680151601",
+      "started_at": "2026-11-23T12:07:28Z",
+      "completed_at": "2026-11-23T12:07:36Z"
+    },
+    {
+      "id": 137680151591,
+      "name": "Merge gate / governance",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137680151591",
+      "started_at": "2026-11-23T12:07:07Z",
+      "completed_at": "2026-11-23T12:10:29Z"
+    },
+    {
+      "id": 137679881108,
+      "name": "Content tree / Item+Mount equivalence",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663892/job/137679881108",
+      "started_at": "2026-11-23T12:05:28Z",
+      "completed_at": "2026-11-23T12:05:30Z"
+    },
+    {
+      "id": 137679866860,
+      "name": "Merge authority audit / protected-base validate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170901229/job/137679866860",
+      "started_at": "2026-11-23T12:05:33Z",
+      "completed_at": "2026-11-23T12:05:41Z"
+    },
+    {
+      "id": 137679863920,
+      "name": "Architecture semantic audit / validate",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900700/job/137679863920",
+      "started_at": "2026-11-23T12:04:49Z",
+      "completed_at": "2026-11-23T12:04:49Z"
+    },
+    {
+      "id": 137679863394,
+      "name": "Merge gate / scope",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900976/job/137679863394",
+      "started_at": "2026-11-23T12:05:14Z",
+      "completed_at": "2026-11-23T12:05:21Z"
+    },
+    {
+      "id": 137679860361,
+      "name": "Agent governance / validate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45170900579/job/137679860361",
+      "started_at": "2026-11-23T12:06:49Z",
+      "completed_at": "2026-11-23T12:07:48Z"
+    },
+    {
+      "id": 137676769597,
+      "name": "Merge gate / World bundle",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137676769597",
+      "started_at": "2026-11-23T11:58:55Z",
+      "completed_at": "2026-11-23T11:58:55Z"
+    },
+    {
+      "id": 137676766905,
+      "name": "Merge gate / Rust policy and metadata",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137676766905",
+      "started_at": "2026-11-23T11:59:10Z",
+      "completed_at": "2026-11-23T11:59:47Z"
+    },
+    {
+      "id": 137676766769,
+      "name": "Merge gate / Molehill runner routing",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137676766769",
+      "started_at": "2026-11-23T12:04:54Z",
+      "completed_at": "2026-11-23T12:06:37Z"
+    },
+    {
+      "id": 137676766589,
+      "name": "Merge gate / Rust supply chain",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137676766589",
+      "started_at": "2026-11-23T12:00:08Z",
+      "completed_at": "2026-11-23T12:00:47Z"
+    },
+    {
+      "id": 137675757618,
+      "name": "Merge gate / routing contract",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137675757618",
+      "started_at": "2026-11-23T11:57:46Z",
+      "completed_at": "2026-11-23T11:59:05Z"
+    },
+    {
+      "id": 137675757609,
+      "name": "Merge gate / dependency review",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137675757609",
+      "started_at": "2026-11-23T11:57:43Z",
+      "completed_at": "2026-11-23T11:57:50Z"
+    },
+    {
+      "id": 137675757487,
+      "name": "Merge gate / governance",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137675757487",
+      "started_at": "2026-11-23T11:57:43Z",
+      "completed_at": "2026-11-23T12:00:29Z"
+    },
+    {
+      "id": 137675757442,
+      "name": "Merge gate / trusted-base risk lanes",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137675757442",
+      "started_at": "2026-11-23T11:57:42Z",
+      "completed_at": "2026-11-23T11:58:55Z"
+    },
+    {
+      "id": 137675646020,
+      "name": "PR heavy / Node boot / plan shards",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663715/job/137675646020",
+      "started_at": "2026-11-23T11:56:43Z",
+      "completed_at": "2026-11-23T11:56:34Z"
+    },
+    {
+      "id": 137675630470,
+      "name": "Node boot / shared Platform build",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663715/job/137675630470",
+      "started_at": "2026-11-23T11:56:41Z",
+      "completed_at": "2026-11-23T11:56:34Z"
+    },
+    {
+      "id": 137675626612,
+      "name": "PostgreSQL legacy archive routing",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663715/job/137675626612",
+      "started_at": "2026-11-23T11:56:41Z",
+      "completed_at": "2026-11-23T11:56:34Z"
+    },
+    {
+      "id": 137675569488,
+      "name": "PR heavy / Node boot against the real Platform",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663715/job/137675569488",
+      "started_at": "2026-11-23T11:56:34Z",
+      "completed_at": "2026-11-23T11:56:34Z"
+    },
+    {
+      "id": 137675569367,
+      "name": "PR heavy / Node boot / ${{ matrix.shard.name }}",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663715/job/137675569367",
+      "started_at": "2026-11-23T11:56:34Z",
+      "completed_at": "2026-11-23T11:56:34Z"
+    },
+    {
+      "id": 137675569315,
+      "name": "PR early signal / PostgreSQL scope and routing",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663715/job/137675569315",
+      "started_at": "2026-11-23T11:56:34Z",
+      "completed_at": "2026-11-23T11:56:34Z"
+    },
+    {
+      "id": 137675568982,
+      "name": "Node boot / shared qualification build",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663715/job/137675568982",
+      "started_at": "2026-11-23T11:56:34Z",
+      "completed_at": "2026-11-23T11:56:34Z"
+    },
+    {
+      "id": 137675568549,
+      "name": "PostgreSQL archive / ${{ matrix.archive }}",
+      "status": "completed",
+      "conclusion": "skipped",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663715/job/137675568549",
+      "started_at": "2026-11-23T11:56:34Z",
+      "completed_at": "2026-11-23T11:56:34Z"
+    },
+    {
+      "id": 137675568283,
+      "name": "Merge gate / scope",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663879/job/137675568283",
+      "started_at": "2026-11-23T11:56:52Z",
+      "completed_at": "2026-11-23T11:56:56Z"
+    },
+    {
+      "id": 137675566359,
+      "name": "heavy-gate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663715/job/137675566359",
+      "started_at": "2026-11-23T11:57:45Z",
+      "completed_at": "2026-11-23T11:57:49Z"
+    },
+    {
+      "id": 137675566098,
+      "name": "Content tree / Full validator and seals",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663892/job/137675566098",
+      "started_at": "2026-11-23T11:57:23Z",
+      "completed_at": "2026-11-23T12:01:25Z"
+    },
+    {
+      "id": 137675565975,
+      "name": "Content tree / Pinned source contracts",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663892/job/137675565975",
+      "started_at": "2026-11-23T11:57:52Z",
+      "completed_at": "2026-11-23T12:00:52Z"
+    },
+    {
+      "id": 137675565888,
+      "name": "Architecture semantic audit / validate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663683/job/137675565888",
+      "started_at": "2026-11-23T11:56:56Z",
+      "completed_at": "2026-11-23T11:58:19Z"
+    },
+    {
+      "id": 137675565547,
+      "name": "Agent governance / validate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663575/job/137675565547",
+      "started_at": "2026-11-23T11:57:23Z",
+      "completed_at": "2026-11-23T11:58:16Z"
+    },
+    {
+      "id": 137675565424,
+      "name": "Content tree / Migration equivalence checks",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663892/job/137675565424",
+      "started_at": "2026-11-23T11:56:58Z",
+      "completed_at": "2026-11-23T12:04:51Z"
+    },
+    {
+      "id": 137675564789,
+      "name": "craft-authoring",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663700/job/137675564789",
+      "started_at": "2026-11-23T11:56:57Z",
+      "completed_at": "2026-11-23T11:57:53Z"
+    },
+    {
+      "id": 137675564444,
+      "name": "item-authoring",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663628/job/137675564444",
+      "started_at": "2026-11-23T11:56:36Z",
+      "completed_at": "2026-11-23T12:07:50Z"
+    },
+    {
+      "id": 137675564417,
+      "name": "codex-review-gate / evaluate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663686/job/137675564417",
+      "started_at": "2026-11-23T11:58:18Z",
+      "completed_at": "2026-11-23T11:58:25Z"
+    },
+    {
+      "id": 137675564257,
+      "name": "wheel-authoring",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169663685/job/137675564257",
+      "started_at": "2026-11-23T11:56:40Z",
+      "completed_at": "2026-11-23T12:00:25Z"
+    },
+    {
+      "id": 137675546979,
+      "name": "Merge authority audit / protected-base validate",
+      "status": "completed",
+      "conclusion": "success",
+      "details_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45169657160/job/137675546979",
+      "started_at": "2026-11-23T11:57:44Z",
+      "completed_at": "2026-11-23T11:57:49Z"
+    }
+  ],
+  "scope": "All two paginated check-run pages; multiple PR event generations are separate checks. Skipped jobs do not count as executed tests."
+}

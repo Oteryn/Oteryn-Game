@@ -1,0 +1,595 @@
+{
+  "source_scan": "/workspace/scratch/738970310ba7/source_value_ci_live_audit.json",
+  "method": "Manual source context inspection plus analysis-only same-length raw identifier substitution. Not Rust execution, source edit or completed semantic audit.",
+  "files": [
+    {
+      "path": "crates/gameplay/dispatch/examples/prey_time_sim.rs",
+      "sha256": "81727f3d7e23375e175d302aa843ea85b3c44bff5fdbd75bb4d9b1ee89ef8155",
+      "original_errors": [
+        {
+          "line": 497,
+          "type": "ERROR"
+        },
+        {
+          "line": 631,
+          "type": "ERROR"
+        },
+        {
+          "line": 658,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 3,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 6,
+      "after": 6,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/activity_runtime/source_bundle.rs",
+      "sha256": "d86ba27892740970b753919fa3712357a05d3c471e36392dc445c596bb0bbdc4",
+      "original_errors": [
+        {
+          "line": 713,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 3,
+      "after": 3,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/shared_experience.rs",
+      "sha256": "dba88cf7d370330e8b5cd2a74c91fef1d85efeee05349269abf30167374a01e5",
+      "original_errors": [
+        {
+          "line": 248,
+          "type": "ERROR"
+        },
+        {
+          "line": 313,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 2,
+      "after": 2,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/familiar_cast_dispatch.rs",
+      "sha256": "e3b25e7892e4afd6bcec0539aa9487f469793473b3b314aa70d8bb53fe856c36",
+      "original_errors": [
+        {
+          "line": 695,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 2,
+      "after": 2,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/fresh_evidence.rs",
+      "sha256": "cbeb2fed8b7df444ac3be8562f1157c33df61ddaa2fdc035247aa45db3382e0f",
+      "original_errors": [
+        {
+          "line": 318,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 6,
+      "after": 6,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/account_deletion.rs",
+      "sha256": "85041ea8ce271a9729c688f6a742085920b764d23c1aa8120ca9de3d2267c1eb",
+      "original_errors": [
+        {
+          "line": 136,
+          "type": "ERROR"
+        },
+        {
+          "line": 167,
+          "type": "ERROR"
+        },
+        {
+          "line": 442,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 3,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 3,
+      "after": 3,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/character_services_v2.rs",
+      "sha256": "8b975b2ef41cc3e02ff7f16502e2fd38a623e95473f2c366e4c86b3c037b215e",
+      "original_errors": [
+        {
+          "line": 105,
+          "type": "ERROR"
+        },
+        {
+          "line": 112,
+          "type": "ERROR"
+        },
+        {
+          "line": 116,
+          "type": "ERROR"
+        },
+        {
+          "line": 234,
+          "type": "ERROR"
+        },
+        {
+          "line": 282,
+          "type": "ERROR"
+        },
+        {
+          "line": 306,
+          "type": "ERROR"
+        },
+        {
+          "line": 325,
+          "type": "ERROR"
+        },
+        {
+          "line": 327,
+          "type": "ERROR"
+        },
+        {
+          "line": 378,
+          "type": "ERROR"
+        },
+        {
+          "line": 382,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 13,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 10,
+      "after": 10,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/event_containers.rs",
+      "sha256": "d4ffca6ef976f90a94d74c5c5bc652e874e03ffe5d36c977b7a6801bdf5bff11",
+      "original_errors": [
+        {
+          "line": 346,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 6,
+      "after": 6,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/gem_enchanting.rs",
+      "sha256": "004bc42857db9faa2967a4afdc36b1657b6d55db6dcbe8f41fb137148e018a83",
+      "original_errors": [
+        {
+          "line": 398,
+          "type": "ERROR"
+        },
+        {
+          "line": 458,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 3,
+      "after": 3,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_podium_dispatch.rs",
+      "sha256": "c1bbc21e4d2bbdb683499efb53c5e31c127f700e4364d2db95b7321cac5b2bb6",
+      "original_errors": [
+        {
+          "line": 575,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 8,
+      "after": 8,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs",
+      "sha256": "509682da4393381eccc2bfc0fef491647ab712c2be7aa10162fb4d92fa069939",
+      "original_errors": [
+        {
+          "line": 641,
+          "type": "ERROR"
+        },
+        {
+          "line": 703,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 8,
+      "after": 8,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/journal_queue.rs",
+      "sha256": "81e1ca86394d951f185e2abb0fb54e53c09461ef926b47a40284fb127fdfd9bb",
+      "original_errors": [
+        {
+          "line": 651,
+          "type": "ERROR"
+        },
+        {
+          "line": 684,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 2,
+      "after": 2,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m06q_quest_doors.rs",
+      "sha256": "1c7f976533364e7f911b3d2b52c2bc573984b7f51b7873af87ff2b717a76ed4e",
+      "original_errors": [
+        {
+          "line": 993,
+          "type": "ERROR"
+        },
+        {
+          "line": 1012,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 8,
+      "after": 8,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_harvest.rs",
+      "sha256": "6b69c6aeb11f9f13473d11651ee5a2afb56780759bb83d8736ee8e396fca1993",
+      "original_errors": [
+        {
+          "line": 794,
+          "type": "ERROR"
+        },
+        {
+          "line": 849,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 7,
+      "after": 7,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/platform_enforcement.rs",
+      "sha256": "038ef14bea960bc21252d40ad44469589a14410a24d7461e7201142cbc3d87df",
+      "original_errors": [
+        {
+          "line": 762,
+          "type": "ERROR"
+        },
+        {
+          "line": 819,
+          "type": "ERROR"
+        },
+        {
+          "line": 1027,
+          "type": "ERROR"
+        },
+        {
+          "line": 1029,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 4,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 8,
+      "after": 8,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_recovery_inner/tests/durability_reconnect_v1_tests.rs",
+      "sha256": "e00aff2a7852b45e1bc3dadd0113e36bb5559773a773497841d652754ef29187",
+      "original_errors": [
+        {
+          "line": 5,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 8,
+      "after": 8,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_recovery_inner/tests/durability_reconnect_v2_commit_phase_regression_tests.rs",
+      "sha256": "9f763f7c3a24ea6be75e4af68847c16a3013b09e525f29ea8c706812de86352d",
+      "original_errors": [
+        {
+          "line": 5,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 2,
+      "after": 2,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/gameplay/foundation/src/foundation/admission_tests/tests_reconnect_history.rs",
+      "sha256": "84be986ffd7bd6630734aa2e07c2cf46a767617fa42527151962f6c11a185165",
+      "original_errors": [
+        {
+          "line": 370,
+          "type": "ERROR"
+        },
+        {
+          "line": 371,
+          "type": "ERROR"
+        },
+        {
+          "line": 372,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 3,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 19,
+      "after": 19,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/protocol-oteryn/src/world_map_tests.rs",
+      "sha256": "0e89817ecbc191c31795be46c40cb50dfdb049d3fe9ae367c0bec9bb0cfcbdb9",
+      "original_errors": [
+        {
+          "line": 268,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 5,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 13,
+      "after": 13,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/achievement_notices_tests.rs",
+      "sha256": "c5b6c8b4df51953466ffb3f6451dc5db77620fa4e1b9f4be38036575a5b85ca2",
+      "original_errors": [
+        {
+          "line": 22,
+          "type": "ERROR"
+        },
+        {
+          "line": 184,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 4,
+      "after": 4,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/features/0011-world-interaction/tests.rs",
+      "sha256": "17f7dbbf9ffcd9852b9fcc675eca7e16576e1c99faca47c493024a21329c18b5",
+      "original_errors": [
+        {
+          "line": 19,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 1,
+      "after": 1,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/presentation_tests.rs",
+      "sha256": "d078bd7a9b8ab7edb209911ae65b703ecce328d70ccc8feded1c84510174cbb1",
+      "original_errors": [
+        {
+          "line": 32,
+          "type": "ERROR"
+        },
+        {
+          "line": 125,
+          "type": "ERROR"
+        },
+        {
+          "line": 214,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 3,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 4,
+      "after": 4,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/quest_log_transport/tests.rs",
+      "sha256": "f67342ce285a74c9897658ddab4f0c39654830969641080df2e0438e1015ae70",
+      "original_errors": [
+        {
+          "line": 22,
+          "type": "ERROR"
+        },
+        {
+          "line": 103,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 2,
+      "after": 2,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/server_messages_tests.rs",
+      "sha256": "414b19e9517096c90a82aa042a561995e8f51956b1b671029fa3a6e096a0aeeb",
+      "original_errors": [
+        {
+          "line": 13,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 3,
+      "after": 3,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/session_tests_capabilities.rs",
+      "sha256": "d9d83377b04485d20750e6c6d7845ea23a75f83a18a2c02491789c9650406e5b",
+      "original_errors": [
+        {
+          "line": 136,
+          "type": "ERROR"
+        },
+        {
+          "line": 292,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 4,
+      "after": 4,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/session_tests_chat.rs",
+      "sha256": "aa1cd406b19981b67232f2e87cb1dd37fcd84750187c9426e81adc9b073608d4",
+      "original_errors": [
+        {
+          "line": 37,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 5,
+      "after": 5,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/session_tests_items.rs",
+      "sha256": "1e12de0927372144cbbf74f5ca6f4aabf1a1570276c192b37b50a3b8414d98e4",
+      "original_errors": [
+        {
+          "line": 34,
+          "type": "ERROR"
+        },
+        {
+          "line": 480,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 18,
+      "after": 18,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/session_tests_market_details.rs",
+      "sha256": "2622376125d29c7852f5421d549ad546df8e73a04f0622353480f759849b30b5",
+      "original_errors": [
+        {
+          "line": 47,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 1,
+      "after": 1,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/session_tests_player_trade.rs",
+      "sha256": "5634bb57c3bc213beb3195a6617965ee279c38da10f624871692fbc3ffb0e938",
+      "original_errors": [
+        {
+          "line": 12,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 2,
+      "after": 2,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c17d.rs",
+      "sha256": "844feab45054a7e269aa7b511345e716bba40ed386d2f90a21fb0b071203a95b",
+      "original_errors": [
+        {
+          "line": 128,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 1,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 1,
+      "after": 1,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    },
+    {
+      "path": "crates/session/src/tutorial_notices_tests.rs",
+      "sha256": "6fb4d061cb27865f626db90dc7fee103367bfb1442d09efd62977643a475be8a",
+      "original_errors": [
+        {
+          "line": 20,
+          "type": "ERROR"
+        },
+        {
+          "line": 81,
+          "type": "ERROR"
+        }
+      ],
+      "in_memory_analysis_substitutions": 2,
+      "errors_after": [],
+      "parsed_ordinary_test_count_before": 2,
+      "after": 2,
+      "disposition": "Grammar ambiguity around borrow of identifier raw; all displayed error contexts manually read. Same-length identifier rewrite used only in-memory for parser diagnostic, original source retained. Semantic review and token/body equality use original bytes."
+    }
+  ]
+}

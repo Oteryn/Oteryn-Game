@@ -1,0 +1,136 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "remote": "0623fbd59c372bbf479f3965031f47393c42cd39",
+  "no_remote_writes_by_this_lane": true,
+  "source_scope": [
+    {
+      "path": "tools/content-migration/test_boss_corpse_terminal_reference.py",
+      "remote_changed_from_baseline": true,
+      "remote_equals_local": true,
+      "baseline_sha256": "aa5495586e9d352791f31830b7a3f4d75112cf072803c5eb99c87704e76651d4",
+      "remote_sha256": "58bc15ac45a4b924b2f2e8f360cf2248650c2d877a1e9dc48032db68671248db",
+      "local_sha256": "58bc15ac45a4b924b2f2e8f360cf2248650c2d877a1e9dc48032db68671248db"
+    },
+    {
+      "path": "tools/content-migration/test_cake_bridge_reference.py",
+      "remote_changed_from_baseline": false,
+      "remote_equals_local": false,
+      "baseline_sha256": "5cfc565100624e77df1c05ef3d6695dbda8905db3a5e9428b8c1eb5647b212b4",
+      "remote_sha256": "5cfc565100624e77df1c05ef3d6695dbda8905db3a5e9428b8c1eb5647b212b4",
+      "local_sha256": "c73cc0244c71c4f5cca283fcb98470ebb5956786c60b9a19d3d5635f471ec65d"
+    },
+    {
+      "path": "tools/content-migration/test_coin_converter_profiles.py",
+      "remote_changed_from_baseline": true,
+      "remote_equals_local": true,
+      "baseline_sha256": "f445b23522ec7c686266a2142970e18967a614e00d563d0f3f50274ded608690",
+      "remote_sha256": "e84f3a0a509e6d31141ea330f9dea0b9036b558207135cca6047cd35ece541d6",
+      "local_sha256": "e84f3a0a509e6d31141ea330f9dea0b9036b558207135cca6047cd35ece541d6"
+    },
+    {
+      "path": "tools/content-migration/test_creature_level_rating.py",
+      "remote_changed_from_baseline": true,
+      "remote_equals_local": true,
+      "baseline_sha256": "8da4719ee1e3dd7ccf7c3a9203e23512e96deb642ad38f0d8a2a4cd5a6182b78",
+      "remote_sha256": "746f3133ef4e3066261f1fc93427486cea4c64113f12501bc2637b730b43fe12",
+      "local_sha256": "746f3133ef4e3066261f1fc93427486cea4c64113f12501bc2637b730b43fe12"
+    },
+    {
+      "path": "tools/content-migration/test_forge_sql_admission.py",
+      "remote_changed_from_baseline": false,
+      "remote_equals_local": false,
+      "baseline_sha256": "654bb32aaad94c24150cd9c91059547bffba0b743af0f072c4a8530169d0f749",
+      "remote_sha256": "654bb32aaad94c24150cd9c91059547bffba0b743af0f072c4a8530169d0f749",
+      "local_sha256": "1aa2257a939315744c164bbc3fde916db3dd3830cc3146e81dfd75a540007d78"
+    },
+    {
+      "path": "tools/content-migration/test_harvest_item_profiles.py",
+      "remote_changed_from_baseline": false,
+      "remote_equals_local": false,
+      "baseline_sha256": "b0deeae2fd19d4a4441cb2414fdf86a4bc16ac9ab1bca13cbb76e9946f269759",
+      "remote_sha256": "b0deeae2fd19d4a4441cb2414fdf86a4bc16ac9ab1bca13cbb76e9946f269759",
+      "local_sha256": "90583fa08df2e471964f216e7f4e5605762210d32a38887b64bc8ea8deb8bbad"
+    },
+    {
+      "path": "tools/content-migration/test_itemhold_q.py",
+      "remote_changed_from_baseline": false,
+      "remote_equals_local": false,
+      "baseline_sha256": "ef8fdcbf46e1398321ff9dae02c1b23954b0a7a038427cd7911482e181d696e3",
+      "remote_sha256": "ef8fdcbf46e1398321ff9dae02c1b23954b0a7a038427cd7911482e181d696e3",
+      "local_sha256": "23705fecd7b8a9bdc0c088dbf951fc5872b6dc07c67c01649fac9ff3502ef5d4"
+    },
+    {
+      "path": "tools/content-migration/test_monster_reference_level.py",
+      "remote_changed_from_baseline": false,
+      "remote_equals_local": false,
+      "baseline_sha256": "09a42aa0d32c295adf274ee94fd156f3ecca74b87c330af7c45b76165f27fcaf",
+      "remote_sha256": "09a42aa0d32c295adf274ee94fd156f3ecca74b87c330af7c45b76165f27fcaf",
+      "local_sha256": "479956b4bf4c05c82139799747afd6c00b863ab28c04d41b4b6658c356f234dd"
+    },
+    {
+      "path": "tools/content-migration/test_official_creature_balance.py",
+      "remote_changed_from_baseline": false,
+      "remote_equals_local": false,
+      "baseline_sha256": "340a19ed6f55775f93e4cdfd758f51001479d7908fa1a2c8a379db1f02070ebd",
+      "remote_sha256": "340a19ed6f55775f93e4cdfd758f51001479d7908fa1a2c8a379db1f02070ebd",
+      "local_sha256": "7745968439378ae9072f0241697444feb7a0aebbbe145069c1197b3dbd09441a"
+    },
+    {
+      "path": "tools/content-migration/test_parallel_checks.py",
+      "remote_changed_from_baseline": true,
+      "remote_equals_local": false,
+      "baseline_sha256": "845e04855fb0ad4bfa928791698c55c72d0725391130ec4ff2b200c1d1fbc483",
+      "remote_sha256": "a30fbe045948cdcc1cdcf760d5e6bace6bb275624989bb14e7a68ad67babc249",
+      "local_sha256": "29fbb4bb4ac7a8abbe3d70603f0b3782636ca6faa279a5f693291102389acb0a"
+    },
+    {
+      "path": "tools/content-migration/test_qengine_reward_item_profiles.py",
+      "remote_changed_from_baseline": false,
+      "remote_equals_local": false,
+      "baseline_sha256": "dc36369ea63617b4f0f502969fd4b75841ff50e175fd38f4dda34b3f70bbf463",
+      "remote_sha256": "dc36369ea63617b4f0f502969fd4b75841ff50e175fd38f4dda34b3f70bbf463",
+      "local_sha256": "fde9a229f7d1d8d977607389949d455c67441e1e095117a68bc37033220a15c5"
+    },
+    {
+      "path": "tools/content-migration/test_questpc4_treasure_reward_profiles.py",
+      "remote_changed_from_baseline": false,
+      "remote_equals_local": false,
+      "baseline_sha256": "5f8dac608facdfae46913d5bf03d8012544295dabd96c94c947fe7d7c8b5ae70",
+      "remote_sha256": "5f8dac608facdfae46913d5bf03d8012544295dabd96c94c947fe7d7c8b5ae70",
+      "local_sha256": "fe4901129560612c611ec187ce31ce72a3a430759cd0d51b14f5f6587313fcf7"
+    },
+    {
+      "path": "tools/content-migration/test_quick_loot_item_profiles.py",
+      "remote_changed_from_baseline": false,
+      "remote_equals_local": false,
+      "baseline_sha256": "a85e28d6dcd66e2b4273a2f8bbd636ccadf881475d1e6f3d2333c905e0de3df2",
+      "remote_sha256": "a85e28d6dcd66e2b4273a2f8bbd636ccadf881475d1e6f3d2333c905e0de3df2",
+      "local_sha256": "16eb07db23dd4289b90f754d0e928461883907f57cc1a75a704a6317959b1d90"
+    },
+    {
+      "path": "tools/content-migration/test_regenerate_content.py",
+      "remote_changed_from_baseline": false,
+      "remote_equals_local": false,
+      "baseline_sha256": "73bdb59d3bf4e42b5dd1ff90caa1bef0c01cb7a4b753c591bdbac985cc773cc8",
+      "remote_sha256": "73bdb59d3bf4e42b5dd1ff90caa1bef0c01cb7a4b753c591bdbac985cc773cc8",
+      "local_sha256": "140a51f54a2b62ceaa4a25e861b9f1ffa21f9a2cb5d4c8431294c0807d95d9e8"
+    },
+    {
+      "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+      "remote_changed_from_baseline": true,
+      "remote_equals_local": false,
+      "baseline_sha256": "dcca590aaed8df321ecd1d7ccb2d7092291663e48bc035311c42e67a8611bede",
+      "remote_sha256": "1c910c31153e2e6581dd4bb48795d436aae082a0d844834ecf0b45fa16500cda",
+      "local_sha256": "228da7ef95341c9d9fad7b43e7904232675b1f922c6dd35e775053fcd6e6f7a6"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/test_engine_items.py",
+      "remote_changed_from_baseline": true,
+      "remote_equals_local": true,
+      "baseline_sha256": "5cbfdcafbac2d66b1ecd456c16a01dda6e72fec67fd4a19098d59220ffeadee9",
+      "remote_sha256": "ee782152b449d88bf3ef69ca55014fd318ad6461a6f41e81ba492adb32be4c72",
+      "local_sha256": "ee782152b449d88bf3ef69ca55014fd318ad6461a6f41e81ba492adb32be4c72"
+    }
+  ],
+  "conclusion": "Four remote repairs are byte-identical to local source: boss, coin, creature-level and item runner. Remote inventory and inventory regression add exactly boss/coin/creature subset; local versions already contain those plus ten additional repaired selected modules. Ten other owned sources have no remote baseline change. Preserve local extra repairs when reconciling."
+}

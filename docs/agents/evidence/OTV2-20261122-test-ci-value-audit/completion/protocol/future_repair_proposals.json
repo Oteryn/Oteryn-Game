@@ -1,0 +1,1144 @@
+{
+  "baseline": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "status": "Held proposals only; cyclopedia was promoted to separately authorized Windows batch4 qualification. Other proposals are not applied or compiler-qualified.",
+  "proposals": [
+    {
+      "path": "crates/protocol-oteryn/src/charm.rs",
+      "test": "each_view_invariant_fails_closed_in_both_directions",
+      "finding": "Final too_many encoder fixture builds charm IDs1..=33, while both entry count and per-entry charm ID are limited to32. Removing only check_view count guard still yields LimitExceeded for charm33, masking the count regression.",
+      "proposed_test_change": "Build33 individually valid entries with repeated charm1 and retain exact LimitExceeded; the independent duplicate-order error is Malformed, so it cannot mask a removed count guard. Positive32-entry fixture already exists.",
+      "candidate_mutation": {
+        "old": "    if view.charms.len() > MAX_CHARMS\n        || view.charm_points_available > MAX_CHARM_BALANCE\n",
+        "new": "    if view.charm_points_available > MAX_CHARM_BALANCE\n"
+      },
+      "evidence": "Full charm.rs production and all tests manually read. Static masked-oracle finding; no runtime mutation performed.",
+      "qualification_required": "In a disposable validation copy, prove original module test passes count-guard removal, candidate exact error fails, then restore production and run package qualification.",
+      "source_modified": false,
+      "sha256": "9a6c32696d49b393ef5b101e5c3e951fb2ff37dc6c7125417d94380c594d4c00"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/command_replay.rs",
+      "test": "command_replay_preserves_results_and_enforces_bounds",
+      "finding": "encode_duplicate_replay(0,1,&[]) is invalid both for generation0 and for empty retained envelope. The latter rejection survives removing the nonzero generation/sequence guard.",
+      "proposed_test_change": "Use an independently valid retained command-result frame for zero-generation and zero-sequence negatives, preserving the separate empty-retained test.",
+      "candidate_mutation": {
+        "old": "    if generation == 0 || sequence == 0 {\n        return Err(FoundationProtocolError::MalformedEnvelope);\n    }\n",
+        "new": ""
+      },
+      "evidence": "Full command_replay.rs and relevant frame helpers manually read; no runtime mutant performed.",
+      "qualification_required": "Prove exact old scoped test survives guard mutation, new valid-frame negative fails by assertion, then restore and qualify package.",
+      "source_modified": false,
+      "sha256": "88c00300062d5a184da2c0b98a40d92d49fe7075f6af03598fe7bbe6dd055c7c"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/coin_transfer.rs",
+      "test": "gifts_require_twenty_five_step_and_explicit_quote",
+      "finding": "The action2 negative has both quote and operation unset. Either required-ID failure masks removal of the other check.",
+      "proposed_test_change": "Start action2 negatives from a successful valid request, invalidate quote and operation separately, and retain the25/26amount assertions.",
+      "candidate_mutation": {
+        "description": "Independently remove the quote-required comparison and the operation-required comparison; do not disable both together."
+      },
+      "evidence": "Full coin_transfer.rs manually read; independent missing-ID fixtures are a static proposal only.",
+      "qualification_required": "Establish both baseline-survives/candidate-fails compiled mutations independently, restore production and qualify package.",
+      "source_modified": false,
+      "sha256": "a1504575dc633a3ec25dd30c98ee9b04a4ea4af9f11de200a22fe78396219666"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/cyclopedia_atlas.rs",
+      "test": "atlas_wire_bounds_roundtrip_and_truncation",
+      "finding": "Oversize decoder body vec![0;MAX_REPLY+1] is also invalid kind0. Generic is_err accepts that fallback after removing the initial byte-length guard.",
+      "proposed_test_change": "Require exact Error::LimitExceeded for the existing oversize decoder fixture.",
+      "candidate_mutation": {
+        "description": "Remove only decode_reply initial body.len()>MAX_REPLY branch; retain encoder length and semantic validation."
+      },
+      "evidence": "Full cyclopedia_atlas.rs manually read; no compiled mutant performed.",
+      "qualification_required": "Prove old scoped test passes removed guard, exactLimit candidate fails withMalformed, restore and qualify package.",
+      "source_modified": false,
+      "sha256": "d07ced265be955369923c74a0f14a9a876280bedc62cd0be472d22a88450627a"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/cyclopedia_tracker.rs",
+      "test": "tracker_wire_refuses_malformed_input",
+      "finding": "Oversized request [1;MAX_KEY_BYTES+2] has invalid control-byte key as well as excess key length. Character-class rejection masks removal of key.len()<=MAX_KEY_BYTES.",
+      "proposed_test_change": "Use action1 plus MAX_KEY_BYTES+1 valid ASCII key characters; retain a positive maximum-length key.",
+      "candidate_mutation": {
+        "old": "        && key.len() <= MAX_KEY_BYTES\n",
+        "new": ""
+      },
+      "evidence": "Full source/tests manually read; no runtime mutant performed.",
+      "qualification_required": "Compile old/new exact test against isolated key-length mutant, restore and qualify.",
+      "source_modified": false,
+      "sha256": "d35f3acec2e68a0b5eed46faa6a5ed2fef6c35b6cb131546e654d193c842674c"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/cyclopedia_tracker.rs",
+      "test": "largest_admitted_tracker_fits_one_command_result",
+      "finding": "The test searches its expected maximum through production snapshot_fits and then only checks admitted bytes fit; lowering the helper threshold can shrink the test input while preserving success.",
+      "proposed_test_change": "Use independent fixed 448-entry maximum for 128-byte keys and 18-byte entry overhead at the verified 65536-byte command limit; assert 65411-byte success and 449-entry failure.",
+      "candidate_mutation": {
+        "description": "Lower only the byte-budget comparison in snapshot_fits enough that a smaller tracker is admitted; validate selected original test still passes while explicit maximum fixture fails."
+      },
+      "evidence": "crates/protocol-oteryn/src/lib.rs:552 defines MAX_COMMAND_RESULT_PAYLOAD_BYTES = 65_536. Current tracker constants give floor((65536-3)/(128+18))=448. Static oracle-dependency finding only.",
+      "qualification_required": "Run baseline/candidate boundary mutant, verify byte arithmetic in compiled output, restore and qualify the affected package.",
+      "source_modified": false,
+      "sha256": "d35f3acec2e68a0b5eed46faa6a5ed2fef6c35b6cb131546e654d193c842674c"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/cyclopedia_character/offence/tests.rs",
+      "test": "offence_augments_pages_preserve_sources_sort_units_and_unknowns",
+      "finding": "Rows arrive pre-sorted; page assertions check counts/roundtrips rather than expected row identities/order. Both production sort branches can be bypassed without this test observing order.",
+      "proposed_test_change": "Use deliberately interleaved/shuffled unique rows and independently assert ordered row tuples for default spell sort and by_source sort across a page boundary.",
+      "candidate_mutation": {
+        "description": "Bypass one sort branch at a time in Page::from_snapshot, preserving filtering and paging."
+      },
+      "evidence": "Full tests, Snapshot validation and Page::from_snapshot read; no runtime mutant performed.",
+      "qualification_required": "Establish each old/new sorting mutant result independently, restore and qualify package.",
+      "source_modified": false,
+      "sha256": "10f6f29a58219aca22d1cdb40c3704fd5d5b3ee2f87ec6303238aa3548188c87"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/daily_reward_codec_tests.rs",
+      "test": "daily_reward_wall_and_result_follow_the_reserved_proto_and_bounds",
+      "finding": "Successful wall payload is only bounded and checked for absence of retired field 6; its five current field values can be absent or wrong without this test detecting that. Accepted-result payload is checked for length only.",
+      "proposed_test_change": "Assert a literal valid wall byte sequence covering all five fields and literal accepted-result bytes carrying the fixed UUID, preserving current negative conditions.",
+      "candidate_mutation": {
+        "description": "In isolated qualification copies, suppress the wall field loop or change one encoded field value; independently replace accepted UUID bytes with a different same-length valid UUID."
+      },
+      "evidence": "Static review of both test bodies and DailyRewardWall/Result encoders. No runtime mutant performed and no claim about other test scopes.",
+      "qualification_required": "Run original and repaired scoped tests against each precise mutation, restore source and qualify the affected package.",
+      "source_modified": false,
+      "sha256": "e5f0d1b68a3a07dfa5b1dfbc6640fd70240173fdf038c36c397bef5b64b8fa7e"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/depot_tests.rs",
+      "test": "depot_replies_round_trip_pages_and_reject_invalid_bounds; depot_decoders_reject_truncation_unknown_duplicate_and_oversized_fields",
+      "finding": "The 33rd reply entry follows descending ordinals 32..1 with ordinal 33 and retains total 32, so order and remaining-total checks mask the entry-count guard. Oversized zero buffers mask outer decoder size checks behind malformed tags.",
+      "proposed_test_change": "Build otherwise valid descending 33-entry reply with total 33, keeping maximum-positive 32 entries; assert exact LimitExceeded for request 49-byte and reply 1025-byte decoder guards.",
+      "candidate_mutation": {
+        "description": "Remove only reply entries.len() > 32 for count proof; remove each outer request/reply length guard independently for exact-error proofs."
+      },
+      "evidence": "Complete test and depot encoder/decoder review only; no runtime mutant.",
+      "qualification_required": "Actual original/repaired scoped mutation results, restoration and full package gates.",
+      "source_modified": false,
+      "sha256": "e2014e18a185b3e8b824b29b3278e33a9642b8d9ce56b387facddcb89461645d"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/depot_search.rs",
+      "test": "rejects_invalid_and_oversize",
+      "finding": "25-byte all-zero request is malformed independently of its length; generic is_err does not prove byte-limit precedence.",
+      "proposed_test_change": "Assert Err(Error::LimitExceeded) for the existing oversized request.",
+      "candidate_mutation": {
+        "description": "Remove only decode_request bytes.len() > 24 guard; normal fallback rejects tag zero as Malformed."
+      },
+      "evidence": "Full source/static control-flow review; no runtime mutant.",
+      "qualification_required": "Original/repaired scoped mutant and normal package gates.",
+      "source_modified": false,
+      "sha256": "f0626cb79e02ae39b051f6c81f841eb9337735c400e59977cad0b337b93cc610"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/guild_bank_tests.rs",
+      "test": "guild_bank_claim_query_and_reply_bounds; guild_bank_codec_roundtrip_and_fail_closed",
+      "finding": "Claim 101 duplicates UUID 16 in the 0..99 page, violates sorting and retains next_claim requiring exactly 100 entries. Oversized zero buffers only assert generic errors.",
+      "proposed_test_change": "For 101 claims, append new valid ordered UUID 100 and clear next_claim; keep the existing valid maximum with continuation. Require exact LimitExceeded for all three oversized decoders.",
+      "candidate_mutation": {
+        "description": "Remove only check_claims length guard for count proof; separately bypass only each top-level decoder bounded call for error proofs."
+      },
+      "evidence": "Full source/static control-flow review; no runtime mutants.",
+      "qualification_required": "Original/repaired scoped mutant results, restored source and normal package gates.",
+      "source_modified": false,
+      "sha256": "692e1047d7209328682c033f85e5c5ea2130cd952094ed7508f465ef92572793"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/guild_tests.rs",
+      "test": "guild_codec_bounds_and_malformed_fields",
+      "finding": "After adding valid row 101 the test retains next cursor row 100 and exact-full-page continuation constraint. Even removing both encode and decode collection admission guards leaves a cursor error. Oversized zero buffers have a separate malformed-tag fallback.",
+      "proposed_test_change": "Clear next for the unique 101-row negative, retain existing valid maximum with next, and require exact LimitExceeded for oversized intent/result bytes.",
+      "candidate_mutation": {
+        "description": "For conceptual collection bound, remove only encoder members.len() guard plus decoder repeated-field count check for the roster path, preserving cursor validation; test original/repaired scope. For outer byte bounds, bypass each relevant top-level bounded call separately."
+      },
+      "evidence": "Both codec files and tests read. Static masking finding, not runtime proof; multiple deliberate collection admission sites are documented rather than misrepresented as one guard.",
+      "qualification_required": "Confirm scoped mutation design and old/new failure before any source adoption; restore and qualify package.",
+      "source_modified": false,
+      "sha256": "02eb15111b73ecd96dfda369d30205467a0d983185fa1bb235b0b2955f7b1c75"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/hireling/management.rs",
+      "test": "projection_reuses_entity_refs_and_rejects_stale_duplicate_and_overbound_bindings",
+      "finding": "11-binding projection repeats the same hireling and entity IDs. Duplicate checks independently reject it if only MAX_HIRELINGS admission is removed.",
+      "proposed_test_change": "Extend the existing valid 10-unique-ID fixture with an eleventh distinct valid hireling/entity pair, keeping the positive maximum; retain separate duplicate and stale generation negatives.",
+      "candidate_mutation": {
+        "description": "Remove only Projection entries.len() > MAX_HIRELINGS from encode_in. With maximal generation each valid binding is 46 bytes: 11 gives 508 bytes within the separate 512-byte reply envelope."
+      },
+      "evidence": "Full implementation, tests and shared reference helpers read; no compiled mutation performed.",
+      "qualification_required": "Verify valid byte arithmetic and old/new exact guard mutant with real Rust, restore and qualify package.",
+      "source_modified": false,
+      "sha256": "56cad3d95e897093990566c2e6661a362f2ae6b50aa84c627f0dc2d8848209fd"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/house_move_out_tests.rs",
+      "test": "house_move_out_strict_codec",
+      "finding": "Oversized zero-byte request and reply also contain malformed tags; generic is_err accepts fallback after either length guard is removed.",
+      "proposed_test_change": "Require exact Error::LimitExceeded for both existing oversized buffers.",
+      "candidate_mutation": {
+        "description": "Bypass each top-level request/reply length condition independently, retaining all parsing."
+      },
+      "evidence": "Full tests and production codec static review only.",
+      "qualification_required": "Actual original/repaired scoped mutants followed by restoration and normal package gates.",
+      "source_modified": false,
+      "sha256": "87c065e4348750e5202945afa847b165737b423efb3e0b69de0ea72162d575bc"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/house_tests.rs",
+      "test": "house_intent_strict_bounds_oneof_and_list; house_query_strict_cursor_and_town; guildhall_leadership_codec_is_bounded_and_strict",
+      "finding": "All-zero oversized intent/query/leadership buffers also fail parsing.",
+      "proposed_test_change": "Require exact LimitExceeded for all three existing oversized buffers.",
+      "candidate_mutation": {
+        "description": "Bypass each top-level byte-size guard independently."
+      },
+      "evidence": "Complete relevant test bodies and implementation paths read; static finding only, no runtime mutation.",
+      "qualification_required": "Run original/repaired scoped mutants with real Rust, restore and qualify the affected package before adoption.",
+      "source_modified": false,
+      "sha256": "19cf43ac5abaeba5fd100161c7fb9de1ac30df9db46fae27599474c6302a2dd9"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/house_transfer.rs",
+      "test": "house_transfer_intent_refuses_unknown_duplicate_and_oversized_input",
+      "finding": "Oversized zero buffer also has an invalid protobuf field; valid intent asserts direction only.",
+      "proposed_test_change": "Require exact LimitExceeded for oversized bytes and exact complete decoded valid intent including house.",
+      "candidate_mutation": {
+        "description": "Bypass only outer byte guard; independently replace decoded house key with another valid same-length key."
+      },
+      "evidence": "Complete relevant test bodies and implementation paths read; static finding only, no runtime mutation.",
+      "qualification_required": "Run original/repaired scoped mutants with real Rust, restore and qualify the affected package before adoption.",
+      "source_modified": false,
+      "sha256": "e3dde14503fa1b100aca347af07d9b3f3fb54819c6c77ae22745ed6f99804f6b"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/imbuement_tests.rs",
+      "test": "imbuement_request_strict_codec; imbuement_reply_strict_codec_and_bound",
+      "finding": "Oversized zero request/reply buffers are malformed independently of their lengths.",
+      "proposed_test_change": "Require exact Error::LimitExceeded for both existing byte-size fixtures.",
+      "candidate_mutation": {
+        "description": "Bypass each top-level decoder byte-size guard independently."
+      },
+      "evidence": "Complete relevant test bodies and implementation paths read; static finding only, no runtime mutation.",
+      "qualification_required": "Run original/repaired scoped mutants with real Rust, restore and qualify the affected package before adoption.",
+      "source_modified": false,
+      "sha256": "bc32d20f53a5293217d7a6eac7d6dd2e0987e734f842ef24dab2ca96d33af596"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/imbuement_details_tests.rs",
+      "test": "imbuement_details_strict_roundtrip_and_material_bounds",
+      "finding": "Four materials clone one definition key, so duplicate material validation masks MAX_MATERIALS. Oversized zero reply masks outer size error.",
+      "proposed_test_change": "Use three distinct valid positive materials and a fourth distinct valid negative; keep a separate duplicate negative. Require exact LimitExceeded for oversize reply.",
+      "candidate_mutation": {
+        "description": "Remove only valid_quote materials.len() bound; separately bypass decode_reply outer byte bound."
+      },
+      "evidence": "Complete relevant test bodies and implementation paths read; static finding only, no runtime mutation.",
+      "qualification_required": "Run original/repaired scoped mutants with real Rust, restore and qualify the affected package before adoption.",
+      "source_modified": false,
+      "sha256": "4c28b55f50add06108729ccd54487ac2292f0ed0f62105c9c3102d708909d68e"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/inspection.rs",
+      "test": "inspection_wire_roundtrip_and_bounds",
+      "finding": "33 peers repeat one EntityRef and are independently rejected as duplicates. Oversized zero request masks byte limit.",
+      "proposed_test_change": "Use32 unique valid positive peers and a33rd unique valid negative; preserve duplicate coverage. Require exact LimitExceeded for oversized request.",
+      "candidate_mutation": {
+        "description": "Remove only encode_reply requests.len() count guard; separately bypass decode_request bounded call."
+      },
+      "evidence": "Complete relevant test bodies and implementation paths read; static finding only, no runtime mutation.",
+      "qualification_required": "Run original/repaired scoped mutants with real Rust, restore and qualify the affected package before adoption.",
+      "source_modified": false,
+      "sha256": "9b14208b3579fd57516142d7817f5e9497de3b47e220046204adf1e54ee0bac7"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/inventory_capacity.rs",
+      "test": "capacity_codec_is_bounded_canonical_and_free_never_exceeds_capacity",
+      "finding": "13-byte zero input remains malformed after removal of its size guard.",
+      "proposed_test_change": "Require exact WorldSpatialError::LimitExceeded for the existing13-byte input.",
+      "candidate_mutation": {
+        "description": "Remove only InventoryCapacity::decode outer byte-size guard."
+      },
+      "evidence": "Complete relevant test bodies and implementation paths read; static finding only, no runtime mutation.",
+      "qualification_required": "Run original/repaired scoped mutants with real Rust, restore and qualify the affected package before adoption.",
+      "source_modified": false,
+      "sha256": "bfc68a745d21d05f8a8c21ed389a3480c9d08ec5e69d390c44120330c702095e"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/item_forge.rs",
+      "test": "cores_are_refused_on_convergence_transfer_conversion_and_history",
+      "finding": "Unassigned flags19 have handle-presence bits1/2 but both handle slots are zero. Presence/handle consistency still rejects without the unknown-bit guard.",
+      "proposed_test_change": "Start from a valid Fusion request with both nonzero handles, then add only bit16 to flags. Keep separate zero-handle/presence negatives.",
+      "candidate_mutation": {
+        "description": "Remove only flags & !15 != 0 guard from Request::decode."
+      },
+      "evidence": "Complete relevant test bodies and implementation paths read; static finding only, no runtime mutation.",
+      "qualification_required": "Run original/repaired scoped mutants with real Rust, restore and qualify the affected package before adoption.",
+      "source_modified": false,
+      "sha256": "9069c547632cc3ce5f96c42e64fd13af4e6732f0c43420666992aa5bd5c69fa5"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/loop_training_tests.rs",
+      "sha256": "ab632a428b41d7d560e8deac0991c1c9afed117a21eeb565dd69b8fd28b196a0",
+      "test": "loop_training_decoders_refuse_duplicates_unknowns_overflow_and_cross_action_fields; loop_training_result_is_bounded_and_refusal_has_no_durable_claim",
+      "finding": "33-byte zero exercise request is also malformed; Start admission does not observe weapon/dummy mapping; running result positive only checks size.",
+      "proposed_test_change": "Require exact LimitExceeded for oversized exercise bytes, exact Start {weapon:1,dummy:2}, and fixed wire bytes or independently decoded fields for the running result with maximal values.",
+      "candidate_mutation": {
+        "description": "Bypass outer exercise byte bound; independently swap Start weapon/dummy; independently omit a running-result field while preserving refusal bytes."
+      },
+      "evidence": "Full tests and production source read; static observability findings, no compiled mutants.",
+      "qualification_required": "Actual original/repaired scoped mutants, restored source and normal package qualification.",
+      "source_modified": false
+    },
+    {
+      "path": "crates/protocol-oteryn/src/market_details.rs",
+      "test": "t124_all_catalogue_filters_compose_and_prices_reject_impossible_data",
+      "finding": "The composed positive has a matching case-insensitive search, but all negatives retain that matching search and fail another filter. Omitting name matching survives these two scoped tests by static inspection.",
+      "proposed_test_change": "Add an otherwise identical filter with nonmatching search such as axe; retain the BLADE positive.",
+      "candidate_mutation": {
+        "description": "Remove only item.name.to_lowercase().contains(&self.search.to_lowercase()) and its conjunction in Filter::matches; leave other filters intact."
+      },
+      "evidence": "Complete source and tests manually read; static proposal only, no runtime mutant or source change.",
+      "qualification_required": "Run the stated original/candidate proof in an isolated validation checkout, restore any production mutation, then affected package gates.",
+      "source_modified": false,
+      "sha256": "1e71e15ca2eec3ceedb6faa017235e0cd2b298bd73f656da5874626f98396fbd"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/mechanics_status.rs",
+      "test": "cl6_status_codec_bounds_and_all_fields; cl6_status_largest_owner_bounds_fit_one_reply",
+      "finding": "Every successful fixture has bonuses [0;5]. Replacing bonus serialization with five zero values leaves their roundtrip equality intact by static inspection.",
+      "proposed_test_change": "Use distinct nonzero bonus values with qualified Some conditions and retain exact full struct roundtrip.",
+      "candidate_mutation": {
+        "description": "Replace only .chain(member.bonuses) with .chain([0;5]) in encoder; do not change decoder or validation."
+      },
+      "evidence": "Complete source and tests manually read; static proposal only, no runtime mutant or source change.",
+      "qualification_required": "Run the stated original/candidate proof in an isolated validation checkout, restore any production mutation, then affected package gates.",
+      "source_modified": false,
+      "sha256": "4c683a8446ffc59f96a70bba73a07a175c671a03c5bdc1701d9e306f3f66a03e"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/native_map_cues.rs",
+      "test": "srx3_legacy_presentation_and_chat_bytes_remain_unchanged",
+      "finding": "The test repeats underlying encode/decode roundtrips for exactly event(14) and speech(14,Say), already observed by the first two tests through both adapters and underlying codecs. It does not assert historical literal bytes.",
+      "proposed_test_change": "Remove only this subsumed smoke after proving the remaining actual compiled IDs and unchanged full cases; preserve all four other tests.",
+      "candidate_mutation": {
+        "description": "No production mutation needed for exact subsumption; require real before5/after4 compiled IDs and retained-case execution, full package gates."
+      },
+      "evidence": "Complete source and tests manually read; static proposal only, no runtime mutant or source change.",
+      "qualification_required": "Run the stated original/candidate proof in an isolated validation checkout, restore any production mutation, then affected package gates.",
+      "source_modified": false,
+      "sha256": "5ae7c392e6f776bac5202f80f5070b9dd21883d0c885231f18f581d5e86241a6"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/personal_map_marks.rs",
+      "test": "personal_map_marks_strict_round_trip_and_bounds; personal_map_marks_admit_exact_maximum_and_refuse_overflow",
+      "finding": "257th row is added to the exact maximum-byte fixture; final byte guard masks removing count. ASCII text257 exceeds both128-scalar and256-byte limits.",
+      "proposed_test_change": "Retain full-byte maximum, add short otherwise valid ordered256/257-row count fixtures; use65 four-byte Unicode scalars for isolated text-byte overflow and129 short scalars for scalar overflow.",
+      "candidate_mutation": {
+        "description": "Remove only self.0.len()>MAX_MARKS; separately remove only text byte bound while leaving scalar bound."
+      },
+      "evidence": "Complete source and scoped tests manually read; static proposal only.",
+      "qualification_required": "Compile original and repaired scoped tests against each isolated mutant, restore production and run affected package gates.",
+      "source_modified": false,
+      "sha256": "3007878ab71d29d43d1fec241e773dec0026a9d352a6b2a9280623949644bf8d"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/player_typing.rs",
+      "test": "player_typing_update_rejects_missing_duplicate_and_unknown_fields",
+      "finding": "Oversized all-zero32-byte update also has malformed tag0; generic error survives removal of31-byte decoder guard.",
+      "proposed_test_change": "Assert exact Err(Error::LimitExceeded) for this oversized buffer.",
+      "candidate_mutation": {
+        "description": "Remove only initial decode_update payload length guard."
+      },
+      "evidence": "Complete source and scoped tests manually read; static proposal only.",
+      "qualification_required": "Compile original and repaired scoped tests against each isolated mutant, restore production and run affected package gates.",
+      "source_modified": false,
+      "sha256": "c6484ebde16b92408bfe246d20a9960467917b2ba2b19defe55fc2fe7f2d66f4"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/pvp_expert.rs",
+      "test": "pvp_expert_wire_refuses_missing_duplicate_unknown_and_invalid_fields",
+      "finding": "Oversized all-zero9-byte payload also has malformed tag0; generic error survives removal of8-byte decoder guard.",
+      "proposed_test_change": "Require exact CyclopediaWireError::LimitExceeded for oversized payload.",
+      "candidate_mutation": {
+        "description": "Remove only initial decode_expert_fight_modes length guard."
+      },
+      "evidence": "Complete source and scoped tests manually read; static proposal only.",
+      "qualification_required": "Compile original and repaired scoped tests against each isolated mutant, restore production and run affected package gates.",
+      "source_modified": false,
+      "sha256": "dab683e9cdde1dd0cee2ae983c1b83e037839893f9d8a6a4ea5e812d1a72855f"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/rest_status.rs",
+      "test": "rest_status_codec_preserves_authority_and_refuses_malformed_payloads",
+      "finding": "Unknown flag fixture replaces original7 with8, simultaneously making inside_resting_area false while multipliers remain2; valid() rejects even if unknown-bit guard is removed.",
+      "proposed_test_change": "OR unknown bit8 into existing valid flags, preserving otherwise valid state.",
+      "candidate_mutation": {
+        "description": "Remove only bytes[0] & !7 != 0 from decoder condition."
+      },
+      "evidence": "Complete source and scoped tests manually read; static proposal only.",
+      "qualification_required": "Compile original and repaired scoped tests against each isolated mutant, restore production and run affected package gates.",
+      "source_modified": false,
+      "sha256": "685b800588d70d96c985273c8419666df4a8d8b86ffddeebba94c07e8931568d"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/skill_display.rs",
+      "test": "nx7_skill_display_strict_roundtrip",
+      "finding": "Positive trained snapshot/loyalty percentage/loyalty levels are all zero. Zeroing those serialized regions survives this scoped test by static inspection.",
+      "proposed_test_change": "Use distinct trained skills and loyalty levels at least their trained bases, nonzero valid loyalty percentage, and distinct current levels; retain exact full struct equality.",
+      "candidate_mutation": {
+        "description": "Independently serialize default trained snapshot or zero loyalty array without changing length/decoder; prove each original/candidate result."
+      },
+      "evidence": "Complete source and scoped tests manually read; static proposal only.",
+      "qualification_required": "Compile original and repaired scoped tests against each isolated mutant, restore production and run affected package gates.",
+      "source_modified": false,
+      "sha256": "6953018c1f0c25930e55ab4f638637e63706d144e72a100fa0893faa08acd0b1"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/support_intake.rs",
+      "test": "support_intake_requires_explicit_consent_and_bounded_exact_utf8_preview",
+      "finding": "Positive preview only contains ASCII, so an encoder stripping all non-ASCII characters preserves this scoped test.",
+      "proposed_test_change": "Include literal accented text and an emoji in the exact positive consented preview.",
+      "candidate_mutation": {
+        "description": "Replace only encoder preview.as_bytes emission with equivalent ASCII-filtered string bytes; retain validation and frame flag."
+      },
+      "evidence": "Complete source and scoped tests manually read; static proposal only.",
+      "qualification_required": "Compile original and repaired scoped tests against each isolated mutant, restore production and run affected package gates.",
+      "source_modified": false,
+      "sha256": "330362f841c69f269eea88a45cc1ed54bc30368f307b575b24726d32a767e904"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/target_move.rs",
+      "test": "target_move_strict_oneof_and_bounds",
+      "finding": "Oversized49 zero bytes also have malformed tag0; generic error masks removed48-byte guard.",
+      "proposed_test_change": "Separate oversized case and assert exact WorldSpatialError::LimitExceeded.",
+      "candidate_mutation": {
+        "description": "Remove only initial decode_target_move_intent length guard."
+      },
+      "evidence": "Full source and test review only; no compiler or mutant run for this held proposal.",
+      "qualification_required": "Actual isolated original/candidate mutation results, restoration and package gates.",
+      "source_modified": false,
+      "sha256": "47def85068656ea768f25f415faf82bbbf496feb945fe11fb383a74a5a7e65e1"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/sanction_record.rs",
+      "test": "sanction_record_reply_is_bounded_at_thirty_two_maximal_records",
+      "finding": "33rd row is added to a full4546-byte record with more=true; continuation requires exactly32 and final length also rejects after count-guard removal.",
+      "proposed_test_change": "Retain full-size maximum, add32/33 short valid descending-or-equal entries with more=false so only count differs.",
+      "candidate_mutation": {
+        "description": "Remove only record.entries.len() <= MAX_RECORDS from valid_record."
+      },
+      "evidence": "Full source and test review only; no compiler or mutant run for this held proposal.",
+      "qualification_required": "Actual isolated original/candidate mutation results, restoration and package gates.",
+      "source_modified": false,
+      "sha256": "31f63352167b13bd3c9a3072a69576e775e44ea232b27631ae14a2012aacdcd5"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/spellbook_details.rs",
+      "test": "spellbook_details_query_and_page_are_bounded_and_filter_canonical_metadata",
+      "finding": "Positive search matches both name and words and no negative isolates search, min/max level or group. Dropping those predicates survives this scoped test by static inspection.",
+      "proposed_test_change": "Add independently valid nonmatching search, separate name-only/words-only matches, valid min/max nonmatches and nonmatching group.",
+      "candidate_mutation": {
+        "description": "Disable one Query::matches predicate/alternative at a time; keep Query::valid and other predicates."
+      },
+      "evidence": "Full source and test review only; no compiler or mutant run for this held proposal.",
+      "qualification_required": "Actual isolated original/candidate mutation results, restoration and package gates.",
+      "source_modified": false,
+      "sha256": "47878fb180d96632b3a5a1f2bde25f22369c883b22f55a05d434b9e4ac4da172"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/quick_loot.rs",
+      "test": "wire_limits_reject_before_allocating; filter_actions_round_trip_and_reject_missing_definition",
+      "finding": "Oversized zeros also have malformed fields; named missing-definition test removes filter_mode instead and therefore does not observe required definition for add/remove.",
+      "proposed_test_change": "Require exact LimitExceeded for outer size fixtures; for add/remove retain valid mode and separately omit definition, also retain current mode negative.",
+      "candidate_mutation": {
+        "description": "Remove each outer decoder length guard independently; separately loosen only add/remove filter_definition_ref requirement."
+      },
+      "evidence": "Full source and test review only; no compiler or mutant run for this held proposal.",
+      "qualification_required": "Actual isolated original/candidate mutation results, restoration and package gates.",
+      "source_modified": false,
+      "sha256": "117fdbffd80f4b621ac94c473f6f73bf44405015dfb6c27df93025c404824c69"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/server_save_countdown_tests.rs",
+      "test": "server_save_countdown_golden_vectors_and_strict_bounds",
+      "finding": "Oversized zero fixture is structurally malformed independently of its size; generic is_err survives removing the outer guard.",
+      "proposed_test_change": "Separate oversized case and assert exact ServerSaveCountdownError::LimitExceeded.",
+      "candidate_mutation": {
+        "description": "Remove only initial decode_server_save_countdown16-byte guard."
+      },
+      "evidence": "Full test and implementation read; static proposal only.",
+      "qualification_required": "Compile original/candidate scoped mutation, restore production and qualify package.",
+      "source_modified": false,
+      "sha256": "4092fd616c25033a1bcaf44b067a272a0d4e6b9844eee92d118940a1e84b7cd2"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/tutorial_notices_tests.rs",
+      "test": "tutorial_notices_golden_vectors_and_strict_bounds",
+      "finding": "Oversized zero fixture is structurally malformed independently of its size; generic is_err survives removing the outer guard.",
+      "proposed_test_change": "Separate oversized case and assert exact TutorialNoticeError::LimitExceeded.",
+      "candidate_mutation": {
+        "description": "Remove only initial decode_tutorial_notice260-byte guard."
+      },
+      "evidence": "Full test and implementation read; static proposal only.",
+      "qualification_required": "Compile original/candidate scoped mutation, restore production and qualify package.",
+      "source_modified": false,
+      "sha256": "25fa8c125cbc72fb768f4a566e347dc5b13dd55e4c9a26ef8f15898b66ee9063"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/zones_nologout_tests.rs",
+      "test": "raid_server_messages_enforce_wire_limit_and_reject_ambiguous_payloads",
+      "finding": "Oversized zero fixture is structurally malformed independently of its size; generic is_err survives removing the outer guard.",
+      "proposed_test_change": "Separate oversized case and assert exact ServerMessageError::LimitExceeded.",
+      "candidate_mutation": {
+        "description": "Remove only initial decode_server_message260-byte guard."
+      },
+      "evidence": "Full test and implementation read; static proposal only.",
+      "qualification_required": "Compile original/candidate scoped mutation, restore production and qualify package.",
+      "source_modified": false,
+      "sha256": "81f5a4cd009a5bb78ecd78eb9088ddeb935779cbdfc8fa33860335bd7c90c753"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/store/coin_history.rs",
+      "test": "coin_history_rejects_oversized_misordered_or_inconsistent_entries",
+      "finding": "33 cloned entries violate strict descending entry IDs independently of count. STORE_PURCHASE negative omits order_id, offer_key and quantity together; each parity check masks the others.",
+      "proposed_test_change": "Use32/33 valid distinct descending entries with bound cursor; add one valid purchase entry and independently remove each required field, retaining duplicate-order negative.",
+      "candidate_mutation": {
+        "description": "Remove only encode_coin_history_page entry count guard; separately remove one purchase-field parity predicate at a time."
+      },
+      "evidence": "Complete scoped test and implementation read; no runtime mutation.",
+      "qualification_required": "Actual original/candidate proof for each isolated guard, restore and package gates.",
+      "source_modified": false,
+      "sha256": "7e52d92ee58640371e1bb3928914e8d03ea4302f2c25d9dcad9ffffaa79e84f7"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/store/hireling_purchase.rs",
+      "test": "store_hireling_customization_rejects_duplicates_unknown_fields_and_bounds",
+      "finding": "65-byte all-zero payload also has malformed tag0, so generic error masks removed64-byte outer guard.",
+      "proposed_test_change": "Assert exact Err(StoreWireError::LimitExceeded) for oversized payload.",
+      "candidate_mutation": {
+        "description": "Remove only initial StoreHirelingCustomization::decode length guard."
+      },
+      "evidence": "Complete scoped test and implementation read; no runtime mutation.",
+      "qualification_required": "Actual original/candidate proof for each isolated guard, restore and package gates.",
+      "source_modified": false,
+      "sha256": "a10b98388bd6adaf2afcbe94284db57de89d442d8725bd846f4172a7849b665e"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/player_report_tests.rs",
+      "test": "player_report_request_codec_is_strict_and_bounded",
+      "finding": "Outer1089-byte zero request also contains malformed tag0, masking removed1088-byte guard.",
+      "proposed_test_change": "Require exact Error::LimitExceeded for the oversized fixture.",
+      "candidate_mutation": {
+        "description": "Remove only decode_player_report_request initial length guard."
+      },
+      "evidence": "Complete source/test review; static proposal only and no mutant execution.",
+      "qualification_required": "Compile original/repaired scoped tests under each isolated mutation, restore source and qualify package.",
+      "source_modified": false,
+      "sha256": "099223c99a978ec8ae87bb13843566dc357cb73b991983320f91ed4efbb61b6b"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/player_trade_tests.rs",
+      "test": "player_trade_wire_roundtrip_and_bounds",
+      "finding": "Outer65-byte zero intent is malformed independently of exceeding64 bytes; generic error masks guard removal.",
+      "proposed_test_change": "Require exact Error::LimitExceeded for the oversized intent.",
+      "candidate_mutation": {
+        "description": "Remove only decode_intent initial64-byte guard."
+      },
+      "evidence": "Complete source/test review; static proposal only and no mutant execution.",
+      "qualification_required": "Compile original/repaired scoped tests under each isolated mutation, restore source and qualify package.",
+      "source_modified": false,
+      "sha256": "5cfd29ea8fb41ab9e29f7be2b1b513e320354c689ce6eb2bd2a1b1b93be9c102"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/party_tests.rs",
+      "test": "party_wire_bounds_and_malformed_inputs",
+      "finding": "Invitation21 duplicates existing handle51, so duplicate-handle rejection survives removing invitation count guard. Oversized49-byte intent generic error masks byte guard.",
+      "proposed_test_change": "Append otherwise valid invitation with uniquehandle71; preserve20-positive and assert exact LimitExceeded. Require exact outer intent LimitExceeded separately.",
+      "candidate_mutation": {
+        "description": "Remove only invitation count predicate in encode_party_result; independently remove decode_party_intent bounded call."
+      },
+      "evidence": "Complete source/test review; static proposal only and no mutant execution.",
+      "qualification_required": "Compile original/repaired scoped tests under each isolated mutation, restore source and qualify package.",
+      "source_modified": false,
+      "sha256": "f425ea8f4bdc715315138264e1c923350759326343bd3ce98a67bb745649b554"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/stash_tests.rs",
+      "test": "stash_strict_codecs_and_limits",
+      "finding": "33rd row has handle1 already present in32-row page, so duplicate-handle rejection masks row count.49-byte zero intent masks outer bound behind malformed tag.",
+      "proposed_test_change": "Use unique nonzero handle33 for extra otherwise valid short row, preserving32-positive; exact LimitExceeded for oversized intent.",
+      "candidate_mutation": {
+        "description": "Remove only value.rows.len()>32 encoder predicate; independently remove initial decode_stash_intent48-byte guard."
+      },
+      "evidence": "Complete source/test review; static proposal only and no mutant execution.",
+      "qualification_required": "Compile original/repaired scoped tests under each isolated mutation, restore source and qualify package.",
+      "source_modified": false,
+      "sha256": "7432a6f7e3b45ddde7b0c942e435f53be2e312262edb79f86720da7679eb9e9b"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/vip_tests.rs",
+      "test": "vip_codec_bounds_and_strict_decoding",
+      "finding": "641-byte zero request is malformed independently of exceeding640 bytes; generic error masks outer guard.",
+      "proposed_test_change": "Require exact Error::LimitExceeded for oversized request.",
+      "candidate_mutation": {
+        "description": "Remove only decode_request initial byte-length guard."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package.",
+      "source_modified": false,
+      "sha256": "cd0eade4453fc0880243a77c51fc8d408225d92717ce5aadf407d5414cfdc891"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/vip_presence_tests.rs",
+      "test": "vip_presence_caps_and_local_numbers_are_enforced",
+      "finding": "101 cloned entries retain identical localnumber1; strict ascending entry check rejects after count-guard removal.",
+      "proposed_test_change": "Build100/101 otherwise valid unique ascending entry numbers and assert exact LimitExceeded at101, retaining separate duplicate test.",
+      "candidate_mutation": {
+        "description": "Remove only encode batch.entries.len()>MAX_ENTRIES guard."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package.",
+      "source_modified": false,
+      "sha256": "6ece6a5757369c53b985a19637b1f9ba107f6402772b234e9009ba75a1888428"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/world_event.rs",
+      "test": "world_event_codec_roundtrips_and_bounds",
+      "finding": "145-byte all-zero payload also has unknown tag0, so generic error masks removal of144-byte guard.",
+      "proposed_test_change": "Assert exact WorldEventWireError::LimitExceeded for oversized payload.",
+      "candidate_mutation": {
+        "description": "Remove only decode_world_event_state initial byte-length guard."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package.",
+      "source_modified": false,
+      "sha256": "951ec701e8a40bc4e132917f8972236fc73249c390521d1679e9ce469320f2cb"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/presentation_tests.rs",
+      "test": "malformed_events_fail_closed",
+      "finding": "One ValueText encoder rejection combines attacker generation0 with secondary.value0; removing either branch alone can still reject for the other violation.",
+      "proposed_test_change": "Split into otherwise-valid cases: attacker generation0 with nonzero secondary; zero secondary with valid nonzero attacker generation. Retain valid paired positive.",
+      "candidate_mutation": {
+        "description": "Independently omit only attacker-reference validation, and only secondary-value validation, in presentation ValueText validation."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Compile original/candidate separately against each scoped mutant, restore production and qualify package.",
+      "source_modified": false,
+      "sha256": "52840c5db1f227549e04df09448446fca537205cfb56d8ded4af777822c26c5b"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/quest_log_tests.rs",
+      "test": "personal_map_mark_round_trip_and_bounds; the_list_holds_1024_ascending_quests_and_refuses_more",
+      "finding": "Marker text x257 violates both128 Unicode scalar and256 UTF8-byte limits. Appended1025th list row also breaks ascending order and exceeds already-maximal list bytes, so generic rejection does not isolate the commented count property.",
+      "proposed_test_change": "Isolate marker bounds with65 four-byte characters versus129 ASCII characters; retain128 two-byte positive. If strengthening list decoder count, construct short unique ascending raw1025 rows below byte bound and exact LimitExceeded, and explicitly account for overlapping decoder/final-validator count guards.",
+      "candidate_mutation": {
+        "description": "Independently remove marker byte bound or scalar bound; identify meaningful list guard mutant only after accounting for both validation layers."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Actual original/candidate scoped mutations, restored production and package gates; do not claim decoder pre-allocation coverage merely from final LimitExceeded.",
+      "source_modified": false,
+      "sha256": "3b01289f227ecb9c76d907c56102d994fe1d2f4a8e5e13ef030e09630b784092"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/spell_presentation_candidate.rs",
+      "test": "duplicate_events_and_cooldowns_refuse",
+      "finding": "Name promises duplicate events but body tests only duplicated cooldown. Valid Batch generator also has only unique pairs.",
+      "proposed_test_change": "Add otherwise-valid two-event duplicate ordinal-pair rejection or rename test to exact existing scope; retain separate valid distinct-pair positive.",
+      "candidate_mutation": {
+        "description": "Remove only encode_batch seen-pair rejection; for decoder probe construct valid raw duplicated-event batch with corrected count."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "acf6313a69b12712ea50cdce648b4631f83489005b7551cadf1c2657b6ba1127"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/task_board_tests.rs",
+      "test": "task_board_reply_strict_codec",
+      "finding": "Field-order and invalid-boolean samples omit required balance/talisman fields, allowing rejection independent of canonicality.",
+      "proposed_test_change": "Swap complete top-level fields of a fully encoded valid reply and add nonminimal varint without changing required field presence; mutate boolean separately in complete fixture.",
+      "candidate_mutation": {
+        "description": "Remove only final encode_task_board_reply(&r) != bytes canonicality comparison; preserve field parsing and semantic validation."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "2e6d454d1d0e0d8246cb49f86e34667b8150f561d40afabef30685286f10dc46"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/tests/team_finder_members_tests.rs",
+      "test": "nested_reply_decoder_rejects_duplicates_unknown_status_and_bad_utf8",
+      "finding": "InvalidUTF8 nested browse row supplies only handle/name and omits required listing/occupancy/status; decoder can reject missing fields even if name conversion becomes lossy.",
+      "proposed_test_change": "Construct otherwise-valid full browse row with invalidUTF8 name; add nonASCII positive name and independently check preserved bytes/string.",
+      "candidate_mutation": {
+        "description": "Replace read_name strict UTF8 conversion by lossy conversion while preserving all other validation."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Compile/run original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "02268c07deef1d27bd106b9e7ede6ead393ef548175a41fbda271dd504376b8b"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/weapon_proficiency.rs",
+      "test": "nx8_catalogue_codec_keeps_xp_every_perk_and_rejects_malformed_frames",
+      "finding": "513-byte perk fixture has only1 perk while selected remainsSome(2), so selected-index rejection precedes text-length check.",
+      "proposed_test_change": "Preserve3 perks and mutate one valid selected/perk text to513; add512-byte otherwise-valid positive.",
+      "candidate_mutation": {
+        "description": "Remove only catalogue_text text.len()>512 branch; preserve selected-index and reader checks."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "187e0895af4528766e5e16c8c4ab206722085c22dfbbd6a8f82e4b2afaed3c75"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/wheel.rs",
+      "test": "wheel_reply_round_trips_legacy_clear_and_full_vessels",
+      "finding": "All reply point arrays are uniform0 oru16max, masking reply decoder permutations of36 ordered slots.",
+      "proposed_test_change": "Add a valid nonuniform36-point reply and exact per-position expected array; preserve max-field fixture separately.",
+      "candidate_mutation": {
+        "description": "Reverse only points decoded by decode_wheel_reply before converting to the fixed-size array."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "22eabf3418052c7046253cc6fb80701ea3fcf6b5e8f1678902b82cd562972dae"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/wheel_presentation/tests.rs",
+      "test": "wheel_presentation_strict_codec_binds_full_draft_and_real_grid_shape",
+      "finding": "All36 Node values are identical; request points uniform and current/draft empty, so roundtrip does not observe grid/point ordering.",
+      "proposed_test_change": "Use distinct valid Node names/capacities/domains and nonuniform point array; distinguish current/draft and mixed flags where useful; retain exact shape and invalidcases.",
+      "candidate_mutation": {
+        "description": "Reverse only decoded nodes or only decoded Request points; each independent scoped mutant requires old/new proof."
+      },
+      "evidence": "Complete test/source manual review; no runtime mutant.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "49ef6ec79755bd17dd844bb8e936d9af619613cbe3d892c0d86a3284b4e14f64"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/world_interaction_tests.rs",
+      "test": "malformed_pushes_fail_closed",
+      "finding": "The zero_generation raw payload contains only identity; no_identity and short_identity cases likewise omit both required coordinates. Malformed can be returned for missing x/y even if the decoder generation or identity requirement regresses.",
+      "proposed_test_change": "Start from a complete canonical PushIntent, isolate explicit zero generation and missing generation/identity while preserving both coordinates; keep separate missing-coordinate cases.",
+      "candidate_mutation": {
+        "description": "Remove only the decoder generation nonzero filter; compare the old named test with the complete explicit-zero-generation assertion."
+      },
+      "evidence": "Full producer, decoder and complete test body read; static finding only.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "293e31e3ec7f3145a48d8f0bfa86c89f50bab6b0a9e5d44549a1a238e4be936f"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/world_object.rs",
+      "test": "the_position_arm_fails_closed_when_combined_repeated_or_malformed",
+      "finding": "The over16-byte position fixture uses nonminimal floor varint0x81,0x80,0x80,0x80,0 which decodes zigzag1 to floor-1. ActorSpell decode_position independently rejects that floor, masking the UseWith position length guard.",
+      "proposed_test_change": "Construct a position over16 bytes whose expanded varints decode to valid coordinates/floor7; establish base position decoder accepts it before wrapping; retain separate invalid floor test.",
+      "candidate_mutation": {
+        "description": "Remove only bytes.len()>MAX_USE_WITH_POSITION_BYTES in decode_use_with; old named test vs new complete valid-domain overlength fixture."
+      },
+      "evidence": "Full source and test bodies read; static finding only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "30961510bd961e68ac692ba0254d32a21f3c9fa2be9f0c6a56ba565b661d29ca"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/world_object.rs",
+      "test": "overlay_snapshot_round_trips_within_bound_and_refuses_over_bound",
+      "finding": "The explicit test checks486/487 only through encoder; decoder rejection only uses an outer payload exceeding523908 bytes. Removing decoder MAX_SNAPSHOT_ENTRIES admission can leave the named test green.",
+      "proposed_test_change": "Manually wrap486 and487 independently valid short overlay entries below outer byte budget; assert complete max decode and exact LimitExceeded at487.",
+      "candidate_mutation": {
+        "description": "Remove only decoder entries.len()>=MAX_SNAPSHOT_ENTRIES branch; do not remove encoder bound."
+      },
+      "evidence": "Full source and test bodies read; static finding only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "30961510bd961e68ac692ba0254d32a21f3c9fa2be9f0c6a56ba565b661d29ca"
+    },
+    {
+      "path": "crates/protocol-oteryn/tests/s17_cast_contract.rs",
+      "test": "clcast_ready_and_caster_roster_are_strict_and_role_separated",
+      "finding": "The51subject encoder case repeats [1;16], violating strict ascending order as well as the50subject limit.",
+      "proposed_test_change": "Use50unique sorted nonzero subjects as positive and51asnegative; separately keep out-of-order and duplicate assertions.",
+      "candidate_mutation": {
+        "description": "Remove only subjects.len()>50 in CasterRoster encoder validation; old named test should survive and new isolated limit case must fail."
+      },
+      "evidence": "Complete source and tests manually reviewed; static proposal only.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "eb69ada3981df32264b0b9ed2bb2db6e429fb0a336d0a91528efe4684d3890d2"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/world_spatial_entities/soulpit_icon_tests.rs",
+      "test": "srx3_soulpit_creature_icon_refuses_wrong_category_shape_count_and_object",
+      "finding": "The named wrong-category/object contract is not exercised with otherwise valid icon metadata on wrong entity kind: category2 is intrinsically invalid, and no object fixture is created.",
+      "proposed_test_change": "Add independently valid player icon on Creature, creature icon on Player and valid icon field14 on otherwise valid Object; retain intrinsic bad category/count cases or narrow test name if complementary coverage already exists.",
+      "candidate_mutation": {
+        "description": "For actor-kind case, relax only contextual icons.iter category-vs-EntityKind validation; separate object decoder native-icon shape mutant if testing that branch."
+      },
+      "evidence": "Complete source and tests manually reviewed; static proposal only.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "d52ece09a44969c876ef711730fbb54f4a25b2d7e248b8652b4e193097a26377"
+    },
+    {
+      "path": "crates/admin/contracts/tests/contract.rs",
+      "test": "signature_excludes_only_signature_and_rejects_tampering",
+      "finding": "Wrong-key check uses already-tampered envelope, so it may fail due to payload alteration even if verifier ignores supplied key.",
+      "proposed_test_change": "Preserve/restore original signed envelope and test wrong key separately from tampered message.",
+      "candidate_mutation": {
+        "description": "Replace only supplied verify key with the original fixture public key; original named test can remain green, new authentic-message wrong-key case must fail."
+      },
+      "evidence": "Complete source/caller/test read; static proposal only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "bf8a18ef17bdca01979c6b7f5c87e881f6bae13e6fd896869b66d85d0744c153"
+    },
+    {
+      "path": "crates/error-codes/src/emit.rs",
+      "test": "capture_restores_its_sink_after_a_panic",
+      "finding": "A fresh capture replaces a leaked previous sink, so successful emission afterward does not prove restoring an existing outer sink.",
+      "proposed_test_change": "Use nested capture with before/after emissions in outer capture and an inner panic; assert exact outer events and separate normal nested behavior.",
+      "candidate_mutation": {
+        "description": "Change restoration to replace(None) instead of replace(previous), preserving returned inner lines."
+      },
+      "evidence": "Complete source/caller/test read; static proposal only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "cac48aacac15c58bd22850304176e392f8fa25f42ed4578e863363a14ec046dd"
+    },
+    {
+      "path": "crates/error-codes/src/flight.rs",
+      "test": "ring_is_bounded_and_dump_has_entries_then_summary",
+      "finding": "The ring contents are not inspected for events two/three; evicting newest instead of oldest preserves count, sequence and common detail assertions.",
+      "proposed_test_change": "Parse dumped inner lines and assert exact surviving event order two,three; preserve count and summary checks.",
+      "candidate_mutation": {
+        "description": "Change bounded eviction from pop_front to pop_back."
+      },
+      "evidence": "Complete source/caller/test read; static proposal only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "302796efb7e3e5c63e789e8ec04697e62de0d48a217cf9ef762b4f1e0b5b93d4"
+    },
+    {
+      "path": "crates/error-codes/src/metrics.rs",
+      "test": "prometheus_histogram_contains_cumulative_buckets",
+      "finding": "Only le5 bucket is checked after observations4 and12, where cumulative and per-bucket counts are both1.",
+      "proposed_test_change": "Assert empty intermediate le10 remains1 and le25 is2, plus terminal +Inf and exact sum when useful.",
+      "candidate_mutation": {
+        "description": "Render individual bucket count instead of accumulated count in render_histogram."
+      },
+      "evidence": "Complete source/caller/test read; static proposal only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "2d4e29edcfd6e416d4b20952a9cf6ab2c8ecfeda15d5f1743d88ff09a3794627"
+    },
+    {
+      "path": "crates/diagnostics/src/lib.rs",
+      "test": "event_fields_are_unique_and_bounded",
+      "finding": "Named boundedness test inserts one field and checks duplicate rejection, never the16/17 unique-field limit.",
+      "proposed_test_change": "Supply16 unique valid static keys, assert retained fields, then reject17th exactTooManyFields without state growth.",
+      "candidate_mutation": {
+        "description": "Remove only the MAX_FIELDS capacity guard; original duplicate-only test is expected to survive; actual old/new mutant execution required."
+      },
+      "evidence": "Complete test source and relevant producer/fixture/caller manually read; static proposal only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "26e8067e4ca806a0a64a303943259fd8404115478d4caeecfae305f9d9f02605"
+    },
+    {
+      "path": "crates/task-supervisor/src/lib.rs",
+      "test": "watchdog_reports_one_stall_and_recovery_per_episode",
+      "finding": "Only one watchdog tick is observed while continuously stalled before heartbeat recovery, so repeated-stall suppression is not independently observed.",
+      "proposed_test_change": "Advance an additional watchdog interval without a beat, require one stall total; after recovery and second stall episode require exactly two stall events.",
+      "candidate_mutation": {
+        "description": "Remove only the stalled episode-edge suppression in run_watchdog, leaving heartbeat/threshold logic intact."
+      },
+      "evidence": "Complete test source and relevant producer/fixture/caller manually read; static proposal only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "2c5f2d778b3b486f5629155f3f7bd8e1de6c44520590af2352e33b24cb36dc25"
+    },
+    {
+      "path": "crates/gameplay/weather/src/tests.rs",
+      "test": "real_world_coordinates_are_the_reserved_extension_point",
+      "finding": "Fixture changes area0 city.ab_dendriel but observes Thais coordinates32369,32241; comparison never selects the changed area.",
+      "proposed_test_change": "Observe the modified area own anchor32732,31634 and assert selected area identity, then compare unchanged weather across deterministic slots.",
+      "candidate_mutation": {
+        "description": "Introduce an observable weather perturbation only when the selected area has real_world metadata; original Thais comparison should survive, candidate should fail."
+      },
+      "evidence": "Complete test source and relevant producer/fixture/caller manually read; static proposal only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "428445e6876b609aa82013afb7a60f634f49786e392ca6ecb4d859e9cd3353eb"
+    },
+    {
+      "path": "crates/test-support/src/lib.rs",
+      "test": "timeline_and_context_are_deterministic; diagnostic_fixture_preserves_redaction",
+      "finding": "Time assertion compares context against the same timeline now; supplied correlation13 is unasserted. Redaction assertions only exclude secret and would pass a dropped field.",
+      "proposed_test_change": "Assert independent3s Moment and correlation13; assert retained field count/key/Redacted kind alongside absence of secret.",
+      "candidate_mutation": {
+        "description": "Independently omit correlation forwarding, or omit fixture try_add_field forwarding, with other behavior unchanged; qualify each chosen narrow mutation."
+      },
+      "evidence": "Complete test source and relevant producer/fixture/caller manually read; static proposal only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "6ef35e69a532d27e1e8ca185e40f8191f4473c0ea4a2321cdf607998ae9557b8"
+    },
+    {
+      "path": "crates/admin/agent/src/tests/verifier.rs",
+      "test": "verifier_rejections_and_conformance_vectors; every_stage_preserves_first_failure_and_r4_preview_can_match",
+      "finding": "missing-reason signed fixture is R3 but also lacks step_up; after removing the reason guard the later step-up guard returns the same ControlMissing. StagedR4 fixture also lacks multiple controls.",
+      "proposed_test_change": "Use an otherwise fully authorized signed R3 request with fresh step_up and only missing reason; add independent blank reason code/text cases if desired.",
+      "candidate_mutation": {
+        "description": "Remove only the class>=R2 reason guard. Other negative controls must remain unchanged."
+      },
+      "evidence": "Complete test source and relevant producer/fixture/caller manually read; static proposal only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "aed4afa1c85c57a2ca5de388fc1574726063a070dc14a3496c3ca1e4e0b419f3"
+    },
+    {
+      "path": "crates/admin/agent/src/tests/verifier.rs",
+      "test": "every_stage_preserves_first_failure_and_r4_preview_can_match",
+      "finding": "Three-signer limit fixture concatenates the same signer block3times; duplicate key_ids independently reject if max2 signer count guard disappears.",
+      "proposed_test_change": "Build3 otherwise valid signers with unique nonempty ids and valid trust windows/public keys; prove2signer positive then3signer exact refusal at parsing boundary.",
+      "candidate_mutation": {
+        "description": "Remove only policy.signers.len()>2 from Policy::parse, leaving duplicate-id/key/window checks intact."
+      },
+      "evidence": "Complete test source and relevant producer/fixture/caller manually read; static proposal only, no mutant executed.",
+      "qualification_required": "Actual original/candidate scoped mutation, restore production and qualify package before adoption.",
+      "source_modified": false,
+      "sha256": "aed4afa1c85c57a2ca5de388fc1574726063a070dc14a3496c3ca1e4e0b419f3"
+    },
+    {
+      "path": "crates/session/src/session_tests_recovery.rs",
+      "test": "recovery_preserves_identity_sequences_and_selection",
+      "finding": "Negative fault1..5 peer closes after accepted and fault6 closes after begin; is_err alone cannot distinguish rejected semantic inconsistency from later end-of-stream after the guard disappears.",
+      "proposed_test_change": "Require expected Protocol(MalformedEnvelope) or ResumeSelectionChanged per fault, or supply complete valid continuation and require exact semantic refusal. Keep positive resumed command/state checks.",
+      "candidate_mutation": {
+        "description": "Individually remove generation/sequence/next-id/identity or recovery snapshot-sequence guard in disposable copy; old is_err may still pass on Io, candidate exact-error assertion must reject."
+      },
+      "evidence": "Complete original test, peer behavior, full Session::resume/read_join/read_body read. Static masking analysis only; no surviving mutant has been executed.",
+      "qualification_required": "Actual old/new scoped mutant, restored full package tests/build/Clippy/fmt before adoption.",
+      "source_modified": false,
+      "sha256": "35ef076aca8a4b3bdab9fa0588bb78ff52d17afc6847dad81e6e0b97a24f2cf7"
+    },
+    {
+      "path": "crates/session/src/session_tests_entities.rs",
+      "test": "the_store_holds_exactly_256_entities_and_fails_closed_at_257",
+      "finding": "Both fill256 and over257 deltas are queued before one service_liveness call; the same generic EntityStoreInconsistent is accepted regardless of which delta failed. A lowered after-delta capacity255 could satisfy the negative oracle.",
+      "proposed_test_change": "Observe successful fill and exactly256 retained entities/revision6 before delivering the257th; then require exact capacity reason and unchanged full store/revision.",
+      "candidate_mutation": {
+        "description": "Lower only WorldEntities::after capacity threshold from MAX_SNAPSHOT_ENTITIES to MAX_SNAPSHOT_ENTITIES-1, leaving protocol snapshot limits unchanged."
+      },
+      "evidence": "Full test/helper/WorldEntities and dispatch source read; static proposal, no old/new mutant executed.",
+      "qualification_required": "Actual old/new scoped mutation and restored package qualification before adoption.",
+      "source_modified": false,
+      "sha256": "bd57519b2966bb7b809d495f5b9abd951d949f6e56382a52be66e4a2644d2caa"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c02.rs",
+      "test": "c02_replays_server_ammunition_payload_and_rejects_invalid_delta",
+      "finding": "Malformed delta uses base revision4 after current revision5, so stale guard can reject before malformed payload decoding; generic error also allows later peer EOF.",
+      "proposed_test_change": "Use valid current base5/new6 with malformed payload and require its exact error while keeping peer alive; separately cover stale base with otherwise-valid payload.",
+      "candidate_mutation": {
+        "description": "Temporarily accept malformed item inventory payload or bypass its decode branch in isolated copy, without changing revision validation."
+      },
+      "evidence": "Full current test, fixture and named consumer source read. Static finding only; no old/new mutant or runtime execution in this review.",
+      "qualification_required": "Actual scoped old/new evidence and restored package tests/build/Clippy/fmt before adoption, unless proved tautology-only removal.",
+      "source_modified": false,
+      "sha256": "69dd50317991d0ac9fd46a8e631b60b4f369805fb7cfd879b31bc579d6f1ca3c"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c06.rs",
+      "test": "c06_real_payloads_replay_into_client_inventory_and_vitals",
+      "finding": "Two retained-state comparisons follow SnapshotState::decode receiving only immutable Some(&state); those comparisons do not observe a mutation-capable consumer.",
+      "proposed_test_change": "Remove only these redundant comparisons, retaining malformed rejection and independent positive exact stats, or test Session installation atomicity through actual mutable consumer.",
+      "candidate_mutation": {
+        "description": "No mutant needed for deletion if compiler immutability plus exact surviving failure oracle is established; qualification still requires package gates."
+      },
+      "evidence": "Full current test, fixture and named consumer source read. Static finding only; no old/new mutant or runtime execution in this review.",
+      "qualification_required": "Actual scoped old/new evidence and restored package tests/build/Clippy/fmt before adoption, unless proved tautology-only removal.",
+      "source_modified": false,
+      "sha256": "09e31bab17bf96da831e55402d42911500bb98393c2776a35b2e02a0d04d9f1e"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c07.rs",
+      "test": "e2e_c07_replays_field_placement_contact_and_expiry",
+      "finding": "Placement requires only nonempty tile items, so ground alone satisfies field-presence oracle. Stale replay generic error with peer closure and unchanged vitals can miss map mutation.",
+      "proposed_test_change": "Assert exact expected field definition/position on placement; stale replay must return exact revision error and preserve full map snapshot/revision while peer remains alive.",
+      "candidate_mutation": {
+        "description": "Drop only field21465 on placement; independently bypass map base-revision guard while keeping rest unchanged."
+      },
+      "evidence": "Full current test, fixture and named consumer source read. Static finding only; no old/new mutant or runtime execution in this review.",
+      "qualification_required": "Actual scoped old/new evidence and restored package tests/build/Clippy/fmt before adoption, unless proved tautology-only removal.",
+      "source_modified": false,
+      "sha256": "a1c039922fff15a30df31c4505a9ce7408594792614fa583d111ebf59da6e102"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c01.rs",
+      "test": "e2e_c01_replays_server_combat_state_and_rejects_invalid_delta",
+      "finding": "Negative supplies full wire envelope from encode_state_delta to apply_state_delta expecting only decode_wire_envelope(...).payload(); rejection can precede actor-combat parsing.",
+      "proposed_test_change": "Decode outer envelope before application; require exact malformed actor-combat behavior and retained state using otherwise-valid revision/shape.",
+      "candidate_mutation": {
+        "description": "Bypass only combat payload malformed decode handling; old wrongly-framed negative may still pass."
+      },
+      "evidence": "Complete current test/fixture and named consumer contract read. Static finding only, no mutation execution.",
+      "qualification_required": "Scoped old/new evidence and restored package gates before adoption.",
+      "source_modified": false,
+      "sha256": "bf3205b02a662c8d1e3595a4e366673fbe0cf2082adf9878252dfda3ef3a5375"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c12.rs",
+      "test": "e2e_c12_replays_augmented_cast_payload_and_refuses_invalid_payload",
+      "finding": "Retained Session comparison follows pure actor_spell::decode_actor_vitals on literal bytes with no access to Session.",
+      "proposed_test_change": "Remove redundant comparison while keeping malformed decode rejection; use actual Session delta application if atomicity is intended.",
+      "candidate_mutation": {
+        "description": "Compiler-visible absence of state reference proves tautology; no behavioral change to production, package qualification before adoption."
+      },
+      "evidence": "Complete current test/fixture and named consumer contract read. Static finding only, no mutation execution.",
+      "qualification_required": "Scoped old/new evidence and restored package gates before adoption.",
+      "source_modified": false,
+      "sha256": "f1f3f2f699df52e8ea0c340ff1ef58ad32d2695b15b25f794a242f273491a88a"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c16a.rs",
+      "test": "e2e_c16a_replays_barrier_map_payloads",
+      "finding": "cases.zip(expected) silently skips positive checks when capture expected rows empty/short; subsequent generic negative can fail stale revision. Expiry examines event tiles, not retained map deletion.",
+      "proposed_test_change": "Require exact expected row/case cardinality before zip; assert final world_map_snapshot lacks expired exact item/position and malformed preserves whole snapshot.",
+      "candidate_mutation": {
+        "description": "Empty or truncate captured expected rows; separately remove map cleared-position filtering."
+      },
+      "evidence": "Complete current test/fixture and named consumer contract read. Static finding only, no mutation execution.",
+      "qualification_required": "Scoped old/new evidence and restored package gates before adoption.",
+      "source_modified": false,
+      "sha256": "2e62aca9540ca56f7c318cd5cb49126c412538337c73af9ca5e859fa7a451fff"
+    },
+    {
+      "path": "crates/session/src/tests/e2e_c16c.rs",
+      "test": "e2e_c16c_replays_real_companion_visibility_payloads",
+      "finding": "visible filters to identities2/4 and synthesizes names, leaving corpse removal and real names/properties unobserved.",
+      "proposed_test_change": "Check actual entity fields or explicit expected names only when name capability selected; assert corpse absent and full store count/identity set after animation, full state unchanged on duplicate.",
+      "candidate_mutation": {
+        "description": "Drop only corpse leave from reducer/fixture while keeping skeleton enter; projection may still match."
+      },
+      "evidence": "Complete current test/fixture and named consumer contract read. Static finding only, no mutation execution.",
+      "qualification_required": "Scoped old/new evidence and restored package gates before adoption.",
+      "source_modified": false,
+      "sha256": "de9d3fa7cb34c157da1d9ce9e9beff9172e22fc02af3e7da6a812acd08c25a21"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/actor_spell_tests/tests_casting.rs",
+      "test": "the_occurrence_and_its_draws_are_bound_to_the_command",
+      "finding": "Only identical command7 outcomes compared; exura runs at fullHP, hiding magnitude. This does not establish command binding or independent draw oracle.",
+      "proposed_test_change": "Wound actor and assert independently qualified deterministic magnitude vector; choose distinct command/session fixtures whose expected effects differ, then prove command-binding removal mutant.",
+      "candidate_mutation": {
+        "description": "Remove only command_id contribution from occurrence hash or force constant draw."
+      },
+      "evidence": "Full test/fixture and bounded production call chain read; no actual mutant or ignored-case execution.",
+      "qualification_required": "Required scoped real execution and full package gates before adoption.",
+      "source_modified": false,
+      "sha256": "65d2b554b53f824f860b279eb3f4a3afc8a420475c6fb1f64c651c85a2dbeb95"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/hireling.rs",
+      "test": "client_e2e_hireling",
+      "finding": "Ignore reason references obsolete position/dismiss guard; current Query follows separate transactional read. Exact ignoredcase not currentlyqualified.",
+      "proposed_test_change": "Run exact ignoredcase with isolated current PG and genuine connection evidence; if green remove stale ignore, if red replace reason with current concrete blocker.",
+      "candidate_mutation": {
+        "description": "No invented PASS from lifecycle/bank tests; this is an explicit execution coverage gap rather than a proved production defect."
+      },
+      "evidence": "Full test/fixture and bounded production call chain read; no actual mutant or ignored-case execution.",
+      "qualification_required": "Required scoped real execution and full package gates before adoption.",
+      "source_modified": false,
+      "sha256": "2d105d66099b09d747d5178940d772bf428cc7b212c012a06e8e5d34148608bb"
+    },
+    {
+      "path": "crates/session/src/cast_viewer/tests.rs",
+      "test": "s17b_observer_rejects_oversized_prefix_before_allocating_body",
+      "finding": "Prefix16433 is followed bypeerclosure; is_err equally accepts EOF afterremovedsizeguard, sobefore-allocation behavior notobserved.",
+      "proposed_test_change": "Use instrumentedstream rejecting anybodyread and inspect Frames bodycapacity/length or exactpre-read marker; include maxvalidprefix/body positive boundary.",
+      "candidate_mutation": {
+        "description": "Remove only size>16432 guard inFrames::read; currentgenericerror maystillpass."
+      },
+      "evidence": "Fullbody/fixture/consumerread; staticonly.",
+      "qualification_required": "Actualscopedqualification beforeadoption.",
+      "source_modified": false,
+      "sha256": "d380ede2591be58cb8827228bddbac261490e6b9a83fe5955a6cdb09ba424e9a"
+    },
+    {
+      "path": "crates/session/src/features/0004-item-view-move/tests/e2e_i05.rs",
+      "test": "i05_equipment_transform_replays_and_malformed_delta_preserves_state",
+      "finding": "RetainedSessioninventory comparison followspuredecode_character_inventory_with_equip_drop withonlymalformedbytes, noSessionreference.",
+      "proposed_test_change": "Remove tautology andretainpositivereplay/refusal, orsendmalformeddelta throughactualSessionthencheckfullstate.",
+      "candidate_mutation": {
+        "description": "No runtime mutation evidence yet; sameclassasrootpuredecoder cleanup."
+      },
+      "evidence": "Fullbody/fixture/consumerread; staticonly.",
+      "qualification_required": "Actualscopedqualification beforeadoption.",
+      "source_modified": false,
+      "sha256": "16d138c6bfb7a1c951a5d2e57c0df556b82ae892a69bc95119a9606128c54e77"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs",
+      "test": "atelier_wire_resource_balances_are_negotiated_live_and_read_only",
+      "finding": "Three test IDs execute the same parent check(Case::Resources), including all presentation/resource child checks. Two IDs add repeated setup/execution without distinct inputs or oracles.",
+      "proposed_test_change": "Retain one documented compiled owner ID for each exact scenario and remove only repeated invocation after actual configured qualification. Preserve helper coverage and all distinct scenario keys.",
+      "candidate_mutation": {
+        "description": "This is exact invocation/callee equivalence, not a production mutation claim. Verify before/after actual selected IDs and execute retained PG scenario."
+      },
+      "evidence": "source_duplicate_resolution.json; source-only binding and shared fixture trace, no deletion or new execution.",
+      "qualification_required": "Actual compiled ID delta, configured retained scenario, and required package gates before adoption.",
+      "source_modified": false,
+      "sha256": "a8ac65412e670056080d87a8cbf653748c1d8dc7ebf9c692b725f5f12f791a6f",
+      "duplicate_group": 9
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/engoutfit.rs",
+      "test": "engoutfit_battle_mage_atomic_outfit_and_addons; engoutfit_beggar_atomic_outfit_and_addons; engoutfit_assassin_atomic_outfit_and_addons",
+      "finding": "Three outfit tests duplicate the same fully qualified fixture calls and literal keys in qengine_outfit_stories.rs.",
+      "proposed_test_change": "Retain one documented compiled owner ID for each exact scenario and remove only repeated invocation after actual configured qualification. Preserve helper coverage and all distinct scenario keys.",
+      "candidate_mutation": {
+        "description": "This is exact invocation/callee equivalence, not a production mutation claim. Verify before/after actual selected IDs and execute retained PG scenario."
+      },
+      "evidence": "source_duplicate_resolution.json; source-only binding and shared fixture trace, no deletion or new execution.",
+      "qualification_required": "Actual compiled ID delta, configured retained scenario, and required package gates before adoption.",
+      "source_modified": false,
+      "sha256": "621b97729f9d7e001b7fa55af2124c3924c4b3e10a21bde6f92c605811cc1bc4",
+      "duplicate_group": 18
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/l6_tomb_native.rs",
+      "test": "present_3950/3951/3952/3954/3955 pairs across native and qcx wrappers",
+      "finding": "Five pairs repeat exactly the same fixed-argument shared Tomb fixture functions; additional locations are recorded in source_duplicate_resolution.json groups21-25.",
+      "proposed_test_change": "Retain one documented compiled owner ID for each exact scenario and remove only repeated invocation after actual configured qualification. Preserve helper coverage and all distinct scenario keys.",
+      "candidate_mutation": {
+        "description": "This is exact invocation/callee equivalence, not a production mutation claim. Verify before/after actual selected IDs and execute retained PG scenario."
+      },
+      "evidence": "source_duplicate_resolution.json; source-only binding and shared fixture trace, no deletion or new execution.",
+      "qualification_required": "Actual compiled ID delta, configured retained scenario, and required package gates before adoption.",
+      "source_modified": false,
+      "sha256": "684accaae215618de232474a1a698f4c5c4a6cf7132c1f46a6c8c90bebe3b098",
+      "duplicate_group": 21
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_reward_claims.rs",
+      "test": "quest_reward_claims_phase_a_key_container_cohort / quest_reward_claims_batch_two_parchment_room_key_bag",
+      "finding": "Both same-module bodies execute the same nonempty singleton PHASE_A_KEY_CONTAINER cohort.",
+      "proposed_test_change": "Retain one documented compiled owner ID for each exact scenario and remove only repeated invocation after actual configured qualification. Preserve helper coverage and all distinct scenario keys.",
+      "candidate_mutation": {
+        "description": "This is exact invocation/callee equivalence, not a production mutation claim. Verify before/after actual selected IDs and execute retained PG scenario."
+      },
+      "evidence": "source_duplicate_resolution.json; source-only binding and shared fixture trace, no deletion or new execution.",
+      "qualification_required": "Actual compiled ID delta, configured retained scenario, and required package gates before adoption.",
+      "source_modified": false,
+      "sha256": "632d95499ad5ac914398b847f4dac83cdc3210151f3b7aef7c40c83629e6b7b2",
+      "duplicate_group": 35
+    }
+  ]
+}

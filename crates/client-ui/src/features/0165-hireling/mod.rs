@@ -115,15 +115,13 @@ mod tests {
     }
 
     #[test]
-    fn requests_use_the_codec_and_refusals_are_visible() {
+    fn requests_use_the_codec_and_refusals_are_visible() -> Result<(), &'static str> {
         let mut panel = HirelingPanel {
             selected: true,
             target: Some((7, 9, 1)),
             ..Default::default()
         };
-        let Some(command) = request(&mut panel, Intent::Summon) else {
-            return;
-        };
+        let command = request(&mut panel, Intent::Summon).ok_or("summon command missing")?;
         assert_eq!(
             hireling::Request::decode(&command.0.encode()),
             Some(command.0)
@@ -136,6 +134,7 @@ mod tests {
             }
         ));
         assert!(panel_text(&panel).contains("refused"));
+        Ok(())
     }
 
     #[test]

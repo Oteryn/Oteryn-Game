@@ -372,9 +372,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pkce_is_deterministic_and_redacted() -> Result<(), IdentityError> {
+    fn pkce_matches_fixed_s256_vector_and_redacts_verifier() -> Result<(), IdentityError> {
         let material = PkceMaterial::from_entropy(&[7_u8; 32])?;
-        assert!(material.challenge().len() >= 43);
+        // Independently calculated with standard Base64url and SHA-256.
+        assert_eq!(
+            material.verifier().expose(),
+            "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc"
+        );
+        assert_eq!(
+            material.challenge(),
+            "3Ev4DHdHPRMPoN6GukAY_pi7IUAF5qWJHRK6kURvnoE"
+        );
         assert_eq!(
             format!("{:?}", material.verifier()),
             "SecretString([REDACTED])"

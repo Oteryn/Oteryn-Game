@@ -1,0 +1,90 @@
+{
+  "task_id": "OTV2-20261122-test-ci-value-audit",
+  "base_sha": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "qualification_level": "authoring-tree Python/shell oracle qualification, not frozen-head Rust or live topology",
+  "source_sha256": {
+    "tools/qualification/node_boot/matrix.py": "25bcbc8e94d49fc3d7a928415cf3b8bdcd46b77ed38ba8a33d2f6b96636fbbc8",
+    "tools/qualification/node_boot/test_matrix.py": "fae000f225ba62033aa88c4877079f09a6b4a1a25999760637fe2421b98e1b53",
+    "tools/qualification/node_boot/test_prebuilt.py": "897b396acd7aa3a57b4a7e5e1022ffce4e28b48c58c3491727374e973726f967",
+    "tools/qualification/wp5_s3b/run.sh": "3763f442861190aea9f36d8e4b4be7b68f9e03c42a436d456d85960f771bdb55"
+  },
+  "checks": [
+    {
+      "command": "python3 docs/agents/evidence/OTV2-20261122-test-ci-value-audit/aggregate_row_regressions.py -v",
+      "phase": "before BB-02 fix",
+      "exit_code": 1,
+      "test_methods": 11,
+      "failures": 8,
+      "errors": 3,
+      "input": "exact source head 245ba783; synthetic scenario log fixtures"
+    },
+    {
+      "command": "python3 tools/qualification/node_boot/test_matrix.py -v",
+      "phase": "after BB-02 fix",
+      "exit_code": 0,
+      "test_methods": 33,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "command": "python3 -m unittest discover -s tools/qualification/node_boot -v",
+      "phase": "after BB-02, before SB-03 additions",
+      "exit_code": 1,
+      "test_methods": 106,
+      "passed": 99,
+      "failures": 0,
+      "errors": 7,
+      "limitation": "AF_UNIX socket creation denied (PermissionError) in unchanged provision tests"
+    },
+    {
+      "command": "python3 tools/qualification/node_boot/test_prebuilt.py SeamExecutionEvidenceTests -v",
+      "phase": "before SB-03 fix",
+      "exit_code": 1,
+      "test_methods": 3,
+      "subtest_failures": 21,
+      "errors": 0,
+      "input": "synthetic child process; actual mode selection, execution and cleanup caller"
+    },
+    {
+      "command": "python3 tools/qualification/node_boot/test_prebuilt.py SeamExecutionEvidenceTests.test_zero_tests_and_incomplete_or_wrong_case_cannot_qualify -v",
+      "phase": "intermediate SB-03 name anchoring negative",
+      "exit_code": 1,
+      "test_methods": 1,
+      "subtest_failures": 3,
+      "errors": 0
+    },
+    {
+      "command": "python3 tools/qualification/node_boot/test_prebuilt.py -v",
+      "phase": "after final SB-03 fix",
+      "exit_code": 0,
+      "test_methods": 9,
+      "failures": 0,
+      "errors": 0,
+      "new_methods": 3,
+      "new_synthetic_mode_case_probes": 30
+    },
+    {
+      "command": "bash -n tools/qualification/wp5_s3b/run.sh",
+      "phase": "final authoring tree",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "phase": "final authoring tree",
+      "exit_code": 0
+    }
+  ],
+  "runtime_not_executed": [
+    "Rust Game compilation",
+    "PostgreSQL live qualification",
+    "Platform/Game live execution",
+    "Windows",
+    "GPU"
+  ],
+  "historical_log_replay": "historical_reference_replay.json",
+  "remaining_scope": [
+    "group/basic/spells/game-platform expected execution declarations",
+    "capture to replay identity chain for capture-only indexed producers",
+    "live final-head qualification"
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "time": "2026-11-23T13:33:50.372482+00:00",
+  "predecessor": "0623fbd59c372bbf479f3965031f47393c42cd39",
+  "kind": "AUTHORING_NOT_FROZEN_HEAD",
+  "source_sha256": {
+    "apps/game-server/tests/ai_bootstrap.rs": "9affd57cc805d548c4b0173e8d268354240e8482792ab0a8ebb6b4a7167e46b2",
+    "apps/game-server/tests/native_admission_source_postgres.rs": "338c46afa64b65bf27ee21c24e5e45333bcf78b000a44e83da51daf6d9d154a7",
+    "apps/game-server/tests/support/bank_postgres_cases.rs": "95e2862cd0e7694874e5101f6d85d18b442d17451ebaecd9abc9b9fe35a7017d",
+    "crates/client-runtime/src/features/0064-target-move/tests/e2e_m01.rs": "79c9d79e0e90f7e723303893da5159501c87b08f3e2096897af32817829e630c",
+    "crates/client-runtime/src/features/0287-actor-spell-catalog/tests/e2e_c14.rs": "a07de8d5730ac8f5cb1285a29a37bd720a854958d7cdb7b29e4a2206688618f7",
+    "crates/client-runtime/src/features/local-spell-action-bar/tests/e2e_c04.rs": "7589347be634412419d12a161ccff9dd6d001c4195b1360c9a09b9cf62f1cd4a",
+    "crates/client-runtime/tests/gap_house.rs": "33c4c82214d4d0f0b9689e9c33afb4097f9b65f7a7aa2600e910d3a9efb458d3",
+    "crates/client-ui/src/features/0117-boss-encounter/tests/state.rs": "a08947ccd0b93908526c5976683d13ab538b85e8e5ec9d595044e9ac2187c9de",
+    "crates/client-ui/src/features/0165-hireling/mod.rs": "061a3c719bc7a297c7ffb10550bfc114663330ceb8719b913388d9713146b7bb",
+    "crates/client-ui/tests/chat_log.rs": "ef84a79b75de54b714ddd644f285813f968a3e1e9b6338d7078566a53f440a66",
+    "crates/gameplay/durability/src/durability/bank.rs": "5f95b35cff3d9a71290038189db0d82f92bc365f7da2dd7a772f64412f6ef7bd",
+    "crates/gameplay/durability/src/durability/core_modules_linkage_tests.rs": "834b82c938310fcd6544eb835149c189e457c06841179731d15e986563d28f31",
+    "crates/gameplay/durability/src/durability/db_holder_wait_tests.rs": "5bfab2a627d1f70ffd96805beead44616b7f356f044816a6b356dc7efd2f1a09",
+    "crates/gameplay/durability/src/durability/db_tests/holder_round_trip_tests.rs": "e93940544720f60f632cd9f55816b22b95b66455cc0d36f8ac5493020e7aa099",
+    "crates/gameplay/foundation/src/scheduled_events.rs": "00323b11ca29bcbcc6958c163f4456df1bcba104f6202b2b78bc6ae02448134b",
+    "crates/gameplay/monster-ai/src/ai/mod.rs": "bddab355674c61af52100638e0799a6b6d45dabf990144848fe1985a88fef29f",
+    "crates/gameplay/monster-ai/src/ai/perception.rs": "386755946bd6c5f9fc4f7a8ff5daccb6dc6330d6980acc9032250d91c017639d",
+    "crates/gameplay/monster-ai/src/ai_think.rs": "5f5a032d3d72e96ca0fdc41c4b57185c55c71d1cc7e4ef1e7949af0384dd910c",
+    "crates/identity/src/lib.rs": "e63df43f6e32e184e92ae8518c994bd4e9994674b07104a519ba48767a321288",
+    "crates/input-platform/tests/native_winit.rs": "c80929f7bdf0241f0f6a778449f343de81903f5afb1f559a4a5ccc7c7d71dcce",
+    "crates/protocol-oteryn/src/analyser_catalogue.rs": "0cadd2224571cbf702f5cdb27bbd6097344d3601c076af73c49d4bc53268513e",
+    "crates/protocol-oteryn/src/analyser_party.rs": "c26a72c267330d5b2b81204ca4ad905608ab79c14619f14484020268f6c7cf87",
+    "crates/protocol-oteryn/src/appearance_tests/mappings_tests.rs": "3e37038ec5d7d94a610968f64cf56c81b11b29433304625c8935532ad21a0681",
+    "crates/protocol-oteryn/src/atelier.rs": "53a477050738b2a95d5355e85d8f91b2e71ee4776eed5042aceea581e6d14679",
+    "crates/protocol-oteryn/src/attack_tests.rs": "9b363a1ff83fe9d39d4566509c3495ffe4aa4dd9f29889fc8f6286e48a653438",
+    "crates/protocol-oteryn/src/battle_metadata/tests.rs": "5e548de120a433a0897200fdf419369e26a701319224e56cc081f401d08836e6",
+    "crates/protocol-oteryn/src/bestiary.rs": "4790424728cadb4b1061566c520c2dcb4dd752bc3e4de1f58557e5516bde035c",
+    "crates/protocol-oteryn/src/bestiary_catalogue.rs": "3d9ddcb14edbc248c576ac5b1321d7276dc73f1664d0ad764c6880da79627e92",
+    "crates/protocol-oteryn/src/boss_difficulty_tests.rs": "a3d76126c271f8dea165813e69ad7570409bfa95790cf94e9d83de8b4fbf7d84",
+    "crates/protocol-oteryn/src/boss_encounter.rs": "5a52f38c503c84359d49b5e36801d7b6d8aae300af9b5b9883fbf0cc9a608ac0",
+    "crates/protocol-oteryn/src/boss_encounter/catalogue_tests.rs": "ba74f0017a69a874fd455fb28f72601c1a983164fec8fb7f40dda03f9c92fcb1",
+    "crates/protocol-oteryn/src/boss_encounter_tests.rs": "a9772f9d87a5faeefabe2cb48dd73fc707f024719624c5cc7eac070dff09008d",
+    "crates/protocol-oteryn/src/boss_rewards_tests.rs": "2ea74efa68eb5f19740ac08e31de503b54997f6d1831f8610532a0c199c7a278",
+    "crates/protocol-oteryn/src/contract_registries.rs": "e7de501635419065aa81a7e993d1ff388c34223789b5398dcaada4d4a4f4d528",
+    "crates/protocol-oteryn/src/cyclopedia.rs": "c5e2f104e981c3ded0bbbb39adb3aac6be6505de7eafdfaca7fb44239ba7de05",
+    "crates/protocol-oteryn/src/daily_boost.rs": "910f6d6d3e61d4c6d445eed716ab9335f088298b86300805f73a8c91e0114e26",
+    "crates/protocol-oteryn/src/guild_war.rs": "5a905f634449bc8316771f057ec30e01ae13f2168453a7d7a5898dde028e218a",
+    "crates/renderer/src/batch.rs": "a2327cd5e866e73b51112c1f3dc626dfd46f9861be786752912a06882317d546",
+    "tools/agents/tests/test_enqueue_readiness.py": "c11ca72616ae372656532b687754a82b0a784f6388f4e5247e6f28db0191c4db",
+    "tools/content-migration/test_cake_bridge_reference.py": "c73cc0244c71c4f5cca283fcb98470ebb5956786c60b9a19d3d5635f471ec65d",
+    "tools/content-migration/test_forge_sql_admission.py": "1aa2257a939315744c164bbc3fde916db3dd3830cc3146e81dfd75a540007d78",
+    "tools/content-migration/test_harvest_item_profiles.py": "90583fa08df2e471964f216e7f4e5605762210d32a38887b64bc8ea8deb8bbad",
+    "tools/content-migration/test_itemhold_q.py": "23705fecd7b8a9bdc0c088dbf951fc5872b6dc07c67c01649fac9ff3502ef5d4",
+    "tools/content-migration/test_monster_reference_level.py": "479956b4bf4c05c82139799747afd6c00b863ab28c04d41b4b6658c356f234dd",
+    "tools/content-migration/test_official_creature_balance.py": "7745968439378ae9072f0241697444feb7a0aebbbe145069c1197b3dbd09441a",
+    "tools/content-migration/test_parallel_checks.py": "29fbb4bb4ac7a8abbe3d70603f0b3782636ca6faa279a5f693291102389acb0a",
+    "tools/content-migration/test_qengine_reward_item_profiles.py": "fde9a229f7d1d8d977607389949d455c67441e1e095117a68bc37033220a15c5",
+    "tools/content-migration/test_questpc4_treasure_reward_profiles.py": "fe4901129560612c611ec187ce31ce72a3a430759cd0d51b14f5f6587313fcf7",
+    "tools/content-migration/test_quick_loot_item_profiles.py": "16eb07db23dd4289b90f754d0e928461883907f57cc1a75a704a6317959b1d90",
+    "tools/content-migration/test_regenerate_content.py": "0354b1111f841419dacf4e6cc0dcc2614cd0a0868be0b5c3f974c6a86fb7be46",
+    "tools/content-migration/test_world_project_v2_to_tree.py": "228da7ef95341c9d9fad7b43e7904232675b1f922c6dd35e775053fcd6e6f7a6",
+    "tools/qualification/wp5_s3b/run.sh": "62e4e16cda0c1b0c684c70b1785869d2b27f179d852d8832982ca2adfcea659a",
+    "tools/repository/check_duplicate_test_sources.py": "2f3af05c1957c61fd0844761982d449a5ebdf80167f596a28be3ff8453e65817",
+    "tools/repository/test_heavy_gate.py": "187a249b8ca8d82b13787371dee7b6aeae31a721209e7b7d53afcc2b5b5a2b0c",
+    "tools/repository/test_protected_main_cache.py": "74193415c8324d3bdf4532a3fa19b531ae1f56d1c8b0965cc1f95f3984b809c2",
+    "tools/repository/test_repository_tests_run.py": "0189671ff5a824d0c5eb55e35fbd8d89aef5ec02c91758da68d31f140a55d44c",
+    "tools/repository/test_wp5_s3b_verdict.py": "ddc021c4da44cf38721605182b616d273e3c74d239a8eea90f72058f597e48e6",
+    "tools/synthetic-client-harness/src/main.rs": "15e5d8f716e64c0a4ec55f24231e7ad5602335a839dd2951eae9273bda196778"
+  },
+  "checks": [
+    {
+      "argv": [
+        "python3",
+        "tools/agents/validate_governance.py"
+      ],
+      "rc": 0,
+      "output": "Governance validation passed for Oteryn/Oteryn-Game.\nValidated 22 required policy documents and 9 project lanes.\n"
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/repository/validate_repository_policy.py"
+      ],
+      "rc": 0,
+      "output": "Post-merge exact-candidate routing regressions PASS\nRepository policy validation passed (23 files, 78 workflows).\n"
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/repository/refresh_ci_workflow_pins.py",
+        "--check"
+      ],
+      "rc": 0,
+      "output": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/repository/test_check_duplicate_test_sources.py",
+        "-v"
+      ],
+      "rc": 0,
+      "output": "test_allowlisted_target_is_exempt_only_under_its_prefix (__main__.DuplicateTestSources.test_allowlisted_target_is_exempt_only_under_its_prefix) ... ok\ntest_copied_source_without_tests_passes (__main__.DuplicateTestSources.test_copied_source_without_tests_passes) ... ok\ntest_copied_test_bearing_source_fails (__main__.DuplicateTestSources.test_copied_test_bearing_source_fails) ... ok\ntest_dep_info_paths_follow_rustc_naming (__main__.DuplicateTestSources.test_dep_info_paths_follow_rustc_naming) ... ok\ntest_dep_info_reads_first_rule_with_escaped_spaces (__main__.DuplicateTestSources.test_dep_info_reads_first_rule_with_escaped_spaces) ... ok\ntest_harness_units_keep_only_workspace_test_harnesses (__main__.DuplicateTestSources.test_harness_units_keep_only_workspace_test_harnesses) ... ok\ntest_main_passes_and_fails_closed (__main__.DuplicateTestSources.test_main_passes_and_fails_closed) ... ok\ntest_repository_allowlist_entries_are_explained (__main__.DuplicateTestSources.test_repository_allowlist_entries_are_explained) ... ok\ntest_shared_case_file_fails_unless_one_holder (__main__.DuplicateTestSources.test_shared_case_file_fails_unless_one_holder) ... ok\ntest_single_holder_per_test_source_passes (__main__.DuplicateTestSources.test_single_holder_per_test_source_passes) ... ok\ntest_unused_allowlist_entry_is_stale (__main__.DuplicateTestSources.test_unused_allowlist_entry_is_stale) ... ok\ntest_build_smoke_selects_only_explicit_workspace_benches (__main__.RustTestShards.test_build_smoke_selects_only_explicit_workspace_benches) ... ok\ntest_planner_fails_closed (__main__.RustTestShards.test_planner_fails_closed) ... ok\ntest_shards_partition_tested_integration_targets (__main__.RustTestShards.test_shards_partition_tested_integration_targets) ... ok\n\n----------------------------------------------------------------------\nRan 14 tests in 0.008s\n\nOK\n"
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "rc": 0,
+      "output": ""
+    }
+  ],
+  "other_gates": "Hash-bound package tests, strict all-target Clippy/default builds/fmt and actual mutations are linked from README and lane manifests."
+}
