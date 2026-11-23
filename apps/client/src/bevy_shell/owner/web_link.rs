@@ -61,3 +61,12 @@ fn closed_web_link_result_preserves_current_login_feedback()
         Ok(())
     })
 }
+
+#[cfg(test)]
+impl HostOwner {
+    pub(crate) fn configure_test_web_link(&mut self, config: crate::NativeLoginConfig) -> bool {
+        self.entry
+            .as_mut()
+            .is_some_and(|entry| entry.configure(config))
+    }
+}
