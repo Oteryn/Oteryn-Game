@@ -33,7 +33,7 @@ impl DurabilityRoot {
                     ).await? {
                         return Err(DurabilityError::Unavailable);
                     }
-                    let (changed, operation): (bool, Option<String>) = sqlx::query_as(
+                    let (changed, operation, cancelled_operation): (bool, Option<String>, Option<String>) = sqlx::query_as(
                         "SELECT * FROM game_house_rent_tick(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4)",
                     )
                     .bind(world_id.as_bytes().as_slice())
@@ -42,9 +42,12 @@ impl DurabilityRoot {
                     .bind(node.sql_possession_secret())
                     .fetch_one(&mut *tx)
                     .await?;
-                    if let Some(operation) = operation {
+                    for operation in [cancelled_operation.as_deref(), operation.as_deref()]
+                        .into_iter()
+                        .flatten()
+                    {
                         super::house_disposition::write_disposition_audit(
-                            &mut tx, &node, scope, generation, &operation,
+                            &mut tx, &node, scope, generation, operation,
                         ).await?;
                     }
                     commit_semantic_transaction(tx, deadline).await?;
