@@ -157,7 +157,9 @@ OUTLAW_KEYS = {3301: 2970, 3302: 2969, 3303: 2970, 3304: 2972}
 
 
 def outlaw_key_claim(definition):
-    return any(key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items())
+    return any(
+        key_claim(definition, number, item) for number, item in OUTLAW_KEYS.items()
+    )
 
 
 def panpipe_key_claim(definition):
@@ -382,8 +384,10 @@ def selections(root=ROOT):
             if (
                 path.name != "outlaw-camp.json"
                 or journey["quest"] != "oteryn:quest.the_outlaw_camp_quest"
-                or captured_claims != {
-                    f"oteryn:reward-claim.quest.key.id{number}" for number in OUTLAW_KEYS
+                or captured_claims
+                != {
+                    f"oteryn:reward-claim.quest.key.id{number}"
+                    for number in OUTLAW_KEYS
                 }
                 or terminal["position"] != [32620, 32198, 10]
                 or terminal["appearance"] != 2472
@@ -437,7 +441,8 @@ def selections(root=ROOT):
             if ITEM_ACCESS[key][0] not in doors:
                 raise ValueError("QUEST_CHEST_ITEM_ACCESS_MISSING")
     if any(
-        row.get("claim") == "oteryn:reward-claim.kv.panpipe" for row in bindings.values()
+        row.get("claim") == "oteryn:reward-claim.kv.panpipe"
+        for row in bindings.values()
     ):
         # Already captured from both donors: door_key.lua lines137/158. The
         # numeric storage is4055 despite the donors' stale "key3791" label.
@@ -478,25 +483,36 @@ def selections(root=ROOT):
     ):
         position = (32479, 31903, 4)
         gates_path = "tools/content-schema/quest-authoring/samples/doors/gates.json"
-        manifest_path = "tools/content-schema/quest-authoring/samples/doors/manifest.json"
+        manifest_path = (
+            "tools/content-schema/quest-authoring/samples/doors/manifest.json"
+        )
         gate_key = "canary:door-gate/key/3899"
         gates_raw = (root / gates_path).read_bytes()
         manifest_raw = (root / manifest_path).read_bytes()
         (gate,) = (
-            row for row in json.loads(gates_raw)["gates"] if row["identity"]["key"] == gate_key
+            row
+            for row in json.loads(gates_raw)["gates"]
+            if row["identity"]["key"] == gate_key
         )
         (entry,) = (
-            row for row in json.loads(manifest_raw)["entries"] if row.get("destination") == gate_key
+            row
+            for row in json.loads(manifest_raw)["entries"]
+            if row.get("destination") == gate_key
         )
         if (
             gate["condition"]["key_binding"] != "canary:door-key/3899"
             or [claim["key"] for claim in gate["condition"]["key_from_claims"]]
             != ["canary:reward-claim/quest/key/id3899"]
-            or gate["placements"] != [{"position": dict(zip("xyz", position)), "appearance": None}]
+            or gate["placements"]
+            != [{"position": dict(zip("xyz", position)), "appearance": None}]
             or tuple(entry["position"]) != position
             or entry["status"] != "mapped"
-            or {row["source"] for row in entry["sources"]} != {"canary", "crystalserver"}
-            or any(row["action_key"] != "Storage.Quest.Key.ID3899" for row in entry["sources"])
+            or {row["source"] for row in entry["sources"]}
+            != {"canary", "crystalserver"}
+            or any(
+                row["action_key"] != "Storage.Quest.Key.ID3899"
+                for row in entry["sources"]
+            )
             or position in doors
         ):
             raise ValueError("PARADOX_KEY_DOOR_SOURCE_DRIFT")

@@ -47,7 +47,8 @@ def capture(source):
         fields = lua_tables.assignments(raw.decode(), {table})[table]["fields"]
         if table == "KeyDoorAction":
             (field,) = [
-                f for f in fields
+                f
+                for f in fields
                 if isinstance(f["key"], dict)
                 and f["key"].get("expr") == "Storage.Quest.Key.ID4502"
             ]
@@ -76,7 +77,9 @@ def capture(source):
                 )
     path = "data-global/lib/core/storages.lua"
     raw = (source / path).read_bytes()
-    storage = lua_tables.as_python(lua_tables.assignments(raw.decode(), {"Storage"})["Storage"])
+    storage = lua_tables.as_python(
+        lua_tables.assignments(raw.decode(), {"Storage"})["Storage"]
+    )
     if storage["Quest"]["Key"]["ID4502"] != 4502:
         raise ValueError("Alawar key storage changed")
     sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})

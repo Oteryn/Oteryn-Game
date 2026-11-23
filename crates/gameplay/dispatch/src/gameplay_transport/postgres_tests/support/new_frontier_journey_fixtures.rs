@@ -796,7 +796,7 @@ async fn move_potion(
     Ok(())
 }
 
-fn farmine_world_spawn() -> TestResult<crate::foundation::BossSpawn> {
+pub(super) fn farmine_world_spawn() -> TestResult<crate::foundation::BossSpawn> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let read = |p: &str| -> TestResult<serde_json::Value> {
         Ok(serde_json::from_slice(&std::fs::read(root.join(p))?)?)
@@ -868,14 +868,4 @@ fn farmine_world_spawn() -> TestResult<crate::foundation::BossSpawn> {
         cycle: 0,
         pending_claim: false,
     })
-}
-
-#[test]
-fn farmine_mine_leader_is_a_scheduled_world_spawn() -> TestResult {
-    let spawn = farmine_world_spawn()?;
-    assert_eq!(
-        spawn.policy,
-        oteryn_gameplay_content::content::BossPolicy::Respawn { min_s: 90, max_s: 90 }
-    );
-    Ok(())
 }

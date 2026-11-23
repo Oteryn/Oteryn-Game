@@ -1,6 +1,19 @@
 use super::TestResult;
-use super::new_frontier_journey_fixtures::{BAIT_RECOVERY, NAME, start};
+use super::new_frontier_journey_fixtures::{BAIT_RECOVERY, NAME, farmine_world_spawn, start};
 use super::quest_world_callbacks_fixtures::scenario;
+
+#[test]
+fn farmine_mine_leader_is_a_scheduled_world_spawn() -> TestResult {
+    let spawn = farmine_world_spawn()?;
+    assert_eq!(
+        spawn.policy,
+        oteryn_gameplay_content::content::BossPolicy::Respawn {
+            min_s: 90,
+            max_s: 90
+        }
+    );
+    Ok(())
+}
 
 #[test]
 fn new_frontier_full_settlement_journey_earns_rewards() -> TestResult {
