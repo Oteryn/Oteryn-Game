@@ -53,6 +53,8 @@ enum Replay {
     BatchedEarlierNeighbour,
     Nearest,
     Ambiguous,
+    Disappeared,
+    DelayedXp,
 }
 
 type ServerStream = tokio_rustls::server::TlsStream<TcpStream>;
@@ -102,35 +104,51 @@ async fn delta(
 async fn replay_peer(mut stream: ServerStream, scenario: Replay) -> TestResult {
     let mut sequence = 0;
     let mut revision = 0;
-    let mut turns = 0;
+    let mut combat_reads = 0;
     let mut attacked = false;
+    let mut stopped = false;
+    let mut approaching_corpse = false;
     let mut actor_position = position(100);
     loop {
         let Ok(bytes) = light_read(&mut stream).await else {
+            if matches!(scenario, Replay::Disappeared) {
+                assert!(
+                    stopped,
+                    "the lost target must be cleared before reacquisition"
+                );
+            }
             return Ok(());
         };
         let frame = native::decode_wire_envelope(&bytes)?;
         let command = frame.client_command(1)?;
         let payload = match command.command_type {
             character::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB => {
-                let mut payload = vec![character::CharacterTab::GeneralStats as u8];
-                payload.extend_from_slice(&u64::from(turns >= 2).to_le_bytes());
-                payload
-            }
-            attacks::COMMAND_TYPE_ATTACK_TARGET_INTENT => {
-                assert_eq!(
-                    command.payload,
-                    attacks::encode_attack_target_intent(Some(&creature().entity))
-                        .map_err(|e| format!("attack encoding: {e:?}"))?
-                        .as_slice()
-                );
-                attacked = true;
-                attacks::encode_attack_intent_result(attacks::AttackIntentDisposition::Ok)
-            }
-            native::target_move::COMMAND_TYPE_TARGET_MOVE_INTENT => {
-                assert!(attacked);
-                turns += 1;
-                match (scenario, turns) {
+                if attacked && !stopped {
+                    combat_reads += 1;
+                }
+                match (scenario, combat_reads) {
+                    (Replay::Disappeared, 1) => {
+                        delta(
+                            &mut stream,
+                            &mut sequence,
+                            &mut revision,
+                            vec![],
+                            vec![],
+                            vec![creature().entity],
+                        )
+                        .await?;
+                    }
+                    (Replay::DelayedXp, 1) => {
+                        delta(
+                            &mut stream,
+                            &mut sequence,
+                            &mut revision,
+                            vec![corpse(13, 101)],
+                            vec![],
+                            vec![creature().entity],
+                        )
+                        .await?;
+                    }
                     (Replay::Ranged, 1) => {
                         let moved = spatial::WorldSpatialEntity {
                             position: position(103),
@@ -237,9 +255,38 @@ async fn replay_peer(mut stream: ServerStream, scenario: Replay) -> TestResult {
                     }
                     _ => {}
                 }
+                let xp = match scenario {
+                    Replay::Disappeared => 0,
+                    Replay::DelayedXp => u64::from(combat_reads >= 14),
+                    _ => u64::from(combat_reads >= 2),
+                };
+                let mut payload = vec![character::CharacterTab::GeneralStats as u8];
+                payload.extend_from_slice(&xp.to_le_bytes());
+                payload
+            }
+            attacks::COMMAND_TYPE_ATTACK_TARGET_INTENT => {
+                let target = creature().entity;
+                let stopping =
+                    matches!(scenario, Replay::Disappeared | Replay::DelayedXp) && attacked;
+                assert_eq!(
+                    command.payload,
+                    attacks::encode_attack_target_intent((!stopping).then_some(&target))
+                        .map_err(|e| format!("attack encoding: {e:?}"))?
+                        .as_slice()
+                );
+                attacked = true;
+                stopped = stopping;
+                attacks::encode_attack_intent_result(attacks::AttackIntentDisposition::Ok)
+            }
+            native::target_move::COMMAND_TYPE_TARGET_MOVE_INTENT => {
+                assert!(
+                    approaching_corpse,
+                    "TURN must not interrupt the combat observer"
+                );
                 vec![8, 1]
             }
             1 => {
+                approaching_corpse = true;
                 let direction = native::world_spatial::decode_step_intent(command.payload)
                     .map_err(|e| format!("hunt step input: {e:?}"))?;
                 assert_eq!(direction, StepDirection::East);
@@ -356,14 +403,30 @@ async fn replay(scenario: Replay) -> TestResult {
     )?;
     let result = tokio::time::timeout(
         Duration::from_secs(2),
-        forge_attack_corpse(&mut client, &world, creature(), 1),
+        forge_attack_corpse(
+            &mut client,
+            &world,
+            creature(),
+            1,
+            tokio::time::Instant::now() + Duration::from_secs(5),
+        ),
     )
     .await;
+    if matches!(scenario, Replay::Disappeared) {
+        assert_eq!(
+            result.map_err(|_| "target disappearance did not restart the hunt")??,
+            None,
+            "lost visibility without XP must restart the hunt"
+        );
+        drop(client);
+        peer.await??;
+        return Ok(());
+    }
     assert!(
         result.is_ok(),
         "fresh corpse near the last target position must bind while the player stands four tiles away"
     );
-    let (handle, xp_before) = result??;
+    let (handle, xp_before) = result??.ok_or("target must yield a proven corpse")?;
     if matches!(scenario, Replay::Ranged) {
         assert_eq!(handle.get(), 12);
     } else {
@@ -431,4 +494,14 @@ fn hunt_corpse_replay_waits_when_corpses_are_equally_plausible() -> TestResult {
 #[test]
 fn hunt_corpse_replay_approaches_accepted_ranged_corpse_before_looting() -> TestResult {
     run_replay(Replay::Ranged)
+}
+
+#[test]
+fn hunt_corpse_replay_reacquires_a_target_gone_without_xp() -> TestResult {
+    run_replay(Replay::Disappeared)
+}
+
+#[test]
+fn hunt_corpse_replay_waits_for_delayed_xp_after_fresh_corpse() -> TestResult {
+    run_replay(Replay::DelayedXp)
 }
