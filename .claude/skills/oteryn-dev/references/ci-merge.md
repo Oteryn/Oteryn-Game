@@ -137,7 +137,10 @@ When one of them turns `main` red, fix it with `oteryn-debugging` section 6
 ## The staging integration branch
 
 Owner decision 2026-11-23. `staging` is a long-lived integration branch
-between the lanes and `main`.
+between the lanes and `main`. Create both rulesets below and verify them
+before the first lane PR, and in any case before the first promotion. To
+verify, read them back with `gh api repos/Oteryn/Oteryn-Game/rulesets` and
+confirm that a force-push to `staging` is refused.
 
 - **Lane PRs go into `staging`.** Each lane works on its own short branch and
   opens its PR with base `staging`. Such a PR runs the light `game-gate`
@@ -155,11 +158,23 @@ between the lanes and `main`.
   tip. For a head `staging`, `pr-postgres-harness.yml` does not cancel the
   run in progress, so a 26-35 minute run finishes even though `staging` moves
   about every 12 minutes. The newest push waits as the one pending run.
-- **Promotion happens on the owner's word.** Declare a promotion freeze, and
-  merge no lane PR into `staging` until the promotion has merged. Wait for
+- **Promotion happens on the owner's word.** Declare a promotion freeze.
+  From then until the promotion has merged, nothing merges into `staging` and
+  nothing else merges into `main`, the auto-archive bot PR included. Wait for
   `game-gate` and `heavy-gate` to be green on that exact head. Then
   squash-merge the `staging -> main` PR with its 40-character head SHA, under
-  the `main` rules in *Merge conditions*.
+  the `main` rules in *Merge conditions*. If `main` moved after the promotion
+  head was qualified, run the sync below first: merge `main` into `staging`,
+  then qualify the new head again.
+- **Retargets.** A retarget into `main` fires `edited`. `game-gate`, the
+  PostgreSQL harness and `codex-review-gate` run again for the new base, and
+  `game-gate` qualifies only the base its event named. Other edits (title,
+  body) cancel nothing: in the harness they only mirror the head's latest
+  `heavy-gate`.
+- **Codex review status.** A PR into `staging` publishes the status
+  `codex-review-gate (staging)`, so it never replaces the `codex-review-gate`
+  of a `main` PR on the same head SHA. The `heavy-tests` exemption applies
+  only to PRs into `main`.
 - **Sync after promotion, with no force-push.** The squash leaves `staging`
   with history that `main` does not contain. The coordinator then:
   1. `git fetch origin main staging && git switch -c sync/staging-<date> origin/staging && git merge --no-edit origin/main`

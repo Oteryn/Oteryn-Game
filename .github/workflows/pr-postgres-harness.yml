@@ -34,17 +34,19 @@ on:
     branches:
       - main
     # Drafts are still being authored; the harness runs once the PR is ready.
-    types: [opened, reopened, synchronize, ready_for_review, labeled]
+    # `edited` covers a retarget into main (staging -> main); other edits only
+    # mirror the latest heavy-gate of the head.
+    types: [opened, reopened, synchronize, ready_for_review, labeled, edited]
 
 permissions: {}
 
 concurrency:
-  # Adding any other label must not cancel a running harness, so those
-  # (skipped) runs get a group of their own.
-  group: pr-postgres-harness-${{ github.event.pull_request.number }}${{ (github.event.action == 'labeled' && github.event.label.name != 'heavy-tests') && format('-label-{0}', github.run_id) || '' }}
+  # Adding any other label or editing anything but the base must not cancel a
+  # running harness, so those (skipped) runs get a group of their own.
+  group: pr-postgres-harness-${{ github.event.pull_request.number }}${{ ((github.event.action == 'labeled' && github.event.label.name != 'heavy-tests') || (github.event.action == 'edited' && github.event.changes.base == null)) && format('-label-{0}', github.run_id) || '' }}
   # The standing staging -> main promotion PR moves faster than one harness run:
   # its run finishes and the newest push waits as the one pending run.
-  cancel-in-progress: ${{ github.event.pull_request.head.ref != 'staging' }}
+  cancel-in-progress: ${{ github.event.pull_request.head.ref != 'staging' || github.event.pull_request.head.repo.full_name != github.repository }}
 
 jobs:
   prepare:
@@ -58,6 +60,7 @@ jobs:
       && github.event.pull_request.user.login != 'dependabot[bot]'
       && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
       && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
+      && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -307,6 +310,7 @@ jobs:
       && github.event.pull_request.user.login != 'dependabot[bot]'
       && contains(github.event.pull_request.labels.*.name, 'node-boot')
       && (github.event.action != 'labeled' || github.event.label.name == 'node-boot')
+      && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -419,6 +423,7 @@ jobs:
       && github.event.pull_request.user.login != 'dependabot[bot]'
       && contains(github.event.pull_request.labels.*.name, 'node-boot')
       && (github.event.action != 'labeled' || github.event.label.name == 'node-boot')
+      && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-24.04
     # W20a's natural day and W20b's light decay run serially for almost two hours.
     # Include build, the basic seam, World setup and the remaining journeys.
@@ -614,6 +619,7 @@ jobs:
       && github.event.pull_request.user.login != 'dependabot[bot]'
       && contains(github.event.pull_request.labels.*.name, 'node-boot')
       && (github.event.action != 'labeled' || github.event.label.name == 'node-boot')
+      && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -684,7 +690,7 @@ jobs:
         env:
           IS_ELIGIBLE: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' }}
           IS_HEAVY: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && contains(github.event.pull_request.labels.*.name, 'heavy-tests') }}
-          IS_REAL_RUN: ${{ github.event.action != 'labeled' || github.event.label.name == 'heavy-tests' }}
+          IS_REAL_RUN: ${{ (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests') && (github.event.action != 'edited' || github.event.changes.base != null) }}
           PREPARE_RESULT: ${{ needs.prepare.result }}
           EMPTY_SCOPE: ${{ needs.prepare.outputs.empty }}
           PG_AFFINITY: ${{ needs.prepare.outputs.pg_affinity }}

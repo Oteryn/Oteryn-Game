@@ -540,9 +540,15 @@ class HeavyGateTests(unittest.TestCase):
             (True, "owner", ["heavy-tests"], "opened", "", False, True),
             (False, "dependabot[bot]", ["heavy-tests"], "opened", "", False, True),
             (False, "owner", [], "opened", "", False, True),
+            # A retarget into main is a real run; any other edit only mirrors.
+            (False, "owner", ["heavy-tests"], "edited", "", True, True),
+            (False, "owner", ["heavy-tests"], "edited-title", "", True, False),
         ):
+            base_change = {"ref": {"from": "staging"}} if action == "edited" else None
+            action = "edited" if action == "edited-title" else action
             context = {"event": {"pull_request": {"draft": draft, "user": {"login": author},
-                       "labels": [{"name": name} for name in labels]}, "action": action, "label": {"name": label}}}
+                       "labels": [{"name": name} for name in labels]}, "action": action, "label": {"name": label},
+                       "changes": {"base": base_change}}}
             for key, expected in (("IS_ELIGIBLE", not draft and author != "dependabot[bot]"),
                                   ("IS_HEAVY", heavy), ("IS_REAL_RUN", real)):
                 expression = expressions[key].replace("labels.*.name", "labels.map(x=>x.name)")
@@ -988,10 +994,14 @@ class HeavyGateTests(unittest.TestCase):
     def test_unrelated_label_keeps_a_separate_concurrency_group(self):
         concurrency = indented_yaml_mapping_block(self.text, "concurrency", 0)
         # Only the standing staging -> main promotion PR keeps its running harness.
-        self.assertIn("  cancel-in-progress: ${{ github.event.pull_request.head.ref != 'staging' }}\n", concurrency)
+        self.assertIn(
+            "  cancel-in-progress: ${{ github.event.pull_request.head.ref != 'staging'"
+            " || github.event.pull_request.head.repo.full_name != github.repository }}\n", concurrency,
+        )
         self.assertIn(
             "  group: pr-postgres-harness-${{ github.event.pull_request.number }}"
-            "${{ (github.event.action == 'labeled' && github.event.label.name != 'heavy-tests')"
+            "${{ ((github.event.action == 'labeled' && github.event.label.name != 'heavy-tests')"
+            " || (github.event.action == 'edited' && github.event.changes.base == null))"
             " && format('-label-{0}', github.run_id) || '' }}\n", concurrency,
         )
 

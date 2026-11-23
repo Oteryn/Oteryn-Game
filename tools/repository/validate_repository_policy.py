@@ -39,7 +39,7 @@ PR_METADATA_SOURCE_SHA256 = {
         "933cdce0ad2c04ef8c15769b61eb69768e014983a76562774056318251c76937"
     ),
     "Verify pull request metadata": (
-        "249bf6ffba4710597ef6b4f889cc39fcbfac03de0664973180913d4dc4704da7"
+        "7a91430e12a05fe0b8bfbbc31a5fe68486bf1e3f8c3c77167ab72b0dc930b3c8"
     ),
 }
 
@@ -368,6 +368,7 @@ def _metadata_environment(
         return common | {
             "PULL_NUMBER": "914",
             "EXPECTED_HEAD": expected_head,
+            "EXPECTED_BASE_REF": "main",
         }
     raise ValueError(f"unsupported PR metadata step: {step_name}")
 
@@ -501,6 +502,7 @@ def validate_pr_metadata_workflow_text(
             "GH_TOKEN": "${{ github.token }}",
             "PULL_NUMBER": "${{ needs.scope.outputs.pr_number }}",
             "REPOSITORY": "${{ github.repository }}",
+            "EXPECTED_BASE_REF": "${{ needs.scope.outputs.base_ref }}",
         }
         workflow_entries = _mapping_entries_at_indent(
             text,
