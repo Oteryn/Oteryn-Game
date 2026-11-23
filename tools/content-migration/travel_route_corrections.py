@@ -8,7 +8,10 @@ from questpc7_world_seal import refresh
 
 def project_routes(root: Path, package: Path, *, check: bool = False) -> None:
     corrections = json.loads(
-        (root / "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json").read_bytes()
+        (
+            root
+            / "crates/gameplay/content/src/content/npc_catalogue/travel_routes.json"
+        ).read_bytes()
     )
     path = package / "definitions/declarations.json"
     document = json.loads(path.read_bytes())
@@ -39,7 +42,9 @@ def project_routes(root: Path, package: Path, *, check: bool = False) -> None:
             expected["required_quest_tracks"] = tracks
         if route != expected:
             if check:
-                raise SystemExit(f"Canonical travel route differs from correction: {correction['key']}")
+                raise SystemExit(
+                    f"Canonical travel route differs from correction: {correction['key']}"
+                )
             route.clear()
             route.update(expected)
             changed = True
