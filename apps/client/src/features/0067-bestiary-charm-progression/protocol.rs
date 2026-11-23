@@ -115,6 +115,7 @@ pub(in crate::play) fn apply(
             charm.effect_active
         ));
     }
+    panel.reply_revision = panel.reply_revision.wrapping_add(1);
     panel.reply = Some(reply);
 }
 #[cfg(test)]

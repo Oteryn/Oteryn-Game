@@ -30,12 +30,31 @@ impl PlayLink {
 }
 
 impl PlayLink {
+    pub(super) fn quick_loot_open_main(&self, mailbox: &mut crate::play::mailbox::Mailbox) -> bool {
+        if mailbox.inventory_shutdown { return false; }
+        let Some(backpack) = mailbox.inventory.inventory.as_ref().and_then(|inventory| inventory.main_backpack) else { return false };
+        let Some(intent) = mailbox.containers.open(backpack.handle, None) else { return false };
+        if self.commands.send(crate::combat_input::PlayCommand::ContainerView(intent)).is_err() {
+            mailbox.containers.end();
+            return false;
+        }
+        mailbox.containers.open = true;
+        true
+    }
     pub fn quick_loot_control(&self, action: usize, fields: &[String], row: usize) -> bool {
         use oteryn_client_ui::quick_loot::{
             Action, QuickLootCategory as Category, QuickLootFilterMode as Mode, QuickLootRecipient,
         };
         if action == 9 {
-            return self.discovery_panel().loot.managed && self.inventory_open_container();
+            let mut mailbox = lock(&self.mailbox);
+            let panel = &mailbox.discovery.loot;
+            if !panel.managed || panel.pending.is_some() { return false; }
+            let main = if panel.destinations.is_empty() {
+                row == 0
+            } else {
+                matches!(panel.destinations.get(row), Some(Action::Destination {recipient: QuickLootRecipient::MainContainer, ..}))
+            };
+            return main && self.quick_loot_open_main(&mut mailbox);
         }
         if action == 7 {
             let mut mailbox = lock(&self.mailbox);
