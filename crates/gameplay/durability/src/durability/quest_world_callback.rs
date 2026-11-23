@@ -329,16 +329,19 @@ pub(super) async fn consume_reward_inputs(
     keys.dedup();
     let rows=sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,c.location,c.kind,i.quantity,i.definition_production_key FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($3::text[]) ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).fetch_all(&mut **tx).await?;
-    if let Some(use_) = carried_use {
+    let selected_source = if let Some(use_) = carried_use {
         let selected = sqlx::types::Uuid::from_bytes(use_.source).to_string();
-        if !rows.iter().any(|row| {
+        let Some(row) = rows.iter().find(|row| {
             row.try_get::<&str, _>("item").ok() == Some(selected.as_str())
                 && row.try_get::<&str, _>("definition_production_key").ok()
                     == callback.carried_item.as_deref()
-        }) {
+        }) else {
             return Ok(false);
-        }
-    }
+        };
+        Some((row, use_))
+    } else {
+        None
+    };
     if rows.len() > 500 {
         return Ok(false);
     }
@@ -390,6 +393,14 @@ pub(super) async fn consume_reward_inputs(
             }
         }
         if needed != 0 {
+            return Ok(false);
+        }
+    }
+    if callback.temporary_creature.is_some() && callback.carried_item.is_some() {
+        let Some((row, use_)) = selected_source else {
+            return Ok(false);
+        };
+        if !reward_inputs::record_presence(tx, fence, request, row, use_).await? {
             return Ok(false);
         }
     }

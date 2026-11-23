@@ -4,6 +4,38 @@ use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, QueryBuilder, types::Uuid};
 
+pub(super) async fn record_presence(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    request: &super::super::quest_state::QuestTransitionRequest,
+    selected: &sqlx::postgres::PgRow,
+    use_: &super::super::reward_claim_mint::QuestCarriedUse,
+) -> Result<bool, DurabilityError> {
+    let super::super::quest_state::QuestCause::Command(command) = request.cause else {
+        return Ok(false);
+    };
+    if !(1..=4096).contains(&use_.intent.len()) || use_.recipe_target.is_some() {
+        return Ok(false);
+    }
+    sqlx::query(
+        "INSERT INTO game_quest_carried_presence(character_id,cause_id,cause_ordinal,transition_key,
+         item_instance_id,before_item,before_location,location_kind,ingress)
+         VALUES($1,$2,$3::text::numeric,$4,$5,$6,$7,$8,$9)",
+    )
+    .bind(Uuid::from_bytes(*fence.character_id.as_bytes()))
+    .bind(Uuid::from_bytes(*command.game_session_id().as_bytes()))
+    .bind(command.command_id().get().to_string())
+    .bind(&request.transition_key)
+    .bind(Uuid::from_bytes(use_.source))
+    .bind(selected.try_get::<serde_json::Value, _>("before_item")?)
+    .bind(selected.try_get::<serde_json::Value, _>("location")?)
+    .bind(selected.try_get::<&str, _>("kind")?)
+    .bind(&use_.intent)
+    .execute(&mut **tx)
+    .await?;
+    Ok(true)
+}
+
 pub(super) async fn apply(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     fence: CurrentCharacterGameplayFence,

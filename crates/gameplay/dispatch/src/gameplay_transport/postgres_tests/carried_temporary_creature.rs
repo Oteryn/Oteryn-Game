@@ -181,6 +181,13 @@ async fn exercise(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-reward/what-a-foolish/cat-basket'",
     ).fetch_one(&harness.pool).await?;
     assert_eq!(receipts, 1);
+    let selected: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(item_instance_id) FROM game_quest_carried_presence
+         WHERE transition_key='oteryn:quest-reward/what-a-foolish/cat-basket'",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(selected.as_slice(), carried_item);
     let due = owner
         .states
         .quest_callbacks
