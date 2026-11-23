@@ -1064,14 +1064,23 @@ fn admitted_clock(
 
 // Advances are explicit and occur only while W20 observes time. Other packet
 // rows, immediate cooldown refusals and offline restoration retain real time.
+fn qualification_clock_path() -> Option<std::path::PathBuf> {
+    #[cfg(feature = "qualification-clock")]
+    {
+        std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").map(std::path::PathBuf::from)
+    }
+    #[cfg(not(feature = "qualification-clock"))]
+    {
+        None
+    }
+}
+
 fn qualification_deadline(real_seconds: u64) -> Duration {
-    Duration::from_secs(
-        if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some() {
-            120
-        } else {
-            real_seconds
-        },
-    )
+    Duration::from_secs(if qualification_clock_path().is_some() {
+        120
+    } else {
+        real_seconds
+    })
 }
 
 fn qualification_step() -> Duration {
@@ -1090,11 +1099,10 @@ fn qualification_offset() -> Duration {
 }
 
 fn advance_qualification_time(step: Duration) -> TestResult {
-    if let Some(path) = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE") {
-        if !cfg!(feature = "qualification-clock") {
-            return Err("qualification clock requires the disposable build feature".into());
-        }
-        let path = std::path::PathBuf::from(path);
+    #[cfg(not(feature = "qualification-clock"))]
+    let _ = step;
+    #[cfg(feature = "qualification-clock")]
+    if let Some(path) = qualification_clock_path() {
         let next = qualification_offset()
             .checked_add(step)
             .ok_or("clock overflow")?;
@@ -1239,7 +1247,7 @@ async fn clock_journey(
 ) -> TestResult {
     let started = std::time::Instant::now();
     let offset = qualification_offset();
-    let accelerated = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some();
+    let accelerated = qualification_clock_path().is_some();
     let mut previous_session = None;
     // The real-clock mode takes one hour; the disposable build advances facts.
     // Idle-removal uses real monotonic time, not the injected World offset.
@@ -1299,6 +1307,27 @@ mod clock_tests {
             light_level: expected_light(u32::from(minute)),
             light_color: 215,
         }
+    }
+
+    #[cfg(not(feature = "qualification-clock"))]
+    #[test]
+    fn ordinary_world_light_keeps_real_clock_with_offset_env() -> TestResult {
+        const PROBE: &str = "OTERYN_QUALIFICATION_REAL_CLOCK_PROBE";
+        if std::env::var_os(PROBE).is_some() {
+            assert_eq!(qualification_deadline(3_750), Duration::from_secs(3_750));
+            advance_qualification_time(qualification_step())?;
+            return Ok(());
+        }
+        let status = std::process::Command::new(std::env::current_exe()?)
+            .arg("ordinary_world_light_keeps_real_clock_with_offset_env")
+            .env(PROBE, "1")
+            .env(
+                "OTERYN_QUALIFICATION_CLOCK_FILE",
+                "unused-qualification-clock",
+            )
+            .status()?;
+        assert!(status.success());
+        Ok(())
     }
 
     #[test]
@@ -2558,7 +2587,7 @@ async fn light_journey(
             advance_qualification_time(duration / u32::from(level))?;
             let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
             loop {
-                let accelerated = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_some();
+                let accelerated = qualification_clock_path().is_some();
                 let result = if accelerated {
                     tokio::time::timeout_at(deadline, client.receive()).await??
                 } else {

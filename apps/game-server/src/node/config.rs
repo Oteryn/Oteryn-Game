@@ -549,6 +549,16 @@ impl NodeConfig {
             .transpose()?;
         Self::parse_with_services_flag(document, flag)
     }
+    /// Validate the configuration for the binary that will actually serve it.
+    pub(super) fn parse_for_startup(document: &[u8]) -> Result<Self, ConfigError> {
+        let config = Self::parse(document)?;
+        #[cfg(feature = "qualification-clock")]
+        if !config.qualification_fixture {
+            return reject("qualification_fixture");
+        }
+        Ok(config)
+    }
+
     fn parse_with_services_flag(document: &[u8], flag: Option<&str>) -> Result<Self, ConfigError> {
         let mut config: Self = parse(document)
             .map_err(|error| missing_required_capabilities(document).unwrap_or(error))?;
@@ -1453,20 +1463,40 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
     -> Result<(), Box<dyn std::error::Error>> {
         const PROBE: &str = "OTERYN_QUALIFICATION_CONFIG_PROBE";
         if std::env::var_os(PROBE).is_some() {
-            assert!(NodeConfig::parse(NODE.as_bytes()).is_err());
+            // The old serving path called parse directly and accepted this input
+            // when no clock file was configured.
+            if std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").is_none() {
+                assert!(NodeConfig::parse(NODE.as_bytes()).is_ok());
+            }
+            assert_eq!(
+                NodeConfig::parse_for_startup(NODE.as_bytes()).err(),
+                Some(ConfigError {
+                    key: "qualification_fixture"
+                })
+            );
             qualification_fixture_requires_the_disposable_node_boot_configuration();
             return Ok(());
         }
-        let status = std::process::Command::new(std::env::current_exe()?)
+        let mut child = std::process::Command::new(std::env::current_exe()?);
+        child
             .args([
                 "--exact",
                 "node::config::tests::qualification_clock_requires_disposable_configuration",
                 "--nocapture",
             ])
-            .env(PROBE, "1")
-            .env("OTERYN_QUALIFICATION_CLOCK_FILE", "disposable-clock")
-            .status()?;
-        assert!(status.success());
+            .env(PROBE, "1");
+        assert!(
+            child
+                .env_remove("OTERYN_QUALIFICATION_CLOCK_FILE")
+                .status()?
+                .success()
+        );
+        assert!(
+            child
+                .env("OTERYN_QUALIFICATION_CLOCK_FILE", "disposable-clock")
+                .status()?
+                .success()
+        );
         Ok(())
     }
 
@@ -1480,12 +1510,12 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
                 "oteryn:runtime:world-1:channel-1",
                 "oteryn:runtime:node-boot",
             );
-        assert!(NodeConfig::parse(disposable.as_bytes()).is_ok());
+        assert!(NodeConfig::parse_for_startup(disposable.as_bytes()).is_ok());
         let pvp = disposable.replace(
             "database = \"oteryn_node_boot\"",
             "database = \"oteryn_node_boot_pvp\"",
         );
-        assert!(NodeConfig::parse(pvp.as_bytes()).is_ok());
+        assert!(NodeConfig::parse_for_startup(pvp.as_bytes()).is_ok());
         let other = disposable.replace(
             "database = \"oteryn_node_boot\"",
             "database = \"oteryn_node_boot_other\"",
