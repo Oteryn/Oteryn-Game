@@ -164,14 +164,22 @@ pub(super) async fn verify(
         195,
         "T187: contribution reloads from PostgreSQL"
     );
-    let title = oteryn_protocol_oteryn::character_info::CharacterTitle::Globetrotter;
-    let unlock = [2, title.id()];
-    let command = admitted.continuity.next_command_id;
-    assert_eq!(
-        support::exchange(owner, admitted, command, 113, &unlock).await?,
-        (CommandStatus::Accepted, unlock.to_vec()),
-        "completing the required subareas qualifies for Globetrotter"
-    );
+    use oteryn_protocol_oteryn::character_info::CharacterTitle;
+    let titles = [CharacterTitle::DedicatedEntrepreneur, CharacterTitle::Globetrotter];
+    for title in titles {
+        let unlock = [2, title.id()];
+        let command = admitted.continuity.next_command_id;
+        assert_eq!(
+            support::exchange(owner, admitted, command, 113, &unlock).await?,
+            (CommandStatus::Accepted, unlock.to_vec()),
+            "completing the required subareas qualifies for {title:?}"
+        );
+        let command = admitted.continuity.next_command_id;
+        assert_eq!(
+            support::exchange(owner, admitted, command, 113, &[3, title.id()]).await?.0,
+            CommandStatus::Accepted
+        );
+    }
     let query_id = admitted.continuity.next_command_id;
     let (status, value) = support::exchange(owner, admitted, query_id, 6178, &[]).await?;
     assert_eq!(status, CommandStatus::Accepted);
@@ -184,12 +192,20 @@ pub(super) async fn verify(
         0,
         "T187: reset immediately removes bonus"
     );
-    let command = admitted.continuity.next_command_id;
-    assert_eq!(
-        support::exchange(owner, admitted, command, 113, &unlock).await?.0,
-        CommandStatus::Rejected,
-        "resetting a required subarea removes Globetrotter qualification"
-    );
+    for title in titles {
+        let command = admitted.continuity.next_command_id;
+        assert_eq!(
+            support::exchange(owner, admitted, command, 113, &[3, title.id()]).await?.0,
+            CommandStatus::Rejected,
+            "resetting the required subarea immediately blocks selecting {title:?}"
+        );
+        let command = admitted.continuity.next_command_id;
+        assert_eq!(
+            support::exchange(owner, admitted, command, 113, &[2, title.id()]).await?.0,
+            CommandStatus::Rejected,
+            "resetting a required subarea removes {title:?} qualification"
+        );
+    }
     let stored: bool = sqlx::query_scalar(
         "SELECT (progress->'subareas'->'2'->>'discovered')::boolean FROM game_character_cyclopedia",
     )

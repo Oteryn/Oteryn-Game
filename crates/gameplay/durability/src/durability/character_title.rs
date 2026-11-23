@@ -516,7 +516,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         title: Option<CharacterTitle>,
     ) -> Result<u64, CharacterAuthorityError> {
-        self.select_character_title_inner(authority, node, fence, title, None)
+        self.select_character_title_inner(authority, node, fence, title, None, None)
             .await
     }
 
@@ -529,11 +529,12 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         title: Option<CharacterTitle>,
         now_unix_ms: i64,
+        discovery: Option<DiscoveryRoster>,
     ) -> Result<u64, CharacterAuthorityError> {
         if now_unix_ms < 0 {
             return Err(CharacterAuthorityError::Rejected);
         }
-        self.select_character_title_inner(authority, node, fence, title, Some(now_unix_ms))
+        self.select_character_title_inner(authority, node, fence, title, Some(now_unix_ms), discovery.and_then(exploration::Source::new))
             .await
     }
 
@@ -544,23 +545,42 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         title: Option<CharacterTitle>,
         now_unix_ms: Option<i64>,
+        exploration: Option<exploration::Source>,
     ) -> Result<u64, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
         let character = fence.character_id;
+        let exploration_title = now_unix_ms.is_some()
+            && matches!(title, Some(CharacterTitle::DedicatedEntrepreneur | CharacterTitle::Globetrotter));
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
-                    if super::character_progression::assert_session_fence(&mut tx, &fence, &node)
-                        .await?
-                        .is_err()
-                    {
+                    let fenced = if exploration_title {
+                        // The non-key Character lock serializes Find and Shuffle
+                        // while allowing the title tables' foreign key checks.
+                        super::character_progression::assert_market_item_fence(&mut tx, &fence, &node).await?.is_ok()
+                    } else {
+                        super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_ok()
+                    };
+                    if !fenced {
                         return Ok(Err(CharacterAuthorityError::Rejected));
                     }
                     if let (Some(title), Some(now)) = (title, now_unix_ms) {
+                        if exploration_title {
+                            let Some(source) = exploration else { return Ok(Err(CharacterAuthorityError::Rejected)); };
+                            let percent = source.read(&mut tx, character).await?;
+                            let facts = TitleFacts {
+                                explored_map_percent: percent,
+                                all_map_areas_discovered: percent == 100,
+                                ..TitleFacts::default()
+                            };
+                            if !valid_at(qualify(title, facts), now) {
+                                return Ok(Err(CharacterAuthorityError::Rejected));
+                            }
+                        }
                         let earned: Option<i16> = sqlx::query_scalar("SELECT title FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=$2 AND (expires_at_unix_ms IS NULL OR expires_at_unix_ms>$3) FOR UPDATE")
                             .bind(character.as_bytes().as_slice()).bind(i16::from(title.id())).bind(now)
                             .fetch_optional(&mut *tx).await?;

@@ -82,9 +82,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             event: occurrence,
             now: super::super::npc_trade_command::unix_ms_now(),
         };
-        let Ok(before) = slot.cursor(self.root, self.character).await else {
+        if slot.cursor(self.root, self.character).await.is_err() {
             return;
-        };
+        }
         match slot
             .cyclopedia(
                 self.root,
@@ -96,10 +96,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            Ok(bytes) => {
-                if wire::decode_retained_result(&bytes).is_ok_and(|result| {
-                    result.discovered && result.found == 7 && result.revision > before.get()
-                }) {
+            Ok(commit) => {
+                if commit.discovered_now {
                     self.states.tutorial_sessions.notice(
                         session,
                         oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(

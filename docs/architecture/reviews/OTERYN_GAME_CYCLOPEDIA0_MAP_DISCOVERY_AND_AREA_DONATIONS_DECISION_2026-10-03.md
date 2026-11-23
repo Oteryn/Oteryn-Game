@@ -38,7 +38,7 @@
 | CYC-WIRE-1 | impl, protocol review | capability `CYCLOPEDIA_MAP_V1` (§6) | CYC-DISCOVERY-1; CYC-DONATE-1 |
 | CYC-PARITY-1 | research | evidence for every `PARITY_PENDING` value (§8) | none |
 
-The raid warning (§4.5) ships with RAID-1. The Charos reward (§4.5) ships with the NPC lane.
+The raid warning (§4.5) ships with RAID-1. Section 4.5 records the W12 supersession of the original Charos reward design.
 
 ## 1. Question
 
@@ -255,7 +255,7 @@ its own preconditions against the active revision inside its transaction, not be
 - normalize: the pinned pool revision still differs from the active one at the expected character
   revision, so a retry after a commit does nothing;
 - donate: §5.3;
-- Charos: the count of fully discovered areas is derived inside the grant transaction;
+- Discoverer: the count of fully discovered areas is derived inside the grant transaction;
 - area completion: the area achievement is checked against the catalogue of the active revision
   inside the completing transaction (§4.3).
 
@@ -287,9 +287,9 @@ two title thresholds are derived from the subarea rows and content. None of them
   (D48), and the catalogue ids come from the client achievement data.
 - **Titles** (*Dedicated Entrepreneur*, *Globetrotter*) are derived. They are shown when the title
   system exists.
-- **Discoverer outfit.** Charos (NPC-0 dialog) checks the count of fully discovered areas: 10 for
-  the outfit, 15 for the first addon, 20 for the second. It grants through the account outfit path
-  (D47), and the dialog content ships with the NPC lane.
+- **Discoverer outfit.** Superseded for W12 by the [Discoverer reward contract](../../contracts/protocol-oteryn/v1/cyclopedia-basic-v1.md#discoverer-reward-contract).
+  The original Charos NPC claim specified 10, 15, and 20 completed areas. W12 adopts Crystal
+  201189f8 discovery thresholds and automatic grants through the account outfit path (D47).
 - **Raid warning.** For characters with the raid's area at 100%, RAID-1 sends the warning 1 hour
   ahead and the subarea 15 minutes ahead, but not for an underground raid. This uses the
   BOSS-RAID-0 announcement path.

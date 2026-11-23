@@ -1,5 +1,6 @@
 use super::*;
-use crate::durability::character_cyclopedia::{CyclopediaPremiumGate, MapRequest};
+use crate::durability::character_cyclopedia::{CyclopediaCommit, CyclopediaPremiumGate, MapRequest};
+
 impl RevisionSlot {
     pub async fn cyclopedia<G: CyclopediaPremiumGate>(
         &mut self,
@@ -9,7 +10,7 @@ impl RevisionSlot {
         mut fence: CurrentCharacterGameplayFence,
         request: MapRequest,
         gate: &G,
-    ) -> Result<Vec<u8>, CharacterProgressionError> {
+    ) -> Result<CyclopediaCommit, CharacterProgressionError> {
         if self.character_id != fence.character_id {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
@@ -21,12 +22,12 @@ impl RevisionSlot {
             .commit_cyclopedia(authority, node, fence, request, gate)
             .await
         {
-            Ok((revision, result)) => {
+            Ok((revision, bytes, discovered_now)) => {
                 *self.cursor = Some(
                     CharacterRevision::new(revision)
                         .map_err(|_| CharacterProgressionError::InvalidInput)?,
                 );
-                Ok(result)
+                Ok(CyclopediaCommit { bytes, discovered_now })
             }
             Err(error) => {
                 *self.cursor = None;

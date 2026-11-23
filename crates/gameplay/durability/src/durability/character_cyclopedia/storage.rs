@@ -106,81 +106,47 @@ impl CanonicalProgress {
     }
 }
 
-async fn load_all(
-    tx: &mut Type2Transaction<'_>,
-    fence: &CurrentCharacterGameplayFence,
-    request: &MapRequest,
-) -> Result<CanonicalProgress, DurabilityError> {
-    let row=sqlx::query("SELECT bundle_digest,catalogue_digest,progress::text FROM game_character_cyclopedia WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
-        .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
-    match row {
-        None => Ok(CanonicalProgress::default()),
-        Some(row) => {
-            if !BasicArea::reads_content_digest(&row.try_get::<Vec<u8>, _>("catalogue_digest")?) {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-            let text: String = row.try_get("progress")?;
-            if text.len() > 262144 {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-            let mut progress = CanonicalProgress::decode(&text)?;
-            progress.convert(request);
-            if row.try_get::<Vec<u8>, _>("bundle_digest")? != request.bundle {
-                // Crystal geometry revision invalidation keeps completed states.
-                for state in progress
-                    .subareas
-                    .values_mut()
-                    .filter(|state| !state.discovered)
-                {
-                    state.exploration = None;
-                }
-            }
-            if let Some(state) = request
-                .subarea
-                .and_then(|id| progress.subareas.get_mut(&id))
-                && !state.discovered
-                && state
-                    .exploration
-                    .as_ref()
-                    .is_some_and(|e| e.points.iter().any(|point| !request.pool.contains(point)))
-            {
-                state.exploration = None;
-            }
-            if progress.subareas.len() > 512 {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-            Ok(progress)
-        }
-    }
-}
 pub(super) async fn load(
     tx: &mut Type2Transaction<'_>,
     fence: &CurrentCharacterGameplayFence,
     request: &MapRequest,
-) -> Result<MapProgress, DurabilityError> {
-    let mut progress = load_all(tx, fence, request).await?;
-    progress.convert(request);
-    Ok(request
-        .subarea
-        .and_then(|id| progress.subareas.remove(&id))
-        .unwrap_or_default())
-}
-pub(super) async fn percentage(
-    tx: &mut Type2Transaction<'_>,
-    fence: &CurrentCharacterGameplayFence,
-    request: &MapRequest,
-    current: &MapProgress,
-) -> Result<u8, DurabilityError> {
-    let mut progress = load_all(tx, fence, request).await?;
-    progress.convert(request);
-    if let Some(id) = request.subarea {
-        progress.subareas.insert(id, current.clone());
+) -> Result<(CanonicalProgress, bool), DurabilityError> {
+    let row=sqlx::query("SELECT bundle_digest,catalogue_digest,progress::text FROM game_character_cyclopedia WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+        .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+    let Some(row) = row else {
+        let mut progress = CanonicalProgress::default();
+        progress.convert(request);
+        return Ok((progress, false));
+    };
+    if !BasicArea::reads_content_digest(&row.try_get::<Vec<u8>, _>("catalogue_digest")?) {
+        return Err(DurabilityError::InvalidStoredState);
     }
-    Ok(progress
-        .completion(&request.milestone_subareas)
-        .area(request.area)
-        .percent())
+    let text: String = row.try_get("progress")?;
+    if text.len() > 262144 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let mut progress = CanonicalProgress::decode(&text)?;
+    let materialized_legacy = progress.legacy.discovered
+        && request.subareas.iter().any(|(_, id)| !progress.subareas.contains_key(id));
+    progress.convert(request);
+    if row.try_get::<Vec<u8>, _>("bundle_digest")? != request.bundle {
+        // Crystal geometry revision invalidation keeps completed states.
+        for state in progress.subareas.values_mut().filter(|state| !state.discovered) {
+            state.exploration = None;
+        }
+    }
+    if let Some(state) = request.subarea.and_then(|id| progress.subareas.get_mut(&id))
+        && !state.discovered
+        && state.exploration.as_ref().is_some_and(|e| e.points.iter().any(|point| !request.pool.contains(point)))
+    {
+        state.exploration = None;
+    }
+    if progress.subareas.len() > 512 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok((progress, materialized_legacy))
 }
+
 // One row per canonical main area; the shared row serializes all Channels of this World.
 pub(super) async fn world(
     tx: &mut Type2Transaction<'_>,
@@ -234,7 +200,7 @@ pub(super) async fn save(
     tx: &mut Type2Transaction<'_>,
     fence: &CurrentCharacterGameplayFence,
     request: &MapRequest,
-    progress: &MapProgress,
+    progress: &CanonicalProgress,
     advanced: bool,
     donation: u64,
     pool: u64,
@@ -245,12 +211,8 @@ pub(super) async fn save(
     sqlx::query("INSERT INTO game_character_cyclopedia_receipts(occurrence,character_id,world_id,command_session_id,command_id,binding,result,fee_transaction_id,donation,pool_before,pool_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,area_id,reset_subarea) SELECT encode($1,'hex')::uuid,s.character_id,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,encode($7,'hex')::uuid,$8,$9,$10,s.character_revision,CASE WHEN $11 THEN s.character_revision+1 ELSE NULL END,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,$13,$14 FROM game_character_progression_state s WHERE s.character_id=encode($12,'hex')::uuid")
         .bind(request.occurrence.as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(request.binding.as_slice()).bind(result).bind((donation>0).then_some(request.transaction.as_slice())).bind(donation as i64).bind(pool as i64).bind(pool_after as i64).bind(advanced).bind(character).bind(i64::from(request.area)).bind((advanced && request.action == MapAction::Shuffle).then_some(request.subarea.map(i64::from)).flatten()).execute(&mut ***tx).await?;
     if advanced {
-        let mut all = load_all(tx, fence, request).await?;
-        all.convert(request);
-        let id = request.subarea.ok_or(DurabilityError::InvalidStoredState)?;
-        all.subareas.insert(id, progress.clone());
         let progress =
-            serde_json::to_string(&all).map_err(|_| DurabilityError::InvalidStoredState)?;
+            serde_json::to_string(progress).map_err(|_| DurabilityError::InvalidStoredState)?;
         sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,progress,occurrence,catalogue_digest) VALUES(encode($1,'hex')::uuid,$2,$3::text::jsonb,encode($4,'hex')::uuid,$5) ON CONFLICT(character_id) DO UPDATE SET bundle_digest=EXCLUDED.bundle_digest,progress=EXCLUDED.progress,occurrence=EXCLUDED.occurrence,catalogue_digest=EXCLUDED.catalogue_digest")
             .bind(character).bind(request.bundle.as_slice()).bind(progress).bind(request.occurrence.as_slice()).bind(BasicArea::content_digest().as_slice()).execute(&mut ***tx).await?;
         sqlx::query("UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid").bind(character).execute(&mut ***tx).await?;

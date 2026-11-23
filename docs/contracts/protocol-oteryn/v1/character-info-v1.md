@@ -144,7 +144,8 @@ payload formats remain unchanged; the existing `u8` title field admits these val
 | 94 | Robinson Crusoe: committed source action 15998 island ingress, level at least 999. |
 
 Dedicated Entrepreneur and Globetrotter count canonical main-area completion against the
-same roster as the map. Globetrotter requires 100 percent completion.
+same roster as the map. Globetrotter requires 100 percent completion. Select rechecks
+both predicates in its fenced transaction and rejects a title that has lost eligibility.
 See [Basic Cyclopedia map v1](cyclopedia-basic-v1.md#automatic-discovery-and-poi-reset-t186t187-2026-11-09).
 
 All appended titles except 89 are permanent. Source qualification, exact donor/retained-wiki

@@ -250,7 +250,12 @@ fn scenario(canonical: bool) -> TestResult {
                 .bind(crate::domain::cyclopedia::BasicArea::V1_CONTENT_DIGEST.as_slice()).bind(id(99).as_slice())
                 .execute(&mut *tx).await?;
             tx.commit().await?;
-            let (_, credited) = support::exchange(&owner, &mut admitted, 3, 72, &[]).await?;
+            let (_, credited) = support::exchange(&owner, &mut admitted, 3, 73, &request(3, 0)).await?;
+            assert_eq!(
+                revision(&credited),
+                revision(&initial) + 1,
+                "the first legacy Find commits canonical progress"
+            );
             assert_eq!(
                 credited[9], 1,
                 "canonical current subarea inherits legacy completion"
@@ -268,6 +273,10 @@ fn scenario(canonical: bool) -> TestResult {
                     .map_err(debug)?,
                 195,
                 "T187: one fully discovered area contributes the content maximum"
+            );
+            assert!(
+                owner.states.tutorial_sessions.take(admitted.game_session_id).is_none(),
+                "materializing discovery credit cannot repeat the seventh-POI notice"
             );
             let (_, donated) =
                 support::exchange_inventory(&owner, &mut admitted, 4, 73, &request(4, 1)).await?;

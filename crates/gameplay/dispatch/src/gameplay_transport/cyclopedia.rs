@@ -364,14 +364,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return GuildReply::Rejected;
             }
         }
-        let before_find = if action == MapAction::Find {
-            match slot.cursor(self.root, self.character).await {
-                Ok(revision) => Some(revision),
-                Err(_) => return GuildReply::Unavailable,
-            }
-        } else {
-            None
-        };
+        if action == MapAction::Find && slot.cursor(self.root, self.character).await.is_err() {
+            return GuildReply::Unavailable;
+        }
         match slot
             .cyclopedia(
                 self.root,
@@ -383,23 +378,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            Ok(bytes) => {
-                let Ok(mut result) = wire::decode_retained_result(&bytes) else {
+            Ok(commit) => {
+                let Ok(mut result) = wire::decode_retained_result(&commit.bytes) else {
                     return GuildReply::Unavailable;
                 };
-                let discovered_now = before_find.is_some_and(|before| {
-                    result.code == 0
-                        && result.discovered
-                        && result.found == 7
-                        && result.revision > before.get()
-                });
                 for (_, _, floor) in &mut result.visible {
                     *floor = -*floor;
                 }
                 let Ok(bytes) = wire::encode_wire_result(&result) else {
                     return GuildReply::Unavailable;
                 };
-                if discovered_now {
+                if commit.discovered_now {
                     self.states.tutorial_sessions.notice(
                         admitted.game_session_id,
                         oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(

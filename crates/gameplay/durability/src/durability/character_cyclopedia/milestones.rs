@@ -49,6 +49,7 @@ pub(super) async fn reconcile(
     if mains.completed == 0 {
         return Ok(());
     }
+    // W12 supersedes CYCLOPEDIA-0 §4.5 for Discoverer rewards. See the wire contract.
     let halfway = mains.completed * 2 >= mains.total;
     let all = mains.is_complete();
     let outfit_count = 1 + usize::from(halfway) + usize::from(all);

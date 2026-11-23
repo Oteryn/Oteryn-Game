@@ -30,7 +30,7 @@ save. Area percent is the completed share of the current main area's required di
 subareas, rounded down to an integer. A main area absent from the discovery roster
 reports zero.
 Only the requesting character's unfound same-floor POIs in its viewport are sent.
-Committed intent and initializing-query receipts retain the exact result, including query-time facts, for retries.
+Committed intent and state-changing query receipts retain the exact result, including query-time facts, for retries.
 New queries read current facts; progress survives session and process replacement.
 An epoch is improved iff the pool is at least 10,000,000; the goal is subtracted
 and the excess carries over.
@@ -74,14 +74,28 @@ admitted bundle. It includes source discovery mains with at least one subarea th
 supports a native seven-POI discovery run and counts only those supported subareas.
 A roster main is complete when every required subarea is complete. The area meter,
 discovery speed, milestone grants, and exploration title census use this roster.
-Titles require canonical completion evidence. Existing legacy discovery credit is
-preserved by canonical conversion. A successful Shuffle reconciles pending milestone
-grants from pre-reset progress in the same transaction as the reset. Discovery speed
-is derived from persisted completion.
+Titles use canonical completion evidence. The first successful map action that
+materializes missing legacy completion advances the Character revision, retains the
+original legacy evidence, and records a replayable receipt. A successful Shuffle
+reconciles eligible milestone grants from pre-reset progress in the reset transaction.
+Discovery speed is derived from persisted completion.
 
 The seventh accepted STEP queues the completion banner through the existing
 capability-31 status-text channel. The capability-57 client presents completion
 and labels Shuffle as Reset POIs.
+
+### Discoverer reward contract
+
+This W12 rule supersedes the Charos claim and 10/15/20 thresholds in
+[CYCLOPEDIA-0 §4.5](../../../architecture/reviews/OTERYN_GAME_CYCLOPEDIA0_MAP_DISCOVERY_AND_AREA_DONATIONS_DECISION_2026-10-03.md#45-grants-and-consumers).
+The server grants the Discoverer outfit for both appearances at the first completed main,
+addon 1 at 50 percent of the admitted roster, and addon 2 at 100 percent. On the
+20-main roster those milestones are 1, 10, and 20 completed mains. The first main
+also grants *Widely Travelled*. Full completion grants *Measuring the World*.
+
+The grants follow Crystal 201189f8 `data/scripts/discovery_system.lua:528–559`.
+They are automatic and account-wide. Find and STEP share the same fenced writer.
+A successful Query or Find also reconciles missing grants for existing completion.
 
 ### Discovery speed query
 

@@ -45,6 +45,12 @@ pub struct MapRequest {
     pub event: [u8; 16],
     pub now: i64,
 }
+pub struct CyclopediaCommit {
+    pub bytes: Vec<u8>,
+    /// True only when this invocation committed a newly discovered subarea.
+    pub discovered_now: bool,
+}
+
 pub trait CyclopediaPremiumGate: Sync {
     fn premium(
         &self,
@@ -60,7 +66,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: MapRequest,
         gate: &G,
-    ) -> Result<(u64, Vec<u8>), CharacterProgressionError> {
+    ) -> Result<(u64, Vec<u8>, bool), CharacterProgressionError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -89,7 +95,7 @@ impl DurabilityRoot {
             if let Some(row)=sqlx::query("SELECT binding,result FROM game_character_cyclopedia_receipts WHERE character_id=encode($1,'hex')::uuid AND command_session_id=encode($2,'hex')::uuid AND command_id=$3::text::numeric")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).fetch_optional(&mut **tx).await? {
                 if row.try_get::<Vec<u8>,_>("binding")? != request.binding { return Ok(Err(CharacterProgressionError::ConflictingOccurrence)); }
-                return Ok(Ok((root.revision,row.try_get("result")?)));
+                return Ok(Ok((root.revision,row.try_get("result")?,false)));
             }
             // A pending reset holds admission's relation fence; active epoch and bundle must
             // still match this boot. No client value chooses either.
@@ -99,13 +105,19 @@ impl DurabilityRoot {
                 return Ok(Err(CharacterProgressionError::AuthorityRejected));
             }
             let area=BasicArea::embedded().ok_or(DurabilityError::InvalidStoredState)?;
-            let mut progress=storage::load(&mut tx,&fence,&request).await?;
-            let changed = match area.apply(&mut progress,request.action,&request.pool,request.at,false,&request.occurrence) {
+            let (mut progress, materialized_legacy)=storage::load(&mut tx,&fence,&request).await?;
+            let subarea=request.subarea.ok_or(DurabilityError::InvalidStoredState)?;
+            let current=progress.subareas.get_mut(&subarea).ok_or(DurabilityError::InvalidStoredState)?;
+            let was_discovered=current.discovered;
+            let outcome=area.apply(current,request.action,&request.pool,request.at,false,&request.occurrence);
+            let current=progress.subareas.get(&subarea).ok_or(DurabilityError::InvalidStoredState)?;
+            let percent=progress.completion(&request.milestone_subareas).area(request.area).percent();
+            let changed = match outcome {
                 Ok(changed)=>changed,
                 Err(reason)=> {
                     let code=match reason { MapRefusal::Invalid=>1, MapRefusal::PremiumRequired=>2, MapRefusal::AlreadyDiscovered=>3, MapRefusal::NoExploration=>4, MapRefusal::InsufficientPool=>5 };
                     let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
-                    return Ok(Ok((root.revision,projection(code,root.revision,&progress,pool,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?)));
+                    return Ok(Ok((root.revision,projection(code,root.revision,current,pool,improved,&request,percent)?,false)));
                 }
             };
             // Gold owner locks root, eligible coins, bank in that order, before the pool.
@@ -118,7 +130,7 @@ impl DurabilityRoot {
                     Ok(FeeBurnOutcome::AlreadyBurned(_))=>return Err(DurabilityError::InvalidStoredState),
                     Err(FeeBurnError::InsufficientFunds|FeeBurnError::ChangeDoesNotFit|FeeBurnError::CapacityExceeded)=> {
                         let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
-                        return Ok(Ok((root.revision,projection(6,root.revision,&progress,pool,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?)));
+                        return Ok(Ok((root.revision,projection(6,root.revision,current,pool,improved,&request,percent)?,false)));
                     }
                     Err(FeeBurnError::Unavailable(e))=>return Err(e),
                     Err(_)=>return Ok(Err(CharacterProgressionError::InvalidInput)),
@@ -127,9 +139,9 @@ impl DurabilityRoot {
             } else {0};
             let (pool,improved)=storage::world(&mut tx,fence.runtime_scope.world_id(),request.bundle,request.epoch,request.area,request.legacy_area).await?;
             let pool_after=pool.checked_add(donation).filter(|v|*v<=i64::MAX as u64).ok_or(DurabilityError::InvalidStoredState)?;
-            let advanced=changed || donation>0;
+            let advanced=changed || donation>0 || materialized_legacy;
             let revision=root.revision.checked_add(u64::from(advanced)).ok_or(DurabilityError::InvalidStoredState)?;
-            let bytes=projection(0,revision,&progress,pool_after,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?;
+            let bytes=projection(0,revision,current,pool_after,improved,&request,percent)?;
             if request.action == MapAction::Shuffle {
                 // A successful Shuffle can erase eligibility. Use the pre-reset row
                 // under the current fence and commit its grants with the reset.
@@ -142,7 +154,8 @@ impl DurabilityRoot {
                 milestones::reconcile(&mut tx, &fence, &request).await?;
             }
             tx.commit(deadline).await?;
-            Ok(Ok((revision,bytes)))
+            let discovered_now=request.action == MapAction::Find && !was_discovered && current.discovered;
+            Ok(Ok((revision,bytes,discovered_now)))
         })).await?
     }
 }

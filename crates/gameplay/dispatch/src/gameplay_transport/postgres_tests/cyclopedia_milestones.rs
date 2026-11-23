@@ -9,6 +9,7 @@ use crate::durability::fresh_admission::{ExpiredLossReleaseV1, FreshAdmissionSto
 use crate::durability::item_mint_audit::Type2Transaction;
 use crate::durability::{DurabilityError, character_authority::ReconciledCharacterAuthority};
 use crate::foundation::{CommandId, CommandRef, GameSessionId};
+use oteryn_protocol_oteryn::character_info::CharacterTitle;
 use oteryn_protocol_oteryn::cyclopedia::decode_retained_result;
 
 const BUNDLE: [u8; 32] = [91; 32];
@@ -17,6 +18,55 @@ const ADDON_ONE: &str = "oteryn:outfit.discoverer/quest-grant/1";
 const ADDON_TWO: &str = "oteryn:outfit.discoverer/quest-grant/2";
 const WIDELY: &str = "oteryn:achievement/widely_travelled";
 const MEASURING: &str = "oteryn:achievement/measuring_the_world";
+
+const EXPLORATION_TITLES: [CharacterTitle; 2] = [
+    CharacterTitle::DedicatedEntrepreneur,
+    CharacterTitle::Globetrotter,
+];
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ReconcileCase {
+    CanonicalQuery,
+    LegacyQuery,
+    LegacyFind,
+    LegacyShuffle,
+    SelectAfterShuffle,
+}
+
+#[test]
+fn discovery_milestone_reward_policy_records_crystal_supersession() {
+    let decision = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../docs/architecture/reviews/OTERYN_GAME_CYCLOPEDIA0_MAP_DISCOVERY_AND_AREA_DONATIONS_DECISION_2026-10-03.md",
+    ));
+    let contract = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../docs/contracts/protocol-oteryn/v1/cyclopedia-basic-v1.md",
+    ));
+    assert!(
+        decision.contains("Superseded for W12 by the [Discoverer reward contract]("),
+        "CYCLOPEDIA-0 section 4.5 must explicitly defer to the implemented reward contract"
+    );
+    assert!(contract.contains("### Discoverer reward contract"));
+}
+
+#[test]
+fn discovery_milestone_materializes_legacy_progress_for_titles() -> TestResult {
+    reconcile_cases(
+        [ReconcileCase::LegacyQuery, ReconcileCase::LegacyFind],
+        &[],
+        "discovery_milestone_materializes_legacy_progress_for_titles",
+    )
+}
+
+#[test]
+fn discovery_milestone_shuffle_blocks_stale_title_selection() -> TestResult {
+    reconcile_cases(
+        [ReconcileCase::SelectAfterShuffle],
+        &[],
+        "discovery_milestone_shuffle_blocks_stale_title_selection",
+    )
+}
 
 struct NoPremium;
 impl CyclopediaPremiumGate for NoPremium {
@@ -65,7 +115,7 @@ fn execute(relogin: bool, name: &'static str) -> TestResult {
 #[test]
 fn discovery_milestone_reconciliation_keeps_existing_progress_and_replies() -> TestResult {
     reconcile_cases(
-        [MapAction::Query, MapAction::Find],
+        [ReconcileCase::CanonicalQuery, ReconcileCase::LegacyFind],
         &[],
         "discovery_milestone_reconciliation_keeps_existing_progress_and_replies",
     )
@@ -74,7 +124,7 @@ fn discovery_milestone_reconciliation_keeps_existing_progress_and_replies() -> T
 #[test]
 fn discovery_milestone_map_percent_counts_only_required_subareas() -> TestResult {
     reconcile_cases(
-        [MapAction::Query],
+        [ReconcileCase::CanonicalQuery],
         &[(1, 12)],
         "discovery_milestone_map_percent_counts_only_required_subareas",
     )
@@ -83,14 +133,14 @@ fn discovery_milestone_map_percent_counts_only_required_subareas() -> TestResult
 #[test]
 fn discovery_milestone_shuffle_reconciles_grandfathered_progress() -> TestResult {
     reconcile_cases(
-        [MapAction::Shuffle],
+        [ReconcileCase::LegacyShuffle],
         &[],
         "discovery_milestone_shuffle_reconciles_grandfathered_progress",
     )
 }
 
 fn reconcile_cases<const N: usize>(
-    actions: [MapAction; N],
+    cases: [ReconcileCase; N],
     extra_subareas: &'static [(u32, u32)],
     name: &'static str,
 ) -> TestResult {
@@ -100,7 +150,7 @@ fn reconcile_cases<const N: usize>(
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(move || reconcile_scenario(actions, extra_subareas, name).map_err(|error| error.to_string()))?
+        .spawn(move || reconcile_scenario(cases, extra_subareas, name).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "discovery reconciliation PostgreSQL scenario panicked")??;
     eprintln!(
@@ -111,13 +161,20 @@ fn reconcile_cases<const N: usize>(
 }
 
 fn reconcile_scenario(
-    actions: impl IntoIterator<Item = MapAction>,
+    cases: impl IntoIterator<Item = ReconcileCase>,
     extra_subareas: &[(u32, u32)],
     name: &str,
 ) -> TestResult {
     run(async |admin| {
-        for action in actions {
-            let progress = if action == MapAction::Query {
+        for case in cases {
+            let (action, legacy) = match case {
+                ReconcileCase::CanonicalQuery => (MapAction::Query, false),
+                ReconcileCase::LegacyQuery => (MapAction::Query, true),
+                ReconcileCase::LegacyFind => (MapAction::Find, true),
+                ReconcileCase::LegacyShuffle => (MapAction::Shuffle, true),
+                ReconcileCase::SelectAfterShuffle => (MapAction::Shuffle, false),
+            };
+            let progress = if !legacy {
                 serde_json::json!({"legacy": {"discovered": false, "exploration": null},
                     "subareas": {"11": {"discovered": true, "exploration": null}}})
             } else {
@@ -168,6 +225,16 @@ fn reconcile_scenario(
             );
             eprintln!("POSTGRES_STARTED {name} {action:?}");
 
+            if case == ReconcileCase::SelectAfterShuffle {
+                for title in EXPLORATION_TITLES {
+                    h.root.qualify_and_unlock_character_title(
+                        &authority, &h.node, fence.item_fence(), title, 1, None, Some(roster.into())
+                    ).await.map_err(debug)?;
+                    h.root.select_character_title_at(
+                        &authority, &h.node, fence.item_fence(), Some(title), 1, Some(roster.into())
+                    ).await.map_err(debug)?;
+                }
+            }
             if action == MapAction::Shuffle {
                 let shuffle = request(session, 2, &roster, 1, 11, action, 0)?;
                 let reply = call(&mut slot, &h, &authority, fence, shuffle.clone()).await?;
@@ -176,6 +243,17 @@ fn reconcile_scenario(
                 assert!(!result.discovered);
                 assert_eq!(result.area_percent, 0);
                 assert_eq!(result.revision, revision + 1);
+                if case == ReconcileCase::SelectAfterShuffle {
+                    let mut accepted = Vec::new();
+                    for title in EXPLORATION_TITLES {
+                        if h.root.select_character_title_at(
+                            &authority, &h.node, fence.item_fence(), Some(title), 1, Some(roster.into())
+                        ).await.is_ok() {
+                            accepted.push(title);
+                        }
+                    }
+                    assert!(accepted.is_empty(), "Shuffle left stale titles selectable: {accepted:?}");
+                }
                 assert_rewards(&h, &[BASE, ADDON_ONE, ADDON_TWO], &[MEASURING, WIDELY]).await?;
                 assert_eq!(call(&mut slot, &h, &authority, fence, shuffle).await?, reply);
                 assert_rewards(&h, &[BASE, ADDON_ONE, ADDON_TWO], &[MEASURING, WIDELY]).await?;
@@ -183,11 +261,19 @@ fn reconcile_scenario(
                 for command in [2, 3] {
                     let mut read = request(session, command, &roster, 1, 11, action, 20)?;
                     read.subareas.extend_from_slice(extra_subareas);
-                    let reply = call(&mut slot, &h, &authority, fence, read).await?;
+                    let reply = call(&mut slot, &h, &authority, fence, read.clone()).await?;
                     let result = decode_retained_result(&reply).map_err(debug)?;
                     assert!(result.discovered);
                     assert_eq!(result.area_percent, 100);
-                    assert_eq!(result.revision, revision);
+                    if legacy {
+                        for title in EXPLORATION_TITLES {
+                            assert!(h.root.qualify_and_unlock_character_title(
+                                &authority, &h.node, fence.item_fence(), title, 1, None, Some(roster.into())
+                            ).await.is_ok(), "{action:?} must materialize legacy credit for {title:?}");
+                        }
+                    }
+                    assert_eq!(result.revision, revision + u64::from(legacy));
+                    assert_eq!(call(&mut slot, &h, &authority, fence, read).await?, reply);
                     assert_rewards(&h, &[BASE, ADDON_ONE, ADDON_TWO], &[MEASURING, WIDELY]).await?;
                 }
             }
@@ -203,6 +289,13 @@ fn reconcile_scenario(
             if action == MapAction::Shuffle {
                 assert_eq!(after["subareas"]["11"]["discovered"], false);
                 assert!(after["subareas"]["11"]["exploration"].is_object());
+            } else if legacy {
+                assert_eq!(after["legacy"], progress, "preserve the original legacy evidence");
+                assert_eq!(
+                    after["subareas"]["11"],
+                    serde_json::json!({"discovered": true, "exploration": null}),
+                    "canonical completion is persisted"
+                );
             } else {
                 assert_eq!(after, progress);
             }
@@ -240,7 +333,9 @@ fn scenario(relogin: bool, name: &'static str) -> TestResult {
         let subareas = if relogin {
             vec![(1, 11)]
         } else {
-            vec![(1, 11), (1, 12), (2, 21), (3, 31), (4, 41)]
+            std::iter::once((1, 11))
+                .chain((1..=20).map(|main| (main, main * 10 + 2)))
+                .collect()
         };
         let mut number = 0;
         let mut completion = None;
@@ -266,13 +361,14 @@ fn scenario(relogin: bool, name: &'static str) -> TestResult {
                     completion = Some((find, reply));
                 }
             }
-            match (relogin, subarea) {
-                (false, 11) => assert_rewards(&h, &[], &[]).await?,
-                (false, 12) => assert_rewards(&h, &[BASE], &[WIDELY]).await?,
-                (false, 21 | 31) => assert_rewards(&h, &[BASE, ADDON_ONE], &[WIDELY]).await?,
-                _ => {
-                    assert_rewards(&h, &[BASE, ADDON_ONE, ADDON_TWO], &[MEASURING, WIDELY]).await?
-                }
+            if relogin || area == 20 {
+                assert_rewards(&h, &[BASE, ADDON_ONE, ADDON_TWO], &[MEASURING, WIDELY]).await?;
+            } else if subarea == 11 {
+                assert_rewards(&h, &[], &[]).await?;
+            } else if area < 10 {
+                assert_rewards(&h, &[BASE], &[WIDELY]).await?;
+            } else {
+                assert_rewards(&h, &[BASE, ADDON_ONE], &[WIDELY]).await?;
             }
         }
         if relogin {
@@ -359,6 +455,7 @@ async fn call(
 ) -> TestResult<Vec<u8>> {
     slot.cyclopedia(&h.root, authority, &h.node, fence, request, &NoPremium)
         .await
+        .map(|commit| commit.bytes)
         .map_err(debug)
 }
 

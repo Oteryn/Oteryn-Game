@@ -202,7 +202,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             CharacterInfoOperation::Select(title) => match self
                 .root
-                .select_character_title_at(self.character, self.holder, fence, title, now)
+                .select_character_title_at(
+                    self.character, self.holder, fence, title, now,
+                    self.bundle_map().map(super::cyclopedia::discovery_roster),
+                )
                 .await
             {
                 Ok(revision) => {
