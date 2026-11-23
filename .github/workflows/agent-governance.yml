@@ -209,10 +209,7 @@ jobs:
       # job. merge-gate does not run for a stack preflight (another base) or a
       # manual dispatch, so those still run both validators here.
       - name: Test PR target admission
-        run: |
-          python tools/repository/test_agent_governance_pr_targets.py
-          python tools/repository/test_main_job_applicability.py
-          python tools/repository/test_merge_authority_applicability.py
+        run: python tools/repository/test_agent_governance_pr_targets.py
 
       - name: Validate agent governance
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.base.ref != 'main' }}

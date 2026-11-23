@@ -1,0 +1,113 @@
+{
+  "source_head": "c8737fa0bc9d6801f2f4de6afd0a81ed149ed8e8",
+  "candidate_head": null,
+  "qualified_on": "authorized oteryn-vps isolated detached checkout, Python 3.14.4",
+  "content_test_command": "(cd tools/content-migration && python3 -m unittest -v test_complete_monster_audio_fields test_complete_monster_behavior_fields test_complete_monster_quality test_complete_monster_source_gaps test_complete_monster_wiki_narratives test_complete_optional_creature_behavior_fields test_complete_optional_wiki_fields test_complete_presentation_optional_fields test_complete_remaining_loot_fields test_complete_remaining_monster_mechanics)",
+  "content_runtime": {
+    "literal_test_methods_source": 62,
+    "unittest_reported_tests_run": 49,
+    "pass": 42,
+    "method_errors": 2,
+    "setUpClass_errors": 2,
+    "skipped": 5,
+    "not_reached_due_to_setUpClass_errors": 13,
+    "exit_code": 1,
+    "raw_log_sha256": "32e71418920bcceb444baed8cf058fa9be8c3ebde2f9691a317a1fb639d35637",
+    "raw_log_path_vps": "/tmp/oteryn-wave5-unittest-20261123.log"
+  },
+  "governance_direct_before": {
+    "run": 5,
+    "pass": 5,
+    "exit_code": 0
+  },
+  "governance_direct_after": {
+    "run": 16,
+    "pass": 16,
+    "exit_code": 0,
+    "log_path_vps": "/tmp/oteryn-wave5-agent-post.log"
+  },
+  "policy_validation": {
+    "governance": "PASS",
+    "repository_policy": "PASS",
+    "workflow_count": 78,
+    "logs": [
+      "/tmp/oteryn-wave5-gov.log",
+      "/tmp/oteryn-wave5-policy.log"
+    ]
+  },
+  "qualification_placement": {
+    "command": "PATH=/tmp/oteryn-wave5-python-bin:$PATH python3 tools/repository/test_validate_pr_gate_pg_sim.py",
+    "run": 17,
+    "pass": 17,
+    "exit_code": 0,
+    "actual_python": "/usr/bin/python3 (3.14.4), symlinked as python in separate temp PATH; no stubs",
+    "log_path_vps": "/tmp/oteryn-wave5-qualification-realpy.log"
+  },
+  "ci_gate": {
+    "job_url": "https://github.com/Oteryn/Oteryn-Game/actions/runs/45101654105/job/137453644301",
+    "prior_actual_conclusion": "failure",
+    "fail_line": "candidate .github/workflows/agent-governance.yml does not match protected-base approved blob",
+    "expected_blob": "42d84c9089cdef928c6cb17268269156c87c0abb",
+    "prior_candidate_blob": "67636ef86a52ee15dcccf3b18719761dcde47d37",
+    "repaired_local_blob": "42d84c9089cdef928c6cb17268269156c87c0abb",
+    "new_head_ci": "NOT_YET_RUN"
+  },
+  "affected_ci_probe": {
+    "command": "PATH=/tmp/oteryn-wave5-python-bin:$PATH python3 docs/agents/evidence/OTV2-20261122-test-ci-value-audit/ci_dedup_probe.py . /tmp/oteryn-wave5-ci-dedup-realpy.json",
+    "exit_code": 0,
+    "executions": 53,
+    "unique_cases": 42,
+    "modules": [
+      {
+        "module": "test_validate_pr_gate_pg_sim",
+        "executions": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "test_run_rust_fast_archive",
+        "executions": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "test_agent_governance_pr_targets",
+        "executions": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "test_main_job_applicability",
+        "executions": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "test_merge_authority_applicability",
+        "executions": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "raw_json_sha256": "14961764e73aa81f170b70133ec9630b3051863e4ce6dc7430ffbecc65ff85be"
+  },
+  "new_exact_head_local_regressions": {
+    "agent_governance_unittest": {
+      "run": 135,
+      "passed": 135,
+      "exit_code": 0
+    },
+    "node_boot_diagnostics": {
+      "run": 48,
+      "passed": 48,
+      "exit_code": 0
+    },
+    "workflow_pins_check": "PASS",
+    "git_diff_check": "PASS"
+  }
+}
