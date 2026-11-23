@@ -153,11 +153,29 @@ pub fn validate_for_catalogue(
     world_context: bool,
 ) -> Result<(), String> {
     let global = registry()?;
+    // These exact authored stages read published progress. The skull stage
+    // also backfills the dialogue mirrors for predecessor saves.
+    let paradox = transition.quest == "oteryn:quest.the_paradox_tower_quest";
+    let skulls = paradox && transition.key == "oteryn:quest-callback/paradox-tower/native-skulls";
+    let talons = paradox && transition.key == "oteryn:quest-callback/paradox-tower/talons";
+    let tomb = transition.quest == "oteryn:quest.koshei_the_deathless_quest"
+        && transition.key == "oteryn:quest-callback/koshei/tomb-entry";
     if global.owners.contains_key(&transition.key)
-        || transition
-            .effects
-            .iter()
-            .any(|effect| global.protected_tracks.contains(&effect.track))
+        || transition.effects.iter().any(|effect| {
+            let reads_progress = (skulls || talons || tomb) && !changes(effect.effect);
+            let fills_mirror = skulls
+                && matches!(
+                    (effect.track.as_str(), effect.effect),
+                    (
+                        "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo",
+                        QuestEffectKind::RaiseTo(4)
+                    ) | (
+                        "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics",
+                        QuestEffectKind::RaiseTo(1)
+                    )
+                );
+            global.protected_tracks.contains(&effect.track) && !reads_progress && !fills_mirror
+        })
     {
         return validate(transition, world_context);
     }

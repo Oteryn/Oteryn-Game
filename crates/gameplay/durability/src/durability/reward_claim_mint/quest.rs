@@ -788,9 +788,20 @@ async fn mint_with_source(
             .item_policy_for_source_id(id)
             .ok_or(DurabilityError::InvalidStoredState)?
             .record();
-        if !matches!(&policy.semantics.classification, ReferenceItemField::Known(c)
-            if c.item_type == ReferenceItemField::Known(ReferenceItemType::Key))
-        {
+        let is_key = match &policy.semantics.classification {
+            ReferenceItemField::Known(classification) => {
+                classification.item_type == ReferenceItemField::Known(ReferenceItemType::Key)
+            }
+            // Crystal 201189f8, startup/tables/item.lua:615-618, binds this
+            // exact copper key to the Folda cache and lock.
+            ReferenceItemField::Unknown => {
+                key == "oteryn:quest-callback/alawars-vault-folda-cache"
+                    && id == 2970
+                    && reward.key_number == Some(4503)
+            }
+            _ => false,
+        };
+        if !is_key {
             return Ok(None);
         }
     }

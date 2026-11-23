@@ -149,7 +149,11 @@
       "claim": "oteryn:reward-claim.kv.mintwallincyclops",
       "expected_revision": "reward-claim-r1",
       "expected_source_uid": 6138,
-      "project_position": { "x": 32591, "y": 32097, "z": 14 },
+      "project_position": {
+        "x": 32591,
+        "y": 32097,
+        "z": 14
+      },
       "appearance": 2472,
       "ordinal": 1,
       "sources": [
@@ -187,6 +191,102 @@
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L449-L455",
         "content/world/placements/region-z07-x126-y124.b3:sha256:71d0f001114257d94cc70fc7bf7405d0e7dc5f05266e71eb87cfab37ba0d43f6 selector 32497,31887,7 ordinal 2 has appearance 3634 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part1",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6236,
+      "project_position": {
+        "x": 33194,
+        "y": 32458,
+        "z": 7
+      },
+      "appearance": 408,
+      "ordinal": 0,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2431-L2437",
+        "content/world/placements/region-z07-x129-y126.b3:sha256:8453ff0d5451a3828b92093778e7116f337cfe9b45bfe0ab5cfb67ae967ca669 selector 33194,32458,7 ordinal 0 has appearance 408 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part2",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6237,
+      "project_position": {
+        "x": 33305,
+        "y": 32277,
+        "z": 10
+      },
+      "appearance": 1983,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2438-L2444",
+        "content/world/placements/region-z10-x130-y126.b3:sha256:72caea57607282bf662d42c9361c13d52a77febef89a51634f43bc227589ce27 selector 33305,32277,10 ordinal 1 has appearance 1983 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part3",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6238,
+      "project_position": {
+        "x": 33212,
+        "y": 32593,
+        "z": 7
+      },
+      "appearance": 231,
+      "ordinal": 0,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2445-L2451",
+        "content/world/placements/region-z07-x129-y127.b3:sha256:3d8be37fc38619e95490267428993d658fac808cbd8eb64e82beb3f26d3108de selector 33212,32593,7 ordinal 0 has appearance 231 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_amulet_part4",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6239,
+      "project_position": {
+        "x": 33053,
+        "y": 32468,
+        "z": 11
+      },
+      "appearance": 1983,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2452-L2458",
+        "content/world/placements/region-z11-x129-y126.b3:sha256:1481abb99b49aa0df46fed1c06c739a30eba7587355f90c6f13aee902c8d1591 selector 33053,32468,11 ordinal 1 has appearance 1983 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_legs",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6240,
+      "project_position": {
+        "x": 33261,
+        "y": 32444,
+        "z": 12
+      },
+      "appearance": 2472,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2459-L2465",
+        "content/world/placements/region-z12-x129-y126.b3:sha256:4a5dbd3e1a2595e3af849bdbaf225060787f71e45786b640eef3fd637cedad66 selector 33261,32444,12 ordinal 1 has appearance 2472 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.koshei_the_deathless.koshei_the_deathless_platinum",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6241,
+      "project_position": {
+        "x": 33261,
+        "y": 32448,
+        "z": 12
+      },
+      "appearance": 2480,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2466-L2472",
+        "content/world/placements/region-z12-x129-y126.b3:sha256:4a5dbd3e1a2595e3af849bdbaf225060787f71e45786b640eef3fd637cedad66 selector 33261,32448,12 ordinal 1 has appearance 2480 and the tile has no unique tags."
       ]
     }
   ]

@@ -1337,12 +1337,13 @@ impl DurabilityRoot {
                     let arena = if transition.quest == oteryn_gameplay_quests::quest::arena_completion::QUEST && transition.completes {
                         Some(oteryn_gameplay_quests::quest::arena_completion::rule().map_err(|_| DurabilityError::InvalidStoredState)?)
                     } else { None };
+                    let authored_admission = super::authored_admission::for_transition(&catalogue, transition, request.cause);
                     // Premium's shared latch precedes the Character root lock. Historical
                     // receipts above replay without evaluating current entrance eligibility.
                     let carrot = callback.as_ref().is_some_and(oteryn_gameplay_quests::quest::dreamer_carrot::shared_input);
                     let mut entrance_premium_denied = false;
                     if callback.as_ref().is_some_and(|c| c.requires_live_premium()) || arena.is_some_and(|rule| rule.requires_premium)
-                        || super::authored_admission::requires_premium(&catalogue, &transition.quest) {
+                        || authored_admission.is_some_and(|gate| gate.premium) {
                         let account: String = sqlx::query_scalar(
                             "SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"
                         ).bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
@@ -1437,7 +1438,8 @@ impl DurabilityRoot {
                         tx.rollback().await?;
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
-                    if !super::authored_admission::permits_level(&catalogue, &transition.quest, state.try_get("level")?) {
+                    if let Some(gate) = authored_admission
+                        && state.try_get::<i64,_>("level")? < i64::from(gate.minimum_level) {
                         tx.rollback().await?;
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }
@@ -1485,7 +1487,7 @@ impl DurabilityRoot {
                             }
                         }
                     }
-                    if !super::authored_admission::prerequisites_hold(&mut tx, id, &catalogue, &transition.quest).await? {
+                    if !super::authored_admission::prerequisites_hold(&mut tx, id, authored_admission).await? {
                         tx.rollback().await?;
                         return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                     }

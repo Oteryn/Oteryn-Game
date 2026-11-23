@@ -167,10 +167,14 @@ async fn install(
     let model = catalogue.service_model_for_project().map_err(debug)?;
     let allowed: std::collections::BTreeSet<_> =
         model.npcs().keys().map(|r| r.key.clone()).collect();
-    owner
-        .states
-        .chat
-        .install_npc_talk(Arc::new(NpcTalkBook::from_model(&model)));
+    let native_quests: &[&str] = if production {
+        &["oteryn:npc.riddler"]
+    } else {
+        &[]
+    };
+    owner.states.chat.install_npc_talk(Arc::new(
+        NpcTalkBook::from_model_with_native_quests(&model, native_quests),
+    ));
     owner.states.chat.admit(
         admitted.game_session_id,
         "Paradox pilgrim",
@@ -252,6 +256,16 @@ pub(super) async fn conversation(
     npc: EntityRef,
     words: &[&str],
 ) -> TestResult<Vec<Reply>> {
+    conversation_with_checkpoints(owner, admitted, npc, words, async |_| Ok(())).await
+}
+
+pub(super) async fn conversation_with_checkpoints(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    words: &[&str],
+    mut checkpoint: impl AsyncFnMut(usize) -> TestResult,
+) -> TestResult<Vec<Reply>> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     owner.clock_origin = owner
         .clock_origin
@@ -289,70 +303,72 @@ pub(super) async fn conversation(
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let generation = admitted.continuity.connection_generation;
     let labels = words.iter().map(|w| (*w).to_owned()).collect::<Vec<_>>();
-    let reader = tokio::spawn(async move {
-        let result: TestResult<Vec<Reply>> = async {
-            let mut replies = Vec::new();
-            let mut window = tokio::time::Instant::now();
-            for (index, frame) in frames.iter().enumerate() {
-                // NPC0-RL-04: use the same four-message window as wire_reward.
-                if index != 0 && index % 4 == 0 {
-                    tokio::time::sleep_until(window + std::time::Duration::from_secs(1)).await;
-                    window = tokio::time::Instant::now();
-                }
-                client
-                    .write_all(&u32::try_from(frame.len())?.to_be_bytes())
+    let (current, shared_owner) = (*admitted, &*owner);
+    let reader = async move {
+        let mut replies = Vec::new();
+        let mut window = tokio::time::Instant::now();
+        for (index, frame) in frames.iter().enumerate() {
+            // NPC0-RL-04: use the same four-message window as wire_reward.
+            if index != 0 && index % 4 == 0 {
+                tokio::time::sleep_until(window + std::time::Duration::from_secs(1)).await;
+                window = tokio::time::Instant::now();
+            }
+            client
+                .write_all(&u32::try_from(frame.len())?.to_be_bytes())
+                .await?;
+            client.write_all(frame).await?;
+            loop {
+                let mut prefix = [0; 4];
+                client.read_exact(&mut prefix).await?;
+                let mut frame = vec![0; u32::from_be_bytes(prefix) as usize];
+                client.read_exact(&mut frame).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::LivenessProbe {
+                    super::qengine_rewards_fixtures::acknowledge_probe(
+                        &mut client,
+                        generation,
+                        envelope.payload(),
+                    )
                     .await?;
-                client.write_all(frame).await?;
-                loop {
-                    let mut prefix = [0; 4];
-                    client.read_exact(&mut prefix).await?;
-                    let mut frame = vec![0; u32::from_be_bytes(prefix) as usize];
-                    client.read_exact(&mut frame).await?;
-                    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
-                    if envelope.message_type() == MessageType::LivenessProbe {
-                        super::qengine_rewards_fixtures::acknowledge_probe(
-                            &mut client,
-                            generation,
-                            envelope.payload(),
-                        )
-                        .await?;
-                    }
-                    if envelope.message_type() == MessageType::CommandResult {
-                        let command =
-                            oteryn_protocol_oteryn::decode_command_result(envelope.payload())
-                                .map_err(debug)?;
-                        let expected = &commands[replies.len()];
-                        assert_eq!(command.command_id, expected.0);
-                        eprintln!(
-                            "PARADOX_STORY_REPLY word={:?} result={:?}",
-                            labels[replies.len()],
-                            decode_npc_intent_result(command.payload).map_err(debug)?
-                        );
-                        replies.push(Reply {
-                            id: command.command_id,
-                            payload: expected.1.clone(),
-                            body: command.payload.to_vec(),
-                            disposition: decode_npc_intent_result(command.payload)
-                                .map_err(debug)?,
-                        });
-                        break;
-                    }
                 }
-                if (index + 1) % 4 == 0 {
-                    window = tokio::time::Instant::now();
+                if envelope.message_type() == MessageType::CommandResult {
+                    let command =
+                        oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                            .map_err(debug)?;
+                    let expected = &commands[replies.len()];
+                    assert_eq!(command.command_id, expected.0);
+                    eprintln!(
+                        "PARADOX_STORY_REPLY word={:?} result={:?}",
+                        labels[replies.len()],
+                        decode_npc_intent_result(command.payload).map_err(debug)?
+                    );
+                    replies.push(Reply {
+                        id: command.command_id,
+                        payload: expected.1.clone(),
+                        body: command.payload.to_vec(),
+                        disposition: decode_npc_intent_result(command.payload)
+                            .map_err(debug)?,
+                    });
+                    break;
                 }
             }
-            client.shutdown().await?;
-            let mut drain = Vec::new();
-            client.read_to_end(&mut drain).await?;
-            Ok(replies)
+            if (index + 1) % 4 == 0 {
+                window = tokio::time::Instant::now();
+            }
+            checkpoint(index + 1).await?;
         }
-        .await;
-        result.map_err(|e| e.to_string())
-    });
-    let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
-    drop(server);
-    let replies = reader.await?.map_err(std::io::Error::other)?;
+        client.shutdown().await?;
+        let mut drain = Vec::new();
+        client.read_to_end(&mut drain).await?;
+        Ok::<_, Box<dyn std::error::Error>>(replies)
+    };
+    let server = async move {
+        let end = serve_admitted(&mut server, current, shared_owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let (end, replies) = tokio::join!(server, reader);
+    let replies = replies?;
     if let ConnectionEnd::AdmittedThenDisconnected(a) | ConnectionEnd::AdmittedThenClosed(a, _) =
         end
     {

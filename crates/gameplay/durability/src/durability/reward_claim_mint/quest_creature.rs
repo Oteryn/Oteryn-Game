@@ -161,7 +161,8 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         corpse: [u8; 16],
     ) -> Option<Self> {
         let at = runtime.read_actor_position(actor).ok()?.position();
-        let position = [at.x, at.y, i32::from(at.floor)];
+        // The corpse receipt stores the actor in native map coordinates.
+        let position = [at.x, at.y, -i32::from(at.floor)];
         callback.corpse_target.as_ref()?;
         let key = callback.creature_target.as_ref()?;
         let lease = runtime

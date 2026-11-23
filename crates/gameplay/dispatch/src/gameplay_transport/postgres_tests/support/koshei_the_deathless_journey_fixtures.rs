@@ -26,6 +26,7 @@ const NPC: Position = at(32699, 31674, -3);
 const DOOR: Position = at(33269, 32446, -12);
 const LEGS: Position = at(33261, 32444, -12);
 const PLATINUM: Position = at(33261, 32448, -12);
+const MONK_POTION: &str = "oteryn:item.tibia.i236";
 const ITEMS: [i32; 7] = [7530, 7528, 7531, 7529, 7532, 645, 3035];
 
 const fn at(x: u16, y: u16, floor: i8) -> Position {
@@ -187,9 +188,7 @@ async fn use_object(
         payload,
     )
     .await?;
-    use_wire::decode_use_result(&reply)
-        .map_err(debug)
-        .map_err(Into::into)
+    use_wire::decode_use_result(&reply).map_err(debug)
 }
 
 async fn move_to(
@@ -237,6 +236,20 @@ async fn commission(
     let [npc] =
         super::classic_quests_fixtures::install_positions(owner, admitted, [CYCLOPS], [NPC])
             .await?;
+    // The deferred SQL check and Rust plan must observe the same fixture time.
+    let validator: String = sqlx::query_scalar(
+        "SELECT pg_get_functiondef('game_quest_reward_effects_valid(jsonb,text[],bigint[],bigint[])'::regprocedure)",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    let wall_clock = "floor(extract(epoch FROM transaction_timestamp()))";
+    assert_eq!(validator.matches(wall_clock).count(), 1);
+    let fixture_validator = |now: i64| validator.replace(wall_clock, &now.to_string());
+    let now = 1_800_000_000;
+    sqlx::raw_sql(sqlx::AssertSqlSafe(fixture_validator(now)))
+        .execute(&h.pool)
+        .await?;
+    h.root.set_test_quest_clock(now)?;
     let (paid, _, _) =
         super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, start, false).await?;
     assert_eq!(paid, NpcIntentDisposition::Ok);
@@ -247,23 +260,17 @@ async fn commission(
         super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, collect, false).await?;
     assert_eq!(early, NpcIntentDisposition::Rejected);
     assert_eq!(State::read(h).await?, *expected);
-    // The writer reads PostgreSQL time. Age the already-earned commission timestamp
-    // in this isolated harness to simulate a day away. Forge phase changes only via TALK.
-    let aged = sqlx::query(
-        "UPDATE game_character_quest_tracks SET value=value-86400 \
-        WHERE character_id=encode($1,'hex')::uuid \
-        AND track_key='oteryn:quest-progress/qnpcfx/koshei/amulet_started_at' AND value>=86400",
-    )
-    .bind(id(41).as_slice())
-    .execute(&h.pool)
-    .await?;
-    assert_eq!(aged.rows_affected(), 1);
-    owner
-        .refresh_quest_session(admitted.game_session_id, false)
-        .await;
+    // Advance the writer's fixture clock without rewriting the earned receipt.
+    let tomorrow = h.root.advance_test_quest_clock(86_400)?;
+    sqlx::raw_sql(sqlx::AssertSqlSafe(fixture_validator(tomorrow)))
+        .execute(&h.pool)
+        .await?;
     let (granted, _, _) =
         super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, collect, false).await?;
     assert_eq!(granted, NpcIntentDisposition::Ok);
+    sqlx::raw_sql(sqlx::AssertSqlSafe(validator))
+        .execute(&h.pool)
+        .await?;
     expected.items[4] = 1;
     expected.mission[1] = 2;
     assert_eq!(State::read(h).await?, *expected);
@@ -339,7 +346,7 @@ async fn seal_client(
                             .iter()
                             .filter(|tile| {
                                 (tile.position.x, tile.position.y, tile.position.floor)
-                                    == (body.x, body.y, -body.floor)
+                                    == (body.x, body.y, body.floor)
                             })
                             .flat_map(|tile| &tile.items)
                             .find_map(|item| match item.origin {
@@ -387,9 +394,7 @@ async fn seal_client(
             let result = wire::decode_command_result(frame.payload())?;
             assert_eq!(result.command_id, command);
             client.shutdown().await?;
-            return use_wire::decode_use_result(result.payload)
-                .map_err(debug)
-                .map_err(Into::into);
+            return use_wire::decode_use_result(result.payload).map_err(debug);
         }
     }
 }
@@ -445,7 +450,19 @@ pub(super) async fn exercise(
         .read_character_build_state(owner.character, fence.character_id)
         .await
         .map_err(debug)?;
-    super::annihilator_combat::prepare_supplies(owner, admitted, &build, true).await?;
+    super::annihilator_combat::prepare_supplies(owner, admitted, &build, false).await?;
+    input_item(
+        owner,
+        fence.item_fence(),
+        &Offering {
+            position: SWITCH,
+            item: MONK_POTION.into(),
+            count: 100,
+        },
+        51001,
+        true,
+    )
+    .await?;
     let fragment_chests = [
         (at(33194, 32458, -7), 0),
         (at(33305, 32277, -10), 1),
@@ -522,9 +539,9 @@ pub(super) async fn exercise(
             .creatures
             .into_iter()
             .find(|creature| {
-                runtime
-                    .creature_spawn_cell(creature.actor)
-                    .is_some_and(|p| (p.x, p.y, p.floor) == (33271, 32406, 12))
+                let p = creature.position;
+                (p.x, p.y, p.floor) == (33271, 32406, 12)
+                    && runtime.matches_live_creature_identity(creature.actor, CREATURE.as_bytes())
             })
             .ok_or(CREATURE)?
     };
@@ -533,7 +550,7 @@ pub(super) async fn exercise(
         admitted,
         boss.actor,
         boss.generation,
-        super::annihilator_combat::KNIGHT_POTION,
+        MONK_POTION,
         ChaseMode::Chase,
     )
     .await?;

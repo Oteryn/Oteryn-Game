@@ -114,6 +114,26 @@ pub fn native_item_definition(
     let profile = gameplay
         .and_then(|state| state.item_policy(key, revision))
         .map(|policy| policy.record());
+    if profile.is_none() {
+        // Crystal 201189f8, data/libs/tables/doors.lua:39-40, defines the
+        // Alawar key-door faces missing from the native profile shard.
+        let solid = match key {
+            "oteryn:item.tibia.i7033" | "oteryn:item.tibia.i7034" | "oteryn:item.tibia.i7042" => {
+                Some(true)
+            }
+            "oteryn:item.tibia.i7035" => Some(false),
+            _ => None,
+        };
+        if let Some(solid) = solid {
+            return Some(ItemDefinition {
+                reference,
+                solid: Some(solid),
+                blocks_projectile: solid,
+                pickupable: false,
+                door: true,
+            });
+        }
+    }
     let pickupable = profile.is_some_and(|profile| {
         matches!(
             &profile.semantics.physical, ReferenceItemField::Known(physical)

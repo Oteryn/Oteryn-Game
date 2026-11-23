@@ -465,7 +465,7 @@ async fn settle_loot(
     loot_table: &LootTableDefinition,
     inflight_before_this_death: usize,
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
-    corpse_race: Option<BestiaryRace>,
+    corpse_source: Option<TypedDefinitionRef>,
     tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
 ) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
     let (corpse_item, loot_table_ref) = match (corpse_item, loot_table_ref) {
@@ -566,9 +566,9 @@ async fn settle_loot(
         0,
     )
     .map_err(CombatDeathRewardLootError::Corpse)?;
-    if let Some(race) = corpse_race {
+    if let Some(source) = corpse_source {
         corpse_cause = corpse_cause
-            .with_corpse_race(race)
+            .with_corpse_source(source)
             .map_err(CombatDeathRewardLootError::Corpse)?;
     }
     let corpse_request = ItemMintRequest {
@@ -869,7 +869,7 @@ async fn settle_creature_death_rewards_inner<const N: usize>(
     session: &DurabilitySession<'_, '_, '_>,
     slot: &mut RevisionSlot,
     input: CreatureDeathRewardInput<N>,
-    corpse_race: Option<BestiaryRace>,
+    corpse_source: Option<TypedDefinitionRef>,
 ) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
     let principal = admit_principal(&facts, &input)?;
     let mut committed_loot = Vec::new();
@@ -885,7 +885,7 @@ async fn settle_creature_death_rewards_inner<const N: usize>(
         &input.loot_table,
         input.inflight_loot_mints_before_this_death,
         &mut committed_loot,
-        corpse_race,
+        corpse_source,
         input.tutorial_corruptor.clone(),
     )
     .await;
@@ -940,9 +940,23 @@ pub struct CreatureDeathBestiaryInput {
     /// `None` when the creature's definition carries no Bestiary block: such
     /// a creature is never counted.
     pub race: Option<BestiaryRace>,
+    /// Exact physical corpse source for an authored kill outside the Bestiary.
+    pub corpse_source: Option<TypedDefinitionRef>,
     pub boss: Option<crate::domain::bosstiary::BosstiaryBoss>,
     /// Current owner-qualified eligibility, retained with the unresolved death.
     pub talisman: Option<crate::durability::bestiary_progress::CapturedBountyTalismanKill>,
+}
+
+impl CreatureDeathBestiaryInput {
+    fn corpse_source(&self) -> Option<TypedDefinitionRef> {
+        self.corpse_source.clone().or_else(|| {
+            self.race.as_ref().map(|race| TypedDefinitionRef {
+                family: "Creature".into(),
+                production_key: race.key().into(),
+                revision_ref: race.definition_revision().into(),
+            })
+        })
+    }
 }
 
 /// Global Animus Mastery: +2% raw species XP, plus 0.1% per ten completed
@@ -1020,7 +1034,7 @@ pub async fn settle_creature_death_rewards_with_bestiary<const N: usize>(
         session,
         slot,
         input,
-        bestiary.race.clone(),
+        bestiary.corpse_source(),
     )
     .await?;
     let boss = bestiary.boss.clone();
@@ -1065,7 +1079,7 @@ pub async fn settle_creature_death_rewards_with_party_experience<const N: usize>
         session,
         slot,
         input,
-        bestiary.race.clone(),
+        bestiary.corpse_source(),
     )
     .await?;
     rewards.xp = xp;

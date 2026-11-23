@@ -4129,8 +4129,35 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             authority: admission.character,
             node: admission.holder,
         };
+        // The tomb's amulet action samples the physical Koshei corpse. Its
+        // native Creature identity is independent of Bestiary credit.
+        let corpse_source = if entry.creature == "oteryn:creature.koshei_the_deathless"
+            && row
+                .corpse_item
+                .as_ref()
+                .is_some_and(|item| item.production_key == "oteryn:item.tibia.i7535")
+        {
+            admission
+                .active_generation
+                .and_then(|generation| generation.native_gameplay())
+                .and_then(|native| {
+                    native
+                        .creature_profiles()
+                        .records
+                        .iter()
+                        .find(|record| record.profile.target.key == entry.creature)
+                })
+                .map(|record| crate::durability::item_mint::TypedDefinitionRef {
+                    family: "Creature".into(),
+                    production_key: record.profile.target.key.clone(),
+                    revision_ref: record.profile.target.revision.clone(),
+                })
+        } else {
+            None
+        };
         let bestiary = CreatureDeathBestiaryInput {
             race: row.race.clone(),
+            corpse_source,
             boss: row.boss.clone(),
             talisman: entry.talisman.get().cloned(),
         };

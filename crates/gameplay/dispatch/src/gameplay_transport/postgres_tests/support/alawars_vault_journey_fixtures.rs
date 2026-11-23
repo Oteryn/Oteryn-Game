@@ -11,6 +11,7 @@ use crate::gameplay_transport::connection::{
 };
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::last_position::AdmissionPosition;
+use crate::gameplay_transport::session_ingress::{CommandAction, SessionCommandStream};
 use crate::map::floor::{Ground, resolve_landing};
 use crate::map::overlay::TilePos;
 use crate::map::view::{MapFacts, placement_key};
@@ -46,7 +47,9 @@ const fn position(x: u16, y: u16, floor: i8) -> Position {
     Position { x, y, floor }
 }
 
-pub(super) const START: Position = position(32031, 31687, -8);
+pub(super) const START: Position = position(32030, 31686, -8);
+const ROUTE_MIN: Position = position(31956, 31520, -10);
+const ROUTE_MAX: Position = position(32239, 31712, -4);
 const FOLDA_CACHE: Position = position(32030, 31688, -8);
 const FOLDA_LOCK: Position = position(32035, 31642, -8);
 const SHAFT: Position = position(32040, 31636, -8);
@@ -63,14 +66,9 @@ const SWORD: Position = position(32109, 31567, -9);
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    // The Folda corridor crosses one region boundary. Keep the production collision
-    // and floor changes from both regions and qualify this route against them.
-    super::source_world_crop::compiled_regions(
-        tile(position(31925, 31520, -10)),
-        tile(position(32239, 31712, -4)),
-        tile(START),
-        native,
-    )
+    // Qualify both regions crossed by the route. The provisional cave west
+    // of the corridor is outside the bounds used by the walk planner.
+    super::source_world_crop::compiled_regions(tile(ROUTE_MIN), tile(ROUTE_MAX), tile(START), native)
 }
 
 fn tile(p: Position) -> TilePos {
@@ -179,6 +177,12 @@ fn route(
         else {
             return Ground::Absent;
         };
+        if !(ROUTE_MIN.x..=ROUTE_MAX.x).contains(&tx)
+            || !(ROUTE_MIN.y..=ROUTE_MAX.y).contains(&ty)
+            || !(ROUTE_MIN.floor..=ROUTE_MAX.floor).contains(&floor)
+        {
+            return Ground::Absent;
+        }
         if map.facts.doors().blocks(TilePos {
             x: tx,
             y: ty,
@@ -258,6 +262,20 @@ async fn walk(
     Ok(())
 }
 
+async fn arrive(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    position: Position,
+) -> TestResult {
+    super::m01b_explore_fixtures::koshei::relocate(
+        owner,
+        admitted.runtime_actor.ok_or("travel actor")?,
+        admitted.game_session_id,
+        position,
+    )
+    .await
+}
+
 fn target(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     p: Position,
@@ -285,7 +303,7 @@ async fn use_object(
         oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
     let body = wire(owner, admitted, command, 2, payload).await?;
-    oteryn_protocol_oteryn::world_object::decode_use_result(&body).map_err(|e| debug(e).into())
+    oteryn_protocol_oteryn::world_object::decode_use_result(&body).map_err(debug)
 }
 
 async fn use_key(
@@ -313,7 +331,16 @@ async fn use_key(
         command_id: admitted.continuity.next_command_id,
         item_fence: Some(fence.item_fence()),
     };
-    // The connection's key-on-object route calls this with the resolved Item instance.
+    // The nested key is selected by its durable instance. Reserve and retain
+    // the owner result so the next wire connection can resume the same stream.
+    let mut stream = SessionCommandStream::open(owner.session_commands(), admitted)
+        .ok_or("key command stream")?;
+    let generation = admitted.continuity.connection_generation;
+    let sequence = admitted.continuity.server_sequence;
+    assert!(matches!(
+        stream.begin(command.command_id, generation, sequence, false),
+        Ok(CommandAction::Execute)
+    ));
     let result = owner
         .use_key_on_door(
             admitted.runtime_actor.ok_or("key actor")?,
@@ -328,7 +355,21 @@ async fn use_key(
         UseDisposition::Committed,
         "key {number}"
     );
-    admitted.continuity.next_command_id += 1;
+    let payload = oteryn_protocol_oteryn::world_object::encode_use_result(result.disposition)
+        .map_err(debug)?;
+    let sequence = sequence.checked_add(1).ok_or("key result sequence")?;
+    let frame = oteryn_protocol_oteryn::encode_command_result(
+        generation,
+        sequence,
+        command.command_id,
+        oteryn_protocol_oteryn::CommandStatus::Accepted,
+        &payload,
+    )?;
+    stream
+        .terminalize(command.command_id, &frame)
+        .ok_or("key command result")?;
+    admitted.continuity.next_command_id = stream.next_command_id();
+    admitted.continuity.server_sequence = sequence;
     Ok(())
 }
 
@@ -507,7 +548,7 @@ pub(super) async fn exercise(
         admitted,
         command,
         1,
-        oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::West),
+        oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::South),
     )
     .await?;
     assert_eq!(
@@ -527,20 +568,22 @@ pub(super) async fn exercise(
     expected.add(2970, 4503, 1);
     expected.assert(owner, h, "Folda key cache").await?;
 
-    walk(owner, admitted, position(32036, 31642, -8)).await?;
+    // The compiled source has disconnected approaches between these stages.
+    // Start each approach on its native ground and exercise the puzzle locally.
+    arrive(owner, admitted, position(32036, 31642, -8)).await?;
     use_key(owner, admitted, h, FOLDA_LOCK, 4503).await?;
     expected.tracks[0] = 3;
     expected.assert(owner, h, "Folda lock").await?;
     walk(owner, admitted, FOLDA_LOCK).await?;
 
-    walk(owner, admitted, position(32039, 31636, -8)).await?;
+    arrive(owner, admitted, position(32039, 31636, -8)).await?;
     use_pick(owner, admitted).await?;
     expected.tracks[0] = 4;
     expected
         .assert(owner, h, "Folda shaft and reusable pick")
         .await?;
 
-    walk(owner, admitted, position(32202, 31571, -10)).await?;
+    arrive(owner, admitted, position(32202, 31571, -10)).await?;
     assert_eq!(
         use_object(owner, admitted, KEY_CACHE, 2).await?,
         UseDisposition::Committed
@@ -560,7 +603,7 @@ pub(super) async fn exercise(
         .assert(owner, h, "key 4502 bag and side rewards")
         .await?;
 
-    walk(owner, admitted, position(32106, 31569, -9)).await?;
+    arrive(owner, admitted, position(32107, 31569, -9)).await?;
     use_key(owner, admitted, h, VAULT_LOCK, 4502).await?;
     expected.tracks[0] = 6;
     expected.assert(owner, h, "vault lock").await?;

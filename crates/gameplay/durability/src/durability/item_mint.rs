@@ -191,7 +191,7 @@ pub struct ItemMintCause {
     loot_table: TypedDefinitionRef,
     purpose_key: String,
     draw_ordinal: u32,
-    corpse_race: Option<crate::domain::bestiary::BestiaryRace>,
+    corpse_source: Option<TypedDefinitionRef>,
 }
 
 impl ItemMintCause {
@@ -217,7 +217,7 @@ impl ItemMintCause {
             loot_table,
             purpose_key,
             draw_ordinal,
-            corpse_race: None,
+            corpse_source: None,
         }
     }
 
@@ -244,17 +244,30 @@ impl ItemMintCause {
             loot_table,
             purpose_key,
             draw_ordinal,
-            corpse_race: None,
+            corpse_source: None,
         })
     }
 
     /// Bind source Creature identity only to the committed death's own corpse.
     /// Skinning never derives race from a shared corpse Item definition.
-    pub fn with_corpse_race(mut self, race: crate::domain::bestiary::BestiaryRace) -> Result<Self> {
-        if self.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY || self.draw_ordinal != 0 {
+    pub fn with_corpse_race(self, race: crate::domain::bestiary::BestiaryRace) -> Result<Self> {
+        self.with_corpse_source(TypedDefinitionRef {
+            family: "Creature".into(),
+            production_key: race.key().into(),
+            revision_ref: race.definition_revision().into(),
+        })
+    }
+
+    /// Record the native Creature identity even if that species has no Bestiary entry.
+    pub fn with_corpse_source(mut self, source: TypedDefinitionRef) -> Result<Self> {
+        if source.family != "Creature"
+            || self.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY
+            || self.draw_ordinal != 0
+        {
             return Err(ItemMintError::InvalidInput);
         }
-        self.corpse_race = Some(race);
+        validate_definition(&source)?;
+        self.corpse_source = Some(source);
         Ok(self)
     }
 
@@ -282,7 +295,7 @@ impl ItemMintCause {
             loot_table,
             purpose_key,
             draw_ordinal,
-            corpse_race: None,
+            corpse_source: None,
         }
     }
 }
@@ -1918,10 +1931,10 @@ fn intent_binding_format(
         push_text(&mut semantic, value)?;
     }
     // Absent provenance retains the byte layout of historical reservations.
-    if let Some(race) = &cause.corpse_race {
+    if let Some(source) = &cause.corpse_source {
         push_text(&mut semantic, b"corpse-source-race.v1")?;
-        push_text(&mut semantic, race.key().as_bytes())?;
-        push_text(&mut semantic, race.definition_revision().as_bytes())?;
+        push_text(&mut semantic, source.production_key.as_bytes())?;
+        push_text(&mut semantic, source.revision_ref.as_bytes())?;
     }
     let digest: [u8; 32] = Sha256::digest(&semantic).into();
     let mut binding = [0_u8; 33];
@@ -2447,15 +2460,15 @@ async fn insert_receipt(
     .bind(assignment_scope_key(death.runtime_scope).as_slice())
     .execute(&mut **tx)
     .await?;
-    if let Some(race) = &request.cause.corpse_race {
+    if let Some(source) = &request.cause.corpse_source {
         sqlx::query(
             "INSERT INTO game_corpse_source_races(item_instance_id,mint_transaction_id,race_key,race_definition_revision) \
              VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4)",
         )
         .bind(frozen.item_instance_id.as_slice())
         .bind(frozen.transaction_id.as_slice())
-        .bind(race.key())
-        .bind(race.definition_revision())
+        .bind(&source.production_key)
+        .bind(&source.revision_ref)
         .execute(&mut **tx)
         .await?;
     }
@@ -3232,14 +3245,11 @@ mod tests {
                         .expect("different Instance")
             },
             |r| {
-                r.cause.corpse_race = Some(
-                    crate::domain::bestiary::BestiaryRace::new(
-                        "oteryn:creature.dragon",
-                        "dragon-r1",
-                        vec![5, 50, 500],
-                    )
-                    .expect("race"),
-                )
+                r.cause.corpse_source = Some(TypedDefinitionRef {
+                    family: "Creature".into(),
+                    production_key: "oteryn:creature.dragon".into(),
+                    revision_ref: "dragon-r1".into(),
+                });
             },
             |r| {
                 r.cause.death.scope_ownership_generation =

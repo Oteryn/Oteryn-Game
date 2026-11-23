@@ -1,30 +1,42 @@
 //! Reuse the quest writer's already locked authoritative progression sample.
-use oteryn_gameplay_quests::quest::QuestStateCatalogue;
+use super::QuestCause;
+use oteryn_gameplay_quests::quest::{
+    QuestStateCatalogue, QuestTransition, authored_bindings::actor_admission::ActorAdmission,
+};
 
-pub(super) fn permits_level(catalogue: &QuestStateCatalogue, quest: &str, level: i64) -> bool {
+pub(super) fn for_transition<'a>(
+    catalogue: &'a QuestStateCatalogue,
+    transition: &QuestTransition,
+    cause: QuestCause,
+) -> Option<&'a ActorAdmission> {
+    let key = transition.key.as_str();
+    // The new journey gates apply to its authored route. Published puzzles and
+    // already-minted chest obligations retain their own admission and proof.
+    let already_admitted = match transition.quest.as_str() {
+        "oteryn:quest.the_paradox_tower_quest" => {
+            key == "oteryn:quest-callback/paradox-skulls"
+                || key.starts_with("oteryn:quest-callback/l6/paradox-")
+        }
+        "oteryn:quest.koshei_the_deathless_quest" => {
+            matches!(cause, QuestCause::ClaimObligation(_))
+                && matches!(
+                    key,
+                    "oteryn:quest-transition/quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs/chest"
+                        | "oteryn:quest-transition/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum/chest"
+                )
+        }
+        _ => false,
+    };
+    if already_admitted {
+        return None;
+    }
     catalogue
-        .authored_bindings()
-        .and_then(|bindings| {
-            bindings
-                .quests
-                .iter()
-                .find(|binding| binding.quest == quest)
-        })
-        .and_then(|binding| binding.admission.as_ref())
-        .is_none_or(|admission| level >= i64::from(admission.minimum_level))
-}
-
-pub(super) fn requires_premium(catalogue: &QuestStateCatalogue, quest: &str) -> bool {
-    catalogue
-        .authored_bindings()
-        .and_then(|bindings| {
-            bindings
-                .quests
-                .iter()
-                .find(|binding| binding.quest == quest)
-        })
-        .and_then(|binding| binding.admission.as_ref())
-        .is_some_and(|admission| admission.premium)
+        .authored_bindings()?
+        .quests
+        .iter()
+        .find(|binding| binding.quest == transition.quest)?
+        .admission
+        .as_ref()
 }
 
 /// The Character root lock serializes prerequisite changes by the same owner.
@@ -32,19 +44,9 @@ pub(super) fn requires_premium(catalogue: &QuestStateCatalogue, quest: &str) -> 
 pub(super) async fn prerequisites_hold(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: &[u8],
-    catalogue: &QuestStateCatalogue,
-    quest: &str,
+    admission: Option<&ActorAdmission>,
 ) -> super::StoredResult<bool> {
-    let Some(admission) = catalogue
-        .authored_bindings()
-        .and_then(|bindings| {
-            bindings
-                .quests
-                .iter()
-                .find(|binding| binding.quest == quest)
-        })
-        .and_then(|binding| binding.admission.as_ref())
-    else {
+    let Some(admission) = admission else {
         return Ok(true);
     };
     if admission.prerequisites.is_empty() {

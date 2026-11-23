@@ -227,14 +227,22 @@ pub(super) async fn carried(
         .await
         .map_err(debug)?
         .ok_or("quest fence")?;
+    carried_for(h, fence.character_id.as_bytes(), owner.world_id.as_bytes()).await
+}
+
+async fn carried_for(
+    h: &Harness,
+    character: &[u8; 16],
+    world: &[u8; 16],
+) -> TestResult<Vec<(String, i64)>> {
     Ok(sqlx::query_as(
         "SELECT i.definition_production_key, sum(i.quantity)::bigint
          FROM game_quest_callback_carried(encode($1,'hex')::uuid, encode($2,'hex')::uuid) c
          JOIN game_item_instances i ON i.item_instance_id=c.item
          GROUP BY i.definition_production_key ORDER BY i.definition_production_key",
     )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(owner.world_id.as_bytes().as_slice())
+    .bind(character.as_slice())
+    .bind(world.as_slice())
     .fetch_all(&h.pool)
     .await?)
 }
@@ -278,7 +286,7 @@ async fn use_wire(
     let payload = encode_use_intent(&object_target(owner, p, ordinal)?).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
     let result = wire::wire(owner, admitted, command, 2, payload).await?;
-    Ok(decode_use_result(&result).map_err(debug)?)
+    decode_use_result(&result).map_err(debug)
 }
 
 async fn send(
@@ -525,8 +533,12 @@ async fn foods(
     for (idx, offering) in callback.offerings.iter().enumerate() {
         if z == 4 {
             tower::walk(owner, admitted, pos(offering.position.x, 31901, -4)).await?;
-        } else {
-            tower::walk(owner, admitted, pos(offering.position.x, 31904, -3)).await?;
+        } else if idx == 1 {
+            // The lever blocks the direct crossing. Reach the eastern offering
+            // by walking around the lever on the south row.
+            tower::walk(owner, admitted, pos(32477, 31905, -3)).await?;
+            tower::walk(owner, admitted, pos(32479, 31905, -3)).await?;
+            tower::walk(owner, admitted, pos(32479, 31904, -3)).await?;
         }
         offer(
             owner,
@@ -547,6 +559,8 @@ async fn foods(
         tower::walk(owner, admitted, pos(32479, 31904, -4)).await?;
         tower::walk(owner, admitted, pos(32478, 31905, -4)).await?;
     } else {
+        tower::walk(owner, admitted, pos(32479, 31905, -3)).await?;
+        tower::walk(owner, admitted, pos(32477, 31905, -3)).await?;
         tower::walk(owner, admitted, pos(32477, 31904, -3)).await?;
     }
     let before = carried(owner, admitted, h).await?;
@@ -630,31 +644,48 @@ async fn riddle(
             })
             .ok_or("placed Riddler")?
     };
-    let items = carried(owner, admitted, h).await?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("Riddler quest fence")?;
+    let character = *fence.character_id.as_bytes();
+    let world = *owner.world_id.as_bytes();
+    let items = carried_for(h, &character, &world).await?;
     let math = format!("{RIDDLE}mathemagics");
     let colour = format!("{RIDDLE}favorite_colour");
-    for words in [
-        &["hi", "test", "yes", "goshnar"][..],
-        &["demonbunny", "tha'kull", "yes", "breath"][..],
-        &["silence", "old", "yes", "green"][..],
-        &["none"][..],
-    ] {
-        let replies = story::conversation(owner, admitted, actor, words).await?;
-        assert!(
-            replies
-                .iter()
-                .all(|r| r.disposition == NpcIntentDisposition::Ok)
-        );
-        assert_eq!(track(h, &math).await?, Some(1));
-        assert_eq!(carried(owner, admitted, h).await?, items);
-        assert!(!completed(h).await?);
-    }
-    assert_eq!(track(h, &colour).await?, Some(1));
-    let replies = story::conversation(owner, admitted, actor, &["1"]).await?;
-    assert_eq!(
-        replies.first().ok_or("riddle answer")?.disposition,
-        NpcIntentDisposition::Ok
-    );
+    let words = [
+        "hi", "test", "yes", "goshnar", "demonbunny", "tha'kull", "yes", "breath",
+        "silence", "old", "yes", "green", "none", "1",
+    ];
+    let selected = admitted.continuity.selected_capabilities;
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1],
+        )
+        .ok_or("Riddler dialogue capability")?;
+    let replies = story::conversation_with_checkpoints(
+        owner,
+        admitted,
+        actor,
+        &words,
+        async |answered| {
+            if [4, 8, 12, 13].contains(&answered) {
+                assert_eq!(track(h, &math).await?, Some(1));
+                assert_eq!(carried_for(h, &character, &world).await?, items);
+                assert!(!completed(h).await?);
+            }
+            if answered == 13 {
+                assert_eq!(track(h, &colour).await?, Some(1));
+            }
+            Ok(())
+        },
+    ).await;
+    admitted.continuity.selected_capabilities = selected;
+    let replies = replies?;
+    assert_eq!(replies.len(), words.len());
+    assert!(replies.iter().all(|r| r.disposition == NpcIntentDisposition::Ok));
     assert_eq!(tower::at(owner, admitted).await?, pos(32478, 31905, -1));
     assert_eq!(track(h, &math).await?, Some(2));
     assert_eq!(track(h, &colour).await?, Some(2));
