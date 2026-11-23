@@ -20,6 +20,9 @@ impl DurabilityRoot {
         weights: &dyn super::super::item_transfer::ItemWeightLookup,
     ) -> Result<Vec<u8>> {
         validate_request(&request)?;
+        if request.command.game_session_id() != gameplay.game_session_id {
+            return Err(RewardClaimMintError::AuthorityRejected);
+        }
         if request.quantity != 1
             || !request.contents.is_empty()
             || request.achievement.is_some()
@@ -35,6 +38,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
         let node = node.clone();
+        let test_clock = self.quest_test_clock_handle();
         let mut context = weights;
         self.try_issue_semantic_pass()?.run_with_context(&mut context,move |holder,deadline,weights|Box::pin(async move {
             let mut tx=begin_type2_transaction(holder,deadline).await?;
@@ -44,21 +48,28 @@ impl DurabilityRoot {
             if super::super::character_progression::assert_gameplay_fence(&mut tx,&gameplay,&node).await?.is_err() {return Ok(Err(RewardClaimMintError::AuthorityRejected));}
             if let Some(reply)=arena::replay(&mut tx,gameplay,request.command,&payload).await? {tx.commit(deadline).await?;return Ok(Ok(reply));}
             let mut state=arena::load(&mut tx,gameplay).await?;
+            if state.active {return Ok(Err(RewardClaimMintError::InvalidInput));}
+            // Fix one cutoff after taking the Character's progress lock. Award publication,
+            // points, and the receipt all describe that rotation even if minting takes longer.
+            let now=arena::now(&mut tx,test_clock.as_deref()).await?;
+            let rotation=now/arena::ROTATION_SECONDS;
+            arena::settle_rotation(&mut tx,gameplay.character_id,&mut state.progress,rotation).await?;
+            arena::publish(&mut tx,gameplay.character_id,rotation).await?;
             let (item,key,award,price)=if let Some(selector)=purchase {
                 let (item,price)=arena::shop_reward(selector).ok_or(DurabilityError::InvalidStoredState)?;
                 if state.progress.points<price {
-                    let bytes=finish(&mut tx,gameplay,&request,&payload,&state,7).await?;
+                    let bytes=finish(&mut tx,gameplay,&request,&payload,&state,7,now).await?;
                     tx.commit(deadline).await?;return Ok(Ok(bytes));
                 }
                 (item,arena::shop_key(request.command),None,price)
             }else{
                 let Some((rotation,claimed,item))=arena::next_potion(&mut tx,gameplay).await? else {
-                    let bytes=finish(&mut tx,gameplay,&request,&payload,&state,7).await?;
+                    let bytes=finish(&mut tx,gameplay,&request,&payload,&state,7,now).await?;
                     tx.commit(deadline).await?;return Ok(Ok(bytes));
                 };
                 (item,format!("oteryn:reward.tibiadrome.{rotation}.{claimed}"),Some((rotation,claimed)),0)
             };
-            if state.active || request.item.definition.production_key!=format!("oteryn:item.tibia.i{item}") || request.claim.production_key!=key {
+            if request.item.definition.production_key!=format!("oteryn:item.tibia.i{item}") || request.claim.production_key!=key {
                 return Ok(Err(RewardClaimMintError::InvalidInput));
             }
             let (world,channel)=scope_of(&fence).map_err(|_|DurabilityError::InvalidStoredState)?;
@@ -68,14 +79,14 @@ impl DurabilityRoot {
             let (destination,_)=match admit(&mut tx,&node,&fence,&request,&reservation).await? {
                 Ok(admitted)=>admitted,
                 Err(RewardClaimMintError::Refused(_))=>{
-                    let bytes=finish(&mut tx,gameplay,&request,&payload,&state,8).await?;
+                    let bytes=finish(&mut tx,gameplay,&request,&payload,&state,8,now).await?;
                     tx.commit(deadline).await?;return Ok(Ok(bytes));
                 }
                 Err(error)=>return Ok(Err(error)),
             };
             if let Err(error)=contents::check_capacity(&mut tx,fence.character_id,reservation.world_id,&request,*weights).await? {
                 if !matches!(error,RewardClaimMintError::Refused(_)) {return Ok(Err(error));}
-                let bytes=finish(&mut tx,gameplay,&request,&payload,&state,8).await?;
+                let bytes=finish(&mut tx,gameplay,&request,&payload,&state,8,now).await?;
                 tx.commit(deadline).await?;return Ok(Ok(bytes));
             }
             insert_reservation(&mut tx,&request,&binding,&reservation).await?;
@@ -91,7 +102,7 @@ impl DurabilityRoot {
                 && sqlx::query("UPDATE game_tibiadrome_awards SET claimed=claimed+1 WHERE character_id=encode($1,'hex')::uuid AND rotation=$2 AND claimed=$3 AND claimed<potions")
                     .bind(gameplay.character_id.as_bytes().as_slice()).bind(i64::from(rotation)).bind(claimed as i32).execute(&mut **tx).await?.rows_affected()!=1 {return Err(DurabilityError::InvalidStoredState);}
             state.progress.points-=price;
-            let bytes=finish(&mut tx,gameplay,&frozen.request,&payload,&state,1).await?;
+            let bytes=finish(&mut tx,gameplay,&frozen.request,&payload,&state,1,now).await?;
             tx.commit(deadline).await?;Ok(Ok(bytes))
         })).await?
     }
@@ -103,9 +114,10 @@ async fn finish(
     payload: &[u8],
     state: &Record,
     disposition: u32,
+    now: u32,
 ) -> std::result::Result<Vec<u8>, DurabilityError> {
-    let now = arena::now(tx).await?;
-    let (rank, potions) = arena::standing(tx, fence, now / arena::ROTATION_SECONDS).await?;
+    let rotation = now / arena::ROTATION_SECONDS;
+    let (rank, potions) = arena::standing(tx, fence, rotation).await?;
     let bytes = DromeResult {
         disposition,
         level: state.progress.level,
@@ -121,7 +133,7 @@ async fn finish(
         cooldown: state.progress.cooldown_until.saturating_sub(now),
         rank,
         potions,
-        rotation_ends: (now / arena::ROTATION_SECONDS + 1) * arena::ROTATION_SECONDS,
+        rotation_ends: rotation.saturating_add(1).saturating_mul(arena::ROTATION_SECONDS),
     }
     .encode();
     arena::save(tx, fence, request.command, payload, state, &bytes).await?;
