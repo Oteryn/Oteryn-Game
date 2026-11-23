@@ -42,8 +42,10 @@ fn coverage() -> TestResult {
             keys.insert(key.as_str().ok_or("claim key")?.to_owned());
         }
     }
-    assert_eq!(quests, 42);
-    assert_eq!(keys.len(), 59);
+    // The qualified Botany Almanach claim adds Crystal 201189f8 UID 6296
+    // at (33004, 31530, 10), with one copy of item 11699 and its written text.
+    assert_eq!(quests, 43);
+    assert_eq!(keys.len(), 60);
     let mut definitions = BTreeMap::new();
     for shard in REWARD_CLAIM_SHARDS {
         let document: Value = serde_json::from_str(shard)?;
@@ -132,7 +134,7 @@ fn coverage() -> TestResult {
             placements += 1;
         }
     }
-    assert_eq!(placements, 60);
+    assert_eq!(placements, 61);
     assert!(
         unserved.is_empty(),
         "source claims did not bind with native items: {unserved:?}"

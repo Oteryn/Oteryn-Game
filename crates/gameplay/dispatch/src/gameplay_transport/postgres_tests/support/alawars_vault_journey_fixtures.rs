@@ -285,7 +285,7 @@ async fn use_object(
         oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
     let body = wire(owner, admitted, command, 2, payload).await?;
-    oteryn_protocol_oteryn::world_object::decode_use_result(&body).map_err(|e| debug(e).into())
+    oteryn_protocol_oteryn::world_object::decode_use_result(&body).map_err(debug)
 }
 
 async fn use_key(

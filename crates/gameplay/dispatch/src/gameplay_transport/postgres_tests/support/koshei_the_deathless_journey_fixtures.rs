@@ -187,9 +187,7 @@ async fn use_object(
         payload,
     )
     .await?;
-    use_wire::decode_use_result(&reply)
-        .map_err(debug)
-        .map_err(Into::into)
+    use_wire::decode_use_result(&reply).map_err(debug)
 }
 
 async fn move_to(
@@ -387,9 +385,7 @@ async fn seal_client(
             let result = wire::decode_command_result(frame.payload())?;
             assert_eq!(result.command_id, command);
             client.shutdown().await?;
-            return use_wire::decode_use_result(result.payload)
-                .map_err(debug)
-                .map_err(Into::into);
+            return use_wire::decode_use_result(result.payload).map_err(debug);
         }
     }
 }

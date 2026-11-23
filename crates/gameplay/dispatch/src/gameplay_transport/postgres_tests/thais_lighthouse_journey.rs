@@ -154,6 +154,7 @@ async fn journey(h: &Harness) -> TestResult {
         (start.x, start.y, start.floor),
     );
     let mut deps = Dependencies::new()?;
+    deps.combat_room = Some(room);
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world_id,
         deps.admitted.channel_id,
@@ -183,7 +184,6 @@ async fn journey(h: &Harness) -> TestResult {
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = Some(generation);
     owner.evidence = &recovery.evidence;
-    owner.rooms = crate::gameplay_transport::SeamRooms::new(Some(&room), Some(&room));
     owner.movement_cells = (&cells).into();
     owner.quest_catalogue = Some(catalogue);
     let mut player = deps.admitted;
