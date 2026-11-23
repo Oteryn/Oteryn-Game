@@ -1,4 +1,4 @@
-//! Same-transaction House sleeper and terminal session owner (BED-1d).
+//! Durable House sleeper, owner wake and terminal session transitions.
 //!
 //! This is the durable participant, not a map/reservation or offline-training
 //! authority. A House runtime must supply its resolved head, native sex and
@@ -20,7 +20,8 @@ use super::spell_house_abi::HousePresenceProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::content::LogicalCell;
 use crate::domain::appearance::Sex;
-use crate::foundation::AuthenticatedTransportRefV1;
+use crate::foundation::{AuthenticatedTransportRefV1, ChannelId, CommandId};
+use std::time::Instant;
 
 /// Immutable intent from the owning House runtime; all durable fences and ACLs
 /// are independently read at commit. These fields do not prove placement.
@@ -55,6 +56,162 @@ pub enum BedSleepOutcome {
     Denied,
     Occupied,
     Conflict,
+}
+
+/// One ordinary USE against a pair resolved by the native House owner.
+#[derive(Clone)]
+pub struct BedUseRequest {
+    pub context: super::consume_transform::HouseActionContext,
+    pub origin_channel: ChannelId,
+    pub transport: AuthenticatedTransportRefV1,
+    pub command_id: u64,
+    pub head: LogicalCell,
+}
+
+pub enum BedUseOutcome {
+    Vacant,
+    Occupied,
+    Woken,
+    Denied,
+    Stale,
+    CheckoutUnavailable,
+    RolledBack,
+}
+
+impl BedUseOutcome {
+    fn from_receipt(value: &str) -> Option<Self> {
+        match value {
+            "vacant" => Some(Self::Vacant),
+            "occupied" => Some(Self::Occupied),
+            "woken" => Some(Self::Woken),
+            _ => None,
+        }
+    }
+}
+
+impl DurabilityRoot {
+    pub async fn use_house_bed(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: BedUseRequest,
+        deadline: Instant,
+    ) -> Result<BedUseOutcome, DurabilityError> {
+        let Ok(recovery) = authority.record_for(self) else {
+            return Ok(BedUseOutcome::Stale);
+        };
+        let pass = match self.try_issue_semantic_pass_by(deadline) {
+            Ok(pass) => pass,
+            Err(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded) => {
+                return Ok(BedUseOutcome::CheckoutUnavailable);
+            }
+            Err(error) => return Err(error),
+        };
+        let node = node.clone();
+        let mut commit_started = false;
+        let result = pass
+            .run_with_context(&mut commit_started, move |holder, deadline, commit_started| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let fence = request.context.fence();
+                    let house = request.context.house();
+                    if super::house_hireling::fence::assert_house_custody_fence(
+                        &mut tx,
+                        &node,
+                        &fence,
+                        *request.origin_channel.as_bytes(),
+                    )
+                    .await?
+                    .as_ref()
+                        != Some(house)
+                    {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(BedUseOutcome::Stale);
+                    }
+                    let fact = node.fact();
+                    let value: String = sqlx::query_scalar(
+                        "SELECT game_house_bed_use(encode($1,'hex')::uuid,encode($2,'hex')::uuid,\
+                         encode($3,'hex')::uuid,$4,$5::text::numeric,$6::text::numeric,$7::text::numeric,\
+                         $8,$9::text::numeric,$10,$11,$12,encode($13,'hex')::uuid,$14::text::numeric)",
+                    )
+                    .bind(fence.game_session_id.as_bytes().as_slice())
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(house.world_id().as_bytes().as_slice())
+                    .bind(house.house_key())
+                    .bind(fence.connection_generation.get().to_string())
+                    .bind(fence.character_lease_generation.to_string())
+                    .bind(fence.scope_ownership_generation.get().to_string())
+                    .bind(request.transport.to_bytes().as_slice())
+                    .bind(request.command_id.to_string())
+                    .bind(request.head.x)
+                    .bind(request.head.y)
+                    .bind(request.head.z)
+                    .bind(fact.node_id().as_bytes().as_slice())
+                    .bind(fact.registration_revision().to_string())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    let outcome = match value.as_str() {
+                        "denied" => BedUseOutcome::Denied,
+                        "stale" => BedUseOutcome::Stale,
+                        receipt => {
+                            let outcome = BedUseOutcome::from_receipt(receipt)
+                                .ok_or(DurabilityError::InvalidStoredState)?;
+                            *commit_started = true;
+                            outcome
+                        }
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(outcome)
+                })
+            })
+            .await;
+        match result {
+            Err(DurabilityError::CommitRejected | DurabilityError::CommitTransactionTimeout) => {
+                Ok(BedUseOutcome::RolledBack)
+            }
+            // Dropping a pass before COMMIT rolls back the sleeper and receipt together.
+            Err(_) if !commit_started => Ok(BedUseOutcome::RolledBack),
+            result => result,
+        }
+    }
+
+    pub async fn read_house_bed_use_receipt(
+        &self,
+        fence: CurrentCharacterItemFence,
+        transport: AuthenticatedTransportRefV1,
+        command: CommandId,
+        deadline: Instant,
+    ) -> Result<Option<BedUseOutcome>, DurabilityError> {
+        self.try_issue_semantic_pass_by(deadline)?
+            .run(move |holder, _| {
+                Box::pin(async move {
+                    let value: Option<String> = sqlx::query_scalar(
+                        "SELECT game_house_bed_use_receipt(encode($1,'hex')::uuid,\
+                         encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,\
+                         $5::text::numeric,$6,$7::text::numeric)",
+                    )
+                    .bind(fence.game_session_id.as_bytes().as_slice())
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(fence.connection_generation.get().to_string())
+                    .bind(fence.character_lease_generation.to_string())
+                    .bind(fence.scope_ownership_generation.get().to_string())
+                    .bind(transport.to_bytes().as_slice())
+                    .bind(command.get().to_string())
+                    .fetch_one(&mut **holder)
+                    .await?;
+                    value
+                        .as_deref()
+                        .map(|value| {
+                            BedUseOutcome::from_receipt(value)
+                                .ok_or(DurabilityError::InvalidStoredState)
+                        })
+                        .transpose()
+                })
+            })
+            .await
+    }
 }
 
 impl BedSleepOwner<'_, '_, '_> {

@@ -1,7 +1,11 @@
 //! Server rules retain exact callback inputs; answers never supply gameplay authority.
 use super::{ComposedFreshAdmission, ServerModalOutcome, actor_is_current, owner::Root};
+use crate::content::LogicalCell;
+use crate::durability::bed_sleep::BedUseOutcome;
+use crate::durability::consume_transform::HouseActionContext;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::gameplay_transport::{
+    AdmissionRetryBudget,
     connection::{AdmittedSession, UseCommand, UseOutcome},
     item_view::ItemKey,
 };
@@ -10,6 +14,9 @@ use oteryn_protocol_oteryn::{
     server_modal::{Answer, CAPABILITY_SERVER_MODAL_V1, Dialog, Reply},
     world_object::{CAPABILITY_WORLD_INTERACTION_V1, UseDisposition, UseTarget},
 };
+
+// Crystal 201189f items_definitions.hpp:99, RETURNVALUE_YOUNEEDPREMIUMACCOUNT.
+const BED_PREMIUM_MESSAGE_ID: u8 = 54;
 
 #[derive(Clone, PartialEq, Eq)]
 pub(super) enum Selection {
@@ -61,12 +68,100 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn offer_bed_modal(
         &self,
         admitted: AdmittedSession,
+        command_id: u64,
         target: UseTarget,
         resolved: Option<ItemKey>,
-    ) -> Option<UseOutcome> {
-        if ![CAPABILITY_SERVER_MODAL_V1, CAPABILITY_WORLD_INTERACTION_V1]
-            .iter()
-            .all(|id| admitted.continuity.selected_capabilities.contains(*id))
+    ) -> Result<Option<UseOutcome>, crate::durability::DurabilityError> {
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let resolved = tokio::time::timeout_at(
+            budget.deadline,
+            Box::pin(self.resolve_bed_use(admitted, target, resolved, &budget)),
+        )
+        .await;
+        let Ok(Some((context, head, selection, action_admitted))) = resolved else {
+            return Ok(None);
+        };
+        if !action_admitted {
+            return Ok(Some(UseOutcome {
+                disposition: UseDisposition::Exhausted,
+                ..UseOutcome::rejected()
+            }));
+        }
+        // Crystal 201189f bed.cpp:102-123 applies Premium before USE.
+        if !self
+            .session_premium_gate(admitted.game_session_id)
+            .await
+            .premium_current()
+        {
+            return Ok(Some(UseOutcome {
+                disposition: UseDisposition::Sealed,
+                gate_message_id: Some(BED_PREMIUM_MESSAGE_ID),
+                ..UseOutcome::rejected()
+            }));
+        }
+        // Crystal 201189f bed.cpp:162-175,221-259: occupied USE ends at refusal or wake.
+        let decision =
+            Box::pin(self.production_bed_use(admitted, command_id, context, head, &budget)).await?;
+        let disposition = match decision {
+            BedUseOutcome::Occupied => UseDisposition::BedOccupied,
+            BedUseOutcome::Woken => UseDisposition::BedWoken,
+            BedUseOutcome::Denied => UseDisposition::Rejected,
+            BedUseOutcome::Stale => UseDisposition::StaleState,
+            BedUseOutcome::CheckoutUnavailable | BedUseOutcome::RolledBack => {
+                UseDisposition::Exhausted
+            }
+            BedUseOutcome::Vacant => self.offer_vacant_bed(admitted, selection).await,
+        };
+        Ok(Some(UseOutcome {
+            disposition,
+            ..UseOutcome::rejected()
+        }))
+    }
+
+    async fn offer_vacant_bed(
+        &self,
+        admitted: AdmittedSession,
+        selection: BedSelection,
+    ) -> UseDisposition {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_SERVER_MODAL_V1)
+        {
+            return UseDisposition::Rejected;
+        }
+        let runtime = self.runtime.lock().await;
+        let Some(root) = self.states.server_messages.connection_root(
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        ) else {
+            return UseDisposition::Rejected;
+        };
+        if actor_is_current(&runtime, admitted)
+            && self.states.server_modals.accepts_terminal_reply(root)
+            && self
+                .states
+                .server_modals
+                .offer_rule(root, bed_dialog(), Selection::Bed(selection))
+                .is_some()
+        {
+            UseDisposition::BedChooseSkill
+        } else {
+            UseDisposition::Rejected
+        }
+    }
+
+    async fn resolve_bed_use(
+        &self,
+        admitted: AdmittedSession,
+        target: UseTarget,
+        resolved: Option<ItemKey>,
+        budget: &AdmissionRetryBudget<'_>,
+    ) -> Option<(HouseActionContext, LogicalCell, BedSelection, bool)> {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_WORLD_INTERACTION_V1)
         {
             return None;
         }
@@ -75,29 +170,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        let root = self.states.server_messages.connection_root(
-            admitted.game_session_id,
-            admitted.continuity.connection_generation,
-        )?;
-        if !self.states.server_modals.accepts_terminal_reply(root) {
-            return None;
-        }
+        let actor = admitted.runtime_actor?;
         let map = self.bundle_map()?;
         let context = {
             let runtime = self.runtime.lock().await;
             if !actor_is_current(&runtime, admitted) {
                 return None;
             }
-            crate::durability::consume_transform::HouseActionContext::from_native_owner(
+            HouseActionContext::from_native_owner(
                 &runtime,
-                admitted.runtime_actor?,
+                actor,
                 admitted.game_session_id,
                 admitted.item_fence?,
             )
             .ok()?
         };
         let changes = self
-            .house_base_decoration_facts(&context, map.overlay.base().digest())
+            .house_base_decoration_facts_with_retry(
+                &context,
+                map.overlay.base().digest(),
+                Some(budget),
+            )
             .await?;
         let runtime = self.runtime.lock().await;
         let base = map.facts.base_only();
@@ -127,35 +220,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return None,
         };
-        if !actor_is_current(&runtime, admitted)
-            || !self.bed_modal_target(&runtime, admitted, target, &changes)
-            || self.states.server_messages.connection_root(
-                admitted.game_session_id,
-                admitted.continuity.connection_generation,
-            ) != Some(root)
-        {
+        if !actor_is_current(&runtime, admitted) {
             return None;
         }
         let ItemKey::MapBase { placement_key, .. } = target else {
             return None;
         };
-        let offered = self.states.server_modals.offer_rule(
-            root,
-            bed_dialog(),
-            Selection::Bed(BedSelection {
-                target,
-                revision: facts.object_revision(placement_key),
-                fence: admitted.item_fence?,
-            }),
-        );
-        Some(UseOutcome {
-            disposition: if offered.is_some() {
-                UseDisposition::BedChooseSkill
-            } else {
-                UseDisposition::Rejected
-            },
-            ..UseOutcome::rejected()
-        })
+        let head = self.bed_modal_head(&runtime, admitted, target, &changes)?;
+        let selection = BedSelection {
+            target,
+            revision: facts.object_revision(placement_key),
+            fence: admitted.item_fence?,
+        };
+        let action_admitted = self
+            .states
+            .world_gate
+            .lock()
+            .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()));
+        Some((context, head, selection, action_admitted))
     }
 }
 

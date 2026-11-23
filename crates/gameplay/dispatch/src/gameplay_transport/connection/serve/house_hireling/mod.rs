@@ -138,18 +138,20 @@ impl State {
                     && admitted
                         .continuity
                         .selected_capabilities
-                        .contains(oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1)
-                    && admitted
-                        .continuity
-                        .selected_capabilities
                         .contains(CAPABILITY_WORLD_INTERACTION_V1)
                 {
                     // Static beds have a base ordinal, not an inventory handle. Only
                     // the bed rule is admitted here; other House world USE stays closed.
                     return Some(Dispatch::Use(
                         authority
-                            .server_modal_offer_bed(*admitted, intent.target, None)
+                            .server_modal_offer_bed(
+                                *admitted,
+                                command.command_id,
+                                intent.target,
+                                None,
+                            )
                             .await
+                            .ok()?
                             .unwrap_or_else(UseOutcome::rejected),
                     ));
                 }

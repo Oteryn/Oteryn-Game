@@ -1,7 +1,7 @@
 //! W18: ordinary USE and map presentation of immutable House decorations.
 use super::connection::{UseCommand, UseOutcome};
 use super::world_map::{DecoratedFacts, HouseBaseMapEntry, MapViewSource, resolve_map_target};
-use super::{ComposedFreshAdmission, ExactActorRef};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, ExactActorRef};
 use crate::durability::consume_transform::HouseActionContext;
 use crate::durability::house_base_decorations::{
     HouseBaseDecorationSet, HouseBaseDecorationSource,
@@ -191,13 +191,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         context: &HouseActionContext,
         bundle: [u8; 32],
     ) -> Option<Vec<HouseBaseMapEntry>> {
+        self.house_base_decoration_facts_with_retry(context, bundle, None)
+            .await
+    }
+
+    pub(super) async fn house_base_decoration_facts_with_retry(
+        &self,
+        context: &HouseActionContext,
+        bundle: [u8; 32],
+        retry: Option<&AdmissionRetryBudget<'_>>,
+    ) -> Option<Vec<HouseBaseMapEntry>> {
         let native = self.active_generation?.native_gameplay()?;
         let index = native.item_index()?;
-        let mut stored = self
-            .root
-            .read_house_base_decorations(self.holder, context, bundle)
-            .await
-            .ok()?;
+        let read = async || {
+            let read = async || {
+                self.root
+                    .read_house_base_decorations(self.holder, context, bundle)
+                    .await
+            };
+            match retry {
+                Some(retry) => retry.retry_command_guard(read).await,
+                None => read().await,
+            }
+        };
+        let mut stored = read().await.ok()?;
         if !stored.materialized {
             let map = self.bundle_map()?;
             if map.overlay.base().digest() != bundle {
@@ -244,11 +261,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
-            stored = self
-                .root
-                .read_house_base_decorations(self.holder, context, bundle)
-                .await
-                .ok()?;
+            stored = read().await.ok()?;
         }
         let mut result = Vec::with_capacity(stored.entries.len());
         for state in stored.entries {

@@ -119,19 +119,29 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         && intent.use_with.is_none()
         && intent.use_with_map_item.is_none()
         && intent.use_with_position.is_none()
-        && matches!(intent.target, UseTarget::Item(_) | UseTarget::WorldObject(_))
-        && admitted.continuity.selected_capabilities.contains(
-            oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_V1,
+        && matches!(
+            intent.target,
+            UseTarget::Item(_) | UseTarget::WorldObject(_)
         )
-        && admitted.continuity.selected_capabilities.contains(
-            oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
-        )
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1)
     {
         let resolved = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
         };
-        if let Some(outcome) = authority.server_modal_offer_bed(*admitted, intent.target.clone(), resolved).await {
+        if let Some(outcome) = authority
+            .server_modal_offer_bed(
+                *admitted,
+                command.command_id,
+                intent.target.clone(),
+                resolved,
+            )
+            .await
+            .ok()?
+        {
             return Some(Dispatch::Use(outcome));
         }
     }
@@ -595,6 +605,32 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             Err(_) => Dispatch::Use(UseOutcome::rejected()),
         }
     })
+}
+
+#[cfg(test)]
+impl transport::ComposedFreshAdmission<'_, '_, '_> {
+    /// Give the actual USE route a map handle minted by the test's item view.
+    pub(in crate::gameplay_transport) async fn route_bed_handle_for_test(
+        &self,
+        admitted: &mut AdmittedSession,
+        command: ClientCommandView<'_>,
+        item_view: SessionItemView,
+    ) -> Option<UseOutcome> {
+        match route(
+            self,
+            admitted.runtime_actor?,
+            admitted,
+            command,
+            &mut Some(item_view),
+            &mut None,
+            &None,
+        )
+        .await?
+        {
+            Dispatch::Use(outcome) => Some(outcome),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]

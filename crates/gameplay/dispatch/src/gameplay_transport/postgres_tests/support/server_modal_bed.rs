@@ -26,7 +26,7 @@ use oteryn_protocol_oteryn::{
 
 use tokio::io::{AsyncReadExt, DuplexStream};
 
-async fn command(
+pub(super) async fn command(
     client: &mut DuplexStream,
     admitted: AdmittedSession,
     next: &mut u64,
@@ -207,6 +207,7 @@ pub(super) async fn sleep(
             .0,
             CommandStatus::Rejected
         );
+        super::m44_source_lifecycle_fixtures::wait_for_world_action(owner, &admitted).await?;
         let (status, bytes) = command(
             &mut client,
             admitted,
@@ -265,6 +266,7 @@ pub(super) async fn sleep(
                 .await?,
             0
         );
+        super::m44_source_lifecycle_fixtures::wait_for_world_action(owner, &admitted).await?;
         let (status, _) = command(
             &mut client,
             admitted,
