@@ -170,6 +170,9 @@ fn journey(web_already_burned: bool) -> TestResult {
 
             let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(deps.admitted.game_session_id).await?.0;
+            deps.runtime.lock().await.bind_attacker_lease(
+                deps.actor, deps.admitted.game_session_id, current.current_character_lease(),
+            ).map_err(debug)?;
             let fence = crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;
             sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
                 .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;

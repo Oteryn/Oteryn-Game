@@ -6,7 +6,10 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
 };
 use crate::content::channel_content_pin::ChannelContentPin;
-use crate::durability::{item_mint::TypedDefinitionRef, starter_grant::StarterTemplate};
+use crate::durability::{
+    fresh_admission::FreshAdmissionStore, item_mint::TypedDefinitionRef,
+    starter_grant::StarterTemplate,
+};
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
@@ -217,6 +220,14 @@ async fn scenario(admin: String) -> TestResult {
     deps.admitted.runtime_actor = Some(deps.actor);
     let mut admitted = deps.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
+    let current = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session(admitted.game_session_id)
+        .await?;
+    deps.runtime
+        .lock()
+        .await
+        .bind_attacker_lease(deps.actor, admitted.game_session_id, current.current_character_lease())
+        .map_err(debug)?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")

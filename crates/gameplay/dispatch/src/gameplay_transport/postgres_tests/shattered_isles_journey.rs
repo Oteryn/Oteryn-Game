@@ -182,6 +182,9 @@ async fn scenario(admin: String) -> TestResult {
         )));
     let mut admitted = deps.admitted;
     let session = admitted.game_session_id;
+    let current = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session(session)
+        .await?;
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
         owner.offered_capabilities(),
         owner.appearance_available(),
@@ -191,6 +194,9 @@ async fn scenario(admin: String) -> TestResult {
             .ok_or("journey capabilities")?;
     {
         let mut runtime = deps.runtime.lock().await;
+        runtime
+            .bind_attacker_lease(deps.actor, session, current.current_character_lease())
+            .map_err(debug)?;
         runtime
             .initialize_first_entry_position(deps.actor)
             .map_err(debug)?;
@@ -1031,6 +1037,9 @@ impl Journey<'_, '_, '_, '_> {
             let mut runtime = self.owner.runtime.lock().await;
             let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
             let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .bind_attacker_lease(actor, session, current.current_character_lease())
+                .map_err(debug)?;
             self.owner
                 .initialize_admitted_position(&mut runtime, actor, session, &position)
                 .await
