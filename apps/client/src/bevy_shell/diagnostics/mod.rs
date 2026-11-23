@@ -13,9 +13,9 @@ use bevy::{
 };
 use std::path::PathBuf;
 
-pub(super) use overlay::options_section;
 #[allow(unused_imports)] // The dock registers this content when it lands.
 pub(super) use overlay::{DiagnosticsText, OverlayBody, content};
+pub(super) use overlay::{folder_command, launch_folder, options_section};
 
 /// Set on the start after a crash, for the UI to say "The client crashed last time; log saved
 /// at ...". It is never cleared by the host; the UI decides when it has shown it.

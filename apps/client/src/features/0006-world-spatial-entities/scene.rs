@@ -3,6 +3,18 @@ use super::*;
 use oteryn_session::{EntityDetail, VisibleAppearance};
 
 impl Scene {
+    #[cfg(bevy_shell)]
+    pub(crate) fn container_flag(&self, appearance: u16) -> Option<bool> {
+        self.cache.container_flag(appearance)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn smart_item_action(
+        &self,
+        id: u16,
+    ) -> Option<oteryn_client_ui::world_interaction::menu::Action> {
+        self.cache.smart_item_action(id)
+    }
     pub(crate) fn item_multi_use(&mut self, id: u16) -> bool {
         self.cache.begin(
             self.world.atlas(),
@@ -38,6 +50,30 @@ impl Scene {
 
     pub(crate) fn set_name_visibility(&mut self, visibility: [bool; 3]) {
         self.name_visibility = visibility;
+    }
+    pub(crate) fn actor_covered(&self, tile: TileCoord) -> bool {
+        let floor = self.world.center().2;
+        (self.world.first_visible_floor..floor).any(|upper| {
+            let shift = i32::from(floor) - i32::from(upper);
+            tile.x
+                .checked_add(shift)
+                .zip(tile.y.checked_add(shift))
+                .is_some_and(|(x, y)| self.world.covering_tiles.contains(&(upper, x, y)))
+        })
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn battle_portrait(&self, target: oteryn_session::EntityRef) -> &[Draw] {
+        let draws = if Some(target.identity) == self.own_identity {
+            self.own_draws.as_deref()
+        } else {
+            self.actor_draws
+                .iter()
+                .find(|d| d.entity == target)
+                .map(|d| d.draws.as_slice())
+        };
+        draws
+            .filter(|d| d.iter().all(|cell| cell.cell != MARKER_CELL))
+            .unwrap_or_default()
     }
     pub fn name_count(&self) -> usize {
         self.names.len()
@@ -232,6 +268,8 @@ impl Scene {
                 self.own_draws = Some(draws);
             } else {
                 self.actor_draws.push(ActorDraw {
+                    #[cfg(bevy_shell)]
+                    entity: entity.entity,
                     floor: draw_floor,
                     tile,
                     draws,
@@ -277,8 +315,9 @@ impl Scene {
                 if !label.is_empty() {
                     self.names.push((
                         tile,
-                        self.cache.name(
+                        self.cache.actor_name(
                             &label,
+                            self.actor_covered(tile),
                             match entity.detail {
                                 EntityDetail::Actor { health_percent, .. }
                                 | EntityDetail::ActorWithIcons { health_percent, .. } => {

@@ -251,6 +251,7 @@ fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResul
 enum Mode {
     Plain,
     ManagedContainerMove,
+    ManagedArmor,
     StashContainer,
     List,
     Mail,
@@ -319,7 +320,8 @@ fn scenario_with_premium(
         Mode::Mail | Mode::MailCapacity | Mode::MailPostCapacity | Mode::List
     );
     let retrieve = mode == Mode::Retrieve;
-    let batch = matches!(mode, Mode::StashContainer | Mode::ManagedContainerMove);
+    let managed = matches!(mode, Mode::ManagedContainerMove | Mode::ManagedArmor);
+    let batch = mode == Mode::StashContainer || managed;
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
             .await
@@ -622,8 +624,16 @@ fn scenario_with_premium(
         } else {
             None
         };
+        let armor = if mode == Mode::ManagedArmor {
+            let reference = index.definition_ref("Item", "oteryn:item.tibia.i811", "definition-r1")
+                .ok_or("armor reference")?;
+            let definition = crate::gameplay_transport::item_look::typed_definition(index, reference)
+                .ok_or("armor definition")?;
+            let facts = generation_item_facts(native, &definition).map_err(debug)?;
+            Some((definition, facts))
+        } else { None };
         let mut first_page_item = None;
-        let seeded: u32 = if mode == Mode::ManagedContainerMove {
+        let seeded: u32 = if managed {
             4
         } else if mode == Mode::List {
             5
@@ -641,12 +651,13 @@ fn scenario_with_premium(
         for ordinal in 0..=seeded {
             let special_item = ordinal.checked_sub(1)
                 .and_then(|n| mail_items.get(usize::try_from(n).ok()?))
-                .or_else(|| if ordinal == 3 {sapphire.as_ref()} else {None});
+                .or_else(|| if ordinal == 3 {sapphire.as_ref()} else {None})
+                .or_else(|| if ordinal >= 3 {armor.as_ref()} else {None});
             let bag = ordinal == 0
                 || (ground_container && ordinal <= 2)
                 || (contents && ordinal == 2)
                 || (batch && ordinal == 1)
-                || (mode == Mode::ManagedContainerMove && ordinal == 2);
+                || (managed && ordinal == 2);
             let mut seed = harness
                 .root
                 .freeze_item_mint(
@@ -674,9 +685,9 @@ fn scenario_with_premium(
                         } else {
                             coin_definition.clone()
                         },
-                        quantity: if bag || (mail && special_item.is_some()) {
+                        quantity: if bag || (mail && special_item.is_some()) || mode == Mode::ManagedArmor {
                             1
-                        } else if mode == Mode::ManagedContainerMove {
+                        } else if managed {
                             40
                         } else {
                             100
@@ -784,6 +795,12 @@ fn scenario_with_premium(
             } else if ordinal > 0 {
                 stacks.push(backpack);
             }
+            if mode == Mode::ManagedContainerMove && ordinal == 3 {
+                // Keep the first stack separate so the second pickup cannot merge
+                // it before the managed move exercises both depths.
+                let source = stacks.first().ok_or("source bag")?;
+                container_batch_cases::nest_fixture(&harness.pool, *source, backpack).await?;
+            }
             if ordinal == 0 {
                 main_bag = Some(backpack);
             }
@@ -791,7 +808,13 @@ fn scenario_with_premium(
                 carried = Some(backpack);
             }
         }
-        if batch {
+        if mode == Mode::ManagedContainerMove {
+            // The batch assertions inspect the nested stack at the end.
+            let [_, _, nested, direct] = stacks.as_mut_slice() else {
+                return Err("missing managed move fixture items".into());
+            };
+            std::mem::swap(nested, direct);
+        } else if batch {
             let [source, .., nested] = stacks.as_slice() else {
                 return Err("missing batch fixture items".into());
             };

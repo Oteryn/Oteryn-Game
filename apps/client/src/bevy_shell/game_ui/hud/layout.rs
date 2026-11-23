@@ -112,7 +112,7 @@ pub(super) fn setup(
     let conditions = status_bar.map_or(regions.vitals, |bar| {
         top_bar::setup(&mut commands, &skins, bar.0)
     });
-    status_icons::setup(&mut commands, conditions);
+    status_icons::setup(&mut commands, conditions, regions.world);
     combat_column(&mut commands, &skins, regions.equipment);
     if overlay.0 {
         let status = commands
@@ -218,7 +218,23 @@ pub(super) fn combat_column(commands: &mut Commands, skins: &Skins, equipment: E
     };
     let modes = grid(commands, 3);
     let pvp = grid(commands, 2);
-    commands.entity(column).add_children(&[modes, pvp]);
+    let toggle = button(
+        commands,
+        skins,
+        0,
+        Command::ToggleExpert,
+        "PvP",
+        COMBAT_COLUMN,
+    );
+    commands.entity(toggle).insert((
+        CombatControl,
+        BorderColor::all(Color::NONE),
+        Name::new("Show expert PvP controls"),
+    ));
+    commands
+        .entity(pvp)
+        .insert((ExpertControls, Name::new("Expert PvP controls")));
+    commands.entity(column).add_children(&[modes, toggle, pvp]);
     for (parent, command, key) in [
         (
             modes,

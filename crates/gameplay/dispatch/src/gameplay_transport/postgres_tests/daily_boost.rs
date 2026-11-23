@@ -37,6 +37,7 @@ fn selected_world_login_probe_returns_boost_and_online_before_admission() -> Tes
 async fn pre_admission_case(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     world: crate::foundation::WorldId,
+    pool: &sqlx::PgPool,
 ) -> TestResult {
     use oteryn_protocol_oteryn::daily_boost::login;
     let request = login::encode_request(*world.as_bytes());
@@ -69,6 +70,22 @@ async fn pre_admission_case(
     );
     assert!(!first.creature.name.is_empty() && !first.boss.name.is_empty());
     assert!(first.effective_from < first.effective_until);
+
+    // Keep the old committed epoch as the active pointer, with no retirement in
+    // progress, after its Berlin boundary has elapsed.
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_world_reset_epochs SET activated_at=statement_timestamp()-interval '2 days'
+                 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+        .bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let (mut stream, mut peer) = tokio::io::duplex(8192);
+    assert!(crate::gameplay_transport::world_login_info::route(&mut stream, &request, owner).await);
+    drop(stream);
+    let reply = crate::gameplay_transport::tcp_tls::read_frame(&mut peer).await.map_err(debug)?;
+    let info = login::decode_reply(&reply).and_then(|reply| reply.info).ok_or("available world")?;
+    assert_eq!(info.players_online, 1);
+    assert!(info.boost.is_none(), "an expired boost must be omitted before retirement starts");
 
     let (mut stream, mut peer) = tokio::io::duplex(8192);
     let unknown = id(97);
@@ -164,7 +181,7 @@ fn scenario(preadmission: bool) -> TestResult {
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
         if preadmission {
-            let result = pre_admission_case(&owner, deps.admitted.world_id).await;
+            let result = pre_admission_case(&owner, deps.admitted.world_id, &h.pool).await;
             drop(owner);
             drop(authority);
             drop(seal);

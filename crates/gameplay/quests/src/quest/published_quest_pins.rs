@@ -125,17 +125,14 @@ mod tests {
     use crate::quest::{loader, npc_rules};
 
     #[test]
-    fn package_keeps_main_grave_danger_pin() -> Result<(), String> {
+    fn package_accepts_main_grave_danger_pin_as_predecessor() -> Result<(), String> {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
         let grave = "oteryn:quest.grave_danger_quest";
-        assert_eq!(
-            catalogue.definition_hash(grave),
-            Some(hash(
-                b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"
-            ))
-        );
+        let main = hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab");
+        assert_ne!(catalogue.definition_hash(grave), Some(main));
+        assert!(npc_rules::legacy_defaults(catalogue, grave, &main).is_some());
         assert!(
             npc_rules::legacy_defaults(
                 catalogue,
@@ -155,7 +152,14 @@ mod tests {
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
             assert_eq!(published_hash(quest, refreshed), published, "{quest}");
-            assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
+            if quest == "oteryn:quest.grave_danger_quest" {
+                // Zelos credit changes the live definition. Both exact citation
+                // variants still resolve to the published predecessor.
+                assert_ne!(catalogue.definition_hash(quest), Some(published));
+                assert!(npc_rules::legacy_defaults(catalogue, quest, &published).is_some());
+            } else {
+                assert_eq!(catalogue.definition_hash(quest), Some(published), "{quest}");
+            }
             let mut unrelated_revision = refreshed;
             unrelated_revision[0] ^= 1;
             assert_eq!(

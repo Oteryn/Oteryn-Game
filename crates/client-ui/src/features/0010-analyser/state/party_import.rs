@@ -2,6 +2,7 @@
 use oteryn_client_runtime::analyser::party::{self as wire, Member};
 use std::{collections::BTreeSet, fmt::Write};
 pub const MAX_BYTES: usize = 8192;
+pub const MAX_HUNT_LOG_BYTES: usize = 32 * 1024;
 const HEADER: &str = "OTERYN-PARTY-SUMMARY\t1";
 // Version 2 preserves advisory edits alongside the original measured values; version 1 remains readable.
 const ADJUSTED_HEADER: &str = "OTERYN-PARTY-SUMMARY\t2";
@@ -9,6 +10,7 @@ const ADJUSTED_COLUMNS: &str = "Name\tLoot\tSupplies\tExtraCost\tExcluded";
 const COLUMNS: &str = "Name\tLoot\tSupplies";
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Summary {
+    pub(super) leader: Option<String>,
     pub(super) rows: Vec<Member>,
     pub(super) adjustments: super::party::Adjustments,
 }
@@ -82,7 +84,108 @@ impl Summary {
             return Err(tr!("Party summary has no members"));
         }
         wire::encode_reply(&rows).map_err(|_| tr!("Invalid member name or values"))?;
-        Ok(Self { rows, adjustments })
+        Ok(Self {
+            rows,
+            adjustments,
+            leader: None,
+        })
+    }
+    /// Parse the multiline party analyser clipboard format.
+    pub fn from_hunt_log(text: &str) -> Result<Self, &'static str> {
+        const INVALID: &str = "Invalid party hunt log";
+        if text.len() > MAX_HUNT_LOG_BYTES {
+            return Err("Party hunt log exceeds 32 KiB");
+        }
+        let mut lines = text
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .peekable();
+        if !lines
+            .next()
+            .is_some_and(|line| line.starts_with("Session data:") || line.starts_with("Session:"))
+        {
+            return Err(INVALID);
+        }
+        let mut reported = [None; 3];
+        while let Some(&line) = lines.peek() {
+            if let Some((index, value)) = ["Loot:", "Supplies:", "Balance:"]
+                .iter()
+                .enumerate()
+                .find_map(|(i, key)| line.strip_prefix(key).map(|value| (i, value)))
+            {
+                let value = hunt_number(value)
+                    .and_then(|v| v.parse::<i128>().ok())
+                    .ok_or(INVALID)?;
+                if reported[index].replace(value).is_some() {
+                    return Err(INVALID);
+                }
+            } else if !line.starts_with("Session:") && !line.starts_with("Loot Type:") {
+                break;
+            }
+            lines.next();
+        }
+        let mut rows = Vec::new();
+        let mut names = BTreeSet::new();
+        let mut leader = None;
+        while let Some(name) = lines.next() {
+            if let Some(name) = name.strip_suffix(" (Leader)")
+                && leader.replace(name.to_owned()).is_some()
+            {
+                return Err(INVALID);
+            }
+            let name = name.strip_suffix(" (Leader)").unwrap_or(name);
+            if rows.len() == wire::MAX_MEMBERS
+                || name.is_empty()
+                || name.contains(['\t', ':'])
+                || !names.insert(name.to_lowercase())
+            {
+                return Err(INVALID);
+            }
+            let mut number = |key| {
+                lines
+                    .next()
+                    .and_then(|line| line.strip_prefix(key))
+                    .and_then(hunt_number)
+                    .ok_or(INVALID)
+            };
+            let loot: u64 = number("Loot:")?.parse().map_err(|_| INVALID)?;
+            let cost: u64 = number("Supplies:")?.parse().map_err(|_| INVALID)?;
+            let balance: i128 = number("Balance:")?.parse().map_err(|_| INVALID)?;
+            if balance != i128::from(loot) - i128::from(cost) {
+                return Err(INVALID);
+            }
+            let damage = number("Damage:")?.parse().map_err(|_| INVALID)?;
+            let healing = number("Healing:")?.parse().map_err(|_| INVALID)?;
+            rows.push(Member {
+                handle: rows.len() as u64 + 1,
+                name: name.into(),
+                available: true,
+                loot_value: loot,
+                supply_cost: cost,
+                damage,
+                healing,
+                ..Default::default()
+            });
+        }
+        if rows.is_empty() {
+            return Err(INVALID);
+        }
+        let loot: i128 = rows.iter().map(|row| i128::from(row.loot_value)).sum();
+        let cost: i128 = rows.iter().map(|row| i128::from(row.supply_cost)).sum();
+        if reported
+            .into_iter()
+            .zip([loot, cost, loot - cost])
+            .any(|(reported, total)| reported.is_some_and(|value| value != total))
+        {
+            return Err("Party hunt totals do not match the member rows");
+        }
+        wire::encode_reply(&rows).map_err(|_| INVALID)?;
+        Ok(Self {
+            rows,
+            leader,
+            adjustments: Default::default(),
+        })
     }
     pub fn export(&self) -> Result<String, &'static str> {
         export_adjusted(&self.rows, &self.adjustments)
@@ -183,4 +286,19 @@ pub fn export_adjusted(
         return Err(tr!("Party summary exceeds the 8 KiB limit"));
     }
     Ok(text)
+}
+
+fn hunt_number(value: &str) -> Option<String> {
+    let value = value.trim();
+    let digits = value.strip_prefix('-').unwrap_or(value);
+    let mut groups = digits.split(',');
+    let first = groups.next()?;
+    if first.is_empty()
+        || !first.bytes().all(|b| b.is_ascii_digit())
+        || (digits.contains(',') && first.len() > 3)
+        || !groups.all(|group| group.len() == 3 && group.bytes().all(|b| b.is_ascii_digit()))
+    {
+        return None;
+    }
+    Some(value.replace(',', ""))
 }

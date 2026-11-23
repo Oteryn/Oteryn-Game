@@ -341,6 +341,7 @@ impl AnalyserStreams {
 /// and a replay that re-captures a settled corpse share these advisory receipts.
 #[derive(Debug, Default)]
 pub(super) struct DeathReceipts {
+    pub(super) boss_defeated: bool,
     pub(super) kill: bool,
     pub(super) loot: HashSet<[u8; 16]>,
     pub(super) xp: HashSet<crate::domain::CharacterId>,

@@ -85,7 +85,9 @@ async fn plan<C: ItemLoopContent>(
         if facts.container_capacity.is_some() {
             continue;
         }
-        let category = content.loot_category(&definition);
+        let category = quick_loot::preferred_category(content, &definition, |category| {
+            settings.category_targets.contains_key(&category)
+        });
         let recipient = settings.category_targets.get(&category).copied().unwrap_or(settings.unassigned_target);
         let target_item = match recipient {
             Recipient::MainContainer => continue,

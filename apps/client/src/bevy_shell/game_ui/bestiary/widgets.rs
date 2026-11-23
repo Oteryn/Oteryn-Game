@@ -48,6 +48,14 @@ pub(super) fn build(
         .id();
     commands.entity(root).add_child(window);
     source::dialog_caption(commands, window, "Bestiary", skin.font.clone());
+    use crate::bevy_shell::game_ui::cyclopedia_navigation::{Subject, bar};
+    bar(
+        commands,
+        skin,
+        window,
+        control.generation,
+        Subject::Bestiary,
+    );
     text(
         commands,
         skin,
@@ -76,9 +84,40 @@ pub(super) fn build(
         })
         .id();
     commands.entity(window).add_child(navigation);
+    let editor = commands
+        .spawn((
+            CreatureSearch,
+            bevy::ui_widgets::TextInput,
+            bevy::input_focus::tab_navigation::TabIndex(0),
+            bevy::text::EditableText::new(panel.catalogue.search.as_ref().map_or("", |s| &s.name)),
+            source::font(skin.font.clone(), false),
+            Node {
+                width: px(180.),
+                min_height: px(24.),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(navigation).add_child(editor);
+    for (kind, label) in [
+        (Kind::Search(false), "Search creatures"),
+        (Kind::Search(true), "Search charm targets"),
+        (Kind::EndSearch, "End search"),
+    ] {
+        button(
+            commands,
+            skin,
+            navigation,
+            Control { kind, ..control },
+            label,
+            panel.pending || !panel.selected,
+        );
+    }
     let categories = !panel.catalogue.page.categories.is_empty();
     for (action, label, available) in [
         (0, "First page / Refresh", true),
+        (8, "Previous page", !panel.catalogue.previous.is_empty()),
+        (9, "Back to results", panel.catalogue.detail_card.is_some()),
         (1, "Next page", panel.catalogue.page.next.is_some()),
         (4, "Previous category", categories),
         (5, "Next category", categories),
@@ -94,7 +133,10 @@ pub(super) fn build(
                 ..control
             },
             label,
-            panel.pending || !panel.selected || !available,
+            panel.pending
+                || !panel.selected
+                || !available
+                || (panel.catalogue.search.is_some() && matches!(action, 0 | 1 | 4 | 5 | 8)),
         );
     }
     button(
@@ -123,10 +165,10 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(window).add_child(body);
-    if panel.catalogue.page.cards.is_empty() && !panel.pending && panel.selected {
+    if panel.catalogue.visible_cards().is_empty() && !panel.pending && panel.selected {
         text(commands, skin, body, "No creatures on this page");
     }
-    for card in &panel.catalogue.page.cards {
+    for card in panel.catalogue.visible_cards() {
         let progress = panel.reply.as_ref().and_then(|reply| {
             reply
                 .bestiary
@@ -322,6 +364,27 @@ fn charms(
     let Some((intent, fee)) = confirm else {
         return;
     };
+    let name = chosen
+        .and_then(|charm| u16::try_from(charm.charm.get()).ok())
+        .and_then(|id| panel.charm_browser.cards.get(&id))
+        .map(|card| card.name.as_str())
+        .unwrap_or(&panel.fields[0]);
+    let prompt = match intent {
+        Intent::Unlock => chosen.map(|charm| {
+            let currency = match charm.kind {
+                oteryn_client_runtime::charm_progression::charm::CharmKind::Major => "charm points",
+                oteryn_client_runtime::charm_progression::charm::CharmKind::Minor => {
+                    "minor charm echoes"
+                }
+            };
+            format!("Unlock {name} for {} {currency}?", charm.next_stage_cost)
+        }),
+        Intent::Assign => panel
+            .catalogue
+            .selected_card(&panel.fields[1])
+            .map(|card| format!("Assign {name} to {}?", card.name)),
+        _ => None,
+    };
     let action = if intent == Intent::ResetAll {
         tr!("Reset all charms").to_string()
     } else {
@@ -343,15 +406,17 @@ fn charms(
         commands,
         skin,
         parent,
-        fee.map_or_else(
-            || {
-                lfmt!(
-                    "{action}? The gold fee depends on your level, which is not reported yet.",
-                    action = action
-                )
-            },
-            |fee| lfmt!("{action} for {fee} gold?", action = action, fee = fee),
-        ),
+        prompt.clone().unwrap_or_else(|| {
+            fee.map_or_else(
+                || {
+                    lfmt!(
+                        "{action}? The gold fee depends on your level, which is not reported yet.",
+                        action = action
+                    )
+                },
+                |fee| lfmt!("{action} for {fee} gold?", action = action, fee = fee),
+            )
+        }),
     );
     let answer = commands
         .spawn(Node {
@@ -373,7 +438,7 @@ fn charms(
             || tr!("Confirm").into(),
             |fee| lfmt!("Confirm ({fee} gold)", fee = fee),
         ),
-        busy || fee.is_none(),
+        busy || (prompt.is_none() && fee.is_none()),
     );
     button(
         commands,

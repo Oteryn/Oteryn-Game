@@ -534,6 +534,9 @@ async fn scenario(
         )
         .await?;
         super::party_skull_fixtures::aggression(h, &targets, &characters, true).await?;
+        super::party_skull_fixtures::check_situation_replacement(
+            &owner, &mut admitted[1], h, &characters,
+        ).await?;
         let result = roundtrip(&owner, &mut admitted[0], &[Step::Invite(targets[1])]).await?;
         assert_eq!(result[0].disposition, PartyDisposition::Rejected);
         super::party_skull_fixtures::aggression(h, &targets, &characters, false).await?;

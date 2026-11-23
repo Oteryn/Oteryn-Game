@@ -8,6 +8,13 @@ impl PlayLink {
     pub(crate) fn analyser_text_for(&self, tool: oteryn_client_ui::analyser::Tool) -> String {
         panel_text(&lock(&self.mailbox), tool)
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn loot_prices(&self) -> std::sync::Arc<std::collections::BTreeMap<u32, u64>> {
+        crate::play::mailbox::lock(&self.mailbox)
+            .analyser
+            .loot_prices
+            .clone()
+    }
     pub fn analyser_panel(&self) -> oteryn_client_ui::analyser::Panel {
         lock(&self.mailbox).analyser.clone()
     }
@@ -25,6 +32,16 @@ fn panel_text(
     } else {
         let mut panel = mailbox.analyser.clone();
         panel.tool = tool;
+        if tool == oteryn_client_ui::analyser::Tool::LootTracker {
+            panel.drop_race_names = mailbox
+                .properties
+                .charm_progression
+                .selector
+                .races
+                .iter()
+                .map(|card| (u32::from(card.race), card.name.clone()))
+                .collect();
+        }
         oteryn_client_ui::analyser::panel_text(&panel)
     }
 }

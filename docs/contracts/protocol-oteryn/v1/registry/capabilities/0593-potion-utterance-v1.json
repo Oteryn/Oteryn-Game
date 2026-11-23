@@ -7,5 +7,5 @@
   "command_types": [],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Bundle World with ITEM_USE_V1. Negotiates optional field 3 on committed potion results of command 2."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World with ITEM_USE_V1. Negotiates optional field 3 on committed potion results of command 2."
 }

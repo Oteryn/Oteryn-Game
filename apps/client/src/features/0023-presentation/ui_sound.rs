@@ -8,6 +8,13 @@ pub enum UiSound {
     Party,
     Vip,
     Chat,
+    PartyMessage,
+    Guild,
+    Global,
+    Npc,
+    Private,
+    PrivateWithoutTab,
+    System,
 }
 impl UiSound {
     pub fn frequency(self) -> f32 {
@@ -15,18 +22,48 @@ impl UiSound {
             Self::Interaction => 440.0,
             Self::Party => 660.0,
             Self::Vip => 880.0,
-            Self::Chat => 550.0,
+            Self::PartyMessage => 660.0,
+            Self::Guild
+            | Self::Global
+            | Self::Npc
+            | Self::Private
+            | Self::PrivateWithoutTab
+            | Self::System
+            | Self::Chat => 550.0,
         }
     }
 }
 pub(in crate::play) fn observe(mailbox: &mut mailbox::Mailbox, events: &[SessionEvent]) {
     for event in events {
         let cue = match event {
-            SessionEvent::ChatLine(delta) => match delta.value {
-                ChatLine::Party { .. } => Some(UiSound::Party),
-                ChatLine::Dropped => None,
+            SessionEvent::ChatLine(delta)
+                if !mailbox.chat.console.communication.visible(&delta.value) =>
+            {
+                None
+            }
+            SessionEvent::ChatLine(delta) => match &delta.value {
+                ChatLine::Party { .. } => Some(UiSound::PartyMessage),
+                ChatLine::Guild(_) => Some(UiSound::Guild),
+                ChatLine::Room {
+                    room: oteryn_session::ChatRoom::World,
+                    ..
+                } => Some(UiSound::Global),
+                ChatLine::Private { speaker_name, .. } => {
+                    let open = mailbox.chat.console.channels.iter().any(|tab| matches!(tab,
+                        oteryn_client_ui::chat::ChannelTab::Conversation(name) if name.eq_ignore_ascii_case(speaker_name)));
+                    Some(if open {
+                        UiSound::Private
+                    } else {
+                        UiSound::PrivateWithoutTab
+                    })
+                }
+                ChatLine::System { .. } | ChatLine::Dropped => None,
                 _ => Some(UiSound::Chat),
             },
+            SessionEvent::ServerMessage(_) => Some(UiSound::System),
+            SessionEvent::NpcConversation(delta) if !delta.value.lines.is_empty() => {
+                Some(UiSound::Npc)
+            }
             SessionEvent::OpenContainer(_) | SessionEvent::NpcConversation(_) => {
                 Some(UiSound::Interaction)
             }
@@ -59,11 +96,29 @@ impl PlayView {
         self.ui_sounds.extend(incoming.into_iter().take(available));
     }
     pub fn take_ui_sounds(&mut self) -> Vec<UiSound> {
-        let filters = self.preferences().audio.ui_sounds;
-        let enabled = !self.preferences().audio.muted;
+        let audio = self.preferences().audio;
         std::mem::take(&mut self.ui_sounds)
             .into_iter()
-            .filter(|cue| enabled && filters[*cue as usize])
+            .filter_map(|cue| {
+                let (tone, enabled) = match cue {
+                    UiSound::PartyMessage => {
+                        (UiSound::Party, audio.party_messages && audio.ui_sounds[3])
+                    }
+                    UiSound::Guild => (UiSound::Chat, audio.guild && audio.ui_sounds[3]),
+                    UiSound::Global => (UiSound::Chat, audio.global && audio.ui_sounds[3]),
+                    UiSound::Npc => (UiSound::Chat, audio.npc && audio.ui_sounds[3]),
+                    UiSound::Private => (UiSound::Chat, audio.private && audio.ui_sounds[3]),
+                    UiSound::PrivateWithoutTab => (
+                        UiSound::Chat,
+                        audio.private_without_tab && audio.ui_sounds[3],
+                    ),
+                    UiSound::System => (UiSound::Chat, audio.system && audio.ui_sounds[3]),
+                    UiSound::Interaction | UiSound::Party | UiSound::Vip | UiSound::Chat => {
+                        (cue, audio.ui_sounds[cue as usize])
+                    }
+                };
+                (enabled && !audio.muted).then_some(tone)
+            })
             .collect()
     }
 }

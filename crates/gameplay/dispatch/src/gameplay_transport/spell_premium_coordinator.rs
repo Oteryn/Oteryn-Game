@@ -8,7 +8,7 @@
 //! account-level reads, for Premium-gated decisions that are not spell casts. Every read needs a
 //! registered trusted clock owner; without one every account reads Free.
 use super::{
-    ComposedFreshAdmission,
+    AdmissionRetryBudget, ComposedFreshAdmission,
     spell_access_facts::{AccessFactsError, CurrentSpellAccessOwner, owner_registration},
 };
 use crate::domain::premium::{PreDelivery, PremiumGate, PremiumStatus};
@@ -575,6 +575,72 @@ impl SpellPremiumCoordinator {
         })
     }
 }
+async fn premium_binding_checkout<T, F: Future<Output = Result<T, DurabilityError>>>(
+    budget: Option<&AdmissionRetryBudget<'_>>,
+    mut read: impl FnMut() -> F,
+) -> Result<T, DurabilityError> {
+    loop {
+        if let Some(budget) = budget {
+            budget.check_deadline()?;
+        }
+        let result = read().await;
+        if let Some(budget) = budget
+            && matches!(result, Err(DurabilityError::RootUnavailable))
+            && budget
+                .retries_unavailable(super::AdmissionRefusal::Unavailable)
+                .await
+        {
+            continue;
+        }
+        return result;
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn review_admission_premium_binding_retries_both_reads() -> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let mut id = [0x40; 16];
+            id[6] = 0x70;
+            id[8] = 0x80;
+            let budget = super::AdmissionRetryBudget::new(&GameSessionId::decode(&id)?);
+            for expected in [true, false] {
+                let reads = std::cell::Cell::new(0);
+                let actual = premium_binding_checkout(Some(&budget), || async {
+                    reads.set(reads.get() + 1);
+                    if reads.get() == 1 {
+                        Err(DurabilityError::RootUnavailable)
+                    } else {
+                        Ok(expected)
+                    }
+                })
+                .await;
+                assert!(matches!(actual, Ok(value) if value == expected));
+            }
+            tokio::time::sleep_until(budget.deadline).await;
+            let expired_reads = std::cell::Cell::new(0);
+            let expired = premium_binding_checkout(Some(&budget), || async {
+                expired_reads.set(expired_reads.get() + 1);
+                Ok(())
+            })
+            .await;
+            assert_eq!(
+                expired_reads.get(),
+                0,
+                "expired Premium binding operation started"
+            );
+            assert!(matches!(
+                expired,
+                Err(DurabilityError::RootPassDeadlineExceeded)
+            ));
+            Ok(())
+        })
+}
+
 /// Private binding produced only by actual session/Character/recovery/node/owner reads below.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct PremiumOwnerBinding {
@@ -597,24 +663,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
+        budget: Option<&AdmissionRetryBudget<'_>>,
     ) -> Option<PremiumOwnerBinding> {
+        use crate::durability::character_authority::CharacterAuthorityError;
+        use crate::durability::character_equipment::EquipmentError;
+        use crate::durability::character_progression::CharacterProgressionError;
         let active = self.active_generation?;
-        let current = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(session)
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let (current, _) = premium_binding_checkout(budget, || store.current_session_at(session))
             .await
-            .ok()?
-            .0;
+            .ok()?;
         if current.session_state() != GameSessionState::Active {
             return None;
         }
         let character =
             crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
                 .ok()?;
-        let record = self
-            .root
-            .read_current_character(self.character, character)
-            .await
-            .ok()?;
+        let record = premium_binding_checkout(budget, || async {
+            self.root
+                .read_current_character(self.character, character)
+                .await
+                .map_err(|error| match error {
+                    CharacterAuthorityError::Unavailable(error) => error,
+                    _ => DurabilityError::Unavailable,
+                })
+        })
+        .await
+        .ok()?;
         if record.world_id.as_bytes() != self.world_id.as_bytes() {
             return None;
         }
@@ -628,19 +703,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             expected_character_revision: record.revision,
         };
         let digest = active.identity().server_artifact_digest();
-        let raw = self
-            .root
-            .read_lifecycle_durable_facts(self.character, self.holder, &gameplay, digest)
-            .await
-            .ok()?;
+        let raw = premium_binding_checkout(budget, || async {
+            self.root
+                .read_lifecycle_durable_facts(self.character, self.holder, &gameplay, digest)
+                .await
+                .map_err(|error| match error {
+                    EquipmentError::Durability(error) => error,
+                    _ => DurabilityError::Unavailable,
+                })
+        })
+        .await
+        .ok()?;
         if raw.account != *record.account_id.as_bytes() {
             return None;
         }
-        let promoted = self
-            .root
-            .read_promotion_for_session(self.character, self.holder, raw.fence)
-            .await
-            .ok()?;
+        let promoted = premium_binding_checkout(budget, || async {
+            self.root
+                .read_promotion_for_session(self.character, self.holder, raw.fence)
+                .await
+                .map_err(|error| match error {
+                    CharacterProgressionError::Unavailable(error) => error,
+                    _ => DurabilityError::Unavailable,
+                })
+        })
+        .await
+        .ok()?;
         let runtime = self.runtime.lock().await;
         let scope = runtime.binding().runtime_scope();
         if raw.fence.runtime_scope != scope
@@ -682,10 +769,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         access: &impl CurrentSpellAccessOwner,
+        budget: Option<&AdmissionRetryBudget<'_>>,
     ) -> Result<bool, AccessFactsError> {
-        let current = self.current_premium_binding(actor, session).await.ok_or(
-            AccessFactsError::Unavailable("current Premium transition owners"),
-        )?;
+        let current = self
+            .current_premium_binding(actor, session, budget)
+            .await
+            .ok_or(AccessFactsError::Unavailable(
+                "current Premium transition owners",
+            ))?;
         if access
             .account_id()
             .is_some_and(|account| account != current.account)
@@ -696,6 +787,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        if let Some(budget) = budget {
+            budget
+                .check_deadline()
+                .map_err(AccessFactsError::Durability)?;
+        }
         if states.has_pending_spell_commit(actor, session) {
             return Ok(false);
         }
@@ -758,17 +854,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Arc<RegisteredSpellAccessOwner> {
-        let view = self.refresh_spell_access(actor, session).await;
-        if self
-            .apply_refreshed_spell_access(actor, session, &view)
+        self.refresh_and_apply_spell_access_with_budget(actor, session, None)
             .await
-            .is_err()
-        {
-            return Arc::new(RegisteredSpellAccessOwner::Unavailable {
-                account: view.account_id(),
-            });
-        }
-        view
+    }
+
+    pub(super) fn refresh_and_apply_spell_access_with_budget<'a>(
+        &'a self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        budget: Option<&'a AdmissionRetryBudget<'_>>,
+    ) -> Pin<Box<dyn Future<Output = Arc<RegisteredSpellAccessOwner>> + Send + 'a>> {
+        Box::pin(async move {
+            let view = self
+                .refresh_spell_access_with_budget(actor, session, budget)
+                .await;
+            if self
+                .apply_refreshed_spell_access(actor, session, &view, budget)
+                .await
+                .is_err()
+            {
+                return Arc::new(RegisteredSpellAccessOwner::Unavailable {
+                    account: view.account_id(),
+                });
+            }
+            view
+        })
     }
     /// The account selector is derived from current Game owners, never the client or caller.
     pub(super) async fn refresh_spell_access(
@@ -776,12 +886,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> Arc<RegisteredSpellAccessOwner> {
+        self.refresh_spell_access_with_budget(actor, session, None)
+            .await
+    }
+
+    async fn refresh_spell_access_with_budget(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        budget: Option<&AdmissionRetryBudget<'_>>,
+    ) -> Arc<RegisteredSpellAccessOwner> {
         let Some(coordinator) = self.premium_coordinator else {
             return Arc::new(RegisteredSpellAccessOwner::unavailable());
         };
-        let Some(current) = self.current_premium_binding(actor, session).await else {
+        let Some(current) = self.current_premium_binding(actor, session, budget).await else {
             return Arc::new(RegisteredSpellAccessOwner::unavailable());
         };
+        if budget.is_some_and(|budget| budget.check_deadline().is_err()) {
+            return Arc::new(RegisteredSpellAccessOwner::Unavailable {
+                account: Some(current.account),
+            });
+        }
         // Settle delivery (§1.2 steps 2-6) before the view reads the latch from memory.
         let _ = coordinator.premium_gate(current.account).await;
         coordinator.view(current.account)

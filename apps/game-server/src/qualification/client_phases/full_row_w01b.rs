@@ -13,7 +13,9 @@
 //!    re-check the session-independent World state: the replacement remains live and the killed
 //!    actor generation has not returned. Finish with another accepted LOGOUT.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, EntityRef};
+use oteryn_dev_client::{
+    DevClientSession, EntityDetail, EntityKind, EntityRef, WorldSpatialEntity,
+};
 
 const ROW: &str = "W01b";
 
@@ -25,13 +27,17 @@ struct Progress {
 impl Progress {
     fn new() -> Self {
         Self {
-            step: "admission",
+            step: "world-bundle",
             started: std::time::Instant::now(),
         }
     }
 
-    fn pass(&mut self, step: &'static str, observed: impl std::fmt::Debug) {
+    fn begin(&mut self, step: &'static str) {
         self.step = step;
+        verdict::Harness::global().progress(step);
+    }
+
+    fn pass(&mut self, step: &'static str, observed: impl std::fmt::Debug) {
         evidence(&format!(
             "W01B_CHECK step={step} status=PASS observed={observed:?}"
         ));
@@ -54,6 +60,7 @@ impl Progress {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut progress = Progress::new();
+    progress.begin("world-bundle");
     let result = match verdict::indexed_timeout(
         Duration::from_secs(420),
         journey(clients, &mut progress),
@@ -97,16 +104,26 @@ fn rat_points<'a>(
     })
 }
 
-fn creature_at(client: &DevClientSession, at: TilePos) -> Option<EntityRef> {
-    client.world_entities().and_then(|entities| {
-        entities
-            .iter()
-            .find(|entity| {
-                entity.kind == EntityKind::Creature
-                    && tile(entity.position).is_ok_and(|position| position == at)
-            })
-            .map(|entity| entity.entity)
-    })
+fn rat_at(
+    mut entities: impl Iterator<Item = WorldSpatialEntity>,
+    at: TilePos,
+) -> Option<EntityRef> {
+    entities
+        .find(|entity| is_rat(entity) && tile(entity.position).ok() == Some(at))
+        .map(|entity| entity.entity)
+}
+
+fn is_rat(entity: &WorldSpatialEntity) -> bool {
+    entity.kind == EntityKind::Creature
+        && entity
+            .display_name
+            .is_some_and(|name| name.as_str() == Ok("Rat"))
+}
+
+fn visible_rat_at(client: &DevClientSession, at: TilePos) -> Option<EntityRef> {
+    client
+        .world_entities()
+        .and_then(|entities| rat_at(entities.iter().copied(), at))
 }
 
 async fn pump(client: &mut DevClientSession) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {
@@ -146,7 +163,9 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    progress.begin("admission");
     let mut client = connect_world(clients, 0xb1).await?;
+    progress.begin("initial-spawn");
     travel_to_spawn(
         &mut client,
         world,
@@ -160,12 +179,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         .and_then(|entities| {
             entities
                 .iter()
-                .filter(|entity| {
-                    entity.kind == EntityKind::Creature
-                        && entity.display_name.is_some_and(|name| {
-                            name.as_str().is_ok_and(|display_name| display_name == "Rat")
-                        })
-                })
+                .filter(|entity| is_rat(entity))
                 .min_by_key(|entity| {
                     tile(entity.position)
                         .map_or(u16::MAX, |position| distance(position, here))
@@ -180,13 +194,13 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         .ok_or("step=initial-spawn live routed creature has no nearby authored rat point")?;
     progress.pass("initial-spawn", (spawn, respawn_ms, target));
 
-    progress.step = "kill-command";
+    progress.begin("kill-command");
     let attack = client.session_mut().attack_target(Some(&target)).await?;
     if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("ATTACK_TARGET reply={attack:?}").into());
     }
     progress.pass("kill-command", attack);
-    progress.step = "kill-deltas";
+    progress.begin("kill-deltas");
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut damaged = false;
@@ -222,19 +236,19 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     }
     progress.pass("kill-deltas", (target, corpse, last));
 
-    progress.step = "nearby-refusal";
+    progress.begin("nearby-refusal");
     let blocked_until = tokio::time::Instant::now()
         + Duration::from_millis(u64::from(respawn_ms) + 1_000);
     verdict::Harness::global().bounded_wait(blocked_until, "bounded-observation");
     while tokio::time::Instant::now() < blocked_until {
         pump(&mut client).await?;
-        if creature_at(&client, spawn).is_some() {
+        if visible_rat_at(&client, spawn).is_some() {
             return Err("nearby refusal observed an unexpected respawn entity enter delta".into());
         }
     }
     progress.pass("nearby-refusal", (spawn, respawn_ms));
 
-    progress.step = "leave-interest";
+    progress.begin("leave-interest");
     let from = tile(client.world_spatial().actor_position)?;
     let away = route(world, from, |at| distance(at, spawn) >= 20)
         .ok_or("no legitimate walking route outside spawn interest")?;
@@ -247,32 +261,35 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     while tokio::time::Instant::now() < until {
         client.service_liveness(Duration::from_millis(500)).await?;
     }
+    progress.begin("return-to-spawn");
     let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
         distance(at, spawn) <= 1
     })
     .ok_or("no legitimate return route to rat spawn")?;
     walk(&mut client, world, &back).await?;
-    progress.step = "replacement-delta";
+    progress.begin("replacement-delta");
     wait_until(
         &mut client,
         tokio::time::Instant::now() + Duration::from_secs(10),
-        |client| creature_at(client, spawn).is_some_and(|entity| entity != target),
+        |client| visible_rat_at(client, spawn).is_some_and(|entity| entity != target),
     )
     .await?;
-    let replacement = creature_at(&client, spawn).ok_or("replacement disappeared")?;
+    let replacement = visible_rat_at(&client, spawn).ok_or("replacement disappeared")?;
     progress.pass("replacement-delta", replacement);
 
-    progress.step = "logout";
+    progress.begin("logout");
     logout(&mut client).await?;
     progress.pass("logout", "Accepted");
     drop(client);
+    progress.begin("fresh-admission");
     let mut fresh = connect_world(clients, 0xb2).await?;
+    progress.begin("fresh-admission-route");
     let path = route(world, tile(fresh.world_spatial().actor_position)?, |at| {
         distance(at, spawn) <= 1
     })
     .ok_or("fresh admission cannot route to rat spawn")?;
     walk(&mut fresh, world, &path).await?;
-    progress.step = "fresh-admission-state";
+    progress.begin("fresh-admission-state");
     wait_until(
         &mut fresh,
         tokio::time::Instant::now() + Duration::from_secs(10),
@@ -290,7 +307,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         return Err("killed actor generation returned after fresh admission".into());
     }
     progress.pass("fresh-admission-state", replacement);
-    progress.step = "final-logout";
+    progress.begin("final-logout");
     logout(&mut fresh).await?;
     progress.pass("final-logout", "Accepted");
     Ok(())
@@ -299,6 +316,49 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn spawn_check_requires_a_rat() -> TestResult {
+        use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
+
+        let decoy = WorldSpatialEntity {
+            motion: None,
+            display_name: Some(
+                EntityDisplayName::new("Cave Rat")
+                    .map_err(|error| format!("display name: {error:?}"))?,
+            ),
+            kind: EntityKind::Creature,
+            entity: EntityRef {
+                identity: v7(10, 1),
+                generation: 1,
+            },
+            position: ActorPosition {
+                x: 0,
+                y: 0,
+                floor: 7,
+            },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::East,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        let rat = WorldSpatialEntity {
+            display_name: Some(
+                EntityDisplayName::new("Rat")
+                    .map_err(|error| format!("display name: {error:?}"))?,
+            ),
+            entity: EntityRef {
+                identity: v7(10, 2),
+                generation: 1,
+            },
+            ..decoy
+        };
+        let at = tile(rat.position)?;
+        assert_eq!(rat_at([decoy].into_iter(), at), None);
+        assert_eq!(rat_at([decoy, rat].into_iter(), at), Some(rat.entity));
+        Ok(())
+    }
 
     #[test]
     fn distance_is_floor_scoped() {

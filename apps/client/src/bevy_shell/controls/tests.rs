@@ -13,8 +13,10 @@ fn configured_preference_utilities_reach_settings_owner() -> Result<(), Box<dyn 
     owner.phase = crate::bevy_shell::owner::Phase::Playing;
     let mut preferences = owner.settings.preferences.clone();
     preferences.add_hotkey_profile("Zeta")?;
+    preferences.hud_npc_names = Some(true);
     owner.settings.apply(preferences);
     for action in [
+        UtilityAction::ToggleCreatureHuds,
         UtilityAction::ToggleCreatureHuds,
         UtilityAction::ToggleFpsLagIndicator,
         UtilityAction::NextHotkeyPreset,
@@ -36,7 +38,9 @@ fn configured_preference_utilities_reach_settings_owner() -> Result<(), Box<dyn 
         let after = &owner.settings.preferences;
         match action {
             UtilityAction::ToggleCreatureHuds => {
-                assert_eq!(after.creature_bars, !before.creature_bars)
+                assert_eq!(after.creature_bars, !before.creature_bars);
+                assert_eq!(after.hud_names, [after.creature_bars; 3]);
+                assert_eq!(after.hud_npc_names, Some(after.creature_bars));
             }
             UtilityAction::ToggleFpsLagIndicator => {
                 assert_ne!(after.performance.show_fps, before.performance.show_fps)
@@ -259,6 +263,87 @@ fn alt_arrows_on_visible_minimap_do_not_step_or_cancel_walking()
         play.view.tick(&play.link).map_err(|e| format!("{e:?}"))?;
         assert!(commands.try_recv().is_err());
         assert_eq!(play.link.target_walk_state().goal, Some(goal));
+    }
+    Ok(())
+}
+
+#[test]
+fn corpse_looting_schemes_route_the_selected_mouse_gesture()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{ActorPosition, EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+    for (scheme, button, modifiers) in [
+        (1, MouseButton::SECONDARY, Modifiers::NONE),
+        (
+            2,
+            MouseButton::SECONDARY,
+            Modifiers::one(oteryn_input_actions::Modifier::Shift),
+        ),
+        (3, MouseButton::PRIMARY, Modifiers::NONE),
+    ] {
+        let mut host = HostOwner::new(None)?;
+        let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
+        let tile = view.click_tile(48., 48.).ok_or("map tile")?;
+        let id = [1, 144, 0, 0, 0, 0, 112, 0, 128, 0, 0, 0, 0, 0, 0, 1];
+        view = view.with_entities(vec![WorldSpatialEntity {
+            motion: None,
+            entity: EntityRef {
+                identity: id,
+                generation: 1,
+            },
+            kind: EntityKind::Corpse,
+            position: ActorPosition {
+                x: tile.x,
+                y: tile.y,
+                floor: 7,
+            },
+            display_name: None,
+            detail: EntityDetail::Object {
+                item_definition_ref: 42,
+                quantity: 1,
+                item_handle: None,
+            },
+        }])?;
+        host.settings.preferences.gameplay.loot_click = scheme;
+        view.set_preferences(host.settings.preferences.clone())?;
+        let (link, mut commands, outbox) = play_channel();
+        outbox.bevy_quick_loot_selected(true);
+        install(&mut host, view, link);
+        host.route_input(
+            &[
+                NormalizedInputEvent::PointerMoved {
+                    position: PointerPosition::new(
+                        PointerCoordinate::new(48)?,
+                        PointerCoordinate::new(48)?,
+                    ),
+                    motion: PointerMotion::new(PointerDelta::new(0)?, PointerDelta::new(0)?),
+                },
+                NormalizedInputEvent::MouseButton {
+                    button,
+                    state: ButtonState::Pressed,
+                    modifiers,
+                },
+            ],
+            false,
+        );
+        host.route_input(
+            &[NormalizedInputEvent::MouseButton {
+                button,
+                state: ButtonState::Released,
+                modifiers,
+            }],
+            false,
+        );
+        let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+            return Err("wrong routed action".into());
+        };
+        assert_eq!(command.capability, 98);
+        assert_eq!(
+            oteryn_client_ui::quick_loot::decode_quick_loot_request(&command.payload)
+                .map_err(|e| format!("{e:?}"))?
+                .corpse,
+            Some(id)
+        );
+        assert!(commands.try_recv().is_err());
     }
     Ok(())
 }

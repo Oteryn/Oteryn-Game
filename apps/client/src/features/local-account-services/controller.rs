@@ -168,11 +168,16 @@ async fn apply(
             return Ok(());
         }
         Action::Status => {
-            if let Some(id) = view.pending_id() {
+            if let Some(id) = view
+                .pending_id()
+                .or_else(|| view.history.unverified.keys().next().map(String::as_str))
+            {
                 match client.bazaar_status(token, id, cancel).await {
                     Ok(receipt) => accept(view, receipt),
                     Err(NativeLoginError::Platform(HttpStatus(404)))
-                        if view.post_refusal_status == Some(409) =>
+                        if view.post_refusal_status == Some(409)
+                            && !view.history.unverified.contains_key(id)
+                            && !view.unresolved.contains(id) =>
                     {
                         view.prior.reconcile(id);
                         view.pending = None;
@@ -181,6 +186,8 @@ async fn apply(
                         view.feedback = tr!("The server refused the request").into();
                     }
                     Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
+                        let missing = id.to_owned();
+                        view.history.missing(&missing);
                         view.post_refusal_status = None;
                         return Err(error);
                     }
@@ -248,15 +255,19 @@ async fn submit(
     accept(view, result?);
     Ok(())
 }
-pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
-    if view.receipt.as_ref().is_some_and(|old| {
-        old.request_id == receipt.request_id
-            && old.state != OperationState::Pending
-            && old != &receipt
-    }) {
+pub(super) fn verify(view: &mut View, receipt: &OperationReceipt) -> bool {
+    if !view.history.record(receipt) {
         view.feedback =
             tr!("Conflicting terminal receipt; keep the original receipt and contact support.")
                 .into();
+        return false;
+    }
+    view.history.unverified.remove(&receipt.request_id);
+    true
+}
+
+pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
+    if !verify(view, &receipt) {
         return;
     }
     if view

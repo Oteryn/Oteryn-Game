@@ -1,11 +1,18 @@
 // ZONES-NOLOGOUT-1: capability 92, domain 57. Reuses TutorialNoticeV1 status_text bytes.
 // Snapshot: empty=1 or the once-per-login configured MOTD (status_text).
-// Delta: exactly one status_text, warning or advance. Capability 575 adds the optional
-// category after the text field. Omission means default. Legacy peers receive identical
-// bytes. Category does not change presentation kind or sequencing. Snapshots omit it.
+// Delta: exactly one status_text, raid warning, raid advance, or boss_defeated.
+// Capability 615 requires 92. Only a live selected killing player's connection
+// receives a boss_defeated event, including for bosses outside its trackers.
+// Field 5 carries the authoritative creature definition key (1..255 UTF-8 bytes).
+// The event is advisory and transient. Join/resume snapshots never replay it,
+// and older clients retain the existing delta shape. The client may use the
+// event and its domain revision to trigger a boss-defeated screenshot.
+// Capability 575 adds optional category as field 6. Omission means default.
+// Category does not change presentation kind or sequencing. Snapshots omit it.
 // Staff broadcasts are GLOBAL and raid announcements are RAID. Clients selecting
 // both 75 and 575 receive SYSTEM text alongside the structured save countdown.
 // Clients may use the structured countdown for timing and the text for display.
+// Decoders accept the pre-merge field 5 varint as the legacy category encoding.
 // Text is 1..=255 UTF-8 bytes; message is at most 260 bytes. No hint IDs.
 syntax = "proto3";
 package oteryn.protocol.v1.server_messages;
@@ -22,6 +29,7 @@ message ServerMessageV1 {
     string status_text = 2;
     string warning = 3; // Crystal MESSAGE_GAME_HIGHLIGHT raid announcement.
     string advance = 4; // Crystal MESSAGE_EVENT_ADVANCE, including XML type=event.
+    string boss_defeated = 5;
   }
-  Category category = 5;
+  Category category = 6;
 }

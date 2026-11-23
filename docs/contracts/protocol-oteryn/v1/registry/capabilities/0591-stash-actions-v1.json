@@ -7,5 +7,5 @@
   "command_types": [6345],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Bundle World with STASH_V1. Negotiates additive carried-tree stow actions on command 79 and row targeting on command 6345."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World with STASH_V1. Negotiates additive carried-tree stow actions on command 79 and row targeting on command 6345."
 }

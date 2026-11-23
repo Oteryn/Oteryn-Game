@@ -34,6 +34,7 @@ pub struct View {
     pending: Option<CoinOrderRequest>,
     post_refusal_status: Option<u16>,
     checkout_unverified: bool,
+    history: crate::account_services::HistoryStatus<CoinOrder>,
     confirmed: Option<CoinPackage>,
     quote_until: BTreeMap<String, Instant>,
 }
@@ -58,10 +59,10 @@ impl View {
         }
     }
     pub fn pending(&self) -> bool {
-        self.pending.is_some()
+        self.pending.is_some() || !self.history.unverified.is_empty()
     }
     pub fn can_retry(&self) -> bool {
-        self.pending() && self.post_refusal_status.is_none()
+        self.pending.is_some() && self.post_refusal_status.is_none()
     }
     pub fn can_purchase(&self, id: &str) -> bool {
         self.can_purchase_at(id, Instant::now())

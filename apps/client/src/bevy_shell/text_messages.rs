@@ -7,13 +7,22 @@ use std::time::Duration;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Area {
+    Loot,
     Top,
     Look,
     Center,
     Bottom,
+    Private,
 }
 impl Area {
-    const ALL: [Self; 4] = [Self::Top, Self::Look, Self::Center, Self::Bottom];
+    const ALL: [Self; 6] = [
+        Self::Top,
+        Self::Look,
+        Self::Center,
+        Self::Bottom,
+        Self::Private,
+        Self::Loot,
+    ];
 }
 #[derive(Component)]
 struct ScreenArea(Area);
@@ -21,14 +30,16 @@ struct ScreenMessage {
     text: String,
     colour: [u8; 3],
     expires: Duration,
+    kind: Option<crate::play::feature_local_text_messages::view::NoticeKind>,
 }
 #[derive(Resource, Default)]
 struct ScreenMessages {
-    slots: [Option<ScreenMessage>; 4],
+    slots: [Option<ScreenMessage>; 6],
     generation: Option<u64>,
     dismissals: u64,
     last_sequence: Option<u64>,
     namespace: u64,
+    chat_cursor: Option<(u64, u64)>,
     last_look: Option<u64>,
 }
 
@@ -45,6 +56,7 @@ impl ScreenMessages {
     fn show(&mut self, area: Area, text: &str, colour: [u8; 3], now: Duration) {
         self.slots[area as usize] = Some(ScreenMessage {
             text: text.into(),
+            kind: None,
             colour,
             expires: now.saturating_add(visible_time(text)),
         });
@@ -72,6 +84,7 @@ impl ScreenMessages {
                 ServerMessage::StatusText(text) => (Area::Bottom, text, [255; 3]),
                 ServerMessage::Warning(text) => (Area::Center, text, [245, 94, 94]),
                 ServerMessage::Advance(text) => (Area::Top, text, [255; 3]),
+                ServerMessage::BossDefeated(_) => continue,
             };
             self.show(area, text, colour, now);
             self.last_sequence = Some(message.server_sequence);
@@ -88,7 +101,7 @@ impl ScreenMessages {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<ScreenMessages>()
         .add_systems(Startup, setup.after(super::game_ui::setup))
-        .add_systems(Update, project);
+        .add_systems(Update, (project, loot::project).chain());
 }
 fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<GameRegions>) {
     for area in Area::ALL {
@@ -104,7 +117,9 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<GameRegions>) {
                     left: percent(10.),
                     width: percent(80.),
                     top: match area {
+                        Area::Loot => percent(50.),
                         Area::Top => percent(15.),
+                        Area::Private => percent(27.),
                         Area::Look => percent(40.),
                         Area::Center => percent(60.),
                         Area::Bottom => Val::Auto,
@@ -139,6 +154,32 @@ fn project(
             };
         }
         state.observe(&play.view, now);
+        let (reset, notices) = play.link.take_screen_notices(&mut state.chat_cursor);
+        if reset
+            && state.slots[Area::Private as usize]
+                .as_ref()
+                .is_some_and(|slot| {
+                    slot.kind
+                        == Some(crate::play::feature_local_text_messages::view::NoticeKind::Private)
+                })
+        {
+            state.slots[Area::Private as usize] = None;
+        }
+        for notice in notices {
+            if !notice.kind.visible(&owner.settings.preferences) {
+                continue;
+            }
+            let (area, colour) = match notice.kind {
+                crate::play::feature_local_text_messages::view::NoticeKind::Private => {
+                    (Area::Private, [95, 247, 247])
+                }
+                _ => (Area::Bottom, [255; 3]),
+            };
+            state.show(area, &notice.text, colour, now);
+            if let Some(slot) = &mut state.slots[area as usize] {
+                slot.kind = Some(notice.kind);
+            }
+        }
         if let Some(message) = play.link.look_message() {
             state.observe_look(&message, now);
         }
@@ -158,11 +199,19 @@ fn project(
     };
     for (area, mut text, mut colour) in &mut texts {
         let enabled = match area.0 {
+            Area::Loot => continue,
             Area::Top | Area::Bottom => banners,
             Area::Center => popups,
             Area::Look => true,
+            Area::Private => owner.settings.preferences.game_window.private_messages,
         };
-        let message = state.visible(area.0, now).filter(|_| enabled);
+        let message = state.visible(area.0, now).filter(|message| {
+            enabled
+                && owner.settings.preferences.game_window.messages
+                && message
+                    .kind
+                    .is_none_or(|kind| kind.visible(&owner.settings.preferences))
+        });
         let value = message.map_or("", |message| message.text.as_str());
         if text.0 != value {
             text.0 = value.into();
@@ -173,6 +222,8 @@ fn project(
         }
     }
 }
+
+mod loot;
 
 #[cfg(test)]
 mod tests;

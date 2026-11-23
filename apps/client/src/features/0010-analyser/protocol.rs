@@ -47,9 +47,23 @@ pub(in crate::play) fn reduce(
     for event in events {
         match event {
             SessionEvent::AnalyserFacts(delta) => {
+                for fact in &delta.value {
+                    mailbox.combat_capture.observe(
+                        fact,
+                        &mut mailbox.capture_attackers,
+                        None,
+                    );
+                }
                 oteryn_client_ui::analyser::protocol::apply(&mut mailbox.analyser, &delta.value)
             }
             SessionEvent::AnalyserAttributedFacts(delta) => {
+                for fact in &delta.value {
+                    mailbox.combat_capture.observe(
+                        &fact.fact,
+                        &mut mailbox.capture_attackers,
+                        fact.attacker,
+                    );
+                }
                 oteryn_client_ui::analyser::protocol::apply(
                     &mut mailbox.analyser,
                     &oteryn_client_ui::analyser_hit_attribution::plain_facts(&delta.value),
@@ -71,6 +85,8 @@ pub(in crate::play) fn reduce(
             }
             _ => {}
         }
+        // The current drop can qualify for automatic tracking during reduction.
+        mailbox.observe_capture_event(event);
     }
 }
 

@@ -272,7 +272,7 @@ where
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
         // Resolve the admitted scope before checking its actor, including a
         // reconnect whose actor already belongs to an activity Instance.
-        if !authority.staff_refresh(admitted).await {
+        if !Box::pin(authority.staff_refresh(admitted)).await {
             return ServeEnd::Disconnected.finish(admitted);
         }
         if !authority.remember_activity_connection(admitted) {
@@ -330,7 +330,9 @@ where
             record_join_progress("held_no_baseline", admitted.first_entry);
             return hold_refused(stream, admitted, policy).await;
         };
-        let mut session = match setup::prepare(
+        // Keep the join snapshot and its temporary session state out of the
+        // connection coroutine, which also carries the live command path.
+        let mut session = match Box::pin(setup::prepare(
             stream,
             &mut admitted,
             authority,
@@ -338,7 +340,7 @@ where
             actor,
             baseline,
             integrity,
-        )
+        ))
         .await
         {
             Ok(session) => session,
@@ -402,7 +404,11 @@ where
             if tokio::time::Instant::now() >= next_staff_refresh {
                 match observed(
                     "staff_refresh",
-                    activity_transfer::refresh_staff(stream, authority, &mut session),
+                    Box::pin(activity_transfer::refresh_staff(
+                        stream,
+                        authority,
+                        &mut session,
+                    )),
                 )
                 .await
                 {
@@ -462,7 +468,11 @@ where
             if tokio::time::Instant::now() >= next_staff_refresh {
                 match observed(
                     "staff_refresh",
-                    activity_transfer::refresh_staff(stream, authority, &mut session),
+                    Box::pin(activity_transfer::refresh_staff(
+                        stream,
+                        authority,
+                        &mut session,
+                    )),
                 )
                 .await
                 {
@@ -485,7 +495,7 @@ where
             let inbound_phase = next.phase();
             let received = observed(
                 inbound_phase,
-                inbound::receive(stream, authority, &mut session, next),
+                Box::pin(inbound::receive(stream, authority, &mut session, next)),
             )
             .await;
             let input = match received {
@@ -501,7 +511,7 @@ where
             };
             if let Err(end) = observed(
                 "command",
-                command::execute(stream, authority, &mut session, input),
+                Box::pin(command::execute(stream, authority, &mut session, input)),
             )
             .await
             {

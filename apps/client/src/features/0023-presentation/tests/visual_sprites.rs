@@ -144,6 +144,25 @@ fn t012_spell_words_use_server_catalog_only_after_server_success()
     assert!(view.tick(&link).is_ok());
     assert_eq!(view.spell_words.get(&19).map(String::as_str), Some("exura"));
     assert!(view.scene().sprites().len() > baseline);
+    view.entities.push(oteryn_session::WorldSpatialEntity {
+        motion: None, display_name: None, kind: oteryn_session::EntityKind::Player,
+        entity: oteryn_session::EntityRef { identity: [1; 16], generation: 1 },
+        position: ActorPosition { x: 0, y: 0, floor: 0 },
+        detail: oteryn_session::EntityDetail::Actor {
+            direction: oteryn_session::StepDirection::South, appearance_ref: 1, health_percent: 100,
+        },
+    });
+    let mut prefs = view.preferences().clone();
+    prefs.game_window.other_spells = false;
+    view.set_preferences(prefs)?;
+    view.project_presentation(std::time::Instant::now())?;
+    let mut actor_without_cast = view.clone();
+    actor_without_cast.visuals.clear();
+    actor_without_cast.rebuild()?;
+    assert_eq!(view.scene().sprites().instances(), actor_without_cast.scene().sprites().instances(), "only the actor remains");
+
+    view.entities.clear();
+    view.rebuild()?;
     outbox.spell_catalog_initialize(false, None)?;
     assert!(view.tick(&link).is_ok());
     assert!(
@@ -453,5 +472,25 @@ fn visible_corpse_sprite_is_painted_only_on_its_own_floor() -> Result<(), Box<dy
     }
     #[cfg(not(bevy_shell))]
     assert!(sprite_count > 0);
+    Ok(())
+}
+
+#[test]
+fn hiding_player_spells_preserves_creature_and_global_missiles() -> Result<(), Box<dyn std::error::Error>> {
+    let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
+    let mut preferences = view.preferences().clone();
+    preferences.game_window.other_spells = false;
+    view.set_preferences(preferences)?;
+    let baseline = view.scene().sprites().len();
+    let at = ActorPosition { x: 0, y: 0, floor: 0 };
+    let now = std::time::Instant::now();
+    for source in [PresentationSource::Creatures, PresentationSource::Global] {
+        view.visuals.clear();
+        view.receive_presentation(&[PresentationEventKind::Missile {
+            from: at, to: ActorPosition { x: 1, ..at }, missile_id: 1, source,
+        }], now);
+        view.project_presentation(now)?;
+        assert!(view.scene().sprites().len() > baseline, "{source:?}");
+    }
     Ok(())
 }

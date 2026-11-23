@@ -51,6 +51,14 @@ archives remain untouched. Missing build products must rebuild through Cargo.
 Report actual before/after bytes and preserve exact-candidate tests independently.
 A protected-main warmer finishes before the newest queued main revision starts;
 frequent merges must not continually cancel cache preparation.
+Warm workspace library tests with `--lib --no-run`: keep their dev-dependency
+features, but avoid linking integration executables that the bounded cache
+discards. Full selected tests, binary targets and strict all-target Clippy remain
+in their qualification lanes. Use the archive producers' checksum-pinned mold
+through `LD_PRELOAD`, without adding linker-specific Cargo flags. A cache-only
+warmup is not evidence that the candidate's tests passed. On Windows, run strict
+Clippy before the release build so a lint failure stops before expensive linking;
+retain the release smoke and installer checks after the build.
 
 ## Shared build artifacts and partial reruns
 
@@ -76,6 +84,8 @@ If no compatible producer is available, it builds locally; an invalid selected
 artifact fails. Route-less fast results never count as PostgreSQL qualification.
 For a deliberate reuse qualification, apply `heavy-tests` to the frozen head
 once all three dedicated producers are active or their artifacts are available.
+An overall workflow can still report `queued` while its selected producer is
+active; honor the bounded active-producer wait in either workflow state.
 Queued or undiscovered producers can exhaust the bounded discovery window and
 cause local fallback; report those builds separately from successful reuse.
 Waiting for producer admission can delay other PG archives, so measure the
@@ -123,6 +133,130 @@ run the matching tests locally (`local-checks.md`) because CI will
 only report them once `main` is already red.
 When one of them turns `main` red, fix it with `oteryn-debugging` section 6
 (*Red main: targeted fix*): bisect the CI history first, then a local loop.
+
+## The staging integration branch
+
+Owner decision 2026-11-23. `staging` is a long-lived integration branch
+between the lanes and `main`. Create both rulesets below and verify them
+before the first lane PR, and in any case before the first promotion. To
+verify, read back the effective rules with
+`gh api repos/Oteryn/Oteryn-Game/rules/branches/staging` and confirm that
+`deletion`, `non_fast_forward`, `pull_request` (squash only) and
+`required_status_checks` (`game-gate`) are listed. Then read each ruleset by
+id and check its bypass actors: `gh api repos/Oteryn/Oteryn-Game/rulesets/27896004`
+(*Protect staging integrity*) must have none, and
+`gh api repos/Oteryn/Oteryn-Game/rulesets/27896005` (*Gate staging*) exactly
+the admin repository role (`actor_id` 5, `RepositoryRole`, `always`). Never
+test them with a real force-push or deletion.
+
+- **Lane PRs go into `staging`.** Each lane works on its own short branch and
+  opens its PR with base `staging`. Such a PR runs the light `game-gate`
+  (`merge-gate.yml` accepts base `main` and `staging`, about 12 minutes) and
+  `codex-review-gate`. The PostgreSQL harness, `heavy-gate` and the PR node
+  boot shards stay main-only, so they never run here. Before pushing a
+  game-server change, run its PostgreSQL partitions on the PC's staging
+  checkout (`STG pg`). Squash-merge once `game-gate` is green on the head and
+  the Codex review is in (*Merge conditions*, 4). Archive the task record in
+  the PR's own final commit: `auto-archive-merged-tasks.yml` only archives
+  records whose PR merged into `main`, because a task completes on `main`.
+- **Heavy tests roll on the staging tip.** One standing PR `staging -> main`
+  is labelled `heavy-tests` and stays **ready for review, not a draft**: the
+  harness skips drafts. Each push to `staging` runs the harness on the new
+  tip. For a head `staging`, `pr-postgres-harness.yml` does not cancel the
+  run in progress, so a 26-35 minute run finishes even though `staging` moves
+  about every 12 minutes. The newest push waits as the one pending run.
+- **Promotion happens on the owner's word.** Declare a promotion freeze.
+  From then until the promotion has merged, nothing merges into `staging` and
+  nothing else merges into `main`, the auto-archive bot PR included. Wait for
+  `game-gate` and `heavy-gate` to be green on that exact head. Then
+  squash-merge the `staging -> main` PR with its 40-character head SHA, under
+  the `main` rules in *Merge conditions*. If `main` moved after the promotion
+  head was qualified, run the sync below first: merge `main` into `staging`,
+  then qualify the new head again.
+- **No retargets.** Do not retarget a PR between `staging` and `main`;
+  close it and open a new PR with the right base. Until the retarget run's
+  `game-gate` fails (about a minute), the old base's green `game-gate` is
+  still the head's check, so a retargeted PR is never merged before a new
+  push has been qualified. `game-gate` has one name
+  for both bases, so a retarget fails `game-gate` at once (the scope job
+  rejects any `edited` event that changed the base, and its run is titled
+  `... • retargeted`). The head stays tainted until a new push: every
+  `game-gate` attempt (later edits, reruns and job retries included) checks
+  the live head and base ref against its own scope and fails on a head that
+  has a retargeted run. Other edits (title, body) cancel nothing: in the
+  harness they only mirror the `heavy-gate` of the newest real heavy run
+  (by run creation, at its latest attempt) on the head, and fail while it is
+  still running. Every run's second `heavy-gate` job republishes that verdict
+  again once `heavy-tests` is live; in a real run it first waits until every
+  other harness run on the head has finished, and fails rather than publish
+  while one is still going.
+- **Codex review status.** A PR into `staging` publishes the status
+  `codex-review-gate (staging)`, so it never replaces the `codex-review-gate`
+  of a `main` PR on the same head SHA. The `heavy-tests` exemption applies
+  only to PRs into `main`.
+- **Sync after promotion, with no force-push.** The squash leaves `staging`
+  with history that `main` does not contain. The coordinator then:
+  1. `git fetch origin main staging && git switch -c sync/staging-<date> origin/staging && git merge --no-edit origin/main`
+     (a real merge commit; with no other commits on `main`, its tree equals
+     `main`).
+  2. Pushes the sync branch and opens a PR into `staging`. `game-gate` runs on
+     that merge commit.
+  3. Once `game-gate` is green, `git push origin <sha>:refs/heads/staging`, a
+     fast-forward of the same commit. GitHub marks the sync PR merged. Do not
+     press a merge button: a squash would drop `main` as a parent and the
+     next promotion diff would repeat the last cycle.
+  4. Lifts the freeze and opens the next standing `staging -> main` PR
+     (ready for review, labelled `heavy-tests`).
+- **Keeping `staging` alive.** `delete_branch_on_merge` is on and the
+  promotion PR's head is `staging`. The deletion rule below has no bypass
+  actor, so nobody's merge, auto-delete included, can delete it. This is not
+  verified live (`staging` did not exist when this was written): after the
+  first promotion, check that `staging` still exists. If it was deleted,
+  restore it with GitHub's *Restore branch* button on the promotion PR.
+  `terminal-branch-lifecycle.yml` never deletes a protected branch.
+
+Two rulesets, because a bypass actor bypasses every rule in its ruleset:
+
+```json
+{
+  "name": "Protect staging integrity",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [],
+  "conditions": {"ref_name": {"include": ["refs/heads/staging"], "exclude": []}},
+  "rules": [{"type": "deletion"}, {"type": "non_fast_forward"}]
+}
+```
+
+```json
+{
+  "name": "Gate staging",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}],
+  "conditions": {"ref_name": {"include": ["refs/heads/staging"], "exclude": []}},
+  "rules": [
+    {"type": "pull_request", "parameters": {
+      "allowed_merge_methods": ["squash"],
+      "dismiss_stale_reviews_on_push": true,
+      "require_code_owner_review": false,
+      "require_last_push_approval": false,
+      "required_approving_review_count": 0,
+      "required_review_thread_resolution": true}},
+    {"type": "required_status_checks", "parameters": {
+      "do_not_enforce_on_create": true,
+      "required_status_checks": [{"context": "game-gate"}],
+      "strict_required_status_checks_policy": false}}
+  ]
+}
+```
+
+Neither ruleset has `required_linear_history`, so the sync merge commit can
+land. The bypass actor (repository role 5, admin: the coordinator's identity)
+is used only for step 3 of the sync. `do_not_enforce_on_create` lets the
+coordinator create `staging` from `main`. The names differ from `Protect
+main`, so `tools/repository/apply_github_settings.py` leaves both rulesets
+alone.
 
 ## Merge conditions
 

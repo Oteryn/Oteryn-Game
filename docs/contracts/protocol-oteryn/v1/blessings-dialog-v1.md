@@ -21,8 +21,9 @@ projection, with zero for absent balances. Both sources are observed together.
 Store copies are separate from active protection. This command neither buys nor
 consumes either kind of holding. The 388 selector-134 reply is unchanged.
 
-The Store fulfillment projection is provisioned by the database owner.
-The gameplay runtime has read access. The inspection format follows the
-separate natural and Store counts.
+The Store fulfillment receipt and its publication outbox commit together with
+the character's copy. Replaying the same Store operation does not add another
+copy. The gameplay runtime reads the projection. The holdings reply displays
+at most 255 copies per blessing; the database retains the full count.
 [Crystal's blessing window](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp#L5411-L5431) ·
 [Tibia Fandom archive](https://tibia.fandom.com/wiki/Blessings#Blessing_Charges).

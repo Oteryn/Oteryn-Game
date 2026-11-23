@@ -111,7 +111,12 @@ pub(super) fn project(
             widgets::page(
                 &mut commands,
                 parent,
-                (state.page, state.binding, help.as_ref()),
+                (
+                    state.page,
+                    state.binding,
+                    state.search.as_str(),
+                    help.as_ref(),
+                ),
                 &skins,
                 &checks,
                 draft,
@@ -154,7 +159,9 @@ pub(super) fn project(
             }
             _ => {}
         }
-        if blocked {
+        if blocked
+            || matches!(*control, Control::Check(id) if metadata::find(state.page,id).is_some_and(|row| !row.enabled(draft)))
+        {
             commands.entity(entity).insert(InteractionDisabled);
         } else {
             commands.entity(entity).remove::<InteractionDisabled>();

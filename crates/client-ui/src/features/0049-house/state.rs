@@ -15,6 +15,10 @@ pub struct Panel {
     pub world: [u8; 16],
     pub town: String,
     pub page: Page,
+    /// First keyset cursor of the displayed rows, or None for the first page.
+    pub page_after: Option<String>,
+    pub pending_after: Option<String>,
+    pub collecting: bool,
     pub index: usize,
     pub feedback: String,
 }
@@ -24,11 +28,13 @@ impl Panel {
             return;
         }
         self.pending = None;
+        let after = self.pending_after.take();
         let acl_read = std::mem::take(&mut self.pending_acl_read);
         if !matches!(
             reply.status,
             CommandStatus::Accepted | CommandStatus::DuplicateReplay
         ) {
+            self.collecting = false;
             self.feedback = tr!("The server refused the request").into();
             return;
         }
@@ -42,9 +48,30 @@ impl Panel {
                     self.acl_snapshot = Some(snapshot);
                 })
         } else if command.kind == 57 {
-            house::page(&reply.payload).map(|page| {
-                self.page = page;
-                self.index = 0;
+            house::page(&reply.payload).and_then(|mut page| {
+                if self.collecting
+                    && let Some(cursor) = after.as_ref()
+                {
+                    if self.page.cursor.as_ref() != Some(cursor)
+                        || page
+                            .rows
+                            .first()
+                            .is_some_and(|first| first.house <= *cursor)
+                    {
+                        return Err("Invalid house catalogue continuation");
+                    }
+                    if self.page.rows.len().saturating_add(page.rows.len()) > 16_384 {
+                        return Err("House catalogue exceeds the browse limit");
+                    }
+                    self.page.rows.append(&mut page.rows);
+                    self.page.cursor = page.cursor;
+                } else {
+                    self.page_after = after;
+                    self.page = page;
+                    self.index = 0;
+                }
+                self.collecting &= self.page.cursor.is_some();
+                Ok(())
             })
         } else {
             house::result(&reply.payload).and_then(|(d, revision)| {
@@ -65,6 +92,9 @@ impl Panel {
                 Ok(())
             })
         };
+        if result.is_err() {
+            self.collecting = false;
+        }
         self.feedback = result.map_or_else(str::to_owned, |()| {
             if acl_read {
                 "Access list loaded; edit members and confirm the matching action".into()

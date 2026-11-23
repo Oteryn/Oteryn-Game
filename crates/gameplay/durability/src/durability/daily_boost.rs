@@ -117,11 +117,17 @@ impl DurabilityRoot {
                 FROM census CROSS JOIN requested w LEFT JOIN LATERAL (
                     SELECT d.creature_key,d.boss_key,
                         floor(extract(epoch FROM e.activated_at)*1000)::bigint AS effective_from,
-                        floor(extract(epoch FROM ((date_trunc('day',(statement_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '6 hours')+interval '1 day 6 hours') AT TIME ZONE 'Europe/Berlin'))*1000)::bigint AS effective_until
+                        floor(extract(epoch FROM boundary.effective_until)*1000)::bigint AS effective_until
                     FROM game_world_reset_active a
                     JOIN game_world_reset_epochs e USING(world_id,reset_epoch)
                     JOIN game_world_daily_boosts d USING(world_id,reset_epoch)
-                    WHERE a.world_id=w.world_id AND e.target_digest=$3 AND e.reset_epoch=$4::text::numeric
+                    CROSS JOIN LATERAL (
+                        SELECT (date_trunc('day', (e.activated_at AT TIME ZONE 'Europe/Berlin') - interval '6 hours')
+                                + interval '1 day 6 hours') AT TIME ZONE 'Europe/Berlin' AS effective_until
+                    ) boundary
+                    WHERE e.activated_at <= statement_timestamp()
+                      AND statement_timestamp() < boundary.effective_until
+                      AND a.world_id=w.world_id AND e.target_digest=$3 AND e.reset_epoch=$4::text::numeric
                       AND e.calendar='TIBIA_SERVER_SAVE_BERLIN_06'
                       AND NOT EXISTS (SELECT 1 FROM game_world_reset_jobs j WHERE j.world_id=w.world_id AND j.phase='RETIRING')
                 ) b ON true",

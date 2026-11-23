@@ -85,7 +85,7 @@ $old$;
     anchor:=$old$IF i.quantity<>0 OR i.lifecycle<>2 OR i.last_transaction_id IS DISTINCT FROM p_transaction$old$;
     IF position(anchor IN body)=0 THEN RAISE EXCEPTION 'missing stash input state proof'; END IF;
     body:=replace(body,anchor,$new$IF i.quantity IS DISTINCT FROM (l.before_item->>'quantity')::bigint-l.quantity
-     OR i.lifecycle IS DISTINCT FROM CASE WHEN i.quantity=0 THEN 2 ELSE 1 END
+     OR i.lifecycle IS DISTINCT FROM (CASE WHEN i.quantity=0 THEN 2 ELSE 1 END)
      OR i.last_transaction_id IS DISTINCT FROM p_transaction$new$);
     anchor:=$old$OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id)$old$;
     IF position(anchor IN body)=0 THEN RAISE EXCEPTION 'missing stash input placement proof'; END IF;
@@ -95,14 +95,14 @@ $old$;
      OR (i.quantity>0 AND NOT game_stash_carried_placement(i.item_instance_id,l.parent_item_instance_id,l.placement_ordinal,r.character_id,r.world_id))$new$);
 
     body:=pg_get_functiondef('game_item_instance_guard()'::regprocedure);
-    anchor:=$old$IF NEW.quantity<>0 OR NEW.lifecycle<>2 OR (to_jsonb(NEW)-ARRAY['quantity','lifecycle','last_transaction_id']) IS DISTINCT FROM
-        (to_jsonb(OLD)-ARRAY['quantity','lifecycle','last_transaction_id']) THEN
+    anchor:=$old$IF NEW.quantity<>0 OR NEW.lifecycle<>2 OR (v_instance_guard_new_json-ARRAY['quantity','lifecycle','last_transaction_id']) IS DISTINCT FROM
+        (v_instance_guard_old_json-ARRAY['quantity','lifecycle','last_transaction_id']) THEN
       RAISE EXCEPTION 'stash retires exactly the input'$old$;
     replacement:=$new$IF NOT EXISTS(SELECT 1 FROM game_character_stash_item_lines l
       WHERE l.item_instance_id=OLD.item_instance_id AND l.transaction_id=NEW.last_transaction_id
-        AND NEW.quantity=OLD.quantity-l.quantity AND NEW.lifecycle=CASE WHEN NEW.quantity=0 THEN 2 ELSE 1 END)
-       OR (to_jsonb(NEW)-ARRAY['quantity','lifecycle','last_transaction_id']) IS DISTINCT FROM
-          (to_jsonb(OLD)-ARRAY['quantity','lifecycle','last_transaction_id']) THEN
+        AND NEW.quantity=OLD.quantity-l.quantity AND NEW.lifecycle=(CASE WHEN NEW.quantity=0 THEN 2 ELSE 1 END))
+       OR (v_instance_guard_new_json-ARRAY['quantity','lifecycle','last_transaction_id']) IS DISTINCT FROM
+          (v_instance_guard_old_json-ARRAY['quantity','lifecycle','last_transaction_id']) THEN
       RAISE EXCEPTION 'stash debits exactly the input'$new$;
     IF position(anchor IN body)=0 THEN RAISE EXCEPTION 'missing stash item change proof'; END IF;
     EXECUTE replace(body,anchor,replacement);

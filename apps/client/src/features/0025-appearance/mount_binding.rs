@@ -1,7 +1,13 @@
 //! Digest-bound local mount presentation metadata; never an ownership source.
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, io::Read, path::Path};
-pub(crate) fn load(root: &Path) -> Result<([u8; 32], BTreeMap<String, u32>), String> {
+pub(crate) struct Metadata {
+    pub digest: [u8; 32],
+    pub mounts: BTreeMap<String, u32>,
+    #[cfg(bevy_shell)]
+    pub outfits: Vec<String>,
+}
+pub(crate) fn load(root: &Path) -> Result<Metadata, String> {
     // Presentation metadata is accepted only when its normalized document matches the server's digest.
     // It never adds choices to the server-owned catalogue or grants an entitlement.
     // Match the native cosmetics owner's 16 MiB input bound. The source
@@ -37,5 +43,20 @@ pub(crate) fn load(root: &Path) -> Result<([u8; 32], BTreeMap<String, u32>), Str
             .ok_or("Mount artwork unavailable")?;
         mounts.insert(key.to_owned(), look);
     }
-    Ok((digest, mounts))
+    Ok(Metadata {
+        digest,
+        mounts,
+        #[cfg(bevy_shell)]
+        outfits: document["outfits"]
+            .as_array()
+            .ok_or("Outfit metadata unavailable")?
+            .iter()
+            .map(|entry| {
+                entry["key"]
+                    .as_str()
+                    .map(str::to_owned)
+                    .ok_or("Missing outfit key")
+            })
+            .collect::<Result<_, _>>()?,
+    })
 }

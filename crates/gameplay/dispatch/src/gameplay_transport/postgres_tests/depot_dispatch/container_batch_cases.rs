@@ -26,6 +26,12 @@ fn managed_container_move_postgres_dispatch_confirms_recursive_plan_and_conserve
     )
 }
 
+#[test]
+fn managed_container_move_postgres_prefers_armor_over_equipment() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    run_case(admin, Mode::ManagedArmor, Some(EntitlementState::Active))
+}
+
 fn run_case(_admin: String, mode: Mode, premium: Option<EntitlementState>) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -43,9 +49,10 @@ pub(super) async fn nest_fixture(pool: &sqlx::PgPool, bag: [u8; 16], item: [u8; 
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query(
+    let inserted = sqlx::query(
         "WITH old AS (DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid             RETURNING item_instance_id,world_id,placed_transaction_id)          INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id)          SELECT item_instance_id,world_id,encode($2,'hex')::uuid,1,placed_transaction_id FROM old",
     ).bind(item.as_slice()).bind(bag.as_slice()).execute(&mut *tx).await?;
+    assert_eq!(inserted.rows_affected(), 1, "the fixture must nest a live stack");
     tx.commit().await?;
     Ok(())
 }
@@ -97,6 +104,15 @@ pub(super) async fn exercise(
         let destination = stacks.get(1).ok_or("assigned bag")?;
         sqlx::query("INSERT INTO game_character_quick_loot_settings(character_id,unassigned_container_id,committed_character_revision) SELECT character_id,encode($1,'hex')::uuid,character_revision FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
             .bind(destination.as_slice()).bind(id(41).as_slice()).execute(pool).await?;
+        if mode == Mode::ManagedArmor {
+            use oteryn_gameplay_items::quick_loot::LootCategory;
+            // These are the durable destinations selected through Quick Loot.
+            sqlx::query("INSERT INTO game_character_quick_loot_categories(character_id,category,container_id)
+                         VALUES (encode($1,'hex')::uuid,$2,NULL),
+                                (encode($1,'hex')::uuid,$3,encode($4,'hex')::uuid)")
+                .bind(id(41).as_slice()).bind(LootCategory::Equipment as i16)
+                .bind(LootCategory::Armor as i16).bind(destination.as_slice()).execute(pool).await?;
+        }
         stash_cases::runtime_role(owner.root).await?;
         (
             wire::COMMAND_TYPE_MANAGED_CONTAINER_MOVE,
@@ -127,7 +143,7 @@ pub(super) async fn exercise(
             command(&mut client, 1, command_type, confirm(1)?).await?,
             (CommandStatus::Rejected, None)
         );
-        let first = if mode == Mode::ManagedContainerMove {
+        let first = if matches!(mode, Mode::ManagedContainerMove | Mode::ManagedArmor) {
             let direct = wire::Request::Preview {
                 source,
                 recursive: false,
@@ -207,7 +223,7 @@ pub(super) async fn exercise(
         } else {
             let destination = stacks.get(1).ok_or("assigned bag")?;
             let units: i64 = sqlx::query_scalar("SELECT coalesce(sum(i.quantity),0)::bigint FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid").bind(destination.as_slice()).fetch_one(pool).await?;
-            assert_eq!(units, 80);
+            assert_eq!(units, if mode == Mode::ManagedArmor { 2 } else { 80 });
             let child_count: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_item_loop_move_receipts WHERE quick_loot_ordinal>0",
             )
