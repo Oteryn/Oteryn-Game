@@ -987,7 +987,8 @@ class HeavyGateTests(unittest.TestCase):
 
     def test_unrelated_label_keeps_a_separate_concurrency_group(self):
         concurrency = indented_yaml_mapping_block(self.text, "concurrency", 0)
-        self.assertIn("  cancel-in-progress: true\n", concurrency)
+        # Only the standing staging -> main promotion PR keeps its running harness.
+        self.assertIn("  cancel-in-progress: ${{ github.event.pull_request.head.ref != 'staging' }}\n", concurrency)
         self.assertIn(
             "  group: pr-postgres-harness-${{ github.event.pull_request.number }}"
             "${{ (github.event.action == 'labeled' && github.event.label.name != 'heavy-tests')"

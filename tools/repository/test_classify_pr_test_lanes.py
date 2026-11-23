@@ -1130,7 +1130,10 @@ def test_metadata_events():
     assert "      - edited\n" in gate, "base retargets must retain native qualification"
     assert "classify_event" not in gate and "metadata_only" not in gate
     scope = core.indented_yaml_mapping_block(gate, "scope", 2)
-    main_guard = "github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref"
+    main_guard = (
+        "github.event.pull_request.base.ref == 'main' || "
+        "github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref"
+    )
     assert f"    if: {main_guard}\n" in scope
     assert not re.search(r"^    needs:", scope, flags=re.MULTILINE)
     aggregate = core.indented_yaml_mapping_block(gate, "validate", 2)

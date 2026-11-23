@@ -42,7 +42,9 @@ concurrency:
   # Adding any other label must not cancel a running harness, so those
   # (skipped) runs get a group of their own.
   group: pr-postgres-harness-${{ github.event.pull_request.number }}${{ (github.event.action == 'labeled' && github.event.label.name != 'heavy-tests') && format('-label-{0}', github.run_id) || '' }}
-  cancel-in-progress: true
+  # The standing staging -> main promotion PR moves faster than one harness run:
+  # its run finishes and the newest push waits as the one pending run.
+  cancel-in-progress: ${{ github.event.pull_request.head.ref != 'staging' }}
 
 jobs:
   prepare:

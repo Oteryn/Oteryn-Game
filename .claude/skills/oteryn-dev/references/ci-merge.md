@@ -134,6 +134,96 @@ only report them once `main` is already red.
 When one of them turns `main` red, fix it with `oteryn-debugging` section 6
 (*Red main: targeted fix*): bisect the CI history first, then a local loop.
 
+## The staging integration branch
+
+Owner decision 2026-11-23. `staging` is a long-lived integration branch
+between the lanes and `main`.
+
+- **Lane PRs go into `staging`.** Each lane works on its own short branch and
+  opens its PR with base `staging`. Such a PR runs the light `game-gate`
+  (`merge-gate.yml` accepts base `main` and `staging`, about 12 minutes) and
+  `codex-review-gate`. The PostgreSQL harness, `heavy-gate` and the PR node
+  boot shards stay main-only, so they never run here. Before pushing a
+  game-server change, run its PostgreSQL partitions on the PC's staging
+  checkout (`STG pg`). Squash-merge once `game-gate` is green on the head and
+  the Codex review is in (*Merge conditions*, 4). Archive the task record in
+  the PR's own final commit: `auto-archive-merged-tasks.yml` only archives
+  records whose PR merged into `main`, because a task completes on `main`.
+- **Heavy tests roll on the staging tip.** One standing PR `staging -> main`
+  is labelled `heavy-tests` and stays **ready for review, not a draft**: the
+  harness skips drafts. Each push to `staging` runs the harness on the new
+  tip. For a head `staging`, `pr-postgres-harness.yml` does not cancel the
+  run in progress, so a 26-35 minute run finishes even though `staging` moves
+  about every 12 minutes. The newest push waits as the one pending run.
+- **Promotion happens on the owner's word.** Declare a promotion freeze, and
+  merge no lane PR into `staging` until the promotion has merged. Wait for
+  `game-gate` and `heavy-gate` to be green on that exact head. Then
+  squash-merge the `staging -> main` PR with its 40-character head SHA, under
+  the `main` rules in *Merge conditions*.
+- **Sync after promotion, with no force-push.** The squash leaves `staging`
+  with history that `main` does not contain. The coordinator then:
+  1. `git fetch origin main staging && git switch -c sync/staging-<date> origin/staging && git merge --no-edit origin/main`
+     (a real merge commit; with no other commits on `main`, its tree equals
+     `main`).
+  2. Pushes the sync branch and opens a PR into `staging`. `game-gate` runs on
+     that merge commit.
+  3. Once `game-gate` is green, `git push origin <sha>:refs/heads/staging`, a
+     fast-forward of the same commit. GitHub marks the sync PR merged. Do not
+     press a merge button: a squash would drop `main` as a parent and the
+     next promotion diff would repeat the last cycle.
+  4. Lifts the freeze and opens the next standing `staging -> main` PR
+     (ready for review, labelled `heavy-tests`).
+- **Keeping `staging` alive.** `delete_branch_on_merge` is on and the
+  promotion PR's head is `staging`. The deletion rule below has no bypass
+  actor, so nobody's merge, auto-delete included, can delete it. This is not
+  verified live (`staging` did not exist when this was written): after the
+  first promotion, check that `staging` still exists. If it was deleted,
+  restore it with GitHub's *Restore branch* button on the promotion PR.
+  `terminal-branch-lifecycle.yml` never deletes a protected branch.
+
+Two rulesets, because a bypass actor bypasses every rule in its ruleset:
+
+```json
+{
+  "name": "Protect staging integrity",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [],
+  "conditions": {"ref_name": {"include": ["refs/heads/staging"], "exclude": []}},
+  "rules": [{"type": "deletion"}, {"type": "non_fast_forward"}]
+}
+```
+
+```json
+{
+  "name": "Gate staging",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}],
+  "conditions": {"ref_name": {"include": ["refs/heads/staging"], "exclude": []}},
+  "rules": [
+    {"type": "pull_request", "parameters": {
+      "allowed_merge_methods": ["squash"],
+      "dismiss_stale_reviews_on_push": true,
+      "require_code_owner_review": false,
+      "require_last_push_approval": false,
+      "required_approving_review_count": 0,
+      "required_review_thread_resolution": true}},
+    {"type": "required_status_checks", "parameters": {
+      "do_not_enforce_on_create": true,
+      "required_status_checks": [{"context": "game-gate"}],
+      "strict_required_status_checks_policy": false}}
+  ]
+}
+```
+
+Neither ruleset has `required_linear_history`, so the sync merge commit can
+land. The bypass actor (repository role 5, admin: the coordinator's identity)
+is used only for step 3 of the sync. `do_not_enforce_on_create` lets the
+coordinator create `staging` from `main`. The names differ from `Protect
+main`, so `tools/repository/apply_github_settings.py` leaves both rulesets
+alone.
+
 ## Merge conditions
 
 Start every merge round with the state of `main`:

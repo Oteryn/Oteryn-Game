@@ -18,10 +18,13 @@ name: codex-review-gate
 # thread fires no workflow event, so a schedule re-evaluates every open PR.
 # Owner decision 2026-11-18: a PR carrying the `heavy-tests` label skips this gate
 # (success without a receipt); its review runs as Codex Cloud tasks before the label.
+# Pull requests into the `staging` integration branch are gated like those into main:
+# the staging -> main promotion PR carries `heavy-tests`, so each lane PR is reviewed here.
 on:
   pull_request:
     branches:
       - main
+      - staging
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
   pull_request_review:
     types: [submitted, edited, dismissed]
@@ -203,7 +206,8 @@ jobs:
           if requested:
               numbers = [int(requested)]
           else:
-              numbers = [p['number'] for p in pages('pulls?state=open&base=main')]
+              numbers = [p['number'] for base in ('main', 'staging')
+                         for p in pages(f'pulls?state=open&base={base}')]
           failed = []
           for number in numbers:
               try:

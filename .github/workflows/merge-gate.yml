@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - main
+      - staging
     types:
       - opened
       - reopened
@@ -23,7 +24,7 @@ concurrency:
 jobs:
   scope:
     name: Merge gate / scope
-    if: github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref
+    if: github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -94,8 +95,8 @@ jobs:
               errors.append('pull request head moved after event head was resolved')
           if head_repository != repository:
               errors.append('merge gate only accepts same-repository pull request heads')
-          if base_ref != 'main':
-              errors.append('merge gate only accepts pull requests targeting main')
+          if base_ref not in ('main', 'staging'):
+              errors.append('merge gate only accepts pull requests targeting main or staging')
           if re.fullmatch(r'[0-9a-f]{40}', base_sha) is None:
               errors.append('pull request base SHA is invalid')
           if type(changed_files) is not int or changed_files < 0:
@@ -137,7 +138,7 @@ jobs:
                   errors.append('pull request repository changed during scope classification')
               if pull_after_files.get('base', {}).get('sha', '').lower() != base_sha:
                   errors.append('pull request base moved during scope classification')
-              if pull_after_files.get('base', {}).get('ref') != 'main':
+              if pull_after_files.get('base', {}).get('ref') != base_ref:
                   errors.append('pull request base ref changed during scope classification')
               changed_files_after = pull_after_files.get('changed_files')
               if type(changed_files_after) is not int or changed_files_after < 0:
@@ -315,8 +316,8 @@ jobs:
               errors.append('pull request head moved after scope validation')
           if head_repository != repository:
               errors.append('merge gate only accepts same-repository pull request heads')
-          if base_ref != 'main':
-              errors.append('merge gate only accepts pull requests targeting main')
+          if base_ref not in ('main', 'staging'):
+              errors.append('merge gate only accepts pull requests targeting main or staging')
 
           warnings: list[str] = []
           pattern = re.compile(
@@ -1551,7 +1552,7 @@ jobs:
 
   validate:
     name: Merge gate / validate
-    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
+    if: always() && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref)
     needs: [scope, lanes, governance, dependency_review, routing_contract, world_bundle, rust_policy, runner_route, rust_fast_build, rust_fast, rust_clippy, rust_supply_chain, rust_client_ui]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1639,7 +1640,7 @@ jobs:
 
   game_gate:
     name: game-gate
-    if: always() && (github.event.pull_request.base.ref == 'main' || !github.event.pull_request.base.ref)
+    if: always() && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'staging' || !github.event.pull_request.base.ref)
     needs: [scope, lanes, rust_fast_build, validate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -1689,7 +1690,7 @@ jobs:
           if (pull.get('number') != int(number) or pull.get('state') != 'open'
               or pull.get('head', {}).get('sha') != expected_head
               or pull.get('head', {}).get('repo', {}).get('full_name') != repository
-              or pull.get('base', {}).get('ref') != 'main'
+              or pull.get('base', {}).get('ref') not in ('main', 'staging')
               or pull.get('base', {}).get('sha') != expected_base):
               raise SystemExit('isolated edit target changed after qualification; current qualification is required')
           print('Isolated edit still matches the qualified live head and base.')
