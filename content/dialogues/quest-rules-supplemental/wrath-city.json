@@ -36,7 +36,8 @@
       ],
       "keyword_mode": "msg_contains",
       "topics": [
-        0
+        0,
+        1
       ],
       "guards": [
         {

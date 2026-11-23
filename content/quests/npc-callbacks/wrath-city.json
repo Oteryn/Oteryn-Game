@@ -204,8 +204,7 @@
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "npc": "oteryn:npc.zlak",
       "keywords": [
-        "mission",
-        "imperial service"
+        "mission"
       ],
       "msg_contains": true,
       "topic": 0,

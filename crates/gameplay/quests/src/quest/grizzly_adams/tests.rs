@@ -951,6 +951,17 @@ fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), 
             .map_err(|error| error.to_string())?
             .ok_or_else(|| format!("{task} phrased offer refused"))?;
         assert_eq!(quote.next_topic, input.topic, "{task}");
+        if task != "minotaurs" {
+            for message in ["yes, about the task", "no, about the task"] {
+                let repeated = programme
+                    .plan_storage(&crate::quest::npc_rules::NpcRuleInput { message, ..input })
+                    .map_err(|error| error.to_string())?
+                    .ok_or_else(|| format!("{task} did not repeat the prompt for {message:?}"))?;
+                assert_eq!(repeated.next_topic, input.topic, "{task}: {message}");
+                assert!(repeated.track_changes.is_empty(), "{task}: {message}");
+                assert_eq!(repeated.selected_rule_keys, quote.selected_rule_keys);
+            }
+        }
         let phrased_accept = programme
             .plan_storage(&crate::quest::npc_rules::NpcRuleInput {
                 message: "yes please",
@@ -962,7 +973,12 @@ fn non_paw_and_fur_tasks_load_with_native_counters_and_journals() -> Result<(), 
             phrased_accept.selected_rule_keys.as_slice(),
             std::slice::from_ref(&acceptance_key)
         );
-        assert!(report.matches_keyword("I finished the task"), "{task}");
+        let report_request = if task == "minotaurs" {
+            "mission"
+        } else {
+            "I finished the task"
+        };
+        assert!(report.matches_keyword(report_request), "{task}");
         let prefix = format!("oteryn:quest-transition/native-kills/hunting-tasks/{task}/");
         assert!(
             !crate::quest::native_kills::active_for(catalogue, &tracks)
@@ -1059,7 +1075,7 @@ fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), St
         .iter()
         .find(|c| c.key == "oteryn:quest-reward/wrath-city/zlak-handoff")
         .ok_or("handoff")?;
-    assert!(handoff.matches_keyword("tell me about imperial service"));
+    assert!(handoff.matches_keyword("tell me about the mission"));
     let gates = crate::quest::npc_rules::NpcRuleCatalog::runtime()
         .and_then(|rules| rules.admitted_for_npc("oteryn:npc.gate_guardian", catalogue))
         .map_err(|error| error.to_string())?
@@ -1092,6 +1108,20 @@ fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), St
             })
             .map_err(|error| error.to_string())?;
         assert_eq!(offer.map(|plan| plan.next_topic), can_enter.then_some(1));
+        for message in ["yes, I need a pass", "yes, about the mission"] {
+            let combined = crate::quest::npc_rules::NpcRuleInput { message, ..input };
+            assert!(
+                gates
+                    .plan_storage_teleport(&combined)
+                    .map_err(|error| error.to_string())?
+                    .is_none(),
+                "prompt keyword should win at stage {stage}: {message}"
+            );
+            let repeated = gates
+                .plan_storage(&combined)
+                .map_err(|error| error.to_string())?;
+            assert_eq!(repeated.map(|plan| plan.next_topic), can_enter.then_some(1));
+        }
         let confirmed = gates
             .plan_storage_teleport(&crate::quest::npc_rules::NpcRuleInput {
                 message: "yes please",
@@ -1138,5 +1168,158 @@ fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), St
             assert!(callback.return_on_failure);
         }
     }
+    Ok(())
+}
+
+#[test]
+fn daniel_repeats_a_reported_starter_hunt_only_from_the_choice_prompt() -> Result<(), String> {
+    use crate::quest::npc_rules::{NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger};
+    let loaded = crate::quest::loader::load_embedded_quest_state("daniel-repeat")
+        .map_err(|error| format!("{error:?}"))?;
+    let npc = "oteryn:npc.daniel_steelsoul";
+    let programme = NpcRuleCatalog::runtime()
+        .and_then(|rules| rules.admitted_for_npc(npc, loaded.catalogue()))
+        .map_err(|error| error.to_string())?
+        .ok_or("Daniel hunting programme")?;
+    let phase = |task| format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
+    let count = |task| format!("oteryn:quest-progress/hunting-tasks/{task}/count");
+    let tracks = BTreeMap::from([
+        (phase("trolls"), 2),
+        (phase("goblins"), 2),
+        (count("trolls"), 100),
+        (count("goblins"), 150),
+    ]);
+    let input = NpcRuleInput {
+        npc,
+        trigger: NpcRuleTrigger::Say,
+        message: "task",
+        player_name: None,
+        topic: 0,
+        tracks: &tracks,
+        inventory: &Default::default(),
+        now_epoch_seconds: 1_700_000_000,
+        calendar_month: 11,
+        premium_current: true,
+        level: 19,
+        vocation: "oteryn:vocation.knight",
+        sex: 0,
+        outfits: &BTreeMap::new(),
+    };
+    let choice = programme
+        .plan_storage(&input)
+        .map_err(|error| error.to_string())?
+        .ok_or("repeat choice")?;
+    assert!(choice.track_changes.is_empty());
+    for task in ["trolls", "goblins"] {
+        assert!(
+            choice
+                .reply
+                .iter()
+                .any(|line| line.contains(&format!("{{{task}}}")))
+        );
+        assert!(
+            programme
+                .plan_storage(&NpcRuleInput {
+                    message: task,
+                    ..input
+                })
+                .map_err(|error| error.to_string())?
+                .is_none()
+        );
+        let start = programme
+            .plan_storage(&NpcRuleInput {
+                message: task,
+                topic: choice.next_topic,
+                ..input
+            })
+            .map_err(|error| error.to_string())?
+            .ok_or("repeat start")?;
+        assert_eq!(start.next_topic, 0);
+        assert!(
+            start
+                .track_changes
+                .iter()
+                .any(|change| change.key == phase(task) && change.after == 1)
+        );
+        assert!(
+            start
+                .track_changes
+                .iter()
+                .any(|change| change.key == count(task) && change.after == 0)
+        );
+        assert!(start.track_changes.iter().all(|change| {
+            !change
+                .key
+                .starts_with("oteryn:quest-progress/hunting-tasks/")
+                || change.key == phase(task)
+                || change.key == count(task)
+        }));
+    }
+    assert!(
+        programme
+            .plan_storage(&NpcRuleInput {
+                message: "yes",
+                topic: choice.next_topic,
+                ..input
+            })
+            .map_err(|error| error.to_string())?
+            .is_none()
+    );
+    Ok(())
+}
+
+#[test]
+fn regional_hunt_reports_and_zlak_require_the_donor_keywords() -> Result<(), String> {
+    use crate::quest::reward_callbacks::{load_for, offered_for};
+    let loaded = crate::quest::loader::load_embedded_quest_state("regional-report-keywords")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = load_for(catalogue)?;
+    let offered = offered_for(catalogue)?;
+    let mut unexpected = Vec::new();
+    for (hunt, creature, held) in [
+        ("trolls", "trolls", false),
+        ("goblins", "goblins", false),
+        ("cyclops", "cyclops", false),
+        ("rotworms", "rotworms", false),
+        ("pirates", "pirates", false),
+        ("blue-djinns", "blue djinns", true),
+        ("green-djinns", "green djinns", true),
+        ("minotaurs", "minotaurs", true),
+        ("necromancers", "necromancers", true),
+    ] {
+        let key = format!("oteryn:quest-reward/hunting-tasks/{hunt}/report");
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.key == key)
+            .ok_or(key)?;
+        assert_eq!(offered.iter().any(|entry| entry.key == callback.key), !held);
+        let positive = if hunt == "minotaurs" {
+            "mission"
+        } else {
+            "I finished the task"
+        };
+        assert!(callback.matches_keyword(positive), "{hunt}");
+        for text in [
+            format!("the {creature} are nearby"),
+            "I have a report".into(),
+        ] {
+            if callback.matches_keyword(&text) {
+                unexpected.push((callback.key.as_str(), text));
+            }
+        }
+    }
+    let zlak = offered
+        .iter()
+        .find(|entry| entry.key == "oteryn:quest-reward/wrath-city/zlak-handoff")
+        .ok_or("Zlak handoff")?;
+    assert!(zlak.matches_keyword("tell me about the mission"));
+    if zlak.matches_keyword("tell me about imperial service") {
+        unexpected.push((zlak.key.as_str(), "tell me about imperial service".into()));
+    }
+    assert!(
+        unexpected.is_empty(),
+        "unexpected reward triggers: {unexpected:?}"
+    );
     Ok(())
 }
