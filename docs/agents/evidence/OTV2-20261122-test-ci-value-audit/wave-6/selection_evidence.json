@@ -1,0 +1,19 @@
+{
+  "source_head": "327b64d1ce5a627a75c1b3520c21ab364796bf99",
+  "workflow_files_scanned": 78,
+  "test_filenames_count": 10,
+  "literal_workflow_matches": {
+    "test_complete_remaining_source_definitions.py": [],
+    "test_complete_residual_monster_mechanics.py": [],
+    "test_complete_soul_core_fields.py": [],
+    "test_complete_wiki_monster_fields.py": [],
+    "test_compose_monster_current_sources.py": [],
+    "test_condition_potion_profiles.py": [],
+    "test_craft_runtime_profiles.py": [],
+    "test_creature_admission_stage.py": [],
+    "test_creature_condition_preservation.py": [],
+    "test_creature_initial_health.py": []
+  },
+  "literal_parallel_check_inventory_matches": [],
+  "indirect_discovery": "UNKNOWN; matching filenames absent does not establish never executed"
+}

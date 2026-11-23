@@ -1,0 +1,16 @@
+{
+  "source_head": "327b64d1ce5a627a75c1b3520c21ab364796bf99",
+  "matrix_blob": "36454c568dac76cb73b58180c0b7214da9fb701a",
+  "synthetic_not_live": true,
+  "command": "python3 docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_repros.py --repo <source-head-checkout> --mode aggregate",
+  "result": {
+    "kind": "aggregate_scenario_identity",
+    "requested_batch": "206:1",
+    "expected_from_audited_dispatch": "S09.client",
+    "observed": "I01.full PASS",
+    "shard_passed": true,
+    "summary_problems": []
+  },
+  "unapplied_patch": "../aggregate_completeness_proposal.patch",
+  "adoption": "DEFER until representative actual log/capture-only qualification"
+}
