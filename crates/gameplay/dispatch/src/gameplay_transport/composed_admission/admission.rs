@@ -425,7 +425,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.states.command_ingress.admit(admitted.game_session_id);
         // A retained position also identifies progression exhaustion after placement.
         let positioned = decided.is_some();
-        // NODEBOOT-1: the fenced hazard step retains its existing admission budget.
+        if matches!(
+            first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ) {
+            budget = budget.for_post_entry();
+        }
+        // Hazard, arrival, training and prey share the post-entry recovery window.
         if matches!(
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled

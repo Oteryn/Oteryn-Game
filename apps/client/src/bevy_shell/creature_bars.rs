@@ -35,6 +35,14 @@ fn project(
         let scale = windows.single().map_or(1., Window::scale_factor);
         let ui_scale = f32::from(owner.settings.preferences.interface_scale) / 100.;
         for bar in play.view.creature_health_bars() {
+            let prefs = &owner.settings.preferences;
+            if !(if bar.own {
+                prefs.player_hud_enabled && prefs.hud_bars && prefs.hud_health
+            } else {
+                prefs.other_hud_enabled && prefs.hud_other_health
+            }) {
+                continue;
+            }
             let [r, g, b] = health_rgb(bar.health);
             for (inset, width, height, colour) in [
                 (0., bar.width, 4. * ui_scale, Color::BLACK),

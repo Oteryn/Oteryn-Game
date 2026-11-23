@@ -11,9 +11,8 @@ pub async fn run_session<T: Stepper>(
     loop {
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
-            Ok(PlayCommand::HudStamina) => match session.feature(&super::resource_hud::stamina_command()).await {
-                Ok(result) => {
-                    outbox.hud_stamina_result(&result);
+            Ok(command @ (PlayCommand::SkillsCombat(_) | PlayCommand::HudStamina)) => match outbox.hud_character_query(&mut session, command).await {
+                Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

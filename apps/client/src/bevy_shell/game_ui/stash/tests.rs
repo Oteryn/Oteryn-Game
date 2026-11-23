@@ -404,3 +404,66 @@ fn stash_left_right_adjust_and_confirm_through_keyboard() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn manage_containers_opens_quick_loot_from_the_stash() -> TestResult {
+    let (mut app, _commands, outbox) = fixture()?;
+    click(&mut app, Kind::ManageContainers)?;
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .stash_panel()
+            .open
+    );
+    outbox.bevy_quick_loot_selected(true);
+    click(&mut app, Kind::ManageContainers)?;
+    let play = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?;
+    assert!(!play.link.stash_panel().open);
+    assert!(play.link.quick_loot_panel().open);
+    Ok(())
+}
+
+#[test]
+fn reverse_button_requests_opposite_name_and_quantity_orders() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    commands.try_recv()?;
+    for stock in [false, true] {
+        if stock {
+            click(&mut app, Kind::Sort)?;
+            commands.try_recv()?;
+            outbox.bevy_stash_result(&reply());
+            app.update();
+        }
+        click(&mut app, Kind::Reverse)?;
+        let PlayCommand::Stash(command) = commands.try_recv()? else {
+            return Err("browse".into());
+        };
+        assert_eq!(command.intent.page, 0);
+        let panel = app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .stash_panel();
+        assert!(panel.reverse);
+        assert_eq!(panel.sort == oteryn_client_ui::stash::Sort::Stock, stock);
+        outbox.bevy_stash_result(&reply());
+        app.update();
+        click(&mut app, Kind::Reverse)?;
+        commands.try_recv()?;
+        outbox.bevy_stash_result(&reply());
+        app.update();
+    }
+    Ok(())
+}

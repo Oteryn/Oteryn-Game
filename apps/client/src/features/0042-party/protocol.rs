@@ -33,6 +33,12 @@ impl Outbox {
         let before = members(&mailbox.party);
         oteryn_client_ui::party_list::apply_result(&mut mailbox.party, response);
         let after = members(&mailbox.party);
+        if let (Some(old), Some(new)) = (&before, &after)
+            && old != new
+            && mailbox.ui_sounds.len() < 32
+        {
+            mailbox.ui_sounds.push(crate::play::UiSound::Party);
+        }
         let shown: std::collections::BTreeSet<_> = mailbox
             .analyser
             .party

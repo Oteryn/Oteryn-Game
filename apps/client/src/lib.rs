@@ -184,9 +184,13 @@ impl ClientBootstrap {
             link.training_batch_label(admitted.character_name(), remaining);
             link.training_open();
         }
-        self.runtime
+        let task = self
+            .runtime
             .spawn(play::run_session(admitted.into_session(), commands, events))
             .map_err(|_error| unavailable())?;
+        #[cfg(bevy_shell)]
+        link.set_session_task(task.abort_handle());
+        drop(task);
         Ok((view, link))
     }
 

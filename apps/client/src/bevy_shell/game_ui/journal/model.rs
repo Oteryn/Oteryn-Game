@@ -1,6 +1,6 @@
 use super::*;
 use crate::play::feature_0287_actor_spell_catalog::view::SpellbookState;
-use oteryn_client_ui::quest_log::{self, QuestLogView, QuestPanel};
+use oteryn_client_ui::quest_log::{self, QuestPanel};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Row {
     pub id: RowId,
@@ -102,10 +102,7 @@ pub(super) fn quests(panel: &QuestPanel, page: usize, hide_completed: bool) -> P
     let visible = quest_rows(panel, hide_completed);
     let pages = visible.len().div_ceil(32).max(1);
     let page = page.min(pages - 1);
-    let line = match &panel.state.log.view {
-        Some(QuestLogView::Line(line)) => Some(line),
-        _ => None,
-    };
+    let line = panel.journal_line();
     let rows = visible
         .iter()
         .skip(page * 32)
@@ -165,9 +162,15 @@ pub(super) fn quests(panel: &QuestPanel, page: usize, hide_completed: bool) -> P
             .to_owned()
     } else {
         format!(
-            "{} quests · {} completed · {} tracked / 10 · Page {} / {}",
+            "{} quests · {} completed · {} hidden · {} tracked / 10 · Page {} / {}",
             visible.len(),
             panel.state.list.iter().filter(|q| q.completed).count(),
+            panel
+                .state
+                .list
+                .iter()
+                .filter(|q| panel.hidden.contains(&q.quest_index))
+                .count(),
             panel.state.log.tracked.len(),
             page + 1,
             pages
