@@ -56,8 +56,8 @@
       "npc": "gamon",
       "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gamon.lua:sha256:466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83",
       "offers": [
-        {"item": 2797, "direction": "SellToPlayer", "unit_price": 50, "line": 107},
-        {"item": 2800, "replaces_item": 2998, "direction": "SellToPlayer", "unit_price": 30, "line": 140}
+        {"item": 2998, "replaces_item": 2797, "direction": "SellToPlayer", "unit_price": 50, "line": 107},
+        {"item": 2998, "replaces_item": 2800, "direction": "SellToPlayer", "unit_price": 30, "line": 140, "shadowed": true}
       ]
     },
     {

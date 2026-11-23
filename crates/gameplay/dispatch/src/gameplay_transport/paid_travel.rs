@@ -135,6 +135,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(mut prompts) => prompts.remove(&session),
             Err(_) => return ordinary,
         };
+        if text == "no" {
+            let Some(decline) = previous
+                .filter(|prompt| {
+                    prompt.matches_confirmation(intent.npc_actor, &context, fence, now)
+                })
+                .and_then(|prompt| prompt.route.decline())
+            else {
+                return ordinary;
+            };
+            let mut outcome = ordinary;
+            let line = decline.reply.clone();
+            if decline.ungreet {
+                let runtime = self.runtime.lock().await;
+                if self.states.npc_conversations.current_npc(
+                    &self.states.chat,
+                    &runtime,
+                    actor,
+                    session,
+                    intent,
+                ) != Some(context)
+                {
+                    return outcome;
+                }
+                let Some(mut closed) = npc_command::end(&self.states.chat, session, intent) else {
+                    return outcome;
+                };
+                closed.lines.push(line);
+                outcome.conversation = Some(closed);
+                outcome.window = self.states.npc_conversations.close_window(session, None);
+            } else {
+                outcome.conversation =
+                    npc_command::NpcConversations::bank_reply(intent, line).conversation;
+            }
+            return outcome;
+        }
         let prompt = if text == "yes" {
             let Some(prompt) = previous else {
                 return ordinary;

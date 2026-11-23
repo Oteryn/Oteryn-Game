@@ -50,6 +50,7 @@
   },
   {
     "key": "oteryn:service.travel.brodrosch/cormaya",
+    "decline": {"reply": "We would like to serve you some time.", "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brodrosch.lua:125:sha256:5bb9cb767aa898153af041dba8364246d0b7b1cc7d9b74e10e840447886c9c64"},
     "keyword": "cormaya",
     "price": 160,
     "premium": false,
@@ -87,6 +88,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_bluebear/carlin",
+    "decline": {"reply": "We would like to serve you some time.", "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_bluebear.lua:67:sha256:8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2"},
     "keyword": "carlin",
     "price": 110,
     "premium": false,

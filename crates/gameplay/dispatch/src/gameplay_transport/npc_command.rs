@@ -321,7 +321,7 @@ impl NpcConversations {
     }
 
     /// The closed window to send when the session was shown one for an NPC it no longer talks to.
-    fn close_window(
+    pub(super) fn close_window(
         &self,
         session: GameSessionId,
         talking_to: Option<[u8; 16]>,
@@ -1559,7 +1559,7 @@ fn bank_completion_reply(
 }
 /// Ends the conversation of `session` when the intent named the NPC it was held with; returns the
 /// closing payload then.
-fn end(
+pub(super) fn end(
     chat: &ChatRuntime,
     session: GameSessionId,
     intent: &NpcTalkIntent,

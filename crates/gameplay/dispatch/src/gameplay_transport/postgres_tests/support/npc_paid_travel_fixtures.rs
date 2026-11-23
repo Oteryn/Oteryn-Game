@@ -954,6 +954,34 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                 line(&talk(&owner, &dependencies, npc, command_id + 2, request).await?)
                     .contains(&format!("{fare} gold"))
             );
+            if matches!(
+                (*captain, route.route.key.as_str()),
+                ("eremo", "cormaya") | ("kendra", "thais") | ("captain_bluebear", "carlin")
+                    | ("uzon", "edron") | ("captain_seahorse", "venore") | ("brodrosch", "cormaya")
+            ) {
+                let decline = decline_fixture(captain, &route.route.key)?;
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                let outcome = talk(&owner, &dependencies, npc, command_id + 3, "no").await?;
+                assert_eq!(line(&outcome), decline.reply, "{captain}/{destination}");
+                assert_eq!(
+                    owner.states.chat.engaged(session).is_none(),
+                    decline.ungreet,
+                    "{captain}/{destination} focus"
+                );
+                assert_eq!(
+                    outcome.conversation.is_some_and(|value| value.open.is_none()),
+                    decline.ungreet,
+                    "{captain}/{destination} conversation payload"
+                );
+                if decline.ungreet {
+                    talk(&owner, &dependencies, npc, command_id + 4, "hi").await?;
+                }
+                assert!(
+                    line(&talk(&owner, &dependencies, npc, command_id + 5, request).await?)
+                        .contains(&format!("{fare} gold"))
+                );
+                eprintln!("POSTGRES_EXECUTED TRAVEL decline {captain}/{destination}");
+            }
             let fence = owner
                 .current_quest_fence(session)
                 .await
@@ -968,7 +996,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     dependencies.actor,
                     UseCommand {
                         game_session_id: session,
-                        command_id: command_id + 3,
+                        command_id: command_id + 6,
                         item_fence: Some(fence),
                     },
                     NpcTalkIntent {
@@ -1005,7 +1033,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     dependencies.actor,
                     UseCommand {
                         game_session_id: session,
-                        command_id: command_id + 3,
+                        command_id: command_id + 6,
                         item_fence: Some(fence),
                     },
                 )
@@ -1306,6 +1334,31 @@ const S10T_CAPTAINS: &[&str] = &[
     "tonar",
     "uzon",
 ];
+
+#[derive(serde::Deserialize)]
+struct DeclineFixture {
+    reply: String,
+    #[serde(default)]
+    ungreet: bool,
+}
+
+fn decline_fixture(captain: &str, route: &str) -> TestResult<DeclineFixture> {
+    let key = format!("oteryn:service.travel.{captain}/{route}");
+    for material in [
+        crate::content::npc_catalogue::travel::CRYSTAL_HELPERS,
+        crate::content::npc_catalogue::travel::revision_material(),
+    ] {
+        let rows: Vec<serde_json::Value> = serde_json::from_str(material)?;
+        if let Some(decline) = rows
+            .iter()
+            .find(|row| row["key"] == key)
+            .and_then(|row| row.get("decline"))
+        {
+            return Ok(serde_json::from_value(decline.clone())?);
+        }
+    }
+    Err(format!("missing authored decline for {key}").into())
+}
 
 type Passage = (&'static str, &'static str, i64, (i32, i32, i16));
 

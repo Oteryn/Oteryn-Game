@@ -39,12 +39,22 @@ pub struct TravelRoute {
     pub world_change: Option<String>,
 }
 
+/// The authored reply and focus action for a declined travel quote.
+#[derive(Deserialize)]
+pub struct TravelDecline {
+    pub reply: String,
+    #[serde(default)]
+    pub ungreet: bool,
+}
+
 #[derive(Deserialize)]
 struct Correction {
     key: String,
     keyword: String,
     #[serde(default)]
     aliases: Vec<String>,
+    #[serde(default)]
+    decline: Option<TravelDecline>,
     price: u64,
     premium: bool,
     x: i32,
@@ -112,12 +122,19 @@ impl TravelRoute {
     pub fn matches_keyword(&self, text: &str) -> bool {
         text == self.keyword
             || text == self.route.key.replace('_', " ")
-            || corrections().iter().any(|row| {
-                !row.aliases.is_empty()
-                    && row.key.split_once('/')
-                        == Some((self.service.as_str(), self.route.key.as_str()))
-                    && row.aliases.iter().any(|alias| alias == text)
-            })
+            || self
+                .correction()
+                .is_some_and(|row| row.aliases.iter().any(|alias| alias == text))
+    }
+
+    pub fn decline(&self) -> Option<&'static TravelDecline> {
+        self.correction()?.decline.as_ref()
+    }
+
+    fn correction(&self) -> Option<&'static Correction> {
+        corrections().iter().find(|row| {
+            row.key.split_once('/') == Some((self.service.as_str(), self.route.key.as_str()))
+        })
     }
 }
 

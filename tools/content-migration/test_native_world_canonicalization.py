@@ -15,6 +15,7 @@ import native_world_canonicalization as canonical
 import prebuilt
 import questpc7_thaian_authoring as thaian
 import regenerate_content as regenerate
+from authored_quest_item_custody import qualify_many
 
 
 def encode(value):
@@ -106,26 +107,10 @@ class NativeWorldCompletion(unittest.TestCase):
             ),
         )
         self.write(self.world / "unmanaged/sentinel", b"retain caller sibling\n")
-        self.write(
-            self.repo / "content/services/trade/crystal-npc-trade.authoring.json",
-            encode(
-                {
-                    "shops": [
-                        {
-                            "npc": "gamon",
-                            "offers": [
-                                {
-                                    "item": 2797,
-                                    "direction": "Sell",
-                                    "unit_price": 50,
-                                    "replaces_item": 2998,
-                                },
-                            ],
-                        }
-                    ]
-                }
-            ),
-        )
+        trade_path = Path("content/services/trade/crystal-npc-trade.authoring.json")
+        shops = json.loads((Path(thaian.ROOT) / trade_path).read_bytes())["shops"]
+        gamon = next(shop for shop in shops if shop["npc"] == "gamon")
+        self.write(self.repo / trade_path, encode({"shops": [gamon]}))
         self.add_gamon()
         self.original = canonical.read_documents(self.world)
 
@@ -142,12 +127,13 @@ class NativeWorldCompletion(unittest.TestCase):
                     {
                         "item": {
                             "family": "Item",
-                            "key": "oteryn:item.tibia.i2998",
+                            "key": f"oteryn:item.tibia.i{item}",
                             "revision": "definition-r1",
                         },
-                        "direction": "Sell",
+                        "direction": "SellToPlayer",
                         "unit_price": 25,
                     }
+                    for item in (2797, 2800)
                 ],
             }
         )
@@ -239,7 +225,7 @@ class NativeWorldCompletion(unittest.TestCase):
                     (offer["item"]["key"], offer["unit_price"])
                     for offer in gamon["offers"]
                 ],
-                [("oteryn:item.tibia.i2797", 50)],
+                [("oteryn:item.tibia.i2998", 50)],
             )
             return self.native_output(command, **kwargs)
 
@@ -257,6 +243,19 @@ class NativeWorldCompletion(unittest.TestCase):
         ):
             canonical.main()
         self.assertEqual(len(self.calls), 1)
+
+    def test_gamon_source_item_refuses_inventory_custody(self):
+        root = Path(thaian.ROOT)
+        path = root / "content/items/definitions/items-17000-17499.json"
+        item_key = "oteryn:item.tibia.i2998"
+        definition = next(
+            row["definition"]
+            for row in json.loads(path.read_bytes())["records"]
+            if row["definition"]["identity"]["key"] == item_key
+        )
+        xml = (root / "imports/canary/items-xml/items.xml").read_bytes()
+        with self.assertRaisesRegex(ValueError, "^AUTHORED_CUSTODY_NOT_PORTABLE$"):
+            qualify_many(root, [definition], xml)
 
     def test_normal_regeneration_completes_natively_before_refreshing_pins(self):
         shutil.copytree(self.world, self.repo / "content/world")

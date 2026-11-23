@@ -15,6 +15,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_seahorse/venore",
+    "decline": {"reply": "We would like to serve you some time.", "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_seahorse.lua:57:sha256:fb220b0c810293487591f47f9e1b0d6e0ac99fa2a37a30505c56645d4a4e0d01"},
     "keyword": "venore",
     "price": 40,
     "premium": false,
@@ -29,6 +30,7 @@
   },
   {
     "key": "oteryn:service.travel.eremo/cormaya",
+    "decline": {"reply": "Maybe later.", "ungreet": true, "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eremo.lua:140:sha256:132039a8d790af142e964d624e1516648a6d6a318c159534db9c84805648401d"},
     "keyword": "cormaya",
     "aliases": ["back", "passage", "pemaret"],
     "price": 0,
@@ -114,6 +116,7 @@
   },
   {
     "key": "oteryn:service.travel.kendra/thais",
+    "decline": {"reply": "We would like to serve you some time.", "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kendra.lua:67:sha256:13d8d3385affdca7d40dc5d5e55af9bcbb2f72b42f0c4451e2ce4cb46d5ff788"},
     "keyword": "thais",
     "price": 180,
     "premium": true,
@@ -142,6 +145,7 @@
   },
   {
     "key": "oteryn:service.travel.uzon/edron",
+    "decline": {"reply": "You shouldn't miss the experience.", "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/uzon.lua:68:sha256:825271d379876103e47f78413d0a8872b1ef10cd1e160b5367833237ba529268"},
     "keyword": "edron",
     "price": 60,
     "premium": false,
