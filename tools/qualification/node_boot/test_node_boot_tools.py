@@ -131,6 +131,12 @@ class KnobTests(unittest.TestCase):
             'stack_reuse_is_local_only': [{'NODE_BOOT_KEEP_STACK': '1', 'CI': 'true'},
                                           {'NODE_BOOT_REUSE_STACK': '1', 'GITHUB_ACTIONS': 'true'},
                                           {'NODE_BOOT_REUSE_STACK': 'teardown', 'CI': 'true'}],
+            'reissue_content_requires_reuse_stack': [
+                {'NODE_BOOT_REISSUE_CONTENT': '1'},
+                {'NODE_BOOT_REISSUE_CONTENT': '1', 'NODE_BOOT_KEEP_STACK': '1'},
+                {'NODE_BOOT_REISSUE_CONTENT': '1', 'NODE_BOOT_REUSE_STACK': 'teardown'},
+                {'NODE_BOOT_REISSUE_CONTENT': '2', 'NODE_BOOT_REUSE_STACK': '1'},
+            ],
             'invalid_stack_reuse_mode': [{'NODE_BOOT_REUSE_STACK': '2'},
                                          {'NODE_BOOT_KEEP_STACK': '1', 'NODE_BOOT_REUSE_STACK': '1'}],
         }
@@ -150,8 +156,8 @@ class WorldFixtureTests(unittest.TestCase):
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 10)
-        self.assertEqual(len(set(accounts)), 10)
+        self.assertEqual(len(accounts), 11)
+        self.assertEqual(len(set(accounts)), 11)
 
 
 class ReuseTests(unittest.TestCase):
@@ -170,6 +176,7 @@ class ReuseTests(unittest.TestCase):
             PG_CONTAINER=fixture-postgres
             STACK_KEPT=0
             REUSE_STATE={temp}/state.env
+            NODE_BOOT_PLATFORM_PIN=platform-pin
             docker() {{ echo true; }}
             sudo() {{ return 0; }}
             {extra}
@@ -182,6 +189,9 @@ class ReuseTests(unittest.TestCase):
             REUSE_STATE={temp}/state.env
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; STACK_KEPT=0
             PVP_GAME_PORT=17182
+            NODE_BOOT_PLATFORM_PIN=platform-pin
+            GAME_DATABASE=oteryn_node_boot; ASSIGNMENT_EPOCH=1; ACTIVATION_SEQUENCE=1
+            NODE_STATE_DIR={temp}/state; NODE_FENCE_DIR={temp}/fence; DESCRIPTOR_INSTALLED_AT=1
             WORK={temp}/kept; node_log="$WORK/node.log"; failed_node_log="$WORK/failed-node.log"
             WP5_PKI="$WORK/pki"; WP5_SCRATCH="$WORK/scratch"; WP5_PORT=18463
             WP5_DB_PASSWORD=a; WP5_DB_ROOT_PASSWORD=b; WP5_APP_KEY=c; PG_PORT=15433
@@ -222,6 +232,94 @@ class ReuseTests(unittest.TestCase):
             # Teardown loads the stack without keeping it, so cleanup removes it.
             result = self.run_guard(temp, 'teardown', 'sudo() { return 1; }')
             self.assertEqual(result.stdout.strip(), f'kept=0 work={temp}/kept pid=4242 fresh=no')
+
+    def test_reuse_refuses_platform_changes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            self.assertEqual(self.save_state(temp).returncode, 0)
+            result = self.run_guard(temp, 1, 'NODE_BOOT_PLATFORM_PIN=different')
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self.assertEqual(result.stdout.strip(),
+                             'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_platform_sha_mismatch')
+
+    def test_template_migrates_once_per_hash_and_never_records_a_failure(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp)
+            migrate = path / 'oteryn-game-migrate'
+            migrate.write_text('#!/bin/bash\necho migration >> "$TRACE"\nexit "${MIGRATION_EXIT:-0}"\n')
+            migrate.chmod(0o755)
+            setup = textwrap.dedent(f"""\
+                set -Eeuo pipefail
+                TARGET={temp}
+                export TRACE={temp}/trace
+                ADMIN_URL=postgresql://fixture/postgres
+                requested_hash=$(printf '%064d' 1)
+                migration_fingerprint() {{ echo "$requested_hash"; }}
+                psql_admin() {{
+                  if [[ "$*" == *shobj_description* ]]; then
+                    cat {temp}/hash 2>/dev/null || true
+                  else
+                    sql=$(cat)
+                    printf '%s\\n' "$sql" >> "$TRACE"
+                    if [[ "$sql" == *COMMENT* ]]; then
+                      echo "$requested_hash" > {temp}/hash
+                    fi
+                  fi
+                }}
+                evidence() {{ echo "$*"; }}
+                """)
+            helpers = '\n'.join(function(name) for name in (
+                'select_database_template', 'template_matches', 'prepare_database_template'))
+            result = bash(setup + helpers + '''
+                prepare_database_template
+                prepare_database_template
+                requested_hash=$(printf '%064d' 2)
+                prepare_database_template
+                prepare_database_template
+                requested_hash=$(printf '%064d' 3)
+                export MIGRATION_EXIT=1
+                prepare_database_template
+                ''')
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(result.stdout.count('qualification_template=rebuilt'), 2)
+            self.assertEqual(result.stdout.count('qualification_template=hit'), 2)
+            self.assertEqual((path / 'trace').read_text().count('migration\n'), 3)
+            self.assertEqual((path / 'hash').read_text().strip(), f'{2:064}')
+
+    def test_assignment_issues_and_waits_for_the_selected_sequence(self):
+        setup = textwrap.dedent('''\
+            set -Eeuo pipefail
+            WORLD_ID=world CHANNEL_ID=channel GAME_DATABASE=clone
+            NODE_BOOT_WORLD=0 NODE_ACTIVATION_WAIT_SECONDS=120
+            node_log=/dev/null BASE=/srv/fixture SERVICE_UID=123
+            node_field() { echo field; }
+            remember() { :; }
+            fail() { echo "$*"; return 1; }
+            evidence() { echo "$*"; }
+            node_deployment_grants() { :; }
+            assignment_report_args() { :; }
+            sudo() { echo '123 600'; }
+            psql_admin() { cat >/dev/null; echo 1; }
+            ops() {
+              echo "ops $*"
+              case "$*" in *-ungranted.json*|*content-stale.json*) return 6;; esac
+            }
+            await_log() { echo "wait $*"; }
+            ''')
+        helpers = '\n'.join(function(name) for name in ('timing', 'node_complete_assignment'))
+        for sequence in (1, 7):
+            with self.subTest(sequence=sequence):
+                result = bash(setup + helpers + f'\nACTIVATION_SEQUENCE={sequence}\nnode_complete_assignment 0\n')
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                lines = result.stdout.splitlines()
+                issue = next(i for i, line in enumerate(lines) if 'content-1.json --world' in line)
+                wait = next(i for i, line in enumerate(lines) if line.startswith('wait event=content_activated'))
+                self.assertLess(issue, wait)
+                self.assertIn(f'--sequence {sequence} --previous empty', lines[issue])
+                self.assertIn(f'activation_sequence={sequence}  120', lines[wait])
+                self.assertIn(f'--sequence {sequence + 1} --previous empty',
+                              next(line for line in lines if 'content-stale.json' in line))
+                self.assertRegex(result.stdout, r'NODE_BOOT_TIMING step=content_issue s=\d+')
+                self.assertRegex(result.stdout, r'NODE_BOOT_TIMING step=content_activate s=\d+')
 
     def test_world_mp_requires_fresh_stack_but_can_teardown(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -295,11 +393,12 @@ class StageDumpTests(unittest.TestCase):
                 NODE_BOOT_WORLD=0; NODE_BOOT_SPELLS=0; ACTIVE_STAGE=setup
                 RUNTIME_DIAGNOSTICS_PID=""; PG_SAMPLER_PID=4242; PG_CONTAINER=x
                 declare -A STATUS=(); ORDER=()
+                STAGE_LOG_DIR="$WORK"; GAME_DATABASE=oteryn_node_boot
                 evidence() {{ :; }}; psql_admin() {{ :; }}; docker() {{ :; }}; compose() {{ :; }}
                 durability_report_lines() {{ cat; }}; sleep() {{ :; }}
                 start_runtime_diagnostics() {{ :; }}; stop_runtime_diagnostics() {{ :; }}
                 pg_observe() {{ echo "PG_OBSERVE $*"; }}
-                ''') + function('pg_observability_dump') + '\n' + function('stage') + f'\nstage sample -- {command}\n'
+                ''') + function('timing') + '\n' + function('pg_observability_dump') + '\n' + function('stage') + f'\nstage sample -- {command}\n'
             return bash(script).stdout
 
     def test_each_stage_end_dumps_postgres_and_a_failed_stage_is_verbose(self):
@@ -329,7 +428,7 @@ class PgSamplerLifecycleTests(unittest.TestCase):
                 '''))
             script = textwrap.dedent(f'''\
                 set -Eeuo pipefail
-                GAME_SOURCE={tmp}/src PG_OBS={tmp}/obs PG_CONTAINER=none PG_SAMPLER_PID=""
+                GAME_SOURCE={tmp}/src PG_OBS={tmp}/obs PG_CONTAINER=none PG_SAMPLER_PID="" GAME_DATABASE=oteryn_node_boot
                 ''') + function('pg_observe') + '\n' + function('start_pg_sampler') + '\n' + function('stop_pg_sampler') + textwrap.dedent('''
                 start_pg_sampler
                 for _ in $(seq 1 100); do [[ -s "$PID_FILE" ]] && break; sleep 0.05; done
@@ -509,7 +608,7 @@ class FailureSummaryTests(unittest.TestCase):
                          ['NODE_BOOT_ROOT_CAUSES failed_rows=0'])
 
     def test_run_sh_prints_the_summary_before_the_stage_table(self):
-        self.assertRegex(RUN_TEXT, r'failure_summary\.py" "\$WORK"/stage-\*\.log \\\n'
+        self.assertRegex(RUN_TEXT, r'failure_summary\.py" "\$STAGE_LOG_DIR"/stage-\*\.log \\\n'
                                    r'  \$\{GITHUB_STEP_SUMMARY:\+--summary "\$GITHUB_STEP_SUMMARY"\} \|\| true\n'
                                    r'echo "NODE_BOOT_STAGES"')
 

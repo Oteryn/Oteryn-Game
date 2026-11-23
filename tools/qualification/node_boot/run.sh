@@ -72,7 +72,7 @@ if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" ]] && (( PVP_GAME_PORT == node_boot_game
   echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_port_node_boot_pvp_game_port'; exit 2
 fi
 # NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
-# reruns only the seam stage against it, =teardown removes it. Local development only.
+# restarts Game on a cloned qualification database, =teardown removes it. Local development only.
 NODE_BOOT_KEEP_STACK="${NODE_BOOT_KEEP_STACK:-0}"
 NODE_BOOT_REUSE_STACK="${NODE_BOOT_REUSE_STACK:-0}"
 case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
@@ -82,6 +82,12 @@ case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
       echo 'NODE_BOOT_RESULT=BLOCKED reason=stack_reuse_is_local_only'; exit 2
     fi ;;
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_stack_reuse_mode'; exit 2 ;;
+esac
+
+NODE_BOOT_REISSUE_CONTENT="${NODE_BOOT_REISSUE_CONTENT:-0}"
+case "$NODE_BOOT_REUSE_STACK/$NODE_BOOT_REISSUE_CONTENT" in
+  */0|1/1) ;;
+  *) echo 'NODE_BOOT_RESULT=BLOCKED reason=reissue_content_requires_reuse_stack'; exit 2 ;;
 esac
 
 
@@ -191,7 +197,7 @@ readonly SPAWN_PROOF=node::serve::qualification_fixture::tests::qualification_sp
 NODE_SPAWN_FEATURES=(--features qualification-spawn)
 NODE_BOOT_LIBTEST=""
 WORLD_COMPILER=(cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler --)
-if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
+if [[ "$NODE_BOOT_REUSE_STACK" != teardown ]]; then
   # The qualification clock is available only in disposable World runs.
   NODE_CLOCK_FEATURES=()
   export OTERYN_NODE_BOOT_REAL_CLOCK="${OTERYN_NODE_BOOT_REAL_CLOCK:-0}"
@@ -230,9 +236,24 @@ if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
   fi
 fi
 if [[ "$NODE_BOOT_SPELLS" == 1 && "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
+  spell_setup_started=$SECONDS
   # Execute the existing compile/decode/stage qualification before creating services.
   RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}" \
     bash "$GAME_SOURCE/tools/qualification/spells/run.sh" map "$NODE_BOOT_SPELL_MANIFEST"
+  printf 'NODE_BOOT_TIMING step=spell_qualification s=%d\n' "$((SECONDS - spell_setup_started))"
+fi
+
+# The flock supervisor retains the lock; service processes never inherit it.
+if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" != 00 && "${NODE_BOOT_STACK_LOCKED:-0}" == 0 ]]; then
+  command -v flock >/dev/null || { echo 'NODE_BOOT_RESULT=BLOCKED reason=missing_binary_flock'; exit 2; }
+  stack_project="${NODE_BOOT_PROJECT:-nodeboot${GITHUB_RUN_ID:-local}${GITHUB_RUN_ATTEMPT:-1}}"
+  code=0
+  NODE_BOOT_STACK_LOCKED=1 flock -n -E 75 --close "${TMPDIR:-/tmp}/node-boot-reuse-$stack_project.lock" bash "$0" "$@" || code=$?
+  if [[ "$code" == 75 ]]; then
+    echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_in_use'
+    exit 2
+  fi
+  exit "$code"
 fi
 
 WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/node-boot.XXXXXX")"
@@ -263,7 +284,29 @@ ACTIVE_STAGE=setup
 PG_OBS="$WORK/postgres"
 PG_SAMPLER_PID=""
 STACK_KEPT=0
+GAME_DATABASE=oteryn_node_boot
+NODE_STATE_DIR="$BASE/state"
+NODE_FENCE_DIR="$BASE/fence-parent/fence"
+ASSIGNMENT_EPOCH=1
+ACTIVATION_SEQUENCE=1
 REUSE_STATE="${TMPDIR:-/tmp}/node-boot-reuse-$WP5_PROJECT.env"
+# Include filenames as well as bytes: adding, removing or renumbering a
+# migration changes the contract even when the SQL itself is unchanged.
+migration_fingerprint() (
+  cd "$GAME_SOURCE/apps/game-server/migrations"
+  export LC_ALL=C
+  sha256sum -- ./*.sql | sha256sum | cut -d ' ' -f 1
+)
+if [[ "$NODE_BOOT_KEEP_STACK" == 1 && ( -e "$REUSE_STATE" || -L "$REUSE_STATE" ) ]]; then
+  rm -rf -- "$WORK"
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_already_exists'; exit 2
+fi
+requested_clock_features=()
+if [[ "$NODE_BOOT_REUSE_STACK" != teardown ]]; then
+  requested_clock_features=("${NODE_CLOCK_FEATURES[@]}")
+fi
+requested_spawn_features=("${NODE_SPAWN_FEATURES[@]}")
+requested_gameplay_env=("${NODE_GAMEPLAY_ENV[@]}")
 if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
   rm -rf -- "$WORK"
   # Owner-only state from the NODE_BOOT_KEEP_STACK run; it holds the disposable stack's secrets.
@@ -276,6 +319,9 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
     echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
   fi
   if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+    if [[ "${kept_platform_sha:-}" != "$NODE_BOOT_PLATFORM_PIN" ]]; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_platform_sha_mismatch'; exit 2
+    fi
     if [[ "$NODE_BOOT_WORLD" == 1 ]] && ! python3 - "${NODE_BOOT_E2E_ONLY:-}" <<'PY_REUSED_GROUPS'
 import os
 import sys
@@ -290,7 +336,7 @@ PY_REUSED_GROUPS
       echo 'NODE_BOOT_RESULT=BLOCKED reason=mp_requires_fresh_stack'; exit 2
     fi
     if [[ "$(docker inspect -f '{{.State.Running}}' "$PG_CONTAINER" 2>/dev/null)" != true ]] \
-      || ! sudo kill -0 "$NODE_PID" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; then
+      || { [[ -n "$NODE_PID" ]] && { ! sudo kill -0 "$NODE_PID" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; }; }; then
       echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_not_running'; exit 2
     fi
     if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" && "${kept_pvp_port:-0}" != "$PVP_GAME_PORT" ]]; then
@@ -336,7 +382,46 @@ compose() {
     --file "$GAME_SOURCE/$COMPOSE_S3B" --file "$GAME_SOURCE/$COMPOSE_OVERLAY" "$@"
 }
 psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_node_boot_admin -d "$1" "${@:2}"; }
+# Templates contain migrated schema only. The database comment is committed
+# after a successful migration/clone, so an interrupted build is never reused.
+select_database_template() {
+  TEMPLATE_HASH="$(migration_fingerprint)"
+  [[ "$TEMPLATE_HASH" =~ ^[0-9a-f]{64}$ ]]
+  TEMPLATE_DATABASE="nb_template_${TEMPLATE_HASH:0:51}"
+}
+template_matches() {
+  [[ "$(psql_admin postgres -c "SELECT shobj_description(oid, 'pg_database') FROM pg_database WHERE datname = '$TEMPLATE_DATABASE'")" == "$TEMPLATE_HASH" ]]
+}
+save_database_template() {
+  select_database_template
+  psql_admin postgres <<SQL
+CREATE DATABASE "$TEMPLATE_DATABASE" TEMPLATE "$1";
+ALTER DATABASE "$TEMPLATE_DATABASE" ALLOW_CONNECTIONS false;
+COMMENT ON DATABASE "$TEMPLATE_DATABASE" IS '$TEMPLATE_HASH';
+SQL
+}
+prepare_database_template() {
+  select_database_template
+  if template_matches; then
+    evidence "qualification_template=hit migrations_sha256=$TEMPLATE_HASH"
+    return
+  fi
+  psql_admin postgres <<SQL
+DROP DATABASE IF EXISTS "$TEMPLATE_DATABASE";
+CREATE DATABASE "$TEMPLATE_DATABASE";
+SQL
+  OTERYN_GAME_MIGRATION_DATABASE_URL="${ADMIN_URL%/*}/$TEMPLATE_DATABASE" "$TARGET/oteryn-game-migrate"
+  psql_admin postgres <<SQL
+ALTER DATABASE "$TEMPLATE_DATABASE" ALLOW_CONNECTIONS false;
+COMMENT ON DATABASE "$TEMPLATE_DATABASE" IS '$TEMPLATE_HASH';
+SQL
+  evidence "qualification_template=rebuilt migrations_sha256=$TEMPLATE_HASH"
+}
 evidence() { printf 'NODE_BOOT_EVIDENCE %s\n' "$*"; }
+timing() {
+  local started=$2
+  printf 'NODE_BOOT_TIMING step=%s s=%d\n' "$1" "$((SECONDS - started))"
+}
 fail() { echo "NODE_BOOT_FAILURE $*"; return 1; }
 stop_runtime_diagnostics() {
   local pid
@@ -348,7 +433,7 @@ stop_runtime_diagnostics() {
   RUNTIME_DIAGNOSTICS_PID=""
   PVP_RUNTIME_DIAGNOSTICS_PID=""
 }
-pg_observe() { python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" "$@" --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot; }
+pg_observe() { python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" "$@" --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database "$GAME_DATABASE"; }
 start_pg_sampler() {
   mkdir -p "$PG_OBS"
   # Start python3 itself in the background, not a subshell running pg_observe:
@@ -357,7 +442,7 @@ start_pg_sampler() {
   # stdout open, so the caller's `run.sh | tee` never saw EOF and the step hung
   # after NODE_BOOT_RESULT until the job timeout. Its stdout is not the run's pipe.
   python3 "$GAME_SOURCE/tools/qualification/node_boot/pg_observe.py" sample --out "$PG_OBS/activity.log" \
-    --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database oteryn_node_boot \
+    --container "$PG_CONTAINER" --user oteryn_node_boot_admin --database "$GAME_DATABASE" \
     < /dev/null > /dev/null 2>> "$PG_OBS/sampler.err" &
   PG_SAMPLER_PID=$!
 }
@@ -377,16 +462,21 @@ pg_observability_dump() { # stage exit: statements, lock waits and slow statemen
 save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
   local names=(WORK node_log failed_node_log WP5_PKI WP5_SCRATCH WP5_PORT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
     WP5_APP_KEY PG_PORT PG_ADMIN_PASSWORD CONTROL_PASSWORD RUNTIME_PASSWORD ADMIN_URL FRESH_SEED_HEX
+    GAME_DATABASE NODE_STATE_DIR NODE_FENCE_DIR ASSIGNMENT_EPOCH ACTIVATION_SEQUENCE DESCRIPTOR_INSTALLED_AT
     RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_CLOCK_FEATURES NODE_SPAWN_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     names+=(GP_HARNESS_PID GP_PG_CONTAINER WP5_SERVER_NAME WP5_SOURCE_AUTHORITY WP5_ROUTE_REVISION)
   fi
   [[ -z "${OTERYN_QUALIFICATION_CLOCK_FILE:-}" ]] || names+=(OTERYN_QUALIFICATION_CLOCK_FILE)
+  local state_tmp
+  state_tmp="$(mktemp "$REUSE_STATE.XXXXXX")"
   ( umask 077
     { declare -p "${names[@]}"
+      printf 'kept_platform_sha=%q\n' "$NODE_BOOT_PLATFORM_PIN"
       printf 'kept_pvp_port=%q\n' "$PVP_GAME_PORT"
       printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
-    } > "$REUSE_STATE" )
+    } > "$state_tmp" )
+  mv -f -- "$state_tmp" "$REUSE_STATE"
   STACK_KEPT=1
 }
 interrupted() {
@@ -442,95 +532,22 @@ if [[ "$NODE_BOOT_REUSE_STACK" == teardown ]]; then
   result=NODE_BOOT_TEARDOWN
   exit 0
 fi
-# A reused stack keeps its provisioning, characters and node: only the seam stage runs again.
-if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
-
-make_ca() {
-  openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
-    -subj "/CN=$2" -keyout "$WP5_PKI/$1.key" -out "$WP5_PKI/$1.crt" >/dev/null 2>&1
-}
-make_leaf() {
-  local prefix=$1 subject=$2 ca=$3 usage=$4 san=${5:-}
-  openssl req -new -newkey rsa:2048 -nodes -sha256 -subj "/CN=$subject" \
-    -keyout "$WP5_PKI/$prefix.key" -out "$WP5_PKI/$prefix.csr" >/dev/null 2>&1
-  printf 'basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=%s\n' "$usage" > "$WP5_PKI/$prefix.ext"
-  [[ -z "$san" ]] || printf 'subjectAltName=%s\n' "$san" >> "$WP5_PKI/$prefix.ext"
-  openssl x509 -req -sha256 -days 1 -in "$WP5_PKI/$prefix.csr" -CA "$WP5_PKI/$ca.crt" \
-    -CAkey "$WP5_PKI/$ca.key" -CAcreateserial -extfile "$WP5_PKI/$prefix.ext" \
-    -out "$WP5_PKI/$prefix.crt" >/dev/null 2>&1
-}
-make_ca server-ca node-boot-server-ca
-make_ca client-ca node-boot-client-ca
-make_ca db-ca node-boot-db-ca
-make_leaf server source.test server-ca serverAuth DNS:source.test
-make_leaf client oteryn-game-native-evidence client-ca clientAuth
-make_leaf db db.node-boot.test db-ca serverAuth DNS:db.node-boot.test
-# The nginx topology expects the S3-B intent client files; the node uses the
-# single evidence identity for both routes.
-cp "$WP5_PKI/client.crt" "$WP5_PKI/intent-client.crt"
-cp "$WP5_PKI/client.key" "$WP5_PKI/intent-client.key"
-# An end-entity certificate: TLS rejects a CA certificate used as a server leaf.
-openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 \
-  -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost" \
-  -addext "basicConstraints=critical,CA:FALSE" -addext "keyUsage=critical,digitalSignature" \
-  -addext "extendedKeyUsage=serverAuth" \
-  -keyout "$WP5_PKI/gameplay.key" -out "$WP5_PKI/gameplay.crt" >/dev/null 2>&1
-openssl genpkey -algorithm ed25519 -out "$WP5_PKI/fresh-signing.pem" >/dev/null 2>&1
-raw_hex() { tail -c 32 | od -An -v -tx1 | tr -d ' \n'; }
-FRESH_PUBLIC_HEX="$(openssl pkey -in "$WP5_PKI/fresh-signing.pem" -pubout -outform DER | raw_hex)"
-FRESH_SEED_HEX="$(openssl pkey -in "$WP5_PKI/fresh-signing.pem" -outform DER | raw_hex)"
-# Separate ephemeral Recovery key (#822 resume); fixed issuer/profile/purpose is not Fresh.
-openssl genpkey -algorithm ed25519 -out "$WP5_PKI/recovery-signing.pem" >/dev/null 2>&1
-RECOVERY_PUBLIC_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -pubout -outform DER | raw_hex)"
-RECOVERY_SEED_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -outform DER | raw_hex)"
-[[ ${#RECOVERY_PUBLIC_HEX} == 64 && ${#RECOVERY_SEED_HEX} == 64 ]]
-evidence "pins platform=$NODE_BOOT_PLATFORM_PIN topology=$NODE_BOOT_TOPOLOGY game=$(git rev-parse HEAD)"
-
-# TLS-verified PostgreSQL 18.6 for the Game durability root. It always logs lock waits
-# (after 200 ms), deadlocks and statements of 500 ms or more without parameter values,
-# and loads pg_stat_statements, so every run carries its own database evidence.
-chmod 644 "$WP5_PKI/db.crt" "$WP5_PKI/db.key"
-docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
-  --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
-  --env POSTGRES_DB=postgres --volume "$WP5_PKI/db.crt:/tls/db.crt:ro" \
-  --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
-  'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key -c log_lock_waits=on -c deadlock_timeout=200ms -c log_min_duration_statement=500 -c log_parameter_max_length=0 -c log_parameter_max_length_on_error=0 -c shared_preload_libraries=pg_stat_statements -c "log_line_prefix=%m [%p] %u "' >/dev/null
-chmod 600 "$WP5_PKI/db.key"
-# Probe over TCP: the entrypoint's temporary init server listens on the unix socket only
-# and is shut down after init, so a socket probe can pass before the real server is up.
-pg_ready=0
-for _ in $(seq 1 60); do
-  docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -p 5432 -U oteryn_node_boot_admin -d postgres >/dev/null 2>&1 && { pg_ready=1; break; }
-  sleep 1
-done
-[[ $pg_ready == 1 ]] || fail "postgres_ready"
-echo "CREATE DATABASE oteryn_node_boot" | psql_admin postgres
-# The view lives in the maintenance database: the Game schema stays exactly as migrated.
-echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
-[[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_node_boot)" == 180006 ]] || fail "postgres_version"
-[[ "$(echo 'SHOW ssl' | psql_admin oteryn_node_boot)" == on ]] || fail "postgres_tls"
-ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
-
-# Use the merged native producer for every shard; the PHP producer is retired.
-game_platform_start
-if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
-  seed_mp_accounts
-fi
-
+build_game() {
 # Shipped binaries and the SEAM client harness.
 if [[ -z "$NODE_BOOT_LIBTEST" ]]; then
   cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
   cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
 fi
+}
 
-# Deployment administration: service user, directories, roles, migration.
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
-SERVICE_UID="$(id -u "$SERVICE_USER")"
-sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE/fence-parent" "$BASE/node"
-sudo install -d -o root -g root -m 0700 "$BASE/ops"
+stage_content_artifacts() {
+local CONTENT_WORK="$WORK"
+if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+  CONTENT_WORK="$(mktemp -d "$WORK/content.XXXXXX")"
+fi
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Stage only declared, hash-bound inputs; never publish unrelated siblings.
-  python3 - "$NODE_BOOT_SPELL_MANIFEST" "$GAME_SOURCE" "$WORK/gameplay" <<'PY_STAGE'
+  python3 - "$NODE_BOOT_SPELL_MANIFEST" "$GAME_SOURCE" "$CONTENT_WORK/gameplay" <<'PY_STAGE'
 import hashlib
 import json
 import pathlib
@@ -578,17 +595,20 @@ for name, data in selected.items():
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(data)
 PY_STAGE
+  if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+    sudo rm -rf -- "$BASE/gameplay"
+  fi
   sudo install -d -o root -g root -m 0755 "$BASE/gameplay"
-  sudo cp -R "$WORK/gameplay/." "$BASE/gameplay/"
+  sudo cp -R "$CONTENT_WORK/gameplay/." "$BASE/gameplay/"
   sudo chmod -R a+rX "$BASE/gameplay"
   evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1) activation_wait_seconds=$NODE_ACTIVATION_WAIT_SECONDS"
 fi
 MAP_REVISION=map-s3b-1
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
-  "${WORLD_COMPILER[@]}" compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
-  PIN="$WORK/world.json"
-  python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
+  "${WORLD_COMPILER[@]}" compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$CONTENT_WORK/world.otwb" "$WORLD_REGIONS" > "$CONTENT_WORK/world-compile.json"
+  PIN="$CONTENT_WORK/world.json"
+  python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$CONTENT_WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
 import json, sys
 pin = json.load(open(sys.argv[1]))
 pin["schema"] = "OTERYN_QUALIFICATION_WORLD/v1"
@@ -599,55 +619,33 @@ with open(sys.argv[3], "w") as output:
 PY_REGION_PIN
   WORLD_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
   sudo install -d -o root -g root -m 0755 "$BASE/world"
-  sudo install -o root -g root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
+  sudo install -o root -g root -m 0644 "$CONTENT_WORK/world.otwb" "$BASE/world/world.otbundle"
   sudo install -o root -g root -m 0644 "$PIN" "$BASE/world/world.json"
   MAP_REVISION="$WORLD_DIGEST"
 fi
-sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
-sudo install -d -o "$SERVICE_UID" -m 0755 "$BASE/node/secrets"
-sudo install -o root -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
-OTERYN_GAME_MIGRATION_DATABASE_URL="$ADMIN_URL" "$BASE/bin/oteryn-game-migrate"
-psql_admin oteryn_node_boot <<SQL
-CREATE ROLE nb_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_control;
-CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
-GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
-SQL
-secret_to() { # owner source destination
-  sudo install -o "$1" -m 0600 "$2" "$3"
 }
-printf '%s\n' "$CONTROL_PASSWORD" > "$WORK/control-password"
-printf '%s\n' "$RUNTIME_PASSWORD" > "$WORK/runtime-password"
-secret_to root "$WORK/control-password" "$BASE/ops/pg-password"
-secret_to root "$WP5_PKI/db-ca.crt" "$BASE/ops/db-ca.pem"
-secret_to "$SERVICE_UID" "$WORK/runtime-password" "$BASE/node/secrets/pg-password"
-secret_to "$SERVICE_UID" "$WP5_PKI/db-ca.crt" "$BASE/node/secrets/db-ca.pem"
-secret_to "$SERVICE_UID" "$WP5_PKI/server-ca.crt" "$BASE/node/secrets/platform-roots.pem"
-secret_to "$SERVICE_UID" "$WP5_PKI/client.crt" "$BASE/node/secrets/platform-client.crt"
-secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-client.key"
-secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
-secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
 
+write_ops_config() {
 cat > "$WORK/ops.toml" <<TOML
 [operator]
-state_directory = "$BASE/state"
+state_directory = "$NODE_STATE_DIR"
 service_uid = $SERVICE_UID
 [database]
 transport_ip = "127.0.0.1"
 port = $PG_PORT
 tls_server_name = "db.node-boot.test"
-database = "oteryn_node_boot"
+database = "$GAME_DATABASE"
 username = "nb_control"
 password_file = "$BASE/ops/pg-password"
 root_ca_file = "$BASE/ops/db-ca.pem"
 [character]
-fence_directory = "$BASE/fence-parent/fence"
+fence_directory = "$NODE_FENCE_DIR"
 authority_scope_id = "character-primary"
 issuer_identity = "game-ops"
 TOML
 sudo install -o root -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
-# One descriptor installation time: changed facts under an unchanged
-# revision are refused at boot, as D3 requires.
-DESCRIPTOR_INSTALLED_AT="$(date +%s)"
+}
+
 write_node_config() { # launch-file
   cat > "$WORK/node.toml" <<TOML
 qualification_fixture = true
@@ -667,12 +665,12 @@ preproduction_actor_capacity = 131072
 transport_ip = "127.0.0.1"
 port = $PG_PORT
 tls_server_name = "db.node-boot.test"
-database = "oteryn_node_boot"
+database = "$GAME_DATABASE"
 username = "nb_runtime"
 password_file = "$BASE/node/secrets/pg-password"
 root_ca_file = "$BASE/node/secrets/db-ca.pem"
 [character]
-fence_directory = "$BASE/fence-parent/fence"
+fence_directory = "$NODE_FENCE_DIR"
 authority_scope_id = "character-primary"
 issuer_identity = "game-ops"
 [control]
@@ -705,8 +703,8 @@ client_certificate_file = "$BASE/node/secrets/public-projections.crt"
 client_key_file = "$BASE/node/secrets/public-projections.key"
 epoch_fence_file = "$BASE/public-projections/epoch-fence"
 [launch]
-authorization_file = "$BASE/state/$1"
-s2_authorization_file = "$BASE/state/s2-fresh-store.json"
+authorization_file = "$NODE_STATE_DIR/$1"
+s2_authorization_file = "$NODE_STATE_DIR/s2-fresh-store.json"
 TOML
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     python3 - "$PIN" "$BASE/world/world.otbundle" >> "$WORK/node.toml" <<'PY_WORLD'
@@ -726,9 +724,143 @@ PY_WORLD
   fi
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"
+    if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+      sed -i "s/^assignment_epoch = 1$/assignment_epoch = $ASSIGNMENT_EPOCH/" "$WORK/node.toml" "$WORK/assignment-report.toml"
+      sudo install -o root -m 0644 "$WORK/assignment-report.toml" "$BASE/ops/assignment-report.toml"
+    fi
   fi
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
+if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
+
+make_ca() {
+  openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
+    -subj "/CN=$2" -keyout "$WP5_PKI/$1.key" -out "$WP5_PKI/$1.crt" >/dev/null 2>&1
+}
+make_leaf() {
+  local prefix=$1 subject=$2 ca=$3 usage=$4 san=${5:-}
+  openssl req -new -newkey rsa:2048 -nodes -sha256 -subj "/CN=$subject" \
+    -keyout "$WP5_PKI/$prefix.key" -out "$WP5_PKI/$prefix.csr" >/dev/null 2>&1
+  printf 'basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=%s\n' "$usage" > "$WP5_PKI/$prefix.ext"
+  [[ -z "$san" ]] || printf 'subjectAltName=%s\n' "$san" >> "$WP5_PKI/$prefix.ext"
+  openssl x509 -req -sha256 -days 1 -in "$WP5_PKI/$prefix.csr" -CA "$WP5_PKI/$ca.crt" \
+    -CAkey "$WP5_PKI/$ca.key" -CAcreateserial -extfile "$WP5_PKI/$prefix.ext" \
+    -out "$WP5_PKI/$prefix.crt" >/dev/null 2>&1
+}
+setup_started=$SECONDS
+make_ca server-ca node-boot-server-ca
+make_ca client-ca node-boot-client-ca
+make_ca db-ca node-boot-db-ca
+make_leaf server source.test server-ca serverAuth DNS:source.test
+make_leaf client oteryn-game-native-evidence client-ca clientAuth
+make_leaf db db.node-boot.test db-ca serverAuth DNS:db.node-boot.test
+# The nginx topology expects the S3-B intent client files; the node uses the
+# single evidence identity for both routes.
+cp "$WP5_PKI/client.crt" "$WP5_PKI/intent-client.crt"
+cp "$WP5_PKI/client.key" "$WP5_PKI/intent-client.key"
+# An end-entity certificate: TLS rejects a CA certificate used as a server leaf.
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 \
+  -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost" \
+  -addext "basicConstraints=critical,CA:FALSE" -addext "keyUsage=critical,digitalSignature" \
+  -addext "extendedKeyUsage=serverAuth" \
+  -keyout "$WP5_PKI/gameplay.key" -out "$WP5_PKI/gameplay.crt" >/dev/null 2>&1
+openssl genpkey -algorithm ed25519 -out "$WP5_PKI/fresh-signing.pem" >/dev/null 2>&1
+raw_hex() { tail -c 32 | od -An -v -tx1 | tr -d ' \n'; }
+FRESH_PUBLIC_HEX="$(openssl pkey -in "$WP5_PKI/fresh-signing.pem" -pubout -outform DER | raw_hex)"
+FRESH_SEED_HEX="$(openssl pkey -in "$WP5_PKI/fresh-signing.pem" -outform DER | raw_hex)"
+# Separate ephemeral Recovery key (#822 resume); fixed issuer/profile/purpose is not Fresh.
+openssl genpkey -algorithm ed25519 -out "$WP5_PKI/recovery-signing.pem" >/dev/null 2>&1
+RECOVERY_PUBLIC_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -pubout -outform DER | raw_hex)"
+RECOVERY_SEED_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -outform DER | raw_hex)"
+[[ ${#RECOVERY_PUBLIC_HEX} == 64 && ${#RECOVERY_SEED_HEX} == 64 ]]
+evidence "pins platform=$NODE_BOOT_PLATFORM_PIN topology=$NODE_BOOT_TOPOLOGY game=$(git rev-parse HEAD)"
+
+timing pki "$setup_started"
+setup_started=$SECONDS
+# TLS-verified PostgreSQL 18.6 for the Game durability root. It always logs lock waits
+# (after 200 ms), deadlocks and statements of 500 ms or more without parameter values,
+# and loads pg_stat_statements, so every run carries its own database evidence.
+chmod 644 "$WP5_PKI/db.crt" "$WP5_PKI/db.key"
+docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
+  --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
+  --env POSTGRES_DB=postgres --volume "$WP5_PKI/db.crt:/tls/db.crt:ro" \
+  --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
+  'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key -c log_lock_waits=on -c deadlock_timeout=200ms -c log_min_duration_statement=500 -c log_parameter_max_length=0 -c log_parameter_max_length_on_error=0 -c shared_preload_libraries=pg_stat_statements -c "log_line_prefix=%m [%p] %u "' >/dev/null
+chmod 600 "$WP5_PKI/db.key"
+# Probe over TCP: the entrypoint's temporary init server listens on the unix socket only
+# and is shut down after init, so a socket probe can pass before the real server is up.
+pg_ready=0
+for _ in $(seq 1 60); do
+  docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -p 5432 -U oteryn_node_boot_admin -d postgres >/dev/null 2>&1 && { pg_ready=1; break; }
+  sleep 1
+done
+[[ $pg_ready == 1 ]] || fail "postgres_ready"
+echo "CREATE DATABASE oteryn_node_boot" | psql_admin postgres
+# The view lives in the maintenance database: the Game schema stays exactly as migrated.
+echo "CREATE EXTENSION pg_stat_statements" | psql_admin postgres
+[[ "$(echo 'SHOW server_version_num' | psql_admin "$GAME_DATABASE")" == 180006 ]] || fail "postgres_version"
+[[ "$(echo 'SHOW ssl' | psql_admin "$GAME_DATABASE")" == on ]] || fail "postgres_tls"
+ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_PORT/oteryn_node_boot"
+
+timing pg "$setup_started"
+setup_started=$SECONDS
+# Use the merged native producer for every shard; the PHP producer is retired.
+game_platform_start
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_LIFECYCLE" == native_reference && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
+  seed_mp_accounts
+fi
+
+timing platform "$setup_started"
+setup_started=$SECONDS
+build_game
+timing build "$setup_started"
+setup_started=$SECONDS
+
+# Deployment administration: service user, directories, roles, migration.
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
+SERVICE_UID="$(id -u "$SERVICE_USER")"
+sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE/fence-parent" "$BASE/node"
+sudo install -d -o root -g root -m 0700 "$BASE/ops"
+timing setup_directories "$setup_started"
+setup_started=$SECONDS
+stage_content_artifacts
+timing content_compile "$setup_started"
+setup_started=$SECONDS
+sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
+sudo install -d -o "$SERVICE_UID" -m 0755 "$BASE/node/secrets"
+sudo install -o root -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
+timing install "$setup_started"
+setup_started=$SECONDS
+OTERYN_GAME_MIGRATION_DATABASE_URL="$ADMIN_URL" "$BASE/bin/oteryn-game-migrate"
+if [[ "$NODE_BOOT_KEEP_STACK" == 1 ]]; then
+  save_database_template "$GAME_DATABASE"
+fi
+timing migrate "$setup_started"
+setup_started=$SECONDS
+psql_admin "$GAME_DATABASE" <<SQL
+CREATE ROLE nb_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_control;
+CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
+GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
+SQL
+secret_to() { # owner source destination
+  sudo install -o "$1" -m 0600 "$2" "$3"
+}
+printf '%s\n' "$CONTROL_PASSWORD" > "$WORK/control-password"
+printf '%s\n' "$RUNTIME_PASSWORD" > "$WORK/runtime-password"
+secret_to root "$WORK/control-password" "$BASE/ops/pg-password"
+secret_to root "$WP5_PKI/db-ca.crt" "$BASE/ops/db-ca.pem"
+secret_to "$SERVICE_UID" "$WORK/runtime-password" "$BASE/node/secrets/pg-password"
+secret_to "$SERVICE_UID" "$WP5_PKI/db-ca.crt" "$BASE/node/secrets/db-ca.pem"
+secret_to "$SERVICE_UID" "$WP5_PKI/server-ca.crt" "$BASE/node/secrets/platform-roots.pem"
+secret_to "$SERVICE_UID" "$WP5_PKI/client.crt" "$BASE/node/secrets/platform-client.crt"
+secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-client.key"
+secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
+secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
+
+write_ops_config
+# One descriptor installation time: changed facts under an unchanged
+# revision are refused at boot, as D3 requires.
+DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 # Root/client writes an atomic offset; the service can only read it. Start at
 # zero on every disposable run, and keep it across the shutdown/restart probes.
 if (( ${#NODE_CLOCK_FEATURES[@]} )); then
@@ -738,8 +870,8 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
   chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
   NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
 fi
+timing configure "$setup_started"
 fi # NODE_BOOT_REUSE_STACK == 0
-start_pg_sampler
 
 ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
 start_node() {
@@ -756,6 +888,7 @@ await_log() { # pattern seconds
 # Every stage runs to a recorded outcome, so one run reports every failing
 # stage instead of stopping at the first one. A stage whose prerequisite did
 # not pass is recorded as SKIP. State shared between stages lives in $VARS.
+STAGE_LOG_DIR="$WORK"
 VARS="$WORK/vars"
 : > "$VARS"
 declare -A STATUS=()
@@ -1009,6 +1142,7 @@ stage() { # name prerequisite... -- function
     fi
   done
   ACTIVE_STAGE=$name
+  local stage_started=$SECONDS
   echo "::group::stage $name"
   evidence "stage=$name state=start world_bundle=$NODE_BOOT_WORLD spells=$NODE_BOOT_SPELLS"
   case "$name" in
@@ -1018,28 +1152,29 @@ stage() { # name prerequisite... -- function
     start_runtime_diagnostics "${name}_pvp" "$WORK/pvp-node.log"
   fi
   set +e
-  ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
+  ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$STAGE_LOG_DIR/stage-$name.log"
   local rc=${PIPESTATUS[0]}
   stop_runtime_diagnostics
   pg_observability_dump "$name" "$rc"
   set -e
   evidence "stage=$name state=finish world_bundle=$NODE_BOOT_WORLD exit=$rc"
+  timing "$name" "$stage_started"
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
     # A FAIL row fails its stage even when the stage process exits 0, unless the row is
     # listed in known_fail_rows.txt (debt that every run prints).
     local known_fail="$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt" new_rows known_hit stale_rows
-    new_rows=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -vxFf <(known_rows "$known_fail") | paste -sd, - || true)
-    known_hit=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
-    stale_rows=$(stage_rows "$WORK/stage-$name.log" PASS | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
+    new_rows=$(stage_rows "$STAGE_LOG_DIR/stage-$name.log" FAIL | grep -vxFf <(known_rows "$known_fail") | paste -sd, - || true)
+    known_hit=$(stage_rows "$STAGE_LOG_DIR/stage-$name.log" FAIL | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
+    stale_rows=$(stage_rows "$STAGE_LOG_DIR/stage-$name.log" PASS | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
     [[ -z $known_hit ]] || echo "NODE_BOOT_KNOWN_FAIL $name rows=$known_hit"
     [[ -z $stale_rows ]] || echo "NODE_BOOT_KNOWN_FAIL_STALE $name rows=$stale_rows"
     if [[ -n $new_rows ]]; then
       STATUS[$name]="FAIL(rows)"
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
     fi
-    if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
+    if grep -q 'e2e_all scenario=.* status=FAIL' "$STAGE_LOG_DIR/stage-$name.log"; then
       echo "--- session close events behind failed e2e rows"
       grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed|connection_[a-z_]+)( |$)' "$node_log" 2>/dev/null | tail -n 120 || true
     fi
@@ -1087,17 +1222,17 @@ stage() { # name prerequisite... -- function
     echo "--- connection and listener events"
     grep -E 'event=(connection_|listener_)' "$node_log" 2>/dev/null | sed -E 's/^.*(event=)/\1/' | head -n 80 || true
     echo "--- postgres sessions"
-    echo "SELECT pid, usename, application_name, state, wait_event_type, wait_event, now() - backend_start, now() - xact_start, now() - state_change, left(regexp_replace(query, '\\s+', ' ', 'g'), 160) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND pid <> pg_backend_pid() ORDER BY backend_start" \
-      | psql_admin oteryn_node_boot 2>&1 | tail -n 30 || true
+    echo "SELECT pid, usename, application_name, state, wait_event_type, wait_event, now() - backend_start, now() - xact_start, now() - state_change, left(regexp_replace(query, '\\s+', ' ', 'g'), 160) FROM pg_stat_activity WHERE datname = '$GAME_DATABASE' AND pid <> pg_backend_pid() ORDER BY backend_start" \
+      | psql_admin "$GAME_DATABASE" 2>&1 | tail -n 30 || true
     # The holder is alive but always busy: show which statements and tables keep it so.
     echo "--- postgres statements on the holder (200 samples)"
     for _ in $(seq 1 200); do
-      echo "SELECT state || ' ' || left(regexp_replace(query, '\\s+', ' ', 'g'), 200) FROM pg_stat_activity WHERE datname = 'oteryn_node_boot' AND usename <> 'oteryn_node_boot_admin'" \
-        | psql_admin oteryn_node_boot 2>/dev/null || true
+      echo "SELECT state || ' ' || left(regexp_replace(query, '\\s+', ' ', 'g'), 200) FROM pg_stat_activity WHERE datname = '$GAME_DATABASE' AND usename <> 'oteryn_node_boot_admin'" \
+        | psql_admin "$GAME_DATABASE" 2>/dev/null || true
       sleep 0.02
     done | sort | uniq -c | sort -rn | head -n 25
     echo "--- postgres table writes and scans over 10 s"
-    psql_admin oteryn_node_boot 2>&1 <<'SQL' | tail -n 30 || true
+    psql_admin "$GAME_DATABASE" 2>&1 <<'SQL' | tail -n 30 || true
 CREATE TEMP TABLE node_boot_stat_before AS
   SELECT relid, n_tup_ins + n_tup_upd + n_tup_del AS writes, coalesce(seq_scan, 0) + coalesce(idx_scan, 0) AS scans
   FROM pg_stat_user_tables;
@@ -1161,24 +1296,24 @@ assignment_report_args() { # fills the caller's report_args on the Platform life
   fi
 }
 node_deployment_grants() {
-  [[ "$(echo "SELECT current_user = pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()" | psql_admin oteryn_node_boot)" == t ]] || fail "deployment issuer is not the database owner"
+  [[ "$(echo "SELECT current_user = pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()" | psql_admin "$GAME_DATABASE")" == t ]] || fail "deployment issuer is not the database owner"
   local operations=1,2,3,4
   [[ "${NODE_BOOT_LIFECYCLE:-}" != game_platform ]] || operations=1,4
   # The reference run also proves the superseding replacement (operation 2).
   [[ "${NODE_BOOT_LIFECYCLE:-}" != native_reference ]] || operations=1,2,4
-  psql_admin oteryn_node_boot <<SQL
+  psql_admin "$GAME_DATABASE" <<SQL
 INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM unnest(ARRAY[$operations]::smallint[]) op;
 INSERT INTO game_control_field_policy_grants VALUES ('nb_control', '$WORLD_ID', 'policy-s3b-1');
 SQL
   # Match the readiness revision with explicit control-owned non-PvP facts.
   # Authenticate as the granted login: SET ROLE cannot satisfy the insert guard.
   docker exec -i -e PGPASSWORD="$CONTROL_PASSWORD" "$PG_CONTAINER" \
-    psql -v ON_ERROR_STOP=1 -qAt -h 127.0.0.1 -U nb_control -d oteryn_node_boot <<SQL
+    psql -v ON_ERROR_STOP=1 -qAt -h 127.0.0.1 -U nb_control -d "$GAME_DATABASE" <<SQL
 INSERT INTO game_spell_field_world_policies (world_id, world_policy_revision, world_type, protection_level, in_fight_ms, source_pin, control_role, decision_identity)
 VALUES ('$WORLD_ID', 'policy-s3b-1', 1, 8, 60000, '99902524e052f37574194466c2949c576e4ab269', session_user, 'node-boot-qualification');
 SQL
-  [[ "$(echo "SELECT has_table_privilege('nb_control','game_control_scope_grants','INSERT,UPDATE,DELETE,TRUNCATE') OR has_table_privilege('nb_runtime','game_control_scope_grants','INSERT,UPDATE,DELETE,TRUNCATE')" | psql_admin oteryn_node_boot)" == f ]] || fail "Game role can issue control-scope grants"
-  [[ "$(echo "SELECT string_agg(operation::text, ',' ORDER BY operation) FROM game_control_scope_grants WHERE control_role='nb_control' AND world_id='$WORLD_ID' AND channel_id='$CHANNEL_ID'" | psql_admin oteryn_node_boot)" == "$operations" ]] || fail "deployment grant scope or operations mismatch"
+  [[ "$(echo "SELECT has_table_privilege('nb_control','game_control_scope_grants','INSERT,UPDATE,DELETE,TRUNCATE') OR has_table_privilege('nb_runtime','game_control_scope_grants','INSERT,UPDATE,DELETE,TRUNCATE')" | psql_admin "$GAME_DATABASE")" == f ]] || fail "Game role can issue control-scope grants"
+  [[ "$(echo "SELECT string_agg(operation::text, ',' ORDER BY operation) FROM game_control_scope_grants WHERE control_role='nb_control' AND world_id='$WORLD_ID' AND channel_id='$CHANNEL_ID'" | psql_admin "$GAME_DATABASE")" == "$operations" ]] || fail "deployment grant scope or operations mismatch"
   evidence "flow=deployment_administration issuer=database_owner scope=seeded_world_channel operations=$operations game_roles_can_issue=0"
 }
 
@@ -1187,13 +1322,14 @@ node_assigned_ready() { # §4.2–§4.4
   start_node
   remember NODE_PID "$NODE_PID"
   await_log awaiting_assignment 120
+  timing node_boot "$boot_started"
   node_complete_assignment "$boot_started"
 }
 
 # Shared continuation: the lane keeps this node alive during ungranted proofs.
 node_complete_assignment() {
   local boot_started=$1
-  local node revision
+  local node revision started=$SECONDS
   node="$(node_field "$node_log" node_id)"; revision="$(node_field "$node_log" registration_revision)"
   remember node_a "$node"
   local code=0
@@ -1202,23 +1338,27 @@ node_complete_assignment() {
   # #935: the node activates the scope's current native entry Content issuance before its
   # Channel runtime exists. Issuance requires an exact-scope operation-4 grant.
   code=0
-  ops content activate --request content-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty || code=$?
+  ops content activate --request content-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence "$ACTIVATION_SEQUENCE" --previous empty || code=$?
   [[ $code == 6 ]] || fail "content activation without an exact-scope grant exit=$code"
   node_deployment_grants
-  ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
+  started=$SECONDS
+  ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence "$ACTIVATION_SEQUENCE" --previous empty
   ops content activate --request content-1.json
+  timing content_issue "$started"
+  started=$SECONDS
   local -a report_args=()
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
-  await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
+  await_log "event=content_activated .*activation_sequence=$ACTIVATION_SEQUENCE " "$NODE_ACTIVATION_WAIT_SECONDS"
+  timing content_activate "$started"
   await_log "event=readiness .*ready=true" 60
   # The canonical manifest makes each validation substantial. Prove the same
-  # stale-predecessor rejection against the now-active sequence 1, without
+  # stale-predecessor rejection against the now-active issuance, without
   # spending the unassigned node's unchanged wait on this independent negative.
   code=0
-  ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 2 --previous empty || code=$?
+  ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence "$((ACTIVATION_SEQUENCE + 1))" --previous empty || code=$?
   [[ $code == 6 ]] || fail "stale content activation predecessor exit=$code"
-  [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "content activation rows"
+  [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin "$GAME_DATABASE")" == 1 ]] || fail "content activation rows"
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     # World admission prepares Cyclopedia/boost state against the admitted epoch.
     # A fresh database has none: initialize through the existing Control owner,
@@ -1226,17 +1366,22 @@ node_complete_assignment() {
     local epoch_result
     epoch_result="$({
       echo 'PREPARE node_boot_world_epoch(UUID, UUID, TEXT) AS'
-      cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+      if [[ "$ACTIVATION_SEQUENCE" == 1 ]]; then
+        cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+      else
+        sed "s/activation_sequence = 1;/activation_sequence = $ACTIVATION_SEQUENCE;/" \
+          "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+      fi
       printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST"
       printf "EXECUTE node_boot_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST"
-    } | psql_admin oteryn_node_boot)"
+    } | psql_admin "$GAME_DATABASE")"
     [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
     evidence "world_epoch=0 source=control_initializer bundle=compiled content=issued replay=idempotent"
   fi
   [[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
-  [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
+  [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin "$GAME_DATABASE")" == 1 ]] || fail "operator registered an incarnation"
   evidence "world_boot_seconds=$((SECONDS - boot_started)) world_bundle=$NODE_BOOT_WORLD"
-  evidence "node registered=1 assignment=operator ungranted=refused content_activation=sequence_1 content_ungranted=refused content_replay=exact content_stale=refused readiness=true control_socket=uid${SERVICE_UID}_0600"
+  evidence "node registered=1 assignment=operator ungranted=refused content_activation=sequence_$ACTIVATION_SEQUENCE content_ungranted=refused content_replay=exact content_stale=refused readiness=true control_socket=uid${SERVICE_UID}_0600"
 }
 
 control_socket_peer() { # a non-root peer is closed without an answer
@@ -1257,9 +1402,17 @@ PY
 
 character_bootstrap() { # §4.5 Characters from real Platform intents
   local index=0 account operation name requested_vocation failed=0 vocation="${NODE_BOOT_PROFILE^}"
+  local -a operations=("${INTENT_OPERATIONS[@]}")
   [[ "$NODE_BOOT_PROFILE" != explorer ]] || vocation=Knight
+  if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+    # An expired Platform intent cannot authorize a birth in the new clone.
+    local issued
+    issued="$(psql_admin "$GAME_DATABASE" -c "SELECT game_character_uuid_v7() FROM generate_series(1, ${#BOOTSTRAP_ACCOUNTS[@]})")"
+    mapfile -t operations <<< "$issued"
+    [[ "${#operations[@]}" == "${#BOOTSTRAP_ACCOUNTS[@]}" ]] || fail "qualification intent IDs"
+  fi
   for account in "${BOOTSTRAP_ACCOUNTS[@]}"; do
-    operation="${INTENT_OPERATIONS[$index]}"
+    operation="${operations[$index]}"
     name="${INTENT_NAMES[$index]}"
     index=$((index + 1))
     requested_vocation="$vocation"
@@ -1279,7 +1432,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
 }
 
 legacy_d150_seed() {
-  psql_admin oteryn_node_boot -v account="$ACCOUNT_ID" -v world="$WORLD_ID" \
+  psql_admin "$GAME_DATABASE" -v account="$ACCOUNT_ID" -v world="$WORLD_ID" \
     -v profile="${INTERPRETATION[0]}" -v ruleset="${INTERPRETATION[1]}" -v content="${INTERPRETATION[2]}" \
     < "$GAME_SOURCE/tools/qualification/node_boot/legacy_d150.sql"
   evidence "d150_fixture=historical_tag3 database=disposable birth=null phase=before_node_launch"
@@ -1290,7 +1443,7 @@ legacy_d150_register_starter() {
   ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" \
     --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
   local registered
-  registered="$(psql_admin oteryn_node_boot -v account="$ACCOUNT_ID" -v world="$WORLD_ID" \
+  registered="$(psql_admin "$GAME_DATABASE" -v account="$ACCOUNT_ID" -v world="$WORLD_ID" \
     -v starter="${INTERPRETATION[3]}" <<'SQL'
 SELECT EXISTS (
     SELECT 1
@@ -1402,8 +1555,86 @@ graceful_shutdown() { # ready=false first, socket removed
   grep -q "event=readiness .*ready=false" "$node_log" || fail "no ready=false on shutdown"
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "no clean shutdown"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after graceful shutdown"
-  [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard still ready"
+  [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin "$GAME_DATABASE")" == f ]] || fail "guard still ready"
   evidence "shutdown ready=false socket=removed"
+}
+
+reactivate_kept_stack() {
+  local previous_database="$GAME_DATABASE" run_logs
+  SERVICE_UID="$(id -u "$SERVICE_USER")"
+  NODE_CLOCK_FEATURES=("${requested_clock_features[@]}")
+  NODE_SPAWN_FEATURES=("${requested_spawn_features[@]}")
+  NODE_GAMEPLAY_ENV=("${requested_gameplay_env[@]}")
+  local started=$SECONDS
+  build_game
+  timing build "$started"
+  started=$SECONDS
+  prepare_database_template
+  timing migrate "$started"
+  started=$SECONDS
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
+    kill -0 "$GP_HARNESS_PID" 2>/dev/null || fail "kept Platform process is down"
+  fi
+  timing platform "$started"
+  started=$SECONDS
+  local previous_activation
+  previous_activation="$(psql_admin "$previous_database" -c \
+    "SELECT coalesce(max(activation_sequence), $ACTIVATION_SEQUENCE) FROM game_content_activations WHERE world_id='$WORLD_ID' AND channel_id='$CHANNEL_ID'")"
+  [[ "$previous_activation" =~ ^[1-9][0-9]{0,8}$ ]] || fail "invalid kept content activation sequence"
+  if [[ -n "$NODE_PID" ]]; then
+    # Require the existing graceful-shutdown proofs before replacing binaries or content.
+    graceful_shutdown
+    ! sudo kill -0 "$NODE_PID" 2>/dev/null || fail "kept node still running after shutdown"
+    NODE_PID=""
+    save_reuse_state
+  fi
+  timing node_stop "$started"
+  started=$SECONDS
+  GAME_DATABASE="nb_run_$(openssl rand -hex 12)"
+  psql_admin postgres <<SQL
+CREATE DATABASE "$GAME_DATABASE" TEMPLATE "$TEMPLATE_DATABASE";
+GRANT CONNECT ON DATABASE "$GAME_DATABASE" TO nb_control, nb_runtime;
+SQL
+  timing pg "$started"
+  ADMIN_URL="${ADMIN_URL%/*}/$GAME_DATABASE"
+  # Each clone owns fresh operator requests and Character authority fences.
+  NODE_STATE_DIR="$BASE/state/$GAME_DATABASE"
+  NODE_FENCE_DIR="$BASE/fence-parent/$GAME_DATABASE"
+  sudo install -d -o root -g root -m 0755 "$NODE_STATE_DIR"
+  sudo install -d -o "$SERVICE_UID" -m 0700 "$NODE_FENCE_DIR"
+  # A restored Game root can restart ownership generation at one. Platform
+  # orders assignment and runtime status by the operator's restore epoch.
+  ASSIGNMENT_EPOCH=$((ASSIGNMENT_EPOCH + 1))
+  ACTIVATION_SEQUENCE=$((previous_activation + NODE_BOOT_REISSUE_CONTENT))
+  save_reuse_state
+  if [[ "$previous_database" =~ ^nb_run_[0-9a-f]{24}$ ]]; then
+    psql_admin postgres -c "DROP DATABASE \"$previous_database\""
+  fi
+  started=$SECONDS
+  sudo install -o root -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
+  timing install "$started"
+  started=$SECONDS
+  stage_content_artifacts
+  timing content_compile "$started"
+  started=$SECONDS
+  write_ops_config
+  if (( ${#NODE_CLOCK_FEATURES[@]} )); then
+    sudo install -d -o "$(id -u)" -m 0755 "$BASE/qualification-clock"
+    export OTERYN_QUALIFICATION_CLOCK_FILE="$BASE/qualification-clock/$GAME_DATABASE-offset-ms"
+    printf '0' > "$OTERYN_QUALIFICATION_CLOCK_FILE"
+    chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
+    NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
+  else
+    unset OTERYN_QUALIFICATION_CLOCK_FILE
+  fi
+  run_logs="$(mktemp -d "$WORK/reactivated.XXXXXX")"
+  STAGE_LOG_DIR="$run_logs"
+  node_log="$run_logs/node.log"
+  failed_node_log="$run_logs/failed-node.log"
+  PG_OBS="$run_logs/postgres"
+  save_reuse_state
+  timing configure "$started"
+  evidence "qualification_database=$GAME_DATABASE content=reactivating source=cloned_template"
 }
 
 restart_without_supersession() { # fails at S2 custody, never ready
@@ -1456,7 +1687,7 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   grep -q 'event=shutdown .*signal before ready' "$node_log" || fail "no pre-ready shutdown event"
   ! grep -q "event=readiness .*ready=true" "$node_log" || fail "ready published after the signal"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after a pre-ready signal"
-  [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard became ready"
+  [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin "$GAME_DATABASE")" == f ]] || fail "guard became ready"
   evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"
 }
 
@@ -1549,7 +1780,7 @@ SQL
   [[ "$epoch_result" == t ]] || fail "PvP World epoch initialization"
   [[ "$(sudo stat -c '%u %a' "$PVP_BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "PvP control socket mode"
   [[ "$PVP_GAME_PORT" != "$NODE_BOOT_GAME_PORT" && "$PVP_NODE_PID" != "$NODE_PID" ]] || fail "PvP listener or process reused the baseline node"
-  [[ "$(echo "SELECT world_type FROM game_spell_field_world_policies WHERE world_id='$WORLD_ID'" | psql_admin oteryn_node_boot)" == 1 ]] || fail "Baseline World policy is not no-PvP"
+  [[ "$(echo "SELECT world_type FROM game_spell_field_world_policies WHERE world_id='$WORLD_ID'" | psql_admin "$GAME_DATABASE")" == 1 ]] || fail "Baseline World policy is not no-PvP"
   evidence "pvp_world world_type=2 database=$PVP_DATABASE port=$PVP_GAME_PORT node=separate_process readiness=true world_epoch=0 boot_seconds=$((SECONDS - boot_started)) world=$PVP_WORLD_ID channel=$PVP_CHANNEL_ID pid=$PVP_NODE_PID baseline_port=$NODE_BOOT_GAME_PORT baseline_pid=$NODE_PID baseline_world_type=1"
 }
 
@@ -1590,6 +1821,9 @@ pvp_world_shutdown() { # the Open PvP World's node ends cleanly before the lifec
   evidence "pvp_world shutdown=complete socket=removed"
 }
 
+if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
+  start_pg_sampler
+fi
 if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
   game_platform_identity
   exit "$?"
@@ -1598,7 +1832,23 @@ fi
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
-  stage "$seam_stage_name" -- seam_stages
+  reactivate_kept_stack
+  start_pg_sampler
+  stage operator_setup -- operator_setup
+  stage node_assigned_ready operator_setup -- node_assigned_ready
+  # The clone's state is disposable. Save the new process even if bootstrap or a row fails.
+  # shellcheck source=/dev/null
+  NODE_PID="$(source "$VARS"; printf '%s' "$NODE_PID")"
+  if [[ ${STATUS[node_assigned_ready]} != PASS && -n "$NODE_PID" ]]; then
+    sudo kill -TERM "$NODE_PID" 2>/dev/null || true
+    for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
+  fi
+  if [[ -n "$NODE_PID" ]] && ! sudo kill -0 "$NODE_PID" 2>/dev/null; then
+    NODE_PID=""
+  fi
+  save_reuse_state
+  stage character_bootstrap node_assigned_ready -- character_bootstrap
+  stage "$seam_stage_name" character_bootstrap -- seam_stages
 else
 stage operator_setup -- operator_setup
 stage configuration_negatives operator_setup -- configuration_negatives
@@ -1645,7 +1895,7 @@ elif [[ ${STATUS[node_assigned_ready]:-PASS} == PASS ]]; then
 fi
 
 # The failed rows of this pass, grouped by their first cause, ahead of the stage table.
-python3 "$GAME_SOURCE/tools/qualification/node_boot/failure_summary.py" "$WORK"/stage-*.log \
+python3 "$GAME_SOURCE/tools/qualification/node_boot/failure_summary.py" "$STAGE_LOG_DIR"/stage-*.log \
   ${GITHUB_STEP_SUMMARY:+--summary "$GITHUB_STEP_SUMMARY"} || true
 echo "NODE_BOOT_STAGES"
 failures=0

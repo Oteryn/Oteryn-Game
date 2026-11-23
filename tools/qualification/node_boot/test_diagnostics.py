@@ -281,7 +281,7 @@ class RuntimeEvidenceTests(unittest.TestCase):
             definitions = '\n'.join(function(name) for name in [
                 'start_runtime_diagnostics', 'stop_runtime_diagnostics',
                 'stop_pg_sampler', 'pg_observability_dump',
-                'interrupted', 'cleanup', 'stage',
+                'interrupted', 'cleanup', 'timing', 'stage',
             ])
             trap_lines = '\n'.join(re.findall(r'^trap .+$', TEXT, re.M))
             script = f'''#!/usr/bin/env bash
@@ -289,6 +289,8 @@ set -Eeuo pipefail
 WORK={work}
 BASE={root / 'base'}
 VARS="$WORK/vars"
+STAGE_LOG_DIR="$WORK"
+GAME_DATABASE=oteryn_node_boot
 node_log="$WORK/node.log"
 NODE_PID=""
 RUNTIME_DIAGNOSTICS_PID=""

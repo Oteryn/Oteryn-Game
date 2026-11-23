@@ -129,15 +129,23 @@ Single-row loop (refused when `CI=true` or `GITHUB_ACTIONS` is set):
 
 ```sh
 NODE_BOOT_KEEP_STACK=1 PLATFORM_SOURCE=... bash tools/qualification/node_boot/run.sh
-NODE_BOOT_REUSE_STACK=1 NODE_BOOT_E2E_ONLY=f6 PLATFORM_SOURCE=... bash tools/qualification/node_boot/run.sh
+NODE_BOOT_REUSE_STACK=1 NODE_BOOT_REISSUE_CONTENT=1 NODE_BOOT_E2E_ONLY=f6 PLATFORM_SOURCE=... bash tools/qualification/node_boot/run.sh
 NODE_BOOT_REUSE_STACK=teardown PLATFORM_SOURCE=... bash tools/qualification/node_boot/run.sh
 ```
 
 The first run stops after the seam stage, keeps the stack and writes an
 owner-only state file (`$TMPDIR/node-boot-reuse-<project>.env`, mode 0600, it
-holds the disposable stack's passwords). The second reruns only the seam stage
-against the same node and characters. Neither reports `NODE_BOOT_PASS`: they end
-with `NODE_BOOT_PARTIAL` and exit 3. Teardown removes the stack and the state.
+holds the disposable stack's passwords). The second keeps PostgreSQL and Platform,
+builds or verifies the current Game artifacts, and starts Game on a fresh database
+cloned from a schema-only template. A migration hash change builds a new template
+before the restart. Character bootstrap and content activation run against the
+clone, and Platform receives a new assignment epoch. Use
+`NODE_BOOT_REISSUE_CONTENT=1` with reuse to issue the current artifacts at the
+next activation sequence. Setup emits `NODE_BOOT_TIMING` lines in seconds.
+A different Platform pin
+requires a new stack. Neither mode reports `NODE_BOOT_PASS`. A successful run that
+keeps the stack reports `NODE_BOOT_PARTIAL` and exits 3. Teardown removes the stack
+and its state.
 
 Every run starts PostgreSQL with lock-wait (200 ms), deadlock and 500 ms
 slow-statement logging and `pg_stat_statements`. `pg_observe.py` samples blocked,
