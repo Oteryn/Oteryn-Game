@@ -202,7 +202,10 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     policy: FiniteProgressionPolicy<String, N>,
     deadline: tokio::time::Instant,
 ) -> TestResult {
-    if !PLAYABLE_VOCATIONS.contains(&spec.vocation) || !(1..=1000).contains(&spec.level) {
+    if !(PLAYABLE_VOCATIONS.contains(&spec.vocation)
+        || (spec.vocation == NO_VOCATION && spec.level == 8))
+        || !(1..=1000).contains(&spec.level)
+    {
         return Err("qualification requires a base vocation and source level 1..1000".into());
     }
     let xp_occurrence =
@@ -237,6 +240,9 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .find(|threshold| threshold.level == level)
         .ok_or("qualification level absent from the served progression policy")?
         .minimum_experience;
+    if vocation == NO_VOCATION && before.vocation() != NO_VOCATION {
+        return Err("unassigned preparation requires an unassigned birth".into());
+    }
     let classed = before.vocation() != NO_VOCATION;
     let requested_vocation_present = classed && before.vocation() == vocation;
     let xp_checkpoint = if level > 1
@@ -423,7 +429,11 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         &context.content,
     )
     .map_err(debug)?;
-    let after = convert_vocation(&formula, &before, vocation).map_err(debug)?;
+    let after = if vocation == NO_VOCATION {
+        before.clone()
+    } else {
+        convert_vocation(&formula, &before, vocation).map_err(debug)?
+    };
     if before != after {
         retry_holder(Some(root), deadline, progression_busy, async || {
             slot.commit_build(

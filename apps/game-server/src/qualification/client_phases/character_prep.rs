@@ -118,6 +118,16 @@ pub(super) async fn grant_item(
     Ok(())
 }
 
+pub(super) async fn grant_premium(client: &oteryn_dev_client::DevClientSession) -> TestResult {
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        "premium".into(),
+    )
+    .await?;
+    Ok(())
+}
+
 pub(super) fn item_id(key: &str) -> TestResult<u32> {
     Ok(key
         .strip_prefix("oteryn:item.tibia.i")

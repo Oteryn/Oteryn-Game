@@ -6,9 +6,7 @@
 //!    spell hit is never health-capped, attack it, and CAST Greater Tiger Clash repeatedly without
 //!    the item; require `Cast` and a mana debit each time and record the spell damage the server
 //!    attributes to the cast (the presentation events sharing the cast's decision ordinal).
-//! 2. `acquire-50271`: acquire Fists of Enlightenment (50271) in-journey through the NPC trade
-//!    route the content declares (earned gold, walk, `hi`, `trade`, BUY); require the inventory
-//!    delta. No route in content or no reachable seller fails with `needed=acquisition-route-for-50271`.
+//! 2. `acquire-50271`: verify the seeded Fists of Enlightenment (50271) in the backpack.
 //! 3. `augmented-cast`: ITEM_MOVE the item to the right hand, CAST again and require the measured
 //!    the cast to publish attributed damage. The weapon swap changes the attack inputs.
 //! 4. `unequip`: ITEM_MOVE it back to the backpack; require the inventory delta.
@@ -20,12 +18,16 @@ use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::item_view as items;
-use oteryn_protocol_oteryn::npc_service as npc;
 use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
 use std::num::NonZeroU32;
 
+const PREPARATION: character_prep::Seeded = character_prep::Seeded {
+    profile: "c12-monk",
+    reason: "C12 tests spell augment behavior after obtaining the weapon and qualifying for the spell.",
+};
 const ITEM_ID: u32 = 50_271;
-const SELLER: &str = "oteryn:npc.enpa_deia_pema";
+const MANA_POTION: u32 = 268;
+const CAST_MANA: u32 = 50;
 const SPELL_WORDS: &str = "exori nia";
 const SPELL_NAME: &str = "greater tiger clash";
 const SAMPLES: usize = 3;
@@ -71,7 +73,6 @@ impl Row {
     }
 
     fn finish(mut self, result: TestResult) {
-        let result: TestResult = result.and(Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into()));
         if let Err(error) = result {
             self.failure = Some((self.current(), error.to_string()));
         }
@@ -126,18 +127,21 @@ fn read_json(relative: &str) -> TestResult<serde_json::Value> {
     Ok(serde_json::from_slice(&std::fs::read(root().join(relative))?)?)
 }
 
-fn spell(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
-    let catalog = client.session_mut().spell_catalog()?.ok_or("served spell catalogue absent")?;
-    let entry = catalog.entries.iter()
-        .find(|entry| entry.words == SPELL_WORDS && entry.rune_item.is_none())
-        .ok_or("need=platform-created-premium-monk-or-exalted-monk;spell=exori-nia;cast-min-level=18;item-50271-min-level=20;observed=absent-from-served-spell-catalogue")?;
-    if !entry.available {
-        return Err(format!(
-            "need=premium-monk-or-exalted-monk;spell={SPELL_WORDS};cast-min-level={};item-50271-min-level=20;learned={}",
-            entry.level, entry.learned
-        ).into());
+async fn spell(client: &mut DevClientSession) -> TestResult<NonZeroU32> {
+    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
+    loop {
+        if let Some(catalog) = client.session_mut().spell_catalog()?
+            && let Some(entry) = catalog.entries.iter()
+                .find(|entry| entry.words == SPELL_WORDS && entry.rune_item.is_none() && entry.available)
+        {
+            return NonZeroU32::new(entry.cast_index).ok_or_else(|| "Greater Tiger Clash has zero served index".into());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("Greater Tiger Clash did not become available in the served Premium Monk catalogue".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
     }
-    NonZeroU32::new(entry.cast_index).ok_or_else(|| "Greater Tiger Clash has zero served index".into())
 }
 
 /// The base-damage augment (hundredths of a percent) that content binds to this spell on the item.
@@ -426,6 +430,7 @@ fn cast_damage_in(event: &SessionEvent, own: oteryn_dev_client::EntityRef, victi
 async fn samples(hunt: &Hunt<'_>, client: &mut DevClientSession, spell: NonZeroU32) -> TestResult<Vec<u64>> {
     let mut out = Vec::new();
     for _ in 0..SAMPLES {
+        restore_cast_mana(client).await?;
         let before = client.actor_vitals().ok_or("pre-sample vitals absent")?.mana;
         out.push(hunt.cast_damage(client, spell).await?);
         if client.actor_vitals().ok_or("post-sample vitals absent")?.mana >= before {
@@ -435,118 +440,28 @@ async fn samples(hunt: &Hunt<'_>, client: &mut DevClientSession, spell: NonZeroU
     Ok(out)
 }
 
-async fn player_gold(client: &mut DevClientSession) -> TestResult<u64> {
-    use oteryn_protocol_oteryn::atelier::resources as money;
-    let reply = client
-        .session_mut()
-        .gated_command(money::CAPABILITY_ATELIER_RESOURCES_V1, money::COMMAND_TYPE_ATELIER_RESOURCES_QUERY, &[])
-        .await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("native player balances refused:{reply:?}").into());
-    }
-    let balances = money::decode_reply(&reply.payload).map_err(|e| format!("native balances:{e:?}"))?;
-    balances.carried_gold.checked_add(balances.bank_gold).ok_or_else(|| "native gold overflow".into())
-}
+async fn restore_cast_mana(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
 
-/// Acquire item 50271 through the declared NPC trade (earning the gold in play) and return nothing
-/// but the confirmed inventory delta.
-async fn acquire(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    metadata: &oteryn_world_bundle::bundle::Visited,
-    definition: NonZeroU32,
-) -> TestResult<u64> {
-    use oteryn_dev_client::client_runtime::npc_shop;
-    if !metadata.npcs.npcs.iter().any(|entry| entry.key == SELLER) {
-        return Err(format!("need=50271-seller-in-served-world;seller={SELLER};placement=33603,31468,7;region=131,122").into());
+    if client.actor_vitals().is_some_and(|vitals| vitals.mana >= CAST_MANA) {
+        return Ok(());
     }
-    let trades = read_json("content/services/trade/trade-00000-00323.json")?;
-    let key = format!("oteryn:item.tibia.i{ITEM_ID}");
-    let mut offers: Vec<(String, u64)> = Vec::new();
-    for record in trades["records"].as_array().ok_or("trade records absent")? {
-        let declaration = &record["declaration"];
-        let Some(service) = declaration["identity"]["key"].as_str().and_then(|k| k.strip_prefix("oteryn:service.trade.")) else { continue };
-        for offer in declaration["offers"].as_array().into_iter().flatten() {
-            if let (true, Some(price)) = (
-                offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key,
-                offer["unit_price"].as_u64(),
-            ) {
-                offers.push((format!("oteryn:npc.{service}"), price));
-            }
+    let potion = provisioning::item_reference(&provisioning::item_index()?, MANA_POTION)?;
+    let handle = client.inventory().and_then(|inventory| {
+        inventory.entries.iter().find(|entry| entry.item_definition_ref == potion)
+    }).map(|entry| entry.handle).ok_or("C12 has insufficient mana and no carried Mana Potion")?;
+    let result = client.use_item(handle).await?;
+    if result.status != CommandStatus::Accepted || result.disposition != UseDisposition::Committed {
+        return Err(format!("Mana Potion USE refused: {result:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
+    while !client.actor_vitals().is_some_and(|vitals| vitals.mana >= CAST_MANA) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("Mana Potion did not publish enough mana for Greater Tiger Clash".into());
         }
+        client.service_liveness(Duration::from_millis(50)).await?;
     }
-    let here = tile(client.world_spatial().actor_position)?;
-    let reachable = |npc_key: &str, from: TilePos| {
-        metadata.npcs.npcs.iter().filter(|n| n.key == npc_key).find_map(|n| {
-            route(world, from, |at| n.placements.iter().any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)).map(|path| (n, path))
-        })
-    };
-    let (seller, price) = offers
-        .iter()
-        .filter(|(npc_key, _)| reachable(npc_key, here).is_some())
-        .min_by_key(|(_, price)| *price)
-        .cloned()
-        .ok_or_else(|| format!("needed=acquisition-route-for-{ITEM_ID};content-sellers={};reachable-sellers=0;loot-and-quest-routes=none-declared", offers.len()))?;
-    let hunt_deadline = tokio::time::Instant::now() + Duration::from_secs(120);
-    verdict::Harness::global().bounded_wait(hunt_deadline, "bounded-observation");
-    let mut hunts = 0_u32;
-    loop {
-        let have = player_gold(client).await?;
-        if have >= price {
-            break;
-        }
-        if tokio::time::Instant::now() >= hunt_deadline {
-            return Err(format!("needed=player-earned-gold>={price};have={have};route=npc-trade:{seller};ordinary-hunts={hunts}-in-120s").into());
-        }
-        travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(client).await?;
-        hunts += 1;
-    }
-    let (npc_entry, path) = reachable(&seller, tile(client.world_spatial().actor_position)?)
-        .ok_or("seller unreachable after the gold hunt")?;
-    walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|e| {
-                e.kind == EntityKind::Npc
-                    && npc_entry.placements.iter().any(|p| e.position.x == i32::from(p.x) && e.position.y == i32::from(p.y) && e.position.floor == -i16::from(p.floor))
-            })
-        })
-        .map(|e| e.entity)
-        .ok_or("seller not visible as an NPC entity")?;
-    for text in ["hi", "trade"] {
-        let reply = npc_shop::talk(client.session_mut(), &npc::NpcTalkIntent { npc_actor: actor, text: text.into() }).await?;
-        if reply != npc::NpcIntentDisposition::Ok {
-            return Err(format!("NPC {text} reply={reply:?}").into());
-        }
-    }
-    let delta = client.session_mut().read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1).await?;
-    let window = npc::decode_npc_trade_window(&delta.payload).map_err(|e| format!("trade window:{e:?}"))?;
-    let (index, offer) = window
-        .offers
-        .iter()
-        .enumerate()
-        .find(|(_, o)| o.side == npc::NpcTradeSide::Buy && o.item_definition_ref == definition.get())
-        .ok_or("served trade window does not offer the item")?;
-    let before = carried_count(client, definition);
-    let reply = npc_shop::buy(
-        client.session_mut(),
-        &npc::NpcTradeIntent {
-            npc_actor: actor,
-            catalogue_revision: window.open.ok_or("trade window closed")?.1,
-            offer_index: u32::try_from(index)?,
-            side: offer.side,
-            quantity: 1,
-            expected_unit_price: offer.unit_price,
-        },
-    )
-    .await?;
-    if reply != npc::NpcIntentDisposition::Ok {
-        return Err(format!("BUY reply={reply:?} price={}", offer.unit_price).into());
-    }
-    wait_inventory(client, "purchased item", |c| carried_count(c, definition) > before).await?;
-    Ok(client.last_server_sequence())
+    Ok(())
 }
 
 async fn equip_right(client: &mut DevClientSession, definition: NonZeroU32) -> TestResult {
@@ -586,8 +501,21 @@ fn weapon(client: &DevClientSession) -> TestResult<Option<NonZeroU32>> {
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let definition = item_ref()?;
-    let mut client = connect_world(clients, 0xc2).await?;
-    let spell_index = spell(&mut client)?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_C12_MONK_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
+    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let mut client = PREPARATION.connect(clients, 0xc2, 1).await?;
+    match carried_count(&client, definition) {
+        0 if !equipped_right(&client, definition) => {
+            character_prep::grant_item(&client, MANA_POTION, 12).await?;
+            character_prep::grant_item(&client, ITEM_ID, 1).await?;
+            character_prep::reload(&mut client, clients).await?;
+        }
+        1 => {}
+        count => return Err(format!("unexpected initial backpack count for item {ITEM_ID}: {count}").into()),
+    }
+    character_prep::grant_premium(&client).await?;
+    let spell_index = spell(&mut client).await?;
     let augment = content_augment()?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -613,7 +541,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .map_err(|_| format!("baseline sampling deadline=75s last-frame={}", client.last_server_sequence()))??;
     row.record_cast("baseline-cast", &baseline, baseline_weapon);
 
-    let acquired = acquire(&mut client, world, &metadata, definition).await?;
+    let acquired = carried_count(&client, definition);
+    if acquired != 1 {
+        return Err(format!("expected one granted item {ITEM_ID} in backpack; observed={acquired}").into());
+    }
     row.pass("acquire-50271", acquired);
 
     equip_right(&mut client, definition).await?;
@@ -644,11 +575,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let old_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc3).await?;
+    let mut fresh = connect_character(clients, 0xc3, 1).await?;
     if fresh.join_snapshot().game_session_id == old_session || !equipped_right(&fresh, definition) {
         return Err("fresh admission lost the right-hand item".into());
     }
-    let fresh_spell_index = spell(&mut fresh)?;
+    character_prep::grant_premium(&fresh).await?;
+    let fresh_spell_index = spell(&mut fresh).await?;
     let replay = samples(&hunt, &mut fresh, fresh_spell_index).await?;
     row.record_cast("fresh-admission", &replay, weapon(&fresh)?);
     logout(&mut fresh).await?;

@@ -21,9 +21,26 @@ fn named_item(profile: &str) -> Option<(u32, u32)> {
     (id != 0 && (1..=20).contains(&count)).then_some((id, count))
 }
 
+#[cfg(feature = "qualification-spawn")]
+pub(super) const UNASSIGNED_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000014";
+#[cfg(feature = "qualification-spawn")]
+const KNIGHT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000015";
+#[cfg(feature = "qualification-spawn")]
+const MONK_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000016";
+
+#[derive(Clone, Copy)]
+pub(super) struct PreparationOwners<'a> {
+    pub(super) premium:
+        Option<&'a crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator>,
+    pub(super) world: Option<SpawnOwners<'a>>,
+}
+
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "c05-exiva" => Some(("sorcerer", 8)),
+        "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
+        "c11-knight" => Some(("knight", 625)),
+        "c12-monk" => Some(("monk", 20)),
         "f5-c17a" => Some(("sorcerer", 20)),
         "f5-c17c" => Some(("sorcerer", 23)),
         "f5-c13" => Some(("sorcerer", 200)),
@@ -41,7 +58,9 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
         profile,
         "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
     ) || (cfg!(any(test, feature = "qualification-spawn"))
-        && (spell_build(profile).is_some() || named_item(profile).is_some())))
+        && (spell_build(profile).is_some()
+            || named_item(profile).is_some()
+            || matches!(profile, "premium" | "c11-oressa-entry" | "c11-town-return"))))
     .then_some((session, profile))
 }
 
@@ -82,6 +101,7 @@ pub(super) async fn prepare(
     proof: &NodeIncarnationProof,
     config: &NodeConfig,
     native: Option<&NativeGameplayState>,
+    owners: PreparationOwners<'_>,
     bytes: &[u8],
 ) -> &'static str {
     let (native, session, profile) =
@@ -93,7 +113,7 @@ pub(super) async fn prepare(
             }
         };
     match Box::pin(prepare_build(
-        root, authority, proof, config, native, session, profile,
+        root, authority, proof, config, native, session, profile, owners,
     ))
     .await
     {
@@ -657,6 +677,7 @@ fn refusal_warning(
         .field("profile", FieldValue::Owned(profile.to_owned()))
 }
 
+#[allow(clippy::too_many_arguments)] // The operator command borrows the node-owned services.
 async fn prepare_build(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -665,6 +686,7 @@ async fn prepare_build(
     native: &NativeGameplayState,
     session: [u8; 16],
     profile: &str,
+    owners: PreparationOwners<'_>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let session = crate::foundation::GameSessionId::decode(&session)?;
@@ -702,6 +724,58 @@ async fn prepare_build(
         *current.current_character_lease().character_id().as_bytes(),
     )
     .map_err(|error| format!("qualification character: {error:?}"))?;
+    #[cfg(feature = "qualification-spawn")]
+    if matches!(
+        profile,
+        "premium"
+            | "c11-oressa-entry"
+            | "c11-town-return"
+            | "c11-unassigned"
+            | "c11-knight"
+            | "c12-monk"
+    ) {
+        if current.session_state() != crate::foundation::GameSessionState::Active
+            || current.current_transport().is_none()
+        {
+            return Err("dedicated preparation requires an active admission".into());
+        }
+        let record = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            qualification_build::authority_busy,
+            async || root.read_current_character(authority, character).await,
+        )
+        .await
+        .map_err(qualification_build::debug)?;
+        let account = uuid_text(record.account_id.as_bytes());
+        match (profile, account.as_str()) {
+            ("premium", KNIGHT_ACCOUNT | MONK_ACCOUNT) => {
+                if !config
+                    .premium_activation
+                    .as_ref()
+                    .is_some_and(|record| record.activation_id == "node-boot-fixture-premium")
+                {
+                    return Err("qualification Premium activation absent".into());
+                }
+                return grant_premium(
+                    root,
+                    owners.premium,
+                    *record.account_id.as_bytes(),
+                    deadline,
+                )
+                .await;
+            }
+            ("c11-oressa-entry" | "c11-town-return", UNASSIGNED_ACCOUNT) => {
+                return c11_position(owners.world, &current, profile == "c11-oressa-entry").await;
+            }
+            ("c11-unassigned", UNASSIGNED_ACCOUNT)
+            | ("c11-knight", KNIGHT_ACCOUNT)
+            | ("c12-monk", MONK_ACCOUNT) => {}
+            _ => return Err("preparation profile does not match dedicated account".into()),
+        }
+    }
+    #[cfg(not(feature = "qualification-spawn"))]
+    let _ = (owners.premium, owners.world);
     let interpretation = qualification_build::retry_holder(
         Some(root),
         deadline,
@@ -751,6 +825,136 @@ async fn prepare_build(
         return Ok(());
     }
     prepare_items(root, authority, proof, &current, native, deadline, None).await
+}
+
+#[cfg(feature = "qualification-spawn")]
+async fn c11_position(
+    owners: Option<SpawnOwners<'_>>,
+    current: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+    oressa: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    use crate::foundation::MovementLocalPosition;
+    use crate::map::boot::BundleCollisionIndexExt;
+    use crate::map::floor::{BundleDoors, prepare_quest_callback_teleport};
+
+    let owners = owners.ok_or("C11 positioning requires a loaded World")?;
+    let cells = owners.room.movement_cells();
+    let NativeMovementCollisionIndex::Bundle(map) = cells.index() else {
+        return Err("C11 positioning requires a loaded World bundle".into());
+    };
+    let closed = BundleDoors(&map.map().facts);
+    let session = current.current_game_session_id();
+    let mut runtime = owners.runtime.lock().await;
+    let (actor, expected) = runtime
+        .positioned_player_for_session(session)
+        .map_err(qualification_build::debug)?
+        .ok_or("C11 positioning requires a live actor")?;
+    if runtime
+        .bound_attacker_lease(actor, session)
+        .map_err(qualification_build::debug)?
+        != current.current_character_lease()
+    {
+        return Err("C11 positioning lost the admitted lease".into());
+    }
+    let entry = owners.room.entry_start();
+    let (x, y, floor) = if oressa {
+        (32064, 31892, 6)
+    } else {
+        (entry.x, entry.y, entry.floor)
+    };
+    let offsets = if oressa {
+        &[(0, -1), (1, 0), (0, 1), (-1, 0)][..]
+    } else {
+        &[(0, 0)]
+    };
+    for &(dx, dy) in offsets {
+        let landing = MovementLocalPosition {
+            x: x + dx,
+            y: y + dy,
+            floor,
+        };
+        if expected.position() == landing {
+            return Ok(());
+        }
+        if let Ok(proof) = prepare_quest_callback_teleport(
+            &runtime, cells, actor, session, expected, landing, false, &closed,
+        ) {
+            runtime
+                .commit_source_step(proof)
+                .map_err(qualification_build::debug)?;
+            return Ok(());
+        }
+    }
+    Err("C11 positioning found no permitted landing in the served bundle".into())
+}
+
+#[cfg(feature = "qualification-spawn")]
+async fn grant_premium(
+    root: &DurabilityRoot,
+    coordinator: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
+    account: [u8; 16],
+    deadline: tokio::time::Instant,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::premium::{
+        IngestOutcome, PRODUCER_PROFILE, PRODUCT_ID, PRODUCT_VERSION, SNAPSHOT_SCHEMA,
+    };
+    let account_text = uuid_text(&account);
+    let coordinator = coordinator.ok_or("qualification Premium coordinator absent")?;
+    let now = unix_now();
+    let timestamp = |seconds| -> Result<String, time::error::ComponentRange> {
+        let utc = time::OffsetDateTime::from_unix_timestamp(seconds)?;
+        Ok(format!(
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+            utc.year(),
+            u8::from(utc.month()),
+            utc.day(),
+            utc.hour(),
+            utc.minute(),
+            utc.second()
+        ))
+    };
+    let nonce =
+        crate::premium::client::fresh_nonce().ok_or("qualification Premium nonce unavailable")?;
+    let body = serde_json::to_vec(&serde_json::json!({
+        "schema": SNAPSHOT_SCHEMA,
+        "producer_revision": "0000000000000000000000000000000000000001",
+        "producer_profile": PRODUCER_PROFILE,
+        "nonce": nonce,
+        "account_id": account_text,
+        "product_id": PRODUCT_ID,
+        "product_version": PRODUCT_VERSION,
+        "entitlement_id": account_text,
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 1,
+        "authority_revision": now,
+        "effective_from": "2026-01-01T00:00:00Z",
+        "effective_until": "2030-01-01T00:00:00Z",
+        "authority_issued_at": timestamp(now)?,
+        "authority_valid_until": timestamp(now + 3600)?,
+        "refresh_after": timestamp(now + 2400)?,
+    }))?;
+    let consumer = coordinator.consumer();
+    loop {
+        let outcome = consumer.ingest(root, account, &nonce, &body).await;
+        if matches!(outcome, IngestOutcome::Accepted | IngestOutcome::Replayed) {
+            break;
+        }
+        if outcome != IngestOutcome::FenceUnavailable || tokio::time::Instant::now() >= deadline {
+            return Err(format!("qualification Premium delivery refused: {outcome:?}").into());
+        }
+        root.request_ready();
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    coordinator
+        .premium_gate(account)
+        .await
+        .require()
+        .map_err(|_| "qualification Premium gate remained closed".into())
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -1804,6 +2008,12 @@ mod tests {
             "f5-c13",
             "f5-c18a",
             "f5-c17d",
+            "c11-unassigned",
+            "c11-knight",
+            "c12-monk",
+            "c11-oressa-entry",
+            "c11-town-return",
+            "premium",
             "item-43895-1",
             "item-6506-2",
         ] {

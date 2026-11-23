@@ -89,6 +89,15 @@ served item definition and commits a fenced reward claim into the main backpack
 for counts 1 through 20. An exact retry in the same admission replays its claim.
 Rows re-admit to observe the backpack through the normal client snapshot.
 
+C11 and C12 use dedicated World accounts. The fixture opens C11’s first
+character through the historical unassigned bootstrap shape and awards level 8
+through the progression owner. The town crop includes Oressa’s retained Dawnport
+placement. The fixture uses the movement owner to stage the dedicated character
+near Oressa, and the dialogue runs through player commands. The separate Knight buys promotion and saves his Wheel through the
+normal commands. A root-only Premium preparation request submits a bounded
+snapshot to Game’s normal Premium consumer for the dedicated Knight or Monk.
+C12 receives item 50271 through the fenced backpack grant.
+
 The f5 spell rows use dedicated Platform-created Sorcerers and a Knight. The
 node fixture awards their starting XP through the progression owner. The rune
 rows seed platinum, then walk to a served seller and buy from its live shop
