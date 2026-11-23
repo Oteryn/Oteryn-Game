@@ -10,52 +10,18 @@ pub(super) async fn apply(
     if let TimedOperation::Repair(coins) = &request.operation {
         return repair::apply(tx, fence, request, coins).await;
     }
-    // Lock the item after the fenced Character root. Immutable custody rows cannot move
-    // concurrently: every owner changing them holds that same root/item lock.
-    let row = sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,i.lifecycle,i.world_id::text, EXISTS(SELECT 1 FROM game_character_equipment_slots s WHERE s.item_instance_id=i.item_instance_id AND s.character_id=encode($2,'hex')::uuid) AS equipped, EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_character_equipment_slots e WHERE e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid) AS held FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid FOR UPDATE OF i")
-        .bind(request.item.as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
-    let Some(row) = row else {
-        return Err(TimedWriteError::NotHeld);
-    };
-    let definition = TypedDefinitionRef {
-        family: row.try_get("definition_family")?,
-        production_key: row.try_get("definition_production_key")?,
-        revision_ref: row.try_get("definition_revision_ref")?,
-    };
-    if !row.try_get::<bool, _>("held")?
-        || row.try_get::<i16, _>("lifecycle")? != 1
-        || uuid_text(&row.try_get::<String, _>("world_id")?)?
-            != *fence.runtime_scope.world_id().as_bytes()
-        || definition != request.definition.definition
-    {
-        return Err(TimedWriteError::NotHeld);
-    }
-    if matches!(
-        request.operation,
-        TimedOperation::Advance(_) | TimedOperation::Use { elapsed_ms: 1.. }
-    ) && !row.try_get::<bool, _>("equipped")?
-    {
-        return Err(TimedWriteError::NotHeld);
-    }
-    let current = timed::load_timed_state(tx, &request.item).await?;
-    let revision = current.map_or(0, |row| row.revision);
-    if !matches!(request.operation, TimedOperation::Inspect)
-        && revision != request.expected_revision
-    {
+    let (mut result, current) = read_held(
+        tx,
+        fence,
+        request.item,
+        &request.definition,
+        matches!(request.operation, TimedOperation::Advance(_) | TimedOperation::Use { elapsed_ms: 1.. }),
+    ).await?;
+    let revision = result.revision;
+    if revision != request.expected_revision {
         return Ok(TimedItemResult::refused(TimedDisposition::Stale));
     }
     let values = current.map_or(Some(request.definition.full), |row| row.values);
-    let mut result = TimedItemResult {
-        disposition: TimedDisposition::Ok,
-        revision,
-        charges: values.and_then(|v| v.charges()),
-        remaining_ms: values.and_then(|v| v.remaining_ms()),
-        retired: false,
-        fee_gold: 0,
-    };
-    if matches!(request.operation, TimedOperation::Inspect) {
-        return Ok(result);
-    }
     if current.is_some_and(|row| row.deadline_at.is_some()) {
         return Err(TimedWriteError::NotAStoreableChange);
     }
@@ -126,4 +92,57 @@ pub(super) async fn apply(
         }
     }
     Ok(result)
+}
+
+
+pub(super) async fn inspect(
+    tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
+    fence: &CurrentCharacterGameplayFence,
+    request: &TimedRequest,
+) -> Result<TimedItemResult> {
+    read_held(tx, fence, request.item, &request.definition, false)
+        .await
+        .map(|(result, _)| result)
+}
+
+async fn read_held(
+    tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
+    fence: &CurrentCharacterGameplayFence,
+    item: [u8; 16],
+    definition: &TimedDefinitionFacts,
+    require_equipped: bool,
+) -> Result<(TimedItemResult, Option<timed::StoredTimedState>)> {
+    // Custody changes serialize on the fenced character root and item row.
+    let row = sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,i.lifecycle,i.world_id::text, EXISTS(SELECT 1 FROM game_character_equipment_slots s WHERE s.item_instance_id=i.item_instance_id AND s.character_id=encode($2,'hex')::uuid) AS equipped, EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_character_equipment_slots e WHERE e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid) AS held FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid FOR UPDATE OF i")
+        .bind(item.as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+    let Some(row) = row else {
+        return Err(TimedWriteError::NotHeld);
+    };
+    let stored_definition = TypedDefinitionRef {
+        family: row.try_get("definition_family")?,
+        production_key: row.try_get("definition_production_key")?,
+        revision_ref: row.try_get("definition_revision_ref")?,
+    };
+    if !row.try_get::<bool, _>("held")?
+        || row.try_get::<i16, _>("lifecycle")? != 1
+        || uuid_text(&row.try_get::<String, _>("world_id")?)?
+            != *fence.runtime_scope.world_id().as_bytes()
+        || stored_definition != definition.definition
+    {
+        return Err(TimedWriteError::NotHeld);
+    }
+    if require_equipped && !row.try_get::<bool, _>("equipped")? {
+        return Err(TimedWriteError::NotHeld);
+    }
+    let current = timed::load_timed_state(tx, &item).await?;
+    let values = current.map_or(Some(definition.full), |row| row.values);
+    let result = TimedItemResult {
+        disposition: TimedDisposition::Ok,
+        revision: current.map_or(0, |row| row.revision),
+        charges: values.and_then(|v| v.charges()),
+        remaining_ms: values.and_then(|v| v.remaining_ms()),
+        retired: false,
+        fee_gold: 0,
+    };
+    Ok((result, current))
 }

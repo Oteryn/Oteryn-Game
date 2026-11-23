@@ -301,6 +301,9 @@ fn scenario() -> TestResult {
             TimedDisposition::Stale
         );
         owner.clock_origin -= std::time::Duration::from_secs(1);
+        let receipts_before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_commands")
+            .fetch_one(&h.pool)
+            .await?;
         let inspected = exchange(
             &owner,
             admitted,
@@ -315,6 +318,10 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(result_value(&inspected[0])?.charges, Some(4));
         assert_eq!(result_value(&inspected[0])?.revision, 1);
+        let receipts_after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_commands")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(receipts_after, receipts_before, "Inspect leaves no timed command receipt");
         // Exhaust the remaining charges through command bytes, including the final durable burn.
         let commands = (1..=4)
             .map(|revision| {

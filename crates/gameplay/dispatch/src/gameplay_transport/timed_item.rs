@@ -80,39 +80,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             super::npc_trade_command::derived(tag, command.game_session_id, command.command_id)
         };
         let transaction_id = id(b"oteryn:timed-command:v1");
-        match self
-            .root
-            .read_timed_command(
-                self.character,
-                command.game_session_id,
-                transaction_id,
-                binding,
-            )
-            .await
-        {
-            Ok(Some(result)) => {
-                let mut clocks = self.states.timed_items.sessions.lock().await;
-                if let Some(clock) = clocks.get_mut(&command.game_session_id) {
-                    for lane in clock.items.values_mut() {
-                        if let Some((request, at)) = &lane.pending
-                            && request.transaction_id == transaction_id
-                        {
-                            if result.disposition == TimedDisposition::Ok {
-                                lane.at_ms = *at;
-                            }
-                            lane.pending = None;
-                        }
-                    }
-                }
-                return encode_timed_item_result(result).ok();
-            }
-            Ok(None) => (),
-            Err(TimedWriteError::Unavailable(_)) => return None,
-            Err(_) => return refusal(TimedDisposition::Rejected),
-        }
         let Ok(intent) = decode_timed_item_intent(payload) else {
             return refusal(TimedDisposition::Rejected);
         };
+        if intent.action != TimedAction::Inspect {
+            match self
+                .root
+                .read_timed_command(
+                    self.character,
+                    command.game_session_id,
+                    transaction_id,
+                    binding,
+                )
+                .await
+            {
+                Ok(Some(result)) => {
+                    let mut clocks = self.states.timed_items.sessions.lock().await;
+                    if let Some(clock) = clocks.get_mut(&command.game_session_id) {
+                        for lane in clock.items.values_mut() {
+                            if let Some((request, at)) = &lane.pending
+                                && request.transaction_id == transaction_id
+                            {
+                                if result.disposition == TimedDisposition::Ok {
+                                    lane.at_ms = *at;
+                                }
+                                lane.pending = None;
+                            }
+                        }
+                    }
+                    return encode_timed_item_result(result).ok();
+                }
+                Ok(None) => (),
+                Err(TimedWriteError::Unavailable(_)) => return None,
+                Err(_) => return refusal(TimedDisposition::Rejected),
+            }
+        }
         let Some(ItemKey::Instance(item)) = target else {
             return refusal(TimedDisposition::Stale);
         };
