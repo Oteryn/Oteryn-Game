@@ -198,13 +198,17 @@ pub(super) async fn exercise_horn(
         assert!((10..=30).contains(&(before - bear_health(owner, admitted).await?)));
         tokio::time::sleep(use_interval).await;
     }
-    let payload = encode_item_use_intent(&UseIntent {
-        target: UseTarget::Item(std::num::NonZeroU64::MIN),
-        use_with: None,
-        use_with_map_item: Some(MapUseTarget::Object(target())),
-        use_with_position: None,
-    })
-    .map_err(debug)?;
+    let horn_use = || {
+        encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(std::num::NonZeroU64::MIN),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Object(target())),
+            use_with_position: None,
+        })
+        .map_err(debug)
+    };
+    let payload = horn_use()?;
+    let before_stun = owner.owner_now().get();
     let (next, result, _) = super::item_craft_fixtures::exchange(
         owner,
         *admitted,
@@ -233,6 +237,24 @@ pub(super) async fn exercise_horn(
     };
     if position == BEAR {
         assert_eq!(appearance()?, 7175);
+        let due = map.facts.next_movement_decay_time().ok_or("bear decay")?;
+        assert!((before_stun + 5_000_000..=owner.owner_now().get() + 5_000_000).contains(&due));
+        assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+        assert_eq!(appearance()?, 7175);
+        assert_eq!(map.facts.expire_movement_items(due), 1);
+        assert_eq!(appearance()?, 7174);
+        tokio::time::sleep(use_interval).await;
+        let (next, result, _) = super::item_craft_fixtures::exchange(
+            owner,
+            *admitted,
+            admitted.continuity.next_command_id,
+            &horn_use()?,
+            Some(source),
+        )
+        .await?;
+        *admitted = next;
+        assert_eq!(result, UseDisposition::Committed);
+        let due = map.facts.next_movement_decay_time().ok_or("second bear decay")?;
         tokio::time::sleep(use_interval).await;
         let payload = encode_use_intent(&target()).map_err(debug)?;
         let (next, result, _) = super::item_craft_fixtures::exchange(
@@ -250,6 +272,7 @@ pub(super) async fn exercise_horn(
             "bare USE hugs the stunned bear"
         );
         assert_eq!(appearance()?, 7174);
+        assert_eq!(map.facts.expire_movement_items(due), 0, "hug invalidates the stun timer");
         let snapshot = owner
             .root
             .read_character_quest_state(owner.character, fence.character_id)
@@ -476,11 +499,23 @@ pub(super) async fn exercise(
     let map = owner.bundle_map().ok_or("map")?;
     assert_eq!(map.facts.object_revision(key), 1);
     assert_eq!(map.facts.expire_movement_items(owner.owner_now().get()), 0);
+    let decay_due = map.facts.next_movement_decay_time().ok_or("mammoth decay")?;
+    assert_eq!(map.facts.expire_movement_items(decay_due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(decay_due), 1);
+    let (position, ordinal) = crate::map::view::placement_of(key).ok_or("mammoth placement")?;
     assert_eq!(
-        map.facts
-            .expire_movement_items(owner.owner_now().get() + 60_000_000),
-        1
+        map.facts.base_entry(position, ordinal, 7176).map(|item| item.appearance_id),
+        Some(7176)
     );
+    let effects_before = map.facts.movement_effects_since(0);
+    let cue_due = map.facts.next_movement_decay_time().ok_or("mammoth sleep cue")?;
+    assert!(cue_due >= decay_due + 55_000_000);
+    assert_eq!(map.facts.expire_movement_items(cue_due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(cue_due), 1);
+    let effects_after = map.facts.movement_effects_since(0);
+    assert_eq!(effects_after.len(), effects_before.len() + 1);
+    assert_eq!(effects_after.last().map(|&(_, p, effect)| (p, effect)), Some((position, 22)));
+    assert_eq!(map.facts.next_movement_decay_time(), None);
     Ok(())
 }
 

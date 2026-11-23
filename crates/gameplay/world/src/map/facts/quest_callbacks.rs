@@ -170,6 +170,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    delayed_movement_effects: Vec<(u64, TilePos, u16)>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     merchant_barricades: BTreeMap<u64, (TilePos, EntryId)>,
@@ -588,6 +589,22 @@ impl CallbackStates {
         self.presences.retain(|_, (p, _)| !cleared(p));
     }
 
+    fn emit_effect(&mut self, scope: Option<EffectScope>, pos: TilePos, effect: u16) -> bool {
+        let Some(sequence) = self.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        if !self.has_capacity(usize::from(self.movement_effects.len() < 512)) {
+            return false;
+        }
+        self.movement_sequence = sequence;
+        if self.movement_effects.len() == 512 {
+            self.movement_effects.pop_front();
+        }
+        self.movement_effects
+            .push_back((sequence, scope, pos, effect));
+        true
+    }
+
     pub(super) fn has_capacity(&self, additional: usize) -> bool {
         let used = self.feroxa_phase.as_ref().map_or(0, |p| p.footprint())
             + self.naginata_picks.len()
@@ -599,6 +616,7 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self.delayed_movement_effects.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -949,6 +967,12 @@ impl BundleFacts {
             .map(|((due, _), _)| *due)
             .into_iter()
             .chain(states.portals.values().filter_map(|p| p.expires))
+            .chain(
+                states
+                    .delayed_movement_effects
+                    .iter()
+                    .map(|(due, _, _)| *due),
+            )
             .min()
     }
 
@@ -1005,6 +1029,13 @@ impl BundleFacts {
                 }
                 changed += 1;
             }
+        }
+        let effects: Vec<_> = states
+            .delayed_movement_effects
+            .extract_if(.., |(due, _, _)| *due <= now)
+            .collect();
+        for (_, position, effect) in effects {
+            changed += usize::from(states.emit_effect(None, position, effect));
         }
         changed
     }
@@ -1278,22 +1309,23 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        let Some(sequence) = states.movement_sequence.checked_add(1) else {
+        Arc::make_mut(&mut states).emit_effect(scope, pos, effect)
+    }
+
+    /// Queue a Channel-local magic cue on the map owner's existing timer.
+    pub fn schedule_movement_effect(&self, due: u64, position: TilePos, effect: u16) -> bool {
+        let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        if !states.has_capacity(usize::from(states.movement_effects.len() < 512)) {
+        if states.delayed_movement_effects.len() >= 512 || !states.has_capacity(1) {
             return false;
         }
-        let states = Arc::make_mut(&mut states);
-        states.movement_sequence = sequence;
-        if states.movement_effects.len() == 512 {
-            states.movement_effects.pop_front();
-        }
-        states
-            .movement_effects
-            .push_back((sequence, scope, pos, effect));
+        Arc::make_mut(&mut states)
+            .delayed_movement_effects
+            .push((due, position, effect));
         true
     }
+
     /// Crystal trap.lua:39-42. Reserve the map projection before consuming the wolf.
     /// The caller holds the exclusive runtime owner through the physical removal.
     /// Effect zero creates a silent source object, such as the Devil Helmet sewer.

@@ -36,7 +36,8 @@
       ],
       "effects": {
         "transform": 7177,
-        "reset_after_ms": 60000,
+        "reset_after_ms": 5000,
+        "magic_repeat_after_ms": 60000,
         "magic": {
           "position": {
             "x": 32154,
@@ -54,7 +55,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:35-48",
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/barbarian_test/action_horn.lua:37-51",
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/lib/core/storages.lua:811-818",
-        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:18742-18750"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-7177"
       ]
     },
     {
@@ -141,9 +142,13 @@
         "selected_instance": true,
         "reusable": true
       },
+      "effects": {
+        "reset_after_ms": 5000
+      },
       "success_message": "The bear loses consciousness.",
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:12-18"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/barbarian_test/action_horn.lua:12-18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-7175"
       ]
     },
     {

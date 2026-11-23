@@ -2,7 +2,10 @@
 //! receipts in the transaction that just changed the terrain.
 use super::super::{item_transfer::CurrentCharacterItemFence, terrain_tool::TerrainMutation};
 use super::*;
-use oteryn_gameplay_quests::quest::authored_bindings::{Trigger, terrain_use::TerrainUse};
+use oteryn_gameplay_quests::quest::{
+    authored_bindings::{Trigger, terrain_use::TerrainUse},
+    npc_rules::legacy_defaults,
+};
 
 const DRAGON_CORPSE: &str = "oteryn:quest.dragon_corpse_quest";
 
@@ -115,7 +118,10 @@ pub(in crate::durability) async fn credit_dragon_corpse(
         Some((pin, hash, completed)) => {
             let hash = <[u8; 32]>::try_from(hash.as_slice())
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
-            if hash != current_hash && !completed {
+            if hash != current_hash
+                && !completed
+                && legacy_defaults(catalogue, DRAGON_CORPSE, &hash).is_none()
+            {
                 return Ok(());
             }
             (pin.as_str(), hash)

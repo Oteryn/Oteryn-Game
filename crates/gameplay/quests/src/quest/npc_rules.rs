@@ -876,6 +876,12 @@ pub fn legacy_definition_hash(
     catalogue.npc_legacy.get(quest).map(|(hash, _)| *hash)
 }
 
+/// The pre-upgrade Dragon Corpse pin for saved-character integration fixtures.
+#[cfg(feature = "test-support")]
+pub fn fixture_dragon_corpse_predecessor() -> [u8; 32] {
+    super::published_quest_pins::DRAGON_CORPSE_PREDECESSOR.1
+}
+
 /// Only an exact registered predecessor retains its old absent-track values.
 /// Existing rows, their values, pins and receipts are never rewritten.
 pub fn legacy_defaults<'a>(

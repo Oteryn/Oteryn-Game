@@ -1008,13 +1008,6 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zalamon.lua:244-262"
-      ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
-          "minimum": 2,
-          "maximum": 2
-        }
       ]
     },
     {

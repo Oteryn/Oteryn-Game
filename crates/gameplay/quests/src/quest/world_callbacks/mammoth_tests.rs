@@ -32,7 +32,13 @@ fn qm48_mammoth_binds_live_drunk_action_and_source_storage() -> Result<(), Strin
     assert_eq!(callback.quest, barbarian_mead::QUEST);
     assert_eq!(callback.selector.appearance, Some(7176));
     assert_eq!(callback.effects.transform, Some(7177));
-    assert_eq!(callback.effects.reset_after_ms, Some(60_000));
+    assert_eq!(callback.effects.reset_after_ms, Some(5_000));
+    assert_eq!(callback.effects.magic_repeat_after_ms, Some(60_000));
+    let stun = callbacks
+        .iter()
+        .find(|c| c.key == "oteryn:quest-callback/barbarian-test/stun-bear")
+        .ok_or("missing bear stun action")?;
+    assert_eq!(stun.effects.reset_after_ms, Some(5_000));
     assert_eq!(callback.storage[0].track, barbarian_mead::TRACKS[0]);
     assert_eq!(
         (
