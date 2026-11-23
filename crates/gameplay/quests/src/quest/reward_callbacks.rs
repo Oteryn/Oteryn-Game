@@ -1179,6 +1179,9 @@ fn validate_document_with_capacity(
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
             || c.exclude_keywords.len() > 12
+            || c.exclude_keywords
+                .iter()
+                .any(|word| c.keywords.contains(word))
             || c.exclude_keywords.iter().collect::<BTreeSet<_>>().len() != c.exclude_keywords.len()
             || c.keywords.iter().chain(&c.exclude_keywords).any(|s| {
                 s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()

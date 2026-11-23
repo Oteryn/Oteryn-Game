@@ -1325,6 +1325,147 @@ fn regional_hunt_reports_and_zlak_require_the_donor_keywords() -> Result<(), Str
 }
 
 #[test]
+fn daniel_declines_to_an_eligible_alternate_hunt() -> Result<(), String> {
+    use crate::quest::npc_rules::{NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger};
+    let loaded = crate::quest::loader::load_embedded_quest_state("daniel-alternate")
+        .map_err(|error| format!("{error:?}"))?;
+    let npc = "oteryn:npc.daniel_steelsoul";
+    let programme = NpcRuleCatalog::runtime()
+        .and_then(|rules| rules.admitted_for_npc(npc, loaded.catalogue()))
+        .map_err(|error| error.to_string())?
+        .ok_or("Daniel hunting programme")?;
+    let phase = |task| format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
+    let mut failures = Vec::new();
+    for (level, trolls, cyclops, expected) in [
+        (19, 0, 0, "goblins"),
+        (19, 2, 0, "trolls"),
+        (30, 0, 0, "rotworms"),
+        (30, 0, 2, "rotworms"),
+    ] {
+        let tracks = BTreeMap::from([(phase("trolls"), trolls), (phase("cyclops"), cyclops)]);
+        let input = NpcRuleInput {
+            npc,
+            trigger: NpcRuleTrigger::Say,
+            message: "task",
+            player_name: None,
+            topic: 0,
+            tracks: &tracks,
+            inventory: &Default::default(),
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: true,
+            level,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &BTreeMap::new(),
+        };
+        let mut topic = 0;
+        for message in ["task", "no", "yes"] {
+            let plan = programme
+                .plan_storage(&NpcRuleInput {
+                    message,
+                    topic,
+                    ..input
+                })
+                .map_err(|error| error.to_string())?;
+            let Some(plan) = plan else {
+                failures.push((expected, message));
+                break;
+            };
+            topic = plan.next_topic;
+            if message == "yes" {
+                assert_eq!(topic, 0);
+                assert!(
+                    plan.track_changes
+                        .iter()
+                        .any(|change| { change.key == phase(expected) && change.after == 1 }),
+                    "{expected}"
+                );
+            } else {
+                assert!(plan.track_changes.is_empty(), "{expected}: {message}");
+            }
+        }
+        // At overlapping levels a player can also decline a Rotworms prompt
+        // opened just before reaching level 30.
+        if level == 30 && cyclops == 0 {
+            let rotworms = programme
+                .plan_storage(&NpcRuleInput { level: 29, ..input })
+                .map_err(|error| error.to_string())?
+                .ok_or("Rotworms offer at level 29")?;
+            let switch = programme
+                .plan_storage(&NpcRuleInput {
+                    message: "no",
+                    topic: rotworms.next_topic,
+                    ..input
+                })
+                .map_err(|error| error.to_string())?
+                .ok_or("Rotworms decline at level 30")?;
+            let start = programme
+                .plan_storage(&NpcRuleInput {
+                    message: "yes",
+                    topic: switch.next_topic,
+                    ..input
+                })
+                .map_err(|error| error.to_string())?;
+            if !start.is_some_and(|plan| {
+                plan.track_changes
+                    .iter()
+                    .any(|change| change.key == phase("cyclops") && change.after == 1)
+            }) {
+                failures.push(("cyclops", "yes"));
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "alternate confirmations failed: {failures:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn regional_hunt_reports_yield_to_earlier_npc_keywords() -> Result<(), String> {
+    use crate::quest::reward_callbacks::{load_for, offered_for};
+    let loaded = crate::quest::loader::load_embedded_quest_state("hunt-mission-precedence")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let offered = offered_for(catalogue)?;
+    let historical = load_for(catalogue)?;
+    let mut intercepted = Vec::new();
+    for (hunt, earlier, held) in [
+        ("cyclops", &["mission"][..], false),
+        ("goblins", &["mission"][..], false),
+        ("rotworms", &["mission"][..], false),
+        ("trolls", &["mission"][..], false),
+        (
+            "pirates",
+            &["eleonore", "mission", "mermaid", "pirate outfit"][..],
+            false,
+        ),
+        ("blue-djinns", &["mission"][..], true),
+        ("green-djinns", &["mission"][..], true),
+    ] {
+        let key = format!("oteryn:quest-reward/hunting-tasks/{hunt}/report");
+        let callbacks = if held { &historical } else { &offered };
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.key == key)
+            .ok_or(key)?;
+        assert!(callback.matches_keyword("I finished the task"), "{hunt}");
+        for keyword in earlier {
+            if callback.matches_keyword(&format!("{keyword} task")) {
+                intercepted.push((hunt, *keyword));
+            }
+        }
+    }
+    assert!(
+        intercepted.is_empty(),
+        "reports intercepted earlier branches: {intercepted:?}"
+    );
+    Ok(())
+}
+
+#[test]
 fn review_batch_regional_hunts_follow_crystal_branch_order() -> Result<(), String> {
     use crate::quest::npc_rules::{NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger};
     let loaded = crate::quest::loader::load_embedded_quest_state("regional-branch-order")
