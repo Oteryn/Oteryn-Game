@@ -299,6 +299,9 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "is_false")]
     pub fresh_corpse: bool,
     pub keywords: Vec<String>,
+    /// Earlier donor branches consume these words before this reward can match.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub exclude_keywords: Vec<String>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub msg_contains: bool,
     #[serde(default, skip_serializing_if = "is_false")]
@@ -465,13 +468,17 @@ impl RewardCallback {
     }
 
     pub fn matches_keyword(&self, text: &str) -> bool {
-        self.keywords.iter().any(|word| {
-            if self.msg_contains {
-                super::npc_rules::msg_contains(text, word)
-            } else {
-                word == text
-            }
-        })
+        !self
+            .exclude_keywords
+            .iter()
+            .any(|word| super::npc_rules::msg_contains(text, word))
+            && self.keywords.iter().any(|word| {
+                if self.msg_contains {
+                    super::npc_rules::msg_contains(text, word)
+                } else {
+                    word == text
+                }
+            })
     }
 
     fn valid_carried_inputs(&self) -> bool {
@@ -1171,7 +1178,9 @@ fn validate_document_with_capacity(
             || (c.keywords.is_empty() && c.world_claim.is_none())
             || c.keywords.len() > 8
             || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
-            || c.keywords.iter().any(|s| {
+            || c.exclude_keywords.len() > 12
+            || c.exclude_keywords.iter().collect::<BTreeSet<_>>().len() != c.exclude_keywords.len()
+            || c.keywords.iter().chain(&c.exclude_keywords).any(|s| {
                 s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()
             })
             || c.experience

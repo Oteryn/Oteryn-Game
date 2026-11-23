@@ -204,12 +204,6 @@
         "task"
       ],
       "keyword_mode": "msg_contains",
-      "topics": [
-        0,
-        1,
-        2,
-        10
-      ],
       "guards": [
         {
           "kind": "level",
@@ -261,6 +255,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:122-156"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -343,7 +340,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:157-164"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "mission"
       ]
     },
     {
@@ -426,7 +424,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:165-173"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "mission"
       ]
     },
     {
@@ -477,8 +476,14 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
-          "op": "eq",
-          "value": 0
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
         }
       ],
       "reply": [
@@ -509,7 +514,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:75-84"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "mission"
       ]
     },
     {
@@ -526,19 +532,21 @@
       ],
       "guards": [],
       "reply": [
-        "Very well."
+        "Will you hunt 150 Goblins?"
       ],
       "effects": [
         {
           "kind": "set_topic",
-          "value": 0
+          "value": 2
         }
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:75-84"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:225-227"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "mission",
+        "yes"
       ]
     },
     {
@@ -551,10 +559,6 @@
         "trolls"
       ],
       "keyword_mode": "msg_contains",
-      "topics": [
-        0,
-        1
-      ],
       "guards": [
         {
           "kind": "level",
@@ -606,6 +610,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:75-84"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -618,9 +625,6 @@
         "trolls"
       ],
       "keyword_mode": "msg_contains",
-      "topics": [
-        0
-      ],
       "guards": [
         {
           "kind": "storage",
@@ -641,6 +645,9 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:75-84"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -684,15 +691,15 @@
         },
         {
           "kind": "storage",
-          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
-          "op": "eq",
-          "value": 2
+          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
+          "op": "ne",
+          "value": 1
         },
         {
           "kind": "storage",
-          "track": "oteryn:quest-progress/hunting-tasks/goblins/phase",
-          "op": "eq",
-          "value": 0
+          "track": "oteryn:quest-progress/hunting-tasks/trolls/phase",
+          "op": "ne",
+          "value": 1
         }
       ],
       "reply": [
@@ -723,7 +730,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:85-98"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "mission"
       ]
     },
     {
@@ -740,19 +748,21 @@
       ],
       "guards": [],
       "reply": [
-        "Very well."
+        "Will you hunt 100 Trolls for Edron?"
       ],
       "effects": [
         {
           "kind": "set_topic",
-          "value": 0
+          "value": 1
         }
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:85-98"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:228-230"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "mission",
+        "yes"
       ]
     },
     {
@@ -765,10 +775,6 @@
         "goblins"
       ],
       "keyword_mode": "msg_contains",
-      "topics": [
-        0,
-        2
-      ],
       "guards": [
         {
           "kind": "level",
@@ -820,6 +826,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:85-98"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -832,9 +841,6 @@
         "goblins"
       ],
       "keyword_mode": "msg_contains",
-      "topics": [
-        0
-      ],
       "guards": [
         {
           "kind": "storage",
@@ -855,6 +861,9 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:85-98"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -937,7 +946,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:110-121"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "mission"
       ]
     },
     {
@@ -952,21 +962,35 @@
       "topics": [
         3
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "lt",
+          "value": 40
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/rotworms/phase",
+          "op": "ne",
+          "value": 1
+        }
+      ],
       "reply": [
-        "Very well."
+        "Will you hunt 300 Rotworms?"
       ],
       "effects": [
         {
           "kind": "set_topic",
-          "value": 0
+          "value": 4
         }
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:110-121"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:237-239"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "mission",
+        "yes"
       ]
     },
     {
@@ -979,10 +1003,6 @@
         "cyclops"
       ],
       "keyword_mode": "msg_contains",
-      "topics": [
-        0,
-        3
-      ],
       "guards": [
         {
           "kind": "level",
@@ -1034,6 +1054,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:110-121"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -1046,9 +1069,6 @@
         "cyclops"
       ],
       "keyword_mode": "msg_contains",
-      "topics": [
-        0
-      ],
       "guards": [
         {
           "kind": "storage",
@@ -1069,6 +1089,9 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:110-121"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -1151,7 +1174,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:99-109"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "mission"
       ]
     },
     {
@@ -1166,21 +1190,35 @@
       "topics": [
         4
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 30
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/hunting-tasks/cyclops/phase",
+          "op": "eq",
+          "value": 0
+        }
+      ],
       "reply": [
-        "Very well."
+        "Will you hunt 500 Cyclops?"
       ],
       "effects": [
         {
           "kind": "set_topic",
-          "value": 0
+          "value": 3
         }
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:99-109"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:232-234"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "mission",
+        "yes"
       ]
     },
     {
@@ -1193,10 +1231,6 @@
         "rotworms"
       ],
       "keyword_mode": "msg_contains",
-      "topics": [
-        0,
-        4
-      ],
       "guards": [
         {
           "kind": "level",
@@ -1248,6 +1282,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:99-109"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -1260,9 +1297,6 @@
         "rotworms"
       ],
       "keyword_mode": "msg_contains",
-      "topics": [
-        0
-      ],
       "guards": [
         {
           "kind": "storage",
@@ -1283,6 +1317,9 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:99-109"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -1348,33 +1385,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
       ],
       "exclude_keywords": [
-        "task"
-      ]
-    },
-    {
-      "key": "oteryn:quest-npc/hunting-tasks/green-djinns/decline",
-      "quest": "oteryn:quest.killing_in_the_name_of_quest",
-      "npc": "oteryn:npc.gabel",
-      "trigger": "say",
-      "keywords": [
-        "no"
-      ],
-      "keyword_mode": "exact",
-      "topics": [
-        5
-      ],
-      "guards": [],
-      "reply": [
-        "Very well."
-      ],
-      "effects": [
-        {
-          "kind": "set_topic",
-          "value": 0
-        }
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
+        "task",
+        "mission"
       ]
     },
     {
@@ -1425,6 +1437,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -1460,6 +1475,9 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -1495,6 +1513,9 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -1560,33 +1581,8 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
       ],
       "exclude_keywords": [
-        "task"
-      ]
-    },
-    {
-      "key": "oteryn:quest-npc/hunting-tasks/blue-djinns/decline",
-      "quest": "oteryn:quest.killing_in_the_name_of_quest",
-      "npc": "oteryn:npc.malor",
-      "trigger": "say",
-      "keywords": [
-        "no"
-      ],
-      "keyword_mode": "exact",
-      "topics": [
-        6
-      ],
-      "guards": [],
-      "reply": [
-        "Very well."
-      ],
-      "effects": [
-        {
-          "kind": "set_topic",
-          "value": 0
-        }
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
+        "task",
+        "mission"
       ]
     },
     {
@@ -1637,6 +1633,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -1672,6 +1671,9 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -1707,6 +1709,9 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -1772,33 +1777,11 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:153-210"
       ],
       "exclude_keywords": [
-        "task"
-      ]
-    },
-    {
-      "key": "oteryn:quest-npc/hunting-tasks/pirates/decline",
-      "quest": "oteryn:quest.killing_in_the_name_of_quest",
-      "npc": "oteryn:npc.raymond_striker",
-      "trigger": "say",
-      "keywords": [
-        "no"
-      ],
-      "keyword_mode": "exact",
-      "topics": [
-        7
-      ],
-      "guards": [],
-      "reply": [
-        "Very well."
-      ],
-      "effects": [
-        {
-          "kind": "set_topic",
-          "value": 0
-        }
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:153-210"
+        "task",
+        "eleonore",
+        "mission",
+        "mermaid",
+        "pirate outfit"
       ]
     },
     {
@@ -1849,6 +1832,12 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:153-210"
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mission",
+        "mermaid",
+        "pirate outfit"
       ]
     },
     {
@@ -1884,6 +1873,12 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:153-210"
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mission",
+        "mermaid",
+        "pirate outfit"
       ]
     },
     {
@@ -2026,6 +2021,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/budrik.lua:75-115"
+      ],
+      "exclude_keywords": [
+        "yes"
       ]
     },
     {
@@ -2159,7 +2157,17 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
       ]
     },
     {
@@ -2188,7 +2196,18 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
       ],
       "exclude_keywords": [
-        "task"
+        "task",
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky",
+        "yes"
       ]
     },
     {
@@ -2233,6 +2252,18 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
       ]
     },
     {
@@ -2268,6 +2299,18 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
       ]
     },
     {
@@ -2303,6 +2346,18 @@
       "effects": [],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
       ]
     }
   ],

@@ -98,7 +98,7 @@ const GAMEPLAY_PREDECESSORS: &[PredecessorPin] = &[
     ),
 ];
 
-// Captured from the published 3e099164 catalogue with quest_definition_hashes.
+// Captured from 3e099164 and origin/main with quest_definition_hashes.
 // The daily bindings add tracks and operations while retaining existing defaults.
 const DAILY_PREDECESSORS: &[(&str, DefinitionHash)] = &[
     (
@@ -108,6 +108,10 @@ const DAILY_PREDECESSORS: &[(&str, DefinitionHash)] = &[
     (
         "oteryn:quest.dangerous_depths_quest",
         hash(b"b19e1d3f99ecdaf123501f7ba3a54ca184be811b7e4e6a9f8c6f3307f32a0acb"),
+    ),
+    (
+        "oteryn:quest.dangerous_depths_quest",
+        hash(b"7fa750757e1538451eef088596b846c0bd4369b78b40a0c57efdbcb047ee6830"),
     ),
     (
         "oteryn:quest.spike_task",
@@ -142,19 +146,19 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
 }
 
 pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatalogue) {
-    // Exact saves from main 3e099164. The new tracks add defaults without
-    // changing any existing track's initial value.
+    // Captured with quest_definition_hashes on the merge base, origin/main,
+    // and the current catalogue. Existing absent-track defaults are unchanged.
     const PINS: &[PredecessorPin] = &[
         (
             "oteryn:quest.killing_in_the_name_of_quest",
-            hash(b"a7f389a365008c76a903abdf77166d015d73d5824067df9b08a83d89d00d06c2"),
+            hash(b"dbb0bbd7ead5a280f2085e685637ff0071e3c04013fb937376d89901950e6e61"),
             &[hash(
                 b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5",
             )],
         ),
         (
             "oteryn:quest.wrath_of_the_emperor_quest",
-            hash(b"58e9e5d6281350894a50b1903b1bce8e3bcc0c8f67d20407f7ef73ae8313a7cf"),
+            hash(b"542b939eb16b9ce3692470efa448e7a90e5dfc3e409061960aa894cb90fd3ba6"),
             &[hash(
                 b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86",
             )],
@@ -201,6 +205,51 @@ fn retain(catalogue: &mut QuestStateCatalogue, pins: &[PredecessorPin]) {
 mod tests {
     use super::*;
     use crate::quest::{loader, npc_rules};
+
+    #[test]
+    fn review_batch_loads_merge_base_quest_saves() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        // Captured with quest_definition_hashes on the merge base d481467205
+        // and origin/main 896958e567 (identical quest loader inputs).
+        let saved = [
+            (
+                "oteryn:quest.bigfoot_s_burden_quest",
+                hash(b"5ec0c3c6eb10e5876e39fd742b9fa39905980b2d81cea8077116aef91f873258"),
+            ),
+            (
+                "oteryn:quest.dangerous_depths_quest",
+                hash(b"7fa750757e1538451eef088596b846c0bd4369b78b40a0c57efdbcb047ee6830"),
+            ),
+            (
+                "oteryn:quest.hunting_for_tokens",
+                hash(b"f68593b143c5de45970b3a2375e9264d9781bc7968f59cc67c218b4e66cd05b3"),
+            ),
+            (
+                "oteryn:quest.killing_in_the_name_of_quest",
+                hash(b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5"),
+            ),
+            (
+                "oteryn:quest.spike_task",
+                hash(b"056a2e30ee5ff71b52331a31967a02804df035b2f8b0befe321d8869809829bb"),
+            ),
+            (
+                "oteryn:quest.wrath_of_the_emperor_quest",
+                hash(b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86"),
+            ),
+        ];
+        let mut refused = Vec::new();
+        for (quest, stored_hash) in saved {
+            if catalogue.definition_hash(quest) != Some(stored_hash)
+                && npc_rules::legacy_defaults(catalogue, quest, &stored_hash).is_none()
+            {
+                refused.push(quest);
+            }
+        }
+        assert!(refused.is_empty(), "merge-base saves refused: {refused:?}");
+        Ok(())
+    }
 
     #[test]
     fn token_exchanges_keep_unfinished_published_saves_readable() -> Result<(), String> {

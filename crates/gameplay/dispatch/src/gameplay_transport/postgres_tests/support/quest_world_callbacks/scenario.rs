@@ -293,6 +293,7 @@ fn scenario_case(
         || name == "questpc7-hydra"
         || name == "questpc7-hoist-story"
         || name == "questpc7-tokens"
+        || name == "regional-hunt-save"
         || name == "token-exchanges"
         || name.starts_with("questpc7-hidden-")
         || name.starts_with("questpc7-outfits-")
@@ -2669,6 +2670,9 @@ fn scenario_case(
             super::super::questpc7_hydra_fixtures::replenishment(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hoist-story" {
             super::super::questpc7_hoist_story_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "regional-hunt-save" {
+            Box::pin(super::super::regional_hunt_save_fixtures::exercise(&mut owner, &mut admitted, &h))
+                .await?;
         } else if name == "token-exchanges" {
             super::super::token_exchanges_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-tokens" {

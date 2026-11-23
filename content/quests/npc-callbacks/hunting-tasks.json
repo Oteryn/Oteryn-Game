@@ -42,6 +42,9 @@
           "minimum": 3,
           "maximum": 3
         }
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -84,7 +87,10 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:110-121"
       ],
       "experience": 3000,
-      "per_occurrence_mint": true
+      "per_occurrence_mint": true,
+      "exclude_keywords": [
+        "mission"
+      ]
     },
     {
       "key": "oteryn:quest-reward/hunting-tasks/goblins/report",
@@ -132,7 +138,10 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:85-98"
       ],
       "experience": 300,
-      "per_occurrence_mint": true
+      "per_occurrence_mint": true,
+      "exclude_keywords": [
+        "mission"
+      ]
     },
     {
       "key": "oteryn:quest-reward/hunting-tasks/green-djinns/report",
@@ -175,6 +184,9 @@
           "minimum": 3,
           "maximum": 3
         }
+      ],
+      "exclude_keywords": [
+        "mission"
       ]
     },
     {
@@ -254,6 +266,18 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lugri.lua:88-118"
+      ],
+      "exclude_keywords": [
+        "outfit",
+        "addon",
+        "shield",
+        "medusa shield",
+        "mail",
+        "dragon scale mail",
+        "legs",
+        "crown legs",
+        "ring",
+        "ring of the sky"
       ]
     },
     {
@@ -302,6 +326,12 @@
           "minimum": 5,
           "maximum": 5
         }
+      ],
+      "exclude_keywords": [
+        "eleonore",
+        "mission",
+        "mermaid",
+        "pirate outfit"
       ]
     },
     {
@@ -344,7 +374,10 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:99-109"
       ],
       "experience": 1000,
-      "per_occurrence_mint": true
+      "per_occurrence_mint": true,
+      "exclude_keywords": [
+        "mission"
+      ]
     },
     {
       "key": "oteryn:quest-reward/hunting-tasks/trolls/report",
@@ -386,7 +419,10 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/daniel_steelsoul.lua:75-84"
       ],
       "experience": 200,
-      "per_occurrence_mint": true
+      "per_occurrence_mint": true,
+      "exclude_keywords": [
+        "mission"
+      ]
     }
   ]
 }

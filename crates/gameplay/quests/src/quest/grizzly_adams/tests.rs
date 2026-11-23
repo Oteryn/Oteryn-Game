@@ -1323,3 +1323,105 @@ fn regional_hunt_reports_and_zlak_require_the_donor_keywords() -> Result<(), Str
     );
     Ok(())
 }
+
+#[test]
+fn review_batch_regional_hunts_follow_crystal_branch_order() -> Result<(), String> {
+    use crate::quest::npc_rules::{NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger};
+    let loaded = crate::quest::loader::load_embedded_quest_state("regional-branch-order")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = crate::quest::reward_callbacks::load_for(catalogue)?;
+    let rules = NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
+    let mut failures = Vec::new();
+    for (task, alternate, level) in [
+        ("trolls", "goblins", 19),
+        ("goblins", "trolls", 19),
+        ("rotworms", "cyclops", 30),
+        ("cyclops", "rotworms", 30),
+    ] {
+        let npc = "oteryn:npc.daniel_steelsoul";
+        let programme = rules
+            .admitted_for_npc(npc, catalogue)
+            .map_err(|error| error.to_string())?
+            .ok_or("Daniel hunting programme")?;
+        let phase = |hunt| format!("oteryn:quest-progress/hunting-tasks/{hunt}/phase");
+        let topic = |hunt| {
+            let key = format!("oteryn:quest-npc/hunting-tasks/{hunt}/accept");
+            programme
+                .programs()
+                .iter()
+                .flat_map(|program| &program.document.rules)
+                .find(|rule| rule.key == key)
+                .and_then(|rule| rule.topics.as_ref()?.first().copied())
+                .ok_or(key)
+        };
+        let tracks = BTreeMap::from([(phase("trolls"), i64::from(task == "goblins") * 2)]);
+        let input = NpcRuleInput {
+            npc,
+            trigger: NpcRuleTrigger::Say,
+            message: "no",
+            player_name: None,
+            topic: topic(task)?,
+            tracks: &tracks,
+            inventory: &Default::default(),
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: true,
+            level,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &BTreeMap::new(),
+        };
+        let decline = programme
+            .plan_storage(&input)
+            .map_err(|error| error.to_string())?;
+        let alternate_topic = topic(alternate)?;
+        if decline.as_ref().map(|plan| plan.next_topic) != Some(alternate_topic) {
+            failures.push(format!("declining {task} did not offer {alternate}"));
+        }
+        let accept = programme
+            .plan_storage(&NpcRuleInput {
+                message: "yes",
+                topic: alternate_topic,
+                ..input
+            })
+            .map_err(|error| error.to_string())?;
+        if !accept.is_some_and(|plan| {
+            plan.track_changes
+                .iter()
+                .any(|change| change.key == phase(alternate) && change.after == 1)
+        }) {
+            failures.push(format!(
+                "could not accept alternate {alternate} after declining {task}"
+            ));
+        }
+    }
+    for (npc, earlier) in [
+        ("daniel_steelsoul", "mission"),
+        ("raymond_striker", "mission"),
+        ("raymond_striker", "eleonore"),
+        ("raymond_striker", "mermaid"),
+        ("raymond_striker", "pirate outfit"),
+        ("malor", "mission"),
+        ("gabel", "mission"),
+        ("lugri", "outfit"),
+    ] {
+        let npc = format!("oteryn:npc.{npc}");
+        let message = format!("I finished the {earlier} task");
+        let matches = callbacks.iter().any(|callback| {
+            callback.npc == npc
+                && callback
+                    .key
+                    .starts_with("oteryn:quest-reward/hunting-tasks/")
+                && callback.matches_keyword(&message)
+        });
+        if matches {
+            failures.push(format!("{npc} Rewards consumed {message:?}"));
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "Crystal branch mismatches: {failures:#?}"
+    );
+    Ok(())
+}

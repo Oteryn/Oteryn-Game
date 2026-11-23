@@ -375,6 +375,16 @@
             "maxLength": 64
           }
         },
+        "exclude_keywords": {
+          "type": "array",
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
         "topic": {
           "type": "integer",
           "minimum": 0,

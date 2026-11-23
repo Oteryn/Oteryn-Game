@@ -724,6 +724,7 @@ async fn wardrobe(
         quest: callback.quest.clone(),
         npc: "oteryn:npc.fixture".into(),
         keywords: vec!["fixture".into()],
+        exclude_keywords: vec![],
         topic: 0,
         next_topic: 0,
         storage: callback.storage.clone(),
