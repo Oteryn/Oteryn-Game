@@ -457,12 +457,15 @@ fn same_familiar_writer(
 }
 /// Retry checkout misses under the Login owner's one foreground window. Each operation
 /// returns before waiting, so it releases any runtime guards it took for that attempt.
-async fn familiar_login_checkout<T, E>(
+async fn familiar_login_checkout<T, E: From<DurabilityError>>(
     budget: Option<&AdmissionRetryBudget<'_>>,
     mut step: impl AsyncFnMut() -> Result<T, E>,
     is_checkout_unavailable: impl Fn(&E) -> bool,
 ) -> Result<T, E> {
     loop {
+        if let Some(budget) = budget {
+            budget.check_deadline()?;
+        }
         let result = step().await;
         if let Some(budget) = budget
             && result.as_ref().is_err_and(&is_checkout_unavailable)
@@ -562,6 +565,25 @@ mod login_checkout_tests {
                 .await;
                 assert!(matches!(still_busy, Err(DurabilityError::RootUnavailable)));
                 assert!(tokio::time::Instant::now() + budget.backoff >= budget.deadline);
+                tokio::time::sleep_until(budget.deadline).await;
+                let mut expired_attempts = 0;
+                let expired = familiar_login_checkout(
+                    Some(&budget),
+                    async || {
+                        expired_attempts += 1;
+                        Ok(())
+                    },
+                    familiar_checkout_unavailable,
+                )
+                .await;
+                assert_eq!(
+                    expired_attempts, 0,
+                    "expired Familiar Login operation started"
+                );
+                assert!(matches!(
+                    expired,
+                    Err(DurabilityError::RootPassDeadlineExceeded)
+                ));
                 Ok(())
             })
     }
@@ -612,6 +634,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     return Err(CharacterProgressionError::AuthorityRejected);
                 }
+                budget.check_deadline()?;
                 self.root
                     .initialize_familiar_group(self.character, self.holder, fence)
                     .await
@@ -722,6 +745,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .any(|p| p.actor == actor && p.session == session),
         };
+        if let Some(budget) = login_budget {
+            budget
+                .check_deadline()
+                .map_err(|error| FamiliarLoginError::Preparation("access", error))?;
+        }
         let projections = super::super::spell_access_facts::CurrentSpellAccessOwner::read_current(
             &retry_access,
             &binding,
@@ -2255,6 +2283,20 @@ struct FamiliarFinishProgress {
     committed: Option<CommittedCharacterFamiliar>,
 }
 
+impl FamiliarFinishProgress {
+    fn check_deadline(&self) -> Result<(), FamiliarLoginError> {
+        if self
+            .deadline
+            .is_some_and(|deadline| tokio::time::Instant::now().into_std() >= deadline)
+        {
+            return Err(FamiliarLoginError::FinalFence(
+                DurabilityError::RootPassDeadlineExceeded,
+            ));
+        }
+        Ok(())
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Actual Login/XP/physical lethal callback composition. The root invokes this at those
     /// committed source sites, with its current account/config/equipment producers. Historical
@@ -2681,6 +2723,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::spell::companion_lifecycle::commit_lifecycle_familiar;
         use crate::spell::delayed_execution::LifecycleScheduleRequest;
         use FamiliarLoginError::{Refused, WriteCheckoutUnavailable};
+        finish.check_deadline()?;
         let actor = prepared.actor;
         let session = prepared.session;
         let index = prepared.spell_index;
@@ -2801,6 +2844,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
+            finish.check_deadline()?;
             let result = if let Some(deadline) = finish.deadline {
                 self.root
                     .write_familiar_owner_state_by(
@@ -2882,6 +2926,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 | FamiliarStateOutcome::AlreadyCommitted(value) => value,
             });
         }
+        finish.check_deadline()?;
         let fresh =
             crate::gameplay_transport::character_gameplay_fence::current_once(self, session, false)
                 .await

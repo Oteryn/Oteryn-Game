@@ -140,7 +140,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let prior = open(&mut client).await?;
     super::full_row_w02::defeat_faceless_bane(&mut client, clients).await?;
     let before = open(&mut client).await?;
-    let mut collected = false;
+    let mut repeated_collection = None;
     let group = earned_group(&prior, &before).ok_or_else(|| format!(
         "step=open-after-player-boss-kill observed=no-new-Faceless-Bane-reward-group count={} need=personal-reward-for-this-defeat source=crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs",
         before.entries.len()
@@ -261,7 +261,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                     && inventory_quantities(&client)? == inventory_after =>
             {
                 row.pass("repeat-collect-refusal", reply);
-                collected = true;
+                repeated_collection = Some(reply);
             }
             observed => {
                 return Err(format!(
@@ -279,10 +279,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let mut fresh = connect_character(clients, 0xf9, 0).await?;
     let after = open(&mut fresh).await?;
-    if collected && !after.entries.iter().eq(before.entries.iter().filter(|group| group.death != death)) {
+    if repeated_collection.is_some() && !after.entries.iter().eq(before.entries.iter().filter(|group| group.death != death)) {
         return Err("step=fresh-admission observed=collected-death-retained-or-uncollected-group-changed".into());
     }
-    if !collected && !same_chest(&before, &after) {
+    if repeated_collection.is_none() && !same_chest(&before, &after) {
         return Err("step=fresh-admission observed=reward-chest-snapshot-changed-without-accepted-collection".into());
     }
     row.pass("fresh-admission-durable-state", after.entries.len());
@@ -291,8 +291,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=fresh-logout observed={cleanup:?}").into());
     }
 
-    if collected {
-        return Err("step=expiry-refusal observed=collection-and-repeat-empty need=separate-uncollected-player-earned-death-past-seven-day-expiry source=crates/gameplay/dispatch/src/gameplay_transport/boss_rewards.rs:49".into());
+    if let Some(repeated) = repeated_collection {
+        return Err(format!("step=expiry-refusal observed=death:{death:?},collect:{collect_reply:?},repeat:{repeated:?},fresh-server-now:{},expiry:{}; need=separate-uncollected-player-earned-death-past-seven-day-expiry source=crates/gameplay/dispatch/src/gameplay_transport/boss_rewards.rs:49", after.now, group.expires_at_unix_ms).into());
     }
     Err(format!(
         "step=collect-all-inventory-delta observed={collect_reply:?};need=ordinary-walkable-route-to-authored-reward-chest"

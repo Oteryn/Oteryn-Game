@@ -580,6 +580,9 @@ async fn premium_binding_checkout<T, F: Future<Output = Result<T, DurabilityErro
     mut read: impl FnMut() -> F,
 ) -> Result<T, DurabilityError> {
     loop {
+        if let Some(budget) = budget {
+            budget.check_deadline()?;
+        }
         let result = read().await;
         if let Some(budget) = budget
             && matches!(result, Err(DurabilityError::RootUnavailable))
@@ -618,6 +621,22 @@ fn review_admission_premium_binding_retries_both_reads() -> Result<(), Box<dyn s
                 .await;
                 assert!(matches!(actual, Ok(value) if value == expected));
             }
+            tokio::time::sleep_until(budget.deadline).await;
+            let expired_reads = std::cell::Cell::new(0);
+            let expired = premium_binding_checkout(Some(&budget), || async {
+                expired_reads.set(expired_reads.get() + 1);
+                Ok(())
+            })
+            .await;
+            assert_eq!(
+                expired_reads.get(),
+                0,
+                "expired Premium binding operation started"
+            );
+            assert!(matches!(
+                expired,
+                Err(DurabilityError::RootPassDeadlineExceeded)
+            ));
             Ok(())
         })
 }
@@ -768,6 +787,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        if let Some(budget) = budget {
+            budget
+                .check_deadline()
+                .map_err(AccessFactsError::Durability)?;
+        }
         if states.has_pending_spell_commit(actor, session) {
             return Ok(false);
         }
@@ -878,6 +902,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(current) = self.current_premium_binding(actor, session, budget).await else {
             return Arc::new(RegisteredSpellAccessOwner::unavailable());
         };
+        if budget.is_some_and(|budget| budget.check_deadline().is_err()) {
+            return Arc::new(RegisteredSpellAccessOwner::Unavailable {
+                account: Some(current.account),
+            });
+        }
         // Settle delivery (§1.2 steps 2-6) before the view reads the latch from memory.
         let _ = coordinator.premium_gate(current.account).await;
         coordinator.view(current.account)
