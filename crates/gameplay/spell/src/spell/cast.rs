@@ -131,6 +131,7 @@ pub struct PlayerSpellState {
     pub(super) stance_key: Option<String>,
     pub(super) pending_stance: Option<Box<super::stance_execution::PreparedStance>>,
     pub(super) owned_skills: Option<[u16; 7]>,
+    combat_loyalty: Option<std::sync::Arc<live_skill::CombatLoyalty>>,
     /// Projection of the current committed Wheel allocation and gem vessels.
     pub(super) wheel_effects: oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects,
     /// Exact hand facts from the existing committed equipment owner.
@@ -236,6 +237,7 @@ impl PlayerSpellState {
                 stance_key: None,
                 pending_stance: None,
                 owned_skills: None,
+                combat_loyalty: None,
                 wheel_effects: Default::default(),
                 wheel_equipment: None,
                 wheel_proficiency_weapon: None,
