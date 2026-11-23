@@ -34,15 +34,19 @@ on:
     branches:
       - main
     # Drafts are still being authored; the harness runs once the PR is ready.
-    types: [opened, reopened, synchronize, ready_for_review, labeled]
+    # `edited` covers a retarget into main (staging -> main); other edits only
+    # mirror the latest heavy-gate of the head.
+    types: [opened, reopened, synchronize, ready_for_review, labeled, edited]
 
 permissions: {}
 
 concurrency:
-  # Adding any other label must not cancel a running harness, so those
-  # (skipped) runs get a group of their own.
-  group: pr-postgres-harness-${{ github.event.pull_request.number }}${{ (github.event.action == 'labeled' && github.event.label.name != 'heavy-tests') && format('-label-{0}', github.run_id) || '' }}
-  cancel-in-progress: true
+  # Adding any other label or editing anything but the base must not cancel a
+  # running harness, so those (skipped) runs get a group of their own.
+  group: pr-postgres-harness-${{ github.event.pull_request.number }}${{ ((github.event.action == 'labeled' && github.event.label.name != 'heavy-tests') || (github.event.action == 'edited' && github.event.changes.base == null)) && format('-label-{0}', github.run_id) || '' }}
+  # The standing staging -> main promotion PR moves faster than one harness run:
+  # its run finishes and the newest push waits as the one pending run.
+  cancel-in-progress: ${{ github.event.pull_request.head.ref != 'staging' || github.event.pull_request.head.repo.full_name != github.repository }}
 
 jobs:
   prepare:
@@ -56,6 +60,7 @@ jobs:
       && github.event.pull_request.user.login != 'dependabot[bot]'
       && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
       && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
+      && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -305,6 +310,7 @@ jobs:
       && github.event.pull_request.user.login != 'dependabot[bot]'
       && contains(github.event.pull_request.labels.*.name, 'node-boot')
       && (github.event.action != 'labeled' || github.event.label.name == 'node-boot')
+      && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -417,6 +423,7 @@ jobs:
       && github.event.pull_request.user.login != 'dependabot[bot]'
       && contains(github.event.pull_request.labels.*.name, 'node-boot')
       && (github.event.action != 'labeled' || github.event.label.name == 'node-boot')
+      && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-24.04
     # W20a's natural day and W20b's light decay run serially for almost two hours.
     # Include build, the basic seam, World setup and the remaining journeys.
@@ -612,6 +619,7 @@ jobs:
       && github.event.pull_request.user.login != 'dependabot[bot]'
       && contains(github.event.pull_request.labels.*.name, 'node-boot')
       && (github.event.action != 'labeled' || github.event.label.name == 'node-boot')
+      && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -674,6 +682,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
+      actions: read
       checks: read
       pull-requests: read
     steps:
@@ -682,7 +691,7 @@ jobs:
         env:
           IS_ELIGIBLE: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' }}
           IS_HEAVY: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && contains(github.event.pull_request.labels.*.name, 'heavy-tests') }}
-          IS_REAL_RUN: ${{ github.event.action != 'labeled' || github.event.label.name == 'heavy-tests' }}
+          IS_REAL_RUN: ${{ (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests') && (github.event.action != 'edited' || github.event.changes.base != null) }}
           PREPARE_RESULT: ${{ needs.prepare.result }}
           EMPTY_SCOPE: ${{ needs.prepare.outputs.empty }}
           PG_AFFINITY: ${{ needs.prepare.outputs.pg_affinity }}
@@ -723,12 +732,38 @@ jobs:
             esac
             exit
           fi
-          # Other label events have skipped dependencies: mirror the latest
-          # completed gate on this exact head without cancelling the real run.
-          conclusion=$(gh api --paginate --slurp \
-            "repos/$REPOSITORY/commits/$HEAD_SHA/check-runs?check_name=heavy-gate&filter=all&per_page=100" |
-            jq -r '[.[].check_runs[] | select(.status == "completed")] | max_by([.completed_at, .id]) | .conclusion // "none"')
-          if [[ "$conclusion" == 'none' ]]; then
+          # Other label events and title/body edits have skipped dependencies:
+          # mirror the newest real run without cancelling it. While it is
+          # pending the mirror fails; that run's reconcile job waits for this
+          # run to finish and publishes last.
+          # The newest real run (its PostgreSQL scope job started and was not
+          # skipped) on this exact head, by workflow run creation, and the
+          # heavy-gate of its latest attempt; selective reruns keep the run's
+          # place. A run whose scope job is still queued is not known to be
+          # real and is passed over. Prints success/failure/..., pending or none.
+          real_verdict() {
+            local runs run attempt jobs verdict
+            runs=$(gh api --paginate --slurp \
+              "repos/$REPOSITORY/actions/workflows/pr-postgres-harness.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" |
+              jq -r '[.[].workflow_runs[]] | sort_by([.created_at, .id]) | reverse | .[] | "\(.id) \(.run_attempt)"')
+            while read -r run attempt; do
+              [[ -n "$run" ]] || continue
+              jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/attempts/$attempt/jobs?per_page=100")
+              verdict=$(jq -r '[.[].jobs[]] as $jobs
+                | if any($jobs[]; .name == "PR early signal / PostgreSQL scope and routing"
+                      and .status != "queued" and .conclusion != "skipped") | not then "mirror"
+                  else [$jobs[] | select(.name == "heavy-gate" and .status == "completed")]
+                    | if length == 0 then "pending" else (max_by([.completed_at, .id]) | .conclusion // "pending") end
+                  end' <<< "$jobs")
+              if [[ "$verdict" != 'mirror' ]]; then
+                echo "$verdict"
+                return
+              fi
+            done <<< "$runs"
+            echo none
+          }
+          conclusion=$(real_verdict)
+          if [[ "$conclusion" == 'pending' || "$conclusion" == 'none' ]]; then
             echo 'The real heavy-tests run is still running and will publish the final heavy-gate.'
             exit 1
           fi
@@ -811,3 +846,82 @@ jobs:
               cases = read_cases(Path(verified), optional=True)
           print(f'{sum(map(len, cases.values()))} PostgreSQL tests across {label} partitions')
           PY
+
+  # A label/edit mirror that saw the real run pending fails, and can finish after
+  # heavy_gate. This second heavy-gate publishes last. It trusts needs.* only
+  # where heavy-gate itself would: when heavy-tests is live on an eligible PR,
+  # it republishes the newest real run's verdict, and in a real run it first
+  # waits until every other run of this workflow on the head has finished.
+  # It always runs: a skipped heavy-gate check must never follow a failed one.
+  heavy_gate_reconcile:
+    name: heavy-gate
+    needs: [prepare, heavy_gate]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      pull-requests: read
+    steps:
+      - name: Republish heavy-gate after in-flight mirrors
+        env:
+          GATE_RESULT: ${{ needs.heavy_gate.result }}
+          IS_REAL: ${{ needs.prepare.result != 'skipped' }}
+          IS_ELIGIBLE: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # The newest real run (its PostgreSQL scope job started and was not
+          # skipped) on this exact head, by workflow run creation, and the
+          # heavy-gate of its latest attempt; selective reruns keep the run's
+          # place. A run whose scope job is still queued is not known to be
+          # real and is passed over. Prints success/failure/..., pending or none.
+          real_verdict() {
+            local runs run attempt jobs verdict
+            runs=$(gh api --paginate --slurp \
+              "repos/$REPOSITORY/actions/workflows/pr-postgres-harness.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" |
+              jq -r '[.[].workflow_runs[]] | sort_by([.created_at, .id]) | reverse | .[] | "\(.id) \(.run_attempt)"')
+            while read -r run attempt; do
+              [[ -n "$run" ]] || continue
+              jobs=$(gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$run/attempts/$attempt/jobs?per_page=100")
+              verdict=$(jq -r '[.[].jobs[]] as $jobs
+                | if any($jobs[]; .name == "PR early signal / PostgreSQL scope and routing"
+                      and .status != "queued" and .conclusion != "skipped") | not then "mirror"
+                  else [$jobs[] | select(.name == "heavy-gate" and .status == "completed")]
+                    | if length == 0 then "pending" else (max_by([.completed_at, .id]) | .conclusion // "pending") end
+                  end' <<< "$jobs")
+              if [[ "$verdict" != 'mirror' ]]; then
+                echo "$verdict"
+                return
+              fi
+            done <<< "$runs"
+            echo none
+          }
+          echo "heavy_gate result: $GATE_RESULT"
+          live_labels=$(gh api "repos/$REPOSITORY/issues/$PR_NUMBER/labels" --paginate --jq '.[].name')
+          if [[ "$IS_ELIGIBLE" != 'true' ]] || ! grep -Fxq 'heavy-tests' <<< "$live_labels"; then
+            test "$GATE_RESULT" = 'success'
+            exit
+          fi
+          if [[ "$IS_REAL" == 'true' ]]; then
+            waited=0
+            while :; do
+              others=$(gh api --paginate --slurp \
+                "repos/$REPOSITORY/actions/workflows/pr-postgres-harness.yml/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" |
+                jq -r --arg own "$GITHUB_RUN_ID" '[.[].workflow_runs[] | select((.id | tostring) != $own and .status != "completed")] | length')
+              [[ "$others" == '0' ]] && break
+              if (( waited >= 54 )); then
+                echo "$others other run(s) on this head are still running; the last of them publishes heavy-gate"
+                exit 1
+              fi
+              echo "Waiting for $others other run(s) on this head"
+              waited=$((waited + 1))
+              sleep 10
+            done
+          fi
+          conclusion=$(real_verdict)
+          echo "Newest real heavy-gate on this head: $conclusion"
+          test "$conclusion" = 'success'

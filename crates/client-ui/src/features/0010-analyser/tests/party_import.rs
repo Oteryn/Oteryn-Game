@@ -94,3 +94,13 @@ fn adjusted_party_summary_rejects_invalid_costs_flags_and_columns() -> Result {
     assert!(summary.text().contains("Split unavailable"));
     Ok(())
 }
+
+#[test]
+fn hunt_log_checks_each_reported_total() -> Result {
+    let log = "Session: Today\nLoot: 1,001\nSupplies: 2\nBalance: 999\nAlice\nLoot: 1,001\nSupplies: 2\nBalance: 999\nDamage: 0\nHealing: 0";
+    Summary::from_hunt_log(log)?;
+    for total in ["Loot: 1,001", "Supplies: 2", "Balance: 999"] {
+        assert!(Summary::from_hunt_log(&log.replacen(total, &format!("{total}0"), 1)).is_err());
+    }
+    Ok(())
+}
