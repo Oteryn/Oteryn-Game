@@ -1,5 +1,5 @@
-use tokio::io::AsyncWriteExt;
 use super::fixture::{self, Harness, debug, id, run};
+use tokio::io::AsyncWriteExt;
 
 use super::{Dependencies, TestResult, prepare_current_session};
 
@@ -61,6 +61,7 @@ pub(super) enum Case {
     NonOverlordHealing,
     OrdinaryDamagerAndHealer,
     ProductionNativeDeath,
+    ShippedLootOutlier(&'static str),
     OfflineReward,
     LivePrivacy,
     ConcurrentCollection,
@@ -81,6 +82,7 @@ pub(super) fn run_case(case: Case) -> TestResult {
 
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
+        let started = std::time::Instant::now();
         super::reset();
         let h = Harness::create_with_admission_seed(
             admin,
@@ -104,7 +106,10 @@ fn scenario(case: Case) -> TestResult {
             .map_err(|error| format!("W03 fixture Character authority: {error:?}"))?;
         let mut deps = Dependencies::new()
             .map_err(|error| format!("W03 fixture native dependencies: {error:?}"))?;
-        let (controller, pin) = if matches!(case, Case::AtomicDeathFault) {
+        let (controller, pin) = if matches!(
+            case,
+            Case::AtomicDeathFault | Case::ShippedLootOutlier(_)
+        ) {
             super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
@@ -282,11 +287,24 @@ fn scenario(case: Case) -> TestResult {
                 | Case::AtomicDeathFault
                 | Case::ProductionNativeDeath
                 | Case::LargePrivateCorpse
+                | Case::ShippedLootOutlier(_)
         ) {
-            let creature = if matches!(case, Case::ProductionNativeDeath | Case::AtomicDeathFault) {
-                "oteryn:creature.grand_mother_foulscale"
-            } else {
-                "oteryn:creature.rat"
+            let creature = match case {
+                Case::ShippedLootOutlier(creature) => {
+                    let row = native.reward_table().row(creature).map_err(debug)?;
+                    assert!(
+                        crate::combat::check_corpse_container_capacity(
+                            row.loot_table.entries.len()
+                        )
+                        .is_err(),
+                        "shipped reward boss table exceeds the ordinary corpse limit"
+                    );
+                    creature
+                }
+                Case::ProductionNativeDeath | Case::AtomicDeathFault => {
+                    "oteryn:creature.grand_mother_foulscale"
+                }
+                _ => "oteryn:creature.rat",
             };
             native_death(
                 &h,
@@ -301,7 +319,14 @@ fn scenario(case: Case) -> TestResult {
             drop(owner);
             drop(authority);
             drop(seal);
-            return h.cleanup().await;
+            h.cleanup().await?;
+            if let Case::ShippedLootOutlier(creature) = case {
+                eprintln!(
+                    "W22A_SHIPPED_OUTLIER_POSTGRES_EXECUTED creature={creature} duration={:.3}s",
+                    started.elapsed().as_secs_f64()
+                );
+            }
+            return Ok(());
         }
         let now: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
@@ -317,6 +342,7 @@ fn scenario(case: Case) -> TestResult {
             | Case::NativeDeath
             | Case::AtomicDeathFault
             | Case::ProductionNativeDeath
+            | Case::ShippedLootOutlier(_)
             | Case::OfflineReward
             | Case::LivePrivacy
             | Case::OrdinaryDamagerAndHealer
@@ -590,6 +616,7 @@ fn scenario(case: Case) -> TestResult {
             Case::NativeDeath
             | Case::AtomicDeathFault
             | Case::ProductionNativeDeath
+            | Case::ShippedLootOutlier(_)
             | Case::LargePrivateCorpse
             | Case::OrdinaryDamagerAndHealer
             | Case::NonOverlordHealing => {
