@@ -136,7 +136,7 @@ impl Reentry {
         let attempt_cancellation = CancellationToken::new();
         self.attempt_cancellation = Some(attempt_cancellation.clone());
         if let Some(config) = &mut config {
-            self.browser_delivery = Arc::default();
+            std::mem::take(&mut self.browser_delivery).close();
             config.open_browser = self.browser_delivery.opener(config);
         }
         let (progress, updates) = tokio::sync::watch::channel(None);
@@ -282,7 +282,7 @@ impl Reentry {
         if result.is_err()
             && let Some(cancel) = self.attempt_cancellation.take()
         {
-            self.browser_delivery.close();
+            std::mem::take(&mut self.browser_delivery).close();
             cancel.cancel();
         }
         self.state.finish(result.is_ok());
@@ -292,7 +292,7 @@ impl Reentry {
     pub fn leave_play(&mut self) {
         if self.state == EntryState::Playing {
             if let Some(cancel) = self.attempt_cancellation.take() {
-                self.browser_delivery.close();
+                std::mem::take(&mut self.browser_delivery).close();
                 cancel.cancel();
             }
             self.state = EntryState::Offline;
@@ -312,11 +312,20 @@ impl Reentry {
     }
 
     pub fn shutdown(self) {
-        if let Some(cancel) = self.attempt_cancellation {
-            self.browser_delivery.close();
+        drop(self);
+    }
+}
+
+impl Drop for Reentry {
+    fn drop(&mut self) {
+        self.browser_delivery.close();
+        if let Some(cancel) = &self.attempt_cancellation {
             cancel.cancel();
         }
-        self.client.shutdown();
+        if let Some(config) = &self.client.native_login {
+            config.system_browser.shutdown();
+        }
+        self.client.runtime.stop(std::time::Duration::ZERO);
     }
 }
 

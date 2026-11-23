@@ -154,3 +154,51 @@ fn deferred_manual_capture_leaves_death_capture_for_the_current_destination() ->
     }
     Ok(())
 }
+
+#[test]
+fn disabling_automatic_capture_during_readback_drops_the_save() -> TestResult {
+    let folder = TestDir::new()?;
+    let mut app = app(folder.path(), false)?;
+    let (link, _, outbox) = crate::play::play_channel();
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings.preferences.screenshots.on_low_health = true;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+            link,
+            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?,
+        });
+    }
+    for (revision, health) in [(1, 100), (2, 3)] {
+        outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
+            oteryn_session::AppliedDelta {
+                server_sequence: revision,
+                base_revision: revision - 1,
+                new_revision: revision,
+                value: oteryn_session::ActorVitals {
+                    health,
+                    max_health: 100,
+                    ..default()
+                },
+            },
+        )]);
+        app.update();
+    }
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<Screenshot>>()
+        .single(app.world())?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .screenshots
+        .automatic_disabled = true;
+    app.world_mut().trigger(ScreenshotCaptured {
+        entity,
+        image: frame(),
+    });
+    app.world_mut().despawn(entity);
+    wait_for_writes(&mut app)?;
+    assert_eq!(std::fs::read_dir(folder.path())?.count(), 0);
+    Ok(())
+}

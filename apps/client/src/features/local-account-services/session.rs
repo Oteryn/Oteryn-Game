@@ -1,8 +1,16 @@
 use super::View;
 
-/// IDs from earlier grants never enter the presentation or retry paths.
-#[derive(Clone, Default)]
-pub(crate) struct PriorRequests(std::collections::BTreeSet<String>);
+use std::collections::BTreeSet;
+use std::sync::{Arc, Mutex};
+use tokio::sync::{OwnedSemaphorePermit, Semaphore};
+
+/// A pending request gates its own authorization. Across authorizations only a live POST
+/// gates submission, and only a current-bearer lookup can establish ownership of a retained ID.
+#[derive(Clone)]
+pub(crate) struct PriorRequests {
+    ids: Arc<Mutex<BTreeSet<String>>>,
+    post: Arc<Semaphore>,
+}
 
 impl std::fmt::Debug for PriorRequests {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -10,46 +18,63 @@ impl std::fmt::Debug for PriorRequests {
     }
 }
 
-impl PriorRequests {
-    pub(crate) fn blocked(&self) -> bool {
-        !self.0.is_empty()
+impl Default for PriorRequests {
+    fn default() -> Self {
+        Self::new(Arc::new(Semaphore::new(1)))
     }
-    pub(crate) fn retain(&mut self, id: String) {
-        self.0.insert(id);
+}
+
+impl PriorRequests {
+    pub(crate) fn new(post: Arc<Semaphore>) -> Self {
+        Self {
+            ids: Default::default(),
+            post,
+        }
+    }
+
+    pub(crate) fn post_in_flight(&self) -> bool {
+        self.post.available_permits() == 0
+    }
+
+    pub(crate) fn start(&self) -> Option<OwnedSemaphorePermit> {
+        self.post.clone().try_acquire_owned().ok()
+    }
+
+    fn ids(&self) -> std::sync::MutexGuard<'_, BTreeSet<String>> {
+        self.ids
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    pub(crate) fn retain(&self, id: String) {
+        self.ids().insert(id);
     }
     pub(crate) fn contains(&self, id: &str) -> bool {
-        self.0.contains(id)
+        self.ids().contains(id)
     }
-    pub(crate) fn reconcile(&mut self, id: &str) {
-        self.0.remove(id);
+    pub(crate) fn reconcile(&self, id: &str) {
+        self.ids().remove(id);
     }
 }
 
 #[derive(Default)]
 pub(crate) struct Session {
     pub(super) account: View,
-    pub(super) coin: crate::coin_shop::View,
+    pub(crate) coin: crate::coin_shop::View,
 }
 
 impl Session {
-    pub(crate) fn reopen_coins(
-        &mut self,
-        character_id: Option<String>,
-    ) -> &mut crate::coin_shop::View {
-        self.coin.reopen(character_id);
-        &mut self.coin
-    }
-
-    pub(crate) fn reopen(&mut self) {
-        let mut prior = std::mem::take(&mut self.account.prior);
-        if let Some(request) = self.account.pending.take() {
-            prior.retain(request.request_id);
+    pub(crate) fn new(
+        account: PriorRequests,
+        coin: PriorRequests,
+        character: Option<String>,
+    ) -> Self {
+        Self {
+            account: View {
+                prior: account,
+                ..View::default()
+            },
+            coin: crate::coin_shop::View::with_prior(character, coin),
         }
-        prior.0.append(&mut self.account.unresolved);
-        self.account = View {
-            prior,
-            ..Default::default()
-        };
-        self.reopen_coins(None);
     }
 }

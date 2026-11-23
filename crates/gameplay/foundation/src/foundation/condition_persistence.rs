@@ -9,43 +9,103 @@ struct SavedConditions {
     conditions: Vec<ConditionInstance<String>>,
 }
 
+impl<S> ConditionInstance<S> {
+    fn persistent_at(&self, now: u64) -> Option<ConditionInstance<String>> {
+        // Spatial effects are rebuilt by the map. A DOT with no end timestamp
+        // is finite when it has a remaining damage budget.
+        let environment = self.provenance.source_kind == ConditionSourceKind::Field
+            && self.provenance.lineage.is_none();
+        if environment
+            || self.definition.permanent_outfit
+            || self
+                .ends_at
+                .map_or(self.remaining_total == 0, |end| end <= now)
+        {
+            return None;
+        }
+        let remaining = |at: u64| at.saturating_sub(now);
+        let debt = |at: Option<u64>| at.map_or(0, |at| now.saturating_sub(at));
+        Some(ConditionInstance {
+            definition: self.definition.clone(),
+            // Crystal does not serialize ConditionDamage::owner. No runtime
+            // identity or attack authority crosses the fresh admission boundary.
+            provenance: ConditionProvenance {
+                historical_source: None,
+                source: None,
+                source_kind: ConditionSourceKind::Restored,
+                definition_key: self.provenance.definition_key.clone(),
+                definition_revision: self.provenance.definition_revision,
+                lineage: None,
+            },
+            sequence: self.sequence,
+            ends_at: self.ends_at.map(remaining),
+            next_tick_at: self.next_tick_at.map(remaining),
+            immediate_due: self.immediate_due.map(remaining),
+            started_at: 0,
+            regeneration_phase: self.regeneration_phase,
+            elapsed_before_start: self.age_at(now),
+            tick_debt_us: self.tick_debt_us.saturating_add(debt(self.next_tick_at)),
+            immediate_debt_us: self
+                .immediate_debt_us
+                .saturating_add(debt(self.immediate_due)),
+            remaining_total: self.remaining_total,
+            scheduled_damage: self.scheduled_damage.clone(),
+            sequence_step: self.sequence_step,
+            sequence_repetition: self.sequence_repetition,
+            speed_delta: self.speed_delta,
+            speed_base: self.speed_base,
+            mana_shield_capacity: self.mana_shield_capacity,
+            mana_shield_remaining: self.mana_shield_remaining,
+            buff_delta: self.buff_delta,
+        })
+    }
+
+    fn persistent_slot(&self) -> ConflictKey {
+        shared_mutation_slot(self.definition.condition_type().conflict_key())
+    }
+}
+
 impl ConditionStore<String> {
-    /// Freeze online timers as remaining microseconds, without advancing damage or RNG.
-    /// Ephemeral suppression/immunity and permanent appearances are rebuilt by their owners.
+    /// Freeze online timers as remaining microseconds without advancing damage or RNG.
     pub fn persistent_snapshot(&self, now: u64) -> Result<serde_json::Value, ConditionRefusal> {
-        if !self.accepts_time(now) {
+        self.persistent_snapshot_with_native(None::<&Self>, now)
+    }
+
+    /// Keep the existing spell checkpoint's entries in shared slots and fill
+    /// the available slots with eligible native instances in their current order.
+    pub fn persistent_snapshot_with_native<S: Clone>(
+        &self,
+        native: Option<&ConditionStore<S>>,
+        now: u64,
+    ) -> Result<serde_json::Value, ConditionRefusal> {
+        if !self.accepts_time(now) || native.is_some_and(|store| !store.accepts_time(now)) {
             return Err(ConditionRefusal::ArithmeticBounds);
         }
-        let mut conditions = Vec::new();
-        for instance in &self.instances {
-            if instance.definition.permanent_outfit
-                || instance.ends_at.is_some_and(|end| end <= now)
+        let mut conditions: Vec<_> = self
+            .instances
+            .iter()
+            .filter_map(|instance| instance.persistent_at(now))
+            .collect();
+        let spell_count = conditions.len();
+        for instance in native.into_iter().flat_map(|store| &store.instances) {
+            if conditions.len() >= COND0_RL_01_INSTANCES_PER_ACTOR {
+                break;
+            }
+            if conditions
+                .iter()
+                .any(|saved| saved.persistent_slot() == instance.persistent_slot())
             {
                 continue;
             }
-            let mut saved = instance.clone();
-            saved.elapsed_before_start = instance.age_at(now);
-            saved.started_at = 0;
-            saved.tick_debt_us = instance
-                .tick_debt_us
-                .saturating_add(instance.next_tick_at.map_or(0, |at| now.saturating_sub(at)));
-            saved.immediate_debt_us = instance.immediate_debt_us.saturating_add(
-                instance
-                    .immediate_due
-                    .map_or(0, |at| now.saturating_sub(at)),
-            );
-            saved.ends_at = instance.ends_at.map(|at| at.saturating_sub(now));
-            saved.next_tick_at = instance.next_tick_at.map(|at| at.saturating_sub(now));
-            saved.immediate_due = instance.immediate_due.map(|at| at.saturating_sub(now));
-            // Crystal does not serialize ConditionDamage::owner. Retain descriptive
-            // provenance, but a prior session can never authorize damage attribution.
-            saved.provenance.source_kind = ConditionSourceKind::Restored;
-            saved.provenance.source = None;
-            saved.provenance.lineage = None;
-            // Logout deliberately drops historical attacker display as well as
-            // authority. Old schema1 snapshots omit this optional field unchanged.
-            saved.provenance.historical_source = None;
-            conditions.push(saved);
+            conditions.extend(instance.persistent_at(now));
+        }
+        if conditions.len() != spell_count {
+            // The two stores issue independent sequences. Keep each store's
+            // order and assign unique sequence numbers for the restored owner.
+            for (sequence, instance) in conditions.iter_mut().enumerate() {
+                instance.sequence =
+                    u32::try_from(sequence).map_err(|_| ConditionRefusal::ArithmeticBounds)?;
+            }
         }
         serde_json::to_value(SavedConditions {
             schema: 1,
@@ -86,7 +146,7 @@ impl ConditionStore<String> {
                 ConditionType::DamageOverTime(_) | ConditionType::Agony
             );
             let scheduled = matches!(definition.values, ConditionValues::DamageSchedule { .. });
-            let key = shared_mutation_slot(definition.condition_type().conflict_key());
+            let key = instance.persistent_slot();
             if !valid
                 || definition.permanent_outfit
                 || instance.started_at != 0
@@ -105,9 +165,7 @@ impl ConditionStore<String> {
                 || !instance.provenance.is_unattributed()
                 || instance.provenance.definition_key != definition.key
                 || instance.provenance.definition_revision != definition.revision
-                || result.instances.iter().any(|i| {
-                    shared_mutation_slot(i.definition.condition_type().conflict_key()) == key
-                })
+                || result.instances.iter().any(|i| i.persistent_slot() == key)
                 || instance
                     .scheduled_damage
                     .as_ref()
