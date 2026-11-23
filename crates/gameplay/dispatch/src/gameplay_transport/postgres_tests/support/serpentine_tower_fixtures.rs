@@ -9,7 +9,7 @@ use crate::map::{
     overlay::TilePos,
     view::{MapFacts, placement_key},
 };
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
+use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
 };
@@ -75,6 +75,16 @@ pub(super) async fn exercise(
     };
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("scene item fence")?;
+    let movable = fixture::callback("inquisition-weakened-coffin")?
+        .offerings
+        .into_iter()
+        .next()
+        .ok_or("movable item fixture")?;
     for (command, appearance, walls_hidden) in [(1, 2773, true), (2, 2772, false), (3, 2773, true)]
     {
         owner.clock_origin = owner
@@ -95,7 +105,8 @@ pub(super) async fn exercise(
         .await?;
         assert_eq!(
             decode_use_result(&result).map_err(debug)?,
-            UseDisposition::Committed
+            UseDisposition::Committed,
+            "lever operation {command}",
         );
         assert_eq!(
             world
@@ -114,6 +125,19 @@ pub(super) async fn exercise(
             );
         }
         if command == 1 {
+            for (index, position) in walls().into_iter().enumerate() {
+                fixture::offering(
+                    owner,
+                    fence.item_fence(),
+                    &Offering {
+                        position,
+                        ..movable.clone()
+                    },
+                    100 + u64::try_from(index)?,
+                )
+                .await?;
+            }
+            owner.states.loop_ground.invalidate();
             owner
                 .runtime
                 .lock()
@@ -135,6 +159,32 @@ pub(super) async fn exercise(
                 )
                 .map_err(debug)?;
         } else {
+            let drops = owner
+                .root
+                .read_item_loop_ground_for_scope(fence.runtime_scope)
+                .await
+                .map_err(debug)?;
+            for wall in walls() {
+                let spatial = |p: Position| {
+                    crate::durability::map_item_mint_audit::map_item_spatial_position(
+                        p.x, p.y, p.floor,
+                    )
+                };
+                let count_at = |p| {
+                    drops
+                        .iter()
+                        .filter(|drop| drop.item.ground.spatial_position == spatial(p))
+                        .count()
+                };
+                assert_eq!(count_at(wall), 0, "wall cell {wall:?}");
+                assert_eq!(
+                    count_at(Position {
+                        y: landing.y,
+                        ..wall
+                    }),
+                    2
+                );
+            }
             let runtime = owner.runtime.lock().await;
             let occupant = runtime
                 .visible_entities()

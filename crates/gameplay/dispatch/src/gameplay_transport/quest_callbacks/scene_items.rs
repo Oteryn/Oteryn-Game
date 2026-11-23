@@ -186,9 +186,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if items.is_empty() {
             return true;
         }
-        let (Some(fence), Some(catalogue)) = (fence, self.quest_catalogue.as_ref()) else {
+        // Stateless scenes need Character authority only when moving item custody.
+        let fence = match fence {
+            Some(fence) => fence,
+            None => match self.current_quest_fence(command.game_session_id).await {
+                Ok(Some(fence)) => fence,
+                _ => return false,
+            },
+        };
+        let Some(catalogue) = self.quest_catalogue.as_ref() else {
             return false;
         };
+        if command.item_fence != Some(fence.item_fence()) {
+            return false;
+        }
         if !matches!(
             self.root
                 .check_character_world_callback(

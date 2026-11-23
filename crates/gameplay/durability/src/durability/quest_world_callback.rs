@@ -10,6 +10,7 @@ pub(crate) mod ground_stack;
 mod npc_input;
 mod selected_tool;
 mod tool_reads;
+mod vampire_coffin;
 pub use selected_tool::QuestWorldToolContext;
 
 /// Test-only entry for the lifted PostgreSQL harness; the opaque transaction
@@ -624,7 +625,9 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
-    if callback.offerings.is_empty()
+    let offerings_paid = callback.vampire_coffin_fallback().is_some()
+        && vampire_coffin::current_payment(tx, fence.character_id).await?;
+    if (callback.offerings.is_empty() || offerings_paid)
         && callback.item_on_target.is_none()
         && callback.effects.carried_inputs.is_empty()
     {

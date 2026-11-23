@@ -647,6 +647,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         true
     }
 
+    #[cfg(test)]
+    pub(super) fn forget_coffin_projection_for_test(
+        &self,
+        session: GameSessionId,
+    ) -> Result<(), &'static str> {
+        let mut pending = self
+            .states
+            .quest_callbacks
+            .records
+            .lock()
+            .map_err(|_| "pending")?;
+        pending
+            .remove(&session)
+            .ok_or("no interrupted projection")?;
+        Ok(())
+    }
+
     pub(super) fn has_pending_quest_callback(&self, session: GameSessionId) -> bool {
         if self.states.grizzly_boss.has_pending(session) {
             return true;
@@ -1092,24 +1109,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
             let selection = tokio::time::timeout_at(deadline, async {
                 let permit = self.spell_lane_permit().await?;
-                let index = {
+                let (index, generation, content, placement) = {
                     let runtime = self.runtime.lock().await;
                     permit.check_scope(runtime.binding().runtime_scope()).ok()?;
-                    super::item_ref_admission::pinned_index(&runtime, self.active_generation)?
+                    (
+                        super::item_ref_admission::pinned_index(&runtime, self.active_generation)?,
+                        runtime.binding().scope_generation().get(),
+                        format!("sha256:{}", hex(&runtime.content_pin().server_artifact_digest())),
+                        runtime.content_pin().frame_binding_digest(),
+                    )
                 };
                 let ground = super::loop_move::loop_ground(self, map.overlay.base(), Some(index)).await?;
                 let has_garlic = weakened.offerings.iter().all(|input| {
                     ground.overlay().tile(tile(input.position)).is_some_and(|tile| {
                         tile.added().iter().any(|item| {
                             matches!(item.item(), crate::map::overlay::AddedItem::Ground(item)
-                                if item.definition.production_key == input.item
+                                if item.runtime_scope_ownership_generation == generation
+                                    && item.ground.content_revision == content
+                                    && item.ground.native_room_placement_context == placement
+                                    && item.definition.production_key == input.item
                                     && item.quantity >= u32::from(input.count)
                                     && item.ground.corpse_ref.starts_with(
                                         crate::durability::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX))
                         })
                     })
                 });
-                Some((permit, if has_garlic { weakened } else { ordinary }))
+                // The durable participant rechecks the payment under the Character root lock.
+                let paid = !has_garlic
+                    && self.root.read_vampire_coffin_payment(
+                        self.character,
+                        command.item_fence?.character_id,
+                    ).await.ok()?;
+                Some((permit, if has_garlic || paid { weakened } else { ordinary }))
             }).await;
             let Ok(Some((permit, callback))) = selection else {
                 return Some(UseOutcome::rejected());

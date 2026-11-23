@@ -582,14 +582,18 @@ fn is_default_use_range(value: &u8) -> bool {
     *value == 1
 }
 
+const WEAKENED_COFFIN: &str = "oteryn:quest-callback/inquisition-weakened-coffin";
+const WEAKENED_COFFIN_SIDE: &str = "oteryn:quest-callback/inquisition-weakened-coffin-side";
+
+/// Durable receipt identities shared by the two physical Inquisition coffin pieces.
+pub const WEAKENED_COFFIN_KEYS: [&str; 2] = [WEAKENED_COFFIN, WEAKENED_COFFIN_SIDE];
+
 impl Callback {
     /// A garlic offering selects the alternate encounter on the same coffin.
     pub fn vampire_coffin_fallback(&self) -> Option<&'static str> {
         match self.key.as_str() {
-            "oteryn:quest-callback/inquisition-weakened-coffin" => {
-                Some("oteryn:quest-callback/inquisition-vampire-hunt-coffin")
-            }
-            "oteryn:quest-callback/inquisition-weakened-coffin-side" => {
+            WEAKENED_COFFIN => Some("oteryn:quest-callback/inquisition-vampire-hunt-coffin"),
+            WEAKENED_COFFIN_SIDE => {
                 Some("oteryn:quest-callback/inquisition-vampire-hunt-coffin-side")
             }
             _ => None,

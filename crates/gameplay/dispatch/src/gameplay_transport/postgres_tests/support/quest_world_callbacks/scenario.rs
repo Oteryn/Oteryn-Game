@@ -25,6 +25,7 @@ fn scenario_case(
 ) -> TestResult {
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
+    let vampire_coffin = super::super::inquisition_coffin_recovery_fixtures::matches(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
     let ring_offering =
@@ -124,7 +125,9 @@ fn scenario_case(
         || diprath_room
         || native_story
         || native_upper;
-    let start = if tibia_tales_hallowed {
+    let start = if vampire_coffin {
+        super::super::inquisition_coffin_recovery_fixtures::staging(name)?
+    } else if tibia_tales_hallowed {
         super::super::tibia_tales_fixtures::HALLOWED_START
     } else if name == "qengine-rewards-smith-story" {
         Position {
@@ -3013,6 +3016,14 @@ fn scenario_case(
                     &h,
                 ),
             )
+            .await?;
+        } else if vampire_coffin {
+            Box::pin(super::super::inquisition_coffin_recovery_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+            ))
             .await?;
         } else if name == super::super::serpentine_tower_fixtures::NAME {
             Box::pin(super::super::serpentine_tower_fixtures::exercise(
