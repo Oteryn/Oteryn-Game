@@ -1515,7 +1515,8 @@ async fn apply_trade(
            $12::text::numeric(20,0), $13, $14, $15, $16, $17, $18, $19, $20, \
            encode($21,'hex')::uuid, $22, encode($23,'hex')::uuid, $24, $25, $26, $27, \
            sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29, \
-           $30, $31, ($32::integer[])[1]::smallint, ($32::integer[])[2], $33, $34)",
+           $30, ($31::text[])[1], ($32::integer[])[1]::smallint, ($32::integer[])[2], \
+           ($31::text[])[2], ($31::text[])[3])",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -1547,13 +1548,16 @@ async fn apply_trade(
     .bind(envelope)
     .bind(gold(plan.bank_debit_gold_units)?)
     .bind(sell_all)
-    .bind(house_key)
+    // Keep the receipt write within the PostgreSQL adapter's 32-parameter limit.
+    .bind([
+        house_key,
+        currency.map(|definition| definition.production_key.as_str()),
+        currency.map(|definition| definition.revision_ref.as_str()),
+    ])
     .bind(vec![
         request.fluid_subtype.map(i32::from),
         request.full_charges.map(i32::from),
     ])
-    .bind(currency.map(|definition| definition.production_key.as_str()))
-    .bind(currency.map(|definition| definition.revision_ref.as_str()))
     .execute(&mut **tx)
     .await?;
 

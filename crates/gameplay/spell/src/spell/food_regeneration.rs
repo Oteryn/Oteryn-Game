@@ -590,7 +590,7 @@ mod tests {
         let before = state.clone();
         assert!(eat_food(&mut state, 200, 0).is_err());
         assert_eq!(state, before);
-        assert!(eat_food(&mut state, 0, 0).is_err());
+        eat_food(&mut state, 0, 0).expect("zero-duration food leaves regeneration unchanged");
         assert_eq!(state, before);
     }
 }

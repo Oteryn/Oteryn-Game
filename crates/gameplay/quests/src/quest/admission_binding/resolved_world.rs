@@ -88,8 +88,9 @@ mod tests {
         let callbacks = world_callbacks::load_for(catalogue)?;
         // #3319 adds one Arbaziloth callback and nine Rottin Wood callbacks.
         assert_eq!(base.len(), 1_012);
-        assert_eq!(bindings.world_callbacks().count(), 31);
-        assert_eq!(callbacks.len(), 1_043);
+        // Authored world contributions add one callback for each of the three Awash pumps.
+        assert_eq!(bindings.world_callbacks().count(), 34);
+        assert_eq!(callbacks.len(), 1_046);
         assert!(callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS);
         let expected: BTreeSet<_> = base
             .iter()

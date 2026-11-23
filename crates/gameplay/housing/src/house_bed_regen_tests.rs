@@ -50,7 +50,11 @@ fn house_bed_regen_food_boundaries_caps_and_remainders() {
         settle([100, 100, 100], [50, 20, 10], 30_000, 900),
         Some(([50, 20, 10], 0))
     );
-    assert_eq!(settle([1, 0, 0], [100, 100, 100], 1_200_001, 900), None);
+    assert_eq!(
+        settle([1, 0, 0], [100, 100, 100], 65_535_000, 900),
+        Some(([31, 30, 1], 64_635_000))
+    );
+    assert_eq!(settle([1, 0, 0], [100, 100, 100], 65_535_001, 900), None);
     assert_eq!(settle([0, 0, 0], [100, 100, 100], 1000, 900), None);
 }
 
