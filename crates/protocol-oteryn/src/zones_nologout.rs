@@ -5,6 +5,7 @@ pub use crate::charm_wire::CyclopediaWireError as ServerMessageError;
 use crate::charm_wire::{WireResult, push_message_field, read_bytes, read_varint};
 
 pub const CAPABILITY_ZONES_NOLOGOUT_V1: u32 = 92;
+pub const CAPABILITY_BOSS_DEFEATED_V1: u32 = 615;
 pub const STATE_DOMAIN_SERVER_MESSAGES: u32 = 57;
 pub const MAX_SERVER_MOTD_BYTES: usize = 255;
 pub const SERVER_MESSAGES_EMPTY_SNAPSHOT: &[u8] = &[8, 1];
@@ -16,6 +17,7 @@ pub enum ServerMessage {
     StatusText(String),
     Warning(String),
     Advance(String),
+    BossDefeated(String),
 }
 
 pub fn encode_server_message(message: &ServerMessage) -> WireResult<Vec<u8>> {
@@ -23,6 +25,7 @@ pub fn encode_server_message(message: &ServerMessage) -> WireResult<Vec<u8>> {
         ServerMessage::StatusText(text) => (2, text),
         ServerMessage::Warning(text) => (3, text),
         ServerMessage::Advance(text) => (4, text),
+        ServerMessage::BossDefeated(key) => (5, key),
     };
     if text.is_empty() || text.len() > MAX_SERVER_MOTD_BYTES {
         return Err(ServerMessageError::Malformed);
@@ -38,7 +41,7 @@ pub fn decode_server_message(bytes: &[u8]) -> WireResult<ServerMessage> {
     }
     let mut cursor = 0;
     let tag = read_varint(bytes, &mut cursor)?;
-    if !matches!(tag, 0x12 | 0x1a | 0x22) {
+    if !matches!(tag, 0x12 | 0x1a | 0x22 | 0x2a) {
         return Err(ServerMessageError::Malformed);
     }
     let text = read_bytes(bytes, &mut cursor)?;
@@ -52,6 +55,7 @@ pub fn decode_server_message(bytes: &[u8]) -> WireResult<ServerMessage> {
         0x12 => ServerMessage::StatusText(text),
         0x1a => ServerMessage::Warning(text),
         0x22 => ServerMessage::Advance(text),
+        0x2a => ServerMessage::BossDefeated(text),
         _ => return Err(ServerMessageError::Malformed),
     })
 }

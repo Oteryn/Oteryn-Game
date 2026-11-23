@@ -1084,6 +1084,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.monster_ai_cursor = (cursor + count) % swinging.len();
         }
         let activity = attack.shared_experience_cells();
+        attack
+            .kills()
+            .bind_kill_notices(&self.states.server_messages);
         for (target, lethal, at) in std::mem::take(&mut states.equipment_reflection_kills) {
             super::kill_reward::record_creature_kill(
                 &mut runtime,

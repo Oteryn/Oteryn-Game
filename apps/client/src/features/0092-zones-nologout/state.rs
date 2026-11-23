@@ -54,7 +54,7 @@ impl ServerMessageInbox {
             let (kind, text) = match &message.value {
                 ServerMessage::Warning(text) => ("warning", text),
                 ServerMessage::Advance(text) => ("advance", text),
-                ServerMessage::StatusText(_) => return None,
+                ServerMessage::StatusText(_) | ServerMessage::BossDefeated(_) => return None,
             };
             let mut key = format!("server-{kind}:");
             for byte in Sha256::digest(text.as_bytes()) {

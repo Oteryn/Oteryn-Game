@@ -52,9 +52,7 @@ const BOSS: &str = "oteryn:creature.ferumbras";
 
 #[test]
 fn cyclopedia_tracker_postgres_dispatch_kill_refresh_and_restart() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
-        return Ok(());
-    }
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     super::kill_reward_e2e_fixtures::scenario_thread::run("cyclopedia-tracker", scenario)
 }
 
@@ -171,6 +169,26 @@ impl Client {
             "{command_type} {payload:?}"
         );
         Ok(())
+    }
+
+    async fn next_boss_defeat(&mut self) -> TestResult<String> {
+        use oteryn_protocol_oteryn::zones_nologout::{self, ServerMessage};
+        tokio::time::timeout(PASS, async {
+            loop {
+                let frame = read_frame(&mut self.stream).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() != MessageType::StateDelta {
+                    continue;
+                }
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+                if delta.domain_id == zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
+                    && delta.delta_type == 1
+                    && let ServerMessage::BossDefeated(key) = zones_nologout::decode_server_message(delta.payload).map_err(debug)?
+                {
+                    return TestResult::Ok(key);
+                }
+            }
+        }).await?
     }
 
     /// The next domain 98 delta, waiting on the server's visibility cadence.
@@ -669,6 +687,73 @@ fn scenario() -> TestResult {
                 .fetch_one(&harness.pool)
                 .await?;
         assert_eq!(rows, 0);
+
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 92, 197, 615],
+        ).ok_or("boss defeat selection")?;
+        connect(&reopened, &mut admitted, async |mut client| {
+            let (_, bosstiary) = client.join().await?.ok_or("tracker snapshot")?;
+            assert!(bosstiary.entries.is_empty());
+            let boss = {
+                let mut runtime = reopened.runtime.lock().await;
+                let health = runtime.companion_policy(BOSS).map_err(debug)?.maximum_health;
+                let boss = runtime.admit_pinned_monster_lab_creature(OPEN_RAT, BOSS, health).map_err(debug)?;
+                runtime.install_creature_policy(boss, BOSS).map_err(debug)?;
+                runtime.commit_monster_lab_damage(boss, b"fixture:ferumbras.wound", health - 1).map_err(debug)?;
+                let target = EntityRef {
+                    identity: boss.placement_identity(),
+                    generation: boss.actor_local_generation(),
+                };
+                assert_eq!(
+                    reopened.states.attack.lock().await.set_target(
+                        &runtime, Some(&room), actor, session, reopened.owner_now(), Some(target), 1
+                    ),
+                    oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
+                );
+                boss
+            };
+            reopened.refresh_attack_weapon(actor, session).await;
+            reopened.drain_auto_attacks().await;
+            assert_eq!(client.next_boss_defeat().await?, BOSS);
+
+            // A raid-owned boss need not have a tracker race or personal boss loot.
+            assert!(reopened.reward_table().boss(RAT).is_none());
+            assert_ne!(runtime.lock().await.companion_policy(RAT).map_err(debug)?.reward_boss, Some(true));
+            {
+                use oteryn_gameplay_entities::carrier::{NativeRaidSpawnSpec, RaidSpawnIdentity, RaidSpawnOutcome};
+                use crate::gameplay_transport::kill_reward::{KillSink, record_creature_kill};
+                let mut runtime = reopened.runtime.lock().await;
+                if runtime.companion_snapshot_including_dead(boss).is_ok() {
+                    runtime.remove_test_actor(boss).map_err(debug)?;
+                }
+                let policy = runtime.companion_policy(RAT).map_err(debug)?;
+                let spec = NativeRaidSpawnSpec::qualified(RAT, &policy.definition_revision, runtime.content_pin().server_artifact_digest(), true).map_err(debug)?;
+                let health = policy.maximum_health;
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                let raid = runtime.realize_raid_spawn(stamp, RaidSpawnIdentity {
+                    firing_id: id(98), wave: 0, entry: 0, index: 0,
+                }, &spec, Some(OPEN_RAT), |_, _| Some(true)).map_err(debug)?;
+                let RaidSpawnOutcome::Placed(raid_boss) = raid.outcome else {
+                    return Err("raid boss was not placed".into());
+                };
+                runtime.commit_monster_lab_damage(raid_boss, b"fixture:raid-boss.lethal", health).map_err(debug)?;
+                let attack = reopened.states.attack.lock().await;
+                let sink = KillSink {
+                    queue: attack.kills(),
+                    prey: None,
+                    activity: &[],
+                    rewards: reopened.reward_table(),
+                    charms: None,
+                };
+                let lethal = crate::combat::CapturedRewardPrincipal {
+                    actor, session, character: crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    lease_generation: fence.character_lease_generation,
+                };
+                record_creature_kill(&mut runtime, sink, raid_boss, lethal, reopened.owner_now().get() / 1000, Some(reopened.owner_now()));
+            }
+            assert_eq!(client.next_boss_defeat().await?, RAT);
+            Ok(client)
+        }).await?;
 
         // The migration grants the runtime only what the owner uses.
         let access: (bool, bool, bool) = sqlx::query_as("SELECT has_table_privilege('oteryn_game_runtime','game_character_cyclopedia_tracker','INSERT'),has_table_privilege('oteryn_game_runtime','game_character_cyclopedia_tracker','DELETE'),has_table_privilege('oteryn_game_runtime','game_character_cyclopedia_tracker','UPDATE')")
