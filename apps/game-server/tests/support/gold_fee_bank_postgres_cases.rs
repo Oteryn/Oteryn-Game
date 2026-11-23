@@ -139,16 +139,23 @@ impl Harness {
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }
-        let suffix = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos();
-        let name = format!("feebank_{tag}_{suffix}");
+        let name = oteryn_test_support::postgres::database_name(&format!("feebank_{tag}"));
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}"
-            ))))
+        if upto.is_some() {
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {name}"
+                ))))
+                .await?;
+        } else {
+            oteryn_test_support::postgres::create_migrated_database(
+                &mut admin,
+                &admin_url,
+                &name,
+                &oteryn_gameplay_durability::GAME_MIGRATOR,
+            )
             .await?;
+        }
         admin.close().await?;
         let prefix = admin_url
             .strip_suffix("/postgres")
@@ -163,15 +170,15 @@ impl Harness {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target is PostgreSQL 18.6"
         );
-        let migrator = &oteryn_gameplay_durability::GAME_MIGRATOR;
-        match upto {
-            Some(version) => migrator.run_to(version, &mut connection).await?,
-            None => migrator.run(&mut connection).await?,
+        if let Some(version) = upto {
+            oteryn_gameplay_durability::GAME_MIGRATOR
+                .run_to(version, &mut connection)
+                .await?;
         }
         connection.close().await?;
         let pool = PgPool::connect(&url).await?;
 
-        let role = format!("feebank_runtime_{tag}_{suffix}");
+        let role = oteryn_test_support::postgres::database_name(&format!("feebank_runtime_{tag}"));
         let password = format!("{role}-secret");
         for statement in [
             format!("CREATE ROLE {role} LOGIN PASSWORD '{password}' IN ROLE oteryn_game_runtime"),

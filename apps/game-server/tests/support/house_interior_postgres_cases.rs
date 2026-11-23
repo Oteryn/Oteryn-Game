@@ -286,14 +286,15 @@ async fn database_case() -> TestResult {
     {
         return Err("unsafe PostgreSQL test admin URL".into());
     }
-    let suffix = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)?
-        .as_nanos();
-    let name = format!("house_interior_{suffix}");
+    let name = oteryn_test_support::postgres::database_name("house_interior");
     let mut admin = PgConnection::connect(&admin_url).await?;
-    sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
-        .execute(&mut admin)
-        .await?;
+    oteryn_test_support::postgres::create_migrated_database(
+        &mut admin,
+        &admin_url,
+        &name,
+        &oteryn_gameplay_durability::GAME_MIGRATOR,
+    )
+    .await?;
     let url = format!(
         "{}/{name}",
         admin_url.strip_suffix("/postgres").ok_or("admin URL")?
@@ -317,9 +318,6 @@ async fn check_database(url: &str) -> TestResult {
         oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
         "canonical target is PostgreSQL 18.6"
     );
-    oteryn_gameplay_durability::GAME_MIGRATOR
-        .run(&mut connection)
-        .await?;
     let stub: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_house_access($1::uuid,$2,$3::uuid)")
             .bind(WORLD)

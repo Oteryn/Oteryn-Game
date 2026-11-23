@@ -1266,22 +1266,20 @@ mod tests {
             {
                 return Err("SQL read regression requires the local test PostgreSQL admin".into());
             }
-            let name = format!(
-                "dispatch_sql_reads_{}_{}",
-                std::process::id(),
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)?
-                    .as_nanos(),
-            );
-            let mut admin = sqlx::PgConnection::connect_with(&options).await?;
-            sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
-                .execute(&mut admin)
-                .await?;
+            let name = oteryn_test_support::postgres::database_name("dispatch_sql_reads");
+            let mut admin_connection = sqlx::PgConnection::connect_with(&options).await?;
+            oteryn_test_support::postgres::create_migrated_database(
+                &mut admin_connection,
+                &admin,
+                &name,
+                &oteryn_gameplay_durability::GAME_MIGRATOR,
+            )
+            .await?;
             let result = run_in_test_database(options.database(&name)).await;
             sqlx::query(sqlx::AssertSqlSafe(format!(
                 "DROP DATABASE {name} WITH (FORCE)"
             )))
-            .execute(&mut admin)
+            .execute(&mut admin_connection)
             .await?;
             result
         })
@@ -1301,7 +1299,6 @@ mod tests {
                 oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
                 "canonical target is PostgreSQL 18.6"
             );
-            oteryn_gameplay_durability::GAME_MIGRATOR.run(&pool).await?;
             seed_character(&pool).await?;
             check_retained_reads(&pool).await
         }

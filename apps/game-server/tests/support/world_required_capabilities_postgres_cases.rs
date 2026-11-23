@@ -44,15 +44,11 @@ fn admit0_fresh_atomic_refusal_preserves_nonce_claims_and_reservations() -> Test
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("admit0_fresh_refusal").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("admit0_fresh_refusal").await?;
             let result = async {
                 let url = database.database_url()?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 require_canonical_postgres(&pool).await?;
-                durability::MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let now: i64 = sqlx::query_scalar(
                     "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
                 )
@@ -213,15 +209,11 @@ fn admit0_current_runtime_replacement_refuses_a_prepared_old_generation() -> Tes
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("admit0_current_owner").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("admit0_current_owner").await?;
             let result = async {
                 let url = database.database_url()?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 require_canonical_postgres(&pool).await?;
-                durability::MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let now: i64 = sqlx::query_scalar(
                     "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
                 )
@@ -403,12 +395,11 @@ fn admit0_v2_prepare_and_commit_refusal_preserve_current_authority() -> TestResu
         return Ok(());
     }
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(Box::pin(async {
-        let database = postgres::IsolatedPostgres::create("admit0_v2_refusal").await?;
+        let database = postgres::IsolatedPostgres::create_migrated("admit0_v2_refusal").await?;
         let result = async {
             let url = database.database_url()?;
             let pool = sqlx::PgPool::connect(&url).await?;
             require_canonical_postgres(&pool).await?;
-            durability::MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&pool).await?;
             let owner = postgres::fresh::Source::new(now)?;
             let guards = AdmissionGuardStore::connect_runtime(&url, 8192).await?;

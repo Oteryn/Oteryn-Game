@@ -30,16 +30,15 @@ impl Database {
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }
-        let suffix = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos();
-        let name = format!("house_custody_{suffix}");
+        let name = oteryn_test_support::postgres::database_name("house_custody");
         let mut admin = PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}"
-            ))))
-            .await?;
+        oteryn_test_support::postgres::create_migrated_database(
+            &mut admin,
+            &admin_url,
+            &name,
+            &oteryn_gameplay_durability::GAME_MIGRATOR,
+        )
+        .await?;
         admin.close().await?;
         let prefix = admin_url
             .strip_suffix("/postgres")
@@ -54,9 +53,6 @@ impl Database {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target is PostgreSQL 18.6"
         );
-        oteryn_gameplay_durability::GAME_MIGRATOR
-            .run(&mut connection)
-            .await?;
         isolate_storage_from_shape_gate(&mut connection).await?;
         connection.close().await?;
         Ok(Self {

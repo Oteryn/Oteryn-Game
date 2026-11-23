@@ -5096,6 +5096,7 @@ dependencies = [
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-task-supervisor",
+ "oteryn-test-support",
  "oteryn-world-bundle",
  "oteryn-world-bundle-compiler",
  "prost",
@@ -5245,6 +5246,7 @@ dependencies = [
  "oteryn-session",
  "oteryn-simulation-determinism",
  "oteryn-task-supervisor",
+ "oteryn-test-support",
  "oteryn-world-bundle",
  "oteryn-world-bundle-compiler",
  "prost",
@@ -5297,6 +5299,7 @@ dependencies = [
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-task-supervisor",
+ "oteryn-test-support",
  "oteryn-world-bundle",
  "prost",
  "serde",
@@ -5822,6 +5825,8 @@ version = "0.1.0"
 dependencies = [
  "oteryn-diagnostics",
  "oteryn-foundation",
+ "sha2 0.11.1",
+ "sqlx",
 ]
 
 [[package]]

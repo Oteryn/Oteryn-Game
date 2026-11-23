@@ -229,16 +229,23 @@ impl Database {
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }
-        let suffix = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos();
-        let name = format!("ca_{test_name}_{suffix}");
+        let name = oteryn_test_support::postgres::database_name(&format!("ca_{test_name}"));
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}"
-            ))))
+        if through.is_some() {
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {name}"
+                ))))
+                .await?;
+        } else {
+            oteryn_test_support::postgres::create_migrated_database(
+                &mut admin,
+                &admin_url,
+                &name,
+                &oteryn_gameplay_durability::GAME_MIGRATOR,
+            )
             .await?;
+        }
         admin.close().await?;
         let prefix = admin_url
             .strip_suffix("/postgres")
@@ -253,10 +260,10 @@ impl Database {
             oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
             "canonical target requires PostgreSQL 18.6"
         );
-        let migrator = &oteryn_gameplay_durability::GAME_MIGRATOR;
-        match through {
-            Some(version) => migrator.run_to(version, &mut connection).await?,
-            None => migrator.run(&mut connection).await?,
+        if let Some(version) = through {
+            oteryn_gameplay_durability::GAME_MIGRATOR
+                .run_to(version, &mut connection)
+                .await?;
         }
         connection.close().await?;
         Ok(Self {

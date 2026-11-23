@@ -3,9 +3,6 @@ use sqlx::{Connection, Executor, PgConnection};
 use std::env;
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
-use std::sync::atomic::{AtomicU64, Ordering};
-
-static DATABASE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 /// Independent actor seeds use independent accounts so transport/nonce negatives
 /// do not first violate the separately enforced account-global session exclusion.
@@ -108,16 +105,41 @@ pub struct IsolatedPostgres {
 
 impl IsolatedPostgres {
     pub async fn create(test_name: &str) -> Result<Self, IsolatedPostgresError> {
+        Self::create_with_schema(test_name, false).await
+    }
+
+    pub async fn create_migrated(test_name: &str) -> Result<Self, IsolatedPostgresError> {
+        Self::create_with_schema(test_name, true).await
+    }
+
+    async fn create_with_schema(
+        test_name: &str,
+        migrated: bool,
+    ) -> Result<Self, IsolatedPostgresError> {
         let admin_url = env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")
             .map_err(|_error| IsolatedPostgresError::MissingAdminUrl)?;
         validate_admin_url(&admin_url)?;
 
-        let database_name = database_name(test_name)?;
+        if test_name.is_empty() || test_name.len() > 40 {
+            return Err(IsolatedPostgresError::UnsafeAdminUrl);
+        }
+        let database_name = oteryn_test_support::postgres::database_name(test_name);
         let mut admin = PgConnection::connect(&admin_url).await?;
-        let create_database = format!("CREATE DATABASE {database_name}");
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(create_database)))
+        if migrated {
+            oteryn_test_support::postgres::create_migrated_database(
+                &mut admin,
+                &admin_url,
+                &database_name,
+                &oteryn_gameplay_durability::GAME_MIGRATOR,
+            )
             .await?;
+        } else {
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {database_name}"
+                ))))
+                .await?;
+        }
 
         Ok(Self {
             admin_url,
@@ -192,26 +214,6 @@ pub fn validate_admin_url(value: &str) -> Result<(), IsolatedPostgresError> {
     }
 
     Ok(())
-}
-
-fn database_name(test_name: &str) -> Result<String, IsolatedPostgresError> {
-    let normalized: String = test_name
-        .bytes()
-        .map(|byte| {
-            if byte.is_ascii_alphanumeric() {
-                char::from(byte.to_ascii_lowercase())
-            } else {
-                '_'
-            }
-        })
-        .collect();
-    if normalized.is_empty() || normalized.len() > 40 {
-        return Err(IsolatedPostgresError::UnsafeAdminUrl);
-    }
-
-    let ordinal = DATABASE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
-    let process = std::process::id();
-    Ok(format!("oteryn_game_test_{process}_{ordinal}_{normalized}"))
 }
 
 /// Isolated migration-admin corruption injection. Dropping the transaction rolls
@@ -628,10 +630,9 @@ mod durability_contract_tests {
     async fn migrated_database(
         test_name: &str,
     ) -> Result<(IsolatedPostgres, String, MigrationExecutor), Box<dyn Error>> {
-        let database = IsolatedPostgres::create(test_name).await?;
+        let database = IsolatedPostgres::create_migrated(test_name).await?;
         let database_url = database.database_url()?;
         let executor = MigrationExecutor::connect_migration(&database_url).await?;
-        executor.apply_embedded_ledger().await?;
         Ok((database, database_url, executor))
     }
 
