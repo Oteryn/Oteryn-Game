@@ -1,7 +1,7 @@
 //! Command-2 rope USE through the composed movement and durable item owners.
 use super::fixture::{Harness, debug, id, run};
 use super::item_craft_fixtures::exchange;
-use super::quest_callbacks_fixtures::source_world_spatial;
+use super::quest_callbacks_fixtures::source_world_spatial_with_ground;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest};
 use crate::foundation::{
@@ -122,14 +122,15 @@ fn scenario(admin: String, case: Case) -> TestResult {
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("item index")?;
-        // The fixture uses Crystal appearances and real bundle geometry, with ordinary
-        // ground on both floors and the donor's south-first landing open.
-        let world = source_world_spatial(
+        // The fixture uses sourced appearances and walkable donor ground 103 on both floors.
+        // The south-first landing remains open.
+        let world = source_world_spatial_with_ground(
             (100, 100, -7),
             &[
                 (HOLE.x, HOLE.y, HOLE.floor, 0, opening),
                 (102, 101, other_floor, 0, 386),
             ],
+            103,
         )?;
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())

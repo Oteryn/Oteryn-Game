@@ -179,6 +179,7 @@ fn source_world_position_rows(
         west,
         prefix,
         native,
+        None,
     )
 }
 
@@ -201,7 +202,16 @@ pub(super) fn source_world_spatial(
     chest: (u16, u16, i8),
     choices: &[(u16, u16, i8, u16, u16)],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    source_world_spatial_layout(chest, choices, 1, 2, &[], None)
+    source_world_spatial_layout(chest, choices, 1, 2, &[], None, None)
+}
+
+/// Movement that inspects spell tiles needs a donor appearance on every ground tile.
+pub(super) fn source_world_spatial_with_ground(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, i8, u16, u16)],
+    ground: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_spatial_layout(chest, choices, 1, 2, &[], None, Some(ground))
 }
 
 fn source_world_spatial_layout(
@@ -211,6 +221,7 @@ fn source_world_spatial_layout(
     west: u16,
     prefix: &[u16],
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    source_ground: Option<u16>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -218,6 +229,9 @@ fn source_world_spatial_layout(
     // A terrain carrier is legal for a placed chest (the binder also validates
     // Item carriers). Its appearance and unique id must both match the shard.
     data.manifest.palette.truncate(1);
+    if let Some(appearance) = source_ground {
+        data.manifest.palette[0].key = format!("oteryn:terrain.tibia.i{appearance}");
+    }
     let appearances: std::collections::BTreeSet<_> = choices
         .iter()
         .map(|c| c.4)

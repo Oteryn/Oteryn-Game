@@ -27,6 +27,7 @@ const TRACK: &str = "oteryn:quest-progress/quest/u8_6/an_interest_in_botany/ques
 const KNIFE: &str = "oteryn:item.tibia.i5908";
 const BOOK: &str = "oteryn:item.tibia.i11699";
 const DONOR: &str = "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/tools/skinning.lua";
+const CALLBACK_DONOR: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua";
 
 #[test]
 fn quest_skinning_botany_requires_almanach_and_ordered_storage_without_replacing_plants()
@@ -349,7 +350,7 @@ fn callback(
         "storage":[{"track":TRACK,"minimum":before,"maximum":before,"set":before+1}],
         "offerings":[], "present":[{"item":BOOK,"count":1}],
         "item_on_target":{"item":KNIFE,"count":1,"selected_instance":true,"reusable":true},
-        "return_on_failure":false, "sources":["oteryn-authored:quest-skinning-wire-fixture", DONOR]
+        "return_on_failure":false, "sources":["oteryn-authored:quest-skinning-wire-fixture", CALLBACK_DONOR]
     }))?)
 }
 
