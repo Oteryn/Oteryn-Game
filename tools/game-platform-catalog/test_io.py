@@ -126,6 +126,90 @@ class ProducerIoTests(unittest.TestCase):
                 self.assertEqual(main(["produce", str(preproduction), str(output)]), 2)
             self.assertEqual((output.read_bytes(), sidecar.read_bytes()), previous)
 
+    def test_produce_repairs_damaged_published_generation(self) -> None:
+        source = HERE / "fixtures/supported-native-input.json"
+        for member in ("snapshot", "digest"):
+            for damage in ("missing", "corrupt"):
+                with (
+                    self.subTest(member=member, damage=damage),
+                    tempfile.TemporaryDirectory() as directory,
+                ):
+                    output = Path(directory) / "catalog.json"
+                    sidecar = output.with_suffix(".json.sha256")
+                    command = ["produce", str(source), str(output)]
+                    self.assertEqual(main(command), 0)
+                    expected = output.read_bytes(), sidecar.read_bytes()
+                    damaged = (output if member == "snapshot" else sidecar).resolve(
+                        strict=True
+                    )
+                    if damage == "missing":
+                        damaged.unlink()
+                    else:
+                        damaged.write_bytes(b"corrupt")
+
+                    self.assertEqual(main(command), 0)
+                    self.assertEqual(
+                        (output.read_bytes(), sidecar.read_bytes()), expected
+                    )
+                    self.assertEqual(main(["verify", str(output)]), 0)
+
+    def test_produce_recovers_interrupted_regular_file_write(self) -> None:
+        fixtures = HERE / "fixtures"
+        default = build_snapshot(
+            load_json_file(fixtures / "unsupported-native-input.json")
+        )
+        source = fixtures / "supported-native-input.json"
+        old_bytes = canonical_json_bytes(default) + b"\n"
+        old_digest = hashlib.sha256(old_bytes).hexdigest().encode() + b"\n"
+        new_bytes = canonical_json_bytes(build_snapshot(load_json_file(source))) + b"\n"
+
+        for legacy_files in ("snapshot", "digest", "mismatched"):
+            with (
+                self.subTest(legacy_files=legacy_files),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                output = Path(directory) / "catalog.json"
+                sidecar = output.with_suffix(".json.sha256")
+                if legacy_files != "digest":
+                    output.write_bytes(new_bytes)
+                if legacy_files != "snapshot":
+                    sidecar.write_bytes(old_digest)
+
+                command = ["produce", str(source), str(output)]
+                for _ in range(2):
+                    self.assertEqual(main(command), 0)
+                    self.assertEqual(output.read_bytes(), new_bytes)
+                    self.assertEqual(
+                        sidecar.read_bytes(),
+                        hashlib.sha256(new_bytes).hexdigest().encode() + b"\n",
+                    )
+
+    def test_legacy_migration_repairs_reused_generation_before_linking(self) -> None:
+        fixtures = HERE / "fixtures"
+        default = fixtures / "unsupported-native-input.json"
+        source = fixtures / "supported-native-input.json"
+        replace = Path.replace
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "catalog.json"
+            sidecar = output.with_suffix(".json.sha256")
+            self.assertEqual(main(["produce", str(default), str(output)]), 0)
+            expected = output.read_bytes(), sidecar.read_bytes()
+            sidecar.resolve(strict=True).unlink()
+            for path, data in zip((output, sidecar), expected, strict=True):
+                path.unlink()
+                path.write_bytes(data)
+
+            def verify_legacy_link(path, destination):
+                result = replace(path, destination)
+                if destination == sidecar:
+                    self.assertEqual(
+                        (output.read_bytes(), sidecar.read_bytes()), expected
+                    )
+                return result
+
+            with patch.object(Path, "replace", verify_legacy_link):
+                self.assertEqual(main(["produce", str(source), str(output)]), 0)
+
     def test_readers_see_matching_pair_at_publication_commit(self) -> None:
         fixtures = HERE / "fixtures"
         replace = Path.replace

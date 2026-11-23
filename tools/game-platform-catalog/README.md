@@ -34,10 +34,11 @@ The producer writes:
 The local output paths are symlinks to one generation under the output directory's
 `.catalogue` directory. Publication requires a filesystem and account that can
 create symlinks. Use a regular output basename that does not end in `.sha256`.
-The producer can migrate an existing regular-file pair whose transport digest
-matches. It retains published generations so a reader can resolve the JSON path
-once and read the digest beside that resolved JSON, even during a subsequent
-build. Copy the file contents when moving the pair outside the output directory.
+The producer preserves a valid regular-file pair during migration and recovers
+an incomplete or mismatched pair using the new snapshot. It retains published
+generations so a reader can resolve the JSON path once and read the digest
+beside that resolved JSON, even during a subsequent build. Copy the file
+contents when moving the pair outside the output directory.
 
 ## Verify
 

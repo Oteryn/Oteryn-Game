@@ -781,10 +781,42 @@ def _publication_lock(directory: Path):
         os.close(parent)
 
 
-def _activate_pair(pair: Path, storage: Path, artifact_hex: str) -> None:
+def _artifact_digest(path: Path) -> str | None:
+    try:
+        if path.is_file() and path.stat().st_size <= MAX_FILE_BYTES:
+            with path.open("rb") as handle:
+                return hashlib.file_digest(handle, "sha256").hexdigest()
+    except FileNotFoundError:
+        pass
+    return None
+
+
+def _sidecar_matches(path: Path, artifact_hex: str) -> bool:
+    try:
+        return (
+            path.is_file()
+            and path.stat().st_size == 65
+            and path.read_bytes() == (artifact_hex + "\n").encode("ascii")
+        )
+    except FileNotFoundError:
+        return False
+
+
+def _activate_pair(pair: Path, storage: Path, basename: str, artifact_hex: str) -> None:
     generation = storage / artifact_hex
+    if generation.is_symlink():
+        raise CatalogValidationError(
+            f"unexpected catalogue generation link: {generation}"
+        )
     if not generation.exists():
         pair.replace(generation)
+    else:
+        output = generation / basename
+        sidecar = generation / (basename + ".sha256")
+        if output.is_symlink() or _artifact_digest(output) != artifact_hex:
+            (pair / output.name).replace(output)
+        if sidecar.is_symlink() or not _sidecar_matches(sidecar, artifact_hex):
+            (pair / sidecar.name).replace(sidecar)
     pointer = pair.parent / "activate"
     pointer.symlink_to(generation.name, target_is_directory=True)
     # Both public paths traverse this pointer. This is the only commit point.
@@ -792,8 +824,8 @@ def _activate_pair(pair: Path, storage: Path, artifact_hex: str) -> None:
 
 
 def _install_public_paths(
-    output: Path, sidecar: Path, storage: Path, staging: Path
-) -> None:
+    output: Path, sidecar: Path, storage: Path, pair: Path, artifact_hex: str
+) -> bool:
     current = storage.relative_to(output.parent) / "current"
     public_paths = {path: current / path.name for path in (output, sidecar)}
     legacy = []
@@ -806,21 +838,22 @@ def _install_public_paths(
                 raise CatalogValidationError(f"invalid catalogue output: {path}")
             legacy.append(path)
 
+    recovered = False
     if legacy:
         # Switch legacy files to links with identical bytes before committing a
         # new generation. A retry can continue after either link was replaced.
-        pair = staging / "legacy"
-        pair.mkdir()
-        for path, limit in ((output, MAX_FILE_BYTES), (sidecar, 65)):
-            if not path.is_file() or path.stat().st_size > limit:
-                raise CatalogValidationError("cannot migrate incomplete catalogue pair")
-            shutil.copyfile(path, pair / path.name)
-        with (pair / output.name).open("rb") as handle:
-            artifact_hex = hashlib.file_digest(handle, "sha256").hexdigest()
-        if (pair / sidecar.name).read_bytes() != artifact_hex.encode("ascii") + b"\n":
-            raise CatalogValidationError("cannot migrate mismatched catalogue pair")
-        _activate_pair(pair, storage, artifact_hex)
-        link = staging / "alias"
+        legacy_hex = _artifact_digest(output)
+        if legacy_hex is not None and _sidecar_matches(sidecar, legacy_hex):
+            legacy_pair = pair.parent / "legacy"
+            legacy_pair.mkdir()
+            for path in (output, sidecar):
+                shutil.copyfile(path, legacy_pair / path.name)
+            _activate_pair(legacy_pair, storage, output.name, legacy_hex)
+        else:
+            # An interrupted regular-file write has no valid pair to preserve.
+            _activate_pair(pair, storage, output.name, artifact_hex)
+            recovered = True
+        link = pair.parent / "alias"
         for path in legacy:
             link.symlink_to(public_paths[path])
             link.replace(path)
@@ -828,6 +861,7 @@ def _install_public_paths(
     for path, target in public_paths.items():
         if not path.is_symlink():
             path.symlink_to(target)
+    return recovered
 
 
 def write_snapshot_files(snapshot: dict, output: Path) -> None:
@@ -856,8 +890,10 @@ def write_snapshot_files(snapshot: dict, output: Path) -> None:
             (pair / sidecar.name).write_bytes((artifact_hex + "\n").encode("ascii"))
             with _publication_lock(output.parent):
                 storage.mkdir(parents=True, exist_ok=True)
-                _install_public_paths(output, sidecar, storage, staging)
-                _activate_pair(pair, storage, artifact_hex)
+                if not _install_public_paths(
+                    output, sidecar, storage, pair, artifact_hex
+                ):
+                    _activate_pair(pair, storage, output.name, artifact_hex)
     except OSError as exc:
         raise CatalogValidationError(f"cannot write output file: {output}") from exc
 

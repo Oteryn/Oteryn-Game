@@ -19,6 +19,10 @@ pub const CATALOG_CAPABILITIES: [&str; 8] = [
 
 const WIRE_MAX_STRING_BYTES: usize = 2_048;
 const WIRE_MAX_ARRAY_ENTRIES: usize = 200_000;
+const WIRE_MAX_RELATIONS: usize = 1_000_000;
+const WIRE_MAX_FILE_BYTES: usize = 256 * 1024 * 1024;
+// Covers the fixed v1 preproduction envelope, manifests, digests and final newline.
+const WIRE_ENVELOPE_BYTES: usize = 2_048;
 
 // These are the v1 carrier bounds enforced by the producer. The native graph
 // can admit wider values and stays intact when the public view omits them.
@@ -174,13 +178,7 @@ impl PublicContentView {
         let entities: Vec<_> = self
             .entities
             .iter()
-            .filter(|row| {
-                preproduction
-                    && matches!(
-                        row["capability_id"].as_str(),
-                        Some("item" | "creature" | "npc")
-                    )
-            })
+            .filter(|row| preproduction && is_catalogue_entity(row))
             .collect();
         let relations = if preproduction {
             self.relations.as_slice()
@@ -210,6 +208,34 @@ impl PublicContentView {
             "entities": entities, "relations": relations, "tombstones": []
         })
     }
+}
+
+fn is_catalogue_entity(row: &Value) -> bool {
+    matches!(
+        row["capability_id"].as_str(),
+        Some("item" | "creature" | "npc")
+    )
+}
+
+fn wire_row_bytes(row: &Value) -> Result<usize, ProjectError> {
+    // Charge one byte per row for its array separator.
+    serde_json::to_vec(row)
+        .map(|bytes| bytes.len() + 1)
+        .map_err(|error| ProjectError::InvalidJson(error.to_string()))
+}
+
+fn push_relation(
+    relations: &mut Vec<Value>,
+    remaining_bytes: &mut usize,
+    row: Value,
+) -> Result<bool, ProjectError> {
+    let bytes = wire_row_bytes(&row)?;
+    if relations.len() == WIRE_MAX_RELATIONS || bytes > *remaining_bytes {
+        return Ok(false);
+    }
+    *remaining_bytes -= bytes;
+    relations.push(row);
+    Ok(true)
 }
 
 fn inventory(value: &Value, path: &str, output: &mut BTreeSet<String>) {
@@ -545,7 +571,15 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
         .collect();
     let is_exported = |kind, key, revision| endpoints.get(key) == Some(&(kind, revision));
 
-    for (identity, services) in npcs {
+    let mut relation_budget = WIRE_MAX_FILE_BYTES - WIRE_ENVELOPE_BYTES;
+    for row in view.entities.iter().filter(|row| is_catalogue_entity(row)) {
+        relation_budget = relation_budget.saturating_sub(wire_row_bytes(row)?);
+    }
+    let mut remaining_bytes = relation_budget;
+
+    // Drop an overflowing capability as a unit. Keeping a prefix could keep
+    // one claimant of an ambiguous relation key whose other claimant was cut off.
+    'shops: for (identity, services) in npcs {
         let npc = identity.key.as_str();
         let mut seen = BTreeSet::new();
         for service in services {
@@ -580,18 +614,25 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                     view.incomplete.insert("npc_shop");
                     continue;
                 }
-                view.relations.push(json!({
+                let row = json!({
                     "type":"npc_shop", "capability_id":"npc_shop",
                     "relation_key":relation_key,
                     "source":npc,"target":offer.item.key,
                     "data":{"payload_revision":1,"direction":project_json(&offer.direction)?,"unit_price":offer.unit_price,
                         "count":offer.count,"sub_type":offer.sub_type,
                         "currency":offer.currency.as_ref().map(|currency| &currency.key)}
-                }));
+                });
+                if !push_relation(&mut view.relations, &mut remaining_bytes, row)? {
+                    view.relations.clear();
+                    remaining_bytes = relation_budget;
+                    view.incomplete.insert("npc_shop");
+                    break 'shops;
+                }
             }
         }
     }
-    for record in &project.reference.records {
+    let shop_rows = view.relations.len();
+    'loot: for record in &project.reference.records {
         let ProjectReferenceRecord::Creature {
             identity,
             loot: Some(table),
@@ -646,13 +687,16 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                 view.incomplete.insert("creature_loot");
                 continue;
             }
-            view.relations.push(
-                json!({"type":"creature_loot","capability_id":"creature_loot",
+            let row = json!({"type":"creature_loot","capability_id":"creature_loot",
                 "relation_key":relation_key,
                 "source":identity.key,"target":entry.item.key,
                 "data":{"payload_revision":1,"algorithm":algorithm,"min_count":entry.min_count,
-                    "max_count":entry.max_count,"probability_ppm":entry.probability_ppm}}),
-            );
+                    "max_count":entry.max_count,"probability_ppm":entry.probability_ppm}});
+            if !push_relation(&mut view.relations, &mut remaining_bytes, row)? {
+                view.relations.truncate(shop_rows);
+                view.incomplete.insert("creature_loot");
+                break 'loot;
+            }
         }
     }
     omit_ambiguous_rows(&mut view.relations, "relation_key", &mut view.incomplete);
@@ -742,6 +786,162 @@ mod tests {
                 } if identity.key == CLEDWYN => Some(services),
                 _ => None,
             })
+    }
+
+    #[test]
+    fn admitted_shared_service_stays_within_catalogue_limits() -> TestResult {
+        project_mutation(
+            |draft| {
+                let npc = draft
+                    .state
+                    .declarations
+                    .iter()
+                    .find(|row| row.identity().key == CLEDWYN)
+                    .ok_or("Cledwyn NPC missing")?
+                    .clone();
+                let service = cledwyn_services(draft)
+                    .and_then(|refs| refs.first())
+                    .ok_or("Cledwyn service link missing")?
+                    .clone();
+                let offers = draft
+                    .state
+                    .declarations
+                    .iter_mut()
+                    .find_map(|row| match row {
+                        ProjectV2Declaration::Service {
+                            identity, offers, ..
+                        } if identity.key == service.key => Some(offers),
+                        _ => None,
+                    })
+                    .ok_or("Cledwyn service missing")?;
+                let template = offers.first().ok_or("Cledwyn offer missing")?.clone();
+                *offers = (1..=1_000)
+                    .map(|count| ProjectV2ServiceOffer {
+                        count: Some(count),
+                        parity_pending: false,
+                        ..template.clone()
+                    })
+                    .collect();
+                for index in 0..1_001 {
+                    let mut npc = npc.clone();
+                    let ProjectV2Declaration::Npc {
+                        identity, services, ..
+                    } = &mut npc
+                    else {
+                        return Err("expected NPC declaration".into());
+                    };
+                    identity.key = format!("{CLEDWYN}.catalogue-bound-{index:04}");
+                    services.clear();
+                    services.push(service.clone());
+                    draft.state.declarations.push(npc);
+                }
+                Ok(())
+            },
+            |view| assert_bounded_catalogue(view, "npc_shop", "creature_loot"),
+        )
+    }
+
+    #[test]
+    fn admitted_shared_loot_stays_within_catalogue_limits() -> TestResult {
+        project_mutation(
+            |draft| {
+                let table = draft
+                    .core
+                    .records
+                    .iter()
+                    .find(|row| row.identity().key == ABYSSADOR_LOOT)
+                    .ok_or("Abyssador loot table missing")?;
+                let ProjectReferenceRecord::Loot {
+                    identity,
+                    algorithm,
+                    entries,
+                } = table
+                else {
+                    return Err("expected Loot record".into());
+                };
+                let mut identity = identity.clone();
+                identity.key.push_str(".catalogue-bound");
+                let shared = DefinitionReferenceDocument {
+                    family: identity.family.clone(),
+                    key: identity.key.clone(),
+                    revision: identity.revision.clone(),
+                };
+                let mut entry = entries
+                    .first()
+                    .ok_or("Abyssador loot entry missing")?
+                    .clone();
+                let mut item = draft
+                    .core
+                    .records
+                    .iter()
+                    .find(|row| row.identity().key == entry.item.key)
+                    .ok_or("loot item missing")?
+                    .clone();
+                let ProjectReferenceRecord::Item {
+                    identity: item_id, ..
+                } = &mut item
+                else {
+                    return Err("expected Item record".into());
+                };
+                item_id.key.push_str(&"x".repeat(450));
+                entry.item.key.clone_from(&item_id.key);
+                let table = ProjectReferenceRecord::Loot {
+                    identity,
+                    algorithm: *algorithm,
+                    entries: vec![entry; 1_000],
+                };
+                for loot in draft
+                    .core
+                    .records
+                    .iter_mut()
+                    .filter_map(|row| match row {
+                        ProjectReferenceRecord::Creature {
+                            client_projection: ProjectionDocument::ClientSafe,
+                            loot,
+                            ..
+                        } => Some(loot),
+                        _ => None,
+                    })
+                    .take(600)
+                {
+                    *loot = Some(shared.clone());
+                }
+                draft.core.records.extend([item, table]);
+                Ok(())
+            },
+            |view| assert_bounded_catalogue(view, "creature_loot", "npc_shop"),
+        )
+    }
+
+    fn assert_bounded_catalogue(
+        view: PublicContentView,
+        oversized: &str,
+        unaffected: &str,
+    ) -> TestResult {
+        let rows = view.relations.len();
+        assert!(
+            rows <= 1_000_000,
+            "projection emitted {rows} rows above the v1 limit"
+        );
+        let input = view.preproduction_input(
+            "0123456789abcdef0123456789abcdef01234567",
+            "2026-01-01T00:00:00Z",
+        );
+        let bytes = serde_json::to_vec(&input)?.len();
+        assert!(
+            bytes < 256 * 1024 * 1024,
+            "projection emitted {bytes} bytes above the v1 file limit"
+        );
+        let manifest = input["capability_manifest"]
+            .as_array()
+            .ok_or("manifest missing")?;
+        assert!(
+            manifest
+                .iter()
+                .any(|row| row["capability_id"] == oversized && row["support"] == "unsupported")
+        );
+        assert!(view.relations.iter().any(|row| row["type"] == unaffected));
+        Ok(())
     }
 
     #[test]
