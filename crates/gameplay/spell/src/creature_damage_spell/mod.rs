@@ -368,14 +368,15 @@ impl SpellSource {
             return Err(AttackError::UnsupportedShape);
         }
 
-        // Crystal 201189f8, dark_torturer_skill_reducer.lua:3–36. The source alias
-        // SKILL_DEFENSEPERCENT is absent from the donor enum, so lower the rolled
-        // percent through the existing shielding attribute condition.
+        // TibiaWiki Dark Torturer (2026-06-16): Great Musical Wave reduces
+        // shielding by 60–95% for about four seconds. Crystal 201189f8 provides
+        // the cone and cue, but its Lua uses the unregistered SKILL_DEFENSEPERCENT.
         const DURATION_MS: u32 = 4_000;
+        const MIN_PERCENT: i32 = 5;
         const MAX_PERCENT: i32 = 40;
         let condition_key = format!("{}.defence", effect.key);
         let mut variants = Vec::new();
-        for percent in 1..=MAX_PERCENT {
+        for percent in MIN_PERCENT..=MAX_PERCENT {
             let mut child = self.clone();
             let mut identity = self.ability.clone();
             identity.key = format!("{}.variant-{percent}", identity.key);
@@ -398,7 +399,8 @@ impl SpellSource {
         }
         self.fingerprint = Sha256::new()
             .chain_update(self.fingerprint)
-            .chain_update(b"dark_torturer_shielding_percent_v1")
+            .chain_update(b"dark_torturer_shielding_percent_v2")
+            .chain_update(MIN_PERCENT.to_be_bytes())
             .chain_update(MAX_PERCENT.to_be_bytes())
             .chain_update(DURATION_MS.to_be_bytes())
             .finalize()
@@ -3214,4 +3216,71 @@ fn source_overpower_roll(
     )
     .map_err(|_| AttackError::InvalidPlan)?;
     Ok(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(draw, 1, 100) as u8)
+}
+
+#[cfg(test)]
+mod dark_torturer_tests {
+    use super::{ConditionValues, Data, SpellSource};
+    use crate::content::native_gameplay::CreatureProfilesDocument;
+    use oteryn_gameplay_domain::domain::condition::attributes::CombatSkill;
+
+    #[test]
+    fn dark_torturer_cone_rolls_every_documented_shielding_value()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let input = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let profiles: CreatureProfilesDocument = serde_json::from_slice(&input)?;
+        let creature = profiles
+            .records
+            .iter()
+            .find(|record| record.profile.target.key == "oteryn:creature.dark_torturer")
+            .ok_or("Dark Torturer profile")?;
+        let Some(Data::Behavior(behavior)) =
+            creature.behavior.as_ref().map(|profile| &profile.data)
+        else {
+            return Err("Dark Torturer behaviour".into());
+        };
+        let entry = behavior
+            .attacks
+            .iter()
+            .position(|attack| {
+                attack.ability.key == "oteryn:ability.spell.dark_torturer_skill_reducer"
+            })
+            .ok_or("Dark Torturer cone schedule")?;
+        let definitions = creature
+            .attack_definitions
+            .as_ref()
+            .ok_or("Dark Torturer attack definitions")?;
+        let source = SpellSource::from_native(
+            &creature.profile.target,
+            entry,
+            &definitions.records,
+            &definitions.profiles,
+            [0; 32],
+        )
+        .map_err(|error| format!("{error:?}"))?;
+
+        assert_eq!(source.variants.len(), (5..=40).count());
+        for (variant, remaining) in source.variants.iter().zip(5..=40) {
+            let variant = variant.as_ref().map_err(|error| format!("{error:?}"))?;
+            let [condition] = variant.conditions.as_slice() else {
+                return Err("one condition per cone variant".into());
+            };
+            let ConditionValues::SourceAttributes {
+                modifiers,
+                duration_ms,
+            } = condition.values()
+            else {
+                return Err("shielding attribute condition".into());
+            };
+            assert_eq!(
+                modifiers.combat_skill(CombatSkill::Shield, 100),
+                Some(remaining)
+            );
+            assert_eq!(duration_ms, 4_000);
+        }
+        Ok(())
+    }
 }

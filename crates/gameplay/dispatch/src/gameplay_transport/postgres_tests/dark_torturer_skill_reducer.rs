@@ -243,9 +243,9 @@ async fn scenario(harness: &Harness, replay: bool) -> TestResult {
         assert!(!cue.tiles.contains(&(12, 10, -7)));
 
         let modifier = shielding(&states, &runtime, first, now)?;
-        let Some(AttributeModifier::PercentOfBase(percent @ 1..=40)) = modifier else {
+        let Some(AttributeModifier::PercentOfBase(percent @ 5..=40)) = modifier else {
             return Err(format!(
-                "successful purple cone must install 1–40% defence, got {modifier:?}; targets={:?}",
+                "successful purple cone must leave 5–40% shielding, got {modifier:?}; targets={:?}",
                 outcome.targets,
             )
             .into());
@@ -253,7 +253,7 @@ async fn scenario(harness: &Harness, replay: bool) -> TestResult {
         assert_eq!(shielding(&states, &runtime, second, now)?, modifier);
         assert_eq!(shielding(&states, &runtime, outside, now)?, None);
         assert_eq!(
-            outcome.source_variant.ok_or("retained cast roll")?.index + 1,
+            outcome.source_variant.ok_or("retained cast roll")?.index + 5,
             usize::try_from(percent)?
         );
         let deadline = cast_at.get() + DURATION_US;
