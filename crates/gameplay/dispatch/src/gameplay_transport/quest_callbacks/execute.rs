@@ -1093,6 +1093,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return ready;
             }
         }
+        let coffin = VampireCoffinKind::for_callback(&callback.key);
+        let mut recover_ordinary_coffin = false;
         if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -1351,6 +1353,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
                 }
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
+                    if coffin == Some(VampireCoffinKind::Ordinary) =>
+                {
+                    // The original transition stays stage-8 only. A separate
+                    // fenced delivery may still find its undelivered encounter.
+                    recover_ordinary_coffin = true;
+                }
                 refusal => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))
@@ -1420,8 +1429,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let merchant_projected = if callback.effects.encounter.is_some() && !close {
-            let disposition = if callback.vampire_coffin_fallback().is_some() {
-                self.deliver_paid_coffin(
+            let disposition = if let Some(kind) = coffin {
+                self.deliver_coffin(
                     runtime,
                     states,
                     actor,
@@ -1435,6 +1444,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     permit,
                     fence,
                     personal_reservation.as_mut(),
+                    kind,
                 )
                 .await
             } else {
@@ -1455,6 +1465,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
             };
             if disposition != UseDisposition::Committed {
+                if recover_ordinary_coffin
+                    && let Ok(mut pending) = self.states.quest_callbacks.records.lock()
+                {
+                    pending.remove(&session);
+                }
                 return disposition;
             }
             if !callback.starts_merchant_wave() {

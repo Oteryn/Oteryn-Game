@@ -4,6 +4,10 @@ use crate::durability::map_item_mint::{
     MapItemMintCandidate, MapItemMintError, commit_reserved_map_item_mint,
 };
 
+const MAX_SOURCE_SCENE_ITEM_MOVES: usize = 8
+    * (oteryn_protocol_oteryn::world_map::MAX_BASE_ORDINAL as usize + 1
+        + super::super::ground_cell_limit::GROUND_CELL_ROOT_LIMIT);
+
 pub struct SourceSceneItemMove {
     pub command: CommandRef,
     pub request: LoopMoveRequest,
@@ -22,7 +26,7 @@ impl DurabilityRoot {
         mut moves: Vec<SourceSceneItemMove>,
     ) -> Result<Result<(), LoopMoveRefusal>, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
-        if moves.is_empty() || moves.len() > 32 || moves.iter().any(|movement| {
+        if moves.is_empty() || moves.len() > MAX_SOURCE_SCENE_ITEM_MOVES || moves.iter().any(|movement| {
             movement.request.pickup_cell.is_none()
                 || !matches!(movement.request.destination, LoopDestination::Ground(_))
                 || movement.request.count.is_some()

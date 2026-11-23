@@ -1,4 +1,4 @@
-//! Recover a paid encounter from the receipt that wrote the current hunt stage.
+//! Recover a Count encounter from the receipt that wrote the current hunt stage.
 use crate::domain::CharacterId;
 use crate::durability::{
     DurabilityError, DurabilityRoot,
@@ -11,15 +11,15 @@ use crate::durability::{
     spell_owner_commit::SpellLanePermit,
 };
 use crate::foundation::CommandRef;
-use oteryn_gameplay_quests::quest::world_callbacks::WEAKENED_COFFIN_KEYS;
+use oteryn_gameplay_quests::quest::world_callbacks::{VAMPIRE_COFFIN_QUESTLINE, VampireCoffinKind};
 
 impl DurabilityRoot {
     /// Selection advice for a fresh coffin use after the in-memory encounter was lost.
-    pub async fn read_vampire_coffin_payment(
+    pub async fn read_pending_vampire_coffin(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         character: CharacterId,
-    ) -> Result<bool, CharacterProgressionError> {
+    ) -> Result<Option<VampireCoffinKind>, CharacterProgressionError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -28,22 +28,23 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    let paid = current_payment(&mut tx, character).await?;
+                    let encounter = pending_encounter(&mut tx, character).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(paid)
+                    Ok(encounter)
                 })
             })
             .await
             .map_err(Into::into)
     }
 
-    /// Consume the recovery payment only after the owner has staged the native
-    /// spawn and reserved its map projection, immediately before publication.
+    /// Serialize delivery under the Character lock. The recovery row is removed
+    /// only when the already-admitted encounter has been published. An unknown
+    /// cleanup commit cannot prevent that publication.
     #[allow(
         clippy::too_many_arguments,
         reason = "the publication uses the same current item fence as payment"
     )]
-    pub async fn deliver_vampire_coffin_payment(
+    pub async fn deliver_vampire_coffin(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -51,50 +52,58 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         command: CommandRef,
         content: [u8; 32],
+        kind: VampireCoffinKind,
+        publish: impl FnOnce() + Send,
     ) -> Result<bool, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+        self.try_issue_semantic_pass()?.run_with_context(&mut Some(publish), move |holder, deadline, publish| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_current_equipment_in_transaction(
                 &mut tx, &recovery, &node, &fence, Some(command), content,
             ).await.map_err(|_| DurabilityError::Unavailable)?;
-            if !current_payment(&mut tx, fence.character_id).await? {
+            if pending_encounter(&mut tx, fence.character_id).await? != Some(kind) {
                 return Ok(false);
             }
             let deleted = sqlx::query("DELETE FROM game_pending_vampire_coffin_payments WHERE character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice())
                 .execute(&mut *tx).await?;
+            if deleted.rows_affected() != 1 {
+                return Ok(false);
+            }
+            publish.take().ok_or(DurabilityError::InvalidStoredState)?();
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(deleted.rows_affected() == 1)
+            Ok(true)
         })).await
     }
 }
 
-/// The mission track points at its latest writer, including after a ring hand-in.
-/// Both coffin pieces can recover the same payment while that stage remains current.
-pub(super) async fn current_payment(
+/// The latest hunt-stage writer determines which Count was admitted. The existing
+/// recovery row covers either kind while the hunt still awaits its ring.
+pub(super) async fn pending_encounter(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
-) -> Result<bool, DurabilityError> {
-    Ok(sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks t \
+) -> Result<Option<VampireCoffinKind>, DurabilityError> {
+    let transition: Option<String> = sqlx::query_scalar(
+        "SELECT r.transition_key FROM game_character_quest_tracks t \
          JOIN game_character_quest_receipts r USING (character_id, committed_character_revision) \
          JOIN game_pending_vampire_coffin_payments p USING (character_id) \
          WHERE t.character_id=encode($1,'hex')::uuid AND t.track_key=$2 \
-         AND r.quest_key=t.quest_key AND r.transition_key=ANY($3))",
+         AND r.quest_key=t.quest_key",
     )
     .bind(character.as_bytes().as_slice())
-    .bind("oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03")
-    .bind(&WEAKENED_COFFIN_KEYS[..])
-    .fetch_one(&mut **tx)
-    .await?)
+    .bind(VAMPIRE_COFFIN_QUESTLINE)
+    .fetch_optional(&mut **tx)
+    .await?;
+    Ok(transition
+        .as_deref()
+        .and_then(VampireCoffinKind::for_callback))
 }
 
-pub(super) async fn record_payment(
+pub(super) async fn record_encounter(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
 ) -> Result<bool, DurabilityError> {

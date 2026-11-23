@@ -3024,7 +3024,7 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &callback,
-                variant == "delivered",
+                variant,
             ))
             .await?;
         } else if name == super::super::serpentine_tower_fixtures::NAME {

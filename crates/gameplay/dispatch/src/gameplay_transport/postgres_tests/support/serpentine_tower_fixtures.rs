@@ -100,6 +100,11 @@ pub(super) async fn exercise(
             let now = owner.clock_origin.elapsed() + std::time::Duration::from_secs(60);
             assert!(owner.states.world_gate.lock().map_err(debug)?.admit(actor, now));
         }
+        if command == 2 && variant == "deadline" {
+            owner.states.quest_callbacks.delay_scene_commit_ack.store(
+                true, std::sync::atomic::Ordering::Release,
+            );
+        }
         let target = WorldObjectTarget {
             placement: placement.clone(),
             expected_revision: world.facts().object_revision(key),
@@ -160,6 +165,16 @@ pub(super) async fn exercise(
                     100 + u64::try_from(index)?,
                 )
                 .await?;
+            }
+            if variant == "large" {
+                for index in 0..29 {
+                    fixture::offering(
+                        owner,
+                        fence.item_fence(),
+                        &Offering { position: occupied, ..movable.clone() },
+                        300 + index,
+                    ).await?;
+                }
             }
             if variant == "capacity" {
                 for index in 0..crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT - 1 {
@@ -226,7 +241,7 @@ pub(super) async fn exercise(
                         y: landing.y,
                         ..wall
                     }),
-                    2
+                    if variant == "large" && wall.x == occupied.x { 31 } else { 2 }
                 );
             }
             let runtime = owner.runtime.lock().await;

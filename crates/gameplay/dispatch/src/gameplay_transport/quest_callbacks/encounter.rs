@@ -196,9 +196,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     #[allow(
         clippy::too_many_arguments,
-        reason = "the paid spawn retains the exact world and Character proofs"
+        reason = "the spawn retains the exact world and Character proofs"
     )]
-    pub(super) async fn deliver_paid_coffin(
+    pub(super) async fn deliver_coffin(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
@@ -213,6 +213,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &SpellLanePermit,
         fence: Option<CurrentCharacterGameplayFence>,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        kind: VampireCoffinKind,
     ) -> UseDisposition {
         let (Some(fence), QuestCause::Use(command), Some(reservation)) =
             (fence, cause, reservation)
@@ -243,23 +244,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(staged) = staged else {
             return disposition;
         };
-        if !matches!(
-            self.root
-                .deliver_vampire_coffin_payment(
-                    self.character,
-                    self.holder,
-                    permit,
-                    fence.item_fence(),
-                    command,
-                    content,
-                )
-                .await,
-            Ok(true)
-        ) {
-            return UseDisposition::Rejected;
+        let mut published = false;
+        let delivery = self
+            .root
+            .deliver_vampire_coffin(
+                self.character,
+                self.holder,
+                permit,
+                fence.item_fence(),
+                command,
+                content,
+                kind,
+                || {
+                    self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
+                    published = true;
+                },
+            )
+            .await;
+        #[cfg(test)]
+        let delivery = if matches!(delivery, Ok(true))
+            && self
+                .states
+                .quest_callbacks
+                .lose_coffin_delivery_ack
+                .swap(false, std::sync::atomic::Ordering::AcqRel)
+        {
+            Err(crate::durability::DurabilityError::CommitOutcomeUnknown)
+        } else {
+            delivery
+        };
+        if published {
+            if let Err(error) = delivery {
+                eprintln!("COFFIN_DELIVERY_CLEANUP_UNCONFIRMED {error:?}");
+            }
+            UseDisposition::Committed
+        } else {
+            UseDisposition::Rejected
         }
-        self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
-        UseDisposition::Committed
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -318,7 +339,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if staged_source_boss.is_some()
             && (encounter.timing.is_some()
-                || (encounter.phase.is_none() && callback.vampire_coffin_fallback().is_none()))
+                || (encounter.phase.is_none()
+                    && VampireCoffinKind::for_callback(&callback.key).is_none()))
         {
             return UseDisposition::Rejected;
         }

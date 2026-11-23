@@ -165,7 +165,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         "oteryn:quest-transition/srvenc-fixture/seed-{}",
         rule.creature.rsplit('.').next().ok_or("creature")?
     );
-    let catalogue = if seeds.is_empty() || rule.top_damage_only {
+    let imported_predecessor = rule.top_damage_only || rule.top_damage_party;
+    let catalogue = if seeds.is_empty() || imported_predecessor {
         Arc::new(catalogue)
     } else {
         let mut transitions = vec![native_transition];
@@ -235,13 +236,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     owner.admit_progression_session(&mut admitted).await;
     deps.initialize(&owner).await;
     let session = admitted.game_session_id;
-    if rule.top_damage_only && !seeds.is_empty() {
-        // Herald starts after Emiliana's historical mission admission. The
-        // generic writer must not impersonate her protected quest operation.
-        // Import only that predecessor, as the other native Quest fixtures do;
-        // the death and all its rewards still use the real fenced owners.
+    if imported_predecessor && !seeds.is_empty() {
+        // Herald and Nomad start after their source mission admission. Retain
+        // the production catalogue while importing the mission predecessor.
         super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(h, &owner, &admitted, &seeds, 0xa6)
-            .await?;
+            .await
+            .map_err(|error| format!("principal mission predecessor: {error}"))?;
     } else if !seeds.is_empty() {
         let fence = owner
             .current_quest_fence(session)
@@ -321,8 +321,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 lease_generation: fence.character_lease_generation,
                 position,
                 dealt_damage: true,
-                top_damage_character: rule
-                    .top_damage_only
+                top_damage_character: imported_predecessor
                     .then_some(*fence.character_id.as_bytes()),
             }),
         };
@@ -339,7 +338,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 Arc::clone(&catalogue),
             )
             .await
-            .map_err(debug)?;
+            .map_err(|error| format!("detached source death: {error:?}"))?;
         assert!(
             matches!(
                 outcome,
@@ -353,6 +352,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     // Both peers are independently admitted durable Characters in this Channel.
     // Member one damages the boss; member two only stands nearby.
     let nomad = rule.creature == "oteryn:creature.nomad";
+    let left_party = mode == "nomad_excludes_former_member_with_stale_top_damage_roster";
     let mut death_peers = Vec::new();
     let peer_source = if nomad || rule.creature.ends_with("_overlord") {
         Some(super::house_transfer_fixtures::RecoverySource::start(h).await?)
@@ -427,7 +427,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
                     h, &owner, &peer, &seeds, member,
                 )
-                .await?;
+                .await
+                .map_err(|error| format!("peer {member} mission predecessor: {error}"))?;
             }
             if mode == "overlordcr_missing_cache" && member == 1 {
                 assert!(
@@ -573,7 +574,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 use crate::foundation::{PartyMemberSnapshot, PartyPresence, PartySnapshot};
 
                 let character = *lease.character_id().as_bytes();
-                let (_, _, idle_member) = death_peers[1];
+                let (peer, peer_session, idle_member) = death_peers[1];
                 // Freeze the party observation at the lethal turn. The first
                 // peer deals damage, but only the second belongs to this party.
                 let members = [character, idle_member]
@@ -587,22 +588,29 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                         channel: Some(*owner.channel_id.as_bytes()),
                     })
                     .collect();
-                runtime
-                    .project_world_party(
-                        actor,
-                        session,
-                        PartySnapshot {
-                            world: *owner.world_id.as_bytes(),
-                            character,
-                            party_id: Some(id(81)),
-                            revision: Some(1),
-                            leader: Some(character),
-                            shared_xp_enabled: true,
-                            members,
-                            observed_database_micros: 1,
-                        },
-                    )
-                    .map_err(debug)?;
+                let party = PartySnapshot {
+                    world: *owner.world_id.as_bytes(),
+                    character,
+                    party_id: Some(id(81)),
+                    revision: Some(1),
+                    leader: Some(character),
+                    shared_xp_enabled: true,
+                    members,
+                    observed_database_micros: 1,
+                };
+                let mut peer_party = party.clone();
+                peer_party.character = idle_member;
+                if left_party {
+                    // The Leave command projects the departing actor without refreshing the leader.
+                    peer_party.party_id = None;
+                    peer_party.revision = None;
+                    peer_party.leader = None;
+                    peer_party.shared_xp_enabled = false;
+                    peer_party.members.clear();
+                    peer_party.observed_database_micros = 2;
+                }
+                runtime.project_world_party(actor, session, party).map_err(debug)?;
+                runtime.project_world_party(peer, peer_session, peer_party).map_err(debug)?;
             }
             let mut health = runtime.companion_snapshot(target).map_err(debug)?.health;
             if matches!(mode, "overlordcr_seventeen" | "overlordcr_fallback") {
@@ -1010,7 +1018,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             let before = seeds.first().ok_or("Nomad mission predecessor")?.1;
             assert_eq!(
                 value,
-                if index == 0 {
+                if index == 0 || left_party {
                     Some(before)
                 } else {
                     rule.effects[0].set

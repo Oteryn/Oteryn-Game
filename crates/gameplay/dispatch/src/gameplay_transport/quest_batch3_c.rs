@@ -47,15 +47,14 @@ pub(super) fn capture(
     if runtime.binding().runtime_scope() != scope || runtime.owner_fence().is_err() {
         return Vec::new();
     }
-    // Freeze the same shared-experience roster used by other source party kills.
+    // Freeze membership at the lethal turn. A departed actor's own projection
+    // changes on Leave before the principal's roster necessarily refreshes.
     let party = if principal_present && rules.any(|rule| rule.top_damage_party) {
         runtime
             .cached_world_party(principal.actor, principal.session)
             .ok()
             .flatten()
-            .and_then(|party| {
-                super::grizzly_kills::participants(party, *principal.character.as_bytes())
-            })
+            .filter(|party| party.character == *principal.character.as_bytes())
     } else {
         None
     };
@@ -84,9 +83,37 @@ pub(super) fn capture(
                 && share.session == Some(snapshot.session)
                 && share.lease_generation == Some(snapshot.lease_generation)
         });
-        let in_top_damage_party = party
-            .as_ref()
-            .is_some_and(|members| members.contains(&snapshot.character));
+        let in_top_damage_party = party.is_some_and(|party| {
+            if party.character == snapshot.character {
+                return true;
+            }
+            let Some(member_view) = runtime
+                .cached_world_party(snapshot.actor, snapshot.session)
+                .ok()
+                .flatten()
+                .filter(|view| {
+                    view.character == snapshot.character
+                        && view.party_id.is_some()
+                        && view.party_id == party.party_id
+                })
+            else {
+                return false;
+            };
+            let latest = if member_view.revision > party.revision {
+                member_view
+            } else {
+                party
+            };
+            latest.shared_xp_enabled
+                && latest
+                    .members
+                    .iter()
+                    .any(|member| member.character == party.character)
+                && latest
+                    .members
+                    .iter()
+                    .any(|member| member.character == snapshot.character)
+        });
         for key in &snapshot.objectives {
             let Some(rule) = source_deaths::rule(key) else {
                 continue;

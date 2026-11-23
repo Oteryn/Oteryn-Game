@@ -31,8 +31,11 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     weakened: &Callback,
-    delivered_case: bool,
+    variant: &str,
 ) -> TestResult {
+    let ordinary_restart = variant == "ordinary_restart";
+    let lost_ack = variant == "lost_delivery_ack";
+    let delivered_case = variant == "delivered";
     let native = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
@@ -54,6 +57,7 @@ pub(super) async fn exercise(
         .await
         .map_err(debug)?
         .ok_or("coffin fence")?;
+    if !ordinary_restart {
     for (index, offering) in weakened.offerings.iter().enumerate() {
         fixture::offering(
             owner,
@@ -63,8 +67,9 @@ pub(super) async fn exercise(
         )
         .await?;
     }
+    }
     owner.states.loop_ground.invalidate();
-    let foreign_generation = !delivered_case && weakened.key.ends_with(FOREIGN_GENERATION);
+    let foreign_generation = variant.is_empty() && weakened.key.ends_with(FOREIGN_GENERATION);
     if foreign_generation {
         // Fixtures own generation 1. Represent carried-over drops with a distinct
         // generation while keeping their location, stack and item identity intact.
@@ -80,7 +85,7 @@ pub(super) async fn exercise(
             u64::try_from(weakened.offerings.len())?
         );
         tx.commit().await?;
-    } else if !delivered_case {
+    } else if !delivered_case && !lost_ack {
         owner
             .states
             .quest_callbacks
@@ -100,7 +105,10 @@ pub(super) async fn exercise(
                 .creatures
                 .is_empty()
         );
-        assert_eq!(burns(h).await?, i64::try_from(weakened.offerings.len())?);
+        assert_eq!(
+            burns(h).await?,
+            if ordinary_restart { 0 } else { i64::try_from(weakened.offerings.len())? },
+        );
         owner.forget_coffin_projection_for_test(admitted.game_session_id)?;
         owner.states.loop_ground.invalidate();
         owner
@@ -111,11 +119,16 @@ pub(super) async fn exercise(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
+    if lost_ack {
+        owner.states.quest_callbacks.lose_coffin_delivery_ack.store(
+            true, std::sync::atomic::Ordering::Release,
+        );
+    }
     assert_eq!(
         use_coffin(owner, admitted, weakened, 62).await?,
         UseDisposition::Committed
     );
-    let expected = if foreign_generation {
+    let expected = if foreign_generation || ordinary_restart {
         let fallback = weakened
             .vampire_coffin_fallback()
             .ok_or("ordinary coffin")?;
@@ -167,11 +180,12 @@ pub(super) async fn exercise(
             "the Count's ring was delivered"
         );
         assert!(
-            !owner
+            owner
                 .root
-                .read_vampire_coffin_payment(owner.character, fence.character_id)
+                .read_pending_vampire_coffin(owner.character, fence.character_id)
                 .await
-                .map_err(debug)?,
+                .map_err(debug)?
+                .is_none(),
             "a defeated Count still has a redeemable garlic payment",
         );
         owner.clock_origin = owner
@@ -213,7 +227,7 @@ pub(super) async fn exercise(
                 .is_empty()
         );
     }
-    let expected_burns = if foreign_generation {
+    let expected_burns = if foreign_generation || ordinary_restart {
         0
     } else {
         i64::try_from(weakened.offerings.len())?

@@ -582,32 +582,46 @@ fn is_default_use_range(value: &u8) -> bool {
     *value == 1
 }
 
+const ORDINARY_COFFIN: &str = "oteryn:quest-callback/inquisition-vampire-hunt-coffin";
+const ORDINARY_COFFIN_SIDE: &str = "oteryn:quest-callback/inquisition-vampire-hunt-coffin-side";
 const WEAKENED_COFFIN: &str = "oteryn:quest-callback/inquisition-weakened-coffin";
 const WEAKENED_COFFIN_SIDE: &str = "oteryn:quest-callback/inquisition-weakened-coffin-side";
 
 pub const VAMPIRE_COFFIN_QUESTLINE: &str =
     "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
 
-/// Durable receipt identities shared by the two physical Inquisition coffin pieces.
-pub const WEAKENED_COFFIN_KEYS: [&str; 2] = [WEAKENED_COFFIN, WEAKENED_COFFIN_SIDE];
+/// The encounter variant frozen by the quest transition at either coffin piece.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VampireCoffinKind {
+    Ordinary,
+    Weakened,
+}
+
+impl VampireCoffinKind {
+    pub fn for_callback(key: &str) -> Option<Self> {
+        match key {
+            ORDINARY_COFFIN | ORDINARY_COFFIN_SIDE => Some(Self::Ordinary),
+            WEAKENED_COFFIN | WEAKENED_COFFIN_SIDE => Some(Self::Weakened),
+            _ => None,
+        }
+    }
+}
 
 impl Callback {
     /// A garlic offering selects the alternate encounter on the same coffin.
     pub fn vampire_coffin_fallback(&self) -> Option<&'static str> {
         match self.key.as_str() {
-            WEAKENED_COFFIN => Some("oteryn:quest-callback/inquisition-vampire-hunt-coffin"),
-            WEAKENED_COFFIN_SIDE => {
-                Some("oteryn:quest-callback/inquisition-vampire-hunt-coffin-side")
-            }
+            WEAKENED_COFFIN => Some(ORDINARY_COFFIN),
+            WEAKENED_COFFIN_SIDE => Some(ORDINARY_COFFIN_SIDE),
             _ => None,
         }
     }
 
     pub fn encounter_reservation_key(&self) -> &str {
-        const COFFIN: &str = "oteryn:quest-callback/inquisition-vampire-hunt-coffin";
-        match self.vampire_coffin_fallback().unwrap_or(self.key.as_str()) {
-            COFFIN | "oteryn:quest-callback/inquisition-vampire-hunt-coffin-side" => COFFIN,
-            _ => &self.key,
+        if VampireCoffinKind::for_callback(&self.key).is_some() {
+            ORDINARY_COFFIN
+        } else {
+            &self.key
         }
     }
 

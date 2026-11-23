@@ -56,7 +56,9 @@ use crate::map::{
     overlay::TilePos,
     view::{MapFacts, placement_key},
 };
-use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position, Trigger};
+use oteryn_gameplay_quests::quest::world_callbacks::{
+    self, Callback, Position, Trigger, VampireCoffinKind,
+};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::OnceLock;
 
@@ -103,6 +105,10 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
+    #[cfg(test)]
+    pub(super) delay_scene_commit_ack: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) lose_coffin_delivery_ack: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(super) lose_source_boss_commit_ack: std::sync::atomic::AtomicBool,
     #[cfg(test)]
@@ -504,6 +510,21 @@ pub(super) fn step_command(
     CommandId::new(u64::from_be_bytes(id).max(1))
         .ok()
         .map(|id| CommandRef::new(session, id))
+}
+
+/// Once a callback starts a bounded commit whose result drives publication,
+/// keep its reserved world state alive until that result is resolved.
+async fn finish_quest_use(
+    deadline: tokio::time::Instant,
+    publication: &std::sync::atomic::AtomicBool,
+    operation: impl Future<Output = UseDisposition>,
+) -> UseDisposition {
+    let mut operation = Box::pin(operation);
+    match tokio::time::timeout_at(deadline, operation.as_mut()).await {
+        Ok(result) => result,
+        Err(_) if publication.load(std::sync::atomic::Ordering::Relaxed) => operation.await,
+        Err(_) => UseDisposition::Rejected,
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -1120,6 +1141,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         runtime.content_pin().frame_binding_digest(),
                     )
                 };
+                let pending = self.root.read_pending_vampire_coffin(
+                    self.character, command.item_fence?.character_id,
+                ).await.ok()?;
+                if let Some(kind) = pending {
+                    return Some((permit, match kind {
+                        VampireCoffinKind::Ordinary => ordinary,
+                        VampireCoffinKind::Weakened => weakened,
+                    }));
+                }
                 let ground = super::loop_move::loop_ground(self, map.overlay.base(), Some(index)).await?;
                 let has_garlic = weakened.offerings.iter().all(|input| {
                     ground.overlay().tile(tile(input.position)).is_some_and(|tile| {
@@ -1135,13 +1165,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         })
                     })
                 });
-                // The durable participant rechecks the payment under the Character root lock.
-                let paid = !has_garlic
-                    && self.root.read_vampire_coffin_payment(
-                        self.character,
-                        command.item_fence?.character_id,
-                    ).await.ok()?;
-                Some((permit, if has_garlic || paid { weakened } else { ordinary }))
+                // The durable participant rechecks the selected variant and its inputs.
+                Some((permit, if has_garlic { weakened } else { ordinary }))
             }).await;
             let Ok(Some((permit, callback))) = selection else {
                 return Some(UseOutcome::rejected());
@@ -1224,7 +1249,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let deadline = selection_deadline
             .unwrap_or_else(|| tokio::time::Instant::now() + std::time::Duration::from_secs(10));
-        let result = tokio::time::timeout_at(deadline, async {
+        let publication = std::sync::atomic::AtomicBool::new(false);
+        let result = finish_quest_use(deadline, &publication, async {
             let permit = match selection_permit {
                 Some(permit) => permit,
                 None => match self.spell_lane_permit().await {
@@ -1333,6 +1359,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
+            if scene_items.is_some() || VampireCoffinKind::for_callback(&callback.key).is_some() {
+                publication.store(true, std::sync::atomic::Ordering::Relaxed);
+            }
             let result = Box::pin(self.execute_quest_callback(
                 &permit,
                 &mut runtime,
@@ -1370,8 +1399,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             result
         })
-        .await
-        .unwrap_or(UseDisposition::Rejected);
+        .await;
         Some(UseOutcome {
             disposition: result,
             ..UseOutcome::rejected()

@@ -182,9 +182,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        if items.len() > 32 {
-            return Err(refusal);
-        }
         if items.is_empty() {
             return Ok(None);
         }
@@ -347,6 +344,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             #[cfg(test)]
             eprintln!("QUEST_SCENE_ITEMS_REFUSED batch={result:?}");
             return false;
+        }
+        #[cfg(test)]
+        if self
+            .states
+            .quest_callbacks
+            .delay_scene_commit_ack
+            .swap(false, std::sync::atomic::Ordering::AcqRel)
+        {
+            // Hold a committed acknowledgement past the ten-second USE deadline.
+            tokio::time::sleep(std::time::Duration::from_secs(11)).await;
         }
         for (item, destination) in prepared.destinations {
             self.states

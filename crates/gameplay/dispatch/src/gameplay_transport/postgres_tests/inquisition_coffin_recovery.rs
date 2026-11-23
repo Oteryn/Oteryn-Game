@@ -21,6 +21,18 @@ fn inquisition_side_coffin_refuses_fresh_use_after_weakened_count_dies() -> Test
     run_case(FOREIGN_GENERATION, "inquisition-weakened-coffin-side#delivered")
 }
 
+#[test]
+fn inquisition_coffins_recover_ordinary_count_after_losing_pending_state() -> TestResult {
+    run_case(RESTART, "inquisition-weakened-coffin#ordinary_restart")?;
+    run_case(FOREIGN_GENERATION, "inquisition-weakened-coffin-side#ordinary_restart")
+}
+
+#[test]
+fn inquisition_coffins_publish_paid_count_despite_lost_delivery_ack() -> TestResult {
+    run_case(RESTART, "inquisition-weakened-coffin#lost_delivery_ack")?;
+    run_case(FOREIGN_GENERATION, "inquisition-weakened-coffin-side#lost_delivery_ack")
+}
+
 fn run(name: &'static str) -> TestResult {
     run_case(name, name)
 }
