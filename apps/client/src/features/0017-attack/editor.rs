@@ -10,8 +10,12 @@ use crate::play::{
     mailbox::{Mailbox, lock},
 };
 
-const SORTS: [(BattleSort, &str); 5] = [
+const SORTS: [(BattleSort, &str); 9] = [
     (BattleSort::Appearance, "appearance"),
+    (BattleSort::AppearanceDescending, "newest"),
+    (BattleSort::DistanceAscending, "nearest"),
+    (BattleSort::DistanceDescending, "farthest"),
+    (BattleSort::NameDescending, "name-desc"),
     (BattleSort::Name, "name"),
     (BattleSort::HealthAscending, "low"),
     (BattleSort::HealthDescending, "high"),
@@ -62,6 +66,15 @@ fn fields(list: &BattleListPreferences) -> Vec<String> {
             .find(|(guild, _)| *guild == list.guild)
             .map_or("any", |(_, word)| *word)
             .into(),
+        list.hidden_vocations
+            .iter()
+            .filter_map(|v| PROFESSIONS.get(usize::from(*v)).copied())
+            .collect::<Vec<_>>()
+            .join(", "),
+        yes_no(list.hide_party),
+        yes_no(list.hide_non_skull),
+        yes_no(list.hide_npcs),
+        yes_no(list.hide_summons),
     ]
 }
 
@@ -87,6 +100,34 @@ fn parse(values: &[String]) -> Option<BattleListPreferences> {
             .iter()
             .find(|(_, name)| *name == sort)
             .map(|(sort, _)| *sort)?,
+        filters_collapsed: false,
+        hide_summons: values
+            .get(12)
+            .filter(|v| !v.is_empty())
+            .map_or(Some(false), |v| flag(v.trim()))?,
+        hide_npcs: values
+            .get(11)
+            .filter(|v| !v.is_empty())
+            .map_or(Some(false), |v| flag(v.trim()))?,
+        hide_party: values
+            .get(9)
+            .filter(|v| !v.is_empty())
+            .map_or(Some(false), |v| flag(v.trim()))?,
+        hide_non_skull: values
+            .get(10)
+            .filter(|v| !v.is_empty())
+            .map_or(Some(false), |v| flag(v.trim()))?,
+        hidden_vocations: word(8)
+            .split(',')
+            .map(str::trim)
+            .filter(|word| !word.is_empty())
+            .map(|word| {
+                PROFESSIONS
+                    .iter()
+                    .position(|name| *name == word)
+                    .and_then(|i| u8::try_from(i).ok())
+            })
+            .collect::<Option<_>>()?,
         vocation: if profession == "any" {
             None
         } else {
@@ -105,7 +146,7 @@ fn submit(mailbox: &mut Mailbox, action: usize, values: &[String]) {
     let mut selected = state.active.min(candidate.len().saturating_sub(1));
     match action {
         0 => {
-            let Some(list) = parse(values) else {
+            let Some(mut list) = parse(values) else {
                 mailbox.battle.feedback =
                     Some("Enter HP from 0 to 100, yes or no, and one of the listed words");
                 return;
@@ -113,6 +154,7 @@ fn submit(mailbox: &mut Mailbox, action: usize, values: &[String]) {
             let Some(slot) = candidate.get_mut(selected) else {
                 return;
             };
+            list.filters_collapsed = slot.filters_collapsed;
             *slot = list;
         }
         1 if candidate.len() < 4 => {
@@ -132,6 +174,20 @@ fn submit(mailbox: &mut Mailbox, action: usize, values: &[String]) {
         2 if candidate.len() > 1 => {
             candidate.remove(selected);
             selected = selected.min(candidate.len() - 1);
+        }
+        3 if selected > 0 => {
+            let default_name = (1..=8).map(|i| format!("List {i}")).find(|name| {
+                !candidate
+                    .iter()
+                    .enumerate()
+                    .any(|(index, list)| index != selected && list.name.eq_ignore_ascii_case(name))
+            });
+            let Some(name) = default_name else { return };
+            candidate[selected] = BattleListPreferences {
+                name,
+                sort: BattleSort::Name,
+                ..Default::default()
+            };
         }
         1 => {
             mailbox.battle.feedback = Some("At most four battle lists");
@@ -156,7 +212,7 @@ fn submit(mailbox: &mut Mailbox, action: usize, values: &[String]) {
     }
 }
 
-pub(in crate::play) fn form(_link: &PlayLink) -> form::Form {
+pub(in crate::play) fn form(link: &PlayLink) -> form::Form {
     form::Form {
         title: "Battle lists",
         labels: &[
@@ -165,11 +221,25 @@ pub(in crate::play) fn form(_link: &PlayLink) -> form::Form {
             "Maximum HP %",
             "Players (yes/no)",
             "Creatures (yes/no)",
-            "Order (appearance, name, low, high, identity)",
+            "Order (appearance, newest, nearest, farthest, name, name-desc, low, high, identity)",
             "Profession (any, none, sorcerer, druid, paladin, knight, monk)",
             "Guild (any, mine, outside)",
+            "Hide professions (comma-separated names)",
+            "Hide party members (yes/no)",
+            "Hide non-skull players (yes/no)",
+            "Hide NPCs (yes/no)",
+            "Hide known summons (yes/no)",
         ],
-        buttons: &["Save list", "Add list", "Remove list"],
+        buttons: if link.active_battle_list() > 0 {
+            &[
+                "Save list",
+                "Add list",
+                "Remove list",
+                "Clear configurations",
+            ]
+        } else {
+            &["Save list", "Add list", "Remove list"]
+        },
         snapshot: |m| {
             let lists = &m.battle_lists;
             let active = lists.active.min(lists.preferences.len().saturating_sub(1));

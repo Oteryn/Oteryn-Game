@@ -175,6 +175,7 @@ macro_rules! number {
 mod controls;
 mod diagnostics;
 mod graphics;
+mod hud;
 mod interface;
 mod miscellaneous;
 mod sound;
@@ -185,7 +186,7 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         // Hotkey sets and key bindings are list editors (`profiles.rs`, `keys.rs`).
         Page::GeneralHotkeys => &[],
         Page::Interface => &interface::MAIN,
-        Page::Hud => &interface::HUD,
+        Page::Hud => &hud::HUD,
         Page::Console => &interface::CONSOLE,
         Page::GameWindow => &interface::GAME_WINDOW,
         Page::ActionBars => &interface::ACTION_BARS,
@@ -198,6 +199,11 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         Page::Gameplay => &miscellaneous::GAMEPLAY,
         Page::Diagnostics => &diagnostics::ROWS,
         Page::Screenshots => &[
+            check!(
+                "screenshots.reward_chest",
+                "Capture reward-chest treasure",
+                screenshots.reward_chest
+            ),
             check!(
                 "screenshots.achievement",
                 "Capture on achievement",

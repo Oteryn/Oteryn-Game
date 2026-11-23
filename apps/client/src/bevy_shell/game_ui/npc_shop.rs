@@ -49,6 +49,7 @@ enum Sort {
     Weight,
 }
 struct RenderedOffers {
+    sell_items: std::collections::BTreeSet<u32>,
     shop: LiveShop,
     side: Option<NpcTradeSide>,
     query: String,
@@ -163,16 +164,8 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
                 return false;
             }
             let mut seen = std::collections::BTreeSet::new();
-            state.sales = panel
-                .live
-                .quotes()
-                .into_iter()
-                .filter(|q| {
-                    q.side == NpcTradeSide::Sell
-                        && q.count == 1
-                        && panel.live.owned(q.item) > 0
-                        && seen.insert(q.item)
-                })
+            state.sales = sales::eligible(&panel)
+                .filter(|quote| seen.insert(quote.item))
                 .collect();
             if let Some(first) = state.sales.pop_front() {
                 let sent = play.link.npc_sell_all_request(first);
@@ -440,7 +433,39 @@ fn project(
         };
         text.0 = if checked { "[x]" } else { "[ ]" }.into();
     }
+    let replacing_rows = changed_rows.is_some();
+    if let Some(rows) = changed_rows {
+        commands.entity(widgets.rows).despawn_children();
+        widgets::rows(
+            &mut commands,
+            &skins,
+            widgets.rows,
+            generation,
+            &rows,
+            &panel.live,
+            state.selection,
+        );
+        state.rendered = Some(RenderedOffers {
+            sell_items: quotes
+                .iter()
+                .filter(|offer| offer.side == NpcTradeSide::Sell && offer.count == 1)
+                .map(|offer| offer.item_definition_ref)
+                .collect(),
+            shop: panel.live.clone(),
+            sort: state.sort,
+            side: state.side,
+            query: state.query.clone(),
+            selection: state.selection,
+            rows,
+        });
+    }
     for (entity, action) in &controls {
+        // The query still sees controls whose despawn was queued above.
+        if action.generation != generation
+            || replacing_rows && matches!(action.kind, Kind::Select(_))
+        {
+            continue;
+        }
         let supported = match action.kind {
             Kind::Close => true,
             _ if panel.pending || panel.live.pending || state.pending.is_some() => false,
@@ -449,11 +474,16 @@ fn project(
             Kind::SellAll => {
                 panel.selected
                     && state.side == Some(NpcTradeSide::Sell)
-                    && panel
-                        .live
-                        .inventory
-                        .as_ref()
-                        .is_some_and(|inv| !inv.entries.is_empty())
+                    && panel.live.inventory.as_ref().is_some_and(|inventory| {
+                        inventory.entries.iter().any(|entry| {
+                            let id = entry.item_definition_ref.get();
+                            !panel.sale_exclusions.contains(&id)
+                                && state
+                                    .rendered
+                                    .as_ref()
+                                    .is_some_and(|shown| shown.sell_items.contains(&id))
+                        })
+                    })
             }
             Kind::Trade => {
                 panel.live.selected
@@ -480,26 +510,6 @@ fn project(
                 commands.entity(entity).remove::<bevy::ui::Checked>();
             }
         }
-    }
-    if let Some(rows) = changed_rows {
-        commands.entity(widgets.rows).despawn_children();
-        widgets::rows(
-            &mut commands,
-            &skins,
-            widgets.rows,
-            generation,
-            &rows,
-            &panel.live,
-            state.selection,
-        );
-        state.rendered = Some(RenderedOffers {
-            shop: panel.live.clone(),
-            sort: state.sort,
-            side: state.side,
-            query: state.query.clone(),
-            selection: state.selection,
-            rows,
-        });
     }
     let status = if !play.link.npc_shop_is_open() {
         String::new()

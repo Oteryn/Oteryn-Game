@@ -49,6 +49,21 @@ impl PlayView {
             .then(|| glide.camera_offset(elapsed, self.scene.view().tile_px() as f32))
     }
 
+    pub(in crate::play) fn face_confirmed_step(&mut self, from: oteryn_renderer::TileCoord) {
+        use StepDir::*;
+        if self.preferences().controls.preserve_facing || from == self.own {
+            return;
+        }
+        if let Some(facing) = [
+            North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest,
+        ]
+        .into_iter()
+        .find(|direction| direction.from(from) == self.own)
+        {
+            self.facing = facing;
+        }
+    }
+
     /// Applies one step outcome: the domain-1 delta moves the own actor, the domain-2 delta
     /// moves a marker. Target walking is owned by the server.
     pub fn apply(&mut self, outcome: &StepOutcome) -> Result<(), BatchError> {
@@ -67,6 +82,7 @@ impl PlayView {
             let (from, floor) = (self.own, self.floor);
             self.place(delta.value.actor_position);
             if moved && floor == self.floor {
+                self.face_confirmed_step(from);
                 // Arrival gaps contain transport jitter, not the server's movement clock.
                 let duration = if outcome.step_wait_ms == 0 {
                     default_step_duration()

@@ -150,7 +150,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }).await?;
     check(3, sequence);
 
-    require_rune_eligibility(&mut client, HEAL_RUNE_ID, 4)?;
+    let healing_spell = require_rune_eligibility(&mut client, HEAL_RUNE_ID, 4)?;
+    let (spell, _) = native_spell_book()?
+        .source_indexed(NonZeroU32::new(healing_spell.cast_index).ok_or("zero healing spell index")?)
+        .filter(|(spell, _)| matches!(spell.carrier, crate::spell::Carrier::Rune { item: HEAL_RUNE_ID, .. }))
+        .ok_or("step=4 healing rune absent from pinned spell catalogue")?;
+    let cooldown = spell.groups.iter().map(|group| group.cooldown_micros)
+        .fold(spell.cooldown_micros, u64::max);
     super::full_row_c02::earn_gold(&mut client, world, &metadata.spawns, 190)
         .await
         .map_err(|e| format!("step=4 observed=fund-healing-runes:{e}"))?;
@@ -158,19 +164,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .await
         .map_err(|error| format!("step=4 item={HEAL_RUNE_ID} {error}"))?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|e| {
-                e.kind == oteryn_dev_client::EntityKind::Creature
-                    && e.position.floor == client.world_spatial().actor_position.floor
-            })
-        })
-        .ok_or("step=4 observed=no-visible-healing-encounter")?
-        .entity;
     let entities = client
         .world_entities()
         .ok_or("step=4 observed=no-entity-view")?;
+    if !entities.iter().any(|entry| {
+        entry.kind == oteryn_dev_client::EntityKind::Creature
+            && entry.position.floor == client.world_spatial().actor_position.floor
+    }) {
+        return Err("step=4 observed=no-visible-healing-encounter".into());
+    }
     let caster = entities
         .iter()
         .find(|entity| &entity.entity.identity == entities.own_identity())
@@ -191,24 +193,67 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    // Start the client cooldown at the confirmed cast. A clocked server
+    // projection can extend the conservative estimate if it arrives.
+    let mut cooldown_until = tokio::time::Instant::now() + Duration::from_micros(cooldown);
     wait_paid_effect(
         &mut client,
         healing,
         heal_before - 1,
         "step=4 self healing",
-        |event| matches!(event, SessionEvent::ActorVitals(delta) if delta.value.health > damaged),
+        |event| {
+            if let SessionEvent::ActorCooldowns(delta) = event {
+                let cooldowns = &delta.value;
+                if let Some(remaining) = cooldowns.entries.iter()
+                    .filter(|entry| match entry.kind {
+                        oteryn_protocol_oteryn::presentation::ActorCooldownKind::Spell => entry.id == healing_spell.cast_index,
+                        oteryn_protocol_oteryn::presentation::ActorCooldownKind::Group => healing_spell.cooldown_groups.contains(&entry.id),
+                    })
+                    .map(|entry| entry.expires_at_ms.saturating_sub(cooldowns.server_now_ms))
+                    .max()
+                {
+                    cooldown_until = cooldown_until.max(tokio::time::Instant::now() + Duration::from_millis(remaining));
+                }
+            }
+            matches!(event, SessionEvent::ActorVitals(delta) if delta.value.health > damaged)
+        },
     )
     .await?;
     check(4, sequence);
 
+    // Move to a protection tile before baselining health, then use a nearby
+    // passive player as the illegal target. Rat attacks cannot race the probe.
+    let mut peer = super::full_e2ef4::keep_alive(
+        &mut client, connect_character(clients, 0xc8, 0),
+    ).await?;
+    let peer_position = tile(peer.world_spatial().actor_position)?;
+    let peer_identity = *peer.world_entities().ok_or("step=5 missing peer spatial view")?.own_identity();
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at != peer_position && at.floor == peer_position.floor
+            && at.x.abs_diff(peer_position.x).max(at.y.abs_diff(peer_position.y)) <= 1
+            && world.base().tile(at.x, at.y, at.floor).is_some_and(|cell| cell.protection_zone())
+    }).ok_or("step=5 no protection tile next to passive target")?;
+    super::full_e2ef4::keep_alive(&mut peer, walk(&mut client, world, &path)).await?;
+    if let Some(remaining) = cooldown_until.checked_duration_since(tokio::time::Instant::now()) {
+        if remaining > Duration::from_secs(5) {
+            return Err(format!("step=5 unexpected remaining rune cooldown {remaining:?}").into());
+        }
+        client.service_liveness(remaining).await?;
+    }
+    let target = client.world_entities().and_then(|entities| {
+        entities.iter().find(|entry| entry.entity.identity == peer_identity)
+    }).ok_or("step=5 passive target not visible")?.entity;
     let charges = quantity(&client, healing)?;
     let before = client
         .actor_vitals()
         .ok_or("step=5 observed=no-vitals")?
         .health;
     client.take_events();
-    let (illegal, sequence) = use_rune(&mut client, healing, Some(target)).await?;
-    drain_after(&mut client, sequence).await?;
+    let (illegal, sequence) = super::full_e2ef4::keep_alive(&mut peer, async {
+        let outcome = use_rune(&mut client, healing, Some(target)).await?;
+        drain_after(&mut client, outcome.1).await?;
+        Ok(outcome)
+    }).await?;
     if illegal != oteryn_protocol_oteryn::world_object::UseDisposition::TargetIllegal
         || quantity(&client, healing)? != charges
         || client.actor_vitals().is_none_or(|v| v.health != before)
@@ -221,6 +266,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     check(5, sequence);
+    super::full_e2ef4::keep_alive(&mut client, logout(&mut peer)).await?;
 
     let old = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
@@ -264,20 +310,20 @@ fn require_rune_eligibility(
     client: &mut DevClientSession,
     item_id: u32,
     step: usize,
-) -> TestResult {
+) -> TestResult<oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry> {
     let catalog = client
         .session_mut()
         .spell_catalog()?
         .ok_or("no served spell catalogue")?;
     let rune = catalog
         .entries
-        .iter()
+        .into_iter()
         .find(|entry| entry.rune_item == Some(item_id))
         .ok_or_else(|| {
             format!("step={step} observed=rune-{item_id}-missing-from-served-catalogue")
         })?;
     if rune.available {
-        Ok(())
+        Ok(rune)
     } else {
         Err(format!(
             "step={step} observed=rune-{item_id}-unavailable;need={}-eligibility;level={}",
@@ -595,7 +641,7 @@ async fn wait_paid_effect(
     rune: NonZeroU32,
     expected: u64,
     action: &str,
-    proves_effect: impl Fn(&SessionEvent) -> bool,
+    mut proves_effect: impl FnMut(&SessionEvent) -> bool,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut effect_seen = false;

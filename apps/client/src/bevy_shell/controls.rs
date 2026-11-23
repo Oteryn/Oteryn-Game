@@ -356,12 +356,22 @@ impl HostOwner {
                 continue;
             }
             if let Some(tile) = play.view.click_tile(click.x, click.y) {
+                let scheme = self.settings.preferences.controls.scheme;
+                let direct = matches!(
+                    (scheme, click.secondary),
+                    (crate::play::MouseScheme::Classic, true)
+                        | (crate::play::MouseScheme::LeftSmart, false)
+                );
+                if click.secondary && play.view.gameplay_secondary_click(&play.link) {
+                    continue;
+                }
+                if direct && play.view.direct_click(tile, &play.link, scheme) {
+                    continue;
+                }
                 if click.secondary {
-                    if !play.view.gameplay_secondary_click(&play.link) {
-                        context = Some(tile);
-                        self.controls.mouse.context_closed();
-                        break;
-                    }
+                    context = Some(tile);
+                    self.controls.mouse.context_closed();
+                    break;
                 } else if let Err(error) = play.view.primary_click(tile, &play.link) {
                     self.status = format!("Scene input failed: {error}");
                 }

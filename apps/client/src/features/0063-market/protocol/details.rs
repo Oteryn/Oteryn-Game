@@ -68,15 +68,19 @@ impl Outbox {
     ) {
         let mut mailbox = lock(&self.0);
         let mailbox = &mut *mailbox;
-        let applied = details::apply(&mut mailbox.market, command, result.status, &result.payload);
-        #[cfg(bevy_shell)]
-        if applied && let Some(stats) = &mailbox.market.details.statistics {
-            mailbox
-                .screen_loot
-                .market_price(stats.definition, stats.average);
+        let carries_statistics = matches!(
+            mailbox.market.details.pending,
+            Some(Query::Book { .. } | Query::Statistics { .. })
+        );
+        if details::apply(&mut mailbox.market, command, result.status, &result.payload)
+            && carries_statistics
+            && let Some(stats) = &mailbox.market.details.statistics
+        {
+            let (id, price) = (stats.definition, stats.average);
+            #[cfg(bevy_shell)]
+            mailbox.screen_loot.market_price(id, price);
+            mailbox.refresh_loot_quote(id, price, oteryn_client_ui::analyser::PriceSource::Market);
         }
-        #[cfg(not(bevy_shell))]
-        let _ = applied;
     }
 }
 

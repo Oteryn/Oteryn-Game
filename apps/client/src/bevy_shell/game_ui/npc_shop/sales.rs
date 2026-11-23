@@ -1,6 +1,17 @@
 //! Continue the user's bulk sale only after a successful acknowledgement.
 use super::*;
 
+pub(super) fn eligible(
+    panel: &oteryn_client_ui::npc_shop::NpcShopPanel,
+) -> impl Iterator<Item = Quote> + '_ {
+    panel.live.quotes().into_iter().filter(|q| {
+        q.side == NpcTradeSide::Sell
+            && q.count == 1
+            && panel.live.owned(q.item) > 0
+            && !panel.sale_exclusions.contains(&q.item)
+    })
+}
+
 pub(super) fn advance(
     state: &mut State,
     owner: &HostOwner,
@@ -32,6 +43,9 @@ pub(super) fn advance(
         return;
     }
     while let Some(quote) = state.sales.pop_front() {
+        if panel.sale_exclusions.contains(&quote.item) {
+            continue;
+        }
         if panel.live.look(quote).is_none() {
             state.sales.clear();
             return;

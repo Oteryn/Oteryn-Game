@@ -88,7 +88,7 @@ pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, 
 pub use tooltips::{HoverTooltip, TooltipTarget};
 pub(crate) use bindings::parse_action_chord;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
-pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
+pub use controls::{ControlPreferences, MousePreset, MouseScheme, MovementKeys, RotationModifier};
 pub use help::{HelpTopic, help_text};
 pub use profile_contexts::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;
@@ -105,6 +105,23 @@ pub enum ChatMode {
     On,
     Auto,
     Off,
+}
+
+// cpkg7 persisted style names before the numeric status-bar settings landed.
+fn read_status_bar_style<'de, D: serde::Deserializer<'de>>(input: D) -> Result<u8, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Style { Number(u8), Name(String) }
+    match Style::deserialize(input)? {
+        Style::Number(value) => Ok(value),
+        Style::Name(name) => match name.as_str() {
+            "Default" => Ok(0),
+            "Compact" => Ok(1),
+            "Large" => Ok(2),
+            "Parallel" => Ok(3),
+            _ => Err(serde::de::Error::custom("unknown status bar style")),
+        },
+    }
 }
 
 /// Preferences owned entirely by the native client.
@@ -184,23 +201,24 @@ pub struct ReferencePreferences {
     #[serde(default)]
     pub compact_status: bool,
     #[serde(default = "enabled")]
-    pub status_panel_visible: bool,
-    #[serde(default = "enabled")]
     pub conditions_bar_enabled: bool,
     #[serde(default = "enabled")]
     pub conditions_hud_enabled: bool,
+    #[serde(default = "enabled")]
+    pub status_panel_visible: bool,
     #[serde(default = "enabled")]
     pub status_bar_visible: bool,
     #[serde(default = "enabled")]
     pub top_menu_visible: bool,
     #[serde(default)]
     pub status_bar_bottom: bool,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "read_status_bar_style")]
     pub status_bar_style: u8,
     #[serde(default = "enabled")]
     pub status_bar_experience: bool,
     #[serde(default)]
     pub status_bar_skills: [bool; 8],
+
     #[serde(default)]
     pub skill_order: Vec<u8>,
     #[serde(default)]
@@ -282,6 +300,7 @@ pub struct ReferencePreferences {
     pub frames: FramePreferences,
     #[serde(default)]
     pub screenshots: ScreenshotPreferences,
+    /// Highest observed damage and healing since this character last reset the Impact Analyser.
     #[serde(default)]
     pub impact_records: [u32; 2],
     #[serde(default)]
@@ -383,9 +402,9 @@ impl Default for ReferencePreferences {
             system_cursor: true,
             console_font_px: 14,
             compact_status: false,
-            status_panel_visible: true,
             conditions_bar_enabled: true,
             conditions_hud_enabled: true,
+            status_panel_visible: true,
             status_bar_visible: true,
             top_menu_visible: true,
             status_bar_bottom: false,

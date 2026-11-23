@@ -43,6 +43,9 @@ struct State {
     dirty: bool,
     playback: animation::Playback,
     artwork: Option<preview::Assets>,
+    metadata: Option<std::sync::Arc<crate::appearance_mount_binding::Metadata>>,
+    draw: Option<animation::Draw>,
+    art_error: Option<String>,
     image: Option<Handle<Image>>,
 }
 pub(super) fn install(app: &mut App) {
@@ -282,6 +285,7 @@ fn project(
         state.reset_gallery();
         return;
     };
+    play.link.apply_committed_riding();
     if keys.just_pressed(KeyCode::Escape)
         && !owner.modal_active()
         && windows.iter().any(|entity| guard.allows(entity))
@@ -303,7 +307,12 @@ fn project(
     let riding = play.link.riding();
     state.dirty |= state.riding != riding;
     state.riding = riding;
-    if !state.dirty && state.rendered.as_ref() == Some(&(generation, panel.clone())) {
+    if !state.dirty
+        && state
+            .rendered
+            .as_ref()
+            .is_some_and(|(previous, rendered)| *previous == generation && rendered == &panel)
+    {
         return;
     }
     let retained = searches.single().ok().filter(|_| {
@@ -471,60 +480,34 @@ fn project(
             );
         }
     }
-    if state.artwork.is_none() {
-        state.artwork = std::env::var_os(crate::map::ASSET_DIR_ENV)
-            .and_then(|root| preview::Assets::load(std::path::Path::new(&root)).ok());
+    if let Some(art) = &state.artwork {
+        state.metadata = art.mounts.clone();
     }
     gallery::build(&mut commands, &skin, root, generation, &state, &panel);
     if panel.preview().is_some() {
-        let layers = state.playback.layers;
-        let pixels = state
-            .artwork
-            .as_mut()
-            .map(|assets| assets.draw_layers(&panel, 2, 0, false, layers));
-        match pixels {
-            Some(Ok(pixels)) => {
-                let image = animation::image(pixels);
-                let handle = if let Some(handle) = &state.image {
-                    if let Some(mut target) = images.get_mut(handle) {
-                        *target = image;
-                    }
-                    handle.clone()
-                } else {
-                    let handle = images.add(image);
-                    state.image = Some(handle.clone());
-                    handle
-                };
-                let picture = commands
-                    .spawn((
-                        ImageNode::new(handle),
-                        Node {
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Start,
-                            width: px(192.),
-                            height: px(192.),
-                            ..default()
-                        },
-                    ))
-                    .id();
-                state.gallery.attach_title(&mut commands, &skin, picture);
-                commands.entity(root).add_child(picture);
-            }
-            Some(Err(message)) => {
-                let label = commands
-                    .spawn(source::button_caption(message, skin.font.clone()))
-                    .id();
-                commands.entity(root).add_child(label);
-            }
-            None => {
-                let label = commands
-                    .spawn(source::button_caption(
-                        "Local outfit artwork unavailable",
-                        skin.font.clone(),
-                    ))
-                    .id();
-                commands.entity(root).add_child(label);
-            }
+        let handle = state
+            .image
+            .get_or_insert_with(|| images.add(Image::default()))
+            .clone();
+        let picture = commands
+            .spawn((
+                ImageNode::new(handle),
+                Node {
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Start,
+                    width: px(192.),
+                    height: px(192.),
+                    ..default()
+                },
+            ))
+            .id();
+        state.gallery.attach_title(&mut commands, &skin, picture);
+        commands.entity(root).add_child(picture);
+        if let Some(message) = &state.art_error {
+            let label = commands
+                .spawn(source::button_caption(message.clone(), skin.font.clone()))
+                .id();
+            commands.entity(root).add_child(label);
         }
     }
     for (control, label) in [

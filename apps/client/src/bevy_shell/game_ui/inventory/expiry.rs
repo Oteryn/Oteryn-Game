@@ -2,20 +2,23 @@
 use super::*;
 use oteryn_client_runtime::timed_item::{TimedDisposition, TimedItemResult};
 use oteryn_session::ItemHandle;
-use std::{
-    collections::BTreeMap,
-    time::{Duration, Instant},
-};
+use std::{collections::BTreeMap, time::Duration};
 
 #[derive(Component)]
 pub(super) struct EquipmentCell;
 #[derive(Component)]
 pub(super) struct Expiry;
+struct Sample {
+    item: ItemEntry,
+    location: Location,
+    requested: Duration,
+    reply: Option<(Duration, TimedItemResult)>,
+}
 #[derive(Default)]
 pub(super) struct Samples {
     generation: Option<u64>,
-    checked: BTreeMap<ItemHandle, (Instant, Option<TimedItemResult>)>,
-    last: Option<Instant>,
+    checked: BTreeMap<ItemHandle, Sample>,
+    last: Option<Duration>,
 }
 fn label(reply: TimedItemResult, unused: bool) -> Option<String> {
     if reply.retired
@@ -33,6 +36,7 @@ fn label(reply: TimedItemResult, unused: bool) -> Option<String> {
 pub(super) fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
+    clock: Res<Time<Real>>,
     skins: Res<Skins>,
     slots: Query<(Entity, &Slot, Has<EquipmentCell>)>,
     mut labels: Query<(&ChildOf, Entity, &mut Text), With<Expiry>>,
@@ -49,10 +53,11 @@ pub(super) fn project(
             ..default()
         };
     }
+    let now = clock.elapsed();
     if let Some((handle, result)) = play.link.take_slot_expiry()
         && let Some(entry) = samples.checked.get_mut(&handle)
     {
-        entry.1 = result;
+        entry.reply = result.map(|reply| (now, reply));
     }
     if !prefs.expiry_inventory
         && !prefs.expiry_containers
@@ -62,6 +67,7 @@ pub(super) fn project(
         return;
     }
     let mut visible = BTreeMap::new();
+    let mut handles = BTreeMap::new();
     for (entity, slot, equipped) in &slots {
         let enabled = if equipped {
             prefs.expiry_inventory
@@ -73,34 +79,48 @@ pub(super) fn project(
             && let Some(item) = slot.item
         {
             visible.insert(entity, item.handle);
+            handles.insert(item.handle, (item, slot.location));
         }
     }
-    let handles: std::collections::BTreeSet<_> = visible.values().copied().collect();
-    samples.checked.retain(|handle, _| handles.contains(handle));
-    let now = Instant::now();
+    samples
+        .checked
+        .retain(|handle, sample| handles.get(handle) == Some(&(sample.item, sample.location)));
     if samples
         .last
-        .is_none_or(|last| now.duration_since(last) >= Duration::from_secs(1))
-        && let Some(handle) = handles
+        .is_none_or(|last| now.saturating_sub(last) >= Duration::from_secs(1))
+        && let Some((handle, (item, location))) = handles
             .into_iter()
-            .filter(|h| {
-                samples
-                    .checked
-                    .get(h)
-                    .is_none_or(|(t, _)| now.duration_since(*t) >= Duration::from_secs(60))
+            .filter(|(h, _)| {
+                samples.checked.get(h).is_none_or(|sample| {
+                    sample.reply.is_none()
+                        && now.saturating_sub(sample.requested) >= Duration::from_secs(60)
+                })
             })
-            .min_by_key(|h| samples.checked.get(h).map(|v| v.0))
+            .min_by_key(|(h, _)| samples.checked.get(h).map(|v| v.requested))
         && play.link.inspect_slot_expiry(handle)
     {
-        samples.checked.entry(handle).or_insert((now, None)).0 = now;
+        samples.checked.insert(
+            handle,
+            Sample {
+                item,
+                location,
+                requested: now,
+                reply: None,
+            },
+        );
         samples.last = Some(now);
     }
     let text_for = |h: &ItemHandle| {
         samples
             .checked
             .get(h)
-            .and_then(|(_, v)| *v)
-            .and_then(|v| label(v, prefs.expiry_unused))
+            .and_then(|sample| sample.reply)
+            .and_then(|(observed, mut reply)| {
+                let elapsed =
+                    u64::try_from(now.saturating_sub(observed).as_millis()).unwrap_or(u64::MAX);
+                reply.remaining_ms = reply.remaining_ms.map(|ms| ms.saturating_sub(elapsed));
+                label(reply, prefs.expiry_unused)
+            })
     };
     for (parent, entity, mut text) in &mut labels {
         if let Some(value) = visible.remove(&parent.parent()).as_ref().and_then(text_for) {

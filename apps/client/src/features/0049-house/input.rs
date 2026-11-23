@@ -45,6 +45,7 @@ pub(in crate::play) fn prepare(
     let world = uuid(panel.fields[0].trim())?;
     let town = panel.fields[1].trim();
     if panel.model.world != world || panel.model.town != town {
+        panel.model.page_after = None;
         panel.model.page = Default::default();
         panel.model.index = 0;
         panel.model.world = world;
@@ -189,6 +190,38 @@ impl PlayLink {
     }
     pub(crate) fn house_world(&self, world: &str) {
         lock(&self.mailbox).properties.house.fields[0] = world.into();
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn house_browse_all(&self, start: bool) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.house.model;
+        if !panel.selected {
+            return;
+        }
+        if start {
+            panel.collecting = true;
+        }
+        if !panel.collecting || panel.pending.is_some() {
+            return;
+        }
+        let first = panel.page_after.is_some();
+        if !first && panel.page.cursor.is_none() {
+            panel.collecting = false;
+            return;
+        }
+        match oteryn_client_ui::house::request(panel, None, !first) {
+            Ok(command) => {
+                if self.commands.send(PlayCommand::Feature(command)).is_err() {
+                    panel.pending = None;
+                    panel.collecting = false;
+                    panel.feedback = "The session has ended".into();
+                }
+            }
+            Err(error) => {
+                panel.collecting = false;
+                panel.feedback = error.into();
+            }
+        }
     }
     pub fn house_request(&self, selection: usize) {
         if matches!(selection,8|9|14) {self.house_ownership_open();return;}
