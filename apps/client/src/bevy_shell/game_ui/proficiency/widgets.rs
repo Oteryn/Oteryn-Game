@@ -1,3 +1,5 @@
+#[path = "catalogue.rs"]
+mod catalogue;
 use super::*;
 use bevy::{
     input_focus::tab_navigation::TabGroup, ui::InteractionDisabled, ui_widgets::ScrollArea,
@@ -56,6 +58,24 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
         .id();
     commands.entity(overlay).add_child(window);
     source::dialog_caption(commands, window, "Weapon proficiency", skin.font.clone());
+    text(commands, skin, window, "Search weapons");
+    let search = commands
+        .spawn((
+            Search,
+            bevy::ui_widgets::TextInput,
+            bevy::text::EditableText::new(""),
+            source::font(skin.font.clone(), false),
+            TextColor(source::TEXT_COLOR),
+            bevy::text::TextCursorStyle::default(),
+            bevy::input_focus::tab_navigation::TabIndex(0),
+            Node {
+                min_height: px(26.),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+        ))
+        .id();
+    commands.entity(window).add_child(search);
     Widgets {
         overlay,
         window,
@@ -68,6 +88,7 @@ pub(super) fn render(
     widgets: &mut Widgets,
     key: Key,
     panel: &WeaponProficiencyPanel,
+    filters: &filters::Filters,
 ) {
     let previous = widgets.content;
     let window = commands
@@ -92,72 +113,23 @@ pub(super) fn render(
         })
         .id();
     commands.entity(window).add_child(body);
-    let list = pane(commands, skin, body, px(280.), 0);
-    text(commands, skin, list, "Weapons");
-    if let Some(catalogue) = &panel.catalogue {
-        for row in panel.visible_weapons() {
-            let entry = &catalogue.entries[row];
-            let caption = format!(
-                "{}{} — Level {}\n{} / {} XP ({}%)",
-                if panel.weapon == entry.definition {
-                    "Selected: "
-                } else {
-                    ""
-                },
-                entry.name,
-                progress_level(entry),
-                entry.experience,
-                mastery_target(entry),
-                progress_percent(entry)
-            );
-            button(
-                commands,
-                skin,
-                list,
-                Control {
-                    key,
-                    kind: Kind::Weapon(row),
-                },
-                &caption,
-                panel.selected && !panel.pending && entry.definition != 0,
-            );
-            let track = commands
-                .spawn((
-                    Node {
-                        width: percent(100.),
-                        height: px(8.),
-                        flex_shrink: 0.,
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.08, 0.08, 0.08)),
-                ))
-                .id();
-            let fill = commands
-                .spawn((
-                    Progress,
-                    Node {
-                        width: percent(progress_percent(entry) as f32),
-                        height: percent(100.),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.2, 0.6, 0.3)),
-                ))
-                .id();
-            commands.entity(track).add_child(fill);
-            commands.entity(list).add_child(track);
-        }
-        text(
-            commands,
-            skin,
-            list,
-            &format!("{} / {} weapons", catalogue.entries.len(), catalogue.total),
-        );
-    } else {
-        text(commands, skin, list, "No weapon catalogue received");
-    }
+    catalogue::render(commands, skin, body, key, panel, filters);
     let tree = pane(commands, skin, body, Val::Auto, 1);
     if let Some(entry) = panel.weapon_entry() {
         text(commands, skin, tree, &entry.name);
+        if entry.levels.iter().any(|level| level.selected.is_some()) {
+            button(
+                commands,
+                skin,
+                tree,
+                Control {
+                    key,
+                    kind: Kind::ResetCommitted,
+                },
+                "Reset committed perks",
+                panel.selected && !panel.pending && !panel.mutation_uncertain,
+            );
+        }
         let grid = commands
             .spawn(Node {
                 width: percent(100.),
@@ -537,6 +509,8 @@ fn control_identity(control: &Control) -> (u8, usize, usize) {
         Kind::Offer(choice) => (10, usize::from(choice), 0),
         Kind::Modify(level) => (11, level, 0),
         Kind::Shape(intent) => (12, intent as usize, 0),
+        Kind::ResetCommitted => (13, 0, 0),
+        Kind::Filter(change) => (14, change as usize, 0),
     }
 }
 fn same_role(world: &World, target: Entity, source: Entity) -> bool {

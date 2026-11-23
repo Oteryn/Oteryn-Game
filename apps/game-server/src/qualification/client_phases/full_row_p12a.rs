@@ -71,13 +71,19 @@ fn encode_operation(operation: CharacterInfoOperation) -> Vec<u8> {
 
 fn titles(payload: &[u8]) -> TestResult<Titles> {
     if payload.first() != Some(&0) || payload.len() < 71 {
-        return Err(format!("step query: malformed character-info reply len={}", payload.len()).into());
+        return Err(format!(
+            "step query: malformed character-info reply len={}",
+            payload.len()
+        )
+        .into());
     }
     let count = usize::from(payload[69]);
-    if count > oteryn_protocol_oteryn::character_info::TITLE_COUNT
-        || payload.len() != 71 + count
-    {
-        return Err(format!("step query: invalid title projection count={count} len={}", payload.len()).into());
+    if count > oteryn_protocol_oteryn::character_info::TITLE_COUNT || payload.len() != 71 + count {
+        return Err(format!(
+            "step query: invalid title projection count={count} len={}",
+            payload.len()
+        )
+        .into());
     }
     let mut earned = Vec::with_capacity(count);
     for raw in &payload[70..70 + count] {
@@ -105,7 +111,11 @@ async fn query(client: &mut DevClientSession) -> TestResult<Titles> {
     let page = PageRequest::new(0, 1).ok_or("step query: invalid page")?;
     let reply = command(client, CharacterInfoOperation::QuerySelf(page)).await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("step query: observed status={:?} payload={:?}", reply.status, reply.payload).into());
+        return Err(format!(
+            "step query: observed status={:?} payload={:?}",
+            reply.status, reply.payload
+        )
+        .into());
     }
     titles(&reply.payload)
 }
@@ -120,15 +130,24 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn inert_refusal(status: CommandStatus, payload: &[u8], before: &Titles, after: &Titles) -> bool {
+    status == CommandStatus::Rejected && payload.is_empty() && before == after
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xc1).await?;
     let initial_session = client.join_snapshot().game_session_id;
     let initial = query(&mut client).await?;
-    let earned = initial
-        .earned
-        .first()
-        .copied()
-        .ok_or("step 1 query: no title earned through the preceding ordinary player journeys")?;
+    let Some(earned) = initial.earned.first().copied() else {
+        let drome = CharacterTitle::ReigningDromeChampion;
+        let reply = command(&mut client, CharacterInfoOperation::Unlock(drome)).await?;
+        let retained = query(&mut client).await?;
+        logout(&mut client).await?;
+        if !inert_refusal(reply.status, &reply.payload, &initial, &retained) {
+            return Err(format!("step=title-prerequisite empty entry titles but Drome unlock observed={reply:?} retained={retained:?}").into());
+        }
+        return Err(format!("step=title-prerequisite observed=no-earned-title,Drome-unlock-{:?} need=ordinary-title-qualification-and-preceding-rota-top-five; source:crates/gameplay/durability/src/durability/character_title.rs:155", reply.status).into());
+    };
 
     let unlock = command(&mut client, CharacterInfoOperation::Unlock(earned)).await?;
     if unlock.status != CommandStatus::Accepted || unlock.payload != [2, earned.id()] {
@@ -136,11 +155,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let after_unlock = query(&mut client).await?;
     if !after_unlock.earned.contains(&earned) {
-        return Err(format!("step 2 unlock {}: accepted reply missing earned-state delta", earned.name()).into());
+        return Err(format!(
+            "step 2 unlock {}: accepted reply missing earned-state delta",
+            earned.name()
+        )
+        .into());
     }
 
     let select = command(&mut client, CharacterInfoOperation::Select(Some(earned))).await?;
-    if select.status != CommandStatus::Accepted || select.payload.len() != 9 || select.payload[0] != 3 {
+    if select.status != CommandStatus::Accepted
+        || select.payload.len() != 9
+        || select.payload[0] != 3
+    {
         return Err(format!("step 3 select {}: observed reply={select:?}", earned.name()).into());
     }
     let selected = query(&mut client).await?;
@@ -153,18 +179,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .find(|title| !selected.earned.contains(title))
         .ok_or("step 4 refusal: character unexpectedly earned the complete title catalogue")?;
     let rejection = command(&mut client, CharacterInfoOperation::Select(Some(refused))).await?;
-    if rejection.status != CommandStatus::Rejected {
-        return Err(format!("step 4 select-unearned {}: observed reply={rejection:?}", refused.name()).into());
-    }
-    if query(&mut client).await? != selected {
-        return Err("step 4 select-unearned: refusal changed title state".into());
+    let retained = query(&mut client).await?;
+    if !inert_refusal(rejection.status, &rejection.payload, &selected, &retained) {
+        return Err(format!(
+            "step=select-unearned title={} observed={rejection:?} retained={retained:?}",
+            refused.name()
+        )
+        .into());
     }
 
     let drome = CharacterTitle::ReigningDromeChampion;
     let expiry = command(&mut client, CharacterInfoOperation::Unlock(drome)).await?;
     let expiry_refusal = (expiry.status == CommandStatus::Rejected).then(|| {
         format!(
-            "step 5 expiring unlock: observed status={:?} payload={:?}; server needs a player-reachable preceding-rota top-five path",
+            "step 5 expiring unlock: observed status={:?} payload={:?}; need=preceding-rota-top-five; source:crates/gameplay/durability/src/durability/character_title.rs:155",
             expiry.status, expiry.payload
         )
     });
@@ -193,24 +221,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let mut durable = query(&mut fresh).await?;
     if expiry_refusal.is_some() && durable != selected {
-        return Err(format!("step 6 durable title state mismatch: before={selected:?} after={durable:?}").into());
+        return Err(format!(
+            "step 6 durable title state mismatch: before={selected:?} after={durable:?}"
+        )
+        .into());
     }
     if let Some(refusal) = expiry_refusal {
         logout(&mut fresh).await?;
         return Err(refusal.into());
     }
     if durable.selected != Some(drome) || !durable.earned.contains(&drome) {
-        return Err(format!(
-            "step 6 durable expiring-title mismatch: after={durable:?}"
-        )
-        .into());
+        return Err(format!("step 6 durable expiring-title mismatch: after={durable:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while durable.selected == Some(drome) || durable.earned.contains(&drome) {
         if tokio::time::Instant::now() >= deadline {
             logout(&mut fresh).await?;
-            return Err("step 5 expiry: title remained earned/selected for the 120s observation window; server needs an observable player-driven rotation boundary".into());
+            return Err("step 5 expiry: title remained earned/selected for the 120s observation window; need=observable-rota-expiry; source:crates/protocol-oteryn/src/character_info.rs:652".into());
         }
         fresh.service_liveness(Duration::from_secs(1)).await?;
         fresh.take_events();
@@ -222,22 +250,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
-    match result {
-        Ok(Ok(())) => evidence(&format!(
-            "e2e_all scenario=P12a.full status=PASS seconds={:.3}",
-            started.elapsed().as_secs_f64()
-        )),
-        Ok(Err(error)) => evidence(&format!(
-            "e2e_all scenario=P12a.full status=FAIL seconds={:.3} evidence={}",
-            started.elapsed().as_secs_f64(),
-            error.to_string().replace(' ', "-")
-        )),
-        Err(_) => evidence(&format!(
-            "e2e_all scenario=P12a.full status=FAIL seconds={:.3} evidence=step-timeout-180s",
-            started.elapsed().as_secs_f64()
-        )),
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
+    let failure = match result {
+        Ok(Ok(())) => None,
+        Ok(Err(error)) => Some(error.to_string()),
+        Err(_) => Some("step=title-journey observed=180s-timeout".into()),
+    };
+    if let Some(error) = &failure {
+        evidence(&format!("P12A_GAP {error}"));
     }
+    evidence(&format!(
+        "e2e_all scenario=P12a.full status={} seconds={:.3}",
+        if failure.is_none() { "PASS" } else { "FAIL" },
+        started.elapsed().as_secs_f64()
+    ));
 }
 
 #[cfg(test)]
@@ -245,12 +273,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn refusal_cannot_carry_a_title_receipt() {
+        let empty = Titles {
+            earned: Vec::new(),
+            selected: None,
+        };
+        assert!(inert_refusal(CommandStatus::Rejected, &[], &empty, &empty));
+        assert!(!inert_refusal(
+            CommandStatus::Rejected,
+            &[3],
+            &empty,
+            &empty
+        ));
+    }
+
+    #[test]
     fn title_projection_requires_correlated_selected_earned_state() -> TestResult {
         let mut payload = vec![0; 71];
         payload[69] = 1;
         payload.insert(70, CharacterTitle::AdeptArmorer.id());
         payload[71] = CharacterTitle::AdeptArmorer.id();
-        assert_eq!(titles(&payload)?.selected, Some(CharacterTitle::AdeptArmorer));
+        assert_eq!(
+            titles(&payload)?.selected,
+            Some(CharacterTitle::AdeptArmorer)
+        );
         payload[71] = CharacterTitle::Globetrotter.id();
         assert!(titles(&payload).is_err());
         Ok(())

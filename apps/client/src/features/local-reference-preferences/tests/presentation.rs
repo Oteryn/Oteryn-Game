@@ -308,3 +308,51 @@ fn t057_loot_highlight_tracks_live_corpse_visibility() -> Result<(), Box<dyn std
     assert_eq!(play.scene().sprites().len(),hidden);
     Ok(())
 }
+
+#[test]
+fn confirmed_combat_target_has_independent_frame_and_highlight() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _, _) = crate::play::play_channel();
+    let mut play = view()?;
+    let entity = oteryn_session::EntityRef {identity: [7;16], generation: 2};
+    play.entities.push(oteryn_session::WorldSpatialEntity {
+        motion: None, entity, display_name: None, kind: oteryn_session::EntityKind::Creature,
+        position: oteryn_session::ActorPosition {x:101,y:200,floor:0},
+        detail: oteryn_session::EntityDetail::Actor { direction: StepDirection::South, appearance_ref:1,health_percent:75 },
+    });
+    crate::play::mailbox::lock(&link.mailbox).battle.combat = Some(oteryn_session::ActorCombatState {
+        target: Some(entity), modes: oteryn_session::FightModes::DEFAULT, in_fight:true
+    });
+    play.tick(&link).map_err(|_| "tick")?;
+    let mut prefs = play.preferences().clone();
+    for (frame, highlight, count) in [(false,false,0),(true,false,4),(false,true,1),(true,true,5)] {
+        let mut saved = serde_json::to_value(prefs.game_window)?;
+        saved["combat_frames"] = frame.into();
+        saved["target_highlight"] = highlight.into();
+        prefs.game_window = serde_json::from_value(saved)?;
+        play.set_preferences(prefs.clone())?;
+        let with = play.scene().sprites().len();
+        crate::play::mailbox::lock(&link.mailbox).battle.combat.as_mut().ok_or("combat")?.target = None;
+        play.tick(&link).map_err(|_| "tick")?;
+        assert_eq!(with, play.scene().sprites().len() + count);
+        crate::play::mailbox::lock(&link.mailbox).battle.combat.as_mut().ok_or("combat")?.target = Some(entity);
+        play.tick(&link).map_err(|_| "tick")?;
+    }
+    Ok(())
+}
+
+#[test]
+fn attack_animation_switch_suppresses_confirmed_hit_flash() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = view()?;
+    play.apply_pushed(&crate::play::Pushed { own_hit_flash: true, ..Default::default() })?;
+    let now = std::time::Instant::now();
+    play.project_presentation(now)?;
+    let with = play.scene().sprites().len();
+    let mut preferences = play.preferences().clone();
+    let mut saved = serde_json::to_value(preferences.game_window)?;
+    saved["attack_animation"] = false.into();
+    preferences.game_window = serde_json::from_value(saved)?;
+    play.set_preferences(preferences)?;
+    play.project_presentation(now)?;
+    assert!(play.scene().sprites().len() < with);
+    Ok(())
+}

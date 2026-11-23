@@ -112,7 +112,7 @@ pub(super) fn setup(
     let conditions = status_bar.map_or(regions.vitals, |bar| {
         top_bar::setup(&mut commands, &skins, bar.0)
     });
-    status_icons::setup(&mut commands, conditions);
+    status_icons::setup(&mut commands, conditions, regions.world);
     combat_column(&mut commands, &skins, regions.equipment);
     if overlay.0 {
         let status = commands
