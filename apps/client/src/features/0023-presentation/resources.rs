@@ -5,6 +5,7 @@ use oteryn_client_runtime::spell::ActorVitals;
 
 pub(super) struct Options {
     combo: bool,
+    harmony_left: bool,
     bars: bool,
     health: bool,
     mana: bool,
@@ -19,13 +20,14 @@ pub(super) struct Options {
 impl From<&ReferencePreferences> for Options {
     fn from(preferences: &ReferencePreferences) -> Self {
         Self {
-            combo: preferences.resource_hud.combo,
-            bars: preferences.hud_bars,
+            harmony_left: preferences.harmony_left,
+            combo: preferences.player_hud_enabled && preferences.resource_hud.combo,
+            bars: preferences.player_hud_enabled && preferences.hud_bars,
             health: preferences.hud_health,
             mana: preferences.hud_mana,
-            harmony: preferences.show_harmony,
-            serene: preferences.show_serene,
-            health_circle: preferences.health_circle,
+            harmony: preferences.player_hud_enabled && preferences.show_harmony,
+            serene: preferences.player_hud_enabled && preferences.show_serene,
+            health_circle: preferences.player_hud_enabled && preferences.health_circle,
             distance: preferences.arc_distance,
             size: preferences.arc_size,
             opacity: preferences.arc_opacity,
@@ -43,6 +45,7 @@ pub(super) fn draw(
 ) -> Result<std::ops::Range<usize>, BatchError> {
     let Options {
         combo,
+        harmony_left,
         bars,
         health,
         mana,
@@ -180,10 +183,10 @@ pub(super) fn draw(
                 view,
                 atlas,
                 [
-                    x + 2.0 + charge as f32 * segment,
-                    y + view.tile_px() as f32 + 2.0,
+                    if harmony_left { x - 6.0 } else { x + 2.0 + charge as f32 * segment },
+                    if harmony_left { y + (4 - charge) as f32 * segment } else { y + view.tile_px() as f32 + 2.0 },
                 ],
-                [(segment - 1.0).max(1.0), 4.0],
+                if harmony_left { [4.0, (segment - 1.0).max(1.0)] } else { [(segment - 1.0).max(1.0), 4.0] },
                 if charge < vitals.harmony.min(5) {
                     PresentationColor::Purple
                 } else {

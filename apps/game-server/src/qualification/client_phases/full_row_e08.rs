@@ -17,8 +17,8 @@
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::{CommandStatus, depot, depot_search as wire};
 use oteryn_protocol_oteryn::item_view::ItemHandle;
+use oteryn_protocol_oteryn::{CommandStatus, depot, depot_search as wire};
 
 struct Journey {
     started: std::time::Instant,
@@ -57,8 +57,11 @@ impl Journey {
                 )),
             ),
         };
+        if let Some(detail) = &detail {
+            evidence(&format!("E08_GAP {detail}"));
+        }
         evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=E08.full status={status} seconds={:.3}{}",
+            "e2e_all scenario=E08.full status={status} seconds={:.3}{}",
             self.started.elapsed().as_secs_f64(),
             detail.map_or_else(String::new, |value| format!(" evidence={value}"))
         ));
@@ -135,14 +138,19 @@ async fn wait_carried(
     Ok(())
 }
 
-async fn depot_intent(
+pub(super) async fn depot_intent(
     client: &mut DevClientSession,
     intent: depot::DepotIntent,
 ) -> TestResult<depot::DepotReply> {
-    let payload = depot::encode_depot_intent(intent).map_err(|error| format!("depot-encode:{error:?}"))?;
+    let payload =
+        depot::encode_depot_intent(intent).map_err(|error| format!("depot-encode:{error:?}"))?;
     let response = client
         .session_mut()
-        .gated_command(depot::CAPABILITY_DEPOT_V1, depot::COMMAND_TYPE_DEPOT_INTENT, &payload)
+        .gated_command(
+            depot::CAPABILITY_DEPOT_V1,
+            depot::COMMAND_TYPE_DEPOT_INTENT,
+            &payload,
+        )
         .await?;
     if response.status != CommandStatus::Accepted {
         return Err(format!("depot-status:{:?}", response.status).into());
@@ -250,8 +258,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     if detail.outcome != wire::Outcome::Detailed
         || detail.results.len() != 1
         || detail.results[0].client_id != client_id
-        || detail.results[0].depot + detail.results[0].stash + detail.results[0].inbox
-            != tier_count
+        || detail.results[0].depot + detail.results[0].stash + detail.results[0].inbox != tier_count
         || detail.results[0].tiers.as_slice()
             != [wire::TierCount {
                 tier,
@@ -325,6 +332,10 @@ mod tests {
                 .and_then(|value| value.parse::<u32>().ok()),
             Some(3031)
         );
-        assert!("oteryn:item.other".strip_prefix("oteryn:item.tibia.i").is_none());
+        assert!(
+            "oteryn:item.other"
+                .strip_prefix("oteryn:item.tibia.i")
+                .is_none()
+        );
     }
 }

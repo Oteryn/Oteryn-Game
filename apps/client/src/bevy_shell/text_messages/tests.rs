@@ -403,11 +403,13 @@ fn incoming_private_message_projects_over_world() -> TestResult {
         vec![line],
     );
     app.update();
-    assert!(
+    assert_eq!(
         app.world_mut()
-            .query::<&Text>()
+            .query::<(&ScreenArea, &Text)>()
             .iter(app.world())
-            .any(|t| t.0 == "Ann: Here")
+            .filter_map(|(area, text)| (text.0 == "Ann: Here").then_some(area.0))
+            .collect::<Vec<_>>(),
+        [Area::Private]
     );
     outbox.push(vec![SessionEvent::ChatSnapshot(AppliedDelta {
         server_sequence: 2,
@@ -564,5 +566,124 @@ fn confirmed_loot_paints_each_item_at_its_own_value() -> TestResult {
             .any(|(_, color)| color.0 == Color::srgb_u8(170, 85, 255)),
         "confirmed market value colours the non-currency item"
     );
+    for (enabled, count) in [(false, 0), (true, 2)] {
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .game_window
+            .messages = enabled;
+        app.update();
+        assert_eq!(spans.iter(app.world()).count(), count);
+    }
+    Ok(())
+}
+
+#[test]
+fn general_message_switch_only_hides_game_window_text() -> TestResult {
+    let mut owner = HostOwner::new(None)?;
+    let (link, _commands, outbox) = play_channel();
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    outbox.push(vec![SessionEvent::ServerMessage(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: ServerMessage::StatusText("Confirmed status".into()),
+    })]);
+    view.tick(&link).map_err(|_| "tick")?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .init_resource::<Time<Real>>()
+        .init_resource::<ScreenMessages>()
+        .add_systems(Update, project);
+    let text = app
+        .world_mut()
+        .spawn((
+            ScreenArea(Area::Bottom),
+            Text::default(),
+            TextColor::default(),
+        ))
+        .id();
+    for (enabled, expected) in [
+        (true, "Confirmed status"),
+        (false, ""),
+        (true, "Confirmed status"),
+    ] {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let mut options = serde_json::to_value(owner.settings.preferences.game_window)?;
+        options["messages"] = enabled.into();
+        owner.settings.preferences.game_window = serde_json::from_value(options)?;
+        app.update();
+        assert_eq!(app.world().get::<Text>(text).ok_or("text")?.0, expected);
+    }
+    Ok(())
+}
+
+#[test]
+fn private_message_receipt_reaches_game_window_only_when_enabled() -> TestResult {
+    let mut owner = HostOwner::new(None)?;
+    let (link, _commands, outbox) = play_channel();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .init_resource::<Time<Real>>()
+        .init_resource::<ScreenMessages>()
+        .add_systems(Update, project);
+    let text = app
+        .world_mut()
+        .spawn((
+            ScreenArea(Area::Private),
+            Text::default(),
+            TextColor::default(),
+        ))
+        .id();
+    for (seq, enabled, ignored) in [(1, true, true), (2, true, false), (3, false, false)] {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let mut saved = serde_json::to_value(host.settings.preferences.game_window)?;
+        assert!(host.play.as_ref().ok_or("play")?.link.chat_communication(
+            Some(oteryn_client_ui::chat::CommunicationList::Ignore),
+            "Bryn",
+            ignored
+        ));
+        saved["private_messages"] = enabled.into();
+        host.settings.preferences.game_window = serde_json::from_value(saved)?;
+        let line = oteryn_session::ChatLine::Private {
+            speaker_name: "Bryn".into(),
+            text: "Hello".into(),
+        };
+        outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
+            server_sequence: seq,
+            base_revision: seq - 1,
+            new_revision: seq,
+            value: line.clone(),
+        })]);
+        crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+            &outbox,
+            Default::default(),
+            vec![line],
+        );
+        // A second receipt for a different screen area arrives before Bevy's next frame.
+        let play = host.play.as_ref().ok_or("play")?;
+        let (_, action) = play
+            .link
+            .custom_hotkey_choices()
+            .into_iter()
+            .find(|(label, _)| label.to_lowercase().contains("whitelist"))
+            .ok_or("ignore list shortcut")?;
+        assert!(play.link.custom_hotkey_action(&play.view, &action));
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<Text>(text)
+                .ok_or("text")?
+                .0
+                .contains("Bryn: Hello"),
+            enabled && !ignored
+        );
+    }
     Ok(())
 }

@@ -233,7 +233,7 @@ pub(super) fn message_action(
     let name = control.message.row.target();
     match control.action {
         MessageAction::Copy => {
-            commands.trigger(super::CopyText(control.message.row.text.clone()));
+            commands.trigger(super::copy_link::Request(control.message.row.text.clone()));
         }
         MessageAction::Private => {
             if let Some(name) = name {
