@@ -52,6 +52,30 @@ where
                 Err(error) => return Err(close(stream, session.admitted, error).await),
             }
         }
+        Ok(envelope) if envelope.message_type() == MessageType::ResyncRequest => {
+            let last_applied = match envelope.resync_request(session.generation) {
+                Ok(last_applied) => last_applied,
+                Err(error) => return Err(close(stream, session.admitted, error).await),
+            };
+            if last_applied > session.sequence {
+                return Err(close(
+                    stream,
+                    session.admitted,
+                    FoundationProtocolError::MalformedEnvelope,
+                )
+                .await);
+            }
+            if !session.map_resync_pending {
+                // A retransmitted request has no command or publication effects.
+                return Ok(());
+            }
+            return tokio::time::timeout(
+                session.policy.interval,
+                super::refresh::resync_map(stream, authority, session),
+            )
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
+        }
         Ok(envelope) if envelope.message_type() != MessageType::ClientCommand => {
             return Err(close(
                 stream,
@@ -100,9 +124,7 @@ where
             return Ok(());
         }
         Ok(crate::gameplay_transport::session_ingress::CommandAction::ReplayControl(frame)) => {
-            return write_frame(stream, &frame)
-                .await
-                .map_err(|_| ServeEnd::Disconnected);
+            return outbound::send_map_resync(stream, session, &frame).await;
         }
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Pending) => return Ok(()),
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Execute) => {}

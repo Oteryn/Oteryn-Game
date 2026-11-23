@@ -99,20 +99,27 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             UseTarget::ItemByDefinition(_) => Some(None),
             _ => None,
         };
-        if let Some(source) = source
-            && !authority
-                .player_trade_item_available(
-                    actor,
-                    UseCommand {
-                        game_session_id: admitted.game_session_id,
-                        command_id: command.command_id,
-                        item_fence: admitted.item_fence,
-                    },
-                    source,
-                )
-                .await?
-        {
-            return Some(Dispatch::Use(UseOutcome::rejected()));
+        if let Some(source) = source {
+            let channel_map = admitted.item_fence.is_some_and(|fence| {
+                matches!(fence.runtime_scope, crate::foundation::RuntimeScopeRefV1::Channel { .. })
+            }) && intent.use_with_map_item.is_some();
+            let use_command = UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: command.command_id,
+                item_fence: admitted.item_fence,
+            };
+            let available = if channel_map {
+                let definition = match intent.target {
+                    UseTarget::ItemByDefinition(definition) => Some(definition),
+                    _ => None,
+                };
+                authority.player_trade_map_item_available(actor, use_command, source, definition).await?
+            } else {
+                authority.player_trade_item_available(actor, use_command, source).await?
+            };
+            if !available {
+                return Some(Dispatch::Use(UseOutcome::rejected()));
+            }
         }
     }
     if let Ok(intent) = &decoded

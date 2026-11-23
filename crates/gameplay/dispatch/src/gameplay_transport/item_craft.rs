@@ -22,6 +22,7 @@ mod planting;
 mod rope;
 mod skinning;
 mod terrain;
+pub(super) use terrain::world_destroy_attack;
 
 pub(super) async fn dispatch_map_result<A: FreshAdmissionAuthority>(
     authority: &A,

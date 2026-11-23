@@ -1,6 +1,50 @@
 //! Periodic state refreshes and chase progression.
 
 use super::*;
+
+/// Replace domain 17 from the native World owner. Other domains and command state retain their
+/// own cursors. The serve loop writes the whole snapshot before polling further input.
+pub(super) async fn resync_map<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let (Some(current), Some(items)) = (&mut session.world_map, &mut session.item_view) else {
+        return Err(ServeEnd::Disconnected);
+    };
+    let mut replacement = SessionMapView::starting_after(current.revision());
+    let Some((sequence, frames)) = world_map_frames(
+        authority,
+        session.actor,
+        session.generation,
+        session.sequence,
+        &mut replacement,
+        items,
+    )
+    .await
+    .flatten() else {
+        return Err(ServeEnd::Disconnected);
+    };
+    // A partially written snapshot can expose new handles before its commit.
+    // Preserve their ordinals across a resumed connection even if writing fails.
+    session.admitted.continuity.item_view = items.continuity();
+    for frame in frames {
+        write_frame(stream, &frame)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
+    }
+    *current = replacement;
+    session.sequence = sequence;
+    session.admitted.continuity.server_sequence = sequence;
+    session.admitted.continuity.world_map_revision = current.revision();
+    session.map_resync_pending = false;
+    Ok(())
+}
+
 use crate::gameplay_transport::appearance_change::observation::ObservationError;
 use oteryn_protocol_oteryn::chat::{line_extended, private_channel_extended};
 
@@ -708,8 +752,10 @@ where
             guild_emblem::refresh(stream, authority, session).await?;
             // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
             *step = "world_map";
-            if let (Some(view), Some(items)) =
-                (session.world_map.as_mut(), session.item_view.as_mut())
+            // Keep the requested replacement as the next domain 17 publication.
+            if !session.map_resync_pending
+                && let (Some(view), Some(items)) =
+                    (session.world_map.as_mut(), session.item_view.as_mut())
             {
                 let update = world_map_frames(
                     authority,

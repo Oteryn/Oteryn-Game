@@ -115,6 +115,7 @@ struct ServeState {
     world_clock_pacer: WorldClockDeltaPacer,
     world_clock: WorldClockSource,
     world_map: Option<SessionMapView>,
+    map_resync_pending: bool,
     quest_log: Option<QuestLogState>,
     container_views: Option<ContainerViewState>,
     visibility: Option<SessionVisibility>,

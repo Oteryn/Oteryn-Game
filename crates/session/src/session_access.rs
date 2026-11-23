@@ -347,8 +347,8 @@ impl<S: SessionStream> Session<S> {
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
-            if let Some(error) = self.terminal_protocol_error(&envelope)? {
-                return Err(error);
+            if self.resolve_protocol_control(&envelope).await?.is_some() {
+                continue;
             }
             match envelope.message_type() {
                 MessageType::LivenessProbe => self.answer_probe(envelope.payload()).await?,

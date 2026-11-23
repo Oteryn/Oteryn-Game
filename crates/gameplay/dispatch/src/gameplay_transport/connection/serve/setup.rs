@@ -527,6 +527,7 @@ async fn live<A: FreshAdmissionAuthority>(
         container_views,
         quest_log,
         world_map,
+        map_resync_pending: false,
         world_clock,
         world_clock_pacer,
         weather_sent,

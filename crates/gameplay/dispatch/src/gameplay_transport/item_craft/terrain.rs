@@ -32,7 +32,7 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
     }
 }
 
-fn world_destroy_attack(
+pub(in crate::gameplay_transport) fn world_destroy_attack(
     native: &NativeGameplayState,
     definition: &TypedDefinitionRef,
 ) -> Option<i32> {
@@ -312,10 +312,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        if !self
-            .states
-            .player_trades
-            .physical(command.game_session_id, tool)
+        if destroy_attack.is_none()
+            && !self
+                .states
+                .player_trades
+                .physical(command.game_session_id, tool)
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
@@ -410,6 +411,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             if too_far {
                 return Ok(Some(outcome(UseDisposition::TooFar)));
+            }
+            if destroy_attack.is_some()
+                && furniture_break.is_none()
+                && !self
+                    .states
+                    .player_trades
+                    .physical(command.game_session_id, tool)
+            {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
             }
             // The daily projector creates slime only on these dungeon ground entries.
             // Carrying the tool never authorizes unrelated map appearances or positions.
@@ -516,6 +526,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         })
                     {
                         return Ok(Some(outcome(UseDisposition::NothingToUse)));
+                    }
+                    if !self
+                        .states
+                        .player_trades
+                        .unreserved(command.game_session_id, item.item_instance_id)
+                    {
+                        return Ok(Some(outcome(UseDisposition::Rejected)));
+                    }
+                    if !self.states.world_gate.lock().is_ok_and(|mut gate| {
+                        gate.admit_ex_action(actor, self.clock_origin.elapsed())
+                    }) {
+                        return Ok(Some(outcome(UseDisposition::Exhausted)));
                     }
                     if !destroy_roll_succeeds(
                         world_destroy_roll(scope.content_generation, command, &placement)?,

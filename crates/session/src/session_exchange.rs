@@ -2,11 +2,76 @@
 use super::*;
 
 impl<S: SessionStream> Session<S> {
-    pub(super) fn terminal_protocol_error(
-        &self,
+    pub(super) async fn resolve_protocol_control(
+        &mut self,
         envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
-    ) -> Result<Option<SessionError>, SessionError> {
-        terminal_protocol_error(envelope, &self.selected_capabilities)
+    ) -> Result<Option<u64>, SessionError> {
+        let Some(terminal) = terminal_protocol_error(envelope, &self.selected_capabilities)? else {
+            return Ok(None);
+        };
+        let control = decode_protocol_error(envelope.payload())?;
+        let domain = oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW;
+        let Some(revision) = self.gated_snapshot(domain).map(|map| map.revision) else {
+            return Err(terminal);
+        };
+        if control.error_code != FoundationProtocolError::StateRevisionMismatch.code()
+            || control.disposition != ProtocolDisposition::ResyncRequired
+            || control.related_command_id < self.first_command_id
+            || control.related_command_id >= self.next_command_id
+            || control.expected_command_id != 0
+            || control.expected_server_sequence != 0
+        {
+            return Err(terminal);
+        }
+        let request = oteryn_protocol_oteryn::encode_resync_request(
+            self.connection_generation,
+            self.last_server_sequence,
+            &[(domain, revision)],
+        )?;
+        bounded(
+            self.deadline,
+            "map resync",
+            self.recover_map(&request, revision),
+        )
+        .await?;
+        Ok(Some(control.related_command_id))
+    }
+
+    async fn recover_map(&mut self, request: &[u8], revision: u64) -> Result<(), SessionError> {
+        write_frame(&mut self.stream, request).await?;
+        loop {
+            let frame = read_frame(&mut self.stream).await?;
+            self.last_received = tokio::time::Instant::now();
+            let envelope = decode_wire_envelope(&frame)?;
+            envelope.validate(Direction::ServerToClient, true)?;
+            self.check_generation(&envelope)?;
+            match envelope.message_type() {
+                MessageType::LivenessProbe => self.answer_probe(envelope.payload()).await?,
+                MessageType::StateDelta => {
+                    let sequence = self.next_sequence(&envelope)?;
+                    let event = self.apply_state_delta(sequence, envelope.payload())?;
+                    self.queue_event(event)?;
+                }
+                MessageType::SnapshotBegin => {
+                    // ID 1 is reserved for admission. Ordinary map snapshots use the
+                    // same sequence boundary, including the first replacement at 2.
+                    let expected = self
+                        .last_server_sequence
+                        .checked_add(1)
+                        .ok_or(FoundationProtocolError::ServerSequenceGap)?
+                        .max(2);
+                    self.replace_resynced_map(envelope.payload(), expected, revision)
+                        .await?;
+                    return Ok(());
+                }
+                actual => {
+                    return Err(SessionError::UnexpectedMessage {
+                        expected: MessageType::SnapshotBegin,
+                        actual,
+                    });
+                }
+            }
+        }
     }
 
     pub(super) fn ensure_usable(&self) -> Result<(), SessionError> {
@@ -24,7 +89,9 @@ impl<S: SessionStream> Session<S> {
         if outcome.as_ref().is_err_and(|error| {
             !matches!(
                 error,
-                SessionError::ScopeChanged | SessionError::ActivityScopeChanged
+                SessionError::ScopeChanged
+                    | SessionError::ActivityScopeChanged
+                    | SessionError::MapResynchronized { .. }
             )
         }) {
             self.unusable = true;
@@ -210,7 +277,28 @@ impl<S: SessionStream> Session<S> {
 
         loop {
             let (message_type, server_sequence, result_payload) =
-                self.read_sequenced_push("CommandResult").await?;
+                match self.read_sequenced_push("CommandResult").await {
+                    Err(SessionError::MapResynchronized {
+                        command_id: refused,
+                    }) if refused < command_id => continue,
+                    // Preserve the existing USE API after confirmed recovery. The refusal
+                    // is local and uses the replacement snapshot's sequence boundary.
+                    Err(SessionError::MapResynchronized {
+                        command_id: refused,
+                    }) if refused == command_id
+                        && command_type == world_object::COMMAND_TYPE_USE_INTENT =>
+                    {
+                        return Ok(ReceivedResult {
+                            command_id,
+                            status: CommandStatus::Accepted,
+                            server_sequence: self.last_server_sequence,
+                            payload: world_object::encode_use_result(
+                                world_object::UseDisposition::StaleState,
+                            )?,
+                        });
+                    }
+                    result => result?,
+                };
             if message_type == MessageType::StateDelta {
                 // Pushed before the result (the session never predicts the next frame's domain).
                 let event = self.apply_state_delta(server_sequence, &result_payload)?;
@@ -351,8 +439,8 @@ impl<S: SessionStream> Session<S> {
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
-            if let Some(error) = self.terminal_protocol_error(&envelope)? {
-                return Err(error);
+            if let Some(command_id) = self.resolve_protocol_control(&envelope).await? {
+                return Err(SessionError::MapResynchronized { command_id });
             }
             if envelope.message_type() == MessageType::SnapshotBegin {
                 if let Some(changed) = self

@@ -59,6 +59,18 @@ pub(super) fn movement_effect_visible(
     }
 }
 
+pub(super) async fn send_map_resync<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    session: &mut ServeState,
+    frame: &[u8],
+) -> Result<(), ServeEnd> {
+    write_frame(stream, frame)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+    session.map_resync_pending = true;
+    Ok(())
+}
+
 pub(super) async fn finish<S, A>(
     stream: &mut S,
     authority: &A,
@@ -93,9 +105,7 @@ where
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
     if resync {
-        return write_frame(stream, &result)
-            .await
-            .map_err(|_| ServeEnd::Disconnected);
+        return send_map_resync(stream, session, &result).await;
     }
     if matches!(dispatch, Dispatch::Depot(_))
         && let Some(view) = &session.item_view

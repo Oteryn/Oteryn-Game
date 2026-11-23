@@ -55,7 +55,7 @@ pub(super) async fn exchange(
         current_target,
         false,
         None,
-        false,
+        MapResyncFixture::None,
     )
     .await
 }
@@ -78,7 +78,7 @@ pub(super) async fn exchange_latest_source(
         None,
         true,
         None,
-        false,
+        MapResyncFixture::None,
     )
     .await
 }
@@ -106,7 +106,7 @@ pub(super) async fn exchange_with_visuals(
         None,
         false,
         Some(&visuals),
-        false,
+        MapResyncFixture::None,
     )
     .await?;
     Ok((end, result, actual, visuals.into_inner()))
@@ -118,6 +118,7 @@ pub(super) async fn expect_map_resync(
     command_id: u64,
     payload: &[u8],
     source: std::num::NonZeroU32,
+    recover: bool,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     exchange_selected_source(
         owner,
@@ -128,9 +129,16 @@ pub(super) async fn expect_map_resync(
         None,
         false,
         None,
-        true,
+        if recover { MapResyncFixture::Recover } else { MapResyncFixture::Refusal },
     )
     .await
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum MapResyncFixture {
+    None,
+    Refusal,
+    Recover,
 }
 
 #[allow(
@@ -148,7 +156,7 @@ async fn exchange_selected_source(
     visuals: Option<
         &std::cell::RefCell<Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>>,
     >,
-    expect_resync: bool,
+    map_resync: MapResyncFixture,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     if owner.root.has_ready_demand() {
         owner.root.maintain_ready_once().await.map_err(debug)?;
@@ -331,7 +339,9 @@ async fn exchange_selected_source(
         )?;
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
-        client.shutdown().await?;
+        if map_resync != MapResyncFixture::Recover {
+            client.shutdown().await?;
+        }
         let mut result = None;
         loop {
             let raw = match super::item_look_fixtures::read_frame(&mut client).await {
@@ -366,7 +376,7 @@ async fn exchange_selected_source(
                     );
                 }
             }
-            if expect_resync
+            if map_resync != MapResyncFixture::None
                 && envelope.message_type() == crate::foundation::MessageType::ProtocolError
             {
                 let error = oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?;
@@ -380,12 +390,16 @@ async fn exchange_selected_source(
                 );
                 assert_eq!(envelope.server_sequence(), 0);
                 assert_eq!(error.related_command_id, command_id);
+                if map_resync == MapResyncFixture::Recover {
+                    receive_replacement_map(&mut client, admitted).await?;
+                    client.shutdown().await?;
+                }
                 return Ok((UseDisposition::Rejected, actual));
             }
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let reply = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                 if reply.command_id == command_id {
-                    assert!(!expect_resync, "expected STATE_REVISION_MISMATCH, got {reply:?}");
+                    assert!(map_resync == MapResyncFixture::None, "expected STATE_REVISION_MISMATCH, got {reply:?}");
                     let disposition =
                         oteryn_protocol_oteryn::world_object::decode_use_result(reply.payload)
                             .map_err(debug)?;
@@ -439,4 +453,57 @@ async fn exchange_selected_source(
     };
     let (result, actual) = result.ok_or("client did not finish")??;
     Ok((admitted, result, actual))
+}
+
+
+async fn receive_replacement_map(
+    client: &mut tokio::io::DuplexStream,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use crate::foundation::MessageType;
+    use oteryn_protocol_oteryn::{
+        decode_snapshot_begin, decode_snapshot_chunk, decode_snapshot_id, decode_wire_envelope,
+        encode_resync_request,
+    };
+
+    let continuity = admitted.continuity;
+    let request = encode_resync_request(
+        continuity.connection_generation,
+        continuity.server_sequence,
+        &[(17, continuity.world_map_revision)],
+    )?;
+    crate::gameplay_transport::tcp_tls::write_frame(client, &request).await?;
+    let mut begin = None;
+    let mut found_map = false;
+    loop {
+        let raw = crate::gameplay_transport::tcp_tls::read_frame(client).await?;
+        let envelope = decode_wire_envelope(&raw)?;
+        assert_eq!(envelope.connection_generation(), continuity.connection_generation);
+        match envelope.message_type() {
+            MessageType::SnapshotBegin => {
+                let snapshot = decode_snapshot_begin(envelope.payload())?;
+                assert!(snapshot.snapshot_id > 1);
+                assert!(snapshot.target_server_sequence > continuity.server_sequence);
+                begin = Some(snapshot);
+            }
+            MessageType::SnapshotChunk => {
+                let (_, domains) = decode_snapshot_chunk(envelope.payload())?;
+                found_map |= domains.iter().any(|entry| {
+                    entry.domain_id == 17 && entry.revision > continuity.world_map_revision
+                });
+            }
+            MessageType::SnapshotCommit => {
+                assert!(found_map);
+                assert_eq!(
+                    decode_snapshot_id(envelope.payload())?,
+                    begin.ok_or("replacement snapshot declaration")?.snapshot_id
+                );
+                return Ok(());
+            }
+            MessageType::ProtocolError => return Err(format!(
+                "replay resync failed with {:?}", oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?
+            ).into()),
+            _ => {}
+        }
+    }
 }

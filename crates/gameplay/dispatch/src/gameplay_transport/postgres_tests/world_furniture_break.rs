@@ -197,6 +197,21 @@ fn world_wooden_bars_compiler_collision_matches_restored_state() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn world_wooden_bars_resync_recovers_production_client_postgres() -> TestResult {
+    run_case("production_resync", || scenario(2295, Case::Resync))
+}
+
+#[test]
+fn world_wooden_bars_miss_starts_ex_action_cooldown_postgres() -> TestResult {
+    run_case("bar_ex_action", || scenario(2295, Case::Cooldown))
+}
+
+#[test]
+fn world_wooden_bars_nonconsuming_use_preserves_editable_trade_postgres() -> TestResult {
+    run_case("bar_trade", || scenario(2295, Case::Trade))
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     Replay,
@@ -205,6 +220,9 @@ enum Case {
     EquippedHotkey { carried_copy: bool },
     Odds { weapon: u16, roll: u8, breaks: bool },
     MapRefusals,
+    Resync,
+    Cooldown,
+    Trade,
     SpellTile,
     Sight,
 }
@@ -298,6 +316,7 @@ async fn exercise(admin: String, bar_id: u16, case: Case) -> TestResult {
         matches!(bar_id, 2291 | 2292),
         match case {
             Case::Odds { roll, .. } => Some(roll),
+            Case::Cooldown => Some(25),
             _ => None,
         },
     )?;
@@ -383,7 +402,10 @@ async fn exercise(admin: String, bar_id: u16, case: Case) -> TestResult {
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice())
         .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-    if matches!(case, Case::EquippedHotkey { carried_copy: true }) {
+    if matches!(
+        case,
+        Case::EquippedHotkey { carried_copy: true } | Case::Trade
+    ) {
         seed_main_backpack(&harness, &[(&weapon_key, 1), (&weapon_key, 1)]).await?;
     } else {
         seed_main_backpack(&harness, &[(&weapon_key, 1)]).await?;
@@ -400,6 +422,153 @@ async fn exercise(admin: String, bar_id: u16, case: Case) -> TestResult {
 
     let weapon = reference(&weapon_key).ok_or("weapon definition")?;
 
+    if case == Case::Resync {
+        let (_, intact) = target(&base, BAR_POS)?;
+        return resync_with_production_client(&owner, admitted, intact, weapon).await;
+    }
+
+    if case == Case::Cooldown {
+        use std::time::{Duration, Instant};
+
+        let (_, intact) = target(&base, BAR_POS)?;
+        let input = map_use(UseTarget::ItemByDefinition(weapon), intact)?;
+        // Freeze the owner's elapsed time across DB reads, then advance it to the boundary.
+        owner.clock_origin = Instant::now() + Duration::from_secs(30);
+        let (next, miss, _) = exchange(&owner, admitted, 1, &input, None, None).await?;
+        assert_eq!(miss, UseDisposition::Committed);
+        assert_eq!(receipts(&harness).await?, 0);
+        let (next, replay, _) = exchange(&owner, next, 1, &input, None, None).await?;
+        assert_eq!(replay, UseDisposition::Committed);
+        let (next, exhausted, _) = exchange(&owner, next, 2, &input, None, None).await?;
+        assert_eq!(exhausted, UseDisposition::Exhausted);
+        assert_eq!(receipts(&harness).await?, 0);
+
+        owner.clock_origin = Instant::now() - Duration::from_secs(1);
+        let (_, fresh, _) = exchange(&owner, next, 3, &input, None, None).await?;
+        assert_eq!(fresh, UseDisposition::Committed);
+        return Ok(());
+    }
+
+    if case == Case::Trade {
+        use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey};
+
+        let binding = owner.runtime.lock().await.binding();
+        let trades = &owner.states.player_trades;
+        let partner = GameSessionId::decode(&id(94)).map_err(debug)?;
+        let source = ItemKey::Instance(id(71));
+        let fence = admitted.item_fence.ok_or("item fence")?;
+        let offer_id = id(72);
+        let offer_command = crate::foundation::CommandRef::new(
+            admitted.game_session_id,
+            crate::foundation::CommandId::new(1).map_err(debug)?,
+        );
+        let leaf = owner
+            .root
+            .observe_player_trade_offer(
+                owner.character,
+                owner.holder,
+                fence,
+                offer_command,
+                offer_id,
+                native.source_digest(),
+            )
+            .await?
+            .map_err(debug)?;
+        let projection = leaf.project_offer(weapon.get())?;
+        trades
+            .seed_editable_trade_test(
+                admitted,
+                partner,
+                binding,
+                native.source_digest(),
+                (offer_id, leaf, projection),
+            )
+            .ok_or("editable trade")?;
+        let ground_pos = TilePos { x: 6, ..BAR_POS };
+        let mut placement = base.digest().to_vec();
+        placement.extend_from_slice(
+            &placement_key(ground_pos, 0)
+                .ok_or("ground key")?
+                .to_be_bytes(),
+        );
+        let use_on = |target| UseIntent {
+            target: UseTarget::Item(std::num::NonZeroU64::MIN),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Object(target)),
+            use_with_position: None,
+        };
+        let command = UseCommand {
+            game_session_id: admitted.game_session_id,
+            item_fence: admitted.item_fence,
+            command_id: 1,
+        };
+        owner
+            .use_cooking_conversion_map_result(
+                deps.actor,
+                command,
+                use_on(WorldObjectTarget {
+                    placement,
+                    expected_revision: 0,
+                }),
+                Some(source),
+                None,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            trades.open(admitted.game_session_id),
+            "an ordinary ground target must leave the trade editable"
+        );
+        let (_, intact) = target(&base, BAR_POS)?;
+        let offered = ItemKey::Instance(offer_id);
+        assert_eq!(
+            owner
+                .player_trade_map_item_available(deps.actor, command, Some(offered), None)
+                .await,
+            Some(false)
+        );
+        assert!(
+            trades.open(admitted.game_session_id),
+            "checking the offered sword cannot close the trade"
+        );
+        let reserved = owner
+            .use_cooking_conversion_map_result(
+                deps.actor,
+                UseCommand {
+                    command_id: 2,
+                    ..command
+                },
+                use_on(intact.clone()),
+                Some(offered),
+                None,
+            )
+            .await
+            .map_err(debug)?
+            .ok_or("offered bar result")?;
+        assert_eq!(reserved.disposition, UseDisposition::Rejected);
+        assert!(trades.open(admitted.game_session_id));
+        let hit = owner
+            .use_cooking_conversion_map_result(
+                deps.actor,
+                UseCommand {
+                    command_id: 3,
+                    ..command
+                },
+                use_on(intact),
+                Some(source),
+                None,
+            )
+            .await
+            .map_err(debug)?
+            .ok_or("bar result")?;
+        assert_eq!(hit.disposition, UseDisposition::Committed);
+        assert!(
+            trades.open(admitted.game_session_id),
+            "a non-consuming bar attempt must leave the trade editable"
+        );
+        return Ok(());
+    }
+
     if case == Case::MapRefusals {
         let (key, intact) = target(&base, BAR_POS)?;
         let mut wrong_map = intact.clone();
@@ -408,18 +577,16 @@ async fn exercise(admin: String, bar_id: u16, case: Case) -> TestResult {
         stale.expected_revision = 1;
         let (_, absent) = target(&base, TilePos { y: 1, ..BAR_POS })?;
         let wrong_map = payload(wrong_map)?;
-        let (next, _, _) = expect_map_resync(&owner, admitted, 1, &wrong_map, weapon).await?;
+        let (next, _, _) =
+            expect_map_resync(&owner, admitted, 1, &wrong_map, weapon, false).await?;
         assert_eq!(next.continuity.next_command_id, 2);
         assert_eq!(
             next.continuity.server_sequence,
             admitted.continuity.server_sequence
         );
-        let (next, _, _) = expect_map_resync(&owner, next, 1, &wrong_map, weapon).await?;
+        let (next, _, _) = expect_map_resync(&owner, next, 1, &wrong_map, weapon, true).await?;
         assert_eq!(next.continuity.next_command_id, 2);
-        assert_eq!(
-            next.continuity.server_sequence,
-            admitted.continuity.server_sequence
-        );
+        assert!(next.continuity.server_sequence > admitted.continuity.server_sequence);
         let (mut next, result, _) =
             exchange(&owner, next, 2, &payload(stale)?, Some(weapon), None).await?;
         assert_eq!(result, UseDisposition::StaleState);
@@ -607,6 +774,7 @@ async fn exercise(admin: String, bar_id: u16, case: Case) -> TestResult {
         );
     }
 
+    restarted.clock_origin -= std::time::Duration::from_secs(1);
     let (_, mut restored_target) = target(&base, BAR_POS)?;
     restored_target.expected_revision = 2;
     let (next, miss, _) = exchange(
@@ -637,6 +805,7 @@ async fn exercise(admin: String, bar_id: u16, case: Case) -> TestResult {
     assert_eq!(receipts(&harness).await?, 1);
 
     if matches!(bar_id, 2291 | 2292) {
+        restarted.clock_origin -= std::time::Duration::from_secs(1);
         // The next crystal draw uses the restored 2296, while the immutable map still has
         // 2291/2292 at this placement. That second break must project revision 3 as 3145.
         let (_, mut next_target) = target(&base, BAR_POS)?;
@@ -656,6 +825,102 @@ async fn exercise(admin: String, bar_id: u16, case: Case) -> TestResult {
         assert!(restored.enterable(BAR_POS));
         assert_eq!(receipts(&harness).await?, 2);
     }
+    Ok(())
+}
+
+async fn resync_with_production_client(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    intact: WorldObjectTarget,
+    weapon: std::num::NonZeroU32,
+) -> TestResult {
+    use crate::gameplay_transport::{
+        connection::{IDLE_LIVENESS, serve_admitted},
+        tcp_tls::{read_frame, write_frame},
+    };
+    use oteryn_protocol_oteryn::{ServerAcceptedValue, encode_server_accepted};
+    use oteryn_session::{Admission, Session};
+
+    let (mut server, client) = tokio::io::duplex(1 << 20);
+    let selected = admitted.continuity.selected_capabilities;
+    let serving = async {
+        // The PG fixture already owns an admitted Character. Hand the real Session library
+        // its corresponding acceptance, then let the production serve loop own every frame.
+        let _bootstrap = read_frame(&mut server).await?;
+        let frame = encode_server_accepted(&ServerAcceptedValue {
+            game_session_id: admitted.game_session_id,
+            world_id: admitted.world_id,
+            channel_id: admitted.channel_id,
+            connection_generation: admitted.continuity.connection_generation,
+            current_server_sequence: admitted.continuity.server_sequence,
+            next_command_id: admitted.continuity.next_command_id,
+            schema_revision: 1,
+            selected_capabilities: selected.as_slice(),
+        })?;
+        write_frame(&mut server, &frame).await?;
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        Ok::<_, Box<dyn std::error::Error>>(end)
+    };
+    let client = async {
+        let fence = admitted.item_fence.ok_or("admitted item fence")?;
+        let mut session = Session::admit(
+            client,
+            Admission {
+                appearance_items: None,
+                schema_revision: 1,
+                character_id: oteryn_protocol_oteryn::CharacterId::decode(
+                    fence.character_id.as_bytes(),
+                )?,
+                admission_material: b"admitted-postgres-fixture",
+                client_build_id: "world-furniture-break",
+                supported_capabilities: selected.as_slice(),
+                deadline: std::time::Duration::from_secs(10),
+            },
+        )
+        .await?;
+        let first_map_revision = session.gated_snapshot(17).ok_or("joined map")?.revision;
+        let mut wrong = intact.clone();
+        wrong.placement[0] ^= 1;
+        let input = map_use(UseTarget::ItemByDefinition(weapon), wrong)?;
+        let refusal = session.world_context_use(&input).await?;
+        assert_eq!(refusal.command_id, 1);
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(&refusal.payload)
+                .map_err(debug)?,
+            UseDisposition::StaleState,
+        );
+        assert!(
+            session
+                .gated_snapshot(17)
+                .ok_or("replacement map")?
+                .revision
+                > first_map_revision,
+            "the production client must install a replacement map after the correlated refusal"
+        );
+        let replacement = session
+            .world_map_snapshot()
+            .ok_or("decoded replacement map")?;
+        let mut current = intact;
+        current.placement[..32].copy_from_slice(&replacement.header.bundle_digest);
+        let input = map_use(UseTarget::ItemByDefinition(weapon), current)?;
+        let result = session.world_context_use(&input).await?;
+        assert_eq!(result.command_id, 2);
+        assert_eq!(
+            oteryn_protocol_oteryn::world_object::decode_use_result(&result.payload)
+                .map_err(debug)?,
+            UseDisposition::Committed
+        );
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let mut maintenance = std::pin::pin!(super::item_craft_fixtures::maintain_ready(owner));
+    tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        tokio::select! {
+            result = async { tokio::try_join!(serving, client) } => { result?; Ok(()) }
+            result = &mut maintenance => result,
+        }
+    })
+    .await??;
     Ok(())
 }
 

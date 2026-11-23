@@ -171,6 +171,19 @@ struct Record {
     staged: Option<(usize, TradeParticipant)>,
     request: Option<PlayerTradeRequest>,
 }
+impl Record {
+    fn offered_leaf(&self, item: [u8; 16]) -> Option<&TradeLeaf> {
+        self.offers.iter().flatten().flat_map(|root| {
+            std::iter::once(root).chain(root.contents())
+        }).find(|leaf| leaf.instance_at(0).ok().flatten() == Some(item))
+    }
+
+    fn reserves(&self, item: [u8; 16]) -> bool {
+        self.items.contains(&Some(item)) || self.offered_leaf(item).is_some()
+    }
+
+}
+
 #[derive(Default)]
 pub struct TradeBook(Mutex<Book>, tokio::sync::Notify);
 #[derive(Default)]
@@ -336,9 +349,60 @@ impl TradeBook {
         }
     }
     #[cfg(test)]
+    pub(super) fn seed_editable_trade_test(
+        &self,
+        admitted: AdmittedSession,
+        partner: GameSessionId,
+        binding: ChannelRuntimeAssignmentBinding,
+        digest: [u8; 32],
+        offer: ([u8; 16], TradeLeaf, wire::Offer),
+    ) -> Option<()> {
+        let command = CommandId::new(1).ok()?;
+        let commands = [admitted.game_session_id, partner].map(|session| CommandRef::new(session, command));
+        let actor = admitted.runtime_actor?;
+        let mut book = self.0.lock().ok()?;
+        for session in [admitted.game_session_id, partner] {
+            book.live.insert(session, Live {
+                admitted: AdmittedSession { game_session_id: session, ..admitted },
+                actor,
+                name: "trade fixture".into(),
+                revision: 0,
+                state: State::default(),
+                inventory_changed: false,
+                rate: Rate::default(),
+            });
+        }
+        book.publish(&Record {
+            sessions: [admitted.game_session_id, partner],
+            binding,
+            digest,
+            lifecycle: Trade::offered(commands[0], 0),
+            offers: [Some(offer.1), None],
+            items: [Some(offer.0), None],
+            backpacks: [None, None],
+            projections: [Some(offer.2), None],
+            contents: [Vec::new(), Vec::new()],
+            commands,
+            pair: None,
+            id: None,
+            accepts: [None, None],
+            staged: None,
+            request: None,
+        })
+    }
+
+    #[cfg(test)]
     pub(in crate::gameplay_transport) fn completed_request(&self) -> Option<PlayerTradeRequest> {
         self.0.lock().ok()?.completed.clone()
     }
+    /// Non-consuming USE-WITH observes custody without closing an editable trade.
+    pub(super) fn unreserved(&self, session: GameSessionId, item: [u8; 16]) -> bool {
+        self.0.lock().is_ok_and(|book| {
+            book.record_ref(session)
+                .is_none_or(|record| record.request.is_none() && !record.reserves(item))
+        })
+    }
+
     /// Called under the mutation's spell lane. An attempt on an offered leaf is refused
     /// and invalidates the dialog; other backpack mutations invalidate before issuance.
     pub(super) fn physical(&self, session: GameSessionId, item: Option<[u8; 16]>) -> bool {

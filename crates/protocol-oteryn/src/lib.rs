@@ -1251,6 +1251,37 @@ pub fn encode_protocol_error_with_trace(
     encode_command_protocol_error_inner(error, generation, 0, 0, Some(connection_trace))
 }
 
+/// FND-02 §16 resync control for the current connection. It consumes no CommandId.
+pub fn encode_resync_request(
+    generation: u64,
+    last_applied_server_sequence: u64,
+    domain_revisions: &[(u32, u64)],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if generation == 0 {
+        return Err(FoundationProtocolError::StaleConnectionGeneration);
+    }
+    if domain_revisions.len() > MAX_STATE_DOMAINS_PER_SYNC {
+        return Err(FoundationProtocolError::PayloadLimitExceeded);
+    }
+    let mut payload = Vec::new();
+    push_scalar(&mut payload, 1, last_applied_server_sequence);
+    let mut seen = BTreeSet::new();
+    for &(domain, revision) in domain_revisions {
+        if domain == 0 || !seen.insert(domain) {
+            return Err(FoundationProtocolError::StateRevisionMismatch);
+        }
+        let mut entry = Vec::new();
+        push_scalar(&mut entry, 1, u64::from(domain));
+        push_scalar(&mut entry, 2, revision);
+        push_bytes(&mut payload, 2, &entry);
+    }
+    let mut output = Vec::new();
+    push_scalar(&mut output, 1, MessageType::ResyncRequest as u64);
+    push_scalar(&mut output, 2, generation);
+    push_bytes(&mut output, 4, &payload);
+    Ok(output)
+}
+
 /// `ProtocolError` with its optional command correlation (zero means not applicable): the
 /// offending `related_command_id` and, for a gap, the `expected_command_id` (FND-02 §13.2).
 pub fn encode_command_protocol_error(
@@ -2051,6 +2082,21 @@ impl<'a> WireEnvelopeView<'a> {
             last_applied_server_sequence: view.last_applied_sequence,
         })
     }
+    /// Validates an admitted ResyncRequest and returns the last sequence applied by the peer.
+    pub fn resync_request(
+        &self,
+        current_connection_generation: u64,
+    ) -> Result<u64, FoundationProtocolError> {
+        self.validate(Direction::ClientToServer, true)?;
+        if self.message_type != MessageType::ResyncRequest {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        if self.connection_generation != current_connection_generation {
+            return Err(FoundationProtocolError::StaleConnectionGeneration);
+        }
+        validate_resync_request_ingress(self.payload)
+    }
+
     #[allow(dead_code)]
     pub fn liveness_ack(
         &self,
@@ -2545,8 +2591,9 @@ fn validate_liveness_ack_ingress(
     })
 }
 
-fn validate_resync_request_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
+fn validate_resync_request_ingress(payload: &[u8]) -> Result<u64, FoundationProtocolError> {
     let mut cursor = 0usize;
+    let mut last_applied = None;
     let mut revision_count = 0usize;
     let mut seen_domains = BTreeSet::new();
     while cursor < payload.len() {
@@ -2554,6 +2601,7 @@ fn validate_resync_request_ingress(payload: &[u8]) -> Result<(), FoundationProto
         let field = decode_field_number(key)?;
         let wire = (key & 7) as u8;
         match (field, wire) {
+            (1, _) => read_singular_varint(payload, &mut cursor, wire, &mut last_applied)?,
             (2, 2) => validate_revision_list(
                 payload,
                 &mut cursor,
@@ -2565,7 +2613,7 @@ fn validate_resync_request_ingress(payload: &[u8]) -> Result<(), FoundationProto
             (_, unknown_wire) => skip_field(payload, &mut cursor, unknown_wire)?,
         }
     }
-    Ok(())
+    Ok(last_applied.unwrap_or(0))
 }
 
 const SERVER_ACCEPTED_IDENTITY_FIELDS: &[u32] = &[1, 2, 3];
@@ -2786,7 +2834,7 @@ fn validate_client_ingress_payload(
             validate_bootstrap_ingress(message_type, payload).map(|_| ())
         }
         MessageType::ClientCommand => validate_client_command_ingress(payload),
-        MessageType::ResyncRequest => validate_resync_request_ingress(payload),
+        MessageType::ResyncRequest => validate_resync_request_ingress(payload).map(drop),
         _ => Ok(()),
     }
 }

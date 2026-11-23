@@ -17,7 +17,7 @@ impl<S: SessionStream> Session<S> {
             .last_server_sequence
             .checked_add(1)
             .ok_or(FoundationProtocolError::ServerSequenceGap)?;
-        self.replace_snapshot_at_with_scope_change(payload, expected)
+        self.replace_snapshot_at_with_scope_change(payload, expected, None)
             .await
     }
 
@@ -26,7 +26,19 @@ impl<S: SessionStream> Session<S> {
         payload: &[u8],
         expected: u64,
     ) -> Result<(), SessionError> {
-        self.replace_snapshot_at_with_scope_change(payload, expected)
+        self.replace_snapshot_at_with_scope_change(payload, expected, None)
+            .await
+            .map(|_| ())
+    }
+
+    /// A correlated map resync replaces only domain 17 and advances its revision.
+    pub(super) async fn replace_resynced_map(
+        &mut self,
+        payload: &[u8],
+        expected: u64,
+        revision: u64,
+    ) -> Result<(), SessionError> {
+        self.replace_snapshot_at_with_scope_change(payload, expected, Some(revision))
             .await
             .map(|_| ())
     }
@@ -35,6 +47,7 @@ impl<S: SessionStream> Session<S> {
         &mut self,
         payload: &[u8],
         expected: u64,
+        resync_map_revision: Option<u64>,
     ) -> Result<Option<SessionError>, SessionError> {
         let begin = decode_snapshot_begin(payload)?;
         if begin.target_server_sequence != expected {
@@ -50,6 +63,15 @@ impl<S: SessionStream> Session<S> {
             &begin,
         )
         .await?;
+        if let Some(revision) = resync_map_revision {
+            let domains = decode_snapshot_body(&body)?;
+            if !matches!(domains.as_slice(), [map]
+                if map.domain_id == oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW
+                    && map.revision > revision)
+            {
+                return Err(FoundationProtocolError::StateRevisionMismatch.into());
+            }
+        }
         if let Some(changed) = self.adopt_activity_snapshot(&body).await? {
             return Ok(Some(changed));
         }

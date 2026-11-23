@@ -12,6 +12,10 @@ pub enum SessionError {
         received: u64,
     },
     Protocol(FoundationProtocolError),
+    /// A correlated map refusal whose replacement snapshot has already been applied.
+    MapResynchronized {
+        command_id: u64,
+    },
     /// The server diagnosed this admitted connection and closed it after this frame.
     ServerProtocolError {
         code: u32,
@@ -186,6 +190,12 @@ impl fmt::Display for SessionError {
             }
             Self::Io(error) => write!(formatter, "transport I/O failed: {error}"),
             Self::Protocol(error) => write!(formatter, "FND-02 protocol error: {error}"),
+            Self::MapResynchronized { command_id } => {
+                write!(
+                    formatter,
+                    "map synchronized after refusal of command {command_id}"
+                )
+            }
             Self::ServerProtocolError {
                 code,
                 connection_trace,

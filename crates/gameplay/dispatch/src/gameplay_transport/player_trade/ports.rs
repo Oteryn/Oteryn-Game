@@ -63,6 +63,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: super::super::connection::UseCommand,
         item: Option<ItemKey>,
     ) -> Option<bool> {
+        self.trade_item_availability(actor, command, item, false, None).await
+    }
+
+    pub(in crate::gameplay_transport) async fn trade_item_availability(
+        &self,
+        actor: ExactActorRef,
+        command: super::super::connection::UseCommand,
+        item: Option<ItemKey>,
+        map_target: bool,
+        definition: Option<std::num::NonZeroU32>,
+    ) -> Option<bool> {
         let runtime = self.runtime.lock().await;
         runtime.owner_fence().ok()?;
         let facts = if let Some(fence) = command.item_fence
@@ -104,20 +115,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(record) = book.record_ref(command.game_session_id) else {
             return Some(true);
         };
-        let reserved = match item {
-            Some(ItemKey::Instance(item)) => record.offers.iter().flatten().any(|leaf| {
-                (0..=leaf.contents().len()).any(|index| {
-                    u8::try_from(index)
-                        .ok()
-                        .and_then(|index| leaf.instance_at(index).ok().flatten())
-                        .is_some_and(|id| id == item)
-                })
-            }),
-            None => true,
-            _ => false,
+        let native = map_target.then(|| {
+            self.active_generation.and_then(crate::content::ActiveGeneration::native_gameplay)
+        }).flatten();
+        let destroy_weapon = |definition: &crate::durability::item_mint::TypedDefinitionRef| {
+            native.is_some_and(|native| {
+                super::super::item_craft::world_destroy_attack(native, definition).is_some()
+            })
+        };
+        let (reserved, nonconsuming) = match item {
+            Some(ItemKey::Instance(item)) => (
+                record.reserves(item),
+                record.offered_leaf(item)
+                    .and_then(|leaf| leaf.definition_and_quantity().ok())
+                    .is_some_and(|(definition, _)| destroy_weapon(&definition)),
+            ),
+            None => {
+                // Only a known destroy-weapon hotkey defers custody to the terrain
+                // owner. It resolves the actual instance and rechecks the book.
+                let destroy_hotkey = native
+                    .and_then(|native| native.item_index())
+                    .zip(definition)
+                    .and_then(|(index, wanted)| index.definition_at(wanted))
+                    .is_some_and(|(key, revision)| destroy_weapon(
+                        &crate::durability::item_mint::TypedDefinitionRef {
+                            family: "Item".into(),
+                            production_key: key.into(),
+                            revision_ref: revision.into(),
+                        }
+                    ));
+                (!destroy_hotkey, destroy_hotkey)
+            }
+            _ => (false, false),
         };
         if reserved {
-            if record.request.is_none() {
+            if !nonconsuming && record.request.is_none() {
                 let record = record.clone();
                 book.close(&record, ResultCode::Stale)?;
             }
@@ -237,6 +269,7 @@ macro_rules! authority_methods {
         fn player_trade_observation(&self, _session: $crate::foundation::GameSessionId) -> impl std::future::Future<Output=Option<(u64, oteryn_protocol_oteryn::player_trade::State, bool)>> { async { None } }
         fn player_trade_inventory(&self, _admitted: $crate::gameplay_transport::connection::AdmittedSession, _view: &mut $crate::gameplay_transport::item_view::SessionItemView, _containers: Option<&mut $crate::gameplay_transport::container_view::ContainerViewState>) -> impl std::future::Future<Output=Option<Vec<$crate::gameplay_transport::item_view::ItemViewDelta>>> { async { None } }
         fn player_trade_item_available(&self, _actor: $crate::foundation::ExactActorRef, _command: $crate::gameplay_transport::connection::UseCommand, _item: Option<$crate::gameplay_transport::item_view::ItemKey>) -> impl std::future::Future<Output=Option<bool>> { async { Some(true) } }
+        fn player_trade_map_item_available(&self, actor: $crate::foundation::ExactActorRef, command: $crate::gameplay_transport::connection::UseCommand, item: Option<$crate::gameplay_transport::item_view::ItemKey>, _definition: Option<std::num::NonZeroU32>) -> impl std::future::Future<Output=Option<bool>> { async move { self.player_trade_item_available(actor, command, item).await } }
         fn player_trade_terminalized(&self, _session: $crate::foundation::GameSessionId, _command: u64) {}
         fn player_trade_delivered(&self, _session: $crate::foundation::GameSessionId, _revision: u64) {}
         fn player_trade_disconnected(&self, _session: $crate::foundation::GameSessionId) {}
@@ -282,6 +315,15 @@ macro_rules! composed_methods {
             item: Option<$crate::gameplay_transport::item_view::ItemKey>,
         ) -> Option<bool> {
             self.trade_item_available(actor, command, item).await
+        }
+        async fn player_trade_map_item_available(
+            &self,
+            actor: $crate::foundation::ExactActorRef,
+            command: $crate::gameplay_transport::connection::UseCommand,
+            item: Option<$crate::gameplay_transport::item_view::ItemKey>,
+            definition: Option<std::num::NonZeroU32>,
+        ) -> Option<bool> {
+            self.trade_item_availability(actor, command, item, true, definition).await
         }
         fn player_trade_terminalized(
             &self,

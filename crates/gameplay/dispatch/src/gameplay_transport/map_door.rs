@@ -30,6 +30,8 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
 
 /// `WORLDINT0-RL-02`: the per-actor `world_action` cooldown.
 pub(super) const WORLD_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(200);
+/// `WORLDINT0-RL-03`: the per-actor `world_ex_action` cooldown for map USE-WITH.
+const WORLD_EX_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(1_000);
 /// `WORLDINT0-RL-08`: world interactions admitted per Channel per owner turn.
 const WORLD_ACTIONS_PER_TURN: u32 = 512;
 /// Crystal 201189f config.lua.dist:469 and game.cpp:11325-11396: 500 - 10 ms.
@@ -42,6 +44,7 @@ const WHEEL_EX_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_
 #[derive(Debug, Default)]
 pub struct WorldActionGate {
     started: Vec<(ExactActorRef, std::time::Duration)>,
+    ex_started: Vec<(ExactActorRef, std::time::Duration)>,
     /// One shared ExAction clock for a session's fresh Wheel and Atelier mutations.
     /// Kept separate from the existing 200 ms world-action and jewelry clocks.
     wheel_mutations: Vec<(crate::foundation::GameSessionId, std::time::Duration)>,
@@ -118,6 +121,23 @@ impl WorldActionGate {
     /// elapsed wall time (FND-03 defines no fixed quantum).
     pub fn begin_turn(&mut self) {
         self.admitted = 0;
+    }
+
+    pub(super) fn admit_ex_action(
+        &mut self,
+        actor: ExactActorRef,
+        now: std::time::Duration,
+    ) -> bool {
+        self.ex_started
+            .retain(|(_, at)| now.saturating_sub(*at) < WORLD_EX_ACTION_COOLDOWN);
+        if self.admitted >= WORLD_ACTIONS_PER_TURN
+            || self.ex_started.iter().any(|(who, _)| *who == actor)
+        {
+            return false;
+        }
+        self.admitted += 1;
+        self.ex_started.push((actor, now));
+        true
     }
 
     /// Admits one `USE` of `actor` at owner-clock time `now`, or refuses it.
