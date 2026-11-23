@@ -153,3 +153,74 @@ pub(super) async fn assert_no_gain(h: &Harness) -> TestResult {
     );
     Ok(())
 }
+
+pub(super) fn rat_loot_that_misses() -> TestResult<Vec<u8>> {
+    let mut loot: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../../../../tools/content-schema/native-gameplay/loot-tables.json"
+    ))?;
+    let rat = loot["tables"].as_array_mut().ok_or("loot tables")?.iter_mut()
+        .find(|table| table["identity"]["key"] == "oteryn:loot.creature.rat")
+        .ok_or("Rat loot table")?;
+    for entry in rat["entries"].as_array_mut().ok_or("Rat entries")? {
+        entry["probability_ppm"] = 0.into();
+    }
+    Ok(serde_json::to_vec(&loot)?)
+}
+
+pub(super) async fn assert_duplex_expiry_retry(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    pending: &crate::gameplay_transport::kill_reward::PendingKillSettlement,
+) -> TestResult {
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+    let principal = pending.facts.principal;
+    let character = crate::domain::CharacterId::from_bytes(*principal.character.as_bytes()).map_err(debug)?;
+    let mut tx = h.pool.begin().await?;
+    // Seed only the existing effect and clock, as in the potion durations fixture.
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::raw_sql(
+        "CREATE TABLE fiendish_clock(at timestamptz NOT NULL);
+         GRANT SELECT ON fiendish_clock TO oteryn_game_runtime;
+         INSERT INTO fiendish_clock VALUES(clock_timestamp());
+         CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz
+           LANGUAGE sql VOLATILE AS $$ SELECT at FROM public.fiendish_clock $$",
+    ).execute(&mut *tx).await?;
+    sqlx::query(
+        "INSERT INTO game_character_concoction_effects(transaction_id,character_id,concoction,started_at,expires_at)
+         SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,'wealth_duplex',at,at+interval '1 hour'
+         FROM fiendish_clock",
+    )
+    .bind(id(202).as_slice()).bind(principal.character.as_bytes().as_slice())
+    .execute(&mut *tx).await?;
+    tx.commit().await?;
+    sqlx::raw_sql(
+        "CREATE FUNCTION fiendish_task_credit_fault() RETURNS trigger LANGUAGE plpgsql
+         AS $$ BEGIN RAISE EXCEPTION 'fixture defers Task Board credit'; END $$;
+         CREATE TRIGGER fiendish_task_credit_fault BEFORE INSERT ON game_task_board_receipts
+         FOR EACH ROW EXECUTE FUNCTION fiendish_task_credit_fault()",
+    ).execute(&h.pool).await?;
+
+    assert!(h.root.wealth_duplex_active(owner.character, character).await?);
+    assert_eq!(owner.drain_kill_rewards(principal.session).await, DrainOutcome::Deferred);
+    let sliver_cause = "SELECT draw_ordinal FROM game_item_mint_reservations WHERE loot_purpose_key='oteryn:item.tibia.i37109' ORDER BY draw_ordinal LIMIT 2";
+    let first: Vec<i64> = sqlx::query_scalar(sliver_cause).fetch_all(&h.pool).await?;
+    assert_eq!(first.len(), 1);
+    let committed: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='oteryn:item.tibia.i37109' AND materialized_at IS NOT NULL",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(committed, 1, "sliver committed before Task Board deferred");
+
+    sqlx::raw_sql(
+        "UPDATE fiendish_clock SET at=at+interval '2 hours';
+         DROP TRIGGER fiendish_task_credit_fault ON game_task_board_receipts",
+    ).execute(&h.pool).await?;
+    assert!(!h.root.wealth_duplex_active(owner.character, character).await?);
+    assert_eq!(owner.drain_kill_rewards(principal.session).await, DrainOutcome::Drained);
+    let retried: Vec<i64> = sqlx::query_scalar(sliver_cause).fetch_all(&h.pool).await?;
+    assert_eq!(retried, first, "retry reuses the committed sliver MINT cause");
+    let credits: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_task_board_receipts WHERE cause_kind='creature_death'",
+    ).fetch_one(&h.pool).await?;
+    assert!(credits > 0);
+    Ok(())
+}

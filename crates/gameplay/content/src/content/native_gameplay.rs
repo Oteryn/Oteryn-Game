@@ -515,6 +515,50 @@ fn qualified_item_policy<'a>(
     Some(QualifiedItemPolicy { digest, record })
 }
 
+/// Resolve stack facts for every loot route from the same exact native Item policy.
+/// Older sections may omit these fields. Keep their facts for definitions that have
+/// no matching materializable native profile.
+fn apply_loot_item_stack_policies(
+    loot: &mut super::creature_reward::LootTablesSection,
+    profiles: &ItemProfilesDocument,
+) {
+    use super::ReferenceItemField as Field;
+    let native: BTreeMap<_, _> = profiles
+        .records
+        .iter()
+        .filter(|record| record.admission.materializable)
+        .map(|record| {
+            let definition = &record.production_definition;
+            (
+                (
+                    definition.family.as_str(),
+                    definition.production_key.as_str(),
+                    definition.revision_ref.as_str(),
+                ),
+                record,
+            )
+        })
+        .collect();
+    for facts in loot.items.iter_mut().filter(|facts| facts.materializable) {
+        let item = &facts.item;
+        let Some(record) = native.get(&(
+            item.family.as_str(),
+            item.key.as_str(),
+            item.revision.as_str(),
+        )) else {
+            continue;
+        };
+        facts.stackable = record.admission.stack_class == NativeItemStackClass::StackCapable;
+        facts.stack_maximum = match &record.semantics.stack {
+            Field::Known(stack) if facts.stackable => match stack.stack_max {
+                Field::Known(maximum) => std::num::NonZeroU32::new(u32::from(maximum)),
+                _ => None,
+            },
+            _ => None,
+        };
+    }
+}
+
 impl PartialEq for NativeGameplayState {
     fn eq(&self, other: &Self) -> bool {
         self.source_digest == other.source_digest && self.encoded == other.encoded
@@ -1823,9 +1867,12 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         None
     };
     // An older pin carries no loot section: every creature then has no loot binding.
-    let loot = is_v8
+    let mut loot = is_v8
         .then(|| super::creature_reward::LootTablesSection::decode(sections[11], &creatures))
         .transpose()?;
+    if let (Some(loot), Some(items)) = (&mut loot, &items) {
+        apply_loot_item_stack_policies(loot, items);
+    }
     let reward_table = Arc::new(
         super::creature_reward::CreatureRewardTable::from_pin_with_native_corpses(
             &creatures,
@@ -3882,6 +3929,58 @@ mod tests {
             .unwrap();
         assert_eq!(boss.category.as_str(), "nemesis");
     }
+    #[test]
+    fn legacy_loot_facts_use_active_item_stack_policy() -> Result<(), Box<dyn std::error::Error>> {
+        // The predecessor loot section omitted stackable for these admitted Items.
+        let mut loot: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/native-gameplay/loot-tables.json"
+        ))?;
+        let legacy_keys = [
+            "oteryn:item.tibia.i37109",
+            "oteryn:item.tibia.i3577",
+            "oteryn:item.tibia.i3032",
+        ];
+        for facts in loot["items"].as_array_mut().ok_or("loot Item facts")? {
+            if legacy_keys.iter().any(|key| facts["item"]["key"] == *key) {
+                facts
+                    .as_object_mut()
+                    .ok_or("loot Item fact")?
+                    .remove("stackable");
+            }
+        }
+        let world = test_source(1)?.world_id;
+        let (controller, _) =
+            activated_with_custom_loot_tables(world, None, Some(&serde_json::to_vec(&loot)?));
+        let native = controller
+            .active()
+            .ok_or("active generation")?
+            .native_gameplay()
+            .ok_or("native gameplay")?;
+        let rewards = native.reward_table();
+        let wolf = rewards
+            .row("oteryn:creature.wolf")
+            .map_err(|reason| reason.as_str())?;
+        let boss = rewards
+            .row("oteryn:creature.glooth_fairy")
+            .map_err(|reason| reason.as_str())?;
+        let sliver = rewards.forge_sliver().ok_or("admitted Fiendish sliver")?;
+        let find_stack = |table: &crate::content::creature_reward::CreatureRewardRow, key| {
+            table.loot_table.entries.iter().any(|entry| {
+                entry.item.production_key == key && entry.max_count > 1 && entry.details.stackable
+            })
+        };
+        assert_eq!(
+            (
+                sliver.details.stackable,
+                find_stack(&wolf, legacy_keys[1]),
+                find_stack(&boss, legacy_keys[2])
+            ),
+            (true, true, true),
+            "Fiendish, ordinary, and private loot must all use the qualified Item stack class",
+        );
+        Ok(())
+    }
+
     #[test]
     fn slice_three_manifest_activates_carried_rewards() {
         let world = test_source(1).unwrap().world_id;

@@ -68,6 +68,13 @@ fn apply_hunting_stamina_to_loot(
         .is_some_and(|minutes| !oteryn_gameplay_characters::stamina::hunting_loot_allowed(minutes))
     {
         loot_table.entries.clear();
+        if matches!(
+            loot_table.algorithm,
+            crate::combat::LootSelectionAlgorithm::DailyBoosted { .. }
+        ) {
+            // The boosted prefix described the cleared entries, not later corpse drops.
+            loot_table.algorithm = crate::combat::LootSelectionAlgorithm::IndependentBernoulliPpm;
+        }
     }
 }
 
@@ -141,7 +148,7 @@ pub struct PendingKillSettlement {
     pub(super) prey_checkpoint: Option<crate::durability::prey::PreyCheckpoint>,
     pub(super) forge: Option<ForgeDeath>,
     /// Frozen at death and added after ordinary loot modifiers.
-    fiendish_sliver: Option<crate::combat::LootTableEntry>,
+    fiendish_sliver: Option<Arc<FiendishCorpseLoot>>,
     /// Frozen callback facts survive corpse replay and actor-slot reuse.
     pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
     pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
@@ -163,6 +170,13 @@ pub struct PendingKillSettlement {
     pub(super) objectives: Option<Arc<Vec<super::quest_kill_objectives::CapturedObjective>>>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
+}
+
+#[derive(Debug)]
+struct FiendishCorpseLoot {
+    sliver: crate::combat::LootTableEntry,
+    // The sliver cause and its destination slot must both replay after a partial settle.
+    prepared: OnceLock<crate::combat::LootTableDefinition>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -2401,11 +2415,14 @@ pub fn record_creature_kill(
             return;
         };
         let count = u32::from(crate::domain::forge_creature::slivers(facts.occurrence[14]));
-        Some(crate::combat::LootTableEntry {
-            min_count: count,
-            max_count: count,
-            ..sliver.clone()
-        })
+        Some(Arc::new(FiendishCorpseLoot {
+            sliver: crate::combat::LootTableEntry {
+                min_count: count,
+                max_count: count,
+                ..sliver.clone()
+            },
+            prepared: OnceLock::new(),
+        }))
     } else {
         None
     };
@@ -4020,74 +4037,84 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             expected_character_revision,
             ..self.fence
         };
-        let mut loot_table = row.loot_table.clone();
-        if let Some(race) = &row.race {
-            let bonus = entry
-                .talisman
-                .get()
-                .map_or(0, |snapshot| snapshot.bonuses(race.key())[2]);
-            apply_talisman_loot_bonus(&mut loot_table, bonus);
-        }
-        if entry.boss_reward.is_none() {
-            let bonus = entry
-                .boss_slot_bonuses
-                .get()
-                .and_then(|v| {
-                    v.iter()
-                        .find(|(c, _)| c == entry.facts.principal.character.as_bytes())
-                })
-                .map_or(0, |(_, b)| *b);
-            super::boss_encounter::apply_slot_loot_bonus(
-                &mut loot_table,
-                bonus,
-                entry.facts.occurrence,
-                |key| admission.reward_table().is_daily_boss_equipment(key),
-            );
-        }
-        // The captured reward principal is Global's highest-damage loot owner. Read its live
-        // session value only after the current fence has been requalified; party members' stamina
-        // affects their XP, not ownership of this corpse's loot.
-        let live_stamina = admission
-            .states
-            .spell_states
-            .lock()
-            .await
-            .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
-        apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
-        // SV09: two full rolls for Double Loot; Reward System loot is excluded.
-        if entry.boss_reward.is_none() {
-            apply_scheduled_loot_rate(&mut loot_table, self.event_rates.loot);
-        }
-        if !loot_table.entries.is_empty() {
-            let Ok(active) = admission
-                .root
-                .wealth_duplex_active(admission.character, self.fence.character_id)
-                .await
-            else {
-                return SettleReport {
-                    verdict: SettleVerdict::Retry,
-                    no_progression: false,
-                };
-            };
-            if active
-                && let Ok(base) = admission.reward_table().row(&entry.creature)
-                && !self
-                    .wealth_duplex(&entry, &row, &base, &mut loot_table, inflight_before)
-                    .await
-            {
-                return SettleReport {
-                    verdict: SettleVerdict::Retry,
-                    no_progression: false,
-                };
+        let retained_fiendish_loot = entry
+            .fiendish_sliver
+            .as_ref()
+            .and_then(|fiendish| fiendish.prepared.get());
+        let loot_table = if let Some(retained) = retained_fiendish_loot {
+            retained.clone()
+        } else {
+            let mut loot_table = row.loot_table.clone();
+            if let Some(race) = &row.race {
+                let bonus = entry
+                    .talisman
+                    .get()
+                    .map_or(0, |snapshot| snapshot.bonuses(race.key())[2]);
+                apply_talisman_loot_bonus(&mut loot_table, bonus);
             }
-        }
-        super::quest_death_loot::append(&mut loot_table, &entry);
-        // Crystal monster.cpp:2526-2540 inserts a selected stack directly into the corpse.
-        if row.corpse_item.is_some()
-            && let Some(sliver) = &entry.fiendish_sliver
-        {
-            loot_table.entries.push(sliver.clone());
-        }
+            if entry.boss_reward.is_none() {
+                let bonus = entry
+                    .boss_slot_bonuses
+                    .get()
+                    .and_then(|v| {
+                        v.iter()
+                            .find(|(c, _)| c == entry.facts.principal.character.as_bytes())
+                    })
+                    .map_or(0, |(_, b)| *b);
+                super::boss_encounter::apply_slot_loot_bonus(
+                    &mut loot_table,
+                    bonus,
+                    entry.facts.occurrence,
+                    |key| admission.reward_table().is_daily_boss_equipment(key),
+                );
+            }
+            // The captured reward principal is Global's highest-damage loot owner. Read its live
+            // session value only after the current fence has been requalified; party members' stamina
+            // affects their XP, not ownership of this corpse's loot.
+            let live_stamina = admission
+                .states
+                .spell_states
+                .lock()
+                .await
+                .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
+            apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
+            // SV09: two full rolls for Double Loot; Reward System loot is excluded.
+            if entry.boss_reward.is_none() {
+                apply_scheduled_loot_rate(&mut loot_table, self.event_rates.loot);
+            }
+            if !loot_table.entries.is_empty() {
+                let Ok(active) = admission
+                    .root
+                    .wealth_duplex_active(admission.character, self.fence.character_id)
+                    .await
+                else {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                };
+                if active
+                    && let Ok(base) = admission.reward_table().row(&entry.creature)
+                    && !self
+                        .wealth_duplex(&entry, &row, &base, &mut loot_table, inflight_before)
+                        .await
+                {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                }
+            }
+            super::quest_death_loot::append(&mut loot_table, &entry);
+            // Crystal monster.cpp:2526-2540 inserts a selected stack directly into the corpse.
+            if row.corpse_item.is_some()
+                && let Some(fiendish) = &entry.fiendish_sliver
+            {
+                loot_table.entries.push(fiendish.sliver.clone());
+                let _ = fiendish.prepared.set(loot_table.clone());
+            }
+            loot_table
+        };
         // Ordinary stamina/event/duplex transforms must never remove or multiply
         // the one-shot tutorial reward. Its arm is consumed by the atomic MINT.
         let Ok((loot_table, tutorial_corruptor)) = admission
@@ -4102,7 +4129,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         // The cached first table can contain more ordinary rolls than this
         // retry's live modifiers reserved. Charge only its positive shortfall;
         // the existing take and extras are both released on every requeue/end.
-        if tutorial_corruptor.is_some()
+        if (tutorial_corruptor.is_some() || retained_fiendish_loot.is_some())
             && let Some(reference) = row.loot_table_ref.as_ref()
             && let Ok(plan) =
                 plan_creature_loot(loot_plan_seed(entry.facts.death), reference, &loot_table)

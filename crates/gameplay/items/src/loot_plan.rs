@@ -23,6 +23,10 @@ pub const COMBAT01_LOOT_PLAN_BYTES_MAX: usize = 4096 * 1792 + 2048;
 /// loot factor.
 pub const COMBAT01_LOOT_RNG_DRAWS_MAX: usize = 8192;
 
+// The one-shot direct drop keeps its MINT cause across ordinary table changes.
+// Successful ordinary plans cannot reach this ordinal, even with split stacks.
+const DIRECT_CORPSE_DROP_MINT_ORDINAL: u32 = u32::MAX;
+
 const DAILY_BOOSTED_EXTRA_ROLLS_MAX: u8 = 3;
 // Reserve a disjoint ordinal range for each additional stack, including across boosted rolls.
 const STACK_MINT_ORDINAL_STRIDE: u32 =
@@ -83,7 +87,7 @@ pub use oteryn_gameplay_domain::domain::loot_data::{
 pub struct LootPlanEntry {
     pub item: LootDefinitionRef,
     pub quantity: u32,
-    /// The original roll's ordinal for the first stack, or a derived MINT ordinal for a split.
+    /// The MINT ordinal of an ordinary roll, a split stack, or the one-shot direct drop.
     pub draw_ordinal: u32,
     pub purpose_key: String,
     /// Index of the parent in this flattened, parent-before-child plan; None means corpse.
@@ -410,7 +414,21 @@ fn roll_entries(
         state.ordinal += 1;
         if entry.details.direct_corpse_drop {
             if roll == 0 {
-                state.push_instances(entry, 0, draw_ordinal, parent, &mut placement_ordinal)?;
+                if parent.is_some()
+                    || state
+                        .entries
+                        .iter()
+                        .any(|entry| entry.draw_ordinal == DIRECT_CORPSE_DROP_MINT_ORDINAL)
+                {
+                    return Err(LootPlanError::UnsupportedAlgorithm);
+                }
+                state.push_instances(
+                    entry,
+                    0,
+                    DIRECT_CORPSE_DROP_MINT_ORDINAL,
+                    None,
+                    &mut placement_ordinal,
+                )?;
             }
             continue;
         }
@@ -789,6 +807,50 @@ mod tests {
         } else {
             0
         }
+    }
+
+    #[test]
+    fn fiendish_sliver_mint_ordinal_survives_wealth_duplex_expiry()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::creature_reward::{
+            CreatureRewardTable, LootTablesSection,
+        };
+
+        let profiles = serde_json::from_slice(include_bytes!(
+            "../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &profiles,
+        )?;
+        let rewards = CreatureRewardTable::from_pin(&profiles, Some(&section));
+        let rat = rewards
+            .row("oteryn:creature.rat")
+            .map_err(|error| error.as_str())?;
+        let reference = rat.loot_table_ref.as_ref().ok_or("Rat loot table")?;
+        let mut duplex = rat.loot_table.clone();
+        duplex.entries.extend_from_slice(&rat.loot_table.entries);
+        let death = (1..=4096)
+            .map(|generation| LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, generation))
+            .find(|&death| {
+                plan_creature_loot(death, reference, &duplex)
+                    .is_ok_and(|plan| plan.entries.is_empty())
+            })
+            .ok_or("death where all ordinary draws miss")?;
+        let sliver = rewards.forge_sliver().ok_or("Fiendish sliver")?;
+        let count = u32::from(oteryn_gameplay_domain::domain::forge_creature::slivers(2));
+        let plan = |mut table: LootTableDefinition| {
+            table.entries.push(LootTableEntry {
+                min_count: count,
+                max_count: count,
+                ..sliver.clone()
+            });
+            plan_creature_loot(death, reference, &table)
+        };
+        let first = plan(duplex)?;
+        assert_eq!(first.entries.len(), 1);
+        assert_eq!(first, plan(rat.loot_table.clone())?);
+        Ok(())
     }
 
     #[test]
