@@ -74,17 +74,38 @@ async fn hunt(client: &mut DevClientSession, world: &BundleWorld) -> TestResult 
     .ok_or("C15 client no route to an unprotected rat")?;
     walk(client, world, &path).await?;
     let at = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Creature
-                    && entity.position.floor == at.floor
-                    && entity.position.x.abs_diff(at.x).max(entity.position.y.abs_diff(at.y)) <= 1
-            })
-        })
-        .copied()
-        .ok_or("C15 client rat reached without an adjacent creature")?;
+    let target = row_timing::wait(async {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+        loop {
+            if let Some(target) = client
+                .world_entities()
+                .and_then(|entities| {
+                    entities.iter().find(|entity| {
+                        entity.kind == oteryn_dev_client::EntityKind::Creature
+                            && entity.position.floor == at.floor
+                            && entity
+                                .position
+                                .x
+                                .abs_diff(at.x)
+                                .max(entity.position.y.abs_diff(at.y))
+                                <= 1
+                    })
+                })
+                .copied()
+            {
+                return TestResult::Ok(target);
+            }
+            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+            if remaining.is_zero() {
+                return Err("C15 client rat reached without an adjacent creature".into());
+            }
+            match client.session_mut().wait_for_events(remaining).await {
+                Ok(_) | Err(oteryn_dev_client::SessionError::Timeout("pushed domain event")) => {}
+                Err(error) => return Err(error.into()),
+            }
+        }
+    })
+    .await?;
     let attack = client.session_mut().attack_target(Some(&target.entity)).await?;
     if attack.disposition != AttackIntentDisposition::Ok {
         return Err(format!("C15 client ATTACK refused: {attack:?}").into());
@@ -137,7 +158,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     general_stats::record_selection("c15-before.bin", &before_payload, general_stats::selected(&client))?;
     capture("c15-before.bin", &before_payload);
 
-    tokio::time::sleep(Duration::from_secs(2)).await;
     hunt(&mut client, world).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let (after, after_payload) = loop {
@@ -157,7 +177,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     drop(client);
 
     verdict::Harness::global().bounded_wait(tokio::time::Instant::now() + Duration::from_secs(780), "offline-recovery");
-    tokio::time::sleep(Duration::from_secs(780)).await;
+    row_timing::wait(tokio::time::sleep(Duration::from_secs(780))).await;
     let mut fresh = connect_world(clients, 0xc8).await?;
     let (recovered, recovered_payload) = progress(&mut fresh).await?;
     if recovered.xp != after.xp

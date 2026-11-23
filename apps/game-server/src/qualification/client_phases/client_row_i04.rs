@@ -12,13 +12,16 @@ const WRITTEN: u32 = 2834;
 const REWRITABLE: u32 = 2817;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
-    match result.unwrap_or_else(|_| Err("I04 client capture timed out".into())) {
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
+    match result.unwrap_or_else(|error| Err(error.into())) {
         Ok(()) => evidence(
             "e2e_all scenario=I04.client status=PASS evidence=mail-write-once-too-long-and-rewrite",
         ),
         Err(error) => evidence(&format!(
-            "e2e_all scenario=I04.client status=FAIL evidence={error}"
+            "e2e_all scenario=I04.client status=FAIL evidence={error}{}",
+            verdict::classify(error.as_ref()).suffix("I04.client/mail-write")
         )),
     }
 }
@@ -159,6 +162,37 @@ async fn write(client: &mut DevClientSession, handle: u64, text: String) -> Test
     Ok(reply.payload)
 }
 
+async fn after_first_write(
+    payload: &[u8],
+    wait: impl std::future::Future<Output = TestResult>,
+) -> TestResult {
+    if payload != [mail::MailOutcome::TextWritten as u8] {
+        return Err(format!("first mail write expected TextWritten, observed {payload:?}").into());
+    }
+    wait.await
+}
+
+#[tokio::test]
+async fn first_write_refusal_skips_the_inventory_wait() -> TestResult {
+    let polled = std::cell::Cell::new(false);
+    let wait = || async {
+        polled.set(true);
+        Ok(())
+    };
+    let error = after_first_write(&[mail::MailOutcome::Rejected as u8], wait())
+        .await
+        .err()
+        .ok_or("refused write reached the inventory wait")?;
+    assert!(matches!(
+        verdict::classify(error.as_ref()),
+        verdict::Cause::Assertion
+    ));
+    assert!(!polled.get());
+    after_first_write(&[mail::MailOutcome::TextWritten as u8], wait()).await?;
+    assert!(polled.get());
+    Ok(())
+}
+
 fn capture(name: &str, bytes: &[u8]) {
     let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         return;
@@ -203,7 +237,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "One inscription: żółw 🐢".into(),
     )
     .await?;
-    wait_units(&mut client, written, 1).await?;
+    after_first_write(&first, async { wait_units(&mut client, written, 1).await }).await?;
     let refused = write(&mut client, once_item.handle.get(), "second".into()).await?;
     let rewrite_item = client
         .inventory()
@@ -218,7 +252,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let too_long = write(&mut client, rewrite_item.handle.get(), "x".repeat(7_996)).await?;
     let rewrite_first = write(&mut client, rewrite_item.handle.get(), "first".into()).await?;
     let rewrite_second = write(&mut client, rewrite_item.handle.get(), "second".into()).await?;
-    if first != [2] || too_long != [10] || rewrite_first != [2] || refused == [2] {
+    if too_long != [10] || rewrite_first != [2] || refused == [2] {
         return Err(format!(
             "I04 unexpected mail replies: first={first:?} refused={refused:?} too_long={too_long:?} rewrite_first={rewrite_first:?}"
         )

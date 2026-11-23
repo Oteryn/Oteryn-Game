@@ -75,6 +75,7 @@ pub(crate) fn indexed(
     // Each row owns its future on the heap; hundreds of inline row temporaries
     // otherwise accumulate in journeys' debug-build poll frame.
     Box::pin(async move {
+        let _row_timing = row_timing::enter(scenario);
         let mut watch = Watch::new(scenario, Harness::global());
         watch.scenario = Some(scenario);
         let result = watch.run(None, "indexed row", journey).await;

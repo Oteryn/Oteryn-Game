@@ -14,17 +14,6 @@ const I01: &str = "I01";
 const I16: &str = "I16";
 pub(super) const COVERED_ROWS: &[&str] = &[I01, I16];
 
-fn world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )
-}
-
 async fn return_to_town(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<()> {
     let from = tile(client.world_spatial().actor_position)?;
     let path = route_avoiding(world, from, |at| at == TOWN, route_available)
@@ -35,8 +24,8 @@ async fn return_to_town(client: &mut DevClientSession, world: &BundleWorld) -> T
 pub(super) async fn relogin_starter(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
+    world: &BundleWorld,
 ) -> TestResult<()> {
-    let world = world(clients)?;
     let from = tile(client.world_spatial().actor_position)?;
     let basis = spatial_basis::current(client)?;
     // Quentin wanders up to two tiles from (32368, 32240, 7), which includes the
@@ -109,26 +98,24 @@ fn report(id: &str, step: &str, started: std::time::Instant, result: &TestResult
 pub(super) async fn run(
     mut client: DevClientSession,
     clients: &SeamClients<'_>,
+    generation: &QualificationWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
 ) -> DevClientSession {
-    let world = world(clients);
+    let world = &generation.bundle;
+    let row_timing = row_timing::enter(I01);
     let mut step = "ground-inventory";
     let started = std::time::Instant::now();
-    let result = match &world {
-        Ok(world) => inventory_journey(&mut client, clients, world, &mut step).await,
-        Err(error) => Err(error.to_string().into()),
-    };
+    let result = inventory_journey(&mut client, clients, generation, spawns, &mut step).await;
     report(I01, step, started, &result);
+    drop(row_timing);
 
+    let row_timing = row_timing::enter(I16);
     let mut step = "reach-imbuement-shrine";
     let started = std::time::Instant::now();
-    let result = match &world {
-        Ok(world) => imbuement_journey(&mut client, clients, world, &mut step).await,
-        Err(error) => Err(error.to_string().into()),
-    };
+    let result = imbuement_journey(&mut client, clients, world, &mut step).await;
     report(I16, step, started, &result);
-    if let Ok(world) = world
-        && let Err(error) = return_to_town(&mut client, world).await
-    {
+    drop(row_timing);
+    if let Err(error) = return_to_town(&mut client, world).await {
         evidence(&format!(
             "E2EF3_OBSERVATION return-to-town=failed observed={error}"
         ));
@@ -213,7 +200,7 @@ async fn await_projection<T>(
                 format!("projection deadline; inventory={inventory}; views={views:?}").into(),
             );
         }
-        client.service_liveness(Duration::from_millis(25)).await?;
+        row_timing::wait(client.service_liveness(Duration::from_millis(25))).await?;
         client.take_events();
     }
 }
@@ -344,9 +331,11 @@ async fn ground_round_trip(client: &mut DevClientSession, rope: NonZeroU32) -> T
 async fn inventory_journey(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    world: &BundleWorld,
+    generation: &QualificationWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
     step: &mut &'static str,
 ) -> TestResult<()> {
+    let world = &generation.bundle;
     let index = provisioning::item_index()?;
     ground_round_trip(client, provisioning::item_reference(&index, 3003)?).await?;
 
@@ -356,9 +345,7 @@ async fn inventory_journey(
     let bags = provisioning::item_reference(&index, 2855)?;
     let coins = provisioning::item_reference(&index, 3031)?;
     if full_e2ef3_e2ei_d::carried_coin_count(&quantities(client)?, coins) < 38 {
-        let (metadata, hunt_world) = full_e2ef3_e2ei_d::load_hunt_world(clients)?;
-        full_e2ef3_e2ei_d::hunt_for_carried_gold(client, hunt_world, &metadata.spawns, coins, 38)
-            .await?;
+        full_e2ef3_e2ei_d::hunt_for_carried_gold(client, generation, spawns, coins, 38).await?;
     }
     full_e2ef3_e2ei_d::buy_from_lubo(client, world, bags, coins, 6, 6).await?;
     assert_counts(entries(client)?, bags, &[1; 6])?;
@@ -463,7 +450,7 @@ async fn inventory_journey(
     }
 
     *step = "relogin-quantities";
-    relogin_starter(client, clients).await?;
+    relogin_starter(client, clients, world).await?;
     if quantities(client)? != before {
         return Err(format!(
             "root quantities expected={before:?}; observed={:?}",
@@ -579,7 +566,7 @@ async fn imbuement_journey(
     }
 
     *step = "relogin-imbuement";
-    relogin_starter(client, clients).await?;
+    relogin_starter(client, clients, world).await?;
     assert_counts(entries(client)?, sword, &[1])?;
     let target = matching(entries(client)?, sword)?;
     let reloaded = inspect_instance(client, target).await?;

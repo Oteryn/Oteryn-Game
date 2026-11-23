@@ -38,6 +38,28 @@ const WOLF_STEP_DESTINATION: TilePos = TilePos {
     floor: -7,
 };
 
+#[derive(Debug)]
+struct DocumentRefusal(String);
+
+impl std::fmt::Display for DocumentRefusal {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for DocumentRefusal {}
+
+fn document_refusal(message: String) -> Box<dyn std::error::Error> {
+    Box::new(DocumentRefusal(message))
+}
+
+fn stop_on_document_refusal(result: TestResult) -> TestResult<TestResult> {
+    match result {
+        Err(error) if error.is::<DocumentRefusal>() => Err(error),
+        result => Ok(result),
+    }
+}
+
 fn report(
     row: &str,
     started: std::time::Instant,
@@ -51,8 +73,17 @@ fn report(
         )),
         Some(error) => {
             let suffix = verdict::classify(error).suffix(&format!("{row}/{action}"));
+            let detail =
+                error
+                    .downcast_ref::<DocumentRefusal>()
+                    .map_or_else(String::new, |refusal| {
+                        format!(
+                            " evidence={}",
+                            refusal.0.split_whitespace().collect::<Vec<_>>().join("-")
+                        )
+                    });
             evidence(&format!(
-                "e2e_all scenario={row}.full status=FAIL seconds={seconds:.3}{suffix}"
+                "e2e_all scenario={row}.full status=FAIL seconds={seconds:.3}{detail}{suffix}"
             ));
             evidence(&format!(
                 "E2EF3_GAP row={row} unexecuted={action} observed={error}"
@@ -64,38 +95,22 @@ fn report(
 pub(super) async fn run(
     mut client: DevClientSession,
     clients: &SeamClients<'_>,
+    world: &BundleWorld,
 ) -> TestResult<DevClientSession> {
     let started = std::time::Instant::now();
-    let world = (|| {
-        load_world(
-            std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
-            &serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?,
-            WorldId::decode(&clients.world)?,
-            ChannelId::decode(&clients.channel)?,
-        )
-    })();
-    let world = match world {
-        Ok(world) => world,
-        Err(error) => {
-            report(I04, started, "write-once-transform", Some(error.as_ref()));
-            report(
-                I09,
-                started,
-                "approach-unbound-nonhouse-furniture",
-                Some(error.as_ref()),
-            );
-            return Ok(client);
-        }
-    };
+    let row_timing = row_timing::enter(I09);
     let mut action = "approach-unbound-nonhouse-furniture";
     let result = furniture(&mut client, world, &mut action).await;
     report(I09, started, action, result.as_ref().err().map(Box::as_ref));
+    drop(row_timing);
 
     let started = std::time::Instant::now();
+    let row_timing = row_timing::enter(I04);
     let mut action = "write-once-transform";
     let mut logged_out = false;
     let result = documents(&mut client, clients, world, &mut action, &mut logged_out).await;
     report(I04, started, action, result.as_ref().err().map(Box::as_ref));
+    drop(row_timing);
     if logged_out {
         result?;
     }
@@ -151,7 +166,7 @@ async fn visible_item(
                 format!("tile {at:?} expected appearance {appearance}, observed {cell:?}").into(),
             );
         }
-        client.service_liveness(Duration::from_millis(25)).await?;
+        row_timing::wait(client.service_liveness(Duration::from_millis(25))).await?;
         client.take_events();
     }
 }
@@ -261,7 +276,7 @@ async fn furniture(
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("no rotation map delta at {CHAIR:?}").into());
         }
-        client.service_liveness(Duration::from_millis(25)).await?;
+        row_timing::wait(client.service_liveness(Duration::from_millis(25))).await?;
     }
 }
 
@@ -292,7 +307,7 @@ async fn wait_carried(
         if observed.is_ok() || tokio::time::Instant::now() >= deadline {
             return observed;
         }
-        client.service_liveness(Duration::from_millis(25)).await?;
+        row_timing::wait(client.service_liveness(Duration::from_millis(25))).await?;
         client.take_events();
     }
 }
@@ -344,9 +359,13 @@ async fn pick_up(
         })
         .await?;
     if reply.status != CommandStatus::Accepted || reply.outcome != ItemMoveOutcome::Moved {
-        return Err(format!("ground pickup {appearance} at {at:?}: {reply:?}").into());
+        return Err(document_refusal(format!(
+            "ground pickup {appearance} at {at:?}: {reply:?}"
+        )));
     }
-    wait_carried(client, definition).await.map(Some)
+    row_timing::wait(wait_carried(client, definition))
+        .await
+        .map(Some)
 }
 
 async fn write(
@@ -369,7 +388,9 @@ async fn write(
         )
         .await?;
     if reply.status != CommandStatus::Accepted || reply.payload != [expected as u8] {
-        return Err(format!("MAIL expected {expected:?}, observed {reply:?}").into());
+        return Err(document_refusal(format!(
+            "MAIL expected {expected:?}, observed {reply:?}"
+        )));
     }
     Ok(())
 }
@@ -393,13 +414,16 @@ async fn read(
             &payload,
         )
         .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(document_refusal(format!(
+            "inscription read refused: {reply:?}"
+        )));
+    }
     let observed = inscription::Reply::decode(&reply.payload);
-    if reply.status != CommandStatus::Accepted
-        || !observed.as_ref().is_some_and(|value| {
-            value.text == expected && value.max_length == 1023 && value.writable == writable
-        })
-    {
-        return Err(format!("inscription expected text {expected:?}, limit 1023, writable {writable}; observed status {:?} {observed:?}", reply.status).into());
+    if !observed.as_ref().is_some_and(|value| {
+        value.text == expected && value.max_length == 1023 && value.writable == writable
+    }) {
+        return Err(format!("inscription expected text {expected:?}, limit 1023, writable {writable}; observed {observed:?}").into());
     }
     Ok(())
 }
@@ -437,6 +461,23 @@ async fn ground_or_trade<T>(
         Some(item) => Ok(item),
         None => trade.await,
     }
+}
+
+#[test]
+fn document_refusal_aborts_before_the_next_journey_step() -> TestResult {
+    let refusal = document_refusal("MAIL Rejected".into());
+    let error = stop_on_document_refusal(Err(refusal))
+        .err()
+        .ok_or("definitive refusal did not stop the journey")?;
+    assert_eq!(error.to_string(), "MAIL Rejected");
+    assert!(matches!(
+        verdict::classify(error.as_ref()),
+        verdict::Cause::Assertion
+    ));
+    let failure = stop_on_document_refusal(Err("inventory delta missing".into()))?;
+    assert!(failure.is_err());
+    stop_on_document_refusal(Ok(()))??;
+    Ok(())
 }
 
 #[tokio::test]
@@ -532,7 +573,7 @@ async fn write_document(
 
     *action = "write-once-transform";
     write(client, handle, SEALED, mail::MailOutcome::TextWritten).await?;
-    let transformed = wait_carried(client, sealed).await?;
+    let transformed = row_timing::wait(wait_carried(client, sealed)).await?;
     if transformed != handle {
         return Err(
             format!("write-once transform changed handle {handle} to {transformed}").into(),
@@ -574,7 +615,9 @@ async fn documents(
     let once = provisioning::item_reference(&definitions, 2818)?;
     let sealed = provisioning::item_reference(&definitions, 2834)?;
 
-    let write_once = write_document(client, world, action, &definitions, once, sealed).await;
+    let write_once = stop_on_document_refusal(
+        write_document(client, world, action, &definitions, once, sealed).await,
+    )?;
     let once_step = *action;
 
     *action = "write-read-rewritable";
@@ -583,6 +626,7 @@ async fn documents(
         rewrite_parchment(client, world, &definitions, rewritable).await
     }
     .await;
+    let rewrite = stop_on_document_refusal(rewrite)?;
     let writes = [(once_step, write_once), ("write-read-rewritable", rewrite)];
     if writes.iter().all(|(_, result)| result.is_err()) {
         return document_outcome(action, writes);

@@ -3541,6 +3541,7 @@ const IMBUE_ACTIONS: &[&str] = &[
 
 async fn continuation_rows(clients: &SeamClients<'_>) {
     for (id, actions) in [("S08", PVP_ACTIONS), ("P21", IMBUE_ACTIONS)] {
+        let _row_timing = row_timing::enter(id);
         let mut row = JourneyRow::new(id, actions);
         let watch = row.actions.watch();
         let mut connections = [None, None];
@@ -3651,10 +3652,10 @@ async fn fresh_player(
     Ok(())
 }
 async fn release_when_unlocked(client: &mut DevClientSession, budget: Duration) -> TestResult {
-    acquisition_step(
+    row_timing::wait(acquisition_step(
         "logout-lock-wait",
         release_when_unlocked_inner(client, budget),
-    )
+    ))
     .await
 }
 
@@ -4362,11 +4363,15 @@ async fn pvp_journey(
     }
     row.pass("lethal-frag");
     let until = tokio::time::Instant::now() + Duration::from_secs(65);
-    while tokio::time::Instant::now() < until {
-        pvp_poll(a, b).await?;
-        a.take_events();
-        b.take_events();
-    }
+    row_timing::wait(async {
+        while tokio::time::Instant::now() < until {
+            pvp_poll(a, b).await?;
+            a.take_events();
+            b.take_events();
+        }
+        TestResult::Ok(())
+    })
+    .await?;
     let locked = a.session_mut().logout().await?;
     if !matches!(
         locked.result,
