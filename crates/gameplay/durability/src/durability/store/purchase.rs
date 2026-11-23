@@ -34,14 +34,16 @@ impl DurabilityRoot {
         })).await?
     }
 
-    /// Native reservations identify unanswered item purchases. Known legacy
-    /// item quotes also supply exact bindings from before reservations existed.
-    pub async fn unanswered_store_item_purchases(
+    /// Select unfinished purchases, including legacy journals identified by an exact quote.
+    /// Removed-offer recovery only considers the supplied bindings and includes paid deliveries
+    /// that stopped before committing the native receipt.
+    pub async fn pending_store_item_purchases(
         &self,
         account: [u8; 16],
         character: [u8; 16],
         world: [u8; 16],
         legacy_bindings: Vec<Vec<u8>>,
+        removed_only: bool,
     ) -> Result<Vec<super::PendingStorePurchase>, StoreDurabilityError> {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -49,14 +51,20 @@ impl DurabilityRoot {
                 "SELECT p.purchase_request_id,p.binding_digest
                  FROM store_purchase_requests p JOIN game_character_roots c USING(character_id)
                  WHERE p.account_id=encode($1,'hex')::uuid AND p.character_id=encode($2,'hex')::uuid
-                   AND c.world_id=encode($3,'hex')::uuid AND p.state=1
-                   AND (p.binding_digest=ANY($4::bytea[]) OR EXISTS (
-                     SELECT 1 FROM game_store_item_reservations r
-                     WHERE r.purchase_request_id=p.purchase_request_id AND r.character_id=p.character_id
-                   ))
+                   AND c.world_id=encode($3,'hex')::uuid
+                   AND (
+                     (p.state=1 AND (p.binding_digest=ANY($4::bytea[]) OR (NOT $5 AND EXISTS (
+                         SELECT 1 FROM game_store_item_reservations r
+                         WHERE r.purchase_request_id=p.purchase_request_id AND r.character_id=p.character_id
+                     ))))
+                     OR ($5 AND p.state=2 AND p.binding_digest=ANY($4::bytea[])
+                         AND convert_from(p.answer,'UTF8')::jsonb ->> 'result' = 'ACCEPTED'
+                         AND NOT EXISTS (SELECT 1 FROM store_delivery_receipts r
+                             WHERE r.operation_id=(convert_from(p.answer,'UTF8')::jsonb -> 'operation_ids' ->> 0)::uuid))
+                   )
                    AND NOT EXISTS(SELECT 1 FROM game_store_purchase_retries r WHERE r.retry_id=p.purchase_request_id)
-                 ORDER BY p.created_at,p.purchase_request_id LIMIT 20",
-            ).bind(account.as_slice()).bind(character.as_slice()).bind(world.as_slice()).bind(legacy_bindings)
+                 ORDER BY (p.binding_digest=ANY($4::bytea[])) DESC,p.created_at,p.purchase_request_id LIMIT 20",
+            ).bind(account.as_slice()).bind(character.as_slice()).bind(world.as_slice()).bind(legacy_bindings).bind(removed_only)
                 .fetch_all(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(rows.into_iter().map(|(purchase_id, binding_digest)| super::PendingStorePurchase {

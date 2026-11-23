@@ -48,7 +48,12 @@ fn conforming_offers<'a>(
 }
 
 #[derive(Deserialize)]
+struct PlatformUnit {
+    unit_kind: String,
+}
+#[derive(Deserialize)]
 struct PlatformOffer {
+    units: Vec<PlatformUnit>,
     offer_key: String,
     currency: String,
     unit_price: String,
@@ -99,7 +104,11 @@ fn active_platform_import_covers_every_dispatch_quote() -> TestResult {
             assert!(quoted.insert(&offer.key));
         }
     }
-    assert_eq!(quoted.len(), active.offers.len());
+    let game_offers = active.offers.iter().filter(|offer| {
+        assert!(!offer.units.is_empty());
+        !offer.units.iter().all(|unit| unit.unit_kind == "PREMIUM_TIME")
+    });
+    assert_eq!(quoted.len(), game_offers.count());
     Ok(())
 }
 

@@ -20,7 +20,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-OUT = ROOT / "rulesets/economy/store/catalogue.json"
+STORE = ROOT / "rulesets/economy/store"
+OUT = STORE / "catalogue.json"
 PLATFORM_OUT = OUT.with_name("platform-catalogue.json")
 PROFILES = ROOT / "content/items/definitions/spell-native-profiles.json"
 CANARY_COMMIT = "52550d5e"
@@ -258,12 +259,12 @@ def build(lua: str) -> dict:
     return with_expansion(catalogue)
 
 
-def platform_catalogue(catalogue: dict) -> bytes:
+def platform_catalogue(catalogue: dict, platform_base: dict | None = None) -> bytes:
     """Project all enabled quotes onto Platform's exact S-5 import shape."""
     catalogues = [
         catalogue,
         *(
-            json.loads(OUT.with_name(f"{name}.json").read_bytes())
+            json.loads((STORE / f"{name}.json").read_bytes())
             for name in ("cosmetics", "hirelings")
         ),
     ]
@@ -276,20 +277,19 @@ def platform_catalogue(catalogue: dict) -> bytes:
         ),
         key=lambda row: row["key"],
     )
-    if len({row["key"] for row in current_offers}) != len(current_offers):
-        raise ValueError("duplicate offer across Store catalogues")
     offers = []
     for row in current_offers:
-        kind = "ITEM"
-        product = "item_grant"
+        kind = "COSMETIC"
+        product = "character_service"
         revision = "1"
         grant = row.get("unlock_key", row["key"])
         if item := row.get("item"):
+            kind = "ITEM"
+            product = "item_grant"
             grant = item["key"]
             revision = item["revision"].removeprefix("definition-r")
         elif preview := row.get("preview"):
             if preview["kind"] in (2, 3):
-                kind = "COSMETIC"
                 product = "outfit_unlock" if preview["kind"] == 2 else "mount_unlock"
         offers.append(
             {
@@ -310,19 +310,27 @@ def platform_catalogue(catalogue: dict) -> bytes:
                 ],
             }
         )
+    if platform_base is not None:
+        if platform_base["contract_version"] != 1:
+            raise ValueError("expected an active Platform S-5 catalogue")
+        offers.extend(
+            offer
+            for offer in platform_base["offers"]
+            if offer["units"]
+            and all(unit["unit_kind"] == "PREMIUM_TIME" for unit in offer["units"])
+        )
+    if len({offer["offer_key"] for offer in offers}) != len(offers):
+        raise ValueError("duplicate offer across Store catalogues")
+    offers.sort(key=lambda offer: offer["offer_key"])
     return json.dumps(
         {"contract_version": 1, "offers": offers}, separators=(",", ":")
     ).encode()
 
 
-def check() -> list[str]:
+def check(platform_base: dict | None = None) -> list[str]:
     catalogue = json.loads(OUT.read_text(encoding="utf-8"))
     items = admitted_items()
     errors = []
-    if not PLATFORM_OUT.is_file() or PLATFORM_OUT.read_bytes() != platform_catalogue(
-        catalogue
-    ):
-        errors.append("Platform active catalogue needs regeneration")
     keys = [offer["key"] for offer in catalogue["offers"]]
     if keys != sorted(set(keys)) or not keys:
         errors.append("offer keys are not unique and sorted")
@@ -358,6 +366,11 @@ def check() -> list[str]:
                 errors.append(f"{offer['key']}: item not admitted with these charges")
         if not 0 < offer["price"] <= 100_000 or offer["currency"] != "TIBIA_COIN":
             errors.append(f"{offer['key']}: price or currency")
+    if not errors and (
+        not PLATFORM_OUT.is_file()
+        or PLATFORM_OUT.read_bytes() != platform_catalogue(catalogue, platform_base)
+    ):
+        errors.append("Platform active catalogue needs regeneration")
     return errors
 
 
@@ -366,6 +379,11 @@ def main() -> int:
     parser.add_argument("--canary", type=Path)
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--refresh-owner-offers", action="store_true")
+    parser.add_argument(
+        "--platform-base",
+        type=Path,
+        help="active Platform S-5 import to retain Premium Time offers from",
+    )
     parser.add_argument("--crystal-extract", nargs=2, type=Path, metavar=("LUA", "XML"))
     args = parser.parse_args()
     if args.crystal_extract:
@@ -378,9 +396,18 @@ def main() -> int:
         catalogue = json.loads(OUT.read_text(encoding="utf-8"))
         catalogue = with_crystal_charged(with_expansion(catalogue), admitted_items())
         OUT.write_text(json.dumps(catalogue, indent=2) + "\n", encoding="utf-8")
-    if args.canary or args.refresh_owner_offers:
-        PLATFORM_OUT.write_bytes(platform_catalogue(json.loads(OUT.read_bytes())))
-    errors = check()
+    platform_base = (
+        json.loads(args.platform_base.read_bytes()) if args.platform_base else None
+    )
+    if (
+        args.canary
+        or args.refresh_owner_offers
+        or (args.platform_base and not args.check)
+    ):
+        PLATFORM_OUT.write_bytes(
+            platform_catalogue(json.loads(OUT.read_bytes()), platform_base)
+        )
+    errors = check(platform_base)
     for error in errors:
         print(error, file=sys.stderr)
     print("FAIL" if errors else "PASS")

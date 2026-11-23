@@ -662,7 +662,7 @@ async fn character(operator: &Operator, mut arguments: Arguments) -> Outcome {
                 tokio::select! {
                     report = publish => report,
                     () = oteryn_gameplay_dispatch::gameplay_transport::run_retained_store_reconciliation(
-                        &operator.root, client,
+                        &operator.root, client, generation,
                     ) => return Err(Failure::Unavailable("Store reconciliation ended".into())),
                 }
             } else {

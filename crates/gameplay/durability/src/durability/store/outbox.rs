@@ -52,6 +52,46 @@ impl DurabilityRoot {
         })).await?
     }
 
+    /// Preserve a lost decision before reporting it to Platform for manual review.
+    pub async fn record_store_restore_conflict(
+        &self,
+        operation: [u8; 16],
+        generation: u64,
+    ) -> Result<Option<i64>, StoreDurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let decided_at = sqlx::query_scalar(
+                "WITH latest AS (
+                     SELECT recovery_generation, predecessor_generation, reconciled_at
+                     FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1
+                 ), restored AS (
+                     SELECT reconciled_at FROM latest
+                     WHERE recovery_generation=$2::text::numeric AND predecessor_generation>0
+                 ), marked AS (
+                     INSERT INTO game_store_restore_conflicts(operation_id)
+                     SELECT encode($1,'hex')::uuid FROM restored ON CONFLICT DO NOTHING
+                 ) SELECT reconciled_at / 1000 FROM restored",
+            ).bind(operation.as_slice()).bind(generation.to_string()).fetch_optional(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(decided_at))
+        })).await?
+    }
+
+    pub async fn has_store_restore_conflict(
+        &self,
+        operation: [u8; 16],
+    ) -> Result<bool, StoreDurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let marked = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_store_restore_conflicts
+                 WHERE operation_id=encode($1,'hex')::uuid)",
+            ).bind(operation.as_slice()).fetch_one(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(marked))
+        })).await?
+    }
+
     /// Read committed delivery evidence even after the outbox was acknowledged.
     pub async fn read_retained_store_delivery(
         &self,

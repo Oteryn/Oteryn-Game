@@ -1,5 +1,5 @@
 //! Republish committed deliveries without an active buyer session.
-use super::{COSMETIC_CATALOGUE, PREDECESSOR_CATALOGUES, PLATFORM_REVISION, RetainedAnswer,
+use super::{COSMETIC_CATALOGUE, PREDECESSOR_CATALOGUES, RetainedAnswer,
     StoreClient, rules, uuid_bytes, uuid_text};
 use crate::durability::{
     DurabilityRoot, character_authority::ReconciledCharacterAuthority,
@@ -13,17 +13,18 @@ pub async fn run_store_receipt_outbox(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     client: StoreClient,
 ) {
-    run_reconciliation(root, Some(authority), client).await;
+    run_reconciliation(root, Some(authority), None, client).await;
 }
 
-/// Republish decisions retained in a restored database while gameplay nodes are stopped.
-pub async fn run_retained_store_reconciliation(root: &DurabilityRoot, client: StoreClient) {
-    run_reconciliation(root, None, client).await;
+/// Reconcile reopened native decisions while gameplay nodes are stopped.
+pub async fn run_retained_store_reconciliation(root: &DurabilityRoot, client: StoreClient, generation: u64) {
+    run_reconciliation(root, None, Some(generation), client).await;
 }
 
 async fn run_reconciliation(
     root: &DurabilityRoot,
     authority: Option<&ReconciledCharacterAuthority<'_, '_>>,
+    restore_generation: Option<u64>,
     mut client: StoreClient,
 ) {
     let mut tick = tokio::time::interval(Duration::from_secs(5));
@@ -34,7 +35,7 @@ async fn run_reconciliation(
         if authority.is_some() {
             publish_pending(root, &mut client).await;
         }
-        reconcile_platform_operations(root, authority, &mut client, &mut cursor).await;
+        reconcile_platform_operations(root, authority, restore_generation, &mut client, &mut cursor).await;
     }
 }
 
@@ -104,6 +105,7 @@ async fn publish_at_current_generation(
 async fn reconcile_platform_operations(
     root: &DurabilityRoot,
     authority: Option<&ReconciledCharacterAuthority<'_, '_>>,
+    restore_generation: Option<u64>,
     client: &mut StoreClient,
     cursor: &mut OperationCursor,
 ) {
@@ -112,7 +114,7 @@ async fn reconcile_platform_operations(
     };
     for pending in &page.entries {
         match pending.operation_kind {
-            OperationKind::Claim => { let _ = publish_claim(root, client, &pending.operation_id, authority.is_some()).await; }
+            OperationKind::Claim => { let _ = publish_claim(root, client, &pending.operation_id, authority.is_some(), restore_generation).await; }
             OperationKind::Deliver => {
                 let Ok(intent) = client.read_intent(OperationKind::Deliver, &pending.operation_id).await else {
                     continue;
@@ -130,7 +132,11 @@ async fn reconcile_platform_operations(
                         }
                     }
                     Ok(None) => {
-                        if let Some(authority) = authority {
+                        if let Some(generation) = restore_generation {
+                            let _ = publish_restore_conflict(root, client, &intent, generation).await;
+                        } else if let Some(authority) = authority
+                            && root.has_store_restore_conflict(operation).await.ok() == Some(false)
+                        {
                             let _ = recover_cosmetic(root, authority, client, intent).await;
                         }
                     }
@@ -155,24 +161,64 @@ pub(super) async fn remember_claim(root: &DurabilityRoot, intent: &DeliveryInten
     ).await.ok()
 }
 
-pub(super) async fn publish_claim(
+async fn publish_claim(
     root: &DurabilityRoot,
     client: &mut StoreClient,
     id: &str,
     discover: bool,
+    restore_generation: Option<u64>,
 ) -> Option<()> {
     let intent = client.read_intent(OperationKind::Claim, id).await.ok()?;
     if discover {
         remember_claim(root, &intent).await?;
     }
     let delivery_id = uuid_bytes(intent.delivery_operation_id.as_deref()?)?;
-    let (receipt, unit) = root.read_store_claim_source(delivery_id).await.ok()??;
+    let Some((receipt, unit)) = root.read_store_claim_source(delivery_id).await.ok()? else {
+        return publish_restore_conflict(root, client, &intent, restore_generation?).await;
+    };
     if intent.account_id != receipt.account_id || intent.entitlement_id != receipt.fulfilment_unit_id {
         return None;
     }
     publish_at_current_generation(root, client, &receipt, |client, generation| {
         client.claim_receipt(&intent, &receipt.character_id, &receipt.world_id, &unit, generation, &receipt.decided_at)
     }).await.ok()
+}
+
+async fn publish_restore_conflict(
+    root: &DurabilityRoot,
+    client: &mut StoreClient,
+    intent: &DeliveryIntent,
+    generation: u64,
+) -> Option<()> {
+    if !matches!(intent.unit_kind.as_str(), "ITEM" | "COSMETIC") {
+        return None;
+    }
+    // Start immediately before this Platform sequence number. Pending lists
+    // also contain new operations, which must never be decided by this path.
+    let previous = intent.source_revision.parse::<u64>().ok()?.checked_sub(1)?;
+    let cursor = if previous == 0 {
+        OperationCursor::default()
+    } else {
+        OperationCursor {
+            after_source_revision: previous.to_string(),
+            after_operation_id: intent.operation_id.clone(),
+        }
+    };
+    let states = client.reconcile(&cursor).await.ok()?;
+    if !states.operations.iter().any(|state| {
+        state.operation_id == intent.operation_id
+            && state.operation_kind == intent.operation_kind
+            && state.source_revision == intent.source_revision
+            && state.state == "REOPENED"
+            && state.receipt_digest.is_none()
+            && state.recovery_generation.is_none()
+    }) {
+        return None;
+    }
+    let operation = uuid_bytes(&intent.operation_id)?;
+    let decided_at = root.record_store_restore_conflict(operation, generation).await.ok()??;
+    let bytes = client.restore_conflict_receipt(intent, generation, decided_at).ok()?;
+    client.publish_receipt(&bytes).await.ok()
 }
 
 async fn recover_cosmetic(
@@ -220,7 +266,7 @@ async fn recover_cosmetic(
     {
         return None;
     }
-    let unit = if revision == PLATFORM_REVISION.as_str() { "COSMETIC" } else { "ITEM" };
+    let unit = super::platform_unit_kind(revision, offer)?;
     let answer = client.purchase(&PurchaseStoreOffer {
         purchase_request_id: uuid_text(&pending.purchase_id),
         account_id: source.account_id.clone(),

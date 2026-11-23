@@ -502,6 +502,29 @@ impl StoreClient {
         }), RECEIPT_REQUEST_BYTES)?;
         Ok(body.into_bytes())
     }
+    /// Resolve a reopened native operation whose local decision was lost to a restore.
+    pub fn restore_conflict_receipt(
+        &self,
+        intent: &DeliveryIntent,
+        generation: u64,
+        decided_at: i64,
+    ) -> Result<Vec<u8>, ProtocolError> {
+        if !matches!(
+            intent.operation_kind,
+            OperationKind::Deliver | OperationKind::Claim
+        ) || !matches!(intent.unit_kind.as_str(), "ITEM" | "COSMETIC")
+        {
+            return Err(ProtocolError::InvalidInput);
+        }
+        let body = self.body("receipt", serde_json::json!({
+            "issuer_authority":wire::ISSUER,"operation_kind":intent.operation_kind,"operation_id":intent.operation_id,
+            "binding_digest":intent.binding_digest,"outcome":"REJECTED","result_code":"STORE_OPERATION_CONFLICT",
+            "account_id":intent.account_id,"entitlement_id":intent.entitlement_id,"product_id":intent.product_id,
+            "product_version":intent.product_version,"recovery_generation":generation.to_string(),"decided_at":decided_at.to_string(),
+        }), RECEIPT_REQUEST_BYTES)?;
+        Ok(body.into_bytes())
+    }
+
     /// Publish the claim of the single unit evidenced by an atomic Game delivery.
     pub fn claim_receipt(
         &self,

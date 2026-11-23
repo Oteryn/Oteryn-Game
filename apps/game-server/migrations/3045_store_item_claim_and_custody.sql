@@ -1,3 +1,10 @@
+-- Store Inbox claims bind a complete item UUID. Depot searches still bind a
+-- four-byte definition ID and a one-byte retrieval mode.
+ALTER TABLE game_depot_search_retrieve_receipts
+    DROP CONSTRAINT game_depot_search_retrieve_receipts_request_check,
+    ADD CONSTRAINT game_depot_search_retrieve_receipts_request_check
+        CHECK (octet_length(request) IN (5, 16));
+
 -- A Store Inbox item retains the purchaser's custody through the existing item binding proofs.
 ALTER TABLE game_item_bindings
     DROP CONSTRAINT game_item_bindings_cause_check,
@@ -55,3 +62,12 @@ CREATE INDEX store_delivery_item_entitlement
     WHERE item_instance_id IS NOT NULL;
 CREATE INDEX store_claim_inbox_move ON game_item_loop_move_lines(item_instance_id,transaction_id)
     WHERE from_kind=6 AND to_kind=1;
+
+-- An operator can resolve a reopened operation whose Game decision was lost.
+-- A retained conflict keeps gameplay from applying it while Platform reviews it.
+CREATE TABLE game_store_restore_conflicts (
+    operation_id UUID PRIMARY KEY CHECK (game_character_is_uuid_v7(operation_id))
+);
+REVOKE ALL ON game_store_restore_conflicts FROM PUBLIC;
+GRANT SELECT ON game_store_restore_conflicts TO oteryn_game_runtime;
+GRANT SELECT, INSERT ON game_store_restore_conflicts TO oteryn_game_control;

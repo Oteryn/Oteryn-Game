@@ -40,10 +40,21 @@ pub(super) struct Ledger {
     pub(super) advertise_claims: bool,
     pub(super) advertise_deliveries: bool,
     pub(super) claims: usize,
+    pub(super) reopened: bool,
+    pub(super) restore_conflicts: Vec<String>,
+    pub(super) claim_reads: usize,
+    pub(super) slow_claim_reads: Option<Arc<SlowClaimReads>>,
     pub(super) receipt_ready: Arc<tokio::sync::Notify>,
     pub(super) malformed: bool,
     pub(super) fail_before_debit: bool,
     pub(super) answers: BTreeMap<String, (String, serde_json::Value)>,
+}
+
+#[derive(Default)]
+pub(super) struct SlowClaimReads {
+    pub(super) first_started: tokio::sync::Notify,
+    pub(super) release_first: tokio::sync::Notify,
+    pub(super) second_started: tokio::sync::Notify,
 }
 
 /// The Platform side of the existing Store port: balance, debit, order and delivery intent.
@@ -96,24 +107,51 @@ impl StoreTransport for FakePlatform {
                     answer
                 }
             }
-            Operation::ListPendingStoreOperationsV1 => {
+            Operation::ListPendingStoreOperationsV1 | Operation::ListStoreOperationStatesV1 => {
                 let entries = ledger.intents.values().filter(|intent| {
                     (intent["operation_kind"] == "CLAIM" && ledger.claims == 0
                         || intent["operation_kind"] == "DELIVER" && ledger.advertise_deliveries && ledger.receipts == 0)
-                        && request["after_source_revision"] == "0"
+                        && (intent["source_revision"].as_str().and_then(|value| value.parse::<u64>().ok()), intent["operation_id"].as_str())
+                            > (request["after_source_revision"].as_str().and_then(|value| value.parse::<u64>().ok()), request["after_operation_id"].as_str())
                 }).map(|intent| serde_json::json!({
                     "operation_kind":intent["operation_kind"], "operation_id":intent["operation_id"],
                     "source_revision":intent["source_revision"]
                 })).collect::<Vec<_>>();
-                serde_json::json!({"contract_version":1,"pending":entries})
+                if operation == Operation::ListStoreOperationStatesV1 {
+                    let entries: Vec<_> = entries.into_iter().map(|mut entry| {
+                        entry["state"] = if ledger.reopened { "REOPENED" } else { "PENDING" }.into();
+                        entry["receipt_digest"] = serde_json::Value::Null;
+                        entry["recovery_generation"] = serde_json::Value::Null;
+                        entry
+                    }).collect();
+                    serde_json::json!({"contract_version":1,"operations":entries})
+                } else {
+                    serde_json::json!({"contract_version":1,"pending":entries})
+                }
             }
             Operation::ReadStoreOperationIntentV1 => {
                 let operation = request["operation_id"].as_str().expect("operation");
-                ledger.intents[operation].clone()
+                let intent = ledger.intents[operation].clone();
+                if intent["operation_kind"] == "CLAIM"
+                    && let Some(slow) = ledger.slow_claim_reads.clone()
+                {
+                    ledger.claim_reads += 1;
+                    let first = ledger.claim_reads == 1;
+                    return Box::pin(async move {
+                        if first {
+                            slow.first_started.notify_one();
+                            slow.release_first.notified().await;
+                            Ok(platform_bytes(&intent))
+                        } else {
+                            slow.second_started.notify_one();
+                            std::future::pending().await
+                        }
+                    });
+                }
+                intent
             }
             Operation::PublishStoreDeliveryReceiptV1 => {
                 assert_eq!(request["binding_digest"], sha256(&platform_bytes(&ledger.intents[request["operation_id"].as_str().expect("operation")])));
-                assert_eq!(request["result_code"], "STORE_OK");
                 if ledger.fail_receipt {
                     return Box::pin(async { Err(TransportFailure::Unavailable) });
                 }
@@ -122,6 +160,14 @@ impl StoreTransport for FakePlatform {
                 {
                     return Box::pin(async { Err(TransportFailure::Conflict) });
                 }
+                if request["outcome"] == "REJECTED" {
+                    assert!(ledger.reopened);
+                    assert_eq!(request["result_code"], "STORE_OPERATION_CONFLICT");
+                    ledger.restore_conflicts.push(request["operation_kind"].as_str().expect("kind").into());
+                    ledger.receipt_ready.notify_one();
+                    return Box::pin(async { Ok(br#"{"contract_version":1,"result":"accepted"}"#.to_vec()) });
+                }
+                assert_eq!(request["result_code"], "STORE_OK");
                 if request["operation_kind"] == "CLAIM" {
                     assert_eq!(request["minted_quantity"], 1);
                     ledger.claims += 1;
@@ -130,7 +176,7 @@ impl StoreTransport for FakePlatform {
                     ledger.receipts += 1;
                     if ledger.advertise_claims {
                         let mut claim = ledger.intents[request["operation_id"].as_str().expect("delivery")].clone();
-                        let id = uuid(&id(112));
+                        let id = uuid(&id(112 + u8::try_from(ledger.receipts).expect("few receipts")));
                         claim["operation_id"] = id.clone().into();
                         claim["operation_kind"] = "CLAIM".into();
                         claim["source_revision"] = "2".into();
@@ -267,18 +313,19 @@ pub(super) fn platform_answer(request: &serde_json::Value, accepted: Option<(&st
 }
 
 pub(super) fn platform_intent(request: &serde_json::Value, operation: &str, order: &str) -> serde_json::Value {
-    let unit_kind = if request["catalog_revision"] == crate::gameplay_transport::store::active_catalogue_revision()
-        && request["offer_key"].as_str().and_then(crate::content::store_cosmetics::offer).is_some() {
-        "COSMETIC"
-    } else {
-        "ITEM"
-    };
+    let revision = request["catalog_revision"].as_str().expect("catalogue revision");
+    let key = request["offer_key"].as_str().expect("offer key");
+    let unit_kind = crate::gameplay_transport::store::platform_unit_kind(revision, key).unwrap_or("ITEM");
     serde_json::json!({"contract_version":1,"operation_kind":"DELIVER","issuer_authority":"OTERYN_PLATFORM_STORE_AUTHORITY","source_revision":"1","operation_id":operation,"order_id":order,"entitlement_id":operation,"account_id":request["account_id"],"product_id":"oteryn.store.item_grant","product_version":"1","unit_kind":unit_kind,"catalog_revision":request["catalog_revision"],"offer_key":request["offer_key"],"grant_key":"item:test","grant_revision":"1","quantity":1,"issued_at_source":"1","audience":"OTERYN_GAME_STORE"})
 }
 
 pub(super) fn platform_bytes(v: &serde_json::Value) -> Vec<u8> {
     let fields = if v.get("pending").is_some() {
         "contract_version pending"
+    } else if v.get("operations").is_some() {
+        "contract_version operations"
+    } else if v.get("state").is_some() {
+        "operation_kind operation_id source_revision state receipt_digest recovery_generation"
     } else if v["operation_kind"] == "CLAIM" && v.get("issuer_authority").is_some() {
         "contract_version operation_kind issuer_authority source_revision operation_id delivery_operation_id entitlement_id account_id product_id product_version unit_kind grant_key grant_revision quantity issued_at_source audience"
     } else if v.get("operation_kind").is_some() && v.get("issuer_authority").is_none() {

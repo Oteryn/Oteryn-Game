@@ -71,8 +71,13 @@ enum Case {
     CrystalCapacity,
     OldQuote,
     RemovedOffer,
+    RemovedOfferAccepted,
+    LegacyLostAnswer,
     ReceiptRecovery,
     RestoreReceiptGeneration,
+    RestoreMissingDelivery,
+    RestoreMissingClaim,
+    SlowClaimDiscovery,
     ClaimReceipt,
     LastSlot,
     InterruptedMint,
@@ -161,6 +166,26 @@ fn store_opening_recovers_an_unanswered_purchase_of_a_removed_offer() -> TestRes
 }
 
 #[test]
+fn store_opening_recovers_an_accepted_purchase_of_a_removed_offer() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-removed-accepted", || {
+        scenario_with_answer(Case::RemovedOfferAccepted)
+    })
+}
+
+#[test]
+fn store_fresh_confirmation_reuses_a_legacy_debit_of_an_active_offer() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-legacy-active", || {
+        scenario_with_answer(Case::LegacyLostAnswer)
+    })
+}
+
+#[test]
 fn store_receipt_is_republished_without_repeating_the_purchase() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -183,6 +208,24 @@ fn store_worker_republishes_a_retained_receipt_after_restore() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
     super::kill_reward_e2e_fixtures::scenario_thread::run("store-recovery-generation", || {
         scenario_with_answer(Case::RestoreReceiptGeneration)
+    })
+}
+
+#[test]
+fn store_restore_resolves_a_missing_delivery_or_claim() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-restore-missing", || {
+        let delivery = scenario_with_answer(Case::RestoreMissingDelivery);
+        let claim = scenario_with_answer(Case::RestoreMissingClaim);
+        delivery.and(claim)
+    })
+}
+
+#[test]
+fn store_claim_discovery_yields_the_client_to_a_waiting_balance_read() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("store-claim-discovery", || {
+        scenario_with_answer(Case::SlowClaimDiscovery)
     })
 }
 
@@ -217,7 +260,7 @@ fn scenario_with_answer(case: Case) -> TestResult {
             .await
             .map_err(debug)?;
         let deps = Dependencies::new()?;
-        let (controller, _) = crate::content::native_gameplay::test_support::activated_with_loot_tables(
+        let (controller, pin) = crate::content::native_gameplay::test_support::activated_with_loot_tables(
             deps.admitted.world_id,
             None,
         );
@@ -402,6 +445,57 @@ fn scenario_with_answer(case: Case) -> TestResult {
             return harness.cleanup().await;
         }
 
+        if matches!(case, Case::SlowClaimDiscovery) {
+            ledger.lock().expect("ledger").advertise_claims = true;
+            purchase(&owner, &mut admitted, purchase_request(80, SWORD, 25)?).await?;
+            let second = purchase(&owner, &mut admitted, purchase_request(81, SWORD, 25)?).await?;
+            verify_claim_discovery_yields(&owner, admitted, &ledger, second.operation_id.ok_or("delivery")?).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        if matches!(case, Case::RestoreMissingDelivery | Case::RestoreMissingClaim) {
+            let claim = matches!(case, Case::RestoreMissingClaim);
+            if claim {
+                ledger.lock().expect("ledger").advertise_claims = true;
+                purchase(&owner, &mut admitted, purchase_request(80, SWORD, 25)?).await?;
+            } else {
+                retained_purchase(&owner, admitted, include_bytes!(
+                    "../../../../../../rulesets/economy/store/predecessors/catalogue.json"
+                ), SWORD, false).await?;
+            }
+            drop(owner);
+            drop(authority);
+            let predecessor = seal.record().recovery_generation;
+            let issued_at = seal.record().issued_at.checked_add(1).ok_or("issued at")?;
+            drop(seal);
+            let transition = harness.recovery.begin_recovery(predecessor, id(181), issued_at).map_err(debug)?;
+            harness.root.reconcile_character_recovery(&transition).await.map_err(debug)?;
+            let ready = {
+                let mut platform = ledger.lock().expect("ledger");
+                platform.recovery_generation = Some(transition.record().recovery_generation.to_string());
+                platform.advertise_deliveries = !claim;
+                platform.reopened = true;
+                platform.receipt_ready = Arc::default();
+                platform.receipt_ready.clone()
+            };
+            let generation = transition.record().recovery_generation;
+            drop(transition);
+            let client = StoreClient::new(Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into());
+            let worker = crate::gameplay_transport::run_retained_store_reconciliation(&harness.root, client, generation);
+            let published = tokio::select! {
+                () = worker => false,
+                observed = tokio::time::timeout(std::time::Duration::from_secs(2), ready.notified()) => observed.is_ok(),
+            };
+            assert!(published, "restore must resolve the reopened operation");
+            assert_eq!(ledger.lock().expect("ledger").restore_conflicts, [if claim { "CLAIM" } else { "DELIVER" }]);
+            assert_eq!(swords(&harness).await?, i64::from(claim));
+            assert_eq!(count(&harness, "SELECT count(*) FROM game_store_restore_conflicts").await?, 1);
+            return harness.cleanup().await;
+        }
+
         if matches!(case, Case::RestoreReceiptGeneration | Case::ClaimReceipt) {
             let claim = matches!(case, Case::ClaimReceipt);
             {
@@ -412,26 +506,10 @@ fn scenario_with_answer(case: Case) -> TestResult {
             assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
             let pending = owner.root.list_unacknowledged_store_receipts(1).await.map_err(debug)?;
             assert!(pending.is_empty(), "delivery was already acknowledged");
-            if !claim {
-                // Simulate a reconciled successor installed after recovering this
-                // backup, retaining the same committed Store delivery and outbox.
-                let mut tx = harness.pool.begin().await?;
-                sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
-                let next: String = sqlx::query_scalar(
-                    "UPDATE game_character_recovery_admissions
-                     SET recovery_generation=recovery_generation+1
-                     RETURNING recovery_generation::text",
-                ).fetch_one(&mut *tx).await?;
-                tx.commit().await?;
-                let mut platform = ledger.lock().expect("ledger");
-                platform.recovery_generation = Some(next);
-                platform.advertise_deliveries = true;
-                platform.receipts = 0;
-                platform.receipt_ready = Arc::default();
-            }
             let ready = {
                 let mut platform = ledger.lock().expect("ledger");
                 platform.fail_receipt = false;
+                platform.receipt_ready = Arc::default();
                 platform.receipt_ready.clone()
             };
             let client = StoreClient::new(
@@ -443,6 +521,17 @@ fn scenario_with_answer(case: Case) -> TestResult {
                 let _ = tokio::time::timeout(std::time::Duration::from_secs(2), worker).await;
                 assert_eq!(ledger.lock().expect("ledger").claims, 0, "item remains in the Inbox");
                 super::item_look_fixtures::seed_main_backpack(&harness, &[]).await?;
+                sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
+                    .bind(admitted.world_id.as_bytes().as_slice())
+                    .bind(admitted.channel_id.as_bytes().as_slice())
+                    .execute(&harness.pool).await?;
+                sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+                    .bind(admitted.world_id.as_bytes().as_slice())
+                    .bind(admitted.channel_id.as_bytes().as_slice())
+                    .bind(pin.identity().server_artifact_digest().as_slice())
+                    .bind(pin.identity().client_artifact_digest().as_slice())
+                    .bind(pin.frame_binding().digest().as_slice())
+                    .execute(&harness.pool).await?;
                 let request = wire::StoreInboxClaimRequest {
                     fulfilment_unit_id: uuid(&result.operation_id.ok_or("delivery ID")?),
                 };
@@ -460,18 +549,31 @@ fn scenario_with_answer(case: Case) -> TestResult {
                 drop(seal);
                 return harness.cleanup().await;
             }
-            let worker = crate::gameplay_transport::run_retained_store_reconciliation(owner.root, client);
+            drop(owner);
+            drop(authority);
+            let predecessor = seal.record().recovery_generation;
+            let issued_at = seal.record().issued_at.checked_add(1).ok_or("issued at")?;
+            drop(seal);
+            let transition = harness.recovery.begin_recovery(predecessor, id(181), issued_at).map_err(debug)?;
+            harness.root.reconcile_character_recovery(&transition).await.map_err(debug)?;
+            {
+                let mut platform = ledger.lock().expect("ledger");
+                platform.recovery_generation = Some(transition.record().recovery_generation.to_string());
+                platform.advertise_deliveries = true;
+                platform.reopened = true;
+                platform.receipts = 0;
+            }
+            let generation = transition.record().recovery_generation;
+            drop(transition);
+            let worker = crate::gameplay_transport::run_retained_store_reconciliation(&harness.root, client, generation);
             let published = tokio::select! {
                 () = worker => false,
                 observed = tokio::time::timeout(std::time::Duration::from_secs(2), ready.notified()) => observed.is_ok(),
             };
             assert!(published, "worker must publish the pending receipt");
-            assert_eq!(ledger.lock().expect("ledger").claims, usize::from(claim));
+            assert_eq!(ledger.lock().expect("ledger").claims, 0);
             assert_eq!(swords(&harness).await?, 1);
             assert_eq!(ledger.lock().expect("ledger").debits, [25]);
-            drop(owner);
-            drop(authority);
-            drop(seal);
             return harness.cleanup().await;
         }
 
@@ -497,15 +599,38 @@ fn scenario_with_answer(case: Case) -> TestResult {
             return harness.cleanup().await;
         }
 
-        if matches!(case, Case::RemovedOffer) {
+        if matches!(case, Case::LegacyLostAnswer) {
+            let old = retained_purchase(&owner, admitted, include_bytes!(
+                "../../../../../../rulesets/economy/store/predecessors/catalogue.json"
+            ), SWORD, false).await?;
+            let result = purchase(&owner, &mut admitted, purchase_request(82, SWORD, old.price)?).await?;
+            assert_eq!(result.code, wire::StorePurchaseCode::Accepted);
+            assert_eq!(ledger.lock().expect("ledger").debits, [old.price]);
+            assert_eq!(swords(&harness).await?, 1);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        if matches!(case, Case::RemovedOffer | Case::RemovedOfferAccepted) {
+            let answered = matches!(case, Case::RemovedOfferAccepted);
             ledger.lock().expect("ledger").balance = 2_000;
             let request = retained_purchase(&owner, admitted, include_bytes!(
                 "../../../../../../rulesets/economy/store/predecessors/charged-catalogue.json"
-            ), "store:ultimate-health-keg").await?;
-            assert_eq!(count(&harness, "SELECT count(*) FROM store_purchase_requests WHERE state=1").await?, 1);
-            assert_eq!(count(&harness, "SELECT count(*) FROM game_store_purchase_history").await?, 0);
+            ), "store:ultimate-health-keg", answered).await?;
+            assert_eq!(count(&harness, "SELECT count(*) FROM store_purchase_requests WHERE state=1").await?, i64::from(!answered));
+            assert_eq!(count(&harness, "SELECT count(*) FROM game_store_purchase_history").await?, i64::from(answered));
             assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 0);
-            let page = serve(&owner, &mut admitted, &[page_request()?]).await?;
+            let query = wire::browse::Query {
+                category: "featured".into(),
+                search: String::new(),
+                sort: 0,
+                cursor: String::new(),
+            };
+            // The legacy path isolates journal selection from browser routing.
+            let open = if answered { page_request()? } else { (wire::browse::COMMAND_TYPE, query.encode().map_err(debug)?) };
+            let page = serve(&owner, &mut admitted, &[open]).await?;
             assert_eq!(page[0].0, CommandStatus::Accepted);
             assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 1);
             assert_eq!(ledger.lock().expect("ledger").debits, [request.price]);
@@ -518,7 +643,7 @@ fn scenario_with_answer(case: Case) -> TestResult {
         if matches!(case, Case::OldQuote) {
             let request = retained_purchase(&owner, admitted, include_bytes!(
                 "../../../../../../rulesets/economy/store/predecessors/catalogue.json"
-            ), SWORD).await?;
+            ), SWORD, false).await?;
             assert_eq!(swords(&harness).await?, 0);
             let command = |request: &wire::StorePurchaseRequest| -> TestResult<_> {
                 Ok((wire::COMMAND_TYPE_STORE_PURCHASE, wire::encode_purchase_request(request).map_err(debug)?))
@@ -743,11 +868,47 @@ fn scenario_with_answer(case: Case) -> TestResult {
     })
 }
 
+async fn verify_claim_discovery_yields(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    ledger: &Arc<SyncMutex<Ledger>>,
+    delivery: [u8; 16],
+) -> TestResult {
+    let slow = Arc::new(super::store_fixtures::SlowClaimReads::default());
+    ledger.lock().expect("ledger").slow_claim_reads = Some(slow.clone());
+    let request = [(wire::COMMAND_TYPE_STORE_INBOX_CLAIM, wire::encode_inbox_claim_request(
+        &wire::StoreInboxClaimRequest { fulfilment_unit_id: uuid(&delivery) },
+    ).map_err(debug)?)];
+    let account = uuid(&admitted.controller.ok_or("controller")?.account_id);
+    let claim = serve(owner, &mut admitted, &request);
+    tokio::pin!(claim);
+    tokio::select! {
+        result = &mut claim => return Err(format!("claim finished before discovery: {result:?}").into()),
+        ready = tokio::time::timeout(std::time::Duration::from_secs(2), slow.first_started.notified()) => ready?,
+    }
+    let platform = owner.store.as_ref().ok_or("Platform")?;
+    let balance = async { platform.lock().await.balance(&account).await };
+    tokio::pin!(balance);
+    tokio::select! {
+        biased;
+        _ = &mut balance => return Err("balance did not wait behind the first exchange".into()),
+        () = std::future::ready(()) => {}
+    }
+    slow.release_first.notify_one();
+    tokio::select! {
+        biased;
+        result = &mut claim => Err(format!("claim finished before balance: {result:?}").into()),
+        result = &mut balance => { result.map_err(debug)?; Ok(()) }
+        () = slow.second_started.notified() => Err("second intent read preempted a queued Store balance read".into()),
+    }
+}
+
 async fn retained_purchase(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
     catalogue: &[u8],
     offer: &str,
+    answered: bool,
 ) -> TestResult<wire::StorePurchaseRequest> {
     use crate::durability::store::{PurchaseRequest, PurchaseRequestState};
     use crate::native_admission_source::store::{PurchaseResult, PurchaseStoreOffer};
@@ -771,12 +932,13 @@ async fn retained_purchase(
         price,
         currency: rules::CurrencyKind::TibiaCoin,
     };
-    let state = owner.root.record_purchase_request(PurchaseRequest {
+    let journal = PurchaseRequest {
         purchase_request_id,
         account_id: account,
         character_id: *character.as_bytes(),
         binding: binding.binding_digest().to_vec(),
-    }).await.map_err(debug)?;
+    };
+    let state = owner.root.record_purchase_request(journal.clone()).await.map_err(debug)?;
     assert_eq!(state, PurchaseRequestState::Sent);
     let answer = owner.store.as_ref().ok_or("Platform")?.lock().await.purchase(&PurchaseStoreOffer {
         purchase_request_id: uuid(&purchase_request_id),
@@ -789,7 +951,25 @@ async fn retained_purchase(
         unit_price: price.to_string(),
         quantity: 1,
     }, "ITEM").await.map_err(debug)?;
-    assert!(matches!(answer, PurchaseResult::Accepted { .. }));
+    let PurchaseResult::Accepted { order_id, operation_ids } = answer else {
+        return Err("fixture purchase refused".into());
+    };
+    if answered {
+        let order_id = *sqlx::types::Uuid::parse_str(&order_id)?.as_bytes();
+        owner.root.record_store_answer_with_history(
+            journal,
+            serde_json::to_vec(&serde_json::json!({
+                "result": "ACCEPTED", "order_id": uuid(&order_id), "operation_ids": operation_ids,
+            }))?,
+            Some(crate::durability::store::StorePurchaseHistoryEntry {
+                order_id,
+                offer_key: offer.into(),
+                catalog_revision: revision.clone(),
+                price,
+                currency: "TIBIA_COIN".into(),
+            }),
+        ).await.map_err(debug)?;
+    }
     Ok(wire::StorePurchaseRequest {
         purchase_request_id,
         offer_key: offer.into(),

@@ -105,11 +105,24 @@ async fn purchase_with_mode(
 const ITEM_CATALOGUE_JSON: &[u8] = include_bytes!("../../../../../rulesets/economy/store/catalogue.json");
 const HIRELING_CATALOGUE_JSON: &[u8] = include_bytes!("../../../../../rulesets/economy/store/hirelings.json");
 const COSMETIC_CATALOGUE_JSON: &[u8] = crate::content::store_cosmetics::DOCUMENT;
+const PLATFORM_CATALOGUE_JSON: &[u8] = include_bytes!("../../../../../rulesets/economy/store/platform-catalogue.json");
 
 static PLATFORM_REVISION: LazyLock<String> = LazyLock::new(|| {
-    let bytes = include_bytes!("../../../../../rulesets/economy/store/platform-catalogue.json");
-    Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect()
+    Sha256::digest(PLATFORM_CATALOGUE_JSON).iter().map(|byte| format!("{byte:02x}")).collect()
 });
+
+static PLATFORM_OFFERS: LazyLock<Option<serde_json::Value>> =
+    LazyLock::new(|| serde_json::from_slice(PLATFORM_CATALOGUE_JSON).ok());
+
+pub(super) fn platform_unit_kind(revision: &str, offer_key: &str) -> Option<&'static str> {
+    if revision != PLATFORM_REVISION.as_str() {
+        return Some("ITEM");
+    }
+    let offers = PLATFORM_OFFERS.as_ref()?.get("offers")?.as_array()?;
+    let offer = offers.iter().find(|offer| offer["offer_key"] == offer_key)?;
+    let [unit] = offer["units"].as_array()?.as_slice() else { return None; };
+    unit["unit_kind"].as_str().filter(|kind| matches!(*kind, "ITEM" | "COSMETIC"))
+}
 
 fn load_active_catalogue(bytes: &[u8]) -> Option<RuntimeCatalogue> {
     RuntimeCatalogue::from_json_with_revision(bytes, Some(&PLATFORM_REVISION))
@@ -194,6 +207,9 @@ pub(super) async fn execute(
         wire::browse::COMMAND_TYPE => {
             let Ok(query)=wire::browse::Query::decode(payload) else {return REJECTED;};
             let Some(page)=browse::execute(owner,admitted,&query).await else {return REJECTED;};
+            if query.cursor.is_empty() && let Some(active) = CATALOGUE.as_ref() {
+                let _ = resume_removed_item(owner, admitted, active, command_id).await;
+            }
             page.encode()
         }
         wire::COMMAND_TYPE_STORE_INBOX_CLAIM => {
@@ -457,9 +473,10 @@ async fn resume_removed_item(
     if removed.is_empty() {
         return Some(());
     }
-    let candidates = owner.root.unanswered_store_item_purchases(
+    let candidates = owner.root.pending_store_item_purchases(
         *account.as_bytes(), *character.as_bytes(), *admitted.world_id.as_bytes(),
         removed.iter().map(|(_, digest)| digest.to_vec()).collect(),
+        true,
     ).await.ok()?;
     for pending in candidates {
         if let Some((binding, _)) = removed.iter().find(|(_, digest)| pending.binding_digest == *digest) {
@@ -486,21 +503,31 @@ fn retained_binding(
     let purchase_request_id = rules::PurchaseRequestId::from_bytes(pending.purchase_id).ok()?;
     let character_id = crate::domain::CharacterId::from_bytes(pending.character_id).ok()?;
     std::iter::once(active).chain(PREDECESSOR_CATALOGUES.iter().flatten()).find_map(|catalogue| {
-        let quote = rules::build_quote(&catalogue.rules, &confirmed.offer_key, &rules::CharacterStoreView::default()).ok()?;
-        if quote.price != confirmed.price || quote.currency != confirmed.currency {
-            return None;
-        }
-        let binding = rules::PurchaseStoreOffer::from_quote(
-            purchase_request_id, confirmed.account_id, character_id, quote,
-        );
-        let journal = PurchaseRequest {
-            purchase_request_id: pending.purchase_id,
-            account_id: *binding.account_id.as_bytes(),
-            character_id: pending.character_id,
-            binding: binding.binding_digest().into(),
-        };
-        (pending.binding_digest == journal.binding_digest()).then_some((catalogue, binding))
+        let (binding, digest) = matching_quote_binding(catalogue, confirmed, purchase_request_id, character_id)?;
+        (pending.binding_digest == digest).then_some((catalogue, binding))
     })
+}
+
+fn matching_quote_binding(
+    catalogue: &RuntimeCatalogue,
+    confirmed: &rules::PurchaseStoreOffer,
+    purchase_request_id: rules::PurchaseRequestId,
+    character_id: crate::domain::CharacterId,
+) -> Option<(rules::PurchaseStoreOffer, [u8; 32])> {
+    let quote = rules::build_quote(&catalogue.rules, &confirmed.offer_key, &rules::CharacterStoreView::default()).ok()?;
+    if quote.price != confirmed.price || quote.currency != confirmed.currency {
+        return None;
+    }
+    let binding = rules::PurchaseStoreOffer::from_quote(
+        purchase_request_id, confirmed.account_id, character_id, quote,
+    );
+    let digest = PurchaseRequest {
+        purchase_request_id: *purchase_request_id.as_bytes(),
+        account_id: *confirmed.account_id.as_bytes(),
+        character_id: *character_id.as_bytes(),
+        binding: binding.binding_digest().into(),
+    }.binding_digest();
+    Some((binding, digest))
 }
 
 async fn purchase_retained_or_new(
@@ -596,10 +623,15 @@ async fn purchase_retained_or_new(
                 } else {
                     let legacy = if removed_offer {
                         vec![retry.binding_digest().to_vec()]
-                    } else {
+                    } else if stale_quote {
                         Vec::new()
+                    } else {
+                        std::iter::once(catalogue).chain(PREDECESSOR_CATALOGUES.iter().flatten())
+                            .filter_map(|old| matching_quote_binding(old, &confirmed, id, fence.character_id))
+                            .map(|(_, digest)| digest.to_vec())
+                            .collect()
                     };
-                    owner.root.unanswered_store_item_purchases(account, *fence.character_id.as_bytes(), world, legacy)
+                    owner.root.pending_store_item_purchases(account, *fence.character_id.as_bytes(), world, legacy, false)
                         .await.ok()?.into_iter()
                         .find(|candidate| retained_binding(catalogue, &confirmed, candidate).is_some())
                 }
@@ -633,11 +665,7 @@ async fn purchase_retained_or_new(
     }
     let purchase_world = pending.as_ref().map_or(*admitted.world_id.as_bytes(), |pending| pending.world_id);
     let character_id = *binding.character_id.as_bytes();
-    let unit_kind = if cosmetic.is_some() && PLATFORM_REVISION.as_str() == catalogue.rules.revision() {
-        "COSMETIC"
-    } else {
-        "ITEM"
-    };
+    let unit_kind = platform_unit_kind(catalogue.rules.revision(), &binding.offer_key)?;
     let journal = PurchaseRequest {
         purchase_request_id: *binding.purchase_request_id.as_bytes(),
         account_id: account,
@@ -785,6 +813,9 @@ async fn deliver(
     world_id: [u8; 16],
 ) -> Option<()> {
     let operation_id = uuid_bytes(operation)?;
+    if owner.root.has_store_restore_conflict(operation_id).await.ok()? {
+        return None;
+    }
     let intent = platform.lock().await.read_intent(crate::native_admission_source::store::OperationKind::Deliver, operation).await.ok()?;
     let account = *binding.account_id.as_bytes();
     let character_id = *binding.character_id.as_bytes();
@@ -891,7 +922,11 @@ async fn publish(owner:&ComposedFreshAdmission<'_, '_, '_>,platform:&StorePlatfo
     // Publication is best effort here: the outbox keeps the receipt until Platform accepts it.
     let acknowledged = {
         let mut client = platform.lock().await;
-        receipt_outbox::publish_delivery(owner.root, &mut client, intent, receipt).await.is_ok()
+        if let Ok(bytes) = client.delivery_receipt(intent, &receipt.recovery_generation, &receipt.decided_at) {
+            client.publish_receipt(&bytes).await.is_ok()
+        } else {
+            false
+        }
     };
     if acknowledged {
         let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;

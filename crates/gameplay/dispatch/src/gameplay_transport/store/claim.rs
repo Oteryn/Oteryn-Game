@@ -25,13 +25,12 @@ pub(super) async fn execute(
         binding
     } else {
         // The worker discovers later pages if the claim is not on the first page yet.
-        let mut client = platform.lock().await;
-        let page = client.list_pending(&OperationCursor::default()).await.ok()?;
+        let page = platform.lock().await.list_pending(&OperationCursor::default()).await.ok()?;
         for pending in page.entries {
             if pending.operation_kind != OperationKind::Claim {
                 continue;
             }
-            let Ok(intent) = client.read_intent(OperationKind::Claim, &pending.operation_id).await else {
+            let Ok(intent) = platform.lock().await.read_intent(OperationKind::Claim, &pending.operation_id).await else {
                 continue;
             };
             if intent.account_id == uuid_text(&account) && intent.entitlement_id == request.fulfilment_unit_id {
@@ -41,6 +40,9 @@ pub(super) async fn execute(
         }
         read().await.ok()??
     };
+    if owner.root.has_store_restore_conflict(operation).await.ok()? {
+        return None;
+    }
     let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
     if owner.root.read_store_claim_source(delivery).await.ok()?.is_none() {
         let native = owner.active_generation?.native_gameplay()?;
@@ -51,9 +53,21 @@ pub(super) async fn execute(
         ).await.ok()?;
     }
     let source = owner.root.read_store_claim_source(delivery).await.ok()?;
-    let (result, generation, decided_at) = if let Some((receipt, _)) = source {
-        let mut client = platform.lock().await;
-        let _ = receipt_outbox::publish_claim(owner.root, &mut client, &uuid_text(&operation), false).await;
+    let (result, generation, decided_at) = if let Some((receipt, unit)) = source {
+        let intent = platform.lock().await.read_intent(OperationKind::Claim, &uuid_text(&operation)).await;
+        if let Ok(intent) = intent
+            && intent.account_id == receipt.account_id
+            && intent.entitlement_id == receipt.fulfilment_unit_id
+        {
+            // A stale generation is republished by the outbox worker.
+            let mut client = platform.lock().await;
+            if let Ok(bytes) = client.claim_receipt(
+                &intent, &receipt.character_id, &receipt.world_id, &unit,
+                &receipt.recovery_generation, &receipt.decided_at,
+            ) {
+                let _ = client.publish_receipt(&bytes).await;
+            }
+        }
         (
             wire::StoreClaimCode::Committed,
             receipt.recovery_generation.parse::<u64>().ok()?,
