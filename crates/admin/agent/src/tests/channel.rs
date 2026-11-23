@@ -51,7 +51,7 @@ impl IdempotencyStore for MemoryStore {
     }
 }
 #[derive(Clone, Default)]
-struct FakeTransport {
+pub(super) struct FakeTransport {
     calls: Arc<Mutex<Vec<(String, serde_json::Value)>>>,
     batches: Arc<Mutex<VecDeque<serde_json::Value>>>,
     superseded: bool,
@@ -84,13 +84,13 @@ impl Transport for FakeTransport {
     }
 }
 #[derive(Clone)]
-struct FixedClock;
+pub(super) struct FixedClock;
 impl Clock for FixedClock {
     fn now(&self) -> i64 {
         NOW
     }
 }
-fn agent() -> Result<Agent<FakeTransport, MemoryStore, FixedClock>, WireError> {
+pub(super) fn agent() -> Result<Agent<FakeTransport, MemoryStore, FixedClock>, WireError> {
     let config = Config::parse(
         r#"
 agent_id="test-agent"
@@ -111,6 +111,7 @@ build_revision="test-build"
         config,
         policy: policy()?,
         transport: FakeTransport::default(),
+        read_pool: None,
         store: MemoryStore::default(),
         clock: FixedClock,
         signing_key: key(),
@@ -238,6 +239,68 @@ async fn heartbeat_continues_while_results_transport_is_blocked() -> Result<(), 
             .filter(|(name, _)| name == "heartbeat")
             .count()
             >= 3
+    );
+    Ok(())
+}
+
+#[test]
+fn phase_one_reads_are_advertised() {
+    let advertised = crate::channel::advertised();
+    for operation in Operation::ALL {
+        assert_eq!(
+            advertised.contains(operation.name()),
+            !matches!(
+                operation,
+                Operation::AdminAgentList | Operation::AnalyticsCatalog
+            ),
+            "{}",
+            operation.name()
+        );
+    }
+}
+
+#[tokio::test]
+async fn retained_read_result_is_bound_to_operation_and_target() -> Result<(), WireError> {
+    let mut a = agent()?;
+    for op in [Operation::WorldGet, Operation::OpsOverviewGet] {
+        a.policy.operations.insert(
+            op.name().into(),
+            crate::policy::OperationPolicy {
+                min_risk_class: op.minimum(),
+                allowed_permissions: [op.permission().into()].into(),
+                worlds: ["w-antica".into(), "w-other".into()].into(),
+            },
+        );
+    }
+    a.config.worlds.push("w-other".into());
+    let mut r = request()?;
+    r.operation = "world.get".into();
+    r.actor.permission = Operation::WorldGet.permission().into();
+    r.target.world_id = Some("w-antica".into());
+    resign(&mut r)?;
+    let original = a.process(&r).await.map_err(|e| format!("{e:?}"))?;
+    assert!(matches!(
+        original.result,
+        Some(OperationResult::WorldGet(_))
+    ));
+
+    r.target.world_id = Some("w-other".into());
+    r.nonce = URL_SAFE_NO_PAD.encode([2; 16]);
+    resign(&mut r)?;
+    let response = a.process(&r).await.map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        response.error.map(|e| e.code),
+        Some(E::AdmIdempotencyConflict)
+    );
+
+    r.operation = "ops.overview.get".into();
+    r.actor.permission = Operation::OpsOverviewGet.permission().into();
+    r.nonce = URL_SAFE_NO_PAD.encode([3; 16]);
+    resign(&mut r)?;
+    let response = a.process(&r).await.map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        response.error.map(|e| e.code),
+        Some(E::AdmIdempotencyConflict)
     );
     Ok(())
 }
