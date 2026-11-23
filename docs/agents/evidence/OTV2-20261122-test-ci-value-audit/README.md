@@ -1,4 +1,16 @@
-# Test and CI value audit — first candidate
+# Test and CI value audit
+
+## Current continuation
+
+[Wave 9](wave-9/README.md) applies the bounded repairs found during the overnight review: exact selected-row evidence in node-boot aggregation, a real-execution verdict for S3B, governance test consolidation that preserves protected workflow bytes, and content test selection/oracle repairs. Its source predecessor is `245ba7838e58318a2d851857b6c2b2d7c757aa09`; the live draft PR identifies the resulting frozen candidate and its CI.
+
+Wave 5 restored the protected governance workflow and returned the focused original slice to 53 executions / 42 unique cases. Wave 9 removes the 11 duplicate sibling executions by consolidating their owner, retaining all 16 governance cases and the approved workflow blob. Do not use the first candidate's altered workflow or historical dispatch probe as the current implementation. [Current selection proof](wave-9/governance_selection.json) and [reproducer](wave-9/prove_governance_selection.py) cover both direct entrypoints and discovery.
+
+The bounded indexed-row part of BB-02 is now applied. Group/basic/spells/Game–Platform completeness and physical gameplay qualification remain separate open work. The remaining queue is still 627 content-tool paths plus the 130 separate global review groups; repairs of already reviewed cases do not reduce it. Eight scheduled overnight runs completed and the schedule is exhausted; this wave is the user's explicit continuation.
+
+## First candidate — retained historical evidence
+
+The sections below describe `978d40a02e9e9d4b1d8c16fe7dea25aad586e108` and its original environment. Later wave reports supersede only the facts they explicitly update. In particular, the original protected-workflow edit was rolled back in [wave 5](wave-5/README.md), and the original environment limitations are not current validation results.
 
 The [second-wave supplement](wave-2/README.md) adds bounded durability, server admission/recovery and content-tooling findings with exact remaining scopes. It does not apply additional code changes.
 
@@ -23,7 +35,7 @@ Evidence labels: **PROVEN** = inspected source/observed result; **DERIVED** = in
 | Check child exit and final stage status in StageDumpTests | The original test passed even though its child exited1/127 before completing the claimed behavior. [Baseline oracle evidence](blackbox_oracle_repro.json). Current test completes the real stage function with its required fixture/helpers. |
 | Replace imported-class collection in diagnostics with a direct-entry load_tests hook | The workflow entrypoint omitted WorldFixture/PgSampler; full discovery repeated 26 sibling cases. Direct execution now includes both classes and full discovery has unique IDs. WorldFixture now validates the existing11 fixture identities/intents including LightCaster; production fixture code is unchanged. |
 
-The only production-script behavior change is stricter classification in `tools/qualification/node_boot/run.sh`. No game code, migration, authority fence, durable-value oracle, baseline row, required-check list or workflow activation state is removed. Retained proposal patches describe their original snapshots; the PR diff is the applied candidate.
+In that first candidate, the only production-script behavior change was stricter classification in `tools/qualification/node_boot/run.sh`. No game code, migration, authority fence, durable-value oracle, baseline row, required-check list or workflow activation state was removed. Retained proposal patches describe their original snapshots; the PR diff is the applied candidate.
 
 ## Remaining priorities
 
@@ -88,7 +100,9 @@ python docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_repros.py
 python docs/agents/evidence/OTV2-20261122-test-ci-value-audit/blackbox_oracle_repro.py --repo /path/to/checkout
 ```
 
-The [BB-02 bounded proposal](aggregate_completeness_proposal.md) and [unapplied patch](aggregate_completeness_proposal.patch) are ready for the next wave:33 matrix tests pass in a scratch overlay, and the original missing-row reproducer fails closed there. The current production matrix is unchanged; basic/group/spells/Game–Platform completeness still needs separate contracts.
+The `ci_dedup_probe.py` command above is a historical first-candidate reproducer with the original module names. Use the wave-9 governance reproducer for the consolidated owners.
+
+The [original BB-02 bounded proposal](aggregate_completeness_proposal.md) and [proposal patch](aggregate_completeness_proposal.patch) remain historical snapshots. Wave 9 applies the subsequently reviewed implementation with exact dispatcher identities and real CI artifact replay. Basic/group/spells/Game–Platform completeness still needs separate contracts.
 
 The user authorized a draft PR and autonomous continuation, not merging. Follow the bound exact-head lifecycle and single-writer allocation for each successor. Read live branch/PR state, reopen AUTHORING for a substantive repair, then freeze and requalify. The separate E2E branch is outside this task's ownership. Missing local push credentials select only the bound META API-native new-candidate exception; no selected/frozen local commit is reconstructed.
 

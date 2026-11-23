@@ -1,0 +1,52 @@
+{
+  "scope": "Actual fixture helper and workflow aggregate subprocesses; no live Game or GitHub Actions run",
+  "before": "/workspace/scratch/23c09bc1235f/Oteryn-Game-current-audit",
+  "after": "/workspace/scratch/23c09bc1235f/Oteryn-Game-resume-authoring",
+  "candidate_test_sha256": "226879223969cfa6b380af6b9623babaa58b4f7c8f8a6ae94b5cb013ceca147c",
+  "candidate_matrix_sha256": "bb95423074580ece694672f17319691c8336a67dd76771d2312596cbf1e33d2e",
+  "baseline_matrix_sha256": "0963e8f8faf31a8aa5ef829a4d0f64b5b405ccdebef6ce0f86e7ab37522c0692",
+  "legacy_schema_adapter": "Delete expected_rows only from each plan item; preserve scenario evidence and workflow script",
+  "workflows": [
+    {
+      "path": ".github/workflows/pr-postgres-harness.yml",
+      "sha256": "253311344bf0037fda6abe34e17cdcded6e23cd0b2680c065c265b1b98fdd25e",
+      "candidate_positive_exit_code": 0,
+      "candidate_missing_required_exit_code": 1,
+      "legacy_positive_exit_code": 0,
+      "legacy_missing_required_exit_code": 0,
+      "only_removed_id": "C03.full",
+      "changed_artifacts": [
+        "node-boot-1-1-rows-000-005"
+      ],
+      "changed_shard_counts": {
+        "before": 4,
+        "after": 3
+      },
+      "all_required_producer_statuses_success": true,
+      "all_child_exit_codes_zero": true,
+      "all_child_results_node_boot_pass": true,
+      "candidate_diagnostic": "missing terminal verdict for C03.full"
+    },
+    {
+      "path": ".github/workflows/merge-group-gate.yml",
+      "sha256": "d80ebed3b8993da45880281e253c54660db95f6ae47b537f3e89c557a861e58e",
+      "candidate_positive_exit_code": 0,
+      "candidate_missing_required_exit_code": 1,
+      "legacy_positive_exit_code": 0,
+      "legacy_missing_required_exit_code": 0,
+      "only_removed_id": "C03.full",
+      "changed_artifacts": [
+        "node-boot-1-1-rows-000-005"
+      ],
+      "changed_shard_counts": {
+        "before": 4,
+        "after": 3
+      },
+      "all_required_producer_statuses_success": true,
+      "all_child_exit_codes_zero": true,
+      "all_child_results_node_boot_pass": true,
+      "candidate_diagnostic": "missing terminal verdict for C03.full"
+    }
+  ],
+  "verdict": "PASS: both real aggregate scripts reject exactly one missing required ID only under the new coverage contract"
+}

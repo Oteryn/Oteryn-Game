@@ -1,0 +1,82 @@
+{
+  "review": "BB-02 expected_rows caller and checkout closure",
+  "date_utc": "2026-11-23",
+  "mode": "Read-only source inspection; no remote or GitHub Actions execution",
+  "baseline": {
+    "root": "/workspace/scratch/23c09bc1235f/Oteryn-Game-current-audit",
+    "head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+    "status_short": "",
+    "source_sha256": {
+      ".github/workflows/node-boot-qualification.yml": "12fcacd9f7a88c8189bbd04e0bd0ec14ab251675ae4e5bcfec919cca1862f6ce",
+      ".github/workflows/merge-group-gate.yml": "d80ebed3b8993da45880281e253c54660db95f6ae47b537f3e89c557a861e58e",
+      ".github/workflows/pr-postgres-harness.yml": "253311344bf0037fda6abe34e17cdcded6e23cd0b2680c065c265b1b98fdd25e",
+      ".github/workflows/node-boot-build.yml": "fe1f1df027a012e269fba8e8088b433ffdaff2a939be4a1a05d7827537455cb0",
+      "tools/qualification/node_boot/prebuilt.py": "288a79b279ca36544338daf3834bdaec8be9f00e39072f6e8d1770e814e4daa0",
+      "tools/repository/test_heavy_gate.py": "6d218c09f06c48876caa7bd7607f984f426c7a03e325d7538398428960a66547"
+    }
+  },
+  "candidate": {
+    "matrix_source": "/workspace/scratch/23c09bc1235f/resume_matrix/overlay/tools/qualification/node_boot/matrix.py",
+    "matrix_sha256": "bb95423074580ece694672f17319691c8336a67dd76771d2312596cbf1e33d2e",
+    "contract": "Every shard carries expected_rows; validate_shard checks exact fields and selected source identities. export_env validates then emits only established harness knobs."
+  },
+  "production_consumers": [
+    {
+      "path": ".github/workflows/merge-group-gate.yml",
+      "plan": "1466-1498",
+      "shard": "1548-1617",
+      "summary": "1744-1787",
+      "revision": "github.event.merge_group.head_sha || github.sha",
+      "explicit_head_assertions": "plan, shard, summary",
+      "artifact_scope": "Current github.run_id; upload 1720-1729, download 1755-1760"
+    },
+    {
+      "path": ".github/workflows/pr-postgres-harness.yml",
+      "plan": "317-381",
+      "shard": "429-499",
+      "summary": "620-660",
+      "revision": "github.event.pull_request.head.sha",
+      "explicit_head_assertions": "plan, shard, summary",
+      "artifact_scope": "Current github.run_id; upload 592-601, download 631-639",
+      "legacy_mode": "Changes artifact reuse versus local Cargo, not planner/shard/summary source checkout."
+    },
+    {
+      "path": ".github/workflows/node-boot-qualification.yml",
+      "plan": "58-94",
+      "shard": "128-196",
+      "summary": "304-328",
+      "revision": "github.sha; checkout defaults to event checkout",
+      "explicit_head_assertions": "plan and shard; summary has no duplicate HEAD assertion",
+      "artifact_scope": "Current github.run_id; upload 286-295, download 309-314",
+      "limitation": "Summary relies on the pinned checkout action's default event-revision contract. No different ref is configured; runtime checkout identity was not independently observed."
+    }
+  ],
+  "closure_facts": [
+    "All three workflows pass the complete plan output through fromJSON and toJSON; none reconstructs the old five-field shard object.",
+    "Summary reads the same plan job's full JSON. No persisted old plan or external plan producer was found in executable callers.",
+    "prebuilt.py imports validate_shard from sibling matrix.py at line 15; select validates at line 42; plan delegates to select at lines 53-64. Its unchanged file hash does not freeze an old validator.",
+    "node-boot-build.yml uses inputs.revision and checks HEAD at lines 52-61. Calling workflows pass the same candidate revision used by planning and execution.",
+    "Prebuilt bundles contain manifest and binaries, not copies of matrix.py. prebuilt.py lines 92-102 and 173-183 bind and verify checkout identity and variant.",
+    "Other prebuilt callers use build, verify, or unpack rather than JSON shard selection: node_boot/run.sh, game_platform/lifecycle.sh, wp5_s3b/run.sh, world_compiler_artifact.py, world_bundle_artifact_boot.rs, integration-shards-dispatch.yml, and additional merge-group/build workflow jobs.",
+    "External direct matrix.shard use is confined to test_matrix.py and is updated in the candidate patch. Other Python shard consumers derive objects from matrix.plan. Repository policy checks inspect workflow strings rather than deserialize shard objects."
+  ],
+  "test_consumer_issue_at_review": {
+    "path": "tools/repository/test_heavy_gate.py",
+    "ranges": ["785-795", "803-806"],
+    "fact": "run_aggregate obtains matrix.plan('pr') but emits one synthetic {shard}-s scenario per World shard.",
+    "inference": "The new required-row coverage check rejects this positive fixture because it omits the planned expected_rows identities.",
+    "verification": "Identified by source inspection; root is preparing the fixture correction and negative missing-ID control. This artifact does not claim that correction was reviewed or executed."
+  },
+  "fixture_follow_up": {
+    "candidate_test_sha256": "226879223969cfa6b380af6b9623babaa58b4f7c8f8a6ae94b5cb013ceca147c",
+    "review_evidence": "/workspace/scratch/23c09bc1235f/resume_ci/heavy_gate_fixture_review.json",
+    "reproducer": "/workspace/scratch/23c09bc1235f/resume_ci/prove_heavy_gate_fixture.py",
+    "result": "Correction independently reviewed. Both unchanged real workflow aggregate scripts pass the complete fixture and reject removal of exactly C03.full from a nonempty 4-to-3 scenario shard. Exit codes and NODE_BOOT_PASS evidence remain successful. The baseline aggregate accepts both fixtures after stripping only the unknown expected_rows plan field.",
+    "scope": "Read-only repository review plus local subprocess replay. No repository edits, remote calls, or live Game/GitHub qualification execution."
+  },
+  "conclusion": "Static caller closure found no production path mixing a new plan with an old matrix consumer or a configured different source revision. The existing aggregate-test fixture incompatibility was corrected and independently verified by the follow-up replay.",
+  "limitations": [
+    "No workflow execution or external checkout-action source verification performed for this read-only review.",
+    "This evidence covers candidate matrix SHA256 above and baseline workflow/helper hashes above; later source edits require revalidation."
+  ]
+}

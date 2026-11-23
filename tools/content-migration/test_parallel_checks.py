@@ -104,6 +104,8 @@ class ParallelChecks(unittest.TestCase):
         expected_external = {
             "test_monster_seven_spell_overlay.py", "test_quest_registration_preservation.py",
             "test_boss_corpse_profiles", "test_authored_npc_item_profiles",
+            "test_boss_corpse_terminal_reference", "test_coin_converter_profiles",
+            "test_creature_level_rating",
             "test_quest_corpse_profiles", "test_boss_reward_yield_profiles",
             "test_equipment_source_overlaps", "test_equipment_known_speed_pin",
             "test_refresh_equipment_profile_pin", "test_refresh_season_creature_inventory",

@@ -14,7 +14,9 @@ class CoinConverterProfiles(unittest.TestCase):
         cls.profiles = {r['production_definition']['production_key']: r for r in rows}
 
     def test_converters_are_carried_nonstackable_tools_with_500_charges(self):
-        for number in sorted(converters.IDS):
+        expected_ids = {23722, 25719, 28525, 28526}
+        self.assertEqual(converters.IDS, expected_ids)
+        for number in sorted(expected_ids):
             key = f'oteryn:item.tibia.i{number}'
             row = self.profiles[key]
             self.assertEqual(row['production_binding']['target']['key'], key)

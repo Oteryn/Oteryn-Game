@@ -1,0 +1,48 @@
+[
+  {
+    "name": "selected_real_ci_caller",
+    "argv": [
+      "python",
+      "/workspace/scratch/23c09bc1235f/resume_content/selected_ci_checks.py",
+      "--repo",
+      "/workspace/scratch/23c09bc1235f/resume_content/overlay",
+      "--output",
+      "/workspace/scratch/23c09bc1235f/resume_content/selected_ci_results.json"
+    ],
+    "exit_code": 0,
+    "seconds": 4.577,
+    "stdout": "START migration-check=test_boss_corpse_terminal_reference\nSTART migration-check=test_coin_converter_profiles\nPASS migration-check=test_boss_corpse_terminal_reference exit=0\nSTART migration-check=test_creature_level_rating\nPASS migration-check=test_coin_converter_profiles exit=0\nPASS migration-check=test_creature_level_rating exit=0\nPASS migration-checks=3 workers=2\n",
+    "stderr": "test_existing_canonical_reference_is_retained_without_second_allocation (test_boss_corpse_terminal_reference.ExistingElderReferenceTests.test_existing_canonical_reference_is_retained_without_second_allocation) ... test_converters_are_carried_nonstackable_tools_with_500_charges (test_coin_converter_profiles.CoinConverterProfiles.test_converters_are_carried_nonstackable_tools_with_500_charges) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.463s\n\nOK\nok\n\n----------------------------------------------------------------------\nRan 1 test in 0.743s\n\nOK\ntest_calibration_within_ten_percent (test_creature_level_rating.CreatureLevelRatingTests.test_calibration_within_ten_percent) ... ok\ntest_deterministic (test_creature_level_rating.CreatureLevelRatingTests.test_deterministic) ... ok\ntest_every_creature_is_rated (test_creature_level_rating.CreatureLevelRatingTests.test_every_creature_is_rated) ... ok\ntest_missing_attacks_are_null_safe (test_creature_level_rating.CreatureLevelRatingTests.test_missing_attacks_are_null_safe) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 3.530s\n\nOK\n"
+  },
+  {
+    "name": "item_ruff",
+    "argv": [
+      "python",
+      "-m",
+      "ruff",
+      "check",
+      "tools/content-schema/item-authoring",
+      "tools/content-schema/world-object-authoring"
+    ],
+    "exit_code": 0,
+    "seconds": 0.058,
+    "stdout": "All checks passed!\n",
+    "stderr": ""
+  },
+  {
+    "name": "item_ruff_format",
+    "argv": [
+      "python",
+      "-m",
+      "ruff",
+      "format",
+      "--check",
+      "tools/content-schema/item-authoring",
+      "tools/content-schema/world-object-authoring"
+    ],
+    "exit_code": 0,
+    "seconds": 0.049,
+    "stdout": "131 files already formatted\n",
+    "stderr": ""
+  }
+]

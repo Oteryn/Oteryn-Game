@@ -16,11 +16,25 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT root; exclusive publication writer
 created_at: 2026-11-22T22:44:25Z
-updated_at: 2026-11-22T23:20:07Z
+updated_at: 2026-11-23T11:47:37Z
 execution_policy: continuous_progress
 owned_paths:
-  - .github/workflows/agent-governance.yml
   - tools/repository/test_agent_governance_pr_targets.py
+  - tools/repository/governance_main_job_cases.py
+  - tools/repository/governance_merge_authority_cases.py
+  - tools/repository/test_main_job_applicability.py
+  - tools/repository/test_merge_authority_applicability.py
+  - tools/repository/test_heavy_gate.py
+  - tools/repository/test_wp5_s3b_verdict.py
+  - tools/qualification/wp5_s3b/run.sh
+  - tools/qualification/node_boot/matrix.py
+  - tools/qualification/node_boot/test_matrix.py
+  - tools/content-migration/test_boss_corpse_terminal_reference.py
+  - tools/content-migration/test_coin_converter_profiles.py
+  - tools/content-migration/test_creature_level_rating.py
+  - tools/content-migration/test_parallel_checks.py
+  - tools/content-migration/test_world_project_v2_to_tree.py
+  - tools/content-schema/item-authoring/test_engine_items.py
   - tools/repository/test_validate_pr_gate_pg_sim.py
   - tools/content-schema/craft-authoring/test_tainted_souls.py
   - tools/qualification/node_boot/run.sh
@@ -62,30 +76,36 @@ NOT_APPLICABLE: no gameplay mechanic or reference balance value changes.
 
 ## Implementation and findings
 
-Applied: repository-test dispatch dedup with standalone caller preservation; craft duplicate removal/direct-discovery repair; exact scenario/cause/root baseline with fail-closed metadata; StageDump child-exit/final-status oracle; diagnostics single discovery and existing WorldFixture identity checks.
+The first candidate repaired craft duplicate/omitted execution, known-failure signature matching, StageDump's false-positive oracle and diagnostics discovery. Wave 5 restored the protected governance workflow byte-for-byte after its actual protected-base gate rejected the original workflow change; the focused original slice then had 53 executions / 42 unique cases.
 
-PROVEN: focused CI retains all42 unique IDs (54 executions before/42 after); craft retains seven unique bodies; actual-stage changed-root regression fails on original source and passes after repair. Peer QA found ambiguous metadata accepted by the initial parser; root added six red subcases and fixed it before publication. No Rust proposal is applied without compiler evidence.
+Current [wave 9](../../evidence/OTV2-20261122-test-ci-value-audit/wave-9/README.md) applies the subsequent reviewed repairs: exact selected indexed-row identity coverage in node-boot; actual one-test execution required for S3B; governance owner consolidation preserving all 16 cases and protected workflow bytes; Frost Cannon registration; independent coin/calibration oracles; canonical reference no-allocation semantics; and three content modules connected to the real migration runner. The focused original slice now retains 42 unique cases without the 11 duplicate executions. Four newly added S3B tests are additional coverage, outside that original slice.
 
-Open: matrix expected-ID completeness; incomplete/capture-only drivers; Windows input selection; source-label/count oracles; main-only PG receipt-test ownership; all remaining semantic scopes. Exact findings/dispositions are retained under the evidence directory.
+Open: basic/group/spells/Game–Platform completeness; incomplete/capture-only physical journeys; Windows input selection; source-label/count oracles; main-only PG receipt-test ownership; historical data fixtures; all remaining semantic scopes. The content-tool queue remains 627 paths and the separate global queue remains 130 groups. Repairs of already reviewed cases do not reduce either inventory.
 
 ## Validation
 
-Authoring commands/results: `../../evidence/OTV2-20261122-test-ci-value-audit/validation.json`. Diagnostics48 and affected CI42 pass; craft discovery/direct7 pass. Full node-boot discovery has seven environment errors from denied AF_UNIX creation; no provision tests were weakened/skipped. Final counts and policy/governance checks are in the evidence. Full repository sweep: 30/32 entrypoints pass; two require absent rustc/pwsh. Full qualification remains open.
+The wave-9 evidence distinguishes actual real CI artifact replay, compiled tiny Rust libtest outcomes, controlled shell fixtures and current gameplay qualification. Root verified integrated source hashes: all 31 repository test entrypoints, 109 node-boot tests, 135 governance tests, 11 focused migration tests, policy and pins passed on the isolated VPS. The engine's initial /tmp quota error was resolved by a same-filesystem TMPDIR, without source changes: 603 checks plus 3+3+4 subsidiary tests passed. Final authoring receipts are retained with the batch; exact frozen-head qualification is recorded in live PR/check evidence after publication.
 
-Rust, PostgreSQL, Windows/GPU, real game/Platform and PowerShell execution remain UNKNOWN. First candidate `978d40a02e9e9d4b1d8c16fe7dea25aad586e108` was published, frozen and checked from a clean checkout; provider review completed without findings. These results belong to that exact head; the second evidence-only candidate needs its own relevant checks. Final SHA and positive PR number belong to live PR/check evidence; do not create a metadata-only successor to copy them here.
+PROVEN before publication: governance direct/discovery 27→16 executions with the same 16 unique cases; engine 599→603 checks with all 108 functions selected once; real migration caller executes the three added modules; invalid empty/missing calibration and coin inputs are rejected. Four real CI ZIP digests and all 302 source dispatcher contracts were independently compared. No successful live gameplay claim is inferred from those FAIL-only artifacts.
+
+UNKNOWN: current-head full Game/Platform/PostgreSQL topology, Windows/GPU execution, whole-CI cost/flakiness and unvisited semantic value. Tiny Rust/libtest and real PowerShell execution are now available, superseding the first environment's absence; they are not full product qualification.
 
 ## Self-review and independent review
 
-Root reviewed code, original/fixed reproductions, unique-case retention, caller closure, baseline compatibility and scope labels. Independent authoring peer QA checked parser ambiguity, discovery and assertion retention; its accepted P2 was fixed and rechecked. This is not external exact-head Codex Review. Root requested one review after live dedup; provider completed it without findings for `978d40a02e9e9d4b1d8c16fe7dea25aad586e108` (PR comment 7087293938). No second paid review is requested for unchanged code.
+Root reviewed the integrated source delta and original/fixed reproductions. Independent lanes reviewed matrix/content repairs, caller closure, unique-case retention and real aggregate behavior. The stale aggregate positive fixture was found, repaired and replayed against both old and new summarizers. No protected YAML changed.
+
+The native external review completed without findings only for `978d40a02e9e9d4b1d8c16fe7dea25aad586e108` (PR comment 7087293938). Do not reuse it as a wave-9 exact-head receipt or request duplicate paid review without the bound policy's qualifying condition.
 
 ## PR and closeout
 
-Draft PR #3430 is open. Root explicitly reopened AUTHORING from `978d40a02e9e9d4b1d8c16fe7dea25aad586e108` for the substantive evidence-only [second wave](../../evidence/OTV2-20261122-test-ci-value-audit/wave-2/README.md), on a separate checkout. The original code-bearing candidate remains preserved. Do not merge. Continue substantive work in coherent batches under a single-writer exact-head lifecycle. Unvisited cases and unavailable runtime checks stay open; they do not become passed or unnecessary by timeout.
+Draft PR #3430 remains open and unmerged. Root reopened AUTHORING from `245ba7838e58318a2d851857b6c2b2d7c757aa09` for wave 9, preserving earlier checkouts. Publish one complete new candidate using the already selected META exception, with this live predecessor as sole parent and a non-force expected-head lease; then verify, freeze and requalify that exact returned SHA. There is no selected local commit to reconstruct. Final SHA and CI belong in live PR/check evidence, without a metadata-only successor.
+
+The eight scheduled overnight runs finished; their automation is disabled with no next run. This wave follows the user's explicit continuation. Do not merge. Unvisited cases and unavailable runtime checks remain open; timeout never changes them to PASS or unnecessary.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: First draft validated and externally reviewed; substantive second-wave findings retained
+last_progress: Wave 9 integrated concrete repairs and independent replay from source predecessor 245ba783
 status: implementing
 branch: codex/test-ci-value-audit-20261122
 head_sha: null
@@ -107,5 +127,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Publish and freeze the evidence-only successor; validate its exact tree and continue the enabled overnight remaining-scope queue
+next_action: Publish one wave-9 candidate, freeze its exact SHA and requalify it; retain the remaining audit queue
 ```

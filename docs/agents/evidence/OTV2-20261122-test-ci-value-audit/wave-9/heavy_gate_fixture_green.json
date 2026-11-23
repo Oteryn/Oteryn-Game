@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python3",
+    "tools/repository/test_heavy_gate.py",
+    "HeavyGateTests.test_node_boot_aggregate_fails_closed"
+  ],
+  "exit_code": 0,
+  "stdout": "",
+  "stderr": ".\n----------------------------------------------------------------------\nRan 1 test in 5.767s\n\nOK\n"
+}

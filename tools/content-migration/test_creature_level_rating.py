@@ -17,6 +17,14 @@ class CreatureLevelRatingTests(unittest.TestCase):
         cls.report = rating.build_report()
 
     def test_calibration_within_ten_percent(self):
+        self.assertCountEqual(
+            [(row["area"], row["observed_tibia"]) for row in self.report["calibration"]],
+            [
+                ("Bulltaur Lair", 300),
+                ("Nimmersatt's Breeding Ground", 454),
+                ("Rotten Wasteland", 790),
+            ],
+        )
         for row in self.report["calibration"]:
             self.assertLessEqual(
                 abs(row["oteryn"] - row["observed_tibia"]), row["observed_tibia"] * 0.1

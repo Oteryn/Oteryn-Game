@@ -1,0 +1,630 @@
+{
+  "phase": "AUTHORING on 245ba783; exact frozen candidate qualification remains separate",
+  "started_at": "2026-11-23T11:44:56.497719+00:00",
+  "repo": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+  "head": "245ba7838e58318a2d851857b6c2b2d7c757aa09",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "source_manifest_sha256": "c2e26cce2b8514a8cb1960081940a623b80dbca9726c258662fd806d03bf6cb2",
+  "source_hashes_verified": 16,
+  "checks": [
+    {
+      "name": "repository/test_agent_governance_pr_targets",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_agent_governance_pr_targets.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 11.332,
+      "unittest_counts": [
+        16
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_agent_governance_pr_targets.log",
+      "log_sha256": "4a8397134cccd06f64d7bac3fc8782dce8932a359f764fd113c064d4006e2565"
+    },
+    {
+      "name": "repository/test_benchmark_rust_cache",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_benchmark_rust_cache.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 10.689,
+      "unittest_counts": [
+        11
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_benchmark_rust_cache.log",
+      "log_sha256": "30261996f1866512a6636f123623c76e3c9b0856c4c2e19c9d4d42ffd1147129"
+    },
+    {
+      "name": "repository/test_check_dispatch_pg_shards",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_check_dispatch_pg_shards.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 16.586,
+      "unittest_counts": [
+        10
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_check_dispatch_pg_shards.log",
+      "log_sha256": "b38c7fd896ae7c653452b34ad2f090f22dcc6ab87629a541fab66d34200c2afb"
+    },
+    {
+      "name": "repository/test_check_duplicate_test_sources",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_check_duplicate_test_sources.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.173,
+      "unittest_counts": [
+        14
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_check_duplicate_test_sources.log",
+      "log_sha256": "c032d32d1f3f2f123c8c20d38cd6a551ddb7aac12e7e161862cdacb79ad5b22b"
+    },
+    {
+      "name": "repository/test_classify_content_routing",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_classify_content_routing.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.131,
+      "unittest_counts": [],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_classify_content_routing.log",
+      "log_sha256": "6ac52f2c2e0805bdb296acceb9f9a99fb654c95fc793bfd0131ed353d3b2ae45"
+    },
+    {
+      "name": "repository/test_classify_post_merge_lanes",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_classify_post_merge_lanes.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.573,
+      "unittest_counts": [],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_classify_post_merge_lanes.log",
+      "log_sha256": "6ed9e00f34986df5732ffafb6b34b95ca0259872464e8f4630beb01371cb86ff"
+    },
+    {
+      "name": "repository/test_classify_pr_test_lanes",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_classify_pr_test_lanes.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 8.292,
+      "unittest_counts": [],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_classify_pr_test_lanes.log",
+      "log_sha256": "5b934052689bfffb5f2ad84a00de09be6d5ff0e99d1c76f567cab593211842b2"
+    },
+    {
+      "name": "repository/test_classify_quest_authoring_scope",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_classify_quest_authoring_scope.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 48.876,
+      "unittest_counts": [
+        30
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_classify_quest_authoring_scope.log",
+      "log_sha256": "c0ed988550e29ef0bdf91876ed42d377257669cf3da077a617b5eb45a1b8ca74"
+    },
+    {
+      "name": "repository/test_collect_rust_fast_results",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_collect_rust_fast_results.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 4.02,
+      "unittest_counts": [
+        21
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_collect_rust_fast_results.log",
+      "log_sha256": "be44988ad471141942a70c6aecb54c389ae3f350635786ec2c88c04ed6322daa"
+    },
+    {
+      "name": "repository/test_heavy_gate",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_heavy_gate.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 59.691,
+      "unittest_counts": [
+        26
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_heavy_gate.log",
+      "log_sha256": "4dc9a1a00d2eebc031313431b0804e54c93338486bd2f6465e767c4979d52e68"
+    },
+    {
+      "name": "repository/test_job_result_key",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_job_result_key.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 27.329,
+      "unittest_counts": [
+        31
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_job_result_key.log",
+      "log_sha256": "616028e12047f46cb593d3bcc6a25e616c69329938d6bcccc120062e3ffae949"
+    },
+    {
+      "name": "repository/test_normalize_cargo_mtimes",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_normalize_cargo_mtimes.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 2.202,
+      "unittest_counts": [
+        8
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_normalize_cargo_mtimes.log",
+      "log_sha256": "94f18e71ec6b111321638909ff0a3c2a7e5511d3dff78ab7eb7c78b614c4bd2b"
+    },
+    {
+      "name": "repository/test_pg_archive_affinity",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_pg_archive_affinity.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.553,
+      "unittest_counts": [
+        5
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_pg_archive_affinity.log",
+      "log_sha256": "2b871dc7802bde22b0505f88195e880f275bc5d5a2101e62dd322a74d42f5e56"
+    },
+    {
+      "name": "repository/test_pg_test_durations",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_pg_test_durations.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.377,
+      "unittest_counts": [
+        4
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_pg_test_durations.log",
+      "log_sha256": "7bee5c8c0a2e825a1e71479c08a406820bc68b355987c06dec75f4d7bbd19f00"
+    },
+    {
+      "name": "repository/test_plan_pg_partitions",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_plan_pg_partitions.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.108,
+      "unittest_counts": [
+        9
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_plan_pg_partitions.log",
+      "log_sha256": "523c31c7ca9224a1fa7671e14e601cfaed2a0621a24d1c684fc4bf328e7414bd"
+    },
+    {
+      "name": "repository/test_protected_main_cache",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_protected_main_cache.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.58,
+      "unittest_counts": [
+        7
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_protected_main_cache.log",
+      "log_sha256": "4eb6bc373cbe201e3feea729ce6c7ef1a6158929da6e82c2164ba529959d63d4"
+    },
+    {
+      "name": "repository/test_refresh_ci_workflow_pins",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_refresh_ci_workflow_pins.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.221,
+      "unittest_counts": [
+        3
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_refresh_ci_workflow_pins.log",
+      "log_sha256": "1c28877b7ad68e86e640a51c1d6520a97414c1008a99700cb064854590c12f0b"
+    },
+    {
+      "name": "repository/test_reliability_checklist",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_reliability_checklist.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.107,
+      "unittest_counts": [
+        8
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_reliability_checklist.log",
+      "log_sha256": "dfbe17fa36a51a5d37bdcf4a622da83fa876d3480c1743708863ca911810ec47"
+    },
+    {
+      "name": "repository/test_repository_tests_run",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_repository_tests_run.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.102,
+      "unittest_counts": [
+        2
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_repository_tests_run.log",
+      "log_sha256": "ba3af0d2c03b4f566a769c57f288828e1eb796d3f9157fe1e0ce341f190c7f83"
+    },
+    {
+      "name": "repository/test_required_status_checks",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_required_status_checks.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.904,
+      "unittest_counts": [
+        2
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_required_status_checks.log",
+      "log_sha256": "8b9cec854c4ea9b0f7adba9387b96e589f119f834881e8e694c3af52ecd89d7e"
+    },
+    {
+      "name": "repository/test_run_rust_fast_archive",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_run_rust_fast_archive.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 2.398,
+      "unittest_counts": [
+        9
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_run_rust_fast_archive.log",
+      "log_sha256": "a1b80d62762c0d70939254167467c1eaee8cf87cfe2ed5a3c76480e806e0b542"
+    },
+    {
+      "name": "repository/test_rust_cache_pilot_workflow",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_rust_cache_pilot_workflow.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.997,
+      "unittest_counts": [
+        3
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_rust_cache_pilot_workflow.log",
+      "log_sha256": "69970a23de7c6cd3bacc755338c1767ef00c43084197b3bc0706106facf7547c"
+    },
+    {
+      "name": "repository/test_rust_fast_archive_routing",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_rust_fast_archive_routing.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.592,
+      "unittest_counts": [
+        2
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_rust_fast_archive_routing.log",
+      "log_sha256": "86ecf4ce03e8132e6453762f6719825f7c08e57f962e9809b58a6b3427fa1f5f"
+    },
+    {
+      "name": "repository/test_select_postgres_packages",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_select_postgres_packages.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 1.009,
+      "unittest_counts": [
+        10
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_select_postgres_packages.log",
+      "log_sha256": "ac40d580f307d1d910f042a1ea360b9479a6414c7a5ee0f4ddb63e35cce6ec04"
+    },
+    {
+      "name": "repository/test_shared_dispatch_archive",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_shared_dispatch_archive.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.374,
+      "unittest_counts": [
+        39
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_shared_dispatch_archive.log",
+      "log_sha256": "44d94093eaa191c5144738f48a90cca8ee810f8a309dcccade9674c848558db4"
+    },
+    {
+      "name": "repository/test_trim_cargo_cache",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_trim_cargo_cache.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.45,
+      "unittest_counts": [
+        13
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_trim_cargo_cache.log",
+      "log_sha256": "6495630a886856530c99daf81d56a9c479c09feebb8bd564da81d776504b08aa"
+    },
+    {
+      "name": "repository/test_validate_coded_output",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_validate_coded_output.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.192,
+      "unittest_counts": [
+        4
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_validate_coded_output.log",
+      "log_sha256": "24abe959977c118ae293d094448c1bfb6774b75ada53726f4cb98c4ffc78a90c"
+    },
+    {
+      "name": "repository/test_validate_game_atlas_semantic_search_triggers",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_validate_game_atlas_semantic_search_triggers.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.645,
+      "unittest_counts": [
+        6
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_validate_game_atlas_semantic_search_triggers.log",
+      "log_sha256": "82e740a9ca683b3f18e52593a3d49eee6e104c6eb2e04764e057891ccc297e1b"
+    },
+    {
+      "name": "repository/test_validate_merge_group_pg_sim",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_validate_merge_group_pg_sim.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 11.011,
+      "unittest_counts": [],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_validate_merge_group_pg_sim.log",
+      "log_sha256": "21104154241ee119d31f9d65db46e03f29354940a53f279ce063011299d4d0b8"
+    },
+    {
+      "name": "repository/test_validate_pr_gate_pg_sim",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_validate_pr_gate_pg_sim.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 8.944,
+      "unittest_counts": [
+        17
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_validate_pr_gate_pg_sim.log",
+      "log_sha256": "451cc62cc2754cc62dce720826764aea7068704f3dea1290d8ce705c26714bbf"
+    },
+    {
+      "name": "repository/test_wp5_s3b_verdict",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/test_wp5_s3b_verdict.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 1.038,
+      "unittest_counts": [
+        4
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository__test_wp5_s3b_verdict.log",
+      "log_sha256": "c2afdc463710749361afccf8275f4d5f952e202e4da8cc9d9f13abc3cb3d24d1"
+    },
+    {
+      "name": "node_boot_discovery",
+      "argv": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/qualification/node_boot",
+        "-p",
+        "test_*.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 28.123,
+      "unittest_counts": [
+        109
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/node_boot_discovery.log",
+      "log_sha256": "fdbc75f2026c7751bb59bf21c143e3d83efe8c6ce517e1d7a0dda36b3326e4e4"
+    },
+    {
+      "name": "agent_governance_tests",
+      "argv": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/agents/tests"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 2.38,
+      "unittest_counts": [
+        135
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/agent_governance_tests.log",
+      "log_sha256": "b9e51849ce3c9d10ca33e7613dc48abd171ed42762a867a25dbff811c81407c0"
+    },
+    {
+      "name": "repository_policy",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/validate_repository_policy.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 6.46,
+      "unittest_counts": [],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/repository_policy.log",
+      "log_sha256": "a3b2c1dc0c86e815ff5e0978f5d4bb94c3eec046f0b082c4b2819e915cb99af0"
+    },
+    {
+      "name": "agent_governance",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/agents/validate_governance.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.901,
+      "unittest_counts": [],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/agent_governance.log",
+      "log_sha256": "85269eb56f761142ef7d403fbf17b94d35b6a936f424abcae9120c12573496f0"
+    },
+    {
+      "name": "workflow_pins",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/repository/refresh_ci_workflow_pins.py",
+        "--check"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.079,
+      "unittest_counts": [],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/workflow_pins.log",
+      "log_sha256": "169f24774e13a79b6341d6c41c58f159e180701e87e9028aa70afdf8712b6fbb"
+    },
+    {
+      "name": "content_migration_focused",
+      "argv": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "-v",
+        "test_boss_corpse_terminal_reference",
+        "test_coin_converter_profiles",
+        "test_creature_level_rating",
+        "test_parallel_checks"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123/tools/content-migration",
+      "exit_code": 0,
+      "seconds": 8.79,
+      "unittest_counts": [
+        11
+      ],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/content_migration_focused.log",
+      "log_sha256": "398c37a6b356b88fb8ef7887561c8af93e54886505ae9f2da515901076c02832"
+    },
+    {
+      "name": "item_engine",
+      "argv": [
+        "/usr/bin/python3",
+        "tools/content-schema/item-authoring/test_engine_items.py"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 1,
+      "seconds": 7.333,
+      "unittest_counts": [],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/item_engine.log",
+      "log_sha256": "371d0c99139a6ac3045e8e9fa0cb8333664933ea9e1cfa07ca9fc5a4d338a573",
+      "tail": "Error: [Errno 18] Invalid cross-device link: '/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123/tools/content-schema/quest-authoring/samples/donor-source/lua-ast/ast-captures-04.tar.gz' -> '/tmp/oteryn-explicit-old165-gbo7s1cl/tools/content-schema/quest-authoring/samples/donor-source/lua-ast/ast-captures-04.tar.gz'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123/tools/content-schema/item-authoring/test_engine_items.py\", line 3956, in <module>\n    print(source_context.check(cohort=\"engine\"))\n          ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py\", line 344, in check\n    with historical_context(root) as path:\n         ~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 141, in __enter__\n    return next(self.gen)\n  File \"/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py\", line 91, in historical_context\n    hardlink_tree(\n    ~~~~~~~~~~~~~^\n        root / name,\n        ^^^^^^^^^^^^\n    ...<2 lines>...\n        detached=(\"content-schema/item-authoring\",) if name == \"tools\" else (),\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123/tools/content-schema/item-authoring/check_tibiawiki165_historical_context.py\", line 77, in hardlink_tree\n    shutil.copy2(p, q)\n    ~~~~~~~~~~~~^^^^^^\n  File \"/usr/lib/python3.14/shutil.py\", line 529, in copy2\n    copyfile(src, dst, follow_symlinks=follow_symlinks)\n    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.14/shutil.py\", line 334, in copyfile\n    _fastcopy_sendfile(fsrc, fdst)\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\n  File \"/usr/lib/python3.14/shutil.py\", line 223, in _fastcopy_sendfile\n    raise err\n  File \"/usr/lib/python3.14/shutil.py\", line 203, in _fastcopy_sendfile\n    sent = os.sendfile(outfd, infd, offset, blocksize)\nOSError: [Errno 122] Disk quota exceeded: '/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123/tools/content-schema/quest-authoring/samples/donor-source/lua-ast/ast-captures-04.tar.gz' -> '/tmp/oteryn-explicit-old165-gbo7s1cl/tools/content-schema/quest-authoring/samples/donor-source/lua-ast/ast-captures-04.tar.gz'\n"
+    },
+    {
+      "name": "qualification_shell_syntax",
+      "argv": [
+        "bash",
+        "-n",
+        "tools/qualification/node_boot/run.sh",
+        "tools/qualification/wp5_s3b/run.sh"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.006,
+      "unittest_counts": [],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/qualification_shell_syntax.log",
+      "log_sha256": "169f24774e13a79b6341d6c41c58f159e180701e87e9028aa70afdf8712b6fbb"
+    },
+    {
+      "name": "diff_check",
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-20261123",
+      "exit_code": 0,
+      "seconds": 0.704,
+      "unittest_counts": [],
+      "log_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation_logs/diff_check.log",
+      "log_sha256": "169f24774e13a79b6341d6c41c58f159e180701e87e9028aa70afdf8712b6fbb"
+    }
+  ],
+  "not_run": [
+    "full Game/Platform/PostgreSQL topology",
+    "Windows/GPU",
+    "complete remaining semantic audit"
+  ],
+  "repository_entrypoints": 31,
+  "protected_workflow_blobs": {
+    ".github/workflows/agent-governance.yml": "42d84c9089cdef928c6cb17268269156c87c0abb",
+    ".github/workflows/merge-gate.yml": "fc63fdaeb1f4d4d80356b4004cd26580d2f5cc55",
+    ".github/workflows/merge-group-gate.yml": "32f0bea7c7e0d071888670c36c39181697fb021b"
+  },
+  "finished_at": "2026-11-23T11:49:31.855992+00:00",
+  "failed": [
+    "item_engine"
+  ],
+  "passed": 39,
+  "full_receipt_sha256": "ba756270acabe1822da7aa5bb8010a70dc1d687b1d8ad0ae6b3fb31889aede93",
+  "full_receipt_path": "/home/ubuntu/oteryn-work/oteryn-test-ci-resume-proof-20261123/authoring_validation.json"
+}
