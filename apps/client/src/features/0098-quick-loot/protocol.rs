@@ -83,6 +83,21 @@ impl Outbox {
                 }
             }
             132 => {
+                let panel = &mut mailbox.discovery.inspection;
+                if let Some(allow) = panel.permission_pending.take() {
+                    use oteryn_session::CommandStatus;
+                    panel.pending = false;
+                    if matches!(response.status, CommandStatus::Accepted | CommandStatus::DuplicateReplay)
+                        && oteryn_client_ui::inspection::decode_reply(&response.payload).is_ok_and(|reply| reply.status == 8)
+                    {
+                        panel.allow_inspection = allow;
+                        panel.permission_retry_at = None;
+                    } else {
+                        panel.feedback = tr!("Permission denied").into();
+                        panel.permission_retry_at = Some((allow, std::time::Instant::now() + std::time::Duration::from_secs(5)));
+                    }
+                    return;
+                }
                 crate::play::feature_0068_imbue::protocol::equipment_inspection_result(
                     &mut mailbox,
                     response,

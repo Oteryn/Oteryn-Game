@@ -34,6 +34,7 @@ struct Overlay;
 struct State {
     snapshot: Option<(Key, WheelPanel)>,
     revision: u64,
+    level: Option<u32>,
     widgets: Option<widgets::Widgets>,
 }
 pub(super) fn install(app: &mut App) {
@@ -82,11 +83,13 @@ fn project(
         state.snapshot = None;
         return;
     };
-    if state
-        .snapshot
+    let level = owner
+        .play
         .as_ref()
-        .is_some_and(|(key, old)| key.generation == owner.generation() && old == &panel)
-    {
+        .and_then(|p| p.link.weapon_filter_character().0);
+    if state.snapshot.as_ref().is_some_and(|(key, old)| {
+        key.generation == owner.generation() && old == &panel && state.level == level
+    }) {
         return;
     }
     let Some(revision) = state.revision.checked_add(1) else {
@@ -108,6 +111,7 @@ fn project(
         }
         commands.entity(widgets.overlay).despawn();
     }
+    state.level = level;
     let mut values = panel.preset_fields.clone();
     if state.snapshot.as_ref().is_some_and(|(old_key, old)| {
         old_key.generation == key.generation && old.preset_fields == panel.preset_fields
@@ -125,7 +129,7 @@ fn project(
     {
         focus.set(widgets.panel, FocusCause::Navigated);
     }
-    widgets::render(&mut commands, &skins, widgets, key, &panel, &values);
+    widgets::render(&mut commands, &skins, widgets, key, &panel, &values, level);
     state.snapshot = Some((key, panel));
 }
 fn perform(owner: &HostOwner, state: &State, control: &Control, remove: Option<bool>) {

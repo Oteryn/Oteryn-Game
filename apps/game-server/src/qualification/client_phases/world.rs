@@ -551,6 +551,15 @@ fn find_route(
 
 /// Use the production floor resolver over the production bundle's collision facts.
 fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> Option<TilePos> {
+    destination_with_teleports(world, from, direction, true)
+}
+
+fn destination_with_teleports(
+    world: &BundleWorld,
+    from: TilePos,
+    direction: StepDirection,
+    allow_teleport: bool,
+) -> Option<TilePos> {
     use crate::map::floor::{Ground, resolve_landing};
     use crate::movement::CardinalStep;
     let direction = match direction {
@@ -581,7 +590,7 @@ fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> 
     let next = resolve_landing(
         world.floors(),
         ground,
-        |_| true,
+        |_| allow_teleport,
         (i32::from(from.x), i32::from(from.y), -i32::from(from.floor)),
         direction,
     )
@@ -798,6 +807,17 @@ async fn walk(
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
+    walk_with_landings(client, path, |at, direction| {
+        destination(world, at, direction)
+    })
+    .await
+}
+
+async fn walk_with_landings(
+    client: &mut oteryn_dev_client::DevClientSession,
+    path: &[StepDirection],
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+) -> TestResult {
     let mut path = VecDeque::from(path.to_vec());
     let mut blocked = std::collections::BTreeSet::new();
     while let Some(direction) = path.pop_front() {
@@ -811,7 +831,7 @@ async fn walk(
             }
             evidence(&format!(
                 "town_route step_rejected attempt={attempt} direction={direction:?} from={before:?} expected={:?} actual={:?}",
-                destination(world, tile(before)?, direction),
+                landing(tile(before)?, direction),
                 client.world_spatial().actor_position,
             ));
             let Some(delay) = town_route_retry_delay(
@@ -825,7 +845,7 @@ async fn walk(
             outcome = client.step_retrying(direction).await?;
         }
         let from = tile(before)?;
-        let expected = destination(world, from, direction);
+        let expected = landing(from, direction);
         if outcome.disposition == StepDisposition::Blocked
             && client.world_spatial().actor_position == before
             && let Some(occupied) = expected
@@ -851,7 +871,7 @@ async fn walk(
                     occupied,
                     &path,
                     |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
-                    |at, next| destination(world, at, next),
+                    &landing,
                 )
             {
                 path = detour.into();

@@ -32,6 +32,12 @@ fn t162_monk_combo_tracks_server_harmony_and_has_independent_controls()
     assert!(!play.resource_status().contains("Serene:"));
     assert_eq!(play.scene().sprites().len(), base + 5);
     let charged = play.scene().sprites().instances()[base..].to_vec();
+    let mut saved = serde_json::to_value(&preferences)?;
+    saved["harmony_left"] = true.into();
+    play.set_preferences(serde_json::from_value(saved)?)?;
+    let left = &play.scene().sprites().instances()[base..];
+    assert!(left.iter().all(|quad| quad.position[0] < charged[0].position[0]));
+    play.set_preferences(preferences.clone())?;
     play.cast(std::num::NonZeroU32::MIN);
     assert!(play.resource_status().contains("Combo charges: 3/5"));
     outbox.push(vec![event(2, 0, true)]);

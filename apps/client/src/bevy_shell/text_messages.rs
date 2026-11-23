@@ -30,6 +30,7 @@ struct ScreenMessage {
     text: String,
     colour: [u8; 3],
     expires: Duration,
+    kind: Option<crate::play::feature_local_text_messages::view::NoticeKind>,
 }
 #[derive(Resource, Default)]
 struct ScreenMessages {
@@ -55,6 +56,7 @@ impl ScreenMessages {
     fn show(&mut self, area: Area, text: &str, colour: [u8; 3], now: Duration) {
         self.slots[area as usize] = Some(ScreenMessage {
             text: text.into(),
+            kind: None,
             colour,
             expires: now.saturating_add(visible_time(text)),
         });
@@ -155,8 +157,19 @@ fn project(
         if reset {
             state.slots[Area::Private as usize] = None;
         }
-        if let Some(text) = private {
+        if owner.settings.preferences.game_window.private_messages
+            && let Some(text) = private
+        {
             state.show(Area::Private, &text, [95, 247, 247], now);
+        }
+        for notice in play.link.take_window_notices() {
+            if !notice.kind.visible(&owner.settings.preferences) {
+                continue;
+            }
+            state.show(Area::Bottom, &notice.text, [255; 3], now);
+            if let Some(slot) = &mut state.slots[Area::Bottom as usize] {
+                slot.kind = Some(notice.kind);
+            }
         }
         if let Some(message) = play.link.look_message() {
             state.observe_look(&message, now);
@@ -180,9 +193,16 @@ fn project(
             Area::Loot => continue,
             Area::Top | Area::Bottom => banners,
             Area::Center => popups,
-            Area::Look | Area::Private => true,
+            Area::Look => true,
+            Area::Private => owner.settings.preferences.game_window.private_messages,
         };
-        let message = state.visible(area.0, now).filter(|_| enabled);
+        let message = state.visible(area.0, now).filter(|message| {
+            enabled
+                && owner.settings.preferences.game_window.messages
+                && message
+                    .kind
+                    .is_none_or(|kind| kind.visible(&owner.settings.preferences))
+        });
         let value = message.map_or("", |message| message.text.as_str());
         if text.0 != value {
             text.0 = value.into();
