@@ -251,9 +251,10 @@ A file is written only from a successful capture and is never replaced.
 `LOGIN_LOCAL_RESULT=` is `BLOCKED`, `FAIL`, `READY` (services up, environment written), `ADMITTED`
 (the client printed `Oteryn: admitted to World ...`) or `WALKED`.
 
-`WALKED` is only emitted from a post-READY operator attestation tied to the current run. **Gap:** the walk happens in
-the Windows shell, which has no machine-readable step output, and the node logs no per-step event, so `WALKED`
-cannot be derived automatically. The non-Windows client binary stops at admission (`ADMITTED`). For the walk, run
+`WALKED` is only emitted from a post-READY operator attestation tied to the current run. Use the Bevy
+`--ui-audit` step receipt described in the Windows acceptance procedure as evidence for the attestation.
+The runbook does not consume the audit file automatically. The non-Windows client invoked by the runbook
+stops at admission (`ADMITTED`). For the walk, run
 with `LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0` and use `client.env` on Windows (the dev root and ports are
 loopback, so run the node and client on the same host). `client.env` carries a Windows-readable
 `OTERYN_DEV_ROOT` (`wslpath -w` under WSL; otherwise set `LOGIN_LOCAL_DEV_ROOT_WINDOWS` to a writable path the
