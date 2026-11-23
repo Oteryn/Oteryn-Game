@@ -42,12 +42,12 @@
     "item_conversion": 130
   },
   "item_authoring_counts": {
-    "authoring": 700,
-    "relation_sources": 880,
+    "authoring": 1153,
+    "relation_sources": 1161,
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "8b1b9c5d9603f29a57c942283ab5721a0084c6d9",
+    "declarations": "186c5ebae175cd9ce3b0549041debf7e89830d53",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "307cf0a3d2c62e222a27ceab4f3b19af9f8b3edf",
     "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",

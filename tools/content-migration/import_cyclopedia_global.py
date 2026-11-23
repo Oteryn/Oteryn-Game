@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""Import captured Global weights into canonical and cooking Item semantics.
+"""Import captured Global Item facts and NPC shop prices into the content tree.
 
 Weights are hundredths of an ounce. Alias records resolve through the capture's
 explicit details target; constructor declarations follow the same client facts.
 """
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
 from decimal import Decimal
 import hashlib
 import json
 import re
+import subprocess
+import unicodedata
 from pathlib import Path
 
 
-def load_weights(root):
-    """Return client weights (hundredths of an ounce) by Item id from the verified capture."""
+def load_capture(root):
+    """Verify the capture and give every alias its target's detail record."""
     capture = root / 'docs/reference/content-prep/item-cyclopedia-capture-1'
     raw = (capture / 'items.jsonl').read_bytes()
     manifest = json.loads((capture / 'manifest.json').read_bytes())
@@ -30,8 +32,10 @@ def load_weights(root):
         if row['basic']['Weight'] != correction['captured_weight']:
             raise ValueError('Stale Cyclopedia weight correction')
         row['basic']['Weight'] = correction['global_weight']
-    weights = {}
+    resolved = {}
     for identifier, row in rows.items():
+        if row['compatibility']['target'] != 'tibia-global':
+            raise ValueError('Unexpected compatibility target')
         seen = set()
         while 'details_from_alias_id' in row['compatibility']:
             target = row['compatibility']['details_from_alias_id']
@@ -39,8 +43,17 @@ def load_weights(root):
                 raise ValueError('Cyclopedia alias cycle')
             seen.add(target)
             row = rows[target]
-        if row['compatibility']['target'] != 'tibia-global':
-            raise ValueError('Unexpected compatibility target')
+        resolved[identifier] = row
+    return resolved
+
+
+def load_weights(root):
+    return capture_weights(load_capture(root))
+
+
+def capture_weights(rows):
+    weights = {}
+    for identifier, row in rows.items():
         value = Decimal(row['basic']['Weight'].removesuffix(' oz')) * 100
         if value != int(value) or not 0 <= value <= 0xffffffff:
             raise ValueError('Unrepresentable weight')
@@ -172,18 +185,531 @@ def refresh_overlay_weights(root, weights):
     return changed
 
 
+ITEM_PREFIX = 'oteryn:item.tibia.i'
+UNKNOWN = {'state': 'UNKNOWN'}
+SLOTS = dict(zip(
+    ('head', 'body', 'legs', 'feet', 'weapon hand', 'shield hand', 'neck', 'finger',
+     'container', 'extra slot', 'both hands'),
+    ('HEAD', 'TORSO', 'LEGS', 'FEET', 'WEAPON', 'SHIELD', 'AMULET', 'RING',
+     'CONTAINER', 'EXTRA', 'WEAPON'),
+))
+VOCATIONS = dict(zip(
+    ('druids', 'knights', 'monks', 'paladins', 'sorcerers', 'players without vocation'),
+    ('DRUID', 'KNIGHT', 'MONK', 'PALADIN', 'SORCERER', 'NONE'),
+))
+# Rust enum order is required by ReferenceItemSemantics validation.
+RESISTANCES = dict(zip(
+    ('death', 'drowning', 'earth', 'energy', 'fire', 'holy', 'ice', 'life drain',
+     'mana drain', 'physical', 'poison', 'fire field'),
+    ('DEATH', 'DROWN', 'EARTH', 'ENERGY', 'FIRE', 'HOLY', 'ICE', 'LIFE_DRAIN',
+     'MANA_DRAIN', 'PHYSICAL', 'POISON', 'FIRE_FIELD'),
+))
+SKILL_KINDS = (
+    'ELEMENTAL_BOND', 'INVISIBILITY', 'MANA_SHIELD', 'MANTRA', 'CLEAVE_PERCENT',
+    'CRITICAL_HIT_CHANCE', 'CRITICAL_HIT_DAMAGE', 'DEATH_MAGIC_LEVEL_POINTS',
+    'EARTH_MAGIC_LEVEL_POINTS', 'ENERGY_MAGIC_LEVEL_POINTS', 'FIRE_MAGIC_LEVEL_POINTS',
+    'HEALING_MAGIC_LEVEL_POINTS', 'HEALTH_GAIN', 'HEALTH_TICKS', 'HOLY_MAGIC_LEVEL_POINTS',
+    'ICE_MAGIC_LEVEL_POINTS', 'LIFE_LEECH_AMOUNT', 'LIFE_LEECH_CHANCE', 'MAGIC_LEVEL_POINTS',
+    'MAGIC_SHIELD_CAPACITY_FLAT', 'MAGIC_SHIELD_CAPACITY_PERCENT', 'MANA_GAIN',
+    'MANA_LEECH_AMOUNT', 'MANA_LEECH_CHANCE', 'MANA_TICKS', 'PERFECT_SHOT_DAMAGE',
+    'PERFECT_SHOT_RANGE', 'REFLECT_DAMAGE', 'SKILL_AXE', 'SKILL_CLUB', 'SKILL_DISTANCE',
+    'SKILL_FIST', 'SKILL_SHIELD', 'SKILL_SWORD', 'SPEED', 'SUPPRESS_DROWN',
+    'SUPPRESS_DRUNK', 'REFLECT_PERCENT_ALL',
+)
+POINT_BOOSTS = {
+    **{f'{skill} fighting': f'SKILL_{skill.upper()}'
+       for skill in ('axe', 'club', 'distance', 'fist', 'sword')},
+    **{label: f'{label.upper().replace(" ", "_")}_POINTS' for label in
+       ('magic level', *(f'{element} magic level' for element in
+                         ('death', 'earth', 'energy', 'fire', 'healing', 'holy', 'ice')))},
+    'shielding': 'SKILL_SHIELD',
+    'speed': 'SPEED',
+}
+PERCENT_BOOSTS = {
+    'critical hit chance': 'CRITICAL_HIT_CHANCE',
+    'critical extra damage': 'CRITICAL_HIT_DAMAGE',
+    'life leech': 'LIFE_LEECH_AMOUNT',
+    'mana leech': 'MANA_LEECH_AMOUNT',
+}
+
+
+def item_id(identity):
+    key = identity['key'].removeprefix(ITEM_PREFIX)
+    return int(key) if key.isdigit() else None
+
+
+def known(value):
+    return {'state': 'KNOWN', 'value': value}
+
+
+def group(semantics, name, fields):
+    existing = semantics.get(name, {})
+    if existing.get('state') != 'KNOWN':
+        existing = semantics[name] = known(dict.fromkeys(fields.split(), UNKNOWN))
+    return existing['value']
+
+
+def percent(value):
+    return {'numerator': int(value), 'denominator': 1}
+
+
+def attack_fields(text):
+    if match := re.fullmatch(r'(\d+)(?: physical \+(\d+))?(?: (death|earth|energy|fire|ice))?', text):
+        first, extra, element = match.groups()
+        attack = int(first) if extra or not element else 0
+        # The typed weapon group stores the physical and elemental portions separately.
+        result = {'attack': attack}
+        if element:
+            result['elemental'] = [{'element': element.upper(), 'points': known(int(extra or first))}]
+        return result
+    # Ranged launchers put the flat attack modifier on a separate authoring path.
+    clauses = text.split(', ')
+    ranges = [part for part in clauses if re.fullmatch(r'\d+ fields', part)]
+    if len(ranges) != 1 or any(not re.fullmatch(r'attack [+-]\d+|chance to hit [+-]\d+%|\d+ fields', part)
+                               for part in clauses):
+        raise ValueError(f'Unrecognized Cyclopedia Attack: {text}')
+    return {}
+
+
+def skill_boosts(text, existing, counts):
+    by_kind = {row['kind']: row for row in existing}
+    captured_kinds = set(POINT_BOOSTS.values()) | set(PERCENT_BOOSTS.values()) | {'SUPPRESS_DRUNK'}
+    result = {kind: row for kind, row in by_kind.items() if kind not in captured_kinds}
+    for entry in text.split(', '):
+        if entry == 'faster regeneration':
+            counts['unquantified_regeneration'] += 1
+            continue
+        if entry == 'hard drinking':
+            kind, parameter = 'SUPPRESS_DRUNK', {'kind': 'BOOLEAN', 'value': True}
+        else:
+            match = re.fullmatch(r'(.+) ([+-]?\d+)(%?)', entry)
+            if match is None:
+                raise ValueError(f'Unrecognized Cyclopedia Skill Boost: {entry}')
+            label, value, suffix = match.groups()
+            kind, parameter = (
+                (PERCENT_BOOSTS[label], {'kind': 'RATIONAL_PERCENT', 'value': percent(value)})
+                if suffix else (POINT_BOOSTS[label], {'kind': 'SIGNED_POINTS', 'value': int(value)})
+            )
+        result[kind] = {
+            **by_kind.get(kind, dict.fromkeys(('target_domain', 'evaluation_phase', 'priority'), UNKNOWN)),
+            'kind': kind, 'parameter': known(parameter),
+        }
+    return sorted(result.values(), key=lambda row: SKILL_KINDS.index(row['kind']))
+
+
+def apply_stats(definition, basic, counts):
+    semantics = definition.get('semantics')
+    if semantics is None:
+        counts['matched_items_without_semantics'] += 1
+        return
+
+    def set_field(destination, field, value, name):
+        desired = known(value)
+        counts[name + ('_matched' if destination.get(field) == desired else '_changed')] += 1
+        destination[field] = desired
+
+    if 'Attack' in basic or 'Defence' in basic:
+        fields = attack_fields(basic['Attack']) if 'Attack' in basic else {}
+        if 'Defence' in basic:
+            defense = basic['Defence'].split()
+            fields['defense'] = int(defense[0])
+            if len(defense) == 2:
+                fields['extra_defense'] = int(defense[1])
+        if fields:
+            weapon = group(semantics, 'weapon',
+                           'weapon_type attack defense extra_defense range hit_chance max_hit_chance ammunition elemental')
+            for field, value in fields.items():
+                set_field(weapon, field, value, field)
+            # A displayed plain value has no secondary attack or defence component.
+            for field, present in (('elemental', 'attack'), ('extra_defense', 'defense')):
+                if present in fields and field not in fields and weapon[field].get('state') == 'KNOWN':
+                    if weapon[field]['value']:
+                        set_field(weapon, field, [] if field == 'elemental' else 0, field)
+
+    if 'Armor' in basic or 'Protection' in basic:
+        protection = group(semantics, 'protection', 'armor resistances')
+        if 'Armor' in basic:
+            set_field(protection, 'armor', int(basic['Armor']), 'armor')
+        if 'Protection' in basic:
+            entries = [part.rsplit(' ', 1) for part in basic['Protection'].split(', ')]
+            entries.sort(key=lambda pair: tuple(RESISTANCES).index(pair[0]))
+            set_field(protection, 'resistances', [
+                {'kind': RESISTANCES[label], 'percent': known(percent(value.removesuffix('%')))}
+                for label, value in entries
+            ], 'protections')
+
+    if 'Imbuement Slots' in basic:
+        imbuement = group(semantics, 'imbuement', 'slot_count allowed_family_tiers excluded_families')
+        set_field(imbuement, 'slot_count', int(basic['Imbuement Slots']), 'imbuement_slots')
+
+    if 'Skill Boost' in basic:
+        previous = semantics.get('skill_modifiers', {}).get('value', {}).get('modifiers', {}).get('value', [])
+        boosts = skill_boosts(basic['Skill Boost'], previous, counts)
+        if boosts or previous:
+            set_field(group(semantics, 'skill_modifiers', 'modifiers'), 'modifiers', boosts, 'skill_boosts')
+
+    requirements = {}
+    if 'Vocations' in basic:
+        vocations = {VOCATIONS[name] for name in basic['Vocations'].split(', ')}
+        requirements['vocations'] = [name for name in VOCATIONS.values() if name in vocations]
+    if 'Required Level' in basic:
+        requirements['level'] = int(basic['Required Level'])
+    if not requirements:
+        return
+
+    position = basic.get('Body Position')
+    if position in (None, 'extra slot'):
+        use = group(semantics, 'use_requirements', 'min_level min_magic_level vocations')
+        use['enforcement_mode'] = 'ON_USE'
+        for name, value in requirements.items():
+            set_field(use, 'min_level' if name == 'level' else name, value, name)
+        return
+
+    equipment = group(semantics, 'equipment', 'patterns')
+    patterns = equipment['patterns'].get('value')
+    if not patterns:
+        patterns = [{
+            'pattern_id': 1, 'primary_slot': known(SLOTS[position]),
+            'additional_reserved_slots': known(['SHIELD'] if position == 'both hands' else []),
+            'mutually_exclusive_groups': UNKNOWN, 'compatibility_rule': UNKNOWN,
+            'level': UNKNOWN, 'vocations': UNKNOWN,
+        }]
+        equipment['patterns'] = known(patterns)
+    for pattern in patterns:
+        for name, value in requirements.items():
+            set_field(pattern, name, value, name)
+
+
+# Preserve native WorldProject wire field order in the declaration document.
+OFFER_FIELDS = ('item', 'direction', 'unit_price', 'currency', 'count', 'sub_type', 'parity_pending')
+TRADE_PREFIX = 'oteryn:service.trade.'
+TRADE_DIRECTIONS = {'npc_buy_from': 'SellToPlayer', 'npc_sell_to': 'BuyFromPlayer'}
+
+
+def npc_name(name):
+    # Canonical NPC slugs differ in punctuation, spacing and case from the client labels.
+    return ''.join(char for char in unicodedata.normalize('NFKD', name.casefold())
+                   if char.isascii() and char.isalnum())
+
+
+def trade_identity(offer):
+    return (offer['item']['key'], offer['item']['revision'], offer['direction'],
+            offer['unit_price'], (offer.get('currency') or {}).get('key', ''),
+            offer.get('count', 0), offer.get('sub_type', -1), offer.get('parity_pending', False))
+
+
+def apply_trades(declarations, rows, identities, counts):
+    services = {d['identity']['key']: d for d in declarations
+                if d['identity']['key'].startswith(TRADE_PREFIX) and d.get('offers')}
+    shops = defaultdict(set)
+    for npc in declarations:
+        if npc['kind'] == 'NPC':
+            name = npc_name(npc['identity']['key'].removeprefix('oteryn:npc.'))
+            shops[name].update(ref['key'] for ref in npc.get('services', []) if ref['key'] in services)
+
+    captures = defaultdict(lambda: defaultdict(Counter))
+    for identifier, row in rows.items():
+        for capture_field, direction in TRADE_DIRECTIONS.items():
+            for offer in row.get(capture_field, []):
+                currency = offer.get('currency_object_type_id')
+                candidates = shops[npc_name(offer['npc'])]
+                if 'currency' in offer and currency is None:
+                    counts['unmodeled_named_currency'] += 1
+                elif identifier not in identities or (currency is not None and currency not in identities):
+                    counts['trade_item_or_currency_missing'] += 1
+                elif len(candidates) != 1:
+                    counts['trade_npc_without_unique_active_service'] += 1
+                else:
+                    shop = next(iter(candidates))
+                    captures[shop][identifier, direction][currency, offer['price']] += 1
+
+    for shop, service in services.items():
+        by_row = defaultdict(list)
+        for offer in service['offers']:
+            by_row[item_id(offer['item']), offer['direction']].append(offer)
+        changed = False
+        for (identifier, direction), captured in captures[shop].items():
+            by_currency = defaultdict(list)
+            for (currency, price), occurrences in captured.items():
+                by_currency[currency].append((price, occurrences))
+            current = by_row[identifier, direction]
+            for currency, prices in by_currency.items():
+                if len(prices) != 1:
+                    counts['trade_conflicting_location_prices'] += sum(n for _, n in prices)
+                    continue
+                price, occurrences = prices[0]
+                ref = identities.get(currency)
+                matching = [offer for offer in current if offer.get('currency') == ref]
+                # One existing row and one unambiguous capture can also correct the currency.
+                if not matching and len(current) == len(by_currency) == 1:
+                    matching = current
+                if not matching:
+                    matching = [{'item': identities[identifier], 'direction': direction}]
+                    service['offers'].extend(matching)
+                    counts['trade_offers_added'] += 1
+                for offer in matching:
+                    before = dict(offer)
+                    offer['unit_price'] = price
+                    offer.pop('parity_pending', None)
+                    if ref:
+                        offer['currency'] = ref
+                    else:
+                        offer.pop('currency', None)
+                    if before == offer:
+                        counts['trade_offers_matched'] += 1
+                    else:
+                        changed = True
+                        counts['trade_offers_changed'] += int('unit_price' in before)
+                counts['trade_capture_rows_matched_to_service'] += occurrences
+                if currency is not None:
+                    counts['trade_item_currency_capture_rows'] += occurrences
+        if changed:
+            service['offers'] = [
+                {field: offer[field] for field in OFFER_FIELDS if field in offer}
+                for offer in sorted(service['offers'], key=trade_identity)
+            ]
+
+
+def forge_tiers(root):
+    from sys import path as module_path
+
+    module_path.insert(0, str(root / 'tools/content-schema/item-authoring'))
+    try:
+        from source_field_catalogs import FORGE_CLASSIFICATION_MAX_TIER
+    finally:
+        module_path.pop(0)
+    return FORGE_CLASSIFICATION_MAX_TIER
+
+
+def captured_authoring_fields(basic, tiers):
+    fields = {}
+    if 'Classification' in basic:
+        classification = int(basic['Classification'])
+        fields['forge'] = {'classification': classification, 'max_tier': tiers[classification]}
+    attack = basic.get('Attack')
+    if attack and not attack_fields(attack):
+        modifier = re.search(r'(?:^|, )attack ([+-]\d+)(?:,|$)', attack)
+        fields['weapon_attack_modifier_points'] = int(modifier[1]) if modifier else 0
+    return fields
+
+
+def apply_authoring(root, rows, identities, counts):
+    # WorldProject/v2 is the converter's input for Item authoring and NPC Services.
+    tiers = forge_tiers(root)
+    path = root / 'content/world/definitions/declarations.json'
+    raw = path.read_bytes()
+    document = json.loads(raw)
+    authoring = {row['item']['key']: dict(row) for row in document['item_authoring']}
+    for identifier, row in rows.items():
+        basic = row['basic']
+        if identifier not in identities:
+            counts['capture_items_without_definition'] += 1
+            continue
+        fields = captured_authoring_fields(basic, tiers)
+        if not fields:
+            continue
+        identity = identities[identifier]
+        profile = authoring.setdefault(identity['key'], {'item': identity})
+        for field, desired in fields.items():
+            label = 'classification' if field == 'forge' else 'launcher_attack'
+            counts[label + ('_matched' if profile.get(field) == desired else '_changed')] += 1
+            profile[field] = desired
+    apply_trades(document['records'], rows, identities, counts)
+    updated = (json.dumps(document, ensure_ascii=False, separators=(',', ':')) + '\n').encode()
+    if updated != raw:
+        path.write_bytes(updated)
+    # The historical WorldProject Item admission inventory is sealed independently.
+    # The tree's Item authoring projection incorporates this new capture cohort.
+    return {**document, 'item_authoring': list(authoring.values())}
+
+
 def apply_admissions(item_records, root):
-    """Client weights are tree-first; retain them across legacy regeneration."""
-    weights = load_weights(root)
+    """Replay verified client semantics during legacy-to-tree generation."""
+    rows = load_capture(root)
+    weights = capture_weights(rows)
     for definition in item_records:
         apply_weight(definition, weights)
+        if row := rows.get(item_id(definition['identity'])):
+            apply_stats(definition, row['basic'], Counter())
+
+
+def materialize_details(root, reference, declarations):
+    """Regenerate the affected tree projections and preserve other registry owners."""
+    import questpc7_world_seal
+    import world_project_v2_to_tree as tree
+    from regenerate_content import repin_rust_inventory
+
+    if root.resolve() != tree.ROOT:
+        raise ValueError('Details regeneration requires its repository checkout')
+    questpc7_world_seal.refresh(root)
+    repin_rust_inventory()
+    item_index_path = 'content/items/index.json'
+    spell_imports = tree.load(root / item_index_path).get('spell_imports')
+    _, _, authoring, _, _ = tree.materialize_item_tree(
+        reference, declarations,
+        tree.load(tree.LEGACY / 'editor/author.json'),
+        tree.load(tree.LEGACY / 'provenance/sources.json'),
+    )
+    if spell_imports is not None:
+        index = tree.load(root / item_index_path)
+        index['spell_imports'] = spell_imports
+        tree.write(item_index_path, index)
+    definitions = {tree.target_id(row['identity']): row for row in reference['records']}
+    relations = []
+    for key, definition in sorted(definitions.items()):
+        if key[0] == 'Item' and (rules := tree.capability_relations(definition, authoring.get(key))):
+            relations.append({'source': definition['identity'], 'relations': rules})
+    tree.write('content/items/relations/items.json', {
+        'schema': 'OTERYN_ITEM_RELATIONS/v1', 'records': relations,
+    })
+
+    trades = {row['identity']['key']: row for row in declarations['records']
+              if row['kind'] == 'Service' and row['identity']['key'].startswith(TRADE_PREFIX)}
+    trade_index = tree.load(root / 'content/services/trade/index.json')
+    for relative in trade_index['shards']:
+        shard = tree.load(root / relative)
+        for row in shard['records']:
+            key = row['declaration']['identity']['key']
+            row['declaration'] = trades.pop(key)
+        tree.write(relative, shard)
+    if trades:
+        raise ValueError('Global trade import changed the service identity inventory')
+
+    source = 'content/world/definitions/declarations.json'
+    blob = tree.git_blob_sha(root / source)
+    for path in sorted((root / 'content').rglob('index.json')):
+        index = tree.load(path)
+        legacy = index.get('legacy_source', {})
+        if legacy.get('path') == source and legacy['git_blob_sha'] != blob:
+            legacy['git_blob_sha'] = blob
+            tree.write(path.relative_to(root).as_posix(), index)
+    lock_path = 'content/content.lock.json'
+    lock = tree.load(root / lock_path)
+    lock['legacy_blobs']['declarations'] = blob
+    lock['item_authoring_counts']['authoring'] = len(authoring)
+    lock['item_authoring_counts']['relation_sources'] = len(relations)
+    tree.write_registry(lock_path, lock)
+
+
+def refresh_profile_input_pins(root, base, rows):
+    """Rebind active native source profiles only across verified client detail edits."""
+    from functools import cache
+
+    from grizzly_shop_profiles import encode
+
+    tiers = forge_tiers(root)
+
+    @cache
+    def previous(path):
+        return subprocess.check_output(['git', '-C', str(root), 'show', f'{base}:{path}'])
+
+    def definitions(document):
+        return {row['definition']['identity']['key']: row['definition']
+                for row in json.loads(document)['records']}
+
+    @cache
+    def verified_shard(path):
+        if not re.fullmatch(r'content/items/definitions/items-\d{5}-\d{5}\.json', path):
+            raise ValueError(f'Unexpected Cyclopedia input pin path: {path}')
+        raw = (root / path).read_bytes()
+        expected = json.loads(previous(path))
+        for record in expected['records']:
+            definition = record['definition']
+            if row := rows.get(item_id(definition['identity'])):
+                apply_stats(definition, row['basic'], Counter())
+                if authoring := captured_authoring_fields(row['basic'], tiers):
+                    record.setdefault('authoring', {}).update(authoring)
+        if expected != json.loads(raw):
+            raise ValueError(f'Canonical Item changes exceed capture replay: {path}')
+        return raw, definitions(raw)
+
+    def digest(value):
+        return hashlib.sha256(value).hexdigest()
+
+    def definition_bytes(definition):
+        return json.dumps(definition, ensure_ascii=False, sort_keys=True,
+                          separators=(',', ':')).encode()
+
+    changed = []
+    directory = 'tools/content-schema/native-gameplay/'
+    for name in ('condition-potion', 'grizzly-shop', 'monk-reward', 'quests-2-emperor-item',
+                 'task-board-item', 'quest-batch3-item', 'qnpcfx-item'):
+        relative = f'{directory}{name}-profiles.json'
+        baseline = json.loads(previous(relative))
+        packet = json.loads((root / relative).read_bytes())
+        if ({**packet, 'canonical_inputs': baseline['canonical_inputs']} != baseline
+                or len(packet['canonical_inputs']) != len(baseline['canonical_inputs'])):
+            raise ValueError(f'Native source profile changed: {relative}')
+        for original, current in zip(baseline['canonical_inputs'], packet['canonical_inputs'], strict=True):
+            path = original['path']
+            field = 'definition_sha256' if 'key' in original else 'sha256'
+            if {**current, field: original[field]} != original:
+                raise ValueError(f'Native source profile input changed: {relative}')
+            raw = (root / path).read_bytes()
+            if raw == previous(path):
+                continue
+            raw, after = verified_shard(path)
+            old_raw = previous(path)
+            if 'key' in original:
+                key = original['key']
+                old_raw = definition_bytes(definitions(old_raw)[key])
+                raw = definition_bytes(after[key])
+            if digest(old_raw) != original[field] or current[field] not in (original[field], digest(raw)):
+                raise ValueError(f'Native source profile pin mismatch: {relative} {path}')
+            current[field] = digest(raw)
+        encoded = encode(packet)
+        if encoded != (root / relative).read_bytes():
+            (root / relative).write_bytes(encoded)
+            changed.append(relative)
+    return changed
+
+
+def refresh_reward_proof(root, base, rows):
+    """Run the reward proof generator with an exact capture replay as qualifier."""
+    from unittest.mock import patch
+
+    import refresh_reward_stack_weight_proof as proof
+
+    def qualified_digest(before, after, pinned, _weight):
+        if proof.semantic_digest(before) != pinned:
+            raise ValueError('REWARD_STACK_BASE_DEFINITION_DRIFT')
+        identifier = item_id(before['identity'])
+        apply_stats(before, rows[identifier]['basic'], Counter())
+        if before != after:
+            raise ValueError('REWARD_STACK_NON_CYCLOPEDIA_CHANGE')
+        return proof.semantic_digest(after)
+
+    with patch.object(proof, 'qualified_digest', qualified_digest):
+        return proof.refresh(root, base)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[2])
+    parser.add_argument('--details-only', action='store_true', help='import stats and NPC trades beyond weight')
+    parser.add_argument('--refresh-detail-pins-from', metavar='BASE',
+                        help='requalify derived pins after tree regeneration against this Git base')
     args = parser.parse_args()
     root = args.root
+    if args.refresh_detail_pins_from:
+        rows = load_capture(root)
+        base = args.refresh_detail_pins_from
+        print(json.dumps({
+            'reward_stack_proofs': refresh_reward_proof(root, base, rows),
+            'native_profile_pins': refresh_profile_input_pins(root, base, rows),
+        }, indent=2))
+        return
+    if args.details_only:
+        rows = load_capture(root)
+        counts = Counter()
+        reference = json.loads((root / 'content/world/definitions/reference.json').read_bytes())
+        identities = {item_id(record['identity']): record['identity']
+                      for record in reference['records'] if record['identity']['family'] == 'Item'
+                      and item_id(record['identity']) is not None}
+        declarations = apply_authoring(root, rows, identities, counts)
+        materialize_details(root, reference, declarations)
+        print(json.dumps(counts, sort_keys=True, indent=2))
+        return
     weights = load_weights(root)
     overlays = refresh_overlay_weights(root, weights)
     counts = Counter()
