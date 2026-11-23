@@ -363,6 +363,16 @@ fn tutorial_vocation_server_capture_buttons_submit_and_close_in_bevy() -> TestRe
                 .ok_or("Paladin button")?;
             app.world_mut()
                 .trigger(bevy::ui_widgets::Activate { entity: button });
+            app.update();
+            let confirm = app
+                .world_mut()
+                .query::<(&Text, &ChildOf)>()
+                .iter(app.world())
+                .find(|(text, _)| text.0 == "Confirm Paladin")
+                .map(|(_, parent)| parent.parent())
+                .ok_or("Paladin confirmation")?;
+            app.world_mut()
+                .trigger(bevy::ui_widgets::Activate { entity: confirm });
             let command = std::iter::from_fn(|| commands.try_recv().ok())
                 .find_map(|command| match command {
                     crate::combat_input::PlayCommand::Feature(command) if command.kind == 6243 => {

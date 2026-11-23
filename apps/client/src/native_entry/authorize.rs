@@ -198,24 +198,22 @@ pub(super) async fn authorize(
                 }
             }
             SelectionAction::AccountServices => {
+                let mut services_session = config.device_sessions.commerce_session(
+                    &config.platform_url,
+                    &config.oauth_client_id,
+                    None,
+                );
                 let services = access_token(client, config, cancellation.clone(), true).await;
                 match services {
                     Ok(services) => {
-                        let session = config
-                            .device_sessions
-                            .commerce_session(&config.platform_url, &config.oauth_client_id);
-                        let mut services_session = session.lock().await;
-                        services_session.reopen();
-                        let result = crate::account_services::run(
+                        crate::account_services::run(
                             client,
                             &services,
                             config,
                             &mut services_session,
                             cancellation.clone(),
                         )
-                        .await;
-                        services_session.reopen();
-                        result?
+                        .await?
                     }
                     Err(_) => {
                         let mut view = crate::account_services::View::default();

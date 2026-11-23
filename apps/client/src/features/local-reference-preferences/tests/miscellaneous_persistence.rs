@@ -254,7 +254,8 @@ fn c2d_sign_out_queues_session_options_without_contention() -> TestResult {
     let temp = Temp::new()?;
     let mut state = SettingsState::new(Some(temp.preferences()));
     state.use_background_preferences();
-    state.disable_remember_device()?;
+    state.record_device_opt_out()()?;
+        state.finish_device_opt_out();
     assert!(state.local_preference_writes_pending());
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
     while state.local_preference_writes_pending() {
@@ -285,7 +286,8 @@ fn opt_out_survives_process_exit(settings: bool) -> TestResult {
         let path = PathBuf::from(path);
         if settings {
             let mut state = SettingsState::new(Some(path));
-            state.disable_remember_device()?;
+            state.record_device_opt_out()()?;
+        state.finish_device_opt_out();
             drop(state);
         } else {
             let mut config = crate::reentry::Reentry::device_test_config(

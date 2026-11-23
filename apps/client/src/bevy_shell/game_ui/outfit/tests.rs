@@ -779,3 +779,6 @@ fn actor_motion_outfit_toggle_sends_mount_action_independently_of_selection()
     assert_eq!(command.payload, [8, 0]);
     Ok(())
 }
+
+#[path = "gallery_tests.rs"]
+mod gallery_tests;

@@ -71,6 +71,8 @@ pub(in crate::play) fn reduce(
             }
             _ => {}
         }
+        // The current drop can qualify for automatic tracking during reduction.
+        mailbox.observe_capture_event(event);
     }
 }
 

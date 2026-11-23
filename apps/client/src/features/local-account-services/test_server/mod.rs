@@ -12,6 +12,8 @@ use tokio::net::TcpListener;
 pub(crate) mod coins;
 pub(crate) mod premium;
 
+// Independent mock applications share the native entry points' process-wide POST permits.
+pub(crate) static COMMERCE_ENTRY: Mutex<()> = Mutex::new(());
 pub(crate) type TestResult = Result<(), Box<dyn std::error::Error>>;
 pub(crate) const CHARACTER: &str = "01890a5d-ac96-774b-bcce-b302099a8058";
 pub(crate) const AUCTION: &str = "01890a5d-ac96-774b-bcce-b302099a8057";
@@ -35,11 +37,17 @@ pub(crate) struct Authority {
     pub effects: u32,
     pub fail_after_commit: bool,
     pub bazaar_post_failure: Option<u16>,
+    pub hold_coin_response: Option<(
+        tokio::sync::oneshot::Sender<()>,
+        tokio::sync::oneshot::Receiver<()>,
+    )>,
     pub coin_post_failure: Option<u16>,
     pub oauth_exchanges: u32,
     pub pending_first: bool,
     pub paginate: bool,
     pub fail_pages: bool,
+    pub status_failure: Option<u16>,
+    pub status_barrier: Option<Arc<tokio::sync::Barrier>>,
     pub offline: bool,
     pub lease_active: bool,
     pub in_guild: bool,
@@ -266,8 +274,11 @@ impl Authority {
         if method == "GET"
             && let Some(id) = target.strip_prefix("/api/v1/native-account/bazaar/commands/")
         {
+            if let Some(status) = self.status_failure {
+                return (status, String::new());
+            }
             if let Some((_, receipt)) = self.commands.get_mut(id) {
-                if receipt.state == OperationState::Pending {
+                if receipt.state == OperationState::Pending && !self.pending_first {
                     receipt.state = OperationState::Committed;
                     receipt.receipt_id = Some(id.into());
                     receipt.charged_coins = 50;
@@ -284,11 +295,4 @@ impl Authority {
 mod http;
 
 type TestResultWith<T> = Result<T, Box<dyn std::error::Error>>;
-pub(crate) fn test_thread(test: impl FnOnce() -> TestResult + Send + 'static) -> TestResult {
-    std::thread::Builder::new()
-        .stack_size(64 << 20)
-        .spawn(move || test().map_err(|e| e.to_string()))?
-        .join()
-        .map_err(|_| "test thread failed")?
-        .map_err(Into::into)
-}
+pub(crate) use http::test_thread;
