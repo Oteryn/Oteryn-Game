@@ -25,7 +25,7 @@ const SCARLETT: &str = "oteryn:creature.scarlett_etzel";
 enum Case {
     Contributors,
     ChestFault,
-    Withheld,
+    ShippedCatalogue,
     IdleReset,
     SecondCreditFault,
 }
@@ -62,12 +62,12 @@ fn grave_boss_credit_waits_for_private_reward_insert_and_retries_once() -> TestR
 }
 
 #[test]
-fn grave_boss_credit_is_withheld_when_the_production_reward_table_is_refused() -> TestResult {
+fn grave_boss_credit_settles_when_shipped_private_loot_is_refused() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario(&admin, "gz_zelos_withheld", ZELOS, Case::Withheld)?;
-    scenario(&admin, "gz_scarlett_withheld", SCARLETT, Case::Withheld)
+    scenario(&admin, "gz_zelos_shipped_loot", ZELOS, Case::ShippedCatalogue)?;
+    scenario(&admin, "gz_scarlett_shipped_loot", SCARLETT, Case::ShippedCatalogue)
 }
 
 #[test]
@@ -133,7 +133,7 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
         .await
         .map_err(debug)?;
     let mut deps = Dependencies::new()?;
-    let (controller, activated) = if case == Case::Withheld {
+    let (controller, activated) = if case == Case::ShippedCatalogue {
         super::death_ml_loss_composed_fixtures::production_generation_with_pin(
             deps.admitted.world_id,
             "content-1",
@@ -145,7 +145,7 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
     };
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
-    if case == Case::Withheld {
+    if case == Case::ShippedCatalogue {
         assert!(native.reward_table().row(creature).is_err());
         assert!(native.reward_table().reward_boss_corpse(creature).is_some());
     } else if creature != death_objectives::GRAVE_NICTROS {
@@ -409,20 +409,24 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
         DrainOutcome::Drained
     );
     let earned = (1, if creature == ZELOS { 4 } else { -1 });
-    let primary_credit = case != Case::Withheld;
-    let peer_credit = matches!(case, Case::Contributors | Case::SecondCreditFault);
-    assert_eq!(
-        progress(h, id(41), objective).await?,
-        if primary_credit { earned } else { (0, -1) }
-    );
+    let peer_credit = matches!(case, Case::Contributors | Case::SecondCreditFault)
+        || (case == Case::ShippedCatalogue && creature == ZELOS);
+    assert_eq!(progress(h, id(41), objective).await?, earned, "{creature}");
     assert_eq!(
         progress(h, id(101), objective).await?,
         if peer_credit { earned } else { (0, -1) }
     );
     let counts = rewards(h).await?;
-    let contributors = i64::from(primary_credit) + i64::from(peer_credit);
-    if case == Case::Withheld || creature == death_objectives::GRAVE_NICTROS {
+    let contributors = 1 + i64::from(peer_credit);
+    if case == Case::ShippedCatalogue || creature == death_objectives::GRAVE_NICTROS {
         assert_eq!((counts.0, counts.1), (0, 0));
+        let personal_rewards: bool = sqlx::query_scalar(
+            "SELECT personal_rewards FROM game_boss_death_settlements WHERE boss_key=$1",
+        )
+        .bind(creature)
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(!personal_rewards);
     } else {
         let damage_contributors = if case == Case::ChestFault { 1 } else { 2 };
         assert_eq!(counts, (1, damage_contributors, 1, damage_contributors));

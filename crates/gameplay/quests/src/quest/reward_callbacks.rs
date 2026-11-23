@@ -6,6 +6,7 @@ use super::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::OnceLock;
 
 #[cfg(test)]
 mod capture_tests;
@@ -601,7 +602,11 @@ pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
-    embedded_document().map(|document| document.callbacks)
+    // The embedded sources do not change between quest receipts.
+    static CALLBACKS: OnceLock<Result<Vec<RewardCallback>, String>> = OnceLock::new();
+    CALLBACKS
+        .get_or_init(|| embedded_document().map(|document| document.callbacks))
+        .clone()
 }
 
 fn embedded_document() -> Result<Document, String> {
