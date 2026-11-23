@@ -661,6 +661,12 @@ async fn database() -> TestResult<(String, String)> {
     }
     let name = oteryn_test_support::postgres::database_name("s3b");
     let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+    let version: String = sqlx::query_scalar("SHOW server_version_num")
+        .fetch_one(&mut admin)
+        .await?;
+    if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
+        return Err(format!("S3-B requires PostgreSQL 18.6, found {version}").into());
+    }
     oteryn_test_support::postgres::create_migrated_database(
         &mut admin,
         &admin_url,
@@ -675,14 +681,6 @@ async fn database() -> TestResult<(String, String)> {
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?
     );
-    let mut connection = sqlx::PgConnection::connect(&url).await?;
-    let version: String = sqlx::query_scalar("SHOW server_version_num")
-        .fetch_one(&mut connection)
-        .await?;
-    if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
-        return Err(format!("S3-B requires PostgreSQL 18.6, found {version}").into());
-    }
-    connection.close().await?;
     Ok((url, version))
 }
 

@@ -37,6 +37,14 @@ impl Database {
         }
         let name = oteryn_test_support::postgres::database_name("lcfa");
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut admin)
+            .await?;
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
         if through.is_some() {
             admin
                 .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
@@ -57,21 +65,13 @@ impl Database {
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?;
         let url = format!("{prefix}/{name}");
-        let mut connection = sqlx::PgConnection::connect(&url).await?;
-        let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut connection)
-            .await?;
-        assert_eq!(
-            version,
-            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
-            "canonical target is PostgreSQL 18.6"
-        );
         if let Some(version) = through {
+            let mut connection = sqlx::PgConnection::connect(&url).await?;
             oteryn_gameplay_durability::GAME_MIGRATOR
                 .run_to(version, &mut connection)
                 .await?;
+            connection.close().await?;
         }
-        connection.close().await?;
         Ok(Self {
             admin_url,
             name,

@@ -32,6 +32,14 @@ impl Database {
         }
         let name = oteryn_test_support::postgres::database_name("house_custody");
         let mut admin = PgConnection::connect(&admin_url).await?;
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut admin)
+            .await?;
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
         oteryn_test_support::postgres::create_migrated_database(
             &mut admin,
             &admin_url,
@@ -45,14 +53,6 @@ impl Database {
             .ok_or("invalid admin URL")?;
         let url = format!("{prefix}/{name}");
         let mut connection = PgConnection::connect(&url).await?;
-        let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut connection)
-            .await?;
-        assert_eq!(
-            version,
-            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
-            "canonical target is PostgreSQL 18.6"
-        );
         isolate_storage_from_shape_gate(&mut connection).await?;
         connection.close().await?;
         Ok(Self {

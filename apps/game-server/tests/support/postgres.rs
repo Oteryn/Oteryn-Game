@@ -66,6 +66,7 @@ pub fn current_authority_from_record(
 pub enum IsolatedPostgresError {
     MissingAdminUrl,
     UnsafeAdminUrl,
+    NoncanonicalVersion(String),
     Sqlx(sqlx::Error),
 }
 
@@ -82,6 +83,12 @@ impl Display for IsolatedPostgresError {
                 "OTERYN_TEST_POSTGRES_ADMIN_URL is required for PostgreSQL E2E"
             }
             Self::UnsafeAdminUrl => "PostgreSQL E2E requires the pinned local test-admin URL",
+            Self::NoncanonicalVersion(version) => {
+                return write!(
+                    formatter,
+                    "PostgreSQL E2E requires PostgreSQL 18.6, received {version}"
+                );
+            }
             Self::Sqlx(error) => {
                 return write!(formatter, "PostgreSQL E2E operation failed: {error}");
             }
@@ -103,18 +110,28 @@ pub struct IsolatedPostgres {
     database_name: String,
 }
 
+enum TestSchema {
+    Empty,
+    Migrated,
+    CanonicalMigrated,
+}
+
 impl IsolatedPostgres {
     pub async fn create(test_name: &str) -> Result<Self, IsolatedPostgresError> {
-        Self::create_with_schema(test_name, false).await
+        Self::create_with_schema(test_name, TestSchema::Empty).await
     }
 
     pub async fn create_migrated(test_name: &str) -> Result<Self, IsolatedPostgresError> {
-        Self::create_with_schema(test_name, true).await
+        Self::create_with_schema(test_name, TestSchema::Migrated).await
+    }
+
+    pub async fn create_migrated_canonical(test_name: &str) -> Result<Self, IsolatedPostgresError> {
+        Self::create_with_schema(test_name, TestSchema::CanonicalMigrated).await
     }
 
     async fn create_with_schema(
         test_name: &str,
-        migrated: bool,
+        schema: TestSchema,
     ) -> Result<Self, IsolatedPostgresError> {
         let admin_url = env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")
             .map_err(|_error| IsolatedPostgresError::MissingAdminUrl)?;
@@ -125,7 +142,15 @@ impl IsolatedPostgres {
         }
         let database_name = oteryn_test_support::postgres::database_name(test_name);
         let mut admin = PgConnection::connect(&admin_url).await?;
-        if migrated {
+        if matches!(schema, TestSchema::CanonicalMigrated) {
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&mut admin)
+                .await?;
+            if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
+                return Err(IsolatedPostgresError::NoncanonicalVersion(version));
+            }
+        }
+        if !matches!(schema, TestSchema::Empty) {
             oteryn_test_support::postgres::create_migrated_database(
                 &mut admin,
                 &admin_url,

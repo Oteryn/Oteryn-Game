@@ -79,6 +79,14 @@ impl Database {
         }
         let name = oteryn_test_support::postgres::database_name(&format!("rsa_{test_name}"));
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut admin)
+            .await?;
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target requires PostgreSQL 18.6"
+        );
         oteryn_test_support::postgres::create_migrated_database(
             &mut admin,
             &admin_url,
@@ -92,14 +100,6 @@ impl Database {
             .ok_or("invalid admin URL")?;
         let url = format!("{prefix}/{name}");
         let mut connection = sqlx::PgConnection::connect(&url).await?;
-        let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut connection)
-            .await?;
-        assert_eq!(
-            version,
-            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
-            "canonical target requires PostgreSQL 18.6"
-        );
         // Deployment administration (OPS-NODE-BOOT-01 D2): the owner grants
         // the test control login every operation on the fixture scopes.
         grant_fixture_scopes(&mut connection, "oteryn_test_admin").await?;

@@ -107,6 +107,13 @@ impl Database {
         }
         let name = oteryn_test_support::postgres::database_name(&format!("t2act_{tag}"));
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut admin)
+            .await?;
+        assert!(
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
+        );
         if upto.is_some() {
             admin
                 .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
@@ -132,7 +139,9 @@ impl Database {
             name,
             url,
         };
-        database.migrate(upto).await?;
+        if upto.is_some() {
+            database.migrate(upto).await?;
+        }
         Ok(database)
     }
 

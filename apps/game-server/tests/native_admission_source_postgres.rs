@@ -73,6 +73,14 @@ async fn create_database(
     }
     let database_name = oteryn_test_support::postgres::database_name(test_name);
     let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+    let version: String = sqlx::query_scalar("SHOW server_version_num")
+        .fetch_one(&mut admin)
+        .await?;
+    assert_eq!(
+        version,
+        oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+        "canonical target requires PostgreSQL 18.6"
+    );
     oteryn_test_support::postgres::create_migrated_database(
         &mut admin,
         &admin_url,
@@ -99,20 +107,6 @@ async fn cleanup_database(
         ))))
         .await?;
     admin.close().await?;
-    Ok(())
-}
-
-async fn verify_canonical_postgres(database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let mut connection = sqlx::PgConnection::connect(database_url).await?;
-    let version: String = sqlx::query_scalar("SHOW server_version_num")
-        .fetch_one(&mut connection)
-        .await?;
-    assert_eq!(
-        version,
-        oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
-        "canonical target requires PostgreSQL 18.6"
-    );
-    connection.close().await?;
     Ok(())
 }
 
@@ -356,7 +350,6 @@ fn missing_registration_pending_read_fails_closed() -> Result<(), Box<dyn std::e
             let (admin_url, database_name, database_url) =
                 create_database("native_source_missing_registration").await?;
             let result = async {
-                verify_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 assert!(matches!(
@@ -385,7 +378,6 @@ fn fresh_and_recovery_account_security_share_one_floor_across_restart()
             let (admin_url, database_name, database_url) =
                 create_database("native_source_floor").await?;
             let result = async {
-                verify_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
@@ -487,7 +479,6 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
             let (admin_url, database_name, database_url) =
                 create_database("native_source_signing").await?;
             let result = async {
-                verify_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
@@ -600,7 +591,6 @@ fn resource_bounds_accept_max_and_reject_max_plus_one_before_retention()
             let (admin_url, database_name, database_url) =
                 create_database("native_source_bounds").await?;
             let result = async {
-                verify_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 let authority = "a".repeat(128);
@@ -698,7 +688,6 @@ fn descriptor_and_floor_rollback_are_rejected_without_losing_current_truth()
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let (admin_url, database_name, database_url) = create_database("native_source_rollback").await?;
         let result = async {
-            verify_canonical_postgres(&database_url).await?;
             let root = ready_root(&database_url).await?;
             let node = register_node(&root, 1).await?;
             issued_initialize(&root, &node, provenance(), descriptor(2, 2, 20)).await?;
@@ -759,7 +748,6 @@ fn lost_response_two_max_slots_exact_clear_and_reuse_survive_restart()
             let (admin_url, database_name, database_url) =
                 create_database("native_source_slots").await?;
             let result = async {
-                verify_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
@@ -925,7 +913,6 @@ fn replaced_stale_and_unregistered_incarnations_cannot_mutate_or_establish_custo
             let (admin_url, database_name, database_url) =
                 create_database("native_source_custody").await?;
             let result = async {
-                verify_canonical_postgres(&database_url).await?;
                 let first_root = ready_root(&database_url).await?;
                 // An unregistered incarnation cannot initialize custody.
                 let unregistered = NodeIncarnationProof::new(
@@ -1048,7 +1035,6 @@ fn revoke_serializes_with_current_custody_and_later_mutations_fail_atomically()
             let (admin_url, database_name, database_url) =
                 create_database("native_source_revoke").await?;
             let result = async {
-                verify_canonical_postgres(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10))
@@ -1186,7 +1172,6 @@ fn recovery_verification_resolves_current_owners_replay_restart_and_purpose_floo
         .block_on(async {
             let (admin_url, name, url) = create_database("recovery_current").await?;
             let result = async {
-                verify_canonical_postgres(&url).await?;
                 let root = ready_root(&url).await?;
                 let node = register_node(&root, 1).await?;
                 let now = recovery_now()?;
@@ -1399,7 +1384,6 @@ fn recovery_redecode_rejects_independent_body_history_and_time_mutations()
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let(admin_url,name,url)=create_database("recovery_provenance").await?;
         let result=async {
-            verify_canonical_postgres(&url).await?;
             let root=ready_root(&url).await?;let node=register_node(&root,1).await?;
             issued_initialize(&root,&node,provenance(),descriptor(1,1,10)).await?;
             let now=recovery_now()?;let current=recovery_bindings()?;
@@ -1452,7 +1436,6 @@ fn recovery_clock_is_sampled_after_registration_wait() -> Result<(), Box<dyn std
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let (admin_url, name, url) = create_database("recovery_clock_wait").await?;
         let result = async {
-            verify_canonical_postgres(&url).await?;
             let root = ready_root(&url).await?;
             let node = register_node(&root, 1).await?;
             issued_initialize(&root, &node, provenance(), descriptor(1,1,10)).await?;
@@ -1519,7 +1502,6 @@ fn recovery_verification_and_s2_denial_serialize_at_registration()
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         let (admin_url,name,url)=create_database("recovery_s2_race").await?;
         let result=async {
-            verify_canonical_postgres(&url).await?;
             let reader=ready_root(&url).await?;let writer=ready_root(&url).await?;
             let node=register_node(&reader,1).await?;
             issued_initialize(&reader,&node,provenance(),descriptor(1,1,10)).await?;

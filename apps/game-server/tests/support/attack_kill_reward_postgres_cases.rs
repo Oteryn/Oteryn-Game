@@ -113,6 +113,13 @@ impl Database {
         }
         let name = oteryn_test_support::postgres::database_name(&format!("akr_{name}"));
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut admin)
+            .await?;
+        assert!(
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
+        );
         oteryn_test_support::postgres::create_migrated_database(
             &mut admin,
             &admin_url,
@@ -125,15 +132,6 @@ impl Database {
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?;
         let url = format!("{prefix}/{name}");
-        let mut connection = sqlx::PgConnection::connect(&url).await?;
-        let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut connection)
-            .await?;
-        assert!(
-            version.starts_with("18"),
-            "PostgreSQL 18 required: {version}"
-        );
-        connection.close().await?;
         Ok(Self {
             admin_url,
             name,

@@ -27,6 +27,13 @@ fn m22_captured_ingredient_debit_rejects_partial_and_unknown_snapshots_postgres(
         .build()?
         .block_on(async {
             let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&mut admin)
+                .await?;
+            assert_eq!(
+                version,
+                oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
+            );
             oteryn_test_support::postgres::create_migrated_database(
                 &mut admin,
                 &admin_url,
@@ -36,13 +43,6 @@ fn m22_captured_ingredient_debit_rejects_partial_and_unknown_snapshots_postgres(
             .await?;
             let exercised: TestResult = async {
                 let mut connection = sqlx::PgConnection::connect(&database_url).await?;
-                let version: String = sqlx::query_scalar("SHOW server_version_num")
-                    .fetch_one(&mut connection)
-                    .await?;
-                assert_eq!(
-                    version,
-                    oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
-                );
                 eprintln!("M22_DEBIT POSTGRES_CONNECTED version={version}");
                 let cases = [
                     (true, serde_json::json!({"quantity":7}), 7, true),

@@ -288,6 +288,14 @@ async fn database_case() -> TestResult {
     }
     let name = oteryn_test_support::postgres::database_name("house_interior");
     let mut admin = PgConnection::connect(&admin_url).await?;
+    let version: String = sqlx::query_scalar("SHOW server_version_num")
+        .fetch_one(&mut admin)
+        .await?;
+    assert_eq!(
+        version,
+        oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+        "canonical target is PostgreSQL 18.6"
+    );
     oteryn_test_support::postgres::create_migrated_database(
         &mut admin,
         &admin_url,
@@ -310,14 +318,6 @@ async fn database_case() -> TestResult {
 
 async fn check_database(url: &str) -> TestResult {
     let mut connection = PgConnection::connect(url).await?;
-    let version: String = sqlx::query_scalar("SHOW server_version_num")
-        .fetch_one(&mut connection)
-        .await?;
-    assert_eq!(
-        version,
-        oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
-        "canonical target is PostgreSQL 18.6"
-    );
     let stub: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_house_access($1::uuid,$2,$3::uuid)")
             .bind(WORLD)

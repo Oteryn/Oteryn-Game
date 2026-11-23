@@ -1268,6 +1268,14 @@ mod tests {
             }
             let name = oteryn_test_support::postgres::database_name("dispatch_sql_reads");
             let mut admin_connection = sqlx::PgConnection::connect_with(&options).await?;
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&mut admin_connection)
+                .await?;
+            assert_eq!(
+                version,
+                oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+                "canonical target is PostgreSQL 18.6"
+            );
             oteryn_test_support::postgres::create_migrated_database(
                 &mut admin_connection,
                 &admin,
@@ -1291,14 +1299,6 @@ mod tests {
             .connect_with(options)
             .await?;
         let result = async {
-            let version: String = sqlx::query_scalar("SHOW server_version_num")
-                .fetch_one(&pool)
-                .await?;
-            assert_eq!(
-                version,
-                oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
-                "canonical target is PostgreSQL 18.6"
-            );
             seed_character(&pool).await?;
             check_retained_reads(&pool).await
         }
