@@ -1151,7 +1151,10 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     // These fixtures explicitly bind the room established by their test scene.
     ("gameplay_transport/postgres_tests/quest_skinning.rs", 1),
     ("gameplay_transport/postgres_tests/raid_cave_rope.rs", 1),
-    ("gameplay_transport/postgres_tests/raid_pale_count_access.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/raid_pale_count_access.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
     // QUESTPC4 source callback and reset fixtures bind their explicit source room.
     (
