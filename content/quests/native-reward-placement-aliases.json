@@ -140,6 +140,70 @@
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2924",
         "content/world/placements/region-z10-x128-y123.b3:sha256:afb894429ec7d41754d8aa0cfeed1ba08fc8aa3e0add9ac1fa5372a517b6f9fb selector 32883,31686,10 ordinal 1 has appearance 21858 and the tile has no unique tags."
       ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6299,
+      "project_position": {
+        "x": 33078,
+        "y": 31170,
+        "z": 8
+      },
+      "appearance": 2473,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2830-L2835",
+        "content/world/placements/region-z08-x129-y121.b3:sha256:824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4 selector 33078,31170,8 ordinal 1 has appearance 2473 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6300,
+      "project_position": {
+        "x": 33080,
+        "y": 31170,
+        "z": 8
+      },
+      "appearance": 2473,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2837-L2842",
+        "content/world/placements/region-z08-x129-y121.b3:sha256:824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4 selector 33080,31170,8 ordinal 1 has appearance 2473 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 6308,
+      "project_position": {
+        "x": 33076,
+        "y": 31170,
+        "z": 8
+      },
+      "appearance": 2473,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2901-L2906",
+        "content/world/placements/region-z08-x129-y121.b3:sha256:824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4 selector 33076,31170,8 ordinal 1 has appearance 2473 and the tile has no unique tags."
+      ]
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items",
+      "expected_revision": "reward-claim-r1",
+      "expected_source_uid": 7825,
+      "project_position": {
+        "x": 33079,
+        "y": 31173,
+        "z": 8
+      },
+      "appearance": 2473,
+      "ordinal": 1,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L3174-L3179",
+        "content/world/placements/region-z08-x129-y121.b3:sha256:824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4 selector 33079,31173,8 ordinal 1 has appearance 2473 and the tile has no unique tags."
+      ]
     }
   ]
 }

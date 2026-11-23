@@ -16,7 +16,7 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1056;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -693,6 +693,9 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/n4-yalahar-mechanisms.json"
+    ))?);
     callbacks.extend(parse(
         &serde_json::json!({"schema":1,"callbacks":[court_warlock::callback()?]}).to_string(),
     )?);

@@ -1,0 +1,633 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1018",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32775,
+          "y": 31118,
+          "floor": -7
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8618
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32773,
+        "y": 31116,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3795-3797",
+        "content/world/placements/region-z07-x128-y121.b3:sha256:74b12475d1840a36790d39fbfdcd695c69459d97678eb82497d84b5fcfc5b877"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1019",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32778,
+          "y": 31118,
+          "floor": -7
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8618
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32780,
+        "y": 31115,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3800-3802",
+        "content/world/placements/region-z07-x128-y121.b3:sha256:74b12475d1840a36790d39fbfdcd695c69459d97678eb82497d84b5fcfc5b877"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3091",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32743,
+          "y": 31164,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8618
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32744,
+        "y": 31161,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 21,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4294-4296",
+        "content/world/placements/region-z05-x127-y121.b3:sha256:b407b3eeddcaf5760dfd79074c08f85a755d393b19a77a238286099ca2516cbe"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3092",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32743,
+          "y": 31161,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8618
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32744,
+        "y": 31164,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 21,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4298-4300",
+        "content/world/placements/region-z05-x127-y121.b3:sha256:b407b3eeddcaf5760dfd79074c08f85a755d393b19a77a238286099ca2516cbe"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3093",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32832,
+          "y": 31266,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8618
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32833,
+        "y": 31269,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 24,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:4",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4303-4305",
+        "content/world/placements/region-z05-x128-y122.b3:sha256:5bd8bb80a2079378ae35a63b88879343c11617d0af126270ce872fa86c1f629f"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3094",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32832,
+          "y": 31269,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8618
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32833,
+        "y": 31266,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 24,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:5",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4308-4310",
+        "content/world/placements/region-z05-x128-y122.b3:sha256:5bd8bb80a2079378ae35a63b88879343c11617d0af126270ce872fa86c1f629f"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3095",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32734,
+          "y": 31199,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8615
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32729,
+        "y": 31200,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 29,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:6",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4312-4314",
+        "content/world/placements/region-z05-x127-y121.b3:sha256:b407b3eeddcaf5760dfd79074c08f85a755d393b19a77a238286099ca2516cbe"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3096",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32729,
+          "y": 31199,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8615
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32734,
+        "y": 31200,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 29,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:7",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4316-4318",
+        "content/world/placements/region-z05-x127-y121.b3:sha256:b407b3eeddcaf5760dfd79074c08f85a755d393b19a77a238286099ca2516cbe"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3097",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32775,
+          "y": 31145,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8615
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32776,
+        "y": 31141,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 35,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:8",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4320-4322",
+        "content/world/placements/region-z05-x128-y121.b3:sha256:e11d9d6979e3b6bacbf039d6a7dbcb771de442f94bf18e756202772c447b8056"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3098",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32775,
+          "y": 31141,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8615
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32776,
+        "y": 31145,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 35,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4324-4326",
+        "content/world/placements/region-z05-x128-y121.b3:sha256:e11d9d6979e3b6bacbf039d6a7dbcb771de442f94bf18e756202772c447b8056"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3099",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32869,
+          "y": 31203,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8615
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32874,
+        "y": 31202,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 41,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:10",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4328-4330",
+        "content/world/placements/region-z05-x128-y121.b3:sha256:e11d9d6979e3b6bacbf039d6a7dbcb771de442f94bf18e756202772c447b8056"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3100",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32874,
+          "y": 31203,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8615
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32869,
+        "y": 31202,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 41,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:11",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4332-4334",
+        "content/world/placements/region-z05-x128-y121.b3:sha256:e11d9d6979e3b6bacbf039d6a7dbcb771de442f94bf18e756202772c447b8056"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3101",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32857,
+          "y": 31248,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8618
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32856,
+        "y": 31251,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 45,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4336-4338",
+        "content/world/placements/region-z05-x128-y122.b3:sha256:5bd8bb80a2079378ae35a63b88879343c11617d0af126270ce872fa86c1f629f"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-3102",
+      "quest": "oteryn:quest.in_service_of_yalahar_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32853,
+          "y": 31251,
+          "floor": -5
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 8618
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32854,
+        "y": 31248,
+        "floor": -5
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 45,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The gate mechanism won't move. You probably have to find a way around until you figure out how to operate the gate.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:13",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4340-4342",
+        "content/world/placements/region-z05-x128-y122.b3:sha256:5bd8bb80a2079378ae35a63b88879343c11617d0af126270ce872fa86c1f629f"
+      ],
+      "effects": {
+        "teleport_effect": 11,
+        "teleport_departure_effect": true
+      }
+    }
+  ]
+}

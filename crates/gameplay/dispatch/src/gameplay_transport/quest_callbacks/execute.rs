@@ -1659,6 +1659,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
                 return UseDisposition::Rejected;
             };
+            if callback.effects.teleport_departure_effect
+                && let Some(effect) = callback.effects.teleport_effect
+                && let Some(origin) = native(expected.position())
+            {
+                map.facts.emit_movement_effect(origin, effect);
+            }
             // Crystal 201189f data-global/scripts/actions/other/dryad_garden.lua:18-19:
             // publish at the committed destination, never at the source or on refusal.
             if matches!(

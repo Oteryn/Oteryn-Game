@@ -98,6 +98,9 @@ pub struct CallbackEffects {
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
+    /// Emit the same cue at the player's departure tile after relocation commits.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub teleport_departure_effect: bool,
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
     /// Create one volatile trap at the selected world target after its item debit.
@@ -424,6 +427,11 @@ impl Callback {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.teleport_departure_effect
+        && (effects.teleport_effect.is_none() || callback.teleport.is_none())
+    {
+        return false;
+    }
     let exact_arbaziloth = super::arbaziloth::exact(callback);
     if callback.key == super::arbaziloth::KEY && !exact_arbaziloth {
         return false;
