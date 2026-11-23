@@ -146,6 +146,24 @@ pub(super) fn render(
             text(commands, skins, row, "Saved destination not available");
         }
         let buttons = row_node(commands, row);
+        if matches!(
+            confirmed,
+            Some(Action::Destination {
+                recipient: Recipient::MainContainer,
+                ..
+            })
+        ) {
+            button(
+                commands,
+                skins,
+                buttons,
+                key,
+                Kind::OpenDestination(category),
+                "Open",
+                60.,
+                panel,
+            );
+        }
         for (fallback, label) in [(false, "Use main"), (true, "Main + fallback")] {
             button(
                 commands,
@@ -205,6 +223,12 @@ pub(super) fn render(
         .id();
     commands.entity(body).add_child(filters);
     text(commands, skins, filters, "QuickLoot filter");
+    for (kind, label) in [
+        (Kind::Catalogue, "Item Catalogue"),
+        (Kind::Store, "Get Premium"),
+    ] {
+        button(commands, skins, filters, key, kind, label, 210., panel);
+    }
     let selected = panel
         .confirmed
         .iter()

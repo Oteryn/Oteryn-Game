@@ -89,6 +89,8 @@ struct FlagsMsg {
     top: Option<bool>,
     #[prost(bool, optional, tag = "9")]
     multiuse: Option<bool>,
+    #[prost(bool, optional, tag = "5")]
+    container: Option<bool>,
     #[prost(bool, optional, tag = "6")]
     cumulative: Option<bool>,
     #[prost(bool, optional, tag = "12")]
@@ -154,6 +156,7 @@ pub struct Appearance {
     pub light: Option<(u8, u8)>,
     pub minimap_color: Option<u8>,
     pub multi_use: bool,
+    pub container: bool,
     pub pattern_width: u32,
     pub pattern_height: u32,
     pub pattern_depth: u32,
@@ -365,6 +368,7 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         }),
         minimap_color: flags.automap.and_then(|map| u8::try_from(map.color?).ok()),
         multi_use: flags.multiuse.unwrap_or(false),
+        container: flags.container.unwrap_or(false),
         pattern_width: width,
         pattern_height: height,
         pattern_depth: depth,
