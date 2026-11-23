@@ -2134,7 +2134,14 @@
           }
         }
       ],
-      "per_occurrence_mint": true
+      "per_occurrence_mint": true,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/guard_offer",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/questpc7-goblin-accept-guards-confirmed",
@@ -2188,7 +2195,14 @@
           }
         }
       ],
-      "per_occurrence_mint": true
+      "per_occurrence_mint": true,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/guard_offer",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/questpc7-goblin-accept-kill",
@@ -4294,6 +4308,76 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-inquisition-commission-held-legacy-zelos-before-passage",
+      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+      "npc": "oteryn:npc.jack_springer",
+      "keywords": [
+        "report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 0,
+          "at_least": true
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/inquisition_s_hand",
+      "completes": false,
+      "reply": [
+        "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.grave_danger_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+              "minimum": 0,
+              "maximum": 3,
+              "set": 5
+            },
+            {
+              "track": "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received",
+              "minimum": 1,
+              "maximum": 1,
+              "set": 1,
+              "preserve": true
+            },
+            {
+              "track": "oteryn:quest-progress/questpc7/grave/passages",
+              "minimum": 5,
+              "maximum": 5,
+              "set": 5,
+              "preserve": true
+            },
+            {
+              "track": "oteryn:quest-progress/questpc7/grave/boss_6",
+              "minimum": 1,
+              "maximum": 1,
+              "set": 1,
+              "preserve": true
+            }
+          ]
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-inquisition-commission-legacy-zelos",
       "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
       "npc": "oteryn:npc.jack_springer",
@@ -4352,6 +4436,78 @@
               "minimum": 6,
               "maximum": 7,
               "set": 6,
+              "preserve": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-inquisition-commission-legacy-zelos-before-passage",
+      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+      "npc": "oteryn:npc.jack_springer",
+      "keywords": [
+        "report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 0,
+          "at_least": true
+        }
+      ],
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.hand_of_the_inquisition",
+        "addons": 0
+      },
+      "achievement": "oteryn:achievement/inquisition_s_hand",
+      "completes": false,
+      "reply": [
+        "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:e798c93b28212c0c26dcb2b588c7b09f949617947cb44ffd6ac5ad9271257d08",
+        "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
+      ],
+      "participants": [
+        {
+          "quest": "oteryn:quest.grave_danger_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u12_20/grave_danger/questline",
+              "minimum": 0,
+              "maximum": 3,
+              "set": 5
+            },
+            {
+              "track": "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received",
+              "minimum": -1,
+              "maximum": 0,
+              "set": 1
+            },
+            {
+              "track": "oteryn:quest-progress/questpc7/grave/passages",
+              "minimum": 5,
+              "maximum": 5,
+              "set": 5,
+              "preserve": true
+            },
+            {
+              "track": "oteryn:quest-progress/questpc7/grave/boss_6",
+              "minimum": 1,
+              "maximum": 1,
+              "set": 1,
               "preserve": true
             }
           ]

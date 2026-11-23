@@ -69,7 +69,7 @@ class Review(unittest.TestCase):
                     (effect["from"]["value"],) * 2,
                 )
 
-    def test_jack_reports_after_pre_update_zelos_passage(self):
+    def test_jack_reports_after_a_saved_zelos_kill(self):
         rows = quest_file("npc-callbacks/questpc7-programmes")
         passage = row(
             quest_file("questpc7-world-callbacks"), "questpc7-grave-zelos-passage"
@@ -85,18 +85,23 @@ class Review(unittest.TestCase):
         passages = next(
             s for s in passage["storage"] if s["track"].endswith("/passages")
         )
-        for completed_passages in (
-            passages["minimum"],
-            passages["set"],
-            passages["set"] + 1,
+        boss = next(s for s in passage["storage"] if s["track"].endswith("/boss_6"))
+        for completed_passages, kills, eligible in (
+            (passages["minimum"], boss["minimum"] - 1, False),
+            (passages["minimum"], boss["minimum"], True),
+            (passages["set"], boss["minimum"] - 1, True),
+            (passages["set"] + 1, boss["minimum"] - 1, True),
         ):
             for outfit_value in (outfit["minimum"], outfit["set"]):
-                with self.subTest(passages=completed_passages, outfit=outfit_value):
+                with self.subTest(
+                    passages=completed_passages, kills=kills, outfit=outfit_value
+                ):
                     state = {
                         fresh["storage"][0]["track"]: -1,
                         questline["track"]: track["initial"],
                         outfit["track"]: outfit_value,
                         passages["track"]: completed_passages,
+                        boss["track"]: kills,
                     }
                     matching = [
                         c
@@ -107,9 +112,7 @@ class Review(unittest.TestCase):
                         and holds(c, state)
                         and all(holds(p, state) for p in c.get("participants", []))
                     ]
-                    self.assertEqual(
-                        len(matching), int(completed_passages >= passages["set"])
-                    )
+                    self.assertEqual(len(matching), int(eligible))
                     if matching:
                         callback = matching[0]
                         effects = {
@@ -299,6 +302,24 @@ class Review(unittest.TestCase):
         post_report[offer_stage["track"]] = offer_stage["set"]
         self.assertTrue(holds(grant, post_report))
         self.assertIn(guard, grant.get("state_ops", []))
+
+    def test_rafzan_repeat_accepts_require_first_confirmation(self):
+        programme = quest_file("npc-callbacks/questpc7-programmes")
+        legacy = quest_file("npc-callbacks/m13-guardcatcher")
+        first_offer = row(legacy, "guards-offer")["storage"][0]
+        first_grant = row(legacy, "guardcatcher-grant")
+        direct = row(programme, "questpc7-goblin-accept-guards")
+        confirmed = row(programme, "questpc7-goblin-accept-guards-confirmed")
+        for accept in (direct, confirmed):
+            state = {guard["track"]: guard["minimum"] for guard in accept["storage"]}
+            for stage, eligible in (
+                (first_offer["minimum"], False),
+                (first_offer["set"], False),
+                (first_grant["storage"][0]["set"], True),
+            ):
+                with self.subTest(callback=accept["key"], stage=stage):
+                    state[first_offer["track"]] = stage
+                    self.assertEqual(holds(accept, state), eligible)
 
     def test_rafzan_gas(self):
         rows = [

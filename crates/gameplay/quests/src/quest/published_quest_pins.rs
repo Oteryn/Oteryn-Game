@@ -89,17 +89,19 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.grave_danger_quest",
-        hash(b"43161afcc986695e8999938e3395de140ec57134c00b1e89bcbe0e640775b5a0"),
-        &[hash(
-            b"4fe40f437a6acad51a574510d5d0bcef6dd7476ff7b1bed9438cc6b88c222ffe",
-        )],
+        hash(b"6121b5603a681798d7e21ba2d8fddfb3a3479f7133f5672c824f6ea72cce87fe"),
+        &[
+            hash(b"43161afcc986695e8999938e3395de140ec57134c00b1e89bcbe0e640775b5a0"),
+            hash(b"4fe40f437a6acad51a574510d5d0bcef6dd7476ff7b1bed9438cc6b88c222ffe"),
+        ],
     ),
     (
         "oteryn:quest.hand_of_the_inquisition_outfits_quest",
-        hash(b"6ce138c8d2d98d0869359e3a93c25e2053fe55fcd729a5dc9887fb0e76cd073e"),
-        &[hash(
-            b"e73c8c57b74a19a1da0b5e2172458951140b1774dc0b526222c8742a156245fc",
-        )],
+        hash(b"2524a17ebf71ea5d741672793c0152ef2c7cde8a0e0d858b8c0a424a13426441"),
+        &[
+            hash(b"6ce138c8d2d98d0869359e3a93c25e2053fe55fcd729a5dc9887fb0e76cd073e"),
+            hash(b"e73c8c57b74a19a1da0b5e2172458951140b1774dc0b526222c8742a156245fc"),
+        ],
     ),
     (
         "oteryn:quest.the_ancient_tombs_quest",
@@ -148,7 +150,7 @@ mod tests {
         assert_eq!(
             catalogue.definition_hash(grave),
             Some(hash(
-                b"43161afcc986695e8999938e3395de140ec57134c00b1e89bcbe0e640775b5a0"
+                b"6121b5603a681798d7e21ba2d8fddfb3a3479f7133f5672c824f6ea72cce87fe"
             ))
         );
         assert_eq!(
@@ -183,10 +185,10 @@ mod tests {
                     hash(b"bc9a387b5eba43a87478e8016be9c36a86f4cf63a555ade6e4eefae403ca8ba8")
                 }
                 "oteryn:quest.goblin_merchant_quest" => {
-                    hash(b"29c02b41a74e92e5adcd94218e4cad52db38134f2de0fe7c0f9363b0ecfc9769")
+                    hash(b"950746d5cd80d9fd1dd8844d03187fd0527f9c69b276f4aa2da4c70ae06e522f")
                 }
                 "oteryn:quest.grave_danger_quest" => {
-                    hash(b"43161afcc986695e8999938e3395de140ec57134c00b1e89bcbe0e640775b5a0")
+                    hash(b"6121b5603a681798d7e21ba2d8fddfb3a3479f7133f5672c824f6ea72cce87fe")
                 }
                 _ => published,
             };

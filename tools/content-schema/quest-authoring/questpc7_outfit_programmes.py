@@ -4,7 +4,7 @@ import hashlib
 import json
 from copy import deepcopy
 
-from questpc7_grave_programme import PASSAGES, state
+from questpc7_grave_programme import PASSAGES, counter, state
 
 DECISION = "owner:questpc7:selected-outfit-item-bindings:2026-11-07"
 ITEM_ACTIONS = "tools/content-schema/native-gameplay/item-cosmetic-actions.json"
@@ -240,6 +240,15 @@ def append(root, callbacks, inputs, pin):
                 legacy_storage[0].update(minimum=0, maximum=ready - 1)
                 legacy_storage.append(state(PASSAGES, 6, 7, 6, preserve=True))
                 callbacks.append(legacy)
+                # The old death writer could persist the kill before the player
+                # crossed the passage or received the questline update.
+                saved_kill = deepcopy(legacy)
+                saved_kill["key"] += "-before-passage"
+                saved_kill["participants"][0]["storage"][-1:] = [
+                    state(PASSAGES, 5, 5, 5, preserve=True),
+                    state(counter(6), 1, 1, 1, preserve=True),
+                ]
+                callbacks.append(saved_kill)
             add("complete", 0, 3, owned=3, completes=True)
             callbacks[-1]["storage"][0]["maximum"] = 2
             continue

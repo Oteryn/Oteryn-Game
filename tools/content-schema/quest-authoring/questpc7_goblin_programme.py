@@ -187,6 +187,14 @@ def append(root, callbacks, inputs, pin, offers):
                 "contents": [],
             }
             start["per_occurrence_mint"] = True
+        if progress == "captures":
+            start["requires"] = [
+                {
+                    "track": "oteryn:quest-progress/goblin_merchant/guard_offer",
+                    "minimum": 2,
+                    "maximum": 2,
+                }
+            ]
         callbacks.append(start)
         confirmed = copy.deepcopy(start)
         confirmed.update(key=start["key"] + "-confirmed", keywords=["yes"], topic=topic)
@@ -200,13 +208,7 @@ def append(root, callbacks, inputs, pin, offers):
             "reply": ["Will you take the " + keyword + " task?"],
         }
         if progress == "captures":
-            offer["requires"] = [
-                {
-                    "track": "oteryn:quest-progress/goblin_merchant/guard_offer",
-                    "minimum": 2,
-                    "maximum": 2,
-                }
-            ]
+            offer["requires"] = start["requires"]
         offers.append(offer)
         # Recurring item grants use per-occurrence MINT. The single achievement
         # award uses the ordinary one-shot reward on the exact 500th report.
