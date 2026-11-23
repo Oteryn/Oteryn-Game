@@ -188,7 +188,9 @@
               "return_on_failure": false,
               "failure_message": null,
               "sources": [
-                "https://tibia.fandom.com/wiki/Alawar%27s_Vault_Quest/Spoiler"
+                "https://tibia.fandom.com/wiki/Alawar%27s_Vault_Quest/Spoiler",
+                "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/1/definition/oteryn_recipe/payload/recipe:sha256:002be36b73457b507959b33614aab35b3095fd72f7a5d21bbdb675f7815817c5",
+                "https://tibia.fandom.com/index.php?curid=4928&oldid=1029814"
               ],
               "requires_world_admission": true,
               "item_on_target": {
@@ -302,7 +304,8 @@
               "failure_message": null,
               "requires_world_admission": true,
               "sources": [
-                "content/quests/world-callbacks.json#alawars-vault-lever"
+                "content/quests/world-callbacks.json#alawars-vault-lever",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/alawars_vault/action-lever.lua:1-21"
               ]
             }
           }

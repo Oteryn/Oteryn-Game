@@ -558,12 +558,20 @@ impl Journey<'_, '_, '_, '_> {
         self.check(10, [0, 1, 0, 0, 1]).await?;
         self.enter(ENTRY, tile(32749, 32536, -10)).await?;
         self.check(11, [0, 1, 0, 0, 1]).await?;
+        self.h.root.set_test_quest_clock(1_800_000_000)?;
         for (index, jar) in AMPHORAS.into_iter().enumerate() {
             let command = self.next();
             self.use_snake_destroyer(jar, command).await?;
             assert_eq!(self.track(&format!("amphora-{}", index + 1)).await?, 1);
             self.check(11, [0, 1, 0, 0, 1]).await?;
         }
+        let expired = self.h.root.advance_test_quest_clock(301)?;
+        self.owner.clock_origin -= std::time::Duration::from_secs(301);
+        let map = self.owner.bundle_map().ok_or("journey World")?;
+        assert!(map.facts.expire_movement_items(self.owner.owner_now().get()) >= AMPHORAS.len());
+        let retry = self.next();
+        self.use_snake_destroyer(AMPHORAS[0], retry).await?;
+        assert_eq!(self.track("amphora-window").await?, expired);
         self.enter(DEEPEST, tile(32885, 32632, -11)).await?;
         self.check(12, [0, 1, 0, 0, 1]).await?;
         self.enter(DEEPEST, tile(32885, 32632, -11)).await?;

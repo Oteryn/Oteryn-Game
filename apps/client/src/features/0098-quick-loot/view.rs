@@ -32,6 +32,9 @@ fn loot_panel(mailbox: &crate::play::mailbox::Mailbox) -> oteryn_client_ui::quic
 #[derive(Clone, PartialEq, Eq)]
 pub enum QuickLootControl {
     Request(oteryn_client_ui::quick_loot::Action),
+    OpenDestination(Option<oteryn_client_ui::quick_loot::QuickLootCategory>),
+    Catalogue,
+    Store,
     Close,
 }
 impl PlayLink {
@@ -51,9 +54,32 @@ impl PlayLink {
             return false;
         }
         let panel = &mut mailbox.discovery.loot;
-        let QuickLootControl::Request(action) = control else {
-            panel.open = false;
-            return true;
+        let action = match control {
+            QuickLootControl::OpenDestination(category) => {
+                if !panel.selected || panel.pending.is_some() || !panel.destinations.iter().any(|entry|
+                    matches!(entry, Action::Destination {category: assigned, recipient: QuickLootRecipient::MainContainer, ..} if *assigned == category)) {
+                    return false;
+                }
+                return self.quick_loot_open_main(&mut mailbox);
+            }
+            QuickLootControl::Close => {
+                panel.open = false;
+                return true;
+            }
+            QuickLootControl::Catalogue | QuickLootControl::Store => {
+                if !panel.selected || panel.pending.is_some() {
+                    return false;
+                }
+                panel.open = false;
+                drop(mailbox);
+                if control == QuickLootControl::Store {
+                    self.store_open_products();
+                } else {
+                    self.item_catalogue_open();
+                }
+                return true;
+            }
+            QuickLootControl::Request(action) => action,
         };
         if !panel.selected || panel.pending.is_some() {
             return false;
@@ -84,7 +110,6 @@ impl PlayLink {
         true
     }
 }
-
 
 #[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {

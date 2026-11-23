@@ -81,9 +81,14 @@
     "y": 31820,
     "floor": 6,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false,
-    "native_addition": true
+    "native_addition": true,
+    "partial_quest_callback": {
+      "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+      "stage": 1,
+      "next_stage": 2
+    }
   },
   {
     "key": "oteryn:service.travel.captain_bluebear/edron",
@@ -949,9 +954,14 @@
     "y": 32022,
     "floor": 6,
     "postman": true,
-    "held": true,
+    "held": false,
     "carpet": false,
-    "native_addition": true
+    "native_addition": true,
+    "partial_quest_callback": {
+      "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+      "stage": 3,
+      "next_stage": 4
+    }
   },
   {
     "key": "oteryn:service.travel.captain_sinbeard/darashia",
@@ -1655,8 +1665,11 @@
     "y": 31957,
     "floor": 15,
     "postman": true,
-    "held": false,
-    "carpet": false
+    "held": true,
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_mines/robsons_isle",
@@ -1667,8 +1680,11 @@
     "y": 32036,
     "floor": 14,
     "postman": true,
-    "held": false,
-    "carpet": false
+    "held": true,
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_mines/thais",
@@ -1679,8 +1695,11 @@
     "y": 32180,
     "floor": 13,
     "postman": true,
-    "held": false,
-    "carpet": false
+    "held": true,
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_robsons/kazordoon",
@@ -1691,8 +1710,11 @@
     "y": 31957,
     "floor": 15,
     "postman": true,
-    "held": false,
-    "carpet": false
+    "held": true,
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_robsons/mines",
@@ -1703,8 +1725,11 @@
     "y": 32069,
     "floor": 10,
     "postman": true,
-    "held": false,
-    "carpet": false
+    "held": true,
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_robsons/thais",
@@ -1715,8 +1740,11 @@
     "y": 32180,
     "floor": 13,
     "postman": true,
-    "held": false,
-    "carpet": false
+    "held": true,
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_thais/kazordoon",
@@ -1727,8 +1755,12 @@
     "y": 31957,
     "floor": 15,
     "postman": true,
-    "held": false,
-    "carpet": false
+    "held": true,
+    "carpet": false,
+    "world_changes": [
+      "awash",
+      "steamship"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_thais/mines",
@@ -1739,8 +1771,11 @@
     "y": 32069,
     "floor": 10,
     "postman": true,
-    "held": false,
-    "carpet": false
+    "held": true,
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.junkar_thais/robsons_isle",
@@ -1751,8 +1786,11 @@
     "y": 32036,
     "floor": 14,
     "postman": true,
-    "held": false,
-    "carpet": false
+    "held": true,
+    "carpet": false,
+    "world_changes": [
+      "awash"
+    ]
   },
   {
     "key": "oteryn:service.travel.karith/ab_dendriel",
@@ -1887,7 +1925,7 @@
     "y": 31059,
     "floor": 7,
     "postman": true,
-    "held": false,
+    "held": true,
     "carpet": false
   },
   {
@@ -2112,11 +2150,12 @@
     "price": 70,
     "premium": true,
     "x": 33805,
-    "y": 32767,
+    "y": 32766,
     "floor": 2,
     "postman": true,
     "held": true,
-    "carpet": true
+    "carpet": true,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.melian/svargrond",
@@ -2316,11 +2355,12 @@
     "price": 70,
     "premium": true,
     "x": 33805,
-    "y": 32767,
+    "y": 32766,
     "floor": 2,
     "postman": true,
     "held": true,
-    "carpet": true
+    "carpet": true,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.pino/svargrond",
@@ -2423,7 +2463,14 @@
     "held": false,
     "carpet": false,
     "native_addition": true,
-    "quest_gate": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor"
+    "quest_gate": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+    "project_required_quest_tracks": [
+      {
+        "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor",
+        "minimum": 1,
+        "maximum": 1
+      }
+    ]
   },
   {
     "key": "oteryn:service.travel.sebastian_nargor/liberty_bay",
@@ -2575,11 +2622,12 @@
     "price": 70,
     "premium": true,
     "x": 33805,
-    "y": 32767,
+    "y": 32766,
     "floor": 2,
     "postman": true,
     "held": true,
-    "carpet": true
+    "carpet": true,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.tanyt/svargrond",
@@ -2639,7 +2687,8 @@
     "floor": 7,
     "postman": true,
     "held": true,
-    "carpet": false
+    "carpet": false,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.tonar_oskayaat/passage",
@@ -2711,7 +2760,13 @@
     "floor": 3,
     "postman": true,
     "held": false,
-    "carpet": true
+    "carpet": true,
+    "project_required_quest_tracks": [],
+    "partial_quest_callback": {
+      "track": "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01",
+      "stage": 2,
+      "next_stage": 3
+    }
   },
   {
     "key": "oteryn:service.travel.uzon/issavi",
@@ -2731,11 +2786,12 @@
     "price": 70,
     "premium": true,
     "x": 32588,
-    "y": 31942,
+    "y": 31941,
     "floor": 0,
     "postman": true,
     "held": false,
-    "carpet": true
+    "carpet": true,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.uzon/kazordoon",
@@ -2743,11 +2799,12 @@
     "price": 70,
     "premium": true,
     "x": 32588,
-    "y": 31942,
+    "y": 31941,
     "floor": 0,
     "postman": true,
     "held": false,
-    "carpet": true
+    "carpet": true,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.uzon/svargrond",

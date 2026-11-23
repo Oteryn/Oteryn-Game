@@ -117,7 +117,8 @@
               "return_on_failure": false,
               "sources": [
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua#L20-L45",
-                "content/world/spawns/held-bosses.json"
+                "content/world/spawns/held-bosses.json",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua:20-45"
               ],
               "effects": {
                 "encounter": {

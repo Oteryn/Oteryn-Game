@@ -323,3 +323,100 @@ fn click_caption(app: &mut App, caption: &str) -> TestResult {
     app.update();
     Ok(())
 }
+
+#[test]
+fn reward_wall_store_buttons_request_filtered_catalogues() -> TestResult {
+    for (caption, search) in [
+        ("Premium offers", "Premium"),
+        ("Instant reward offers", "Instant Reward"),
+    ] {
+        let (mut app, mut commands, outbox) = fixture()?;
+        outbox.bevy_store_initialize();
+        outbox.bevy_reward_wall(panel());
+        app.update();
+        let entity = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+            .ok_or_else(|| format!("missing {caption} button"))?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        let link = &app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link;
+        assert!(link.store_panel().open && !link.daily_reward_panel().open);
+        assert_eq!(link.store_panel().browser.search, search);
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::ServerMechanic(_)
+        ));
+    }
+    Ok(())
+}
+
+#[test]
+fn reward_reset_clock_uses_the_matching_server_save_notice() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.bevy_reward_wall(panel());
+    app.update();
+    for (sequence, epoch) in [(1, 41), (2, 42)] {
+        outbox.push(vec![oteryn_session::SessionEvent::ServerSaveCountdown(
+            oteryn_session::AppliedDelta {
+                server_sequence: sequence,
+                base_revision: sequence - 1,
+                new_revision: sequence,
+                value: oteryn_session::ServerSaveCountdown {
+                    ending_epoch: epoch,
+                    minutes_remaining: 3,
+                },
+            },
+        )]);
+        app.update();
+        assert_eq!(
+            texts(&mut app).contains("Reward resets in about 3 min"),
+            epoch == 42
+        );
+    }
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualInstant(
+        std::time::Instant::now() + std::time::Duration::from_secs(181),
+    ));
+    app.update();
+    assert!(!texts(&mut app).contains("Reward resets in"));
+    assert!(matches!(commands.try_recv()?, PlayCommand::DailyReward(_)));
+    outbox.bevy_reward_wall(panel());
+    app.update();
+    assert!(
+        commands.try_recv().is_err(),
+        "one refresh per expired notice"
+    );
+    Ok(())
+}
+
+#[test]
+fn review_unavailable_store_gives_feedback_on_the_wall() -> TestResult {
+    let (mut app, _, outbox) = fixture()?;
+    outbox.bevy_reward_wall(panel());
+    app.update();
+    click(&mut app, Kind::Offers("Premium"))?;
+    assert!(texts(&mut app).contains("Store unavailable"));
+    Ok(())
+}
+
+#[test]
+fn reward_store_send_refusal_keeps_the_wall_open() -> TestResult {
+    let (mut app, commands, outbox) = fixture()?;
+    outbox.bevy_store_initialize();
+    outbox.bevy_reward_wall(panel());
+    app.update();
+    drop(commands);
+    click(&mut app, Kind::Offers("Premium"))?;
+    assert!(texts(&mut app).contains("The session has ended"));
+    let owner = app.world().non_send::<HostOwner>();
+    assert!(!owner.play.as_ref().ok_or("play")?.link.store_panel().open);
+    Ok(())
+}

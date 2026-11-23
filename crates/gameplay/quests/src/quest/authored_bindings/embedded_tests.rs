@@ -1,5 +1,50 @@
 use super::*;
 
+#[test]
+fn reviewed_world_callback_documents_load() -> Result<(), String> {
+    for source in [
+        include_bytes!(
+            "../../../../../../content/quests/authored-bindings/alawars_vault_journey.json"
+        )
+        .as_slice(),
+        include_bytes!(
+            "../../../../../../content/quests/authored-bindings/outlaw_camp_journey.json"
+        )
+        .as_slice(),
+        include_bytes!(
+            "../../../../../../content/quests/authored-bindings/paradox_tower_journey.json"
+        )
+        .as_slice(),
+        include_bytes!(
+            "../../../../../../content/quests/authored-bindings/thais_lighthouse_journey.json"
+        )
+        .as_slice(),
+    ] {
+        Bindings::parse(source)?;
+    }
+    crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    Ok(())
+}
+
+#[test]
+fn koshei_carried_seal_needs_no_dialogue_keywords() -> Result<(), String> {
+    let source = include_bytes!(
+        "../../../../../../content/quests/authored-bindings/koshei_the_deathless_journey.json"
+    );
+    let bindings = Bindings::parse(source)?;
+    let mut seal = bindings
+        .reward_callbacks()
+        .find(|callback| callback.key == "oteryn:quest-reward/koshei/tomb-seal")
+        .ok_or("tomb seal")?
+        .clone();
+    assert!(seal.keywords.is_empty());
+    assert!(seal.corpse_target.is_some());
+    seal.take.clear();
+    assert!(crate::quest::reward_callbacks::validate_callbacks(&[seal]).is_err());
+    Ok(())
+}
+
 fn binding() -> Result<Bindings, String> {
     Bindings::parse(include_bytes!("fixtures/talk.json"))
 }

@@ -36,6 +36,7 @@ pub struct World {
     pub(crate) item_lights: Vec<(oteryn_session::ActorPosition, u8, u8)>,
     pub(crate) minimap_colors: BTreeMap<(i16, i32, i32), u8>,
     center: (i32, i32, i16),
+    pub(crate) covering_tiles: std::collections::BTreeSet<(i16, i32, i32)>,
     pub(crate) first_visible_floor: i16,
     // Phase updates share immutable pixels while replacing projected tile draws.
     atlas: std::sync::Arc<AtlasImage>,
@@ -68,6 +69,7 @@ impl World {
             item_lights: Vec::new(),
             minimap_colors: BTreeMap::new(),
             center: (START.0, START.1, i16::from(START_FLOOR)),
+            covering_tiles: Default::default(),
             first_visible_floor: i16::from(START_FLOOR),
             atlas: std::sync::Arc::new(atlas),
             animations: Default::default(),
@@ -144,6 +146,7 @@ impl World {
             item_lights: Vec::new(),
             minimap_colors: BTreeMap::new(),
             center,
+            covering_tiles: Default::default(),
             first_visible_floor: center.2,
             atlas: std::sync::Arc::new(atlas),
             animations: Default::default(),

@@ -12,6 +12,7 @@ pub struct Panel {
     pub fields: [String; 0],
     pub feedback: String,
     pub summary: String,
+    pub incoming_situations: Option<Vec<u64>>,
     pub unjustified: Option<UnjustifiedSnapshot>,
     pub skull_timer: Option<SkullTimer>,
     pub status_received_at: Option<std::time::Instant>,

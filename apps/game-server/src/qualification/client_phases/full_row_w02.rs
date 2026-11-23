@@ -24,7 +24,7 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
-const BOSS: &str = "oteryn:boss.faceless_bane";
+pub(super) const BOSS: &str = "oteryn:boss.faceless_bane";
 const LEVERS: &[TilePos] = &[
     TilePos {
         x: 33638,
@@ -53,6 +53,10 @@ const LEVERS: &[TilePos] = &[
     },
 ];
 
+fn lever_route_gap(from: TilePos) -> String {
+    format!("step-2-lever-walk:observed=no-route-from-{from:?};need=walk-to-authored-Faceless-Bane-lever;source=tools/qualification/node_boot/run.sh:139")
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
@@ -61,15 +65,21 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=W02.full status=PASS seconds={:.3} evidence=lever-instance-defeat-cooldown-participation-reward-fresh-admission",
             started.elapsed().as_secs_f64()
         )),
-        Ok(Err(error)) => evidence(&format!(
-            "e2e_all scenario=W02.full status=FAIL seconds={:.3} evidence={}",
-            started.elapsed().as_secs_f64(),
-            evidence_token(&error.to_string())
-        )),
-        Err(_) => evidence(&format!(
-            "e2e_all scenario=W02.full status=FAIL seconds={:.3} evidence=step-timeout:240s;need=completed-native-boss-lifecycle",
-            started.elapsed().as_secs_f64()
-        )),
+        Ok(Err(error)) => {
+            evidence(&format!("W02_GAP {error}"));
+            evidence(&format!(
+                "e2e_all scenario=W02.full status=FAIL seconds={:.3} evidence={}",
+                started.elapsed().as_secs_f64(),
+                evidence_token(&error.to_string())
+            ));
+        }
+        Err(_) => {
+            evidence("W02_GAP step=journey observed=240s-timeout need=completed-native-boss-lifecycle");
+            evidence(&format!(
+                "e2e_all scenario=W02.full status=FAIL seconds={:.3} evidence=step-timeout:240s;need=completed-native-boss-lifecycle",
+                started.elapsed().as_secs_f64()
+            ));
+        }
     }
 }
 
@@ -118,6 +128,102 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     evidence("W02_CHECK step=1 status=PASS observed=accepted-empty-target-cooldown");
 
+    defeat_faceless_bane(&mut client, clients).await?;
+    evidence("W02_CHECK step=3 status=PASS observed=native-boss-removal-and-channel-return");
+
+    let after = cooldowns(&mut client).await?;
+    let settled_cooldown = nested_entry(&after, 2, BOSS)?
+        .ok_or("step-4-cooldown:observed=no-target-entry;need=new-durable-boss-deadline")?;
+    let observed_at = varint_field(&after, 1)?;
+    let cooldown_deadline = varint_field(&settled_cooldown, 2)?;
+    if observed_at
+        .zip(cooldown_deadline)
+        .is_none_or(|(now, deadline)| deadline <= now)
+    {
+        return Err(format!(
+            "step-4-cooldown:observed-now={observed_at:?},deadline={cooldown_deadline:?};need=future-boss-deadline"
+        )
+        .into());
+    }
+    let progress = nested_entry(&after, 4, BOSS)?
+        .ok_or("step-4-participation:observed=no-target-progress;need=positive-kill-progress")?;
+    if varint_field(&progress, 2)?.is_none_or(|count| count == 0) {
+        return Err(
+            "step-4-participation:observed=zero-kill-count;need=positive-kill-progress".into(),
+        );
+    }
+    let chest = command(&mut client, wire::COMMAND_TYPE_BOSS_REWARD_OPEN, &[]).await?;
+    let settled_reward = nested_entry(&chest.payload, 2, BOSS)?;
+    let reward_count = settled_reward
+        .as_ref()
+        .map(|entry| varint_field(entry, 5))
+        .transpose()?
+        .flatten();
+    if chest.status != CommandStatus::Accepted || reward_count.is_none_or(|count| count == 0) {
+        return Err(format!(
+            "step-4-reward:observed={chest:?};need=personal-participation-reward-group"
+        )
+        .into());
+    }
+    let settled_reward = settled_reward.ok_or(
+        "step-4-reward:observed=missing-target-group;need=personal-participation-reward-group",
+    )?;
+    evidence("W02_CHECK step=4 status=PASS observed=cooldown-and-personal-reward");
+
+    let payload =
+        wire::encode_boss_key(BOSS).map_err(|error| format!("step-5-lever-encode:{error:?}"))?;
+    let before_repeat_session = client.join_snapshot().game_session_id;
+    let before_repeat_position = client.world_spatial().actor_position;
+    let repeated = command(&mut client, wire::COMMAND_TYPE_BOSS_LEVER, &payload).await?;
+    let repeated_reply = wire::decode_boss_activity_reply(&repeated.payload)
+        .map_err(|error| format!("step-5-cooldown-refusal-decode:{error:?}"))?;
+    if repeated.status != CommandStatus::Rejected
+        || repeated_reply != wire::BossActivityReply::Refused(wire::BossActivityRefusal::Cooldown)
+    {
+        return Err(format!("step-5-cooldown-refusal:observed-status={:?},reply={repeated_reply:?};need=typed-Cooldown", repeated.status).into());
+    }
+    if client.join_snapshot().game_session_id != before_repeat_session
+        || client.world_spatial().actor_position != before_repeat_position
+    {
+        return Err(format!(
+            "step-5-no-second-handoff:observed-reply={repeated_reply:?},session-changed={},position-changed={};need=Cooldown-without-Instance-handoff",
+            client.join_snapshot().game_session_id != before_repeat_session,
+            client.world_spatial().actor_position != before_repeat_position
+        )
+        .into());
+    }
+    evidence(
+        "W02_CHECK step=5 status=PASS observed=typed-cooldown-refusal-without-session-or-position-handoff",
+    );
+
+    let old_session = client.join_snapshot().game_session_id;
+    let logout = client.session_mut().logout().await?;
+    if logout.status != CommandStatus::Accepted {
+        return Err(format!("step-6-logout:observed={logout:?};need=accepted-logout").into());
+    }
+    drop(client);
+    let mut fresh = connect_world(clients, 0xb3).await?;
+    if fresh.join_snapshot().game_session_id == old_session {
+        return Err("step-6-fresh-admission:observed=reused-session;need=new-session".into());
+    }
+    let durable = cooldowns(&mut fresh).await?;
+    let durable_chest = command(&mut fresh, wire::COMMAND_TYPE_BOSS_REWARD_OPEN, &[]).await?;
+    let durable_cooldown = nested_entry(&durable, 2, BOSS)?;
+    let durable_reward = nested_entry(&durable_chest.payload, 2, BOSS)?;
+    if durable_cooldown.as_ref() != Some(&settled_cooldown)
+        || durable_chest.status != CommandStatus::Accepted
+        || durable_reward.as_ref() != Some(&settled_reward)
+    {
+        return Err(format!("step-6-durable-recheck:observed-cooldown-match={},reward-match={},chest-status={:?};need=same-deadline-and-personal-reward-group", durable_cooldown.as_ref() == Some(&settled_cooldown), durable_reward.as_ref() == Some(&settled_reward), durable_chest.status).into());
+    }
+    evidence("W02_CHECK step=6 status=PASS observed=durable-state-after-fresh-admission");
+    Ok(())
+}
+
+pub(super) async fn defeat_faceless_bane(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult {
     // Make the real walking attempt before operating the lever. `route` uses the
     // same immutable production map facts and bound as the other full-row phases.
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -129,16 +235,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| LEVERS.contains(&at)).ok_or_else(|| {
-        format!("step-2-lever-walk:observed=no-route-from-{from:?};need=walk-to-authored-lever")
-    })?;
-    walk(&mut client, world, &path).await?;
+    let path =
+        route(world, from, |at| LEVERS.contains(&at)).ok_or_else(|| lever_route_gap(from))?;
+    walk(client, world, &path).await?;
     let lever_position = client.world_spatial().actor_position;
     let channel_session = client.join_snapshot().game_session_id;
 
     let payload =
         wire::encode_boss_key(BOSS).map_err(|error| format!("step-2-lever-encode:{error:?}"))?;
-    let lever = command(&mut client, wire::COMMAND_TYPE_BOSS_LEVER, &payload).await?;
+    client.take_events();
+    let lever = command(client, wire::COMMAND_TYPE_BOSS_LEVER, &payload).await?;
     let activity = wire::decode_boss_activity_reply(&lever.payload).map_err(|error| {
         format!(
             "step-2-lever-reply:status={:?};decode={error:?}",
@@ -158,7 +264,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         wire::BossActivityReply::Accepted { handoff, .. }
             if lever.status == CommandStatus::Accepted =>
         {
+            // The accepted result names the handoff on the source session.
+            // Only then service the independently validated destination snapshot.
+            if client.join_snapshot().game_session_id != channel_session {
+                return Err("step-2-instance-snapshot arrived before accepted lever handoff".into());
+            }
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            while client.join_snapshot().game_session_id == channel_session {
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!("step-2-accepted handoff {handoff:?} missing instance snapshot").into());
+                }
+                client.service_liveness(Duration::from_millis(25)).await?;
+                client.take_events();
+            }
             let instance_session = client.join_snapshot().game_session_id;
+            let scope = client.session_mut().activity_scope()
+                .ok_or("step-2-instance snapshot missing validated activity scope")?;
+            if scope.handoff != handoff
+                || scope.source_session != *channel_session.as_bytes()
+                || scope.session != *instance_session.as_bytes()
+                || !matches!(scope.scope, oteryn_protocol_oteryn::activity_scope::ActivityScope::Instance { .. })
+            {
+                return Err(format!("step-2-unexpected activity handoff {scope:?}").into());
+            }
             let instance_position = client.world_spatial().actor_position;
             if instance_session == channel_session || instance_position == lever_position {
                 return Err(format!(
@@ -168,9 +296,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 )
                 .into());
             }
-            evidence(
-                "W02_CHECK step=2 status=PASS observed=accepted-instance-session-and-position-deltas",
-            );
         }
         other => {
             return Err(format!("step-2-lever-entry:observed-status={:?},reply={other:?};need=accepted-consistent-handoff", lever.status).into());
@@ -188,7 +313,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .and_then(|entities| {
                 entities
                     .iter()
-                    .find(|entity| entity.kind == oteryn_dev_client::EntityKind::Creature)
+                    .find(|entity| {
+                        entity.kind == oteryn_dev_client::EntityKind::Creature
+                            && entity.display_name.is_some_and(|name| name.as_str() == Ok("Faceless Bane"))
+                    })
             })
             .copied()
         {
@@ -238,92 +366,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
-    evidence("W02_CHECK step=3 status=PASS observed=native-boss-removal-and-channel-return");
-
-    let after = cooldowns(&mut client).await?;
-    let settled_cooldown = nested_entry(&after, 2, BOSS)?
-        .ok_or("step-4-cooldown:observed=no-target-entry;need=new-durable-boss-deadline")?;
-    let observed_at = varint_field(&after, 1)?;
-    let cooldown_deadline = varint_field(&settled_cooldown, 2)?;
-    if observed_at
-        .zip(cooldown_deadline)
-        .is_none_or(|(now, deadline)| deadline <= now)
-    {
-        return Err(format!(
-            "step-4-cooldown:observed-now={observed_at:?},deadline={cooldown_deadline:?};need=future-boss-deadline"
-        )
-        .into());
-    }
-    let progress = nested_entry(&after, 4, BOSS)?
-        .ok_or("step-4-participation:observed=no-target-progress;need=positive-kill-progress")?;
-    if varint_field(&progress, 2)?.is_none_or(|count| count == 0) {
-        return Err(
-            "step-4-participation:observed=zero-kill-count;need=positive-kill-progress".into(),
-        );
-    }
-    let chest = command(&mut client, wire::COMMAND_TYPE_BOSS_REWARD_OPEN, &[]).await?;
-    let settled_reward = nested_entry(&chest.payload, 2, BOSS)?;
-    let reward_count = settled_reward
-        .as_ref()
-        .map(|entry| varint_field(entry, 5))
-        .transpose()?
-        .flatten();
-    if chest.status != CommandStatus::Accepted || reward_count.is_none_or(|count| count == 0) {
-        return Err(format!(
-            "step-4-reward:observed={chest:?};need=personal-participation-reward-group"
-        )
-        .into());
-    }
-    let settled_reward = settled_reward.ok_or(
-        "step-4-reward:observed=missing-target-group;need=personal-participation-reward-group",
-    )?;
-    evidence("W02_CHECK step=4 status=PASS observed=cooldown-and-personal-reward");
-
-    let before_repeat_session = client.join_snapshot().game_session_id;
-    let before_repeat_position = client.world_spatial().actor_position;
-    let repeated = command(&mut client, wire::COMMAND_TYPE_BOSS_LEVER, &payload).await?;
-    let repeated_reply = wire::decode_boss_activity_reply(&repeated.payload)
-        .map_err(|error| format!("step-5-cooldown-refusal-decode:{error:?}"))?;
-    if repeated.status != CommandStatus::Rejected
-        || repeated_reply != wire::BossActivityReply::Refused(wire::BossActivityRefusal::Cooldown)
-    {
-        return Err(format!("step-5-cooldown-refusal:observed-status={:?},reply={repeated_reply:?};need=typed-Cooldown", repeated.status).into());
-    }
-    if client.join_snapshot().game_session_id != before_repeat_session
-        || client.world_spatial().actor_position != before_repeat_position
-    {
-        return Err(format!(
-            "step-5-no-second-handoff:observed-reply={repeated_reply:?},session-changed={},position-changed={};need=Cooldown-without-Instance-handoff",
-            client.join_snapshot().game_session_id != before_repeat_session,
-            client.world_spatial().actor_position != before_repeat_position
-        )
-        .into());
-    }
-    evidence(
-        "W02_CHECK step=5 status=PASS observed=typed-cooldown-refusal-without-session-or-position-handoff",
-    );
-
-    let old_session = client.join_snapshot().game_session_id;
-    let logout = client.session_mut().logout().await?;
-    if logout.status != CommandStatus::Accepted {
-        return Err(format!("step-6-logout:observed={logout:?};need=accepted-logout").into());
-    }
-    drop(client);
-    let mut fresh = connect_world(clients, 0xb3).await?;
-    if fresh.join_snapshot().game_session_id == old_session {
-        return Err("step-6-fresh-admission:observed=reused-session;need=new-session".into());
-    }
-    let durable = cooldowns(&mut fresh).await?;
-    let durable_chest = command(&mut fresh, wire::COMMAND_TYPE_BOSS_REWARD_OPEN, &[]).await?;
-    let durable_cooldown = nested_entry(&durable, 2, BOSS)?;
-    let durable_reward = nested_entry(&durable_chest.payload, 2, BOSS)?;
-    if durable_cooldown.as_ref() != Some(&settled_cooldown)
-        || durable_chest.status != CommandStatus::Accepted
-        || durable_reward.as_ref() != Some(&settled_reward)
-    {
-        return Err(format!("step-6-durable-recheck:observed-cooldown-match={},reward-match={},chest-status={:?};need=same-deadline-and-personal-reward-group", durable_cooldown.as_ref() == Some(&settled_cooldown), durable_reward.as_ref() == Some(&settled_reward), durable_chest.status).into());
-    }
-    evidence("W02_CHECK step=6 status=PASS observed=durable-state-after-fresh-admission");
     Ok(())
 }
 
@@ -411,6 +453,14 @@ fn varint_field(payload: &[u8], field: u64) -> TestResult<Option<u64>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unreachable_lever_gap_locates_the_authored_room() {
+        let gap = lever_route_gap(TOWN);
+        assert!(gap.contains("step-2-lever-walk"));
+        assert!(gap.contains("Faceless-Bane"));
+        assert!(gap.contains("tools/qualification/node_boot/run.sh:139"));
+    }
 
     #[test]
     fn evidence_is_one_report_token() {

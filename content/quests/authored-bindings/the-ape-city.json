@@ -593,7 +593,7 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/amphora-1",
                   "minimum": 0,
-                  "maximum": 0,
+                  "maximum": 1,
                   "set": 1
                 }
               ],
@@ -610,8 +610,11 @@
                 "item": "oteryn:item.tibia.i4835",
                 "count": 1,
                 "selected_instance": true,
-                "reusable": true,
-                "target_replacement": 4996
+                "reusable": true
+              },
+              "effects": {
+                "transform": 4996,
+                "reset_after_ms": 300000
               },
               "premium_required": true,
               "state_ops": [
@@ -663,7 +666,7 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/amphora-2",
                   "minimum": 0,
-                  "maximum": 0,
+                  "maximum": 1,
                   "set": 1
                 }
               ],
@@ -680,8 +683,11 @@
                 "item": "oteryn:item.tibia.i4835",
                 "count": 1,
                 "selected_instance": true,
-                "reusable": true,
-                "target_replacement": 4996
+                "reusable": true
+              },
+              "effects": {
+                "transform": 4996,
+                "reset_after_ms": 300000
               },
               "premium_required": true,
               "state_ops": [
@@ -733,7 +739,7 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/amphora-3",
                   "minimum": 0,
-                  "maximum": 0,
+                  "maximum": 1,
                   "set": 1
                 }
               ],
@@ -750,8 +756,11 @@
                 "item": "oteryn:item.tibia.i4835",
                 "count": 1,
                 "selected_instance": true,
-                "reusable": true,
-                "target_replacement": 4996
+                "reusable": true
+              },
+              "effects": {
+                "transform": 4996,
+                "reset_after_ms": 300000
               },
               "premium_required": true,
               "state_ops": [
@@ -803,7 +812,7 @@
                 {
                   "track": "oteryn:quest-progress/chosen/ape-city/amphora-4",
                   "minimum": 0,
-                  "maximum": 0,
+                  "maximum": 1,
                   "set": 1
                 }
               ],
@@ -820,8 +829,11 @@
                 "item": "oteryn:item.tibia.i4835",
                 "count": 1,
                 "selected_instance": true,
-                "reusable": true,
-                "target_replacement": 4996
+                "reusable": true
+              },
+              "effects": {
+                "transform": 4996,
+                "reset_after_ms": 300000
               },
               "premium_required": true,
               "state_ops": [

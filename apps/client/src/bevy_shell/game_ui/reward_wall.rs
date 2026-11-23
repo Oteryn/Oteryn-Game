@@ -14,12 +14,60 @@ use bevy::{input_focus::InputFocus, prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::daily_reward::{DailyRewardPanel, Intent};
 #[derive(Component)]
 struct DayCell;
+#[derive(Component)]
+struct ResetClock;
+
+fn update_clock(
+    owner: NonSend<HostOwner>,
+    mut clocks: Query<&mut Text, With<ResetClock>>,
+    time: Res<Time<Real>>,
+    mut running: Local<Option<(u64, std::time::Instant)>>,
+) {
+    if clocks.is_empty() {
+        *running = None;
+        return;
+    }
+    let Some(play) = &owner.play else {
+        *running = None;
+        return;
+    };
+    let deadline = play.link.reward_reset_deadline();
+    let now = time.last_update().unwrap_or_else(std::time::Instant::now);
+    if let Some(time) = deadline {
+        if time > now {
+            *running = Some((owner.generation(), time));
+        } else if *running == Some((owner.generation(), time)) {
+            let panel = play.link.daily_reward_panel();
+            if play
+                .link
+                .daily_reward_request_bound(&panel, Intent::Refresh)
+            {
+                *running = None;
+            }
+        }
+    } else {
+        *running = None;
+    }
+    for mut clock in &mut clocks {
+        let label = deadline
+            .and_then(|deadline| deadline.checked_duration_since(now))
+            .map(|duration| {
+                let minutes = duration.as_millis().div_ceil(60_000);
+                format!("Reward resets in about {minutes} min")
+            })
+            .unwrap_or_default();
+        if clock.0 != label {
+            clock.0 = label;
+        }
+    }
+}
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Close,
     Collect,
     History,
     Help(Help),
+    Offers(&'static str),
     Refresh,
     Wall,
 }
@@ -49,7 +97,7 @@ struct State {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (keyboard, project).chain());
+        .add_systems(Update, (keyboard, project, update_clock).chain());
 }
 fn collectable(panel: &DailyRewardPanel) -> bool {
     panel.selected
@@ -152,6 +200,11 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
         Kind::Help(help) => {
             state.history = false;
             state.help = (state.help != Some(help)).then_some(help);
+        }
+        Kind::Offers(search) => {
+            if play.link.open_reward_store_offers(search) {
+                play.link.daily_reward_close();
+            }
         }
         Kind::Refresh | Kind::Collect => {
             if play.view.gameplay_input_blocked(&play.link) {

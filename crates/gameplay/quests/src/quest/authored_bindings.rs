@@ -450,6 +450,41 @@ impl Bindings {
             *before = digest.finalize().into();
             // Paradox keeps its published source NPC program and its native
             // absent-value adapter. Other replacements require their new witness.
+            if matches!(
+                quest.quest.as_str(),
+                "oteryn:quest.the_new_frontier_quest" | "oteryn:quest.the_shattered_isles_quest"
+            ) {
+                // Cael and Eleonore already wrote these tracks in the published
+                // catalogue. Preserve explicit progress and use the new route's
+                // zero when the old donor default was an absent -1.
+                let mut accepted = catalogue
+                    .predecessors
+                    .remove(&quest.quest)
+                    .unwrap_or_default();
+                if let Some((hash, defaults)) = catalogue.npc_legacy.remove(&quest.quest) {
+                    accepted.push(super::NpcDefinitionPredecessor { hash, defaults });
+                }
+                if let Some(hash) = base.definition_hash(&quest.quest) {
+                    accepted.push(super::NpcDefinitionPredecessor {
+                        hash,
+                        defaults: base
+                            .tracks
+                            .values()
+                            .filter(|track| track.quest == quest.quest)
+                            .map(|track| (track.key.clone(), track.initial))
+                            .collect(),
+                    });
+                }
+                for predecessor in &mut accepted {
+                    predecessor.defaults.retain(|key, initial| {
+                        catalogue.track(key).is_some_and(|track| {
+                            track.quest == quest.quest && (track.min..=track.max).contains(initial)
+                        })
+                    });
+                }
+                catalogue.predecessors.insert(quest.quest.clone(), accepted);
+                continue;
+            }
             if quest.quest != "oteryn:quest.the_paradox_tower_quest" {
                 catalogue.npc_legacy.remove(&quest.quest);
             }

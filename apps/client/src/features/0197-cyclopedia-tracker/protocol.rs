@@ -12,11 +12,50 @@ impl Outbox {
         panel.widget_feedback[slot] = panel.feedback;
     }
     pub(in crate::play) fn cyclopedia_tracker_push(&self, payload: Vec<u8>) {
-        let panel = &mut lock(&self.0).cyclopedia_tracker;
+        let mut mailbox = lock(&self.0);
+        let old_bosses = mailbox.capture_boss_tracker.take();
+        let panel = &mut mailbox.cyclopedia_tracker;
+        let old_bestiary = panel.bestiary_snapshot.clone();
         if !oteryn_client_ui::cyclopedia_tracker::apply_snapshot(panel, &payload) {
-            // A domain-98 push carries both trackers.
             panel.widget_feedback = [panel.feedback; 2];
+            mailbox.capture_boss_tracker = old_bosses;
+            return;
         }
+        let mut events = [false; 3];
+        if let Some((old, new)) = old_bestiary.as_ref().zip(panel.bestiary_snapshot.as_ref()) {
+            for entry in &new.entries {
+                if let Some(before) = old
+                    .entries
+                    .iter()
+                    .find(|e| e.creature_key == entry.creature_key)
+                    && before.thresholds == entry.thresholds
+                    && entry.kill_count > before.kill_count
+                {
+                    if entry.completed && !before.completed {
+                        events[1] = true;
+                    } else if entry
+                        .thresholds
+                        .iter()
+                        .any(|&n| before.kill_count < n && entry.kill_count >= n)
+                    {
+                        events[0] = true;
+                    }
+                }
+            }
+        }
+        if let Some((old, new)) = old_bosses.as_ref().zip(panel.bosstiary_snapshot.as_ref()) {
+            events[2] = new.entries.iter().any(|entry| {
+                old.entries.iter().any(|before| {
+                    before.creature_key == entry.creature_key
+                        && entry.kill_count > before.kill_count
+                })
+            });
+        }
+        let latest = panel.bosstiary_snapshot.clone();
+        for (counter, event) in mailbox.capture_observations.tracker.iter_mut().zip(events) {
+            *counter = counter.wrapping_add(u64::from(event));
+        }
+        mailbox.capture_boss_tracker = latest;
     }
 }
 

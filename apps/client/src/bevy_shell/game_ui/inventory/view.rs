@@ -202,7 +202,14 @@ pub(super) fn project(
     }
     if let Some(views) = &snapshot.containers.views {
         for view in &views.views {
-            container(&mut commands, &skins, regions.containers, view, &snapshot);
+            container(
+                &mut commands,
+                &skins,
+                regions.containers,
+                view,
+                &snapshot,
+                play.view.scene(),
+            );
         }
     }
     if let Some(message) = snapshot.containers.feedback.or(snapshot.movement.feedback) {
@@ -221,6 +228,7 @@ pub(super) fn project(
             slot,
             position,
             (snapshot.write, snapshot.timed),
+            slot.parent_container(&snapshot.containers),
         );
     }
     previous.0 = Some(snapshot);

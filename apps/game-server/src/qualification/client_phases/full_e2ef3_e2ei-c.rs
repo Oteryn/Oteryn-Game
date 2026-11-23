@@ -2,12 +2,14 @@
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::{
+    attack::{AttackIntentDisposition, ChaseMode, FightModes},
     item_view::{ItemEntry, ItemHandle, ItemMoveOutcome},
     logout::LogoutResult,
     quick_loot::{self as loot, QuickLootAction as Action, QuickLootFilterMode as Filter},
     world_object::UseDisposition,
     world_spatial_entities::WorldSpatialEntity,
 };
+use std::collections::BTreeSet;
 use tokio::time::Instant;
 
 const I06: &str = "I06";
@@ -21,19 +23,39 @@ const WOLF_TILE: TilePos = TilePos {
 };
 const RAT: &str = "oteryn:creature.rat";
 
-struct Hunt<'a> {
-    world: &'a BundleWorld,
-    spawns: &'a oteryn_world_bundle::spawn::Table,
+pub(super) struct Hunt<'a> {
+    pub(super) world: &'a BundleWorld,
+    pub(super) spawns: &'a oteryn_world_bundle::spawn::Table,
 }
 
-struct Corpse {
+pub(super) struct Corpse {
     entity: WorldSpatialEntity,
     handle: ItemHandle,
-    entries: Vec<ItemEntry>,
+    pub(super) entries: Vec<ItemEntry>,
 }
 
 fn nearby(a: TilePos, b: TilePos) -> bool {
     a.floor == b.floor && a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)) <= 1
+}
+
+fn hunt_landing_available(at: TilePos, occupied: &BTreeSet<TilePos>) -> bool {
+    route_available(at) && at != WOLF_TILE && !occupied.contains(&at)
+}
+
+fn spawn_route(
+    client: &DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+    approaches: &BTreeSet<TilePos>,
+) -> Result<Vec<StepDirection>, usize> {
+    let occupied = occupied_tiles(client);
+    find_route(
+        from,
+        |at| approaches.contains(&at) && hunt_landing_available(at, &occupied),
+        |at, step| {
+            destination(world, at, step).filter(|next| hunt_landing_available(*next, &occupied))
+        },
+    )
 }
 
 async fn travel(
@@ -42,25 +64,70 @@ async fn travel(
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
-    let occupied: Vec<_> = client
-        .world_entities()
-        .into_iter()
-        .flat_map(|entities| entities.others())
-        .filter(|entity| {
-            matches!(
-                entity.kind,
-                EntityKind::Creature | EntityKind::Npc | EntityKind::Player
-            )
-        })
-        .filter_map(|entity| tile(entity.position).ok())
-        .collect();
+    let occupied = occupied_tiles(client);
     let path = route_avoiding(world, from, goal, |at| {
-        at != WOLF_TILE && !occupied.contains(&at)
+        hunt_landing_available(at, &occupied)
     })
     .ok_or_else(|| {
         format!("no served route from {from:?} avoiding occupied cells and {WOLF_TILE:?}")
     })?;
     walk(client, world, &path).await
+}
+
+pub(super) fn near_vendor_placement(actor: TilePos, placement: TilePos) -> bool {
+    actor.floor == placement.floor
+        && actor
+            .x
+            .abs_diff(placement.x)
+            .max(actor.y.abs_diff(placement.y))
+            <= 2
+}
+
+pub(super) async fn approach_vendor(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    name: &str,
+    near_placement: impl Fn(TilePos) -> bool,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let here = tile(client.world_spatial().actor_position)?;
+        let actor = client
+            .world_entities()
+            .into_iter()
+            .flat_map(|entities| entities.others())
+            .filter(|entry| entry.kind == EntityKind::Npc)
+            .filter(|entry| {
+                entry.display_name.is_some_and(|seen| {
+                    seen.as_str()
+                        .is_ok_and(|seen| seen.eq_ignore_ascii_case(name))
+                })
+            })
+            .filter_map(|entry| {
+                let at = tile(entry.position).ok()?;
+                (at.floor == here.floor && near_placement(at)).then_some((at, entry.entity))
+            })
+            .min_by_key(|(at, _)| at.x.abs_diff(here.x).max(at.y.abs_diff(here.y)));
+        if let Some((at, entity)) = actor {
+            if here.x.abs_diff(at.x).max(here.y.abs_diff(at.y)) <= 3 {
+                return Ok(entity);
+            }
+            travel(client, world, |cell| {
+                cell.floor == at.floor
+                    && cell != at
+                    && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) <= 2
+            })
+            .await?;
+        }
+        if Instant::now() >= deadline {
+            return Err(format!(
+                "vendor {name} not talkable within two tiles of compiled placement from {here:?}"
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
 }
 
 async fn settle(
@@ -87,70 +154,130 @@ impl Hunt<'_> {
     async fn kill(
         &self,
         client: &mut DevClientSession,
+        deadline: Instant,
+        sources: &BTreeSet<&str>,
     ) -> TestResult<(WorldSpatialEntity, ItemHandle)> {
-        let points: Vec<_> = self
-            .spawns
-            .sources
+        let names: Vec<_> = sources
             .iter()
-            .flat_map(|source| {
-                source.points.iter().filter_map(|point| {
-                    (self.spawns.creatures.get(point.creature as usize)?.key == RAT).then_some(
-                        TilePos {
-                            x: point.x,
-                            y: point.y,
-                            floor: source.floor,
-                        },
-                    )
-                })
-            })
+            .filter_map(|key| key.strip_prefix("oteryn:creature."))
+            .map(|name| name.replace('_', " "))
             .collect();
+        if Instant::now() >= deadline {
+            return Err(format!("hunt budget expired before routing to {sources:?}").into());
+        }
         let outside_pz = |at: TilePos| {
             self.world
                 .base()
                 .tile(at.x, at.y, at.floor)
                 .is_some_and(|ground| !ground.protection_zone())
         };
-        travel(client, self.world, |at| {
-            outside_pz(at) && points.iter().any(|&point| nearby(at, point))
-        })
-        .await?;
-        let mut target = None;
-        for _ in 0..16 {
+        let mut approaches = BTreeSet::new();
+        for (point, _) in ordinary_spawn_points(self.spawns)
+            .filter(|(at, key)| sources.contains(key) && outside_pz(*at))
+        {
+            for dx in -1..=1 {
+                for dy in -1..=1 {
+                    if let (Some(x), Some(y)) = (
+                        point.x.checked_add_signed(dx),
+                        point.y.checked_add_signed(dy),
+                    ) {
+                        let at = TilePos { x, y, ..point };
+                        if at != point && outside_pz(at) {
+                            approaches.insert(at);
+                        }
+                    }
+                }
+            }
+        }
+        if approaches.is_empty() {
+            return Err(format!("no compiled non-protection approach to {sources:?}").into());
+        }
+        let from = tile(client.world_spatial().actor_position)?;
+        let path = spawn_route(client, self.world, from, &approaches).map_err(|visited| {
+            format!("no served route to {sources:?} from {from:?} after {visited} cells")
+        })?;
+        for step in path {
+            if Instant::now() >= deadline {
+                return Err(
+                    format!("hunt budget expired en route to {sources:?} from {from:?}").into(),
+                );
+            }
+            walk(client, self.world, &[step]).await?;
+        }
+        // A previous row may have depleted this spawn. Give its live
+        // projection time to appear, then try a distinct approach.
+        let mut search_again = Instant::now() + Duration::from_secs(5);
+        let target = loop {
             let here = tile(client.world_spatial().actor_position)?;
-            let rat = client
+            let candidate = client
                 .world_entities()
                 .into_iter()
                 .flat_map(|entities| entities.others())
-                .filter(|entity| {
-                    entity.kind == EntityKind::Creature
-                        && entity.position.floor == -i16::from(here.floor)
-                })
-                .filter(|entity| {
-                    entity.display_name.as_ref().is_some_and(|name| {
-                        name.as_str()
-                            .is_ok_and(|name| name.eq_ignore_ascii_case("rat"))
+                .filter(|entry| entry.kind == EntityKind::Creature)
+                .filter(|entry| {
+                    entry.display_name.is_some_and(|name| {
+                        name.as_str().is_ok_and(|name| {
+                            names.iter().any(|wanted| name.eq_ignore_ascii_case(wanted))
+                        })
                     })
                 })
-                .min_by_key(|entity| {
-                    entity
-                        .position
-                        .x
-                        .abs_diff(i32::from(here.x))
-                        .max(entity.position.y.abs_diff(i32::from(here.y)))
+                .filter_map(|entry| {
+                    let at = tile(entry.position).ok()?;
+                    (here.floor == at.floor && outside_pz(at)).then_some((
+                        *entry,
+                        at,
+                        here.x.abs_diff(at.x).max(here.y.abs_diff(at.y)),
+                    ))
                 })
-                .copied()
-                .ok_or_else(|| format!("served rat spawn has no visible named rat at {here:?}"))?;
-            let at = tile(rat.position)?;
-            if nearby(here, at) {
-                target = Some(rat);
-                break;
+                .min_by_key(|(_, _, distance)| *distance);
+            if let Some((creature, at, _)) = candidate {
+                if nearby(here, at) {
+                    break creature;
+                }
+                travel(client, self.world, |cell| {
+                    outside_pz(cell) && nearby(cell, at) && cell != at
+                })
+                .await?;
+            } else if Instant::now() >= search_again {
+                approaches.retain(|cell| {
+                    cell.floor != here.floor
+                        || cell.x.abs_diff(here.x).max(cell.y.abs_diff(here.y)) > 8
+                });
+                if !approaches.is_empty()
+                    && let Ok(path) = spawn_route(client, self.world, here, &approaches)
+                {
+                    for step in path {
+                        if Instant::now() >= deadline {
+                            return Err(format!(
+                                "hunt budget expired routing to another {sources:?} spawn"
+                            )
+                            .into());
+                        }
+                        walk(client, self.world, &[step]).await?;
+                    }
+                }
+                search_again = Instant::now() + Duration::from_secs(5);
             }
-            travel(client, self.world, |cell| {
-                outside_pz(cell) && nearby(cell, at) && cell != at
-            })
-            .await?;
+            if Instant::now() >= deadline {
+                return Err(format!("spawn depleted or no attackable {sources:?} reached at {here:?} by hunt deadline").into());
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+        };
+        let prior_modes = client
+            .session_mut()
+            .combat_state()
+            .map_or(FightModes::DEFAULT, |state| state.modes);
+        let modes = FightModes {
+            chase: ChaseMode::Chase,
+            ..prior_modes
+        };
+        let reply = client.session_mut().set_fight_modes(&modes).await?;
+        if reply.status != CommandStatus::Accepted
+            || reply.disposition != AttackIntentDisposition::Ok
+        {
+            return Err(format!("hunt chase mode refused: {reply:?}").into());
         }
-        let target = target.ok_or("could not close to a rat after 16 approaches")?;
         let mut position = target.position;
         let mut removed = false;
         let mut corpses = Vec::new();
@@ -159,10 +286,16 @@ impl Hunt<'_> {
             .session_mut()
             .attack_target(Some(&target.entity))
             .await?;
-        if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
-            return Err(format!("ATTACK target={:?} reply={attack:?}", target.entity).into());
+        if attack.status != CommandStatus::Accepted
+            || attack.disposition != AttackIntentDisposition::Ok
+        {
+            let restored = client.session_mut().set_fight_modes(&prior_modes).await?;
+            return Err(format!(
+                "ATTACK target={:?} reply={attack:?}; restore={restored:?}",
+                target.entity
+            )
+            .into());
         }
-        let deadline = Instant::now() + Duration::from_secs(120);
         verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
         loop {
             for event in client.take_events() {
@@ -186,19 +319,38 @@ impl Hunt<'_> {
                 }
             }
             if removed
-                && let Some(corpse) = corpses.iter().find(|entity| entity.position == position)
+                && let Some((corpse, handle)) = corpses
+                    .iter()
+                    .filter(|corpse| corpse.position == position)
+                    .find_map(|entered| {
+                        let corpse = *client.world_entities()?.get(&entered.entity)?;
+                        match corpse.detail {
+                            EntityDetail::Object { item_handle, .. }
+                            | EntityDetail::ObjectWithAppearance { item_handle, .. } => {
+                                item_handle.map(|handle| (corpse, handle))
+                            }
+                            _ => None,
+                        }
+                    })
             {
-                let handle = match corpse.detail {
-                    EntityDetail::Object { item_handle, .. }
-                    | EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
-                    _ => None,
+                let restored = client.session_mut().set_fight_modes(&prior_modes).await?;
+                if restored.status != CommandStatus::Accepted
+                    || restored.disposition != AttackIntentDisposition::Ok
+                {
+                    return Err(format!("restore fight mode after kill: {restored:?}").into());
                 }
-                .ok_or_else(|| format!("new rat corpse has no item handle: {corpse:?}"))?;
                 verdict::Harness::global().progress("kill");
-                return Ok((*corpse, handle));
+                return Ok((corpse, handle));
             }
             if Instant::now() >= deadline {
-                return Err(format!("rat attack deadline;target={:?};removed={removed};position={position:?};corpses={corpses:?}", target.entity).into());
+                let stop = client.session_mut().attack_target(None).await?;
+                let restore = client.session_mut().set_fight_modes(&prior_modes).await?;
+                let missing = if removed {
+                    "bound-corpse-item-handle"
+                } else {
+                    "target-removal"
+                };
+                return Err(format!("attack deadline;missing={missing};sources={sources:?};target={:?};position={position:?};corpses={corpses:?};stop={stop:?};restore={restore:?}", target.entity).into());
             }
             client.service_liveness(Duration::from_millis(100)).await?;
         }
@@ -210,34 +362,54 @@ impl Hunt<'_> {
         step: &mut &'static str,
         kill_step: &'static str,
         open_step: &'static str,
+        deadline: Instant,
     ) -> TestResult<Corpse> {
         // Rat drops are random. Another real kill is the ordinary route after an empty roll.
         for _ in 0..5 {
             *step = kill_step;
-            let (entity, handle) = self.kill(client).await?;
+            let killed = self.kill(client, deadline, &BTreeSet::from([RAT])).await?;
             *step = open_step;
-            let used = client.use_item(handle).await?;
-            if used.status != CommandStatus::Accepted
-                || used.disposition != UseDisposition::Committed
-            {
-                return Err(format!("corpse USE reply={used:?};corpse={entity:?}").into());
-            }
-            settle(client, |client| {
-                Ok(client
-                    .open_container()
-                    .is_some_and(|view| view.container_handle == Some(handle)))
-            })
-            .await?;
-            let entries = &client.open_container().ok_or("corpse view absent")?.entries;
-            if !entries.is_empty() {
-                return Ok(Corpse {
-                    entity,
-                    handle,
-                    entries: entries.clone(),
-                });
+            let corpse = Self::open(client, killed).await?;
+            if !corpse.entries.is_empty() {
+                return Ok(corpse);
             }
         }
         Err("five rat corpse USE replies opened empty loot views".into())
+    }
+    pub(super) async fn hunt_sources(
+        &self,
+        client: &mut DevClientSession,
+        deadline: Instant,
+        sources: &BTreeSet<&str>,
+    ) -> TestResult<Corpse> {
+        let killed = self.kill(client, deadline, sources).await?;
+        Self::open(client, killed).await
+    }
+
+    async fn open(
+        client: &mut DevClientSession,
+        (entity, handle): (WorldSpatialEntity, ItemHandle),
+    ) -> TestResult<Corpse> {
+        let used = client.use_item(handle).await?;
+        if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
+            return Err(format!("corpse USE reply={used:?};corpse={entity:?}").into());
+        }
+        settle(client, |client| {
+            Ok(client
+                .open_container()
+                .is_some_and(|view| view.container_handle == Some(handle)))
+        })
+        .await?;
+        let entries = client
+            .open_container()
+            .ok_or("corpse view absent")?
+            .entries
+            .clone();
+        Ok(Corpse {
+            entity,
+            handle,
+            entries,
+        })
     }
 }
 
@@ -275,6 +447,21 @@ async fn relog(
     Ok(())
 }
 
+fn loot_deadline() -> Instant {
+    let deadline = Instant::now() + Duration::from_secs(120);
+    verdict::Harness::global().bounded_wait(deadline, "rat-hunt-budget");
+    deadline
+}
+
+fn verify_corpse_retirement_timing(
+    step: &mut &'static str,
+    leave_sequence: u64,
+    stale_use: UseDisposition,
+) -> TestResult {
+    *step = "verify-server-corpse-retirement-timing";
+    Err(format!("SERVER-GAP missing server timestamps for rat corpse materialization and retirement; leave-sequence={leave_sequence}; stale-use={stale_use:?}; 60s fallback at 1357_instance_corpse_mint.sql:164; enter/leave projection at world_spatial_entities.rs:188").into())
+}
+
 async fn decay(
     client: &mut Option<DevClientSession>,
     clients: &SeamClients<'_>,
@@ -283,22 +470,33 @@ async fn decay(
     town: TilePos,
 ) -> TestResult {
     let live = client.as_mut().ok_or("connection closed")?;
-    let corpse = hunt.lootable(live, step, "kill", "leave-loot").await?;
+    let corpse = hunt
+        .lootable(live, step, "kill", "leave-loot", loot_deadline())
+        .await?;
     let before = quantities(live)?;
     let at = tile(corpse.entity.position)?;
     let stationary = live.world_spatial().actor_position;
     *step = "observe-decay";
     let deadline = Instant::now() + Duration::from_secs(75);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    loop {
+    let leave_sequence = loop {
         let position = live.world_spatial().actor_position;
         if position != stationary {
             return Err(format!("actor left the decay observation cell;expected={stationary:?};observed={position:?}").into());
         }
-        if live.take_events().into_iter().any(|event| matches!(event,
-            SessionEvent::WorldSpatialEntities(delta) if delta.value.leave.contains(&corpse.entity.entity)
-        )) {
-            break;
+        if let Some(sequence) = live
+            .take_events()
+            .into_iter()
+            .find_map(|event| match event {
+                SessionEvent::WorldSpatialEntities(delta)
+                    if delta.value.leave.contains(&corpse.entity.entity) =>
+                {
+                    Some(delta.server_sequence)
+                }
+                _ => None,
+            })
+        {
+            break sequence;
         }
         if Instant::now() >= deadline {
             return Err(format!(
@@ -308,7 +506,7 @@ async fn decay(
             .into());
         }
         live.service_liveness(Duration::from_millis(100)).await?;
-    }
+    };
     *step = "retired-loot-unavailable";
     let stale_use = live.use_item(corpse.handle).await?;
     if stale_use.status != CommandStatus::Accepted
@@ -355,7 +553,7 @@ async fn decay(
         )
         .into());
     }
-    Ok(())
+    verify_corpse_retirement_timing(step, leave_sequence, stale_use.disposition)
 }
 
 fn request(action: Action) -> loot::QuickLootRequest {
@@ -557,27 +755,43 @@ async fn loot_policy(
     hunt: &Hunt<'_>,
     step: &mut &'static str,
     town: TilePos,
-    click: &mut String,
 ) -> TestResult {
     let live = client.as_mut().ok_or("connection closed")?;
-    let mut corpse = hunt.lootable(live, step, "loot-all", "loot-all").await?;
+    let mut corpse = hunt
+        .lootable(live, step, "loot-all", "loot-all", loot_deadline())
+        .await?;
+    *step = "manual-click";
+    let before = quantities(live)?;
     let (status, reply) = quick(
         live,
         loot::QuickLootRequest {
-            // This is the real clicked entity's advertised identity. Command 114
-            // currently compares it with a different, durable item identity.
             corpse: Some(corpse.entity.entity.identity),
             ..request(Action::Click)
         },
     )
     .await?;
-    *click = format!(
-        "spatial identity={:?};status={status:?};result={reply:?}",
-        corpse.entity.entity.identity
-    );
-    if reply.items.iter().any(|item| item.accepted) {
-        return Err("Click transferred an item before the filter checks".into());
+    let refreshed = live.use_item(corpse.handle).await?;
+    if refreshed.status != CommandStatus::Accepted
+        || refreshed.disposition != UseDisposition::Committed
+    {
+        return Err(format!("Click corpse readback refused: {refreshed:?}").into());
     }
+    settle(live, |live| {
+        Ok(live.open_container().is_some_and(|view| {
+            view.container_handle == Some(corpse.handle) && view.entries == corpse.entries
+        }))
+    })
+    .await?;
+    if status != CommandStatus::Accepted || !reply.items.is_empty() || quantities(live)? != before {
+        return Err(format!(
+            "negative Click changed custody or did not return an empty result: {status:?}/{reply:?}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "I07 negative Click spatial={:?} status={status:?} reply={reply:?}",
+        corpse.entity.entity.identity
+    ));
     *step = "accept-skip-filters";
     filter(live, Action::FilterClear, Filter::Skip, None).await?;
     let refs: std::collections::BTreeSet<_> = corpse
@@ -629,6 +843,7 @@ async fn loot_policy(
             step,
             "relogin-policy-custody",
             "relogin-policy-custody",
+            loot_deadline(),
         )
         .await?;
     loot_all(fresh, &mut corpse, |_| false).await?;
@@ -680,25 +895,29 @@ async fn shop_quiver(
         .filter_map(|npc| {
             route_avoiding(world, here,
                 |at| npc.placements.iter().any(|p| in_reach(at, p)),
-                |at| at != WOLF_TILE && !npc.placements.iter().any(|p| p.x == at.x && p.y == at.y && p.floor == at.floor),
+                |at| route_available(at) && at != WOLF_TILE && !npc.placements.iter().any(|p| p.x == at.x && p.y == at.y && p.floor == at.floor),
             ).map(|path| (npc, path))
         }).min_by_key(|(_, path)| path.len())
         .ok_or_else(|| format!("NPC trade route from {here:?} to {sellers:?} unreachable for quiver 35562 / arrow 3447"))?;
     walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .into_iter()
-        .flat_map(|entities| entities.others())
-        .find(|entity| {
-            entity.kind == EntityKind::Npc
-                && npc.placements.iter().any(|p| {
-                    entity.position.x == i32::from(p.x)
-                        && entity.position.y == i32::from(p.y)
-                        && entity.position.floor == -i16::from(p.floor)
-                })
+    let name = npc
+        .key
+        .strip_prefix("oteryn:npc.")
+        .ok_or("quiver NPC key prefix")?
+        .replace('_', " ");
+    let actor = approach_vendor(client, world, &name, |at| {
+        npc.placements.iter().any(|p| {
+            near_vendor_placement(
+                at,
+                TilePos {
+                    x: p.x,
+                    y: p.y,
+                    floor: p.floor,
+                },
+            )
         })
-        .ok_or_else(|| format!("seller {} absent from live view after walk", npc.key))?
-        .entity;
+    })
+    .await?;
     for text in ["hi", "trade"] {
         let reply = shop::talk(
             client.session_mut(),
@@ -800,7 +1019,7 @@ async fn quiver(
             .map(|(reference, value)| inventory.get(reference).copied().unwrap_or(0) * value)
             .sum::<u64>()
     };
-    let deadline = Instant::now() + Duration::from_secs(120);
+    let deadline = loot_deadline();
     loop {
         let gold = balance(&backpack(live).await?);
         if gold >= 403 {
@@ -811,7 +1030,13 @@ async fn quiver(
         }
         let mut step = "quiver-ammunition";
         let corpse = hunt
-            .lootable(live, &mut step, "quiver-ammunition", "quiver-ammunition")
+            .lootable(
+                live,
+                &mut step,
+                "quiver-ammunition",
+                "quiver-ammunition",
+                deadline,
+            )
             .await?;
         for item in corpse.entries.iter().filter(|item| {
             coins
@@ -969,8 +1194,7 @@ pub(super) async fn run(
 
     let started = Instant::now();
     let mut step = "loot-all";
-    let mut click = "no lootable corpse observed".to_owned();
-    let policy = loot_policy(&mut client, clients, &hunt, &mut step, town, &mut click).await;
+    let policy = loot_policy(&mut client, clients, &hunt, &mut step, town).await;
     let policy = policy.map_or_else(
         |error| format!("{step}={error}"),
         |()| "loot-all,accept-skip-filters,relogin-policy-custody=verified".into(),
@@ -983,9 +1207,12 @@ pub(super) async fn run(
             recipient: Some(loot::QuickLootRecipient::MainContainer),
             ..request(Action::Assign)
         }).await?;
-        Ok::<_, Box<dyn std::error::Error>>(format!("Gold/MainContainer status={status:?} result={reply:?}; distinct container requires an unpublished durable recipient UUID"))
+        if status != CommandStatus::Accepted || !reply.items.is_empty() {
+            return Err(format!("Gold/MainContainer assignment refused: {status:?} {reply:?}").into());
+        }
+        Ok::<_, Box<dyn std::error::Error>>("Gold/MainContainer assignment accepted; distinct container requires a durable recipient UUID")
     }.await;
-    let category = category.unwrap_or_else(|error| error.to_string());
+    let category = category.map_or_else(|error| error.to_string(), str::to_owned);
     let ammunition = quiver(&mut client, clients, &hunt, &metadata.npcs, town)
         .await
         .map_or_else(
@@ -994,8 +1221,9 @@ pub(super) async fn run(
         );
 
     let observed = format!(
-        "Click observed {click}; rat corpse exposes spatial identity and session item handle only; Click requires bound corpse item UUID; \
-        {policy}; category-routing={category}; gold-pouch=23721 requires Inbox custody and durable recipient UUID; \
+        "Click needs a bound corpse UUID (item_ref_admission.rs:150, item_quick_loot.rs:197); \
+        {policy}; category-routing={category} (item_quick_loot.rs:170); \
+        gold-pouch=23721 requires Inbox custody and durable recipient UUID (item_quick_loot.rs:88); \
         no served NPC buy offer or starter Inbox acquisition; quiver-ammunition={ammunition}"
     );
     let cause = verdict::Cause::Precondition {
@@ -1004,8 +1232,58 @@ pub(super) async fn run(
     result(I07, started, "", Some(("manual-click", &observed, &cause)));
 
     let mut client = client.ok_or("E2EF3 connection closed during fresh admission")?;
-    // The shared journey's next route starts in town. A failed row still hands
-    // back its live client if the return route itself is refused.
-    let _ = travel(&mut client, world, |at| at == TOWN).await;
+    travel(&mut client, world, |at| at == TOWN)
+        .await
+        .map_err(|error| format!("I07 return to town: {error}"))?;
+    if tile(client.world_spatial().actor_position)? != TOWN {
+        return Err("I07 return did not reach town".into());
+    }
     Ok(client)
+}
+
+#[test]
+fn rat_retirement_requires_server_timestamps() {
+    let mut step = "relogin-retirement";
+    let result = verify_corpse_retirement_timing(&mut step, 17, UseDisposition::StaleState);
+    assert_eq!(step, "verify-server-corpse-retirement-timing");
+    assert!(result.is_err_and(|error| {
+        let error = error.to_string();
+        error.contains("missing server timestamps")
+            && error.contains("leave-sequence=17")
+            && error.contains("stale-use=StaleState")
+            && error.contains("60s fallback")
+    }));
+}
+
+#[test]
+fn vendor_placement_allows_two_tiles_of_wander_on_same_floor() {
+    let at = TOWN;
+    assert!(near_vendor_placement(
+        TilePos {
+            x: at.x + 2,
+            y: at.y - 2,
+            ..at
+        },
+        at
+    ));
+    assert!(!near_vendor_placement(TilePos { x: at.x + 3, ..at }, at));
+    assert!(!near_vendor_placement(
+        TilePos {
+            floor: at.floor - 1,
+            ..at
+        },
+        at
+    ));
+}
+
+#[test]
+fn hunt_landing_rejects_a_visible_occupant() {
+    let adjacent = TilePos {
+        x: TOWN.x + 1,
+        ..TOWN
+    };
+    let occupied = BTreeSet::from([adjacent]);
+    assert!(!hunt_landing_available(adjacent, &occupied));
+    assert!(hunt_landing_available(TOWN, &occupied));
+    assert!(!hunt_landing_available(WOLF_TILE, &BTreeSet::new()));
 }

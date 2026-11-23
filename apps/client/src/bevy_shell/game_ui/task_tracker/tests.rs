@@ -286,3 +286,33 @@ fn task_tracker_open_is_fenced_by_foreground_map_modal() -> TestResult {
     assert!(link(&app)?.task_board_panel().open);
     Ok(())
 }
+
+#[test]
+fn tracker_controls_collapse_restore_and_open_destinations() -> TestResult {
+    let (mut app, outbox, _) = fixture()?;
+    outbox.bevy_prey_initialize(true);
+    app.update();
+    let click = |app: &mut App, kind: Destination| -> TestResult {
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &TrackerControl)>()
+            .iter(app.world())
+            .find(|(_, control)| control.kind == kind)
+            .ok_or("missing control")?
+            .0;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        Ok(())
+    };
+    click(&mut app, Destination::Toggle)?;
+    assert!(!text(&mut app).contains("dragon: 3/10"));
+    click(&mut app, Destination::Toggle)?;
+    assert!(text(&mut app).contains("dragon: 3/10"));
+    click(&mut app, Destination::Weekly)?;
+    assert!(link(&app)?.task_board_panel().open);
+    assert!(link(&app)?.task_board_panel().open_weekly);
+    link(&app)?.task_board_set_open(false);
+    click(&mut app, Destination::Prey)?;
+    assert!(link(&app)?.prey_panel().open);
+    Ok(())
+}

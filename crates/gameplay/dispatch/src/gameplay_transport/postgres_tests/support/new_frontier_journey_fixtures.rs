@@ -430,7 +430,6 @@ pub(super) async fn exercise(
     }
     state(h, 15, ("mission05_1", 2), 0).await?;
     assert_log(owner, a).await?;
-    assert_world_inputs()?;
     Ok(())
 }
 
@@ -671,21 +670,20 @@ async fn defeat_mine_leader(
         .active_generation
         .and_then(|g| g.native_gameplay())
         .ok_or("creature policies")?;
+    let scheduled = farmine_world_spawn()?;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        native.install_companion_policies(&mut runtime).map_err(debug)?;
+        runtime.configure_boss_spawns(vec![scheduled]).map_err(debug)?;
+    }
+    crate::durability::DurabilityRoot::with_background_holder(
+        owner.boss_spawn_pass(&mut std::collections::BTreeMap::new()),
+    ).await.map_err(debug)?;
     let (actor, target) = {
         let mut runtime = owner.runtime.lock().await;
-        native
-            .install_companion_policies(&mut runtime)
-            .map_err(debug)?;
-        let health = runtime
-            .companion_policy(BOSS)
-            .map_err(debug)?
-            .maximum_health;
         let actor = runtime
-            .admit_encounter_actor(BOSS, health, local(BOSS_CELL))
-            .map_err(debug)?;
-        runtime
-            .install_creature_policy(actor, BOSS)
-            .map_err(debug)?;
+            .boss_spawns().first().and_then(|spawn| spawn.actor)
+            .ok_or("scheduled mine leader was not realized")?;
         // The test starts at the lethal swing. Attacking, capturing the principal
         // and settling both combat and the quest receipt use their native owners.
         runtime.set_test_creature_health(actor, 1).map_err(debug)?;
@@ -798,7 +796,7 @@ async fn move_potion(
     Ok(())
 }
 
-fn assert_world_inputs() -> TestResult {
+fn farmine_world_spawn() -> TestResult<crate::foundation::BossSpawn> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let read = |p: &str| -> TestResult<serde_json::Value> {
         Ok(serde_json::from_slice(&std::fs::read(root.join(p))?)?)
@@ -852,14 +850,32 @@ fn assert_world_inputs() -> TestResult {
     let points: Vec<_> = table
         .sources
         .iter()
-        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
-        .filter(|(_, point)| point.creature == index)
+        .flat_map(|source| source.points.iter().enumerate().map(move |(ordinal, point)| (source, ordinal, point)))
+        .filter(|(_, _, point)| point.creature == index)
         .collect();
     assert_eq!(points.len(), 1);
-    let (floor, point) = points[0];
+    let (source, ordinal, point) = points[0];
     assert_eq!(
-        (point.x, point.y, floor),
+        (point.x, point.y, source.floor),
         (BOSS_CELL.x, BOSS_CELL.y, BOSS_CELL.floor)
+    );
+    Ok(crate::foundation::BossSpawn {
+        key: format!("{}:{ordinal}", source.key),
+        creature: BOSS.into(),
+        position: local(BOSS_CELL),
+        policy: point.boss_policy.ok_or("scheduled mine leader boss policy")?,
+        actor: None,
+        cycle: 0,
+        pending_claim: false,
+    })
+}
+
+#[test]
+fn farmine_mine_leader_is_a_scheduled_world_spawn() -> TestResult {
+    let spawn = farmine_world_spawn()?;
+    assert_eq!(
+        spawn.policy,
+        oteryn_gameplay_content::content::BossPolicy::Respawn { min_s: 90, max_s: 90 }
     );
     Ok(())
 }

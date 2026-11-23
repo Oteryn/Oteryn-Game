@@ -36,6 +36,8 @@ struct ChatState {
     history_pending: Option<(u64, Option<String>)>,
     rows: Vec<widgets::RenderedRow>,
     row_entities: Vec<Entity>,
+    selection: Option<Entity>,
+    source: Option<(u64, ConsoleTab, Option<oteryn_client_ui::chat::ChannelTab>)>,
     menu: Option<Entity>,
 }
 impl Default for ChatState {
@@ -52,6 +54,8 @@ impl Default for ChatState {
             history_pending: None,
             rows: Vec::new(),
             row_entities: Vec::new(),
+            selection: None,
+            source: None,
             menu: None,
         }
     }
@@ -119,46 +123,7 @@ fn request(
     }
     sent
 }
-fn capture_history(mut state: ResMut<ChatState>, fields: Query<(&Field, &EditableText)>) {
-    if state.pending.is_none() {
-        return;
-    }
-    if let Some((_, value)) = &mut state.history_pending {
-        for (field, text) in &fields {
-            if *field == Field::Message && text.pending_paste.is_none() {
-                *value = Some(text.value().to_string());
-            }
-        }
-    }
-}
-fn finish_history(
-    owner: NonSend<HostOwner>,
-    mut state: ResMut<ChatState>,
-    fields: Query<(&Field, &EditableText)>,
-) {
-    if state.pending.is_some() {
-        return;
-    }
-    if let Some((generation, Some(value))) = state.history_pending.take()
-        && generation == owner.generation()
-        && state.generation == Some(generation)
-        && !value.is_empty()
-        && fields
-            .iter()
-            .any(|(field, text)| *field == Field::Message && text.value() == "")
-    {
-        state.history.sent(value);
-    }
-}
-fn install_history(app: &mut App) {
-    app.add_systems(
-        PostUpdate,
-        capture_history
-            .after(bevy::text::EditableTextSystems)
-            .before(submission::finish),
-    );
-    app.add_systems(PostUpdate, finish_history.after(submission::finish));
-}
+use submission::install_history;
 #[derive(Component)]
 struct ChatRoot;
 #[derive(Component)]
@@ -209,6 +174,7 @@ struct Control {
 }
 
 pub(super) fn install(app: &mut App) {
+    app.init_resource::<crate::bevy_shell::game_ui::clipboard_writer::ClipboardWriter>();
     app.init_resource::<ChatState>()
         .init_resource::<bevy::clipboard::Clipboard>()
         .add_systems(Startup, widgets::setup.after(super::setup))
@@ -228,6 +194,7 @@ pub(super) fn install(app: &mut App) {
             PostUpdate,
             submission::finish.after(bevy::text::EditableTextSystems),
         );
+    widgets::copy_link::install(app);
     install_history(app);
     channels::install(app);
 }
@@ -433,28 +400,31 @@ fn project(
             }
         }
         play.link.open_chat();
-        // Tibia Global opens Local Chat, Server Log and Loot; Local Chat stays selected.
-        let panel = play.link.chat_panel();
-        let mut opened = false;
-        for tab in [
-            oteryn_client_ui::chat::ChannelTab::ServerLog,
-            oteryn_client_ui::chat::ChannelTab::Loot,
-        ] {
-            if !panel.console.channels.contains(&tab) {
-                play.link.chat_open_entry(&ChannelEntry::Local(tab));
-                opened = true;
-            }
-        }
-        if opened {
-            play.link.chat_console_tab(ConsoleTab::All);
-        }
+        channels::open_saved_local_tabs(
+            &play.link,
+            owner.settings.preferences.console.local_channels,
+        );
     }
     let panel = play.link.chat_panel();
     let mut changed = false;
     // Cache only the last projection; all edits and commands still belong to PlayLink.
-    if previous.as_ref() != Some(&panel) {
+    let selection_ended = state.selection.is_some()
+        && (state.selection != focus.get()
+            || previous.as_ref().is_none_or(|old| {
+                old.console.tab != panel.console.tab || old.console.current != panel.console.current
+            }));
+    if selection_ended {
+        state.selection = None;
+    }
+    if selection_ended || previous.as_ref() != Some(&panel) {
+        state.source = Some((
+            panel.scope,
+            panel.console.tab,
+            panel.console.current.clone(),
+        ));
         let rows = widgets::transcript_rows(&panel);
-        if state.rows != rows {
+        if selection_ended || state.rows != rows {
+            state.selection = None;
             if focus
                 .get()
                 .is_some_and(|entity| state.row_entities.contains(&entity))

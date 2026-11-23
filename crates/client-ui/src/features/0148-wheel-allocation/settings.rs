@@ -6,7 +6,11 @@ const MAX_PRESETS: usize = 32;
 const MAX_FILE: u64 = 32768;
 const MAX_CODE: usize = 256;
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct PresetBook(pub BTreeMap<String, String>);
+pub struct PresetBook(
+    pub BTreeMap<String, String>,
+    std::collections::BTreeSet<String>,
+);
+const EMPTY_VESSELS: &str = "#-,-,-,-";
 fn decode(code: &str) -> Result<[u16; 36], &'static str> {
     if code.len() > MAX_CODE {
         return Err(tr!("Build code is too long"));
@@ -33,7 +37,129 @@ fn decode(code: &str) -> Result<[u16; 36], &'static str> {
     }
     Ok(points)
 }
+type GemSlots = Vec<Option<[u8; 16]>>;
+fn named_parts(code: &str) -> Result<(&str, Option<GemSlots>), &'static str> {
+    let Some((points, gems)) = code.split_once('#') else {
+        return Ok((code, None));
+    };
+    let (count, fields) = gems.strip_prefix("v2:").map_or((4, gems), |v| (12, v));
+    if fields.len() > count * 33 || fields.split(',').count() != count {
+        return Err("Invalid preset vessel count");
+    }
+    let mut slots = Vec::with_capacity(count);
+    for field in fields.split(',') {
+        if field == "-" {
+            slots.push(None);
+            continue;
+        }
+        if field.len() != 32 || !field.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return Err("Invalid preset gem");
+        }
+        let id = u128::from_str_radix(field, 16)
+            .map_err(|_| "Invalid preset gem")?
+            .to_be_bytes();
+        if id == [0; 16] || slots.contains(&Some(id)) {
+            return Err("Invalid preset gem");
+        }
+        slots.push(Some(id));
+    }
+    Ok((points, Some(slots)))
+}
 impl WheelPanel {
+    pub fn named_build_code(&self) -> String {
+        let mut code = self.build_code();
+        let slots = if self.atelier_v2 {
+            let Some(board) = self.vessel_board.as_ref().filter(|b| b.slots.len() == 12) else {
+                return code;
+            };
+            code.push_str("#v2:");
+            board.slots.iter().map(|s| s.gem).collect::<Vec<_>>()
+        } else if self
+            .confirmed_wheel
+            .as_ref()
+            .is_some_and(|w| w.vessels.is_some())
+            || self.vessels.iter().any(Option::is_some)
+        {
+            code.push('#');
+            self.vessels.to_vec()
+        } else {
+            return code;
+        };
+        code.push_str(
+            &slots
+                .iter()
+                .map(|id| {
+                    id.map_or_else(
+                        || "-".into(),
+                        |id| format!("{:032x}", u128::from_be_bytes(id)),
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(","),
+        );
+        code
+    }
+    pub fn preset_vessel_change(&self, slot: u8) -> Option<Option<[u8; 16]>> {
+        if !self.atelier_v2 || self.dirty() {
+            return None;
+        }
+        let board = self.vessel_board.as_ref()?;
+        if board.wheel_revision != self.confirmed_wheel.as_ref()?.revision {
+            return None;
+        }
+        let index = usize::from(slot);
+        let vessel = board.slots.get(index)?;
+        let wanted = *self.preset_vessels.as_ref()?.get(index)?;
+        if !vessel.open || vessel.gem == wanted {
+            return None;
+        }
+        if let Some(id) = wanted {
+            let gem = self
+                .confirmed_atelier
+                .as_ref()?
+                .gems
+                .iter()
+                .find(|g| g.id == id)?;
+            if crate::gem_atelier::replace_block(board, gem, slot).is_some() {
+                return None;
+            }
+        }
+        Some(wanted)
+    }
+    pub fn load_named_build(&mut self, code: &str) -> Result<(), &'static str> {
+        let (points, slots) = named_parts(code)?;
+        if let Some(slots) = &slots {
+            if self.atelier_v2 != (slots.len() == 12) {
+                return Err("Preset uses a different vessel layout");
+            }
+            for (slot, id) in slots.iter().enumerate() {
+                let Some(id) = id else { continue };
+                let gem = self
+                    .confirmed_atelier
+                    .as_ref()
+                    .and_then(|a| a.gems.iter().find(|g| g.id == *id))
+                    .ok_or("A saved gem is unavailable for its vessel")?;
+                let valid = if self.atelier_v2 {
+                    self.vessel_board
+                        .as_ref()
+                        .and_then(|b| b.slots.get(slot))
+                        .is_some_and(|v| v.quality == gem.quality)
+                } else {
+                    usize::from(gem.domain) == slot
+                };
+                if !valid {
+                    return Err("A saved gem is unavailable for its vessel");
+                }
+            }
+        }
+        self.import_build(points)?;
+        if self.atelier_v2 {
+            self.preset_vessels = slots;
+        } else if let Some(slots) = slots {
+            self.vessels.copy_from_slice(&slots);
+        }
+        Ok(())
+    }
     pub fn build_code(&self) -> String {
         format!(
             "OW1:{}",
@@ -50,6 +176,7 @@ impl WheelPanel {
         }
         let points = decode(code)?;
         self.points = points;
+        self.preset_vessels = None;
         // Every OW1 code predates the Gem Vessel rework of the Wheel.
         self.feedback = Some(
             "You have imported an older Wheel of Destiny configuration. Some values may have changed. Save Wheel applies it through the server",
@@ -58,6 +185,31 @@ impl WheelPanel {
     }
 }
 impl PresetBook {
+    /// Older point-only records leave vessels alone. New empty builds explicitly clear them.
+    pub fn named_code(&self, name: &str) -> Option<String> {
+        let mut code = self.0.get(name)?.clone();
+        if self.1.contains(name) {
+            code.push_str(EMPTY_VESSELS)
+        }
+        Some(code)
+    }
+    pub fn remove(&mut self, name: &str) -> Option<String> {
+        let code = self.named_code(name)?;
+        self.0.remove(name);
+        self.1.remove(name);
+        Some(code)
+    }
+    pub fn encoded(&self) -> Result<Vec<u8>, &'static str> {
+        let mut entries = BTreeMap::new();
+        for name in self.0.keys() {
+            let code = self.named_code(name).ok_or(tr!("Invalid preset code"))?;
+            decode(named_parts(&code)?.0)?;
+            entries.insert(name, code);
+        }
+        serde_json::to_vec_pretty(&serde_json::json!({"version":1,"presets":entries}))
+            .map_err(|_| tr!("Cannot encode presets"))
+    }
+
     pub fn insert(&mut self, name: &str, code: &str) -> Result<(), &'static str> {
         let name = name.trim();
         if name.is_empty() || name.len() > 64 || name.chars().any(char::is_control) {
@@ -66,8 +218,14 @@ impl PresetBook {
         if self.0.len() >= MAX_PRESETS && !self.0.contains_key(name) {
             return Err(tr!("At most 32 presets"));
         }
-        decode(code)?;
-        self.0.insert(name.into(), code.into());
+        decode(named_parts(code)?.0)?;
+        if let Some(points) = code.strip_suffix(EMPTY_VESSELS) {
+            self.1.insert(name.into());
+            self.0.insert(name.into(), points.into());
+        } else {
+            self.1.remove(name);
+            self.0.insert(name.into(), code.into());
+        }
         Ok(())
     }
     pub fn load(path: &Path) -> Result<Self, &'static str> {
@@ -109,8 +267,7 @@ impl PresetBook {
         for (name, code) in &self.0 {
             validated.insert(name, code)?;
         }
-        let bytes = serde_json::to_vec_pretty(&serde_json::json!({"version":1,"presets":self.0}))
-            .map_err(|_| tr!("Cannot encode presets"))?;
+        let bytes = self.encoded()?;
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|_| tr!("Cannot create preset directory"))?;
         }

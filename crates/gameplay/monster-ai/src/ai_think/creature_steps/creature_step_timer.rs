@@ -172,6 +172,7 @@ impl CreatureAiTable {
             if matches!(motion.goal, MovementGoal::WalkBack { spawn } if spawn == next) {
                 motion.stop();
                 entry.due_us = None;
+                runtime.clear_source_player_damage(actor);
             }
         }
         for entry in self.entries.values_mut() {

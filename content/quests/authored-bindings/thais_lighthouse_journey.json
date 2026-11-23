@@ -56,7 +56,8 @@
               "return_on_failure": false,
               "failure_message": null,
               "sources": [
-                "https://tibia.fandom.com/index.php?curid=3250&oldid=749243"
+                "https://tibia.fandom.com/index.php?curid=3250&oldid=749243",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/13/definition/oteryn_recipe/payload/recipe:sha256:d633371520b8e60de1de873ecf375d1dbbd3d2b9ee073c56383e3f7d56a1be64"
               ]
             }
           }
@@ -97,7 +98,8 @@
               "return_on_failure": false,
               "failure_message": null,
               "sources": [
-                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_lighthouse/action-lever.lua#L4-L12"
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_lighthouse/action-lever.lua#L4-L12",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:4-12"
               ]
             }
           }
@@ -138,7 +140,8 @@
               "return_on_failure": false,
               "failure_message": null,
               "sources": [
-                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_lighthouse/action-lever.lua#L15-L30"
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_lighthouse/action-lever.lua#L15-L30",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_lighthouse/action-lever.lua:15-30"
               ]
             }
           }

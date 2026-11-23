@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "8d37de2355d2695fed268450353137b1987b3261532b8f4979a5bd0bb550b5f7",
+  "input_sha256": "5122d17dcded09e228580f1583eb0a63a1d4ccb41021a8049b8e2394e0af1ea4",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -212,7 +212,7 @@
         },
         {
           "creature": "oteryn:creature.the_collector",
-          "source_path": "content/world/spawns/spawns-54000-54680.json",
+          "source_path": "content/world/spawns/spawns-54000-54681.json",
           "source_group": "oteryn:spawn.x32028_y31816_z8.boss.oteryn_creature_the_collector",
           "source_point": 0,
           "cell": {
@@ -530,7 +530,7 @@
         },
         {
           "creature": "oteryn:creature.ancient_lion_knight",
-          "source_path": "content/world/spawns/spawns-54000-54680.json",
+          "source_path": "content/world/spawns/spawns-54000-54681.json",
           "source_group": "oteryn:spawn.x32439_y32470_z6.boss.oteryn_creature_ancient_lion_knight",
           "source_point": 0,
           "cell": {
@@ -636,7 +636,7 @@
         },
         {
           "creature": "oteryn:creature.xogixath",
-          "source_path": "content/world/spawns/spawns-54000-54680.json",
+          "source_path": "content/world/spawns/spawns-54000-54681.json",
           "source_group": "oteryn:spawn.x33794_y31478_z8.boss.oteryn_creature_xogixath",
           "source_point": 0,
           "cell": {

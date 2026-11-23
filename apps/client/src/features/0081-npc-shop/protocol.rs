@@ -3,6 +3,8 @@ use crate::play::{
     mailbox::{Mailbox, lock},
 };
 use oteryn_session::{NpcIntentDisposition, SessionEvent, npc_service};
+#[path = "weights.rs"]
+mod weights;
 impl Outbox {
     pub(in crate::play) fn npc_shop_initialize<T: Stepper>(&self, session: &T) {
         let mut mailbox = lock(&self.0);
@@ -123,6 +125,27 @@ impl Outbox {
 }
 
 impl Mailbox {
+    pub(in crate::play) fn refresh_loot_quote(
+        &mut self,
+        id: u32,
+        price: Option<u64>,
+        source: oteryn_client_ui::analyser::PriceSource,
+    ) {
+        if self.analyser.loot_sources.get(&id) != Some(&source)
+            || self.analyser.loot_prices.get(&id).copied() == price
+        {
+            return;
+        }
+        if let Some(price) = price {
+            self.analyser.loot_prices.insert(id, price);
+        } else {
+            self.analyser.loot_prices.remove(&id);
+        }
+        self.analyser.party.clear();
+        self.analyser.party_revision = self.analyser.party_revision.saturating_add(1);
+        self.analyser.party_feedback = Some("Prices changed; refresh party accounting");
+    }
+
     pub(in crate::play) fn npc_shop_events(&mut self, events: &[SessionEvent]) {
         for event in events {
             match event {
@@ -133,6 +156,22 @@ impl Mailbox {
                         &mut self.npc_shop.live,
                         delta.value.clone(),
                     );
+                    let mut prices = std::collections::BTreeMap::<u32, u64>::new();
+                    for quote in self.npc_shop.live.quotes() {
+                        if quote.side == oteryn_client_ui::npc_shop::NpcTradeSide::Sell
+                            && quote.count == 1
+                        {
+                            let price = prices.entry(quote.item).or_default();
+                            *price = (*price).max(u64::from(quote.price));
+                        }
+                    }
+                    for (id, price) in prices {
+                        self.refresh_loot_quote(
+                            id,
+                            Some(price),
+                            oteryn_client_ui::analyser::PriceSource::Merchant,
+                        );
+                    }
                 }
                 SessionEvent::NpcConversation(delta) => {
                     self.npc_shop.live.conversation = delta.value.open.map(|(npc, _)| npc);
@@ -162,6 +201,13 @@ impl Mailbox {
 
 #[cfg(all(test, bevy_shell))]
 impl Outbox {
+    pub(crate) fn bevy_npc_sale_accepted(&self) {
+        use oteryn_client_runtime::npc_shop::{CommandStatus, NpcShopResponse, npc_shop::NpcShopResult};
+        self.npc_shop_result(&NpcShopResponse {
+            status: CommandStatus::Accepted,
+            result: Some(NpcShopResult { disposition: NpcIntentDisposition::Ok, look_text: String::new(), sold_units: 3, total_gold_units: 21 }),
+        });
+    }
     pub(crate) fn bevy_npc_shop_supported(&self) {
         let mut mailbox = lock(&self.0);
         mailbox.npc_shop.selected = true;

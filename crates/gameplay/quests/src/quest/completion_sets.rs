@@ -577,6 +577,81 @@ mod journey_predecessor_tests {
     use std::collections::BTreeMap;
 
     #[test]
+    fn cael_and_eleonore_predecessors_resume_the_authored_routes() -> Result<(), String> {
+        let empty = Bindings::parse_documents(&[])?;
+        let previous = loader::load_embedded_quest_state_with_bindings("content-1", &empty)
+            .map_err(|error| format!("{error:?}"))?;
+        let active =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let active = active.catalogue();
+        for (quest, transition, saved) in [
+            (
+                "oteryn:quest.the_new_frontier_quest",
+                "oteryn:quest-reward/l2-cael-tome-2",
+                "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge",
+            ),
+            (
+                "oteryn:quest.the_shattered_isles_quest",
+                "oteryn:quest-callback/authored-shattered-isles-ring",
+                "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_governor_daughter",
+            ),
+        ] {
+            let pin = previous.catalogue().definition_hash(quest).ok_or(quest)?;
+            assert_ne!(active.definition_hash(quest), Some(pin));
+            let mut progress = npc_rules::legacy_defaults(active, quest, &pin)
+                .ok_or_else(|| format!("published pin for {quest}"))?
+                .clone();
+            progress.insert(saved.to_owned(), 1);
+            let transition = active.transition(transition).ok_or(transition)?;
+            let changes = active
+                .evaluate(transition, &progress, 0)
+                .map_err(|error| format!("{quest}: {error:?}"))?;
+            assert!(
+                changes
+                    .iter()
+                    .any(|change| change.track == saved && change.after == 2)
+            );
+            assert!(npc_rules::legacy_defaults(active, quest, &[0; 32]).is_none());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn ape_city_restores_amphorae_and_refreshes_an_expired_window() -> Result<(), String> {
+        let active =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let active = active.catalogue();
+        let prefix = "oteryn:quest-progress/chosen/ape-city/";
+        let window = format!("{prefix}amphora-window");
+        for number in 1..=4 {
+            let key = format!("oteryn:quest-callback/authored-ape-city-amphora-{number}");
+            let callback = active
+                .authored_bindings()
+                .ok_or("authored quests")?
+                .world_callbacks()
+                .find(|callback| callback.key == key)
+                .ok_or_else(|| key.clone())?;
+            assert_eq!(callback.effects.reset_after_ms, Some(300_000));
+            assert_eq!(callback.effects.transform, Some(4996));
+            let transition = active.transition(&key).ok_or(key)?;
+            let saved = BTreeMap::from([
+                (format!("{prefix}stage"), 11),
+                (format!("{prefix}amphora-{number}"), 1),
+                (window.clone(), 1000),
+            ]);
+            let updated = active
+                .evaluate(transition, &saved, 1301)
+                .map_err(|error| format!("retry: {error:?}"))?;
+            assert!(
+                updated
+                    .iter()
+                    .any(|change| change.track == window && change.after == 1301)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn koshei_tomb_admits_a_character_with_the_pre_journey_quest_pin() -> Result<(), String> {
         let empty = Bindings::parse_documents(&[])?;
         let previous = loader::load_embedded_quest_state_with_bindings("content-1", &empty)

@@ -1,5 +1,8 @@
 //! Screenshot requests share the settings caller on every platform; native capture supplies pixels.
 use super::{PreferenceStore, SettingsState};
+#[path = "boss_capture.rs"]
+mod boss_capture;
+pub(in crate::play) use boss_capture::BossCapture;
 #[path = "screenshot_backlog.rs"]
 mod backlog;
 pub(super) use backlog::ScreenshotRuntime;
@@ -93,7 +96,61 @@ impl Pixels {
     }
 }
 
-pub(super) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct CaptureObservations {
+    tracked_loot: u64,
+    pub(in crate::play) tracker: [u64; 3],
+    credited_kills: u64,
+    kill_feed: bool,
+    low_health: u64,
+    was_low: Option<bool>,
+}
+impl crate::play::mailbox::Mailbox {
+    pub(in crate::play) fn observe_capture_event(&mut self, event: &oteryn_session::SessionEvent) {
+        use oteryn_session::{SessionEvent, analyser_transport::AnalyserFact};
+        let mut observe = |fact: &AnalyserFact| {
+            #[cfg(bevy_shell)]
+            if let AnalyserFact::KillLoot {
+                corpse_items, gold, ..
+            } = fact
+            {
+                self.screen_loot.record(corpse_items, *gold);
+            }
+            if matches!(fact, AnalyserFact::Kill { .. }) {
+                self.capture_observations.credited_kills =
+                    self.capture_observations.credited_kills.wrapping_add(1);
+            }
+        };
+        match event {
+            SessionEvent::AnalyserFacts(delta) => delta.value.iter().for_each(&mut observe),
+            SessionEvent::AnalyserAttributedFacts(delta) => {
+                delta.value.iter().for_each(|row| observe(&row.fact))
+            }
+            SessionEvent::ActorVitals(delta) if delta.value.max_health > 0 => {
+                let vitals = &delta.value;
+                let low = vitals.health > 0
+                    && u64::from(vitals.health) * 100 <= u64::from(vitals.max_health) * 4;
+                if self.capture_observations.was_low == Some(false) && low {
+                    self.capture_observations.low_health =
+                        self.capture_observations.low_health.wrapping_add(1);
+                }
+                self.capture_observations.was_low = (vitals.health > 0).then_some(low);
+            }
+            _ => {}
+        }
+    }
+}
+impl crate::play::PlayLink {
+    fn capture_observations(&self) -> CaptureObservations {
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        CaptureObservations {
+            tracked_loot: mailbox.analyser.tracked_loot_receipts,
+            kill_feed: mailbox.analyser.selected,
+            ..mailbox.capture_observations
+        }
+    }
+}
+pub(crate) fn screenshot_directory(folder: &Path) -> io::Result<PathBuf> {
     if !folder.as_os_str().is_empty() {
         if !folder.is_absolute() {
             return Err(io::Error::new(
@@ -136,29 +193,38 @@ pub(crate) fn retry_capture_name<T>(mut attempt: impl FnMut() -> io::Result<T>) 
     attempt()
 }
 
-/// Open a new screenshot with private permissions before writing any pixels.
-pub(crate) fn create_capture_file(path: &Path) -> io::Result<File> {
+/// Newly created screenshot directories have the same privacy whether opened or saved into.
+pub(crate) fn ensure_screenshot_directory(path: &Path) -> io::Result<()> {
     let mut directory = DirBuilder::new();
     directory.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        directory.mode(0o700);
+    }
+    directory.create(path).map_err(|error| {
+        if error.kind() == io::ErrorKind::AlreadyExists {
+            io::Error::new(io::ErrorKind::NotADirectory, error)
+        } else {
+            error
+        }
+    })
+}
+
+/// Open a new screenshot with private permissions before writing any pixels.
+pub(crate) fn create_capture_file(path: &Path) -> io::Result<File> {
     let mut options = File::options();
     options.write(true).create_new(true);
     #[cfg(unix)]
     {
-        use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
-        directory.mode(0o700);
+        use std::os::unix::fs::OpenOptionsExt;
         options.mode(0o600);
     }
-    let parent = path
+    if let Some(parent) = path
         .parent()
-        .filter(|parent| !parent.as_os_str().is_empty());
-    if let Some(parent) = parent {
-        directory.create(parent).map_err(|error| {
-            if error.kind() == io::ErrorKind::AlreadyExists {
-                io::Error::new(io::ErrorKind::NotADirectory, error)
-            } else {
-                error
-            }
-        })?;
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
+        ensure_screenshot_directory(parent)?;
     }
     options.open(path)
 }
@@ -194,6 +260,11 @@ pub trait CaptureSource {
 }
 
 impl SettingsState {
+    #[cfg(bevy_shell)]
+    pub(crate) fn manual_capture_requested(&self) -> bool {
+        self.screenshot_requested
+    }
+
     pub fn request_screenshot(&mut self) {
         self.screenshot_requested = true;
     }
@@ -216,7 +287,7 @@ impl SettingsState {
 #[cfg(test)]
 #[path = "screenshot_fixture.rs"]
 mod fixture;
-#[cfg(test)]
-pub(crate) use fixture::{TestDir, assert_one_test_passed, with_relative_capture_path};
 #[cfg(all(test, bevy_shell, unix))]
 pub(crate) use fixture::one_test_passed;
+#[cfg(test)]
+pub(crate) use fixture::{TestDir, assert_one_test_passed, with_relative_capture_path};

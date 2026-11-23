@@ -157,7 +157,8 @@
               "sources": [
                 "content/quests/authoring/paradox-tower.md",
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_paradox_tower/movement_sacrifice_skulls.lua#L1-L41",
-                "https://www.tibiawiki.com.br/wiki/The_Paradox_Tower_Quest"
+                "https://www.tibiawiki.com.br/wiki/The_Paradox_Tower_Quest",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_sacrifice_skulls.lua:1-41"
               ],
               "requires_world_admission": true,
               "minimum_level": 30,
@@ -239,7 +240,8 @@
               },
               "sources": [
                 "content/quests/authoring/paradox-tower.md",
-                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1279-L1285"
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1279-L1285",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1279-1285"
               ]
             }
           }

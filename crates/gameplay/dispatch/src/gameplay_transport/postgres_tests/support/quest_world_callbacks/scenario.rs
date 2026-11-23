@@ -1064,11 +1064,16 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
-        let (controller, activated) =
+        let (controller, activated) = if name == "questpc7-grave" {
+            super::super::questpc7_grave_fixtures::generation_with_qualified_grave_rewards(
+                deps.admitted.world_id,
+            )?
+        } else {
             super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
-            )?;
+            )?
+        };
         let generation = controller.active().ok_or("generation")?;
         let world = if alawars_vault {
             super::super::alawars_vault_journey_fixtures::world(generation.native_gameplay().ok_or("Alawar native content")?)?

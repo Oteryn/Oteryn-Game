@@ -58,9 +58,12 @@ mod profile_contexts;
 mod custom_actions;
 #[path = "custom_dispatch.rs"]
 mod custom_dispatch;
+#[path = "special.rs"]
+mod special;
 #[path = "utility_actions.rs"]
 mod utility_actions;
 pub use custom_actions::{CustomAction, ObjectTarget, default_custom_hotkeys};
+pub use special::SpecialAction;
 pub use utility_actions::UtilityAction;
 #[path = "profiles.rs"]
 mod profiles;
@@ -85,7 +88,7 @@ pub use ui_geometry::{FIXED_PIXEL_FONT_PROPERTY, fit_ui_scale, rescale_ui_rect, 
 pub use tooltips::{HoverTooltip, TooltipTarget};
 pub(crate) use bindings::parse_action_chord;
 pub use bindings::{PreferenceBinding, PreferenceInput, preference_bindings};
-pub use controls::{ControlPreferences, MousePreset, MovementKeys, RotationModifier};
+pub use controls::{ControlPreferences, MousePreset, MouseScheme, MovementKeys, RotationModifier};
 pub use help::{HelpTopic, help_text};
 pub use profile_contexts::HotkeyProfiles;
 pub use shortcuts::SHORTCUTS;
@@ -104,6 +107,23 @@ pub enum ChatMode {
     Off,
 }
 
+// cpkg7 persisted style names before the numeric status-bar settings landed.
+fn read_status_bar_style<'de, D: serde::Deserializer<'de>>(input: D) -> Result<u8, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Style { Number(u8), Name(String) }
+    match Style::deserialize(input)? {
+        Style::Number(value) => Ok(value),
+        Style::Name(name) => match name.as_str() {
+            "Default" => Ok(0),
+            "Compact" => Ok(1),
+            "Large" => Ok(2),
+            "Parallel" => Ok(3),
+            _ => Err(serde::de::Error::custom("unknown status bar style")),
+        },
+    }
+}
+
 /// Preferences owned entirely by the native client.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -115,6 +135,8 @@ pub struct ReferencePreferences {
     pub performance: PerformanceSettings,
     #[serde(default)]
     pub stash_stock_order: bool,
+    #[serde(default)]
+    pub outfit_presets: std::collections::BTreeMap<String, ([String; 4], Option<bool>)>,
     #[serde(skip)]
     pub miscellaneous: MiscellaneousPreferences,
     #[serde(default)]
@@ -149,17 +171,54 @@ pub struct ReferencePreferences {
     pub arc_opacity: u8,
     #[serde(default)]
     pub chat_context_hotkeys: bool,
+    #[serde(default)]
+    pub chat_drag_locked: bool,
     /// The chat mode the character last chose; `None` keeps the console default.
     #[serde(default)]
     pub chat_mode: Option<ChatMode>,
     #[serde(default)]
     pub manual_hotkey_profile: bool,
+    #[serde(default = "enabled")]
+    pub confirm_store_purchase: bool,
+    #[serde(default = "enabled")]
+    pub confirm_copy_link: bool,
+    #[serde(default)]
+    pub expiry_containers: bool,
+    #[serde(default)]
+    pub expiry_inventory: bool,
+    #[serde(default)]
+    pub expiry_unused: bool,
+    #[serde(default)]
+    pub highlight_mouse_target: bool,
+    #[serde(default)]
+    pub animated_cursor: bool,
+    #[serde(default)]
+    pub large_cursor: bool,
+    #[serde(default = "enabled")]
+    pub system_cursor: bool,
     #[serde(default = "default_console_font")]
     pub console_font_px: u16,
     #[serde(default)]
     pub compact_status: bool,
     #[serde(default = "enabled")]
+    pub conditions_bar_enabled: bool,
+    #[serde(default = "enabled")]
+    pub conditions_hud_enabled: bool,
+    #[serde(default = "enabled")]
     pub status_panel_visible: bool,
+    #[serde(default = "enabled")]
+    pub status_bar_visible: bool,
+    #[serde(default = "enabled")]
+    pub top_menu_visible: bool,
+    #[serde(default)]
+    pub status_bar_bottom: bool,
+    #[serde(default, deserialize_with = "read_status_bar_style")]
+    pub status_bar_style: u8,
+    #[serde(default = "enabled")]
+    pub status_bar_experience: bool,
+    #[serde(default)]
+    pub status_bar_skills: [bool; 8],
+
     #[serde(default)]
     pub skill_order: Vec<u8>,
     #[serde(default)]
@@ -211,6 +270,15 @@ pub struct ReferencePreferences {
     #[serde(default = "enabled")]
     pub hud_bars: bool,
     #[serde(default = "enabled")]
+    pub hud_other_health: bool,
+    #[serde(default)]
+    pub harmony_left: bool,
+    #[serde(default = "enabled")]
+    pub player_hud_enabled: bool,
+    #[serde(default = "enabled")]
+    pub other_hud_enabled: bool,
+
+    #[serde(default = "enabled")]
     pub show_effects: bool,
     #[serde(default = "enabled")]
     pub show_lights: bool,
@@ -232,6 +300,9 @@ pub struct ReferencePreferences {
     pub frames: FramePreferences,
     #[serde(default)]
     pub screenshots: ScreenshotPreferences,
+    /// Highest observed damage and healing since this character last reset the Impact Analyser.
+    #[serde(default)]
+    pub impact_records: [u32; 2],
     #[serde(default)]
     pub diagnostics: DiagnosticsPreferences,
     #[serde(default)]
@@ -301,6 +372,7 @@ impl Default for ReferencePreferences {
             schema_version: custom_actions::PREFERENCES_SCHEMA_VERSION,
             performance: PerformanceSettings::default(),
             stash_stock_order: false,
+            outfit_presets: Default::default(),
             miscellaneous: Default::default(),
             boss_area_opacity: default_boss_opacity(),
             graphics: GraphicsPreferences::default(),
@@ -316,11 +388,29 @@ impl Default for ReferencePreferences {
             hud_npc_names: None,
             arc_opacity: 100,
             chat_context_hotkeys: false,
+            chat_drag_locked: false,
             chat_mode: None,
             manual_hotkey_profile: false,
+            confirm_store_purchase: true,
+            confirm_copy_link: true,
+            expiry_containers: false,
+            expiry_inventory: false,
+            expiry_unused: false,
+            highlight_mouse_target: false,
+            animated_cursor: false,
+            large_cursor: false,
+            system_cursor: true,
             console_font_px: 14,
             compact_status: false,
+            conditions_bar_enabled: true,
+            conditions_hud_enabled: true,
             status_panel_visible: true,
+            status_bar_visible: true,
+            top_menu_visible: true,
+            status_bar_bottom: false,
+            status_bar_style: 0,
+            status_bar_experience: true,
+            status_bar_skills: [false; 8],
             skill_order: Vec::new(),
             condition_order: Vec::new(),
             special_condition_order: Vec::new(),
@@ -346,6 +436,11 @@ impl Default for ReferencePreferences {
             keyboard_delay_ms: 0,
             hud_bounds: default_hud_bounds(),
             hud_bars: true,
+            hud_other_health: true,
+            harmony_left: false,
+            player_hud_enabled: true,
+            other_hud_enabled: true,
+
             game_window: Default::default(),
             show_effects: true,
             show_lights: true,
@@ -359,6 +454,7 @@ impl Default for ReferencePreferences {
             archive_bindings: Default::default(),
             frames: Default::default(),
             screenshots: Default::default(),
+            impact_records: [0; 2],
             diagnostics: Default::default(),
             arcs: Default::default(),
             minimap: Default::default(),

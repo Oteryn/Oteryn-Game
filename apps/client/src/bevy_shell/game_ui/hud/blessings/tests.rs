@@ -363,6 +363,16 @@ fn tutorial_vocation_server_capture_buttons_submit_and_close_in_bevy() -> TestRe
                 .ok_or("Paladin button")?;
             app.world_mut()
                 .trigger(bevy::ui_widgets::Activate { entity: button });
+            app.update();
+            let confirm = app
+                .world_mut()
+                .query::<(&Text, &ChildOf)>()
+                .iter(app.world())
+                .find(|(text, _)| text.0 == "Confirm Paladin")
+                .map(|(_, parent)| parent.parent())
+                .ok_or("Paladin confirmation")?;
+            app.world_mut()
+                .trigger(bevy::ui_widgets::Activate { entity: confirm });
             let command = std::iter::from_fn(|| commands.try_recv().ok())
                 .find_map(|command| match command {
                     crate::combat_input::PlayCommand::Feature(command) if command.kind == 6243 => {
@@ -391,5 +401,36 @@ fn tutorial_vocation_server_capture_buttons_submit_and_close_in_bevy() -> TestRe
         })?
         .join()
         .map_err(|_| "vocation Bevy thread")??;
+    Ok(())
+}
+
+#[test]
+fn blessing_premium_button_browses_premium_time() -> TestResult {
+    let (mut app, mut commands, outbox) = super::super::tests::app().map_err(|e| e.to_string())?;
+    outbox.bevy_store_initialize();
+    outbox.bevy_cyclopedia_initialize(true, false, false);
+    app.world_mut().resource_mut::<EquipmentWidget>().blessings = true;
+    app.update();
+    let button = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, name)| (name.as_str() == "blessings.premium").then_some(entity))
+        .ok_or("premium offers control")?;
+    app.world_mut().trigger(Activate { entity: button });
+    let store = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .store_panel();
+    assert!(store.open);
+    assert_eq!(store.browser.category, "premium-time");
+    assert!(
+        std::iter::from_fn(|| commands.try_recv().ok()).any(|cmd| matches!(cmd,
+        crate::combat_input::PlayCommand::ServerMechanic(command) if command.capability == 154))
+    );
     Ok(())
 }

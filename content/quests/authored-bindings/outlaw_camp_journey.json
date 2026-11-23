@@ -122,7 +122,8 @@
               "sources": [
                 "content/quests/definitions/quests-00200-00299.json:oteryn:quest.the_outlaw_camp_quest",
                 "content/quests/world-callbacks.json:oteryn:quest-callback/outlaw-camp-entrance",
-                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_outlaw_camp/movements_entrance.lua#L1-L25"
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_outlaw_camp/movements_entrance.lua#L1-L25",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/movements_entrance.lua:1-25"
               ]
             }
           }
@@ -165,7 +166,9 @@
               "requires_world_admission": true,
               "sources": [
                 "content/quests/definitions/quests-00200-00299.json:oteryn:quest.the_outlaw_camp_quest",
-                "tools/content-schema/world-authoring/samples/quest-chest-bindings/outlaw-camp.json"
+                "tools/content-schema/world-authoring/samples/quest-chest-bindings/outlaw-camp.json",
+                "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/34/definition/oteryn_recipe/payload/recipe:sha256:bc4942a72b761fb84c9074bfe2597363e7b8e0de60f3e3676d03961b2b2bb699",
+                "https://tibia.fandom.com/index.php?curid=3558&oldid=899329"
               ]
             }
           }
@@ -214,7 +217,8 @@
               "requires_world_admission": true,
               "sources": [
                 "content/quests/definitions/quests-00200-00299.json:oteryn:quest.the_outlaw_camp_quest",
-                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_outlaw_camp/actions_the_outlaw_camp_quest.lua#L4-L32"
+                "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_outlaw_camp/actions_the_outlaw_camp_quest.lua#L4-L32",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/actions_the_outlaw_camp_quest.lua:4-32"
               ],
               "completes": true,
               "effects": {

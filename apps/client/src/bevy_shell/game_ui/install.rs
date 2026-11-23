@@ -151,6 +151,7 @@ struct ToolUi {
     revision: u64,
     root: Option<Entity>,
     seen: Option<ToolSnapshot>,
+    pending_sort: Option<(ToolAction, ToolSnapshot)>,
 }
 #[derive(Clone, Copy)]
 enum ToolAction {
@@ -174,9 +175,13 @@ enum ToolAction {
         handle: oteryn_session::ItemHandle,
         key: oteryn_client_runtime::container_sort::SortKey,
         descending: bool,
+        confirmed: bool,
     },
     /// Tibia Global's "Use Manual Sort Mode" checkbox of the sort menu; `checked` is the mode
     /// the control shows.
+    NestedSort {
+        checked: bool,
+    },
     ManualSort {
         checked: bool,
     },
@@ -219,7 +224,7 @@ fn tool_button(
     if !enabled {
         commands.entity(entity).insert(InteractionDisabled);
     }
-    if let ToolAction::ManualSort { checked } = action {
+    if let ToolAction::ManualSort { checked } | ToolAction::NestedSort { checked } = action {
         let indicator = commands
             .spawn(source::checkbox_indicator(if checked {
                 skin.checked.clone()
@@ -330,8 +335,9 @@ fn tool_activate(
                 handle,
                 key,
                 descending,
+                confirmed,
             },
-            ToolSnapshot::Sort(_, containers, _),
+            ToolSnapshot::Sort(panel, containers, _),
         ) => {
             if !containers.views.as_ref().is_some_and(|views| {
                 views.views.iter().any(|entry| {
@@ -342,17 +348,42 @@ fn tool_activate(
             }) {
                 return;
             }
+            let recursive = panel.fields[3] == "1";
+            if recursive && owner.settings.preferences.gameplay.warn_recursive_sort && !confirmed {
+                state.pending_sort = state.seen.clone().map(|seen| {
+                    (
+                        ToolAction::Sort {
+                            view,
+                            handle,
+                            key,
+                            descending,
+                            confirmed: true,
+                        },
+                        seen,
+                    )
+                });
+                state.seen = None;
+                return;
+            }
+            if confirmed && (state.pending_sort.take().is_none() || !recursive) {
+                state.seen = None;
+                return;
+            }
             let request = oteryn_client_runtime::container_sort::Request {
                 view,
                 key,
                 descending,
-                recursive: false,
+                recursive,
             };
             for (index, value) in request.encode().into_iter().enumerate() {
                 play.link.container_sort_edit(index, value.to_string());
             }
             play.link
                 .container_sort_request(oteryn_client_ui::container_sort::Intent::Sort);
+        }
+        (ToolAction::NestedSort { checked }, ToolSnapshot::Sort(_, _, mode)) if !mode.active() => {
+            play.link
+                .container_sort_edit(3, u8::from(!checked).to_string());
         }
         // The same per-session mode as the ToggleManualSortMode hotkey (Shift+S).
         (ToolAction::ManualSort { .. }, ToolSnapshot::Sort(_, _, mode)) if mode.selected => {
