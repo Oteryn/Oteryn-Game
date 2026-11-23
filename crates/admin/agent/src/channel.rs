@@ -16,12 +16,23 @@ pub trait Transport {
 }
 pub trait Clock {
     fn now(&self) -> i64;
+
+    fn until(&self, expires: i64) -> Duration {
+        Duration::from_secs(expires.saturating_sub(self.now()).max(0) as u64)
+    }
 }
 #[derive(Clone)]
 pub struct SystemClock;
 impl Clock for SystemClock {
     fn now(&self) -> i64 {
         OffsetDateTime::now_utc().unix_timestamp()
+    }
+
+    fn until(&self, expires: i64) -> Duration {
+        OffsetDateTime::from_unix_timestamp(expires)
+            .ok()
+            .and_then(|at| Duration::try_from(at - OffsetDateTime::now_utc()).ok())
+            .unwrap_or_default()
     }
 }
 
@@ -84,9 +95,8 @@ impl Transport for HttpsTransport {
 }
 /// Only implemented executors are advertised.
 pub fn advertised() -> BTreeSet<String> {
-    Operation::ALL
-        .into_iter()
-        .filter(|op| crate::read::implemented(*op))
+    crate::read::IMPLEMENTED
+        .iter()
         .map(|op| op.name().into())
         .collect()
 }
@@ -193,36 +203,68 @@ impl<T: Transport + Clone, S: NonceStore + IdempotencyStore, C: Clock + Clone> A
             ))
             .map_err(|_| E::AdmInternal)?
         };
-        // Steps 5–8 succeeded before touching idempotency state.
-        let prior = self.store.lookup(&r.admin_operation_id).await?;
-        match verifier::idempotency(&replay_digest, prior.as_ref())? {
-            Decision::Recorded(response) => Ok(*response),
-            Decision::Execute { params_digest } => {
-                // Store I/O may have consumed the remaining lifetime.
-                if crate::policy::timestamp(&r.expires_at)
-                    .is_none_or(|expires| self.clock.now() >= expires)
-                {
-                    return Err(E::AdmExpired);
-                }
-                let result = crate::read::execute(
-                    op,
-                    r,
-                    &self.config,
-                    &self.policy,
-                    self.read_pool.as_ref(),
-                )
-                .await;
-                let response = self.response(r, result)?;
-                self.store.finish(r, &params_digest, &response, now).await
-            }
+        if r.target
+            .world_id
+            .as_ref()
+            .is_some_and(|world| !self.config.worlds.contains(world))
+        {
+            return Err(E::AdmTargetNotFound);
         }
+
+        let expires = crate::policy::timestamp(&r.expires_at).ok_or(E::AdmExpired)?;
+        let deadline = tokio::time::Instant::now() + self.clock.until(expires);
+        let execution = tokio::time::timeout_at(deadline, async {
+            crate::read::check_deadline(deadline)?;
+            // Check current Character visibility and offline state before idempotency,
+            // then reuse that snapshot for any new result.
+            let snapshot =
+                crate::read::preconditions(op, &r.target, self.read_pool.as_ref(), deadline)
+                    .await?;
+            let prior = self.store.lookup(&r.admin_operation_id).await?;
+            match verifier::idempotency(&replay_digest, prior.as_ref())? {
+                Decision::Recorded(response) => {
+                    if op == Operation::SanctionList {
+                        crate::read::check_retained_sanctions(
+                            r,
+                            &self.config,
+                            &self.policy,
+                            self.read_pool.as_ref(),
+                            deadline,
+                            &response,
+                        )
+                        .await?;
+                    }
+                    Ok((*response, None))
+                }
+                Decision::Execute { params_digest } => {
+                    let result = crate::read::execute(
+                        op,
+                        r,
+                        &self.config,
+                        &self.policy,
+                        self.read_pool.as_ref(),
+                        snapshot,
+                        deadline,
+                    )
+                    .await?;
+                    Ok((self.response(r, Ok(result))?, Some(params_digest)))
+                }
+            }
+        })
+        .await;
+        crate::read::check_deadline(deadline)?;
+        let (response, retain) = execution.map_err(|_| E::AdmExpired)??;
+        if let Some(params_digest) = retain {
+            return self.store.finish(r, &params_digest, &response, now).await;
+        }
+        Ok(response)
     }
     pub async fn process(&mut self, request: &Request) -> Result<Response, E> {
         match self.process_inner(request).await {
             Ok(response) => Ok(response),
             Err(error) => {
                 let mut response = self.response(request, Err(error))?;
-                // A failure is never retained as a successful idempotent effect.
+                // A failure is audited without retaining an idempotent result.
                 // If the DB itself is unavailable, report no ledger id rather than
                 // claiming an audit row that could not be persisted.
                 let params_digest = digest(&request.params).unwrap_or_default();

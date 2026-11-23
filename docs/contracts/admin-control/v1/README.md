@@ -49,25 +49,32 @@ with location and parent ids. ADM-G3 implements the Phase-1 reads below.
 | `db.status` | PostgreSQL catalog and statistics, including the largest 50 tables. Bloat is unavailable. Lag is replica replay age when available. Oldest transaction age covers activity visible to the read role. |
 | `db.migrations.list` | SQLx migration history compared with the Game migrations embedded in the agent build. |
 | `player.search` | Character roots and progression with matching durable session presence. IP hash lookup is unavailable. |
-| `player.character.get` | Offline Character root, progression, build, last saved position, account premium and bank projections, guild, house, sanctions, and retained online interval starts. Skill progress percentages are unavailable (zero). Missing saved position or a nonterminal session returns `ADM_TARGET_UNAVAILABLE`. |
-| `player.inventory.get` | Offline durable equipment, backpack, depot, and inbox custody trees. Stash balances have no instance IDs and are omitted. Item definitions without a numeric type ID use zero. Characters with a nonterminal session return `ADM_TARGET_UNAVAILABLE`. |
-| `sanction.list` | Game staff mute history and the Game projection of Platform sanction decisions. Account-only records require account targeting and global scope. |
+| `player.character.get` | Offline Character root, progression, build, last saved position, account premium and bank projections, guild, house, sanctions, and retained online interval starts. Skill progress percentages are unavailable (zero). Missing saved position returns `ADM_TARGET_UNAVAILABLE`. The offline guard returns `ADM_PRECONDITION_FAILED` for a nonterminal session or outstanding holder. |
+| `player.inventory.get` | Offline durable equipment, backpack, depot, and inbox custody trees. Stash balances follow instance rows in the same pagination stream. Each balance contains a type ID and decimal-string count. Item definitions without a numeric type ID use zero. The same offline guard applies. |
+| `sanction.list` | Game staff mutes and account bans, plus the Game projection of Platform sanction decisions. Character bindings must be visible in scope. An account-wide sanction requires a visible Character of that account in scope, matching any signed Character selector. |
 | `admin.ledger.query` | Existing Game ledger, restricted to the result fields. Time ranges are half-open and at most 31 days. |
 | `admin.policy.get` | Pinned local policy. |
 
-Read executors use short read-only PostgreSQL snapshots and never acquire a
-Character writer lease. Offline access requires no nonterminal session or
-outstanding Character or account presence holder in the same snapshot as the
-data. The existing channel still records its nonce, idempotency and audit
-evidence. Retained ADM-G3 results bind the replay digest to the signed operation,
-actor and target and the effective ownership policy.
+The database operations `db.status` and `db.migrations.list` and the local
+`admin.policy.get` are global and require an empty signed target. All other
+registered reads use the intersection of the operation's World allowlist and
+the agent's configured Worlds, narrowed by any signed World selector. An
+empty allowlist disables a World-scoped operation. Applicable signed selectors
+and parameter filters apply together.
+
+Read executors use short read-only PostgreSQL snapshots under the signed
+deadline, including pool acquisition. Character reads check current visibility
+and durable session holders before idempotency and use the same snapshot for
+any new result. Executor failures are audited without retaining a result.
+Retained ADM-G3 results bind the replay digest to the signed operation, actor
+and target and the effective ownership policy.
 
 Set the optional `read_db_url_env_name` to the name of a separately provisioned
-connection to the same Game database. Provision a dedicated SELECT-only login
-for the named source relations with no gameplay writer or control membership.
-Grant access only to the columns used by the executors, plus EXECUTE on
-`game_account_closure_detached(uuid)`. In particular, ledger reads require only
-the fields listed in its result schema and never select canonical requests.
+login's connection URL for the same Game database. The deployed read login
+needs CONNECT on the database and membership in the `oteryn_game_admin_read`
+NOLOGIN role. The migration
+grants that role SELECT on the curated `admin_read` views and usage of that
+schema. Ledger views expose the result fields and omit canonical requests.
 The existing audit connection and role stay dedicated to ADM transport
 bookkeeping. An omitted read connection leaves the world roster and overview
 fallback available, returns an empty node page, and returns

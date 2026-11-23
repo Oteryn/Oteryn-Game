@@ -76,7 +76,7 @@ pub(super) async fn migrations(conn: &mut PgConnection, params: Page) -> Result<
                   'description', COALESCE(p.description,a.description),
                   'applied', COALESCE(a.success,false),
                   'checksum_drift', a.version IS NOT NULL AND a.checksum IS DISTINCT FROM p.checksum)
-         FROM pinned p FULL JOIN public._sqlx_migrations a USING(version)
+         FROM pinned p FULL JOIN admin_read.migrations a USING(version)
          WHERE ($4::bigint IS NULL OR version>$4)
          ORDER BY version LIMIT $5",
     )
@@ -98,7 +98,6 @@ pub(super) async fn ledger(
     conn: &mut PgConnection,
     target: &Target,
     worlds: &[String],
-    global: bool,
     params: LedgerQuery,
 ) -> Result<LedgerPage, E> {
     let from = timestamp(&params.from)?;
@@ -123,7 +122,7 @@ pub(super) async fn ledger(
                    'admin_id', admin_id, 'risk_class', risk_class, 'target', target,
                    'status', status, 'error_code', error_code,
                    'started_at', started_at, 'finished_at', finished_at)
-         FROM admin_command_ledger
+         FROM admin_read.ledger
          WHERE started_at >= $1::text::timestamptz AND started_at < $2::text::timestamptz
            AND ($3::text IS NULL OR admin_id=$3)
            AND ($4::text IS NULL OR operation=$4)
@@ -132,9 +131,9 @@ pub(super) async fn ledger(
            AND ($7::text IS NULL OR target->>'character_id'=$7)
            AND ($8::text IS NULL OR target->>'node_id'=$8)
            AND ($9::text IS NULL OR target->>'account_ref'=$9)
-           AND (target->>'world_id'=ANY($10) OR ($11 AND target->>'world_id' IS NULL))
-           AND ($12::text IS NULL OR (started_at,ledger_id)<($12::text::timestamptz,$13))
-         ORDER BY started_at DESC, ledger_id DESC LIMIT $14",
+           AND target->>'world_id'=ANY($10)
+           AND ($11::text IS NULL OR (started_at,ledger_id)<($11::text::timestamptz,$12))
+         ORDER BY started_at DESC, ledger_id DESC LIMIT $13",
     )
     .bind(&params.from)
     .bind(&params.to)
@@ -146,7 +145,6 @@ pub(super) async fn ledger(
     .bind(&target.node_id)
     .bind(&target.account_ref)
     .bind(worlds)
-    .bind(global)
     .bind(cursor_time)
     .bind(cursor_id)
     .bind(i64::from(params.limit) + 1)

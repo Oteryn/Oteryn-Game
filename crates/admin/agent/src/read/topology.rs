@@ -28,7 +28,7 @@ pub(super) async fn world_page(
             .filter_map(|row| Uuid::parse_str(&row.world_id).ok())
             .collect();
         let channels: std::collections::BTreeMap<_, _> = sqlx::query_as::<_, (Uuid, Vec<String>)>(
-            "SELECT id, ARRAY(SELECT channel_id::text FROM game_runtime_scope_assignments
+            "SELECT id, ARRAY(SELECT channel_id::text FROM admin_read.runtime_scope_assignments
                               WHERE world_id=id AND scope_kind=1 AND state=1
                               ORDER BY scope_key LIMIT 101)
              FROM unnest($1::uuid[]) AS id",
@@ -61,34 +61,32 @@ pub(super) async fn node_page(
     conn: &mut PgConnection,
     nodes: &[Uuid],
     worlds: &[Uuid],
-    global: bool,
     params: Page,
 ) -> Result<NodePage, E> {
     let rows = sqlx::query(
         "SELECT n.node_id::text, n.registered_at,
-                ARRAY(SELECT DISTINCT s.world_id::text FROM game_runtime_scope_assignments s
+                ARRAY(SELECT DISTINCT s.world_id::text FROM admin_read.runtime_scope_assignments s
                       WHERE s.state=1 AND s.holder_node_id=n.node_id
                         AND s.holder_registration_revision=n.registration_revision
                         AND s.world_id=ANY($2) ORDER BY 1 LIMIT 101) AS worlds,
-                EXISTS(SELECT 1 FROM game_runtime_scope_assignments s
-                       JOIN game_durability_admission_runtime_guards g USING(scope_key)
+                EXISTS(SELECT 1 FROM admin_read.runtime_scope_assignments s
+                       JOIN admin_read.runtime_guards g USING(scope_key)
                        WHERE s.holder_node_id=n.node_id AND s.state=1
                          AND s.holder_registration_revision=n.registration_revision
                          AND s.world_id=ANY($2)
                          AND g.ownership_generation=s.ownership_generation AND g.ready) AS ready,
                 EXTRACT(EPOCH FROM statement_timestamp())::bigint AS now
-         FROM game_node_registrations n WHERE n.state=1 AND n.node_id=ANY($1)
+         FROM admin_read.node_registrations n WHERE n.state=1 AND n.node_id=ANY($1)
            AND ($3::uuid IS NULL OR n.node_id>$3)
-           AND ($5 OR EXISTS(SELECT 1 FROM game_runtime_scope_assignments s
+           AND EXISTS(SELECT 1 FROM admin_read.runtime_scope_assignments s
                 WHERE s.state=1 AND s.holder_node_id=n.node_id
-                  AND s.holder_registration_revision=n.registration_revision AND s.world_id=ANY($2)))
+                  AND s.holder_registration_revision=n.registration_revision AND s.world_id=ANY($2))
          ORDER BY n.node_id LIMIT $4",
     )
     .bind(nodes)
     .bind(worlds)
     .bind(optional_uuid(params.cursor.as_deref())?)
     .bind(i64::from(params.limit) + 1)
-    .bind(global)
     .fetch_all(conn)
     .await
     .map_err(db_error)?;
@@ -122,7 +120,7 @@ pub(super) async fn overview(
     worlds: &[String],
     world_ids: &[Uuid],
     nodes: &[Uuid],
-    global: bool,
+    deadline: Instant,
 ) -> Result<Overview, E> {
     let params = || Page {
         limit: 100,
@@ -143,7 +141,7 @@ pub(super) async fn overview(
             .push("Game read connection unavailable".into());
         return Ok(overview);
     };
-    let mut tx = match begin(pool).await {
+    let mut tx = match begin(pool, deadline).await {
         Ok(tx) => tx,
         Err(E::AdmTargetUnavailable) => {
             overview
@@ -154,7 +152,7 @@ pub(super) async fn overview(
         Err(e) => return Err(e),
     };
     let worlds = world_page(Some(&mut tx), worlds, params()).await?;
-    let nodes = node_page(&mut tx, nodes, world_ids, global, params()).await?;
+    let nodes = node_page(&mut tx, nodes, world_ids, params()).await?;
     if worlds.next_cursor.is_some() || nodes.next_cursor.is_some() {
         overview
             .alerts

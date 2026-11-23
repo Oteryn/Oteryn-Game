@@ -67,7 +67,11 @@ closed!(Position {
 });
 closed!(Character { character_id: String, name: String, world_id: String, level: u32, vocation: String, skills: Vec<Skill>, position: Position, online: bool, premium: bool, guild: Option<String>, house: Option<String>, bank_balance: String, sanctions: Vec<Sanction>, last_logins: Vec<String> });
 closed!(Item { instance_id: String, type_id: u32, count: String, location: String, parent_id: Option<String> });
-closed!(Inventory { items: Vec<Item>, next_cursor: Option<String> });
+closed!(StashBalance {
+    type_id: u32,
+    count: String
+});
+closed!(Inventory { items: Vec<Item>, stash_balances: Vec<StashBalance>, next_cursor: Option<String> });
 closed!(Sanction { sanction_id: String, character_id: Option<String>, account_ref: Option<String>, kind: String, starts_at: String, expires_at: Option<String>, active: bool });
 closed!(SanctionPage { sanctions: Vec<Sanction>, next_cursor: Option<String> });
 closed!(LedgerEntry { ledger_id: String, request_id: String, admin_operation_id: String, operation: String, admin_id: String, risk_class: RiskClass, target: crate::Target, status: crate::Status, error_code: Option<crate::ErrorCode>, started_at: String, finished_at: String });
@@ -188,6 +192,13 @@ impl Operation {
         Ok(self.minimum())
     }
 
+    pub fn is_global_read(self) -> bool {
+        matches!(
+            self,
+            Self::AdminPolicyGet | Self::DbMigrationsList | Self::DbStatus
+        )
+    }
+
     pub fn validate_target(self, target: &crate::Target) -> Result<(), WireError> {
         let present = |id: &Option<String>| id.as_deref().is_some_and(|s| !s.trim().is_empty());
         let valid = match self {
@@ -214,6 +225,32 @@ impl Operation {
         };
         if !valid {
             return Err("required operation target missing".into());
+        }
+        let incompatible = match self {
+            Self::AdminPolicyGet | Self::DbMigrationsList | Self::DbStatus => {
+                target.world_id.is_some()
+                    || target.node_id.is_some()
+                    || target.character_id.is_some()
+                    || target.account_ref.is_some()
+            }
+            Self::NodeGet
+            | Self::NodeList
+            | Self::OpsOverviewGet
+            | Self::WorldGet
+            | Self::WorldList => {
+                target.character_id.is_some()
+                    || target.account_ref.is_some()
+                    || (matches!(self, Self::WorldGet | Self::WorldList)
+                        && target.node_id.is_some())
+            }
+            Self::PlayerCharacterGet
+            | Self::PlayerInventoryGet
+            | Self::PlayerSearch
+            | Self::SanctionList => target.node_id.is_some(),
+            _ => false,
+        };
+        if incompatible {
+            return Err("incompatible operation target".into());
         }
         Ok(())
     }
