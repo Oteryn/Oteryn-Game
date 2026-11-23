@@ -140,6 +140,8 @@ pub struct PendingKillSettlement {
     /// re-evaluate a later Premium state or attribute this kill to a successor.
     pub(super) prey_checkpoint: Option<crate::durability::prey::PreyCheckpoint>,
     pub(super) forge: Option<ForgeDeath>,
+    /// One fixed corpse stack, captured independently of the creature's loot rolls.
+    fiendish_slivers: Option<crate::combat::LootTableEntry>,
     /// Frozen callback facts survive corpse replay and actor-slot reuse.
     pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
     pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
@@ -266,6 +268,7 @@ impl PendingKillSettlement {
             world_change: None,
             prey_checkpoint: None,
             forge: None,
+            fiendish_slivers: None,
             echo: None,
             callback_loot: Vec::new(),
             tutorial_loot: Arc::default(),
@@ -1556,7 +1559,7 @@ impl KillSettlementQueue {
             .unwrap_or_else(oteryn_gameplay_foundation::scheduled_events::current_rates);
         let loot_mints = entry.row.as_ref().map_or(0, |row| {
             loot_table_mint_ceiling(
-                entry.facts.death,
+                entry,
                 row,
                 if entry.boss_reward.is_none() {
                     event_rates.loot
@@ -1740,7 +1743,7 @@ fn apply_scheduled_loot_rate(
 }
 
 fn loot_table_mint_ceiling(
-    death: CreatureDeathOccurrenceKey,
+    entry: &PendingKillSettlement,
     row: &CreatureRewardRow,
     event_loot_rate: u32,
 ) -> Option<usize> {
@@ -1762,10 +1765,11 @@ fn loot_table_mint_ceiling(
     if event_loot_rate >= 200 && event_loot_rate.is_multiple_of(100) {
         apply_scheduled_loot_rate(&mut table, event_loot_rate);
     }
+    table.entries.extend(entry.fiendish_slivers.iter().cloned());
     let Some(reference) = &row.loot_table_ref else {
         return table.entries.is_empty().then_some(0);
     };
-    plan_creature_loot(loot_plan_seed(death), reference, &table)
+    plan_creature_loot(loot_plan_seed(entry.facts.death), reference, &table)
         .ok()
         .map(|plan| plan.entries.len())
 }
@@ -2216,6 +2220,7 @@ pub fn record_creature_kill(
                             world_change,
                             prey_checkpoint,
                             forge: None,
+                            fiendish_slivers: None,
                             echo,
                             callback_loot: Vec::new(),
                             tutorial_loot: Arc::default(),
@@ -2383,24 +2388,25 @@ pub fn record_creature_kill(
             }
         }
     }
-    if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _difficulty)) = forge_kind
-    {
-        let Some(sliver) = sink.rewards.forge_sliver() else {
-            refuse("forge_sliver_inadmissible", &creature);
-            return;
+    let fiendish_slivers =
+        if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _difficulty)) =
+            forge_kind
+        {
+            let Some(sliver) = sink.rewards.forge_sliver() else {
+                refuse("forge_sliver_inadmissible", &creature);
+                return;
+            };
+            // Crystal Monster::dropLoot inserts this stack independently of the loot event.
+            let mut sliver = sliver.clone();
+            let count = u32::from(crate::domain::forge_creature::slivers(facts.occurrence[14]));
+            sliver.min_count = count;
+            sliver.max_count = count;
+            // Even with the minimum 95% factor, this exceeds every chance draw.
+            sliver.details.rated_probability_ppm = Some(2_000_000);
+            (!top.is_gone() && personal_reward_row.is_none()).then_some(sliver)
+        } else {
+            None
         };
-        let count = u32::from(crate::domain::forge_creature::slivers(facts.occurrence[14]));
-        if count > 0 {
-            Arc::make_mut(&mut row)
-                .loot_table
-                .entries
-                .push(crate::combat::LootTableEntry {
-                    min_count: count,
-                    max_count: count,
-                    ..sliver.clone()
-                });
-        }
-    }
     if let Some((kind, _)) = forge_kind {
         let Some(amount) = kind.experience(row.xp_amount.get()) else {
             refuse("forge_xp_overflow", &creature);
@@ -2448,7 +2454,7 @@ pub fn record_creature_kill(
     });
     let percent = sink.queue.prey_at_death(runtime, target, percent);
     // One independent trigger plus two <=7-entry rolls stay within PREY-0 R4's
-    // 29 draws; a forge sliver adds two more, still below the existing 32 ceiling.
+    // 29 draws; the fixed Fiendish stack occupies two planner slots, still below 32.
     let base = sink
         .rewards
         .row(&creature)
@@ -2603,6 +2609,7 @@ pub fn record_creature_kill(
         boss_reward,
         activity_death,
         forge,
+        fiendish_slivers,
         echo,
         callback_loot,
         tutorial_loot: Arc::default(),
@@ -4049,6 +4056,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         if entry.boss_reward.is_none() {
             apply_scheduled_loot_rate(&mut loot_table, self.event_rates.loot);
         }
+        loot_table
+            .entries
+            .extend(entry.fiendish_slivers.iter().cloned());
         if !loot_table.entries.is_empty() {
             let Ok(active) = admission
                 .root

@@ -76,6 +76,8 @@ pub(super) enum Case {
     CakeWorldBonusExpired,
     CakeKillBeforeActivation,
     CakeKillBeforeExpiry,
+    ForgeDoubleLoot,
+    ForgeReducedLoot,
 }
 
 impl Case {
@@ -177,7 +179,25 @@ async fn scenario(
     let cake_case = cake_world_bonus || cake_kill_before_activation || cake_kill_before_expiry;
     let task_board_case = case;
     let t94_case = matches!(case, Case::T94);
+    let loot_rate = match case {
+        Case::ForgeDoubleLoot => Some(200),
+        Case::ForgeReducedLoot => Some(1),
+        _ => None,
+    };
+    let _forge_clock = loot_rate
+        .map(|rate| {
+            use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
+
+            let schedule = Schedule::parse(&format!(
+                r#"{{"events":[{{"name":"forge-loot","startdate":"01/01/2030",
+                    "enddate":"01/02/2030","ingame":{{"lootrate":{rate}}}}}]}}"#
+            ))
+            .map_err(debug)?;
+            Ok::<_, String>(test_clock::set(schedule, 1_893_456_000))
+        })
+        .transpose()?;
     let case = match case {
+        Case::ForgeDoubleLoot | Case::ForgeReducedLoot => Case::ForgeReplay,
         Case::T94 => Case::Shared,
         Case::CharmCarnage
         | Case::TaskBoardParty

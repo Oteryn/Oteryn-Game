@@ -366,8 +366,9 @@ impl RollState {
         let quantity = match entry.details.charges {
             _ if entry.details.container_capacity.is_some() => 1,
             Some(charges) if stackable => charges,
-            Some(_) => 1,
-            None => quantity_in_range(chance, entry.min_count, entry.max_count),
+            None if stackable => quantity_in_range(chance, entry.min_count, entry.max_count),
+            // Crystal's generateLootRoll awards one unstackable Item on success.
+            _ => 1,
         };
         if quantity == 0 {
             return Err(LootPlanError::InvalidQuantityRange);
@@ -907,20 +908,7 @@ mod tests {
                 placement_ordinal: position.placement_ordinal,
             });
         }
-        let mut unsplit = reward.loot_table.clone();
-        let source = unsplit
-            .entries
-            .iter_mut()
-            .find(|entry| entry.item.production_key == gold)
-            .ok_or("missing gold entry")?;
-        assert!(source.details.charges.is_none());
-        source.details.stackable = false;
-        let total = plan_creature_loot(death, reference, &unsplit)?
-            .entries
-            .iter()
-            .filter(|entry| entry.parent.is_none() && entry.item.production_key == gold)
-            .map(|entry| entry.quantity)
-            .sum::<u32>();
+        let total = expected_gold_roll(death, reference, &reward.loot_table, gold)?;
         let maximum = GAMEITEM01_STACK_QUANTITY_MAX;
         assert!((maximum + 1..=2 * maximum).contains(&total));
         assert_eq!(
@@ -1025,20 +1013,17 @@ mod tests {
         for creature in ["oteryn:creature.animated_clomp", "oteryn:creature.clomp"] {
             let reward = rewards.row(creature).map_err(NoSettlementReason::as_str)?;
             let reference = reward.loot_table_ref.as_ref().ok_or("missing loot table")?;
-            let mut unsplit = reward.loot_table.clone();
-            let source = unsplit
+            let source_maximum = reward
+                .loot_table
                 .entries
-                .iter_mut()
+                .iter()
                 .find(|entry| entry.item.production_key == gold)
-                .ok_or("missing gold roll")?;
-            let source_maximum = source.max_count;
-            // Gold has no charges, so disabling stacks here leaves the raw source roll.
-            assert!(source.details.charges.is_none());
-            source.details.stackable = false;
+                .ok_or("missing gold roll")?
+                .max_count;
             let mut largest = 0;
             for seed in 0..=u8::MAX {
                 let death = death_key(seed);
-                let expected = plan_creature_loot(death, reference, &unsplit)?;
+                let expected = expected_gold_roll(death, reference, &reward.loot_table, gold)?;
                 let plan = plan_creature_loot(death, reference, &reward.loot_table)?;
                 let gold_stacks: Vec<_> = plan
                     .entries
@@ -1046,16 +1031,7 @@ mod tests {
                     .filter(|entry| entry.item.production_key == gold)
                     .collect();
                 let total: u32 = gold_stacks.iter().map(|entry| entry.quantity).sum();
-                assert_eq!(
-                    total,
-                    expected
-                        .entries
-                        .iter()
-                        .filter(|entry| entry.item.production_key == gold)
-                        .map(|entry| entry.quantity)
-                        .sum::<u32>(),
-                    "{creature}, seed {seed}"
-                );
+                assert_eq!(total, expected, "{creature}, seed {seed}");
                 assert_eq!(
                     plan,
                     plan_creature_loot(death, reference, &reward.loot_table)?
@@ -1078,6 +1054,35 @@ mod tests {
         }
         assert!(oversized.is_empty(), "uncollectable gold: {oversized:?}");
         Ok(())
+    }
+
+    fn expected_gold_roll(
+        death: LootPlanDeathKey,
+        reference: &LootDefinitionRef,
+        table: &LootTableDefinition,
+        gold: &str,
+    ) -> Result<u32, Box<dyn std::error::Error>> {
+        let (index, entry) = table
+            .entries
+            .iter()
+            .enumerate()
+            .find(|(_, entry)| entry.item.production_key == gold)
+            .ok_or("missing gold roll")?;
+        assert!(entry.details.stackable && entry.details.charges.is_none());
+        let ordinal = u32::try_from(validate_tree(&table.entries[..index], 0)?)?;
+        let chance = deterministic_draw(death, reference, ordinal, DrawKind::Chance);
+        let factor = loot_factor_percent(deterministic_draw(
+            death,
+            reference,
+            ordinal,
+            DrawKind::Factor,
+        ));
+        let probability = entry.probability_ppm.ok_or("missing gold probability")?;
+        Ok(if factored_success(chance, probability, factor, 0) {
+            quantity_in_range(chance, entry.min_count, entry.max_count)
+        } else {
+            0
+        })
     }
 
     fn rat_loot_table() -> LootTableDefinition {
@@ -2169,8 +2174,8 @@ mod admitted_loot_tests {
                 let expected = match entry.details.charges {
                     _ if entry.details.container_capacity.is_some() => 1,
                     Some(charges) if stackable => charges,
-                    Some(_) => 1,
-                    None => entry.max_count,
+                    None if stackable => entry.max_count,
+                    _ => 1,
                 };
                 // Force a successful maximum roll in isolation so independent table
                 // rolls cannot exhaust a corpse or suppress another unique drop.
