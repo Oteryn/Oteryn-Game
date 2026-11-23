@@ -86,6 +86,30 @@ pub(super) fn prepare(
         intent,
     )?;
     let text = intent.text.trim().to_ascii_lowercase();
+    // Asking for a passage replaces the outstanding ticket question. Retire
+    // its topic before paid travel takes over, including when its quote later expires.
+    if phase == Phase::Rewards
+        && let Some(npc) = admission
+            .states
+            .chat
+            .npc_talk()
+            .and_then(|book| book.get(&context.2))
+        && npc
+            .travel_routes
+            .iter()
+            .any(|route| text == route.keyword || text == route.route.key.replace('_', " "))
+        && let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&command.game_session_id)
+    {
+        let topic = state.quest_dialogue.topic(&context).number;
+        if offers.offers.iter().any(|offer| {
+            offer.npc == context.2
+                && offer.next_topic == topic
+                && offer.keywords.iter().any(|keyword| keyword == "ticket")
+        }) {
+            state.quest_dialogue.retire_for_source(&context);
+        }
+    }
     if text == "no"
         || (phase == Phase::Offers
             && !matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
