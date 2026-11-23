@@ -62,7 +62,8 @@ pub(super) async fn record(
             .collect::<String>(),
     );
     let map_revision = row.try_get::<&str, _>("map_revision")?;
-    let floor = if map_revision == native_revision {
+    let native_axes = map_revision == native_revision;
+    let floor = if native_axes {
         cell.z
     } else if <[u8; 32]>::from(Sha256::digest(map_revision.as_bytes())) == map_revision_digest {
         -cell.z
@@ -73,6 +74,17 @@ pub(super) async fn record(
     {
         return Ok(false);
     }
+    // The SQL predicate expresses the actor floor opposite to the stored Ground
+    // axis. Convert the verified runtime position into that receipt frame.
+    let sample_position = [
+        position[0],
+        position[1],
+        if native_axes {
+            -position[2]
+        } else {
+            position[2]
+        },
+    ];
     let before: serde_json::Value = row.try_get("item")?;
     let ground: serde_json::Value = row.try_get("ground")?;
     Ok(sqlx::query("INSERT INTO game_quest_corpse_samples(character_id,cause_id,cause_ordinal,transition_key,world_id,channel_id,scope_generation,corpse_item,source_item,appearance,maximum_age_ms,actor_position,before_item,before_ground,ingress) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13,$14,$15) ON CONFLICT DO NOTHING")
@@ -81,6 +93,6 @@ pub(super) async fn record(
         .bind(channel_id.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
         .bind(corpse.as_slice()).bind(carried.source.as_slice()).bind(i64::from(spec.appearance))
         .bind(i32::try_from(spec.maximum_age_ms).map_err(|_|DurabilityError::InvalidStoredState)?)
-        .bind(serde_json::json!(position)).bind(before).bind(ground).bind(&carried.intent)
+        .bind(serde_json::json!(sample_position)).bind(before).bind(ground).bind(&carried.intent)
         .execute(&mut **tx).await?.rows_affected()==1)
 }
