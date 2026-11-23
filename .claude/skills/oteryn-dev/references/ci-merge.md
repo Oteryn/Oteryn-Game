@@ -174,17 +174,22 @@ test them with a real force-push or deletion.
   head was qualified, run the sync below first: merge `main` into `staging`,
   then qualify the new head again.
 - **No retargets.** Do not retarget a PR between `staging` and `main`;
-  close it and open a new PR with the right base. `game-gate` has one name
+  close it and open a new PR with the right base. Until the retarget run's
+  `game-gate` fails (about a minute), the old base's green `game-gate` is
+  still the head's check, so a retargeted PR is never merged before a new
+  push has been qualified. `game-gate` has one name
   for both bases, so a retarget fails `game-gate` at once (the scope job
   rejects any `edited` event that changed the base, and its run is titled
   `... • retargeted`). The head stays tainted until a new push: every
   `game-gate` attempt (later edits, reruns and job retries included) checks
   the live head and base ref against its own scope and fails on a head that
   has a retargeted run. Other edits (title, body) cancel nothing: in the
-  harness they only mirror the `heavy-gate` of the newest real heavy run's
-  latest attempt on the head, and fail while it is still running. That run's
-  second `heavy-gate` job waits for such mirrors and republishes its result
-  last.
+  harness they only mirror the `heavy-gate` of the newest real heavy run
+  (by run creation, at its latest attempt) on the head, and fail while it is
+  still running. Every run's second `heavy-gate` job republishes that verdict
+  again once `heavy-tests` is live; in a real run it first waits until every
+  other harness run on the head has finished, and fails rather than publish
+  while one is still going.
 - **Codex review status.** A PR into `staging` publishes the status
   `codex-review-gate (staging)`, so it never replaces the `codex-review-gate`
   of a `main` PR on the same head SHA. The `heavy-tests` exemption applies

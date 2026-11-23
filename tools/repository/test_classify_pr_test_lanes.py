@@ -1225,7 +1225,10 @@ def test_metadata_events():
             page = len(calls) - 1
             assert request.full_url == (prefix + "actions/workflows/merge-gate.yml/runs?head_sha="
                                         f"{expected_head}&per_page=100&page={page}"), request.full_url
-            return io.StringIO(json.dumps(pages[page - 1]))
+            body = pages[page - 1]
+            if isinstance(body, dict) and "workflow_runs" in body and "total_count" not in body:
+                body = dict(body, total_count=sum(len(item.get("workflow_runs") or []) for item in pages))
+            return io.StringIO(json.dumps(body))
         env = {"REPOSITORY": "Oteryn/Oteryn-Game", "PR_NUMBER": "42",
                "ISOLATED_EDIT": "true" if isolated else "false",
                "EXPECTED_HEAD": expected_head, "EXPECTED_BASE": expected_base,
@@ -1261,6 +1264,10 @@ def test_metadata_events():
                                                         {"workflow_runs": [tainted]}])
     assert accepts_live(live, runs=[{"workflow_runs": [clean_run] * 100}, {"workflow_runs": []}])
     assert accepts_live(live, runs=[{"workflow_runs": [{"display_title": "Merge gate • pull_request • 43 • retargeted"}]}])
+    # The filtered listing is capped at 1000 runs: a longer or uncounted history fails closed.
+    assert accepts_live(live, runs=[{"workflow_runs": [clean_run], "total_count": 1000}])
+    assert not accepts_live(live, runs=[{"workflow_runs": [clean_run], "total_count": 1001}])
+    assert not accepts_live(live, runs=[{"workflow_runs": [clean_run], "total_count": "1"}])
     for broken in ({}, {"workflow_runs": None}, {"workflow_runs": ["x"]}):
         assert not accepts_live(live, runs=[broken]), broken
     assert "        if: github.event.action == 'edited' && github.event.changes.base == null\n" not in final
