@@ -1,0 +1,82 @@
+{
+  "task_id": "OTV2-20261122-test-ci-value-audit",
+  "wave": 4,
+  "source_repository": "Oteryn/Oteryn-Game",
+  "observed_head": "2749acb3295b536f0b88dc04c25fe0f6afcbd526",
+  "source_tree": "009565071b9ce3af3d5147f01a0e1d5482f0d4f4",
+  "machine": "oteryn-vps",
+  "worktree": "/tmp/oteryn-ci-value-audit-20261123-run4",
+  "worktree_is_new_detached": true,
+  "worktree_clean_before_after": true,
+  "python_version": "3.14.4",
+  "file_count": 10,
+  "literal_test_definitions": 50,
+  "selection": {
+    "workflow_files_scanned": 78,
+    "literal_exact_filename_matches_in_workflow_bodies": 0,
+    "indirect_dynamic_selection": "UNKNOWN"
+  },
+  "runs": [
+    {
+      "command": "python3 -m unittest -v [ten source modules]",
+      "ran": 50,
+      "passed": 48,
+      "assertion_failures": 0,
+      "errors": 2,
+      "exit_code": 1,
+      "seconds": 84.408,
+      "error_methods": [
+        "test_cake_native_successor.CakeNativeSuccessorTests.test_actual_generated_provider_contains_complete_canonical_cake",
+        "test_complete_captured_loot_alias_delta.CapturedAliasTests.test_final_delta_has_no_duplicate_data_patches_and_flag_guards"
+      ]
+    },
+    {
+      "command": "python3 -m unittest -v [classify, compact, dependencies, familiar, loot-quality modules]",
+      "ran": 29,
+      "passed": 29,
+      "errors": 0,
+      "exit_code": 0,
+      "seconds": 0.07
+    },
+    {
+      "command": "python3 -m unittest -v test_complete_captured_loot_alias_delta",
+      "ran": 6,
+      "passed": 5,
+      "errors": 1,
+      "exit_code": 1,
+      "seconds": 0.004,
+      "error": "FileNotFoundError: /workspace/monster-field-next-20261002/loot-alias-delta-final/field-patches.json"
+    },
+    {
+      "command": "python3 test_cake_bridge_reference.py",
+      "ran": 0,
+      "exit_code": 0,
+      "stdout_stderr_bytes": 0
+    },
+    {
+      "command": "/home/ubuntu/oteryn-work/qmech-3056-20261111-9dd395d3452e-venv/bin/python3 -m unittest -v test_cake_native_successor.CakeNativeSuccessorTests.test_actual_generated_provider_contains_complete_canonical_cake",
+      "ran": 1,
+      "passed": 1,
+      "errors": 0,
+      "exit_code": 0,
+      "seconds": 170.596,
+      "pinned_requirement": "zstandard==0.25.0",
+      "stubs_used": false
+    }
+  ],
+  "distinct_methods_observed_pass": 49,
+  "distinct_methods_unqualified_due_missing_historical_file": 1,
+  "content_tool_queue_before": 677,
+  "content_tool_queue_after": 667,
+  "other_aggregate_remaining_groups_not_affected": 130,
+  "unapplied_patches_retained": true,
+  "code_test_workflow_changes_in_this_wave": 0,
+  "review_history": "one native review for 978d40a02e only; no second request",
+  "limits": [
+    "no live PostgreSQL/Game/Platform test",
+    "no Windows/GPU qualification",
+    "no historical source packet present",
+    "no complete dynamic CI selection trace",
+    "no full-green 50-test run"
+  ]
+}
