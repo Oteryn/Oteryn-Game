@@ -45,6 +45,9 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     let [capture_guard] = offer.requires.as_slice() else {
         return Err("the offer must yield to a completed capture task".into());
     };
+    let [cooldown] = grant.state_ops.as_slice() else {
+        return Err("the grant must check the capture cooldown".into());
+    };
     let shipped = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
         .map_err(f::debug)?;
     let captures = shipped
@@ -64,6 +67,11 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                     max: 2,
                 },
                 captures,
+                shipped
+                    .catalogue()
+                    .track(&cooldown.track)
+                    .ok_or("registered capture cooldown track")?
+                    .clone(),
                 shipped
                     .catalogue()
                     .track("oteryn:quest-progress/questpc7/goblin/programme")

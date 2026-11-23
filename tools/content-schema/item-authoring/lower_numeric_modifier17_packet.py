@@ -11,8 +11,8 @@ import lower_wiki_movable_packet as frame
 
 shared, base, ROOT = prior.shared, prior.base, prior.ROOT
 COMPILER = "tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py"
-RECEIPT = "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v10.json"
-RECEIPT_SHA = "e32ab7a10cd574bb56fd9a14332de33cdaf4554caf56810b4e4c5425e88caec4"
+RECEIPT = "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v11.json"
+RECEIPT_SHA = "343f46372aeb78085c9a35fd2d84ef8595a75ac422ac203d8e2878034e04d966"
 OUTPUT = (
     ROOT
     / "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json"
@@ -196,7 +196,9 @@ def source_vector(entry, indexed, pages, cutoff, order):
     return values[0]["value"]
 
 
-def qualify(entry, definition, binding, obj, members, routed, vector):
+def qualify(
+    entry, definition, binding, obj, members, routed, vector, *, current_headers=None
+):
     iid, target = entry["item_id"], entry["current_target"]
     official = entry["official_source"]
     if (
@@ -212,9 +214,10 @@ def qualify(entry, definition, binding, obj, members, routed, vector):
         or target["revision"] != "definition-r1"
     ):
         raise ValueError("numeric modifier exact/native/World identity drift")
-    if {k: definition[k] for k in HEADERS} != entry["current_published_scope_receipt"][
-        "native_headers"
-    ]:
+    headers = {k: definition[k] for k in HEADERS}
+    if current_headers is None:
+        current_headers = entry["current_published_scope_receipt"]["native_headers"]
+    if headers != current_headers:
         raise ValueError("four scoped structural headers drift")
     flags = obj.get("flags", {})
     if (
@@ -255,7 +258,7 @@ def qualify(entry, definition, binding, obj, members, routed, vector):
     return {
         "source_item_id": iid,
         "target": target,
-        "headers": {k: definition[k] for k in HEADERS},
+        "headers": headers,
         "expected_name": obj["name"],
         "modifiers": vector,
     }
@@ -360,6 +363,9 @@ def build(root=ROOT):
                 members,
                 routed,
                 vector,
+                current_headers=receipt["native_header_successors"].get(
+                    str(entry["item_id"])
+                ),
             )
         )
     if sum(len(r["modifiers"]) for r in rows) != 50:
