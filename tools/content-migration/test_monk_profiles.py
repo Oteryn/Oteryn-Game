@@ -86,6 +86,11 @@ class MonkProfiles(unittest.TestCase):
                 modifiers = worn["skill_modifiers"]["value"]["modifiers"]["value"]
                 self.assertEqual({r["kind"]: r["parameter"]["value"]["value"]
                                   for r in modifiers}, effects)
+                # Reference Item SkillModifier kinds are ordered by wire ID.
+                expected_order = ["INVISIBILITY"] if active == 3086 else [
+                    "HEALTH_GAIN", "HEALTH_TICKS", "MANA_GAIN", "MANA_TICKS",
+                ]
+                self.assertEqual([row["kind"] for row in modifiers], expected_order)
 
 
 if __name__ == "__main__":
