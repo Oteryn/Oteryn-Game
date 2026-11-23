@@ -52,7 +52,7 @@ fn project(
     let active = owner
         .play
         .as_ref()
-        .filter(|_| preferences.health_circle)
+        .filter(|_| preferences.health_circle && preferences.player_hud_enabled)
         .and_then(|play| play.link.actor_vitals().map(|vitals| (play, vitals)));
     let mut count = 0;
     if let Some((play, vitals)) = active {
@@ -68,7 +68,8 @@ fn project(
         let center = Vec2::from(scene.health_circle_center()) + offset - size.as_vec2() * 0.5;
         let scale = windows.single().map_or(1., Window::scale_factor);
         let ui_scale = preferences.interface_scale as f32 / 100.;
-        let radius = preferences.arcs.size as f32 * ui_scale;
+        let width = f32::from(preferences.arcs.width.unwrap_or(preferences.arcs.size)) * ui_scale;
+        let height = f32::from(preferences.arcs.height.unwrap_or(preferences.arcs.size)) * ui_scale;
         let distance = preferences.arcs.distance as f32 * ui_scale;
         let step = std::f32::consts::PI / SEGMENTS as f32;
         for (mana, current, maximum, side, colour) in [
@@ -104,17 +105,16 @@ fn project(
                 let angle = std::f32::consts::PI - (index as f32 + portion * 0.5) * step;
                 let at = center
                     + Vec2::new(
-                        side * (distance + radius * angle.sin()),
-                        -radius * angle.cos(),
+                        side * (distance + width * angle.sin()),
+                        -height * angle.cos(),
                     );
+                let tangent = Vec2::new(side * width * angle.cos(), -height * angle.sin());
                 let sprite = Sprite::from_color(
                     colour.with_alpha(f32::from(preferences.arcs.opacity) / 100.),
-                    Vec2::new(radius * step * portion, 3. * ui_scale) / scale,
+                    Vec2::new(tangent.length() * step * portion, 3. * ui_scale) / scale,
                 );
                 let transform = Transform::from_xyz(at.x / scale, -at.y / scale, 100.)
-                    .with_rotation(Quat::from_rotation_z(
-                        (-angle.sin()).atan2(side * angle.cos()),
-                    ));
+                    .with_rotation(Quat::from_rotation_z(tangent.y.atan2(tangent.x)));
                 if let Some(entity) = entities.get(count) {
                     if let Ok((mut segment, mut old_sprite, mut old_transform)) =
                         segments.get_mut(*entity)
@@ -242,6 +242,38 @@ mod tests {
             }),
         );
         app.update();
+        let extent = |app: &mut App| {
+            app.world_mut()
+                .query::<(&CircleSegment, &Transform)>()
+                .iter(app.world())
+                .fold(
+                    (Vec2::splat(f32::INFINITY), Vec2::splat(f32::NEG_INFINITY)),
+                    |(min, max), (_, t)| {
+                        let point = t.translation.truncate();
+                        (min.min(point), max.max(point))
+                    },
+                )
+        };
+        let (min, max) = extent(&mut app);
+        let original = max - min;
+        for (field, axis) in [("width", 0), ("height", 1)] {
+            {
+                let mut host = app.world_mut().non_send_mut::<HostOwner>();
+                let mut saved = serde_json::to_value(host.settings.preferences.arcs)?;
+                saved[field] = 90.into();
+                host.settings.preferences.arcs = serde_json::from_value(saved)?;
+            }
+            app.update();
+            let (min, max) = extent(&mut app);
+            assert!(((max - min)[axis] / original[axis] - 1.5).abs() < 0.01);
+            {
+                let mut host = app.world_mut().non_send_mut::<HostOwner>();
+                let mut saved = serde_json::to_value(host.settings.preferences.arcs)?;
+                saved[field] = serde_json::Value::Null;
+                host.settings.preferences.arcs = serde_json::from_value(saved)?;
+            }
+            app.update();
+        }
         let mut full = 0.;
         for (segment, sprite) in app
             .world_mut()

@@ -6,8 +6,12 @@ use oteryn_client_ui::wheel_allocation::{WheelPanel, diagram};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WheelControl {
     Close,
+    Empty,
+    Fill,
+    Inspect(usize),
     Node(usize),
     Preset(String),
+    PresetVessel(u8),
     Refresh,
     Reset,
     Retry,
@@ -24,7 +28,7 @@ pub(crate) fn editable(panel: &WheelPanel) -> bool {
 }
 
 /// Preserve graph connectivity while allowing reductions in level-locked rings.
-fn adjust(panel: &mut WheelPanel, index: usize, remove: bool) -> bool {
+fn adjust(panel: &mut WheelPanel, index: usize, remove: bool, bulk: bool) -> bool {
     if !editable(panel) || index >= 36 {
         return false;
     }
@@ -35,12 +39,24 @@ fn adjust(panel: &mut WheelPanel, index: usize, remove: bool) -> bool {
         return false;
     }
     let mut points = panel.points;
-    let next = if remove {
+    let next = if bulk && remove {
+        Some(0)
+    } else if bulk {
+        let spent: u32 = points.iter().copied().map(u32::from).sum();
+        let remaining = u16::try_from(reply.available.saturating_sub(spent)).unwrap_or(u16::MAX);
+        Some(
+            points[index]
+                .saturating_add(remaining)
+                .min(reply.nodes[index].capacity),
+        )
+    } else if remove {
         points[index].checked_sub(1)
     } else {
         points[index].checked_add(1)
     };
-    let Some(next) = next.filter(|value| *value <= reply.nodes[index].capacity) else {
+    let Some(next) =
+        next.filter(|value| *value != points[index] && *value <= reply.nodes[index].capacity)
+    else {
         return false;
     };
     points[index] = next;
@@ -138,15 +154,59 @@ impl PlayLink {
             return false;
         }
         match action {
-            WheelControl::Node(index) => return adjust(&mut m.wheel, index, remove),
+            WheelControl::Inspect(index) => {
+                let Some(reply) = diagram::metadata(&m.wheel) else {
+                    return false;
+                };
+                let nonce = reply.request.nonce;
+                return diagram::slot(&mut m.wheel, nonce, index);
+            }
+            WheelControl::Fill | WheelControl::Empty => {
+                let index = m.wheel.slot;
+                return adjust(&mut m.wheel, index, action == WheelControl::Empty, true);
+            }
+            WheelControl::Node(index) => return adjust(&mut m.wheel, index, remove, false),
+            WheelControl::PresetVessel(slot) => {
+                if !editable(&m.wheel) || !m.wheel.atelier_v2 || m.wheel.dirty() {
+                    return false;
+                }
+                let Some(&wanted) = m
+                    .wheel
+                    .preset_vessels
+                    .as_ref()
+                    .and_then(|v| v.get(usize::from(slot)))
+                else {
+                    return false;
+                };
+                let Some(vessel) = m
+                    .wheel
+                    .vessel_board
+                    .as_ref()
+                    .and_then(|b| b.slots.get(usize::from(slot)))
+                else {
+                    return false;
+                };
+                if !vessel.open || vessel.gem == wanted {
+                    return false;
+                }
+                m.wheel.vessel_slot = slot;
+                m.wheel.select_gem(wanted);
+                let intent = if wanted.is_some() {
+                    oteryn_client_ui::wheel_allocation::Intent::ReplaceVessel
+                } else {
+                    oteryn_client_ui::wheel_allocation::Intent::ClearVessel
+                };
+                super::enqueue(&mut m, &self.commands, intent);
+            }
             WheelControl::Preset(name) => {
                 if !editable(&m.wheel) {
                     return false;
                 }
-                let Some(code) = m.wheel.preset_book.0.get(&name).cloned() else {
+                let Some(code) = m.wheel.preset_book.named_code(&name) else {
                     return false;
                 };
-                if m.wheel.import_build(&code).is_err() {
+                if let Err(reason) = m.wheel.load_named_build(&code) {
+                    m.wheel.preset_feedback = reason.into();
                     return false;
                 }
                 m.wheel.preset_fields[0] = name;
@@ -283,9 +343,9 @@ mod regression_tests {
     #[test]
     fn locked_ring_allocation_can_be_removed_one_point_at_a_time() {
         let mut panel = locked_ring_panel();
-        assert!(!adjust(&mut panel, 0, false));
+        assert!(!adjust(&mut panel, 0, false, false));
         for remaining in [2, 1, 0] {
-            assert!(adjust(&mut panel, 0, true));
+            assert!(adjust(&mut panel, 0, true, false));
             assert_eq!(panel.points[0], remaining);
         }
         // Editing a proposal does not bypass the authoritative Save preview.
@@ -329,6 +389,44 @@ mod regression_tests {
         })));
         assert!(link.wheel_preset_bound(&panel, 0, ["First".into(), String::new()]));
         assert_eq!(saved(&path, "First"), Some(panel.build_code()));
+        Ok(())
+    }
+
+    #[test]
+    fn wheel_bound_named_preset_restores_gem_in_its_vessel() -> std::io::Result<()> {
+        let (link, _commands, outbox) = crate::play::play_channel();
+        link.use_shared_frontend();
+        let mut panel = locked_ring_panel();
+        let id = [17; 16];
+        panel
+            .confirmed_atelier
+            .as_mut()
+            .ok_or_else(|| std::io::Error::other("atelier"))?
+            .gems
+            .push(oteryn_client_ui::wheel_allocation::atelier::GemView {
+                id,
+                quality: 0,
+                domain: 0,
+                locked: false,
+                vessel: false,
+                modifiers: vec![7],
+            });
+        panel.vessels[0] = Some(id);
+        outbox.bevy_wheel_state(panel.clone());
+        let folder = tempfile::tempdir()?;
+        let path = folder.path().join("wheel.json");
+        let target = path.clone();
+        TEST_PATH.set(Some(Box::new(move || target)));
+        assert!(link.wheel_preset_bound(&panel, 0, ["Copied".into(), String::new()]));
+        let code = saved(&path, "Copied").ok_or_else(|| std::io::Error::other("preset"))?;
+        panel
+            .preset_book
+            .insert("Copied", &code)
+            .map_err(std::io::Error::other)?;
+        panel.vessels = [None; 4];
+        outbox.bevy_wheel_state(panel.clone());
+        assert!(link.wheel_control_bound(&panel, WheelControl::Preset("Copied".into()), false));
+        assert_eq!(link.wheel_panel().vessels[0], Some(id));
         Ok(())
     }
 

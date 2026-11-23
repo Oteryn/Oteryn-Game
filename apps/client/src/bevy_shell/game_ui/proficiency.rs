@@ -1,7 +1,9 @@
 //! Weapon list and level-gated perk grid over the retained proficiency owner.
 mod draft;
+mod filters;
 #[cfg(test)]
 mod tests;
+mod track;
 mod widgets;
 use super::{
     super::{
@@ -16,10 +18,12 @@ use crate::play::feature_0195_weapon_proficiency::view::ProficiencyAction as Mod
 enum Kind {
     Close,
     Refresh,
+    Filter(filters::Change),
     Weapon(usize),
     Perk(usize, usize),
     Apply,
     Reset,
+    ResetCommitted,
     SaveClose,
     DiscardClose,
     CancelClose,
@@ -45,6 +49,8 @@ struct Control {
 struct Overlay;
 #[derive(Component)]
 struct Progress;
+#[derive(Component)]
+struct Search;
 #[derive(Resource, Default)]
 struct State {
     key: Key,
@@ -52,8 +58,11 @@ struct State {
     root: Option<widgets::Widgets>,
     draft: draft::Draft,
     dirty: bool,
+    search: String,
+    filters: filters::Filters,
 }
 pub(super) fn install(app: &mut App) {
+    track::install(app);
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain());
@@ -63,6 +72,7 @@ fn project(
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
     mut state: ResMut<State>,
+    fields: Query<&bevy::text::EditableText, With<Search>>,
 ) {
     let panel = owner
         .play
@@ -75,6 +85,20 @@ fn project(
             let panel = play.link.weapon_proficiency_panel();
             panel.open.then_some(panel)
         });
+    if state.key.generation != owner.generation() || panel.is_none() {
+        state.search.clear();
+        state.filters = default();
+    } else if let Ok(field) = fields.single()
+        && field.value() != state.search.as_str()
+    {
+        state.search = field.value().to_string();
+        state.dirty = true;
+    }
+    if let (Some(panel), Some(play)) = (&panel, &owner.play)
+        && state.filters.update(&play.link, panel)
+    {
+        state.dirty = true;
+    }
     draft::advance(&owner, &mut state, panel.as_ref());
     if !state.dirty && state.key.generation == owner.generation() && state.snapshot == panel {
         return;
@@ -91,12 +115,14 @@ fn project(
     };
     let key = state.key;
     if let Some(panel) = &panel {
-        let projected = draft::projection(panel, &state.draft);
+        let mut projected = draft::projection(panel, &state.draft);
+        projected.search.clone_from(&state.search);
+        let filters = state.filters.clone();
         let draft_controls = state.draft.controls();
         let widgets = state
             .root
             .get_or_insert_with(|| widgets::build(&mut commands, &skins));
-        widgets::render(&mut commands, &skins, widgets, key, &projected);
+        widgets::render(&mut commands, &skins, widgets, key, &projected, &filters);
         draft::render(&mut commands, &skins, widgets, key, draft_controls);
     }
     state.snapshot = panel;

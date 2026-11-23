@@ -702,3 +702,39 @@ fn parity_a_inline_chat_commands_override_channel_and_keep_private_prefix()
     }
     Ok(())
 }
+
+#[test]
+fn enabled_speaker_levels_query_the_first_line_after_login()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox) = play_channel();
+    let mut settings = crate::play::SettingsState::new(None);
+    settings.preferences.console.levels = true;
+    outbox.chat_initialize(true);
+    settings.sync_local_preferences(&link);
+    assert!(commands.try_recv().is_err());
+    outbox.chat_public_state(
+        ChatRoomSet::default(),
+        vec![ChatLine::Private {
+            speaker_name: "Ada".into(),
+            text: "Hello".into(),
+        }],
+    );
+    settings.sync_local_preferences(&link);
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("level command".into());
+    };
+    assert_eq!(
+        oteryn_client_runtime::chat::console::decode_names(&command.payload),
+        Some(vec!["Ada".into()])
+    );
+    outbox.console_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: oteryn_client_runtime::chat::console::encode_levels(&[Some(7)]).ok_or("encode")?,
+    });
+    settings.sync_local_preferences(&link);
+    assert!(commands.try_recv().is_err());
+    assert!(panel_text(&link.chat_panel()).contains("Ada [current level 7]"));
+    Ok(())
+}

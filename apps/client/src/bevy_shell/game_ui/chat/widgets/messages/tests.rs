@@ -82,3 +82,29 @@ fn transcript_preserves_entry_boundaries_and_feedback_order() {
     assert!(rows[2].contains("has joined"));
     assert_eq!(rows[3], "feedback\n");
 }
+
+#[test]
+fn private_channel_join_leave_filter_keeps_exclusion_notices() {
+    use oteryn_client_ui::chat_channel_participants::{NoticeKind, NoticeLine};
+    let mut panel = ChatPanel::default();
+    panel.console.current = Some(ChannelTab::Private(7));
+    for (serial, kind) in [NoticeKind::Joined, NoticeKind::Left, NoticeKind::Excluded]
+        .into_iter()
+        .enumerate()
+    {
+        panel.console.channel_notices.push(NoticeLine {
+            serial: serial as u64,
+            channel_id: 7,
+            kind,
+            name: format!("Participant{serial}"),
+        });
+    }
+    panel.console.filters.join_leave = false;
+    let text = transcript_rows(&panel)
+        .into_iter()
+        .map(|row| row.text)
+        .collect::<String>();
+    assert!(!text.contains("Participant0"));
+    assert!(!text.contains("Participant1"));
+    assert!(text.contains("Participant2"));
+}

@@ -22,7 +22,7 @@ use oteryn_protocol_oteryn::{CommandStatus, house_wrap as wrap, world_object};
 /// The refusal is the server's correct answer outside a house, so the row fails on the missing
 /// precondition: House ownership is only settled by the Control-side auction settlement, which
 /// no player command reaches during the run.
-const GAP: &str = "step=wrap-observed=NotInHouse;needed=owned-house;settlement-only:crates/gameplay/durability/src/durability/house_ownership/settlement.rs";
+const GAP: &str = "step=wrap-observed=NotInHouse;needed=owned-house;settlement-only:crates/gameplay/durability/src/durability/house_ownership/settlement.rs:32";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -32,6 +32,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Ok(Err(error)) => classify(&error.to_string()),
         Err(_) => ("FAIL", "step=journey observed=timeout".to_owned()),
     };
+    if status == "FAIL" {
+        evidence(&format!("I10_GAP {detail}"));
+    }
     evidence(&format!(
         "SEAM_EVIDENCE e2e_all scenario=I10.full status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
@@ -211,12 +214,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if before_logout.as_ref() != Some(&after_relog) {
         return Err("step=fresh-admission observed=inventory-state-changed".into());
     }
-    Ok(())
+    Err("step=construction-kit missing=ordinary-kit-acquisition-install-and-relog-readback owner=crates/gameplay/dispatch/src/gameplay_transport/house_wrap.rs:172".into())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn construction_gap_preserves_the_specific_missing_player_action() {
+        let gap = "step=construction-kit missing=ordinary-kit-acquisition-install-and-relog-readback";
+        assert_eq!(classify(gap), ("FAIL", compact(gap)));
+    }
 
     #[test]
     fn verdict_depends_on_observed_reply() {

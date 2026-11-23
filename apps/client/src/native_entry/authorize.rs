@@ -434,6 +434,8 @@ mod session_options_tests {
             let second = folder.join("other.json");
             let global = MiscellaneousPreferences::load();
             let flags = MiscellaneousPreferences {
+                character_sort_column: 2,
+                character_sort_descending: true,
                 stay_logged_in: !global.stay_logged_in,
                 remember_device: !global.remember_device,
                 quick_login: !global.quick_login,
