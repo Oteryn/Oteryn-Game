@@ -75,6 +75,7 @@ pub(super) async fn exercise_mint(
 pub(super) async fn exercise_drag(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    h: &Harness,
 ) -> TestResult {
     use crate::gameplay_transport::connection::UseCommand;
     use crate::gameplay_transport::item_move::{LoopMove, LoopMoveResult, LoopTarget};
@@ -159,6 +160,66 @@ pub(super) async fn exercise_drag(
     assert_eq!(
         (persisted.x, persisted.y, persisted.z),
         (at.x, at.y, -i32::from(at.floor))
+    );
+    use oteryn_protocol_oteryn::quick_loot::{QuickLootAction, QuickLootRequest};
+
+    let loot = QuickLootRequest {
+        action: QuickLootAction::Click,
+        corpse: Some(before.item.item_instance_id),
+        category: None,
+        recipient: None,
+        recipient_id: None,
+        fallback_to_main: false,
+        filter_mode: None,
+        filter_definition_ref: None,
+    };
+    // A live corpse can carry loot; use Command 114 to empty it before pickup.
+    owner
+        .execute_quick_loot(
+            *admitted,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: 60002,
+                item_fence: Some(fence),
+            },
+            loot,
+        )
+        .await
+        .ok_or("quick loot response")?;
+    let remaining: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_corpse_container_entries WHERE parent_item_instance_id=$1",
+    )
+    .bind(sqlx::types::Uuid::from_bytes(before.item.item_instance_id))
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(remaining, 0, "corpse must be empty before pickup");
+    assert_eq!(
+        crate::gameplay_transport::loop_move::move_loop_item(
+            owner,
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: 60003,
+                item_fence: Some(fence),
+            },
+            LoopMove {
+                slot: None,
+                item: ItemKey::Instance(before.item.item_instance_id),
+                count: None,
+                target: LoopTarget::MainBackpack,
+            },
+        )
+        .await,
+        LoopMoveResult::Committed,
+    );
+    assert!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .bound_corpse(before.identity)
+            .is_none(),
+        "a carried corpse cannot remain visible on the Ground"
     );
     Ok(())
 }

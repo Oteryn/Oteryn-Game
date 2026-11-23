@@ -29,7 +29,7 @@ pub(super) struct CorpseItemBinding {
     // Original MINT binding stays immutable when the displayed Item transforms.
     minted_item: RuntimeCorpseItem,
     item: RuntimeCorpseItem,
-    position: MovementLocalPosition,
+    ground_position: Option<MovementLocalPosition>,
     revision: u64,
 }
 
@@ -86,7 +86,7 @@ impl ChannelActorCarrier {
             actor,
             minted_item: item.clone(),
             item,
-            position,
+            ground_position: Some(position),
             revision,
         });
         Ok(())
@@ -109,7 +109,7 @@ impl ChannelActorCarrier {
                     .find(|binding| binding.actor == actor)?;
                 Some(VisibleRuntimeCorpse {
                     identity: actor.corpse_identity(),
-                    position: binding.position,
+                    position: binding.ground_position?,
                     revision: binding.revision,
                     item: binding.item.clone(),
                 })
@@ -302,12 +302,22 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
-    /// Update a bound corpse after its durable Ground placement changes.
-    /// The item-lane owner supplies the committed location in runtime coordinates.
+    /// Relocate a corpse from its durable Ground placement in runtime coordinates.
     pub fn relocate_corpse_item(
         &mut self,
         item_instance_id: [u8; 16],
         position: MovementLocalPosition,
+    ) -> Result<(), CarrierError> {
+        self.set_corpse_item_ground_position(item_instance_id, Some(position))
+    }
+
+    /// Publish a bound corpse's committed location while the item lane is held.
+    /// A carried corpse has no Ground position. Keep its original MINT binding
+    /// so replaying death settlement cannot show it again.
+    pub fn set_corpse_item_ground_position(
+        &mut self,
+        item_instance_id: [u8; 16],
+        position: Option<MovementLocalPosition>,
     ) -> Result<(), CarrierError> {
         self.owner_fence()?;
         if let Some(binding) = self
@@ -315,9 +325,9 @@ impl ChannelRuntimeV1 {
             .corpse_item_bindings
             .iter_mut()
             .find(|binding| binding.item.item_instance_id == item_instance_id)
-            && binding.position != position
+            && binding.ground_position != position
         {
-            binding.position = position;
+            binding.ground_position = position;
             binding.revision = binding.revision.saturating_add(1);
         }
         Ok(())

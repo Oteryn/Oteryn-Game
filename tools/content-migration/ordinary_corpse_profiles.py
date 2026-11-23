@@ -178,6 +178,45 @@ def movable_stage_profiles(root):
         yield record
 
 
+def inherited_portable_stage_ids(root):
+    from ordinary_corpse_cohort import packet
+
+    cohort = packet(root)
+    stages = {item for chain in cohort["chains"].values() for item, _ in chain[1:]}
+    return [
+        item
+        for item in sorted(stages)
+        if (facts := cohort["items"].get(str(item)))
+        and facts["movable"]
+        and facts["pickupable"]
+    ]
+
+
+def qualify_inherited_portable_stages(root, records):
+    active = {
+        record["production_definition"]["production_key"]: record for record in records
+    }
+    for item in inherited_portable_stage_ids(root):
+        record = active[item_ref(item)["key"]]
+        admission = record["admission"]
+        if "CharacterInventory" in admission["legal_destinations"]:
+            continue
+        physical = record["semantics"]["physical"]["value"]
+        if (
+            admission
+            != {
+                "materializable": True,
+                "stack_class": "NonStackable",
+                "legal_destinations": ["Ground"],
+            }
+            or physical["movable"] != items.source.K(True)
+            or physical["pickupable"] != items.source.K(False)
+        ):
+            raise ValueError(f"Unexpected inherited corpse admission: {item}")
+        physical["pickupable"] = items.source.K(True)
+        admission["legal_destinations"] = ["CharacterInventory", "Ground"]
+
+
 def check_movable_stages(root):
     profile_path = root / "content/items/definitions/spell-native-profiles.json"
     active = {
@@ -197,15 +236,28 @@ def check_movable_stages(root):
         ):
             raise ValueError(f"Missing or inconsistent movable corpse admission: {key}")
 
+    for item in inherited_portable_stage_ids(root):
+        key = item_ref(item)["key"]
+        actual = active[key]
+        if "CharacterInventory" not in actual["admission"][
+            "legal_destinations"
+        ] or actual["semantics"]["physical"]["value"]["pickupable"] != items.source.K(
+            True
+        ):
+            raise ValueError(f"Missing portable corpse admission: {key}")
+
 
 def stage_portability_sql(root, path):
-    portable = [
-        str(item) for item, facts in read(root, "movable-stages") if facts["pickupable"]
-    ]
+    portable = set(inherited_portable_stage_ids(root))
+    portable.update(
+        item for item, facts in read(root, "movable-stages") if facts["pickupable"]
+    )
     start = "        -- Begin generated portable stages\n"
     end = "        -- End generated portable stages"
     sql = path.read_text()
-    body = "        " + ",".join(portable) + ",\n"
+    inherited = sql.split(end, 1)[1].split("]) AS id", 1)[0]
+    portable.difference_update(map(int, re.findall(r"\b\d+\b", inherited)))
+    body = "        " + ",".join(map(str, sorted(portable))) + ",\n"
     result, count = re.subn(
         re.escape(start) + r"(?s:.*?)" + re.escape(end),
         start + body + end,

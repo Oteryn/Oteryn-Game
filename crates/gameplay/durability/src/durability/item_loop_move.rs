@@ -44,7 +44,7 @@ pub use seed_drop::{SeedDropProbe, SeedDropTarget};
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_equipment::{EquipmentError, assert_current_equipment_in_transaction};
 use super::ground_cell_limit::{
-    GroundCellAdmissionError, GroundCellLimitError, check_loop_ground_root_insert_with_recovery,
+    GroundCellAdmissionError, GroundCellLimitError, check_ground_cell_root_insert_with_recovery,
 };
 use super::item_mint::{
     GroundItemInstance, GroundPlacement, TypedDefinitionRef, decode_ground_scope,
@@ -1395,7 +1395,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 return refuse(LoopMoveRefusal::Blocked);
             }
             ground.corpse_ref = [ITEM_LOOP_DROP_REF_PREFIX, transaction_id.as_slice()].concat();
-            check_loop_ground_root_insert_with_recovery(
+            check_ground_cell_root_insert_with_recovery(
                 tx,
                 permit,
                 record,

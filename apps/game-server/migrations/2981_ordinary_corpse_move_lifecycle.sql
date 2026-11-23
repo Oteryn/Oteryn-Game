@@ -28,7 +28,7 @@ LANGUAGE sql IMMUTABLE STRICT AS $$
     SELECT p_key = ANY(ARRAY(
         SELECT 'oteryn:item.tibia.i'||id FROM unnest(ARRAY[
         -- Begin generated portable stages
-        866,4034,4035,4036,4086,4087,4105,4106,4107,4166,4167,4176,4177,4178,4200,4201,4202,4230,4231,4232,5013,5629,5727,5728,5729,6348,6349,6350,21100,21101,21102,
+        866,4013,4034,4035,4036,4041,4042,4047,4048,4086,4087,4105,4106,4107,4128,4147,4160,4161,4166,4167,4176,4177,4178,4200,4201,4202,4230,4231,4232,5013,5629,5727,5728,5729,6348,6349,6350,21100,21101,21102,
         -- End generated portable stages
         287,288,289,862,863,864,2983,3987,3990,3991,3992,3994,3995,3996,
         3998,3999,4000,4001,4002,4003,4004,4007,4008,4009,4011,4012,4016,4017,
@@ -144,6 +144,13 @@ BEGIN
         END IF;
     END IF;
     $cap$ || house);
+    original := 'cg.runtime_scope_ownership_generation=r.scope_generation';
+    IF (length(body)-length(replace(body,original,'')))/length(original) <> 1 THEN
+        RAISE EXCEPTION 'Ordinary corpse Quick Loot predecessor changed';
+    END IF;
+    body := replace(body,original,'(('||original||') OR
+        (cg.runtime_scope_ownership_generation<r.scope_generation
+         AND game_ordinary_corpse_loop_ground(cg.item_instance_id)))');
     EXECUTE body;
 
     -- Try the exact relocated receipt independently of the original death scope.

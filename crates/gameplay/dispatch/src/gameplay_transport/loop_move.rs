@@ -1148,8 +1148,6 @@ pub(super) async fn move_loop_item_with_house_capacity(
         && !receipt.replayed
         && ordinary_move
         && touches_ground
-        && let LoopTarget::Ground(to) = request.target
-        && let Some(floor) = to.floor.checked_neg()
     {
         let mut runtime = admission.runtime.lock().await;
         if runtime.binding().runtime_scope() == fence.runtime_scope
@@ -1157,14 +1155,23 @@ pub(super) async fn move_loop_item_with_house_capacity(
                 .owner_fence()
                 .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
         {
-            let _ = runtime.relocate_corpse_item(
-                item,
-                crate::foundation::MovementLocalPosition {
-                    x: to.x,
-                    y: to.y,
-                    floor,
-                },
-            );
+            match request.target {
+                LoopTarget::Ground(to) => {
+                    if let Some(floor) = to.floor.checked_neg() {
+                        let _ = runtime.set_corpse_item_ground_position(
+                            item,
+                            Some(crate::foundation::MovementLocalPosition {
+                                x: to.x,
+                                y: to.y,
+                                floor,
+                            }),
+                        );
+                    }
+                }
+                LoopTarget::MainBackpack | LoopTarget::Container(_) => {
+                    let _ = runtime.set_corpse_item_ground_position(item, None);
+                }
+            }
         }
     }
     // Publish the tile-order event while the same Channel lane still excludes

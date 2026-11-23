@@ -450,23 +450,8 @@ fn encode_composed_item_profiles(
                     attributes.retain(|_, field| !field.is_null());
                 }
                 if let Some(semantics) = value["semantics"].as_object_mut() {
-                    for group in [
-                        "fluid",
-                        "imbuement",
-                        "protection",
-                        "readable_writeable",
-                        "trade_restrictions",
-                        "use_transform",
-                        "weapon",
-                    ] {
-                        if semantics
-                            .get(group)
-                            .and_then(|field| field["state"].as_str())
-                            == Some("UNKNOWN")
-                        {
-                            semantics.remove(group);
-                        }
-                    }
+                    // Each semantic field defaults to Unknown when omitted.
+                    semantics.retain(|_, field| field["state"].as_str() != Some("UNKNOWN"));
                 }
                 if record.production_binding_qualification.is_none()
                     && let Some(object) = value.as_object_mut()
@@ -1398,10 +1383,27 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         }
         // These exact bodies lack a historical XML binding. Their Crystal
         // appearance and the current client object agree on the server Item id.
-        for external_id in [35384, 35388, 35846, 36929, 44667, 44671, 48406] {
+        #[derive(Deserialize)]
+        struct CorrectedCorpseBindings {
+            crystal_revision: String,
+            binding_corrections: BTreeMap<String, [u32; 2]>,
+        }
+        let corrected: CorrectedCorpseBindings = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/native-gameplay/ordinary-corpse-cohort.json"
+        ))
+        .map_err(|_| invalid("ordinary corpse binding corrections"))?;
+        let mut extra = BTreeSet::from([35384, 35388, 35846, 36929, 44667, 44671, 48406]);
+        extra.extend(
+            corrected
+                .binding_corrections
+                .into_values()
+                .map(|[_, item]| item)
+                .filter(|item| !admitted.contains_key(&item.to_string())),
+        );
+        for external_id in extra {
             let binding = serde_json::from_value(serde_json::json!({
                 "source_key": "oteryn:source.crystalserver",
-                "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+                "source_revision": corrected.crystal_revision,
                 "identity_namespace": "ots/item_server_id",
                 "external_id": external_id.to_string(),
                 "target": {"family": "Item", "key": format!("oteryn:item.tibia.i{external_id}"), "revision": "definition-r1"},

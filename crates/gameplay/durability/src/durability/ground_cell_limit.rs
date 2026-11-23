@@ -137,28 +137,15 @@ pub async fn check_ground_cell_root_insert_with_recovery(
     check_ground_cell_root_insert_in_transaction(tx, &authority, ground, item_instance_id).await
 }
 
-/// Command 9 uses the bundle's map axes. Native Ground writers use the
-/// runtime axes and hash the bundle revision string. Count the physical tile
-/// under the same scope lock even when both representations are occupied.
-pub(super) async fn check_loop_ground_root_insert_with_recovery(
+/// Admit a new root against the locked census of both map encodings.
+pub async fn check_ground_cell_root_insert_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
-    permit: &SpellLanePermit,
-    recovery: &CharacterRecoveryFenceV1,
-    node: &super::runtime_scope_assignment::NodeIncarnationProof,
-    expected_scope: (RuntimeScopeRefV1, u64),
+    authority: &SpellItemScopeAuthority,
     ground: &GroundPlacement,
     item_instance_id: &[u8; 16],
 ) -> Result<(), GroundCellAdmissionError> {
     use sha2::{Digest, Sha256};
-    let authority = assert_spell_item_scope_with_recovery(
-        tx,
-        permit,
-        recovery,
-        node,
-        expected_scope.0,
-        expected_scope.1,
-    )
-    .await?;
+
     let target = SpellGroundTarget {
         item_profile_source: None,
         spatial_position: ground.spatial_position.clone(),
@@ -168,63 +155,36 @@ pub(super) async fn check_loop_ground_root_insert_with_recovery(
     };
     let cell = decode_ground_cell(&ground.spatial_position)
         .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
-    let floor = i16::try_from(-cell.z)
-        .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
-    let native_cell = [
-        cell.x.to_be_bytes().as_slice(),
-        cell.y.to_be_bytes().as_slice(),
-        floor.to_be_bytes().as_slice(),
-    ]
-    .concat();
-    let native_map = super::map_item_mint_audit::map_revision_of(
+    // Command 9 uses bundle axes and the bundle revision. Native writers can
+    // use the opposite floor and SHA-256 of that revision. The query also
+    // tests the reverse hash relation when the writer already has that hash.
+    let other_cell = i16::try_from(-cell.z).ok().map(|floor| {
+        let mut bytes = ground.spatial_position.clone();
+        bytes[8..].copy_from_slice(&floor.to_be_bytes());
+        bytes
+    });
+    let other_map = super::map_item_mint_audit::map_revision_of(
         Sha256::digest(ground.map_revision.as_bytes()).as_slice(),
     );
     let rows = locked_physical_tile_rows_for_scope(
         tx,
-        &authority,
+        authority,
         &target,
-        Some((&native_cell, &native_map)),
+        other_cell.as_deref().map(|cell| (cell, other_map.as_str())),
     )
     .await?;
-    if rows.len() >= GROUND_CELL_ROOT_LIMIT {
-        return Err(GroundCellAdmissionError::Limit(GroundCellLimitError::NotEnoughRoom));
-    }
-    for row in rows {
-        let id = uuid_text(row.try_get("item_instance_id").map_err(SpellItemError::from)?)
-            .map_err(SpellItemError::from)?;
-        if &id == item_instance_id {
-            return Err(GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput));
-        }
-    }
-    Ok(())
-}
-
-/// A genuine Player/Creature physical writer already holds its sealed scope
-/// and native Channel lock. Read the actual post-removal census immediately
-/// before its fresh root. Ground placement and identity are data, not grants.
-pub async fn check_ground_cell_root_insert_in_transaction(
-    tx: &mut Transaction<'_, Postgres>,
-    authority: &SpellItemScopeAuthority,
-    ground: &GroundPlacement,
-    item_instance_id: &[u8; 16],
-) -> Result<(), GroundCellAdmissionError> {
-    let target = SpellGroundTarget {
-        item_profile_source: None,
-        spatial_position: ground.spatial_position.clone(),
-        map_revision: ground.map_revision.clone(),
-        content_revision: ground.content_revision.clone(),
-        placement_context: ground.native_room_placement_context.clone(),
-    };
-    let remaining =
-        check_ground_cell_root_admission_in_transaction(tx, authority, &target, &[]).await?;
+    let world = WorldId::decode(&authority.world_bytes())
+        .map_err(|_| GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput))?;
+    let remaining = native_roots(rows, authority, world)?;
     if remaining.len() >= GROUND_CELL_ROOT_LIMIT {
         return Err(GroundCellAdmissionError::Limit(
             GroundCellLimitError::NotEnoughRoom,
         ));
     }
+    let mut seen = std::collections::BTreeSet::from([*item_instance_id]);
     if remaining
         .iter()
-        .any(|item| &item.item_instance_id == item_instance_id)
+        .any(|item| !seen.insert(item.item_instance_id))
     {
         return Err(GroundCellAdmissionError::Limit(
             GroundCellLimitError::IncompatibleInput,

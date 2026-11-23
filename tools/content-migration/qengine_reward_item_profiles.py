@@ -279,10 +279,13 @@ def reconcile(existing, observed):
         if previous is None:
             attributes[key] = value
     merged['attributes'] = attributes
-    if existing.keys() != observed.keys():
+    # Native encoding omits null qualification; a non-null qualification
+    # still has to agree exactly across both sources.
+    qualification = 'production_binding_qualification'
+    if existing.keys() - {qualification} != observed.keys() - {qualification}:
         raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:shape')
-    for key in existing.keys() - {'authoring', 'attributes', 'semantics'}:
-        if existing[key] != observed[key]:
+    for key in (existing.keys() | observed.keys()) - {'authoring', 'attributes', 'semantics'}:
+        if existing.get(key) != observed.get(key):
             raise ValueError('QENGINE_REWARD_ITEM_NATIVE_CONFLICT:' + key)
     from native_profile_composition import compact_item_profile
 

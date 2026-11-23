@@ -57,7 +57,10 @@ def extend_item_references(root, items):
 
 
 def apply_items(root, items, provider_order, shared_ids):
-    from ordinary_corpse_profiles import movable_stage_profiles
+    from ordinary_corpse_profiles import (
+        movable_stage_profiles,
+        qualify_inherited_portable_stages,
+    )
     from ordinary_corpse_slice2 import merge_shared_item
 
     # Crystal items.cpp loads the appearance flags before the items.xml
@@ -162,6 +165,7 @@ def apply_items(root, items, provider_order, shared_ids):
             raise ValueError(f"Movable corpse stage already has an Item owner: {key}")
         items["records"].append(record)
         present.add(key)
+    qualify_inherited_portable_stages(root, items["records"])
     items["records"].sort(key=provider_order)
 
 
