@@ -3395,6 +3395,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 struct BossAchievementSettlement {
     boss: BossDeathAchievements,
     recipients: Vec<BossDeathAchievementRecipient>,
+    // Once the rewards resolve, a grant-only retry does not need the live corpse.
+    settled_rewards: OnceLock<SettleReport>,
+}
+
+fn record_settled_boss_rewards(
+    entry: &PendingKillSettlement,
+    report: SettleReport,
+) -> SettleReport {
+    if report.verdict == SettleVerdict::Final
+        && let Some(achievement) = &entry.boss_achievements
+    {
+        let _ = achievement.settled_rewards.set(report);
+    }
+    report
+}
+
+fn boss_xp_settled(
+    xp: &Result<
+        crate::durability::character_progression::ExperienceCommitOutcome,
+        CombatDeathRewardXpError,
+    >,
+) -> bool {
+    matches!(
+        xp,
+        Ok(_)
+            | Err(CombatDeathRewardXpError::NoProgressionBinding
+                | CombatDeathRewardXpError::NoExperienceAward)
+    )
 }
 
 /// Crystal's killingLibrary event reads Player IDs from the physical damage map.
@@ -3421,7 +3449,13 @@ fn capture_boss_achievements(
             })
         })
         .collect();
-    (!recipients.is_empty()).then(|| Arc::new(BossAchievementSettlement { boss, recipients }))
+    (!recipients.is_empty()).then(|| {
+        Arc::new(BossAchievementSettlement {
+            boss,
+            recipients,
+            settled_rewards: OnceLock::new(),
+        })
+    })
 }
 
 /// Copied Soul War onDeath settles XP before the ordinary drain can take the
@@ -3450,41 +3484,42 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
         if entry.soulpit_experience.is_some() {
             return self.settle_soulpit(entry).await;
         }
-        if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
-            return SettleReport {
-                verdict: SettleVerdict::Retry,
-                no_progression: false,
-            };
+        let achievement = entry.boss_achievements.as_deref();
+        let mut report = if let Some(report) = achievement.and_then(|a| a.settled_rewards.get()) {
+            *report
+        } else {
+            if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
+            super::grizzly_kills::settle(
+                self.admission,
+                entry,
+                Box::pin(self.settle_durably(entry, inflight_before)),
+            )
+            .await
+        };
+        // The separate idempotent grant may outlive this drain. It can only
+        // start after the quest and applicable reward owners finish this death.
+        if let Some(achievement) = achievement
+            && achievement.settled_rewards.get().is_some()
+            && self
+                .admission
+                .root
+                .grant_boss_death_achievements(
+                    self.admission.character,
+                    self.admission.holder,
+                    achievement.recipients.clone(),
+                    entry.facts.death,
+                    achievement.boss,
+                )
+                .await
+                .is_err()
+        {
+            report.verdict = SettleVerdict::Retry;
         }
-        let report = super::grizzly_kills::settle(
-            self.admission,
-            entry,
-            Box::pin(async {
-                // Quest prerequisites settle first. Commit the grant before the XP and
-                // loot transactions so their durable rewards cannot outlive the roster.
-                if let Some(settlement) = &entry.boss_achievements
-                    && self
-                        .admission
-                        .root
-                        .grant_boss_death_achievements(
-                            self.admission.character,
-                            self.admission.holder,
-                            settlement.recipients.clone(),
-                            entry.facts.death,
-                            settlement.boss,
-                        )
-                        .await
-                        .is_err()
-                {
-                    return SettleReport {
-                        verdict: SettleVerdict::Retry,
-                        no_progression: false,
-                    };
-                }
-                self.settle_durably(entry, inflight_before).await
-            }),
-        )
-        .await;
         self.admission
             .refresh_native_objective_recipients(entry)
             .await;
@@ -3765,6 +3800,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             }
         }
+        let mut encounter_xp_settled = true;
         if let Some(experience) = entry.encounter_experience {
             let Some(permit) = admission.spell_lane_permit().await else {
                 return SettleReport {
@@ -3777,6 +3813,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 Some(self.modified_experience(entry, experience.get()).await);
             match admission.settle_party_experience(&permit, &captured).await {
                 Ok(party) => {
+                    encounter_xp_settled = boss_xp_settled(&party.xp);
                     // Publish while the same Character revision slots and scope
                     // lane are held, so an activity handoff carries these marks.
                     admission
@@ -3840,7 +3877,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     &boss.key,
                 );
             }
-            if let Err(error) = result {
+            if let Err(ref error) = result {
                 operator_event(&format!(
                     "kill_reward_bosstiary_failed creature={} reason={error:?}",
                     entry.creature
@@ -3855,18 +3892,28 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     no_progression: false,
                 };
             }
-            return SettleReport {
+            let report = SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
+            };
+            return if result.is_ok() && encounter_xp_settled {
+                record_settled_boss_rewards(entry, report)
+            } else {
+                report
             };
         }
         // Explicit native encounter XP and the Grizzly wrapper have settled.
         // A missing reward row admits no additional progression, Task Board,
         // equipment, proficiency or loot descendant.
         if entry.row.is_none() {
-            return SettleReport {
+            let report = SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
+            };
+            return if encounter_xp_settled {
+                record_settled_boss_rewards(entry, report)
+            } else {
+                report
             };
         }
         // SPELL-LOCK-2: qualify the party roster and equipment under the existing
@@ -3932,10 +3979,13 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 entry,
                 SettleVerdict::Final,
             );
-            return SettleReport {
-                verdict: SettleVerdict::Final,
-                no_progression: false,
-            };
+            return record_settled_boss_rewards(
+                entry,
+                SettleReport {
+                    verdict: SettleVerdict::Final,
+                    no_progression: false,
+                },
+            );
         }
         // A session without an XP binding keeps its existing no-write XP refusal.
         // Its admitted private rewards still use the same canonical death owner.
@@ -4369,7 +4419,13 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             admission.states.loop_ground.invalidate();
         }
         release_settled_corpse(&mut runtime, &entry, report.verdict);
-        report
+        if outcome.as_ref().is_ok_and(|outcome| {
+            outcome.rewards.loot.is_ok() && boss_xp_settled(&outcome.rewards.xp)
+        }) {
+            record_settled_boss_rewards(&entry, report)
+        } else {
+            report
+        }
     }
 }
 
