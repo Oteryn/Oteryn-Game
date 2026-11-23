@@ -612,6 +612,19 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
     return capacity if type(capacity) is int and 1 <= capacity <= maximum else None
 
 
+def native_loot_stack_facts(profile: dict) -> dict:
+    stack_class = profile['admission'].get('stack_class')
+    if stack_class not in ('StackCapable', 'NonStackable'):
+        return {}
+    stackable = stack_class == 'StackCapable'
+    result = {'stackable': stackable}
+    stack = known_native(profile.get('semantics', {}).get('stack', {})) or {}
+    maximum = known_native(stack.get('stack_max', {}))
+    if stackable and maximum is not None and maximum != 100:
+        result['stack_maximum'] = maximum
+    return result
+
+
 def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:
     """Normal yields additionally require admitted carried custody and pickup physics."""
     semantics = native_item_semantics(ref, profile, {'Ground', 'CharacterInventory'})
@@ -638,7 +651,7 @@ def native_loot_yield_facts(ref: dict, profile: dict) -> dict | None:
     elif charges.get('state') != 'NOT_APPLICABLE':
         return None
     fact = {'item': ref, 'materializable': True, 'container_capacity': capacity,
-            'stackable': known_native(known_native(semantics['stack'])['stackable'])}
+            **native_loot_stack_facts(profile)}
     if count:
         fact['charges'] = count
     return fact
@@ -815,25 +828,21 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                 facts[key].update(native)
     # Complete the selected portable loot and source-qualified corpse closures.
     # A loot yield requires carried and Ground custody plus pickup physics.
-    def admit_yields(entries, *, retain_native_stacks=False):
+    def admit_yields(entries):
         for entry in entries:
             key = entry['item']['key']
             profiles = native_by_key.get(key, [])
             fact = facts[key]
-            if len(profiles) == 1 and (retain_native_stacks or not fact['materializable']):
+            if len(profiles) == 1 and not fact['materializable']:
                 native = native_loot_yield_facts(entry['item'], profiles[0])
                 if native is not None:
-                    if not fact['materializable']:
-                        fact.update(native)
-                    elif retain_native_stacks and native['stackable']:
-                        # Static facts omit stackability for uncharged Items.
-                        fact.setdefault('stackable', True)
-            admit_yields(entry.get('children', []), retain_native_stacks=retain_native_stacks)
+                    fact.update(native)
+            admit_yields(entry.get('children', []))
     for creature in sorted(slice_creatures & bindings.keys()):
         reference = bindings[creature]['loot']
         if reference is None:
             raise ValueError(f'Selected creature has no loot binding: {creature}')
-        admit_yields(used[reference['key']]['entries'], retain_native_stacks=True)
+        admit_yields(used[reference['key']]['entries'])
     for key, corpses in corpse_tables.items():
         if corpses & qualified_corpses:
             admit_yields(used[key]['entries'])
@@ -841,6 +850,24 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         binding = bindings.get(creature)
         if binding is not None and binding['loot'] is not None:
             admit_yields(used[binding['loot']['key']]['entries'])
+    # Every table reads the same exact carried Item stack policy, including
+    # yields that were materializable before any of the slice admissions.
+    for key in yield_keys:
+        fact = facts[key]
+        profiles = native_by_key.get(key, [])
+        if not fact['materializable'] or len(profiles) != 1:
+            continue
+        profile = profiles[0]
+        ref = fact['item']
+        exact = {'family': ref['family'], 'production_key': ref['key'],
+                 'revision_ref': ref['revision']}
+        admission = profile['admission']
+        if (profile['production_definition'] == exact
+                and admission['materializable'] is True
+                and 'CharacterInventory' in admission['legal_destinations']):
+            stack = native_loot_stack_facts(profile)
+            if stack and (stack['stackable'] or 'stackable' in fact):
+                fact.update(stack)
     # FORGECREATURE: this resource is added by the live fiend's death classification,
     # rather than by every creature's static loot table. Preserve core admission facts.
     sliver = facts.get('oteryn:item.tibia.i37109')
@@ -856,6 +883,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         if len(admitted) != 1:
             raise ValueError('Forge resource requires one exact native Item profile')
         sliver['materializable'] = admitted[0]['admission']['materializable'] is True
+        sliver.update(native_loot_stack_facts(admitted[0]))
         name(sliver['item'])
     if max(len(bindings), len(used), len(named)) > LOOT_RECORDS_MAX:
         raise ValueError('Loot section exceeds its record bound')

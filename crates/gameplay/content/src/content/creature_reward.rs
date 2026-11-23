@@ -92,7 +92,7 @@ pub struct CreatureRewardTable {
     rows: HashMap<String, Result<Arc<CreatureRewardRow>, NoSettlementReason>>,
     bosses: HashMap<String, BosstiaryBoss>,
     reward_boss_corpses: HashMap<String, Arc<CreatureRewardRow>>,
-    forge_sliver: Option<LootDefinitionRef>,
+    forge_sliver: Option<LootTableEntry>,
     daily_boss_equipment: HashSet<String>,
     encounter_facts: BTreeMap<String, CreatureEncounterFacts>,
     admitted_source_items: HashMap<u32, LootDefinitionRef>,
@@ -235,7 +235,7 @@ impl CreatureRewardTable {
     }
 
     /// The existing corpse loot admission owns the materializable Forge resource too.
-    pub fn forge_sliver(&self) -> Option<&LootDefinitionRef> {
+    pub fn forge_sliver(&self) -> Option<&LootTableEntry> {
         self.forge_sliver.as_ref()
     }
     #[cfg(any(test, feature = "test-support"))]
@@ -319,6 +319,8 @@ pub struct SectionItemFacts {
     #[serde(default)]
     pub stackable: bool,
     #[serde(default)]
+    pub stack_maximum: Option<std::num::NonZeroU32>,
+    #[serde(default)]
     pub creature_product: bool,
 }
 
@@ -398,7 +400,7 @@ fn lower_loot_entries(
                 container_capacity: facts.container_capacity,
                 charges: facts.charges,
                 stackable: facts.stackable,
-                corpse_stack_maximum: None,
+                corpse_stack_maximum: facts.stack_maximum,
                 subtype: entry.subtype,
                 unique: entry.unique,
                 creature_product: facts.creature_product,
@@ -656,7 +658,17 @@ impl CreatureRewardTable {
             .items
             .iter()
             .find(|facts| facts.item.key == "oteryn:item.tibia.i37109" && facts.materializable)
-            .map(|facts| facts.item.lower());
+            .map(|facts| LootTableEntry {
+                item: facts.item.lower(),
+                min_count: 1,
+                max_count: 1,
+                probability_ppm: Some(1_000_000),
+                details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                    stackable: facts.stackable,
+                    corpse_stack_maximum: facts.stack_maximum,
+                    ..Default::default()
+                },
+            });
         let admitted_source_items = section
             .items
             .iter()
@@ -1166,6 +1178,7 @@ mod private_loot_capacity_tests {
             ordinary_corpse_only: false,
             charges: None,
             stackable: false,
+            stack_maximum: None,
             creature_product: false,
         };
         assert!(
@@ -1278,6 +1291,7 @@ mod private_loot_tests {
             ordinary_corpse_only: false,
             charges: None,
             stackable: false,
+            stack_maximum: None,
             creature_product: false,
         };
         assert!(

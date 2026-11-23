@@ -4,6 +4,10 @@
 
 use sha2::{Digest, Sha256};
 
+use crate::stacking::stack_maximum;
+use oteryn_gameplay_domain::domain::item_definition::ItemStackClass;
+
+#[cfg(test)]
 use crate::item_transfer::GAMEITEM01_STACK_QUANTITY_MAX;
 
 mod boss;
@@ -148,7 +152,7 @@ pub enum LootPlanError {
     UnsupportedAlgorithm,
     /// The loot subtype of an uncharged, unstacked Item is beyond the one-byte fluid range.
     UnsupportedItemSubtype,
-    /// An entry's `min_count`/`max_count` is zero or out of order.
+    /// An entry has an invalid roll quantity or Item stack maximum.
     InvalidQuantityRange,
     /// An `IndependentBernoulliPpm` entry has no `probability_ppm`, or one
     /// above the one-million ppm scale.
@@ -177,7 +181,7 @@ impl std::fmt::Display for LootPlanError {
                 formatter.write_str("loot instance subtype requires durable state support")
             }
             Self::InvalidQuantityRange => {
-                formatter.write_str("loot entry has a zero or out-of-order quantity range")
+                formatter.write_str("loot entry has an invalid quantity range or stack maximum")
             }
             Self::InvalidProbability => {
                 formatter.write_str("loot entry has a missing or out-of-scale probability_ppm")
@@ -338,6 +342,61 @@ struct RollState {
     bytes: usize,
 }
 
+impl RollState {
+    fn push_instances(
+        &mut self,
+        entry: &LootTableEntry,
+        chance: u64,
+        draw_ordinal: u32,
+        parent: Option<usize>,
+        placement_ordinal: &mut u32,
+    ) -> Result<(), LootPlanError> {
+        let stack = if entry.details.stackable {
+            ItemStackClass::Stackable {
+                proven_maximum: entry
+                    .details
+                    .corpse_stack_maximum
+                    .map(std::num::NonZeroU32::get),
+            }
+        } else {
+            ItemStackClass::NonStackable
+        };
+        let (maximum, stackable) =
+            stack_maximum(stack).map_err(|_| LootPlanError::InvalidQuantityRange)?;
+        let quantity = match entry.details.charges {
+            _ if entry.details.container_capacity.is_some() => 1,
+            Some(charges) if stackable => charges,
+            Some(_) => 1,
+            None => quantity_in_range(chance, entry.min_count, entry.max_count),
+        };
+        if quantity == 0 {
+            return Err(LootPlanError::InvalidQuantityRange);
+        }
+        for stack_index in 0..quantity.div_ceil(maximum) {
+            if self.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
+                return Err(LootPlanError::TooManyPlanItems);
+            }
+            let purpose = &entry.item.production_key;
+            self.bytes =
+                charge_plan_bytes(self.bytes, entry_footprint_bytes(&entry.item, purpose))?;
+            *placement_ordinal += 1;
+            self.entries.push(LootPlanEntry {
+                item: entry.item.clone(),
+                quantity: (quantity - stack_index * maximum).min(maximum),
+                draw_ordinal: draw_ordinal + stack_index * STACK_MINT_ORDINAL_STRIDE,
+                purpose_key: purpose.clone(),
+                parent,
+                placement_ordinal: *placement_ordinal,
+                subtype: entry.details.subtype,
+                charges: entry.details.charges,
+                unique: entry.details.unique,
+                stackable,
+            });
+        }
+        Ok(())
+    }
+}
+
 fn roll_entries(
     death: LootPlanDeathKey,
     reference: &LootDefinitionRef,
@@ -385,49 +444,8 @@ fn roll_entries(
             state.ordinal += validate_tree(&entry.details.children, 0)? as u32;
             continue;
         }
-        let quantity = if entry.details.container_capacity.is_some() {
-            // Donor containers are non-stackable: their count is not a stack quantity.
-            1
-        } else {
-            match entry.details.charges {
-                Some(charges) if entry.details.stackable => charges,
-                Some(_) => 1,
-                None => quantity_in_range(chance, entry.min_count, entry.max_count),
-            }
-        };
-        if quantity == 0 {
-            return Err(LootPlanError::InvalidQuantityRange);
-        }
-        let maximum = if entry.details.stackable {
-            entry
-                .details
-                .corpse_stack_maximum
-                .map_or(GAMEITEM01_STACK_QUANTITY_MAX, std::num::NonZeroU32::get)
-        } else {
-            quantity
-        };
         let index = state.entries.len();
-        for stack_index in 0..quantity.div_ceil(maximum) {
-            if state.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
-                return Err(LootPlanError::TooManyPlanItems);
-            }
-            let purpose = &entry.item.production_key;
-            state.bytes =
-                charge_plan_bytes(state.bytes, entry_footprint_bytes(&entry.item, purpose))?;
-            placement_ordinal += 1;
-            state.entries.push(LootPlanEntry {
-                item: entry.item.clone(),
-                quantity: (quantity - stack_index * maximum).min(maximum),
-                draw_ordinal: draw_ordinal + stack_index * STACK_MINT_ORDINAL_STRIDE,
-                purpose_key: purpose.clone(),
-                parent,
-                placement_ordinal,
-                subtype: entry.details.subtype,
-                charges: entry.details.charges,
-                unique: entry.details.unique,
-                stackable: entry.details.stackable,
-            });
-        }
+        state.push_instances(entry, chance, draw_ordinal, parent, &mut placement_ordinal)?;
         if entry.details.unique {
             state.unique.insert(entry.item.production_key.clone());
         }
@@ -1078,7 +1096,10 @@ mod tests {
                     min_count: 1,
                     max_count: 4,
                     probability_ppm: Some(903_036),
-                    details: Default::default(),
+                    details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                        stackable: true,
+                        ..Default::default()
+                    },
                 },
             ],
         }
@@ -1406,7 +1427,8 @@ mod tests {
     #[test]
     fn quantity_draw_stays_within_the_entry_range() {
         let table_ref = table_ref("oteryn:loot.quantity.table");
-        let table = one_entry_table("oteryn:item.quantity.stack", 3, 9, Some(1_000_000));
+        let mut table = one_entry_table("oteryn:item.quantity.stack", 3, 9, Some(1_000_000));
+        table.entries[0].details.stackable = true;
         for seed in 0..40_u8 {
             let plan = plan_creature_loot(death_key(seed), &table_ref, &table).expect("plan");
             let entry = plan.entries.first().expect("guaranteed entry");
@@ -1499,7 +1521,10 @@ mod daily_boost_tests {
                     min_count: 3,
                     max_count: 3,
                     probability_ppm: Some(1_000_000),
-                    details: Default::default(),
+                    details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                        stackable: true,
+                        ..Default::default()
+                    },
                 },
             ],
         };
@@ -1880,7 +1905,9 @@ mod w22a_tests {
     fn planned_rolls_apply_the_loot_factor_and_take_the_count_from_the_chance_draw()
     -> Result<(), LootPlanError> {
         let reference = super::tests::table_ref("oteryn:loot.factor.table");
-        let table = super::tests::one_entry_table("oteryn:item.factor.coin", 1, 4, Some(500_000));
+        let mut table =
+            super::tests::one_entry_table("oteryn:item.factor.coin", 1, 4, Some(500_000));
+        table.entries[0].details.stackable = true;
         let (mut above, mut below) = (false, false);
         for actor in 0..4_096_u32 {
             let death = LootPlanDeathKey::new([3; 16], [4; 16], 1, actor, 1);
@@ -2012,5 +2039,206 @@ mod w22c_tests {
         // Three activators: 300 / 3^0.7 = 139.04.
         assert_eq!(wealth_duplex_extra_rolls(3, 39), 2);
         assert_eq!(wealth_duplex_extra_rolls(3, 40), 1);
+    }
+}
+
+#[cfg(test)]
+mod admitted_loot_tests {
+    use super::*;
+    use crate::item_ref_admission::generation_item_facts;
+    use crate::item_transfer::{
+        InventoryItem, ItemTransferDestination, PlanInput, plan_transfer, stack_maximum,
+    };
+    use oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables;
+    use oteryn_gameplay_content::content::native_gameplay_test_world_id;
+    use oteryn_gameplay_domain::domain::item_definition::{
+        ItemDefinitionFacts, ItemStackClass, TypedDefinitionRef,
+    };
+
+    fn yields(entries: &[LootTableEntry]) -> impl Iterator<Item = &LootTableEntry> {
+        let mut pending = entries.iter().rev().collect::<Vec<_>>();
+        std::iter::from_fn(move || {
+            let entry = pending.pop()?;
+            pending.extend(entry.details.children.iter().rev());
+            Some(entry)
+        })
+    }
+
+    #[test]
+    fn admitted_loot_preserves_maximum_rolls_in_transferable_instances()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (controller, _) = activated_with_loot_tables(native_gameplay_test_world_id()?, None);
+        let native = controller
+            .active()
+            .and_then(|generation| generation.native_gameplay())
+            .ok_or("missing active native gameplay")?;
+        let rewards = native.reward_table();
+        let slivers = LootTableEntry {
+            max_count: (0..=u8::MAX)
+                .map(oteryn_gameplay_domain::domain::forge_creature::slivers)
+                .map(u32::from)
+                .max()
+                .ok_or("missing Fiendish sliver count")?,
+            ..rewards
+                .forge_sliver()
+                .ok_or("missing admitted sliver")?
+                .clone()
+        };
+        let backpack = ItemDefinitionFacts {
+            definition: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "fixture:backpack".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            stack: ItemStackClass::NonStackable,
+            container_capacity: Some(1),
+            container_slot_equip_pattern: true,
+            weight: None,
+        };
+        let slot = InventoryItem {
+            item_instance_id: [1; 16],
+            definition: backpack.definition.clone(),
+            quantity: 1,
+        };
+        let mut failures = Vec::new();
+        let mut coverage = [0, 0];
+        let mut reviewed_yields = vec![
+            (
+                "oteryn:creature.evil_prospector",
+                "oteryn:item.tibia.i8092",
+                false,
+            ),
+            (
+                "oteryn:creature.glooth_fairy",
+                "oteryn:item.tibia.i21143",
+                true,
+            ),
+            (
+                "oteryn:creature.glooth_fairy",
+                "oteryn:item.tibia.i21144",
+                true,
+            ),
+            (
+                "oteryn:creature.vok_the_freakish",
+                "oteryn:item.tibia.i1781",
+                true,
+            ),
+            ("oteryn:creature.rat", "oteryn:item.tibia.i37109", false),
+        ];
+        for record in &native.creature_profiles().records {
+            let creature = &record.profile.target.key;
+            let Ok(row) = rewards.row(creature) else {
+                continue;
+            };
+            let Some(reference) = &row.loot_table_ref else {
+                continue;
+            };
+            let personal = rewards.reward_boss_corpse(creature).is_some();
+            coverage[usize::from(personal)] += 1;
+            // Any admitted ordinary creature can carry the separately appended Fiendish roll.
+            let fiendish = (creature == "oteryn:creature.rat").then_some(&slivers);
+            for entry in yields(&row.loot_table.entries).chain(fiendish) {
+                if entry.probability_ppm == Some(0)
+                    || (is_surprise_bag(entry) && !is_global_event_loot_table(reference))
+                {
+                    continue;
+                }
+                let definition = TypedDefinitionRef {
+                    family: entry.item.family.clone(),
+                    production_key: entry.item.production_key.clone(),
+                    revision_ref: entry.item.revision_ref.clone(),
+                };
+                let Ok(item) = generation_item_facts(native, &definition) else {
+                    // Legacy materialization alone cannot supply an active pickup policy.
+                    continue;
+                };
+                if item.stack == ItemStackClass::Unknown {
+                    continue;
+                }
+                let (maximum, stackable) = stack_maximum(item.stack).map_err(|reason| {
+                    format!("{creature}, {}: {reason:?}", definition.production_key)
+                })?;
+                reviewed_yields.retain(|&(required_creature, required_item, required_personal)| {
+                    (required_creature, required_item, required_personal)
+                        != (
+                            creature.as_str(),
+                            definition.production_key.as_str(),
+                            personal,
+                        )
+                });
+                let expected = match entry.details.charges {
+                    _ if entry.details.container_capacity.is_some() => 1,
+                    Some(charges) if stackable => charges,
+                    Some(_) => 1,
+                    None => entry.max_count,
+                };
+                // Force a successful maximum roll in isolation so independent table
+                // rolls cannot exhaust a corpse or suppress another unique drop.
+                let mut source = entry.clone();
+                source.min_count = source.max_count;
+                source.probability_ppm = Some(1_000_000);
+                source.details.gut_bonus_hundredths = 1_000;
+                source.details.children.clear();
+                let table = LootTableDefinition {
+                    algorithm: row.loot_table.algorithm,
+                    entries: vec![source],
+                };
+                let plan = if personal {
+                    plan_boss_loot([1; 16], [2; 16], reference, &table, 2.0, true)?
+                } else {
+                    plan_creature_loot(
+                        LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+                        reference,
+                        &table,
+                    )?
+                };
+                let mut total = 0;
+                let mut ordinals = std::collections::HashSet::new();
+                for planned in &plan.entries {
+                    let source = InventoryItem {
+                        item_instance_id: [2; 16],
+                        definition: definition.clone(),
+                        quantity: planned.quantity,
+                    };
+                    if let Err(reason) = plan_transfer(&PlanInput {
+                        destination: ItemTransferDestination::MainBackpack,
+                        item: &item,
+                        backpack: Some(&backpack),
+                        source: &source,
+                        source_has_entries: false,
+                        slot: Some(&slot),
+                        entries: &[],
+                    }) {
+                        failures.push(format!(
+                            "{creature}, {}: {} units refused with {reason:?}",
+                            definition.production_key, planned.quantity
+                        ));
+                    }
+                    assert!(ordinals.insert(planned.draw_ordinal), "{creature}");
+                    assert_eq!(planned.charges, entry.details.charges, "{creature}");
+                    total += planned.quantity;
+                }
+                if total != expected
+                    || plan.entries.len() != expected.div_ceil(maximum) as usize
+                    || entry.details.stackable != stackable
+                {
+                    failures.push(format!(
+                        "{creature}, {}: {} units in {} instances (stackable {}), expected {expected} units in {} instances (stackable {stackable})",
+                        definition.production_key,
+                        total,
+                        plan.entries.len(),
+                        entry.details.stackable,
+                        expected.div_ceil(maximum),
+                    ));
+                }
+            }
+        }
+        assert!(coverage.iter().all(|count| *count > 0), "{coverage:?}");
+        assert!(
+            reviewed_yields.is_empty(),
+            "missing admitted yields: {reviewed_yields:?}"
+        );
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+        Ok(())
     }
 }

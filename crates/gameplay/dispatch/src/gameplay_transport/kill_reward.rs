@@ -2385,7 +2385,7 @@ pub fn record_creature_kill(
     }
     if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _difficulty)) = forge_kind
     {
-        let Some(item) = sink.rewards.forge_sliver() else {
+        let Some(sliver) = sink.rewards.forge_sliver() else {
             refuse("forge_sliver_inadmissible", &creature);
             return;
         };
@@ -2395,11 +2395,9 @@ pub fn record_creature_kill(
                 .loot_table
                 .entries
                 .push(crate::combat::LootTableEntry {
-                    item: item.clone(),
                     min_count: count,
                     max_count: count,
-                    probability_ppm: Some(1_000_000),
-                    details: Default::default(),
+                    ..sliver.clone()
                 });
         }
     }
