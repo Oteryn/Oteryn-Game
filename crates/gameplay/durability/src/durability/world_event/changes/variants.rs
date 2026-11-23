@@ -1,6 +1,7 @@
 //! The current reset decision, Character fence, and visit bookkeeping share one transaction.
 use super::*;
 use crate::durability::{
+    character_last_position::{FinalLastPosition, LastPositionKey, LastPositionWrite, upsert_last_position},
     character_progression::{assert_item_only_fence, assert_runtime_scope_fence},
     runtime_scope_assignment::NodeIncarnationProof,
 };
@@ -21,6 +22,7 @@ pub struct PassageStep {
     pub position: Position,
     pub command: CommandRef,
     pub binding: [u8; 32],
+    pub arrival: FinalLastPosition,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -64,6 +66,7 @@ impl DurabilityRoot {
     ) -> Result<Option<Position>, CharacterProgressionError> {
         if step.command.game_session_id() != fence.game_session_id
             || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            || step.arrival.record.world_id != fence.runtime_scope.world_id()
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -92,11 +95,27 @@ impl DurabilityRoot {
             if portal.premium || portal.promoted || portal.min_level != 0 {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            let admitted = if portal.exit || !matches!(definition.key.as_str(), "warpath" | "spider_nest") {
-                true
-            } else {
-                record_entry(&mut tx, fence, step, &definition.key).await?
-            };
+            let (x, y, z) = portal.destination;
+            let cell = step.arrival.record.cell;
+            if (cell.x, cell.y, cell.floor) != (i32::from(x), i32::from(y), i16::from(z)) {
+                return Ok(Ok(None));
+            }
+            let guarded = !portal.exit && matches!(definition.key.as_str(), "warpath" | "spider_nest");
+            let admitted = !guarded || record_entry(&mut tx, fence, step, &definition.key).await?;
+            if guarded && admitted {
+                let arrival = step.arrival;
+                let key = LastPositionKey {
+                    character_lease_generation: fence.character_lease_generation,
+                    write_sequence: arrival.write_sequence,
+                };
+                let saved = upsert_last_position(&mut tx, fence.character_id.as_bytes(), key, &arrival.record).await?;
+                if saved != LastPositionWrite::Written && !(saved == LastPositionWrite::Superseded
+                    && crate::durability::character_last_position::load_last_position(&mut tx, fence.character_id)
+                        .await?.is_some_and(|stored| stored.key == key && stored.record == arrival.record))
+                {
+                    return Ok(Ok(None));
+                }
+            }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(admitted.then_some(portal.destination)))
         })).await?
@@ -166,9 +185,12 @@ async fn record_entry(
                 .fetch_one(&mut **tx).await?;
             let previous: Option<i64> = sqlx::query_scalar("SELECT last_entry_attempt_ms FROM game_daily_variant_warpath WHERE character_id=encode($1,'hex')::uuid")
                 .bind(character).fetch_optional(&mut **tx).await?;
-            sqlx::query("INSERT INTO game_daily_variant_warpath VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(character_id) DO UPDATE SET last_entry_attempt_ms=greatest(game_daily_variant_warpath.last_entry_attempt_ms,excluded.last_entry_attempt_ms)")
-                .bind(character).bind(now).execute(&mut **tx).await?;
-            previous.is_none_or(|previous| now.saturating_sub(previous) >= WARPATH_COOLDOWN_MS)
+            let allowed = previous.is_none_or(|previous| now.saturating_sub(previous) >= WARPATH_COOLDOWN_MS);
+            if allowed {
+                sqlx::query("INSERT INTO game_daily_variant_warpath VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(character_id) DO UPDATE SET last_entry_attempt_ms=greatest(game_daily_variant_warpath.last_entry_attempt_ms,excluded.last_entry_attempt_ms)")
+                    .bind(character).bind(now).execute(&mut **tx).await?;
+            }
+            allowed
         }
         "spider_nest" => {
             let deaths: i64 = sqlx::query_scalar("SELECT coalesce(sum(deaths),0)::bigint FROM game_daily_variant_spider_progress WHERE character_id=encode($1,'hex')::uuid")
