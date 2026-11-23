@@ -1942,6 +1942,7 @@ pub fn record_creature_kill(
                     super::npc_trade_command::unix_ms_now(),
                 );
                 if (boss
+                    || runtime.is_raid_boss(target)
                     || runtime
                         .boss_spawns()
                         .iter()

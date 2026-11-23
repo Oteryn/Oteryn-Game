@@ -155,6 +155,7 @@ async fn exchange_kind(
 
 #[test]
 fn timed_item_postgres_wire_charges_replay_repair_and_owner_expiry() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(|| scenario().map_err(|e| e.to_string()))?

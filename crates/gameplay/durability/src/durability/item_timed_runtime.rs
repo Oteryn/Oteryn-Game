@@ -230,12 +230,15 @@ impl DurabilityRoot {
             let inspect = matches!(request.operation, TimedOperation::Inspect);
             if !inspect {
                 sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex'),158))")
-                .bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
-            match receipt(&mut tx, fence.game_session_id, request.transaction_id, request.binding).await {
-                Ok(Some(result)) => { tx.commit(deadline).await?; return Ok(Ok(result)); },
-                Ok(None) => (),
-                Err(TimedWriteError::Unavailable(error)) => return Err(error),
-                Err(error) => return Ok(Err(error)),
+                    .bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
+                let replay = match receipt(&mut tx, fence.game_session_id, request.transaction_id, request.binding).await {
+                    Ok(replay) => replay,
+                    Err(TimedWriteError::Unavailable(error)) => return Err(error),
+                    Err(error) => return Ok(Err(error)),
+                };
+                if let Some(result) = replay {
+                    tx.commit(deadline).await?;
+                    return Ok(Ok(result));
                 }
             }
             if !assert_timed_fence(&mut tx, &fence, &node, house_origin).await? {

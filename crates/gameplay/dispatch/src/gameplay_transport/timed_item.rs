@@ -84,7 +84,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return refusal(TimedDisposition::Rejected);
         };
         if intent.action != TimedAction::Inspect {
-            match self
+            let replay = match self
                 .root
                 .read_timed_command(
                     self.character,
@@ -94,25 +94,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             {
-                Ok(Some(result)) => {
-                    let mut clocks = self.states.timed_items.sessions.lock().await;
-                    if let Some(clock) = clocks.get_mut(&command.game_session_id) {
-                        for lane in clock.items.values_mut() {
-                            if let Some((request, at)) = &lane.pending
-                                && request.transaction_id == transaction_id
-                            {
-                                if result.disposition == TimedDisposition::Ok {
-                                    lane.at_ms = *at;
-                                }
-                                lane.pending = None;
-                            }
-                        }
-                    }
-                    return encode_timed_item_result(result).ok();
-                }
-                Ok(None) => (),
+                Ok(replay) => replay,
                 Err(TimedWriteError::Unavailable(_)) => return None,
                 Err(_) => return refusal(TimedDisposition::Rejected),
+            };
+            if let Some(result) = replay {
+                let mut clocks = self.states.timed_items.sessions.lock().await;
+                if let Some(clock) = clocks.get_mut(&command.game_session_id) {
+                    for lane in clock.items.values_mut() {
+                        if let Some((request, at)) = &lane.pending
+                            && request.transaction_id == transaction_id
+                        {
+                            if result.disposition == TimedDisposition::Ok {
+                                lane.at_ms = *at;
+                            }
+                            lane.pending = None;
+                        }
+                    }
+                }
+                return encode_timed_item_result(result).ok();
             }
         }
         let Some(ItemKey::Instance(item)) = target else {

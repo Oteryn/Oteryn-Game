@@ -171,6 +171,26 @@ impl Client {
         Ok(())
     }
 
+    async fn next_boss_defeat(&mut self) -> TestResult<String> {
+        use oteryn_protocol_oteryn::zones_nologout::{self, ServerMessage};
+        tokio::time::timeout(PASS, async {
+            loop {
+                let frame = read_frame(&mut self.stream).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() != MessageType::StateDelta {
+                    continue;
+                }
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+                if delta.domain_id == zones_nologout::STATE_DOMAIN_SERVER_MESSAGES
+                    && delta.delta_type == 1
+                    && let ServerMessage::BossDefeated(key) = zones_nologout::decode_server_message(delta.payload).map_err(debug)?
+                {
+                    return TestResult::Ok(key);
+                }
+            }
+        }).await?
+    }
+
     /// The next domain 98 delta, waiting on the server's visibility cadence.
     async fn next_delta(&mut self) -> TestResult<(u64, TrackerSnapshot)> {
         while self.deltas.is_empty() {
@@ -674,9 +694,12 @@ fn scenario() -> TestResult {
         connect(&reopened, &mut admitted, async |mut client| {
             let (_, bosstiary) = client.join().await?.ok_or("tracker snapshot")?;
             assert!(bosstiary.entries.is_empty());
-            {
+            let boss = {
                 let mut runtime = reopened.runtime.lock().await;
-                let boss = runtime.admit_pinned_monster_lab_creature(OPEN_RAT, BOSS, 1).map_err(debug)?;
+                let health = runtime.companion_policy(BOSS).map_err(debug)?.maximum_health;
+                let boss = runtime.admit_pinned_monster_lab_creature(OPEN_RAT, BOSS, health).map_err(debug)?;
+                runtime.install_creature_policy(boss, BOSS).map_err(debug)?;
+                runtime.commit_monster_lab_damage(boss, b"fixture:ferumbras.wound", health - 1).map_err(debug)?;
                 let target = EntityRef {
                     identity: boss.placement_identity(),
                     generation: boss.actor_local_generation(),
@@ -687,23 +710,48 @@ fn scenario() -> TestResult {
                     ),
                     oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
                 );
-            }
+                boss
+            };
             reopened.refresh_attack_weapon(actor, session).await;
             reopened.drain_auto_attacks().await;
-            let event = tokio::time::timeout(PASS, async {
-                loop {
-                    let frame = read_frame(&mut client.stream).await?;
-                    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
-                    if envelope.message_type() != MessageType::StateDelta {
-                        continue;
-                    }
-                    let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
-                    if delta.domain_id == 57 && delta.delta_type == 1 && delta.payload.first() == Some(&42) {
-                        break TestResult::Ok(oteryn_protocol_oteryn::zones_nologout::decode_server_message(delta.payload).map_err(debug)?);
-                    }
+            assert_eq!(client.next_boss_defeat().await?, BOSS);
+
+            // A raid-owned boss need not have a tracker race or personal boss loot.
+            assert!(reopened.reward_table().boss(RAT).is_none());
+            assert_ne!(runtime.lock().await.companion_policy(RAT).map_err(debug)?.reward_boss, Some(true));
+            {
+                use oteryn_gameplay_entities::carrier::{NativeRaidSpawnSpec, RaidSpawnIdentity, RaidSpawnOutcome};
+                use crate::gameplay_transport::kill_reward::{KillSink, record_creature_kill};
+                let mut runtime = reopened.runtime.lock().await;
+                if runtime.companion_snapshot_including_dead(boss).is_ok() {
+                    runtime.remove_test_actor(boss).map_err(debug)?;
                 }
-            }).await??;
-            assert_eq!(event, oteryn_protocol_oteryn::zones_nologout::ServerMessage::BossDefeated(BOSS.into()));
+                let policy = runtime.companion_policy(RAT).map_err(debug)?;
+                let spec = NativeRaidSpawnSpec::qualified(RAT, &policy.definition_revision, runtime.content_pin().server_artifact_digest(), true).map_err(debug)?;
+                let health = policy.maximum_health;
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                let raid = runtime.realize_raid_spawn(stamp, RaidSpawnIdentity {
+                    firing_id: id(98), wave: 0, entry: 0, index: 0,
+                }, &spec, Some(OPEN_RAT), |_, _| Some(true)).map_err(debug)?;
+                let RaidSpawnOutcome::Placed(raid_boss) = raid.outcome else {
+                    return Err("raid boss was not placed".into());
+                };
+                runtime.commit_monster_lab_damage(raid_boss, b"fixture:raid-boss.lethal", health).map_err(debug)?;
+                let attack = reopened.states.attack.lock().await;
+                let sink = KillSink {
+                    queue: attack.kills(),
+                    prey: None,
+                    activity: &[],
+                    rewards: reopened.reward_table(),
+                    charms: None,
+                };
+                let lethal = crate::combat::CapturedRewardPrincipal {
+                    actor, session, character: crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    lease_generation: fence.character_lease_generation,
+                };
+                record_creature_kill(&mut runtime, sink, raid_boss, lethal, reopened.owner_now().get() / 1000, Some(reopened.owner_now()));
+            }
+            assert_eq!(client.next_boss_defeat().await?, RAT);
             Ok(client)
         }).await?;
 
