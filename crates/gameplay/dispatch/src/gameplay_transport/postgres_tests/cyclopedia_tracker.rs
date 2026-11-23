@@ -655,9 +655,18 @@ fn scenario() -> TestResult {
         })
         .await?;
 
-        // P22c: a rebuilt owner holds no tracker state; the lists come from PostgreSQL.
+        // P22c: the rebuilt owner reloads trackers from PostgreSQL. Keep the command
+        // stream so the existing GameSession can reconnect with its current continuity.
+        let commands = std::mem::take(
+            &mut std::sync::Arc::get_mut(&mut owner.states)
+                .expect("isolated fixture state")
+                .command_ingress,
+        );
         drop(owner);
-        let reopened = owner!();
+        let mut reopened = owner!();
+        std::sync::Arc::get_mut(&mut reopened.states)
+            .expect("isolated rebuilt fixture state")
+            .command_ingress = commands;
         // The join (`serve/snapshot.rs`) and the command route call these authority methods.
         let (bestiary, bosstiary) = decode_domain_snapshot(
             &reopened
@@ -760,13 +769,13 @@ fn scenario() -> TestResult {
             .fetch_one(&harness.pool)
             .await?;
         assert_eq!(access, (true, true, false));
-        eprintln!(
-            "CYCLOPEDIA TRACKER PostgreSQL: dispatch, kill gate, live refresh and restart verified"
-        );
         drop(reopened);
         drop(authority);
         drop(seal);
         harness.cleanup().await?;
+        eprintln!(
+            "POSTGRES_CASE_COMPLETED cyclopedia_tracker_postgres_dispatch_kill_refresh_and_restart"
+        );
         Ok(())
     })
 }
