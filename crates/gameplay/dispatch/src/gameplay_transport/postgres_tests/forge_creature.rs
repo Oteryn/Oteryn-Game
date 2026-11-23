@@ -3,7 +3,7 @@ use super::party_xp_fixtures::{self as party_xp, Case};
 use crate::bestiary_postgres_harness::TestResult;
 
 #[test]
-fn forge_creature_postgres_real_dispatch_party_cap_and_replay() -> TestResult {
+fn creatures_forge_dust_draws_per_recipient_and_replays() -> TestResult {
     party_xp::run(Case::ForgeReplay)
 }
 #[test]
@@ -42,4 +42,9 @@ fn forge_creature_postgres_real_dispatch_foreign_contributor_gets_full_dust() ->
 #[test]
 fn elite_dust_real_party_shared_off_excludes_non_damaging_member() -> TestResult {
     party_xp::run(Case::EliteNoShared)
+}
+
+#[test]
+fn creatures_fiendish_sliver_mints_once_when_nominal_roll_would_miss() -> TestResult {
+    party_xp::run(Case::ForgeSliver)
 }

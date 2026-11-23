@@ -68,6 +68,8 @@ fn apply_hunting_stamina_to_loot(
         .is_some_and(|minutes| !oteryn_gameplay_characters::stamina::hunting_loot_allowed(minutes))
     {
         loot_table.entries.clear();
+        // No ordinary roll remains; death guarantees are appended afterward.
+        loot_table.algorithm = crate::combat::LootSelectionAlgorithm::IndependentBernoulliPpm;
     }
 }
 
@@ -97,6 +99,12 @@ struct PreparedKillExperience {
     amount: oteryn_simulation_determinism::ExactI64,
 }
 
+#[derive(Debug)]
+struct PreparedKillLoot {
+    table: crate::combat::LootTableDefinition,
+    tutorial: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+}
+
 /// One captured kill awaiting its settle.
 #[derive(Debug, Clone)]
 pub struct PendingKillSettlement {
@@ -118,6 +126,10 @@ pub struct PendingKillSettlement {
     source_drop_rates: Option<oteryn_gameplay_foundation::scheduled_events::EventRates>,
     /// The copied Quest callback and ordinary drain must replay the same XP input.
     prepared_experience: Arc<OnceLock<PreparedKillExperience>>,
+    /// The effective table and one-shot claim are frozen before the first MINT attempt.
+    prepared_loot: Arc<OnceLock<PreparedKillLoot>>,
+    boss_clock_settled: Arc<OnceLock<()>>,
+    forge_sliver: Option<Arc<crate::combat::LootTableEntry>>,
     source_completion: Option<
         oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathCompletion,
     >,
@@ -279,6 +291,9 @@ impl PendingKillSettlement {
             source_death_pending: false,
             source_drop_rates: None,
             prepared_experience: Arc::default(),
+            prepared_loot: Arc::default(),
+            boss_clock_settled: Arc::default(),
+            forge_sliver: None,
             source_completion: None,
             no_progression_logged: false,
         }
@@ -340,7 +355,6 @@ pub(super) async fn prepare_experience(
 #[derive(Debug, Clone)]
 pub(super) struct ForgeDeath {
     pub kind: crate::domain::forge_creature::ForgeCreature,
-    pub roll: u8,
     pub origin: crate::foundation::MovementLocalPosition,
     pub recipients: Vec<(
         ExactActorRef,
@@ -351,6 +365,23 @@ pub(super) struct ForgeDeath {
 
 /// A principal identity: the captured session and its Character lease generation.
 type Principal = (GameSessionId, u64);
+
+type BossSpawnCycle = (String, u64, crate::content::BossPolicy);
+
+struct QueuedKillHead {
+    principal: Principal,
+    death: CreatureDeathOccurrenceKey,
+    boss: Option<(BossSpawnCycle, Arc<OnceLock<()>>)>,
+}
+
+impl PendingKillSettlement {
+    fn pending_boss_clock(&self) -> Option<&BossSpawnCycle> {
+        if self.boss_clock_settled.get().is_some() {
+            return None;
+        }
+        self.ground.boss_spawn.as_ref()
+    }
+}
 
 fn principal_of(entry: &PendingKillSettlement) -> Principal {
     (
@@ -918,7 +949,7 @@ impl KillSettlementQueue {
 
     /// A parked or in-flight oldest death must settle before any later death can
     /// change a shared member's bounty and therefore the oldest death's bonus.
-    fn ordered_principal(&self) -> Result<Option<Principal>, ()> {
+    fn ordered_head(&self) -> Result<Option<QueuedKillHead>, ()> {
         let mut state = self.state();
         state.prune_accepted_order();
         let Some(death) = state.accepted_order.front() else {
@@ -935,8 +966,22 @@ impl KillSettlementQueue {
             .queued
             .iter()
             .find(|entry| entry.facts.death == *death)
-            .map(|entry| Some(principal_of(entry)))
+            .map(|entry| {
+                Some(QueuedKillHead {
+                    principal: principal_of(entry),
+                    death: entry.facts.death,
+                    boss: entry
+                        .pending_boss_clock()
+                        .map(|boss| (boss.clone(), Arc::clone(&entry.boss_clock_settled))),
+                })
+            })
             .ok_or(())
+    }
+
+    #[cfg(test)]
+    fn ordered_principal(&self) -> Result<Option<Principal>, ()> {
+        self.ordered_head()
+            .map(|head| head.map(|head| head.principal))
     }
 
     /// A sealed park predates the release commit point, so put it back before
@@ -1430,10 +1475,10 @@ impl KillSettlementQueue {
 
     /// Free `session`'s queued and parked entries whose principal has no live session: the
     /// session is over (`live == None`), or the entry's lease generation is not the live one.
-    /// Their marks go with them.
-    pub fn discard_gone(&self, session: GameSessionId, live: Option<u64>) {
+    /// Their marks go with them. A pending boss clock survives loss of its loot recipient.
+    pub fn discard_gone(&self, session: GameSessionId, live: Option<u64>) -> bool {
         let gone_principal = |(owner, lease): Principal| owner == session && Some(lease) != live;
-        let gone = {
+        let (gone, clock_pending) = {
             let mut state = self.state();
             let (mut gone, kept) = std::mem::take(&mut state.queued)
                 .into_iter()
@@ -1448,14 +1493,20 @@ impl KillSettlementQueue {
                     .into_iter()
                     .flat_map(|mark| mark.parked.into_iter().map(|(entry, _)| entry)),
             );
+            let (pending, gone): (Vec<_>, Vec<_>) = gone
+                .into_iter()
+                .partition(|entry| entry.pending_boss_clock().is_some());
+            let clock_pending = !pending.is_empty();
+            state.queued.extend(pending);
             for entry in &gone {
                 state.refuse_source_drop(entry, SourceDropRefusalReason::PrincipalGone);
             }
-            gone
+            (gone, clock_pending)
         };
         for entry in gone {
             refuse("principal_gone", &entry.creature);
         }
+        clock_pending
     }
 
     /// The killed actor of every queued, parked or in-flight entry: the corpse projections the
@@ -1607,6 +1658,7 @@ impl KillSettlementQueue {
                 // point; capacity therefore has to cover every direct and nested candidate.
                 mints
                     .checked_add(entry.callback_loot.len())
+                    .and_then(|mints| mints.checked_add(usize::from(entry.forge_sliver.is_some())))
                     .and_then(|mints| {
                         mints.checked_add(
                             usize::from(entry.creature == "oteryn:creature.the_corruptor") * 3,
@@ -1652,24 +1704,6 @@ impl KillSettlementQueue {
             inflight_before,
             event_rates,
         }))
-    }
-
-    /// W22c: reserve `extra` more loot MINTs for the in-flight `death`. `false` reserves
-    /// nothing: the death is not in flight or the scope has no room for them now.
-    pub fn reserve_extra_loot_mints(
-        &self,
-        death: CreatureDeathOccurrenceKey,
-        extra: usize,
-    ) -> bool {
-        let mut state = self.state();
-        if !state.in_flight.iter().any(|(held, _, _, _)| *held == death)
-            || check_inflight_loot_mint_capacity(state.reserved_loot_mints, extra).is_err()
-        {
-            return false;
-        }
-        state.reserved_loot_mints += extra;
-        state.extra_loot_mints.push((death, extra));
-        true
     }
 
     /// Top up this death's existing take and extra reservations to its frozen
@@ -2248,7 +2282,11 @@ pub fn record_creature_kill(
                 // donor. Missing a native corpse row must not lose these points.
                 // A missing native corpse cannot erase the independently frozen
                 // Prey kill counter. Its actual settled loot value remains zero.
-                if echo.is_some() || prey_checkpoint.is_some() || world_change.is_some() {
+                if echo.is_some()
+                    || prey_checkpoint.is_some()
+                    || world_change.is_some()
+                    || ground.boss_spawn.is_some()
+                {
                     accept_encounter_kill(
                         runtime,
                         sink.queue,
@@ -2284,6 +2322,9 @@ pub fn record_creature_kill(
                             source_death_pending: false,
                             source_drop_rates: None,
                             prepared_experience: Arc::default(),
+                            prepared_loot: Arc::default(),
+                            boss_clock_settled: Arc::default(),
+                            forge_sliver: None,
                             source_completion: None,
                             no_progression_logged: false,
                         },
@@ -2438,26 +2479,29 @@ pub fn record_creature_kill(
             }
         }
     }
-    if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _difficulty)) = forge_kind
+    let forge_sliver = if !top.is_gone()
+        && let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _)) = forge_kind
     {
         let Some(item) = sink.rewards.forge_sliver() else {
             refuse("forge_sliver_inadmissible", &creature);
             return;
         };
         let count = u32::from(crate::domain::forge_creature::slivers(facts.occurrence[14]));
-        if count > 0 {
-            Arc::make_mut(&mut row)
-                .loot_table
-                .entries
-                .push(crate::combat::LootTableEntry {
-                    item: item.clone(),
-                    min_count: count,
-                    max_count: count,
-                    probability_ppm: Some(1_000_000),
-                    details: Default::default(),
-                });
-        }
-    }
+        Some(Arc::new(crate::combat::LootTableEntry {
+            item: item.clone(),
+            min_count: count,
+            max_count: count,
+            probability_ppm: Some(1_000_000),
+            details: crate::domain::loot_data::LootEntryDetails {
+                // A nominal 100% roll can miss at the donor's 95% factor.
+                rated_probability_ppm: Some(2_000_000),
+                stackable: true,
+                ..Default::default()
+            },
+        }))
+    } else {
+        None
+    };
     if let Some((kind, _)) = forge_kind {
         let Some(amount) = kind.experience(row.xp_amount.get()) else {
             refuse("forge_xp_overflow", &creature);
@@ -2576,7 +2620,6 @@ pub fn record_creature_kill(
         }
         Some(ForgeDeath {
             kind,
-            roll: facts.occurrence[15],
             origin,
             recipients,
         })
@@ -2686,6 +2729,9 @@ pub fn record_creature_kill(
         source_death_pending: false,
         source_drop_rates: None,
         prepared_experience: Arc::default(),
+        prepared_loot: Arc::default(),
+        boss_clock_settled: Arc::default(),
+        forge_sliver: if personal_rewards { None } else { forge_sliver },
         source_completion: None,
         no_progression_logged: false,
     };
@@ -3258,11 +3304,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return DrainOutcome::Deferred;
         }
         for _ in 0..KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
-            let principal = match self.states.attack.lock().await.kills().ordered_principal() {
-                Ok(Some(principal)) => principal,
+            let head = match self.states.attack.lock().await.kills().ordered_head() {
+                Ok(Some(head)) => head,
                 Ok(None) => return DrainOutcome::Drained,
                 Err(()) => return DrainOutcome::Deferred,
             };
+            if let Some((boss, settled)) = head.boss {
+                let Some(permit) = self.spell_lane_permit().await else {
+                    return DrainOutcome::Deferred;
+                };
+                if let Err(error) = self
+                    .root
+                    .settle_open_world_boss_clock(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        head.death,
+                        boss,
+                    )
+                    .await
+                {
+                    operator_event(&format!("boss_clock_death_deferred reason={error:?}"));
+                    return DrainOutcome::Deferred;
+                }
+                let _ = settled.set(());
+            }
+            let principal = head.principal;
             let fence = match self.current_quest_fence(principal.0).await {
                 Ok(Some(fence)) => fence,
                 Ok(None) => {
@@ -3277,8 +3344,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(()) => return DrainOutcome::Deferred,
             };
             let core_head = match self.states.attack.lock().await.kills().core_head() {
-                Ok(Some(head)) => head,
-                Ok(None) => continue,
+                Ok(Some(core_head)) if core_head.1 == head.death => core_head,
+                Ok(_) => continue,
                 Err(()) => return DrainOutcome::Deferred,
             };
             // The actual queued lethal owner clock bounds retained callbacks;
@@ -3366,13 +3433,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fence = match self.current_quest_fence(session).await {
             Ok(Some(fence)) => fence,
             Ok(None) => {
-                self.states
+                let clock_pending = self
+                    .states
                     .attack
                     .lock()
                     .await
                     .kills()
                     .discard_gone(session, None);
-                return KillRelease::Send(None);
+                return if clock_pending
+                    && self.drain_kill_rewards(session).await != DrainOutcome::Drained
+                {
+                    KillRelease::Deferred
+                } else {
+                    KillRelease::Send(None)
+                };
             }
             Err(()) => return KillRelease::Deferred,
         };
@@ -3612,18 +3686,14 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         oteryn_simulation_determinism::ExactI64::new(i64::try_from(event_xp).unwrap_or(i64::MAX))
     }
 
-    /// W22c: the corpse owner's live Wealth Duplex rolls the creature's base loot once more,
-    /// without Gut (Crystal ff7ede59 `ondroploot_wealth_duplex.lua:61-63`, `gut = false`). The
-    /// extra MINTs are reserved first; `false` waits for scope room. A roll that cannot fit even
-    /// an idle scope is left out, so the kill still settles.
-    async fn wealth_duplex(
-        &self,
+    /// W22c rolls the creature's base table once more, without Gut. An extra
+    /// roll that cannot fit even an idle scope is left out.
+    fn wealth_duplex(
         entry: &PendingKillSettlement,
         row: &CreatureRewardRow,
         base: &CreatureRewardRow,
-        loot_table: &mut oteryn_gameplay_items::loot_plan::LootTableDefinition,
-        inflight_before: usize,
-    ) -> bool {
+        loot_table: &mut crate::combat::LootTableDefinition,
+    ) {
         let entropy = u64::from_be_bytes(
             entry.facts.death.world_id().as_bytes()[8..]
                 .try_into()
@@ -3639,34 +3709,86 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             extended.entries.extend(extra);
         }
         let seed = loot_plan_seed(entry.facts.death);
-        let count = |table| {
-            row.loot_table_ref
-                .as_ref()
-                .and_then(|reference| plan_creature_loot(seed, reference, table).ok())
-                .map_or(0, |plan| plan.entries.len())
-                + entry.callback_loot.len()
-        };
-        let (before, after) = (count(loot_table), count(&extended));
-        let extra = after.saturating_sub(before);
-        if check_inflight_loot_mint_capacity(0, after).is_err() {
-            return true;
-        }
-        if extra > 0
-            && (check_inflight_loot_mint_capacity(inflight_before, after).is_err()
-                || !self
-                    .admission
-                    .states
-                    .attack
-                    .lock()
-                    .await
-                    .kills()
-                    .reserve_extra_loot_mints(entry.facts.death, extra))
+        let extra_outputs = entry.callback_loot.len() + usize::from(entry.forge_sliver.is_some());
+        if let Some(reference) = &row.loot_table_ref
+            && let Ok(plan) = plan_creature_loot(seed, reference, &extended)
+            && check_inflight_loot_mint_capacity(0, plan.entries.len() + extra_outputs).is_ok()
         {
-            return false;
+            *loot_table = extended;
         }
-        *loot_table = extended;
-        true
     }
+
+    async fn prepare_loot<'e>(
+        &self,
+        entry: &'e PendingKillSettlement,
+        row: &CreatureRewardRow,
+        fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+    ) -> Result<&'e PreparedKillLoot, ()> {
+        if let Some(prepared) = entry.prepared_loot.get() {
+            return Ok(prepared);
+        }
+        let admission = self.admission;
+        let mut loot_table = row.loot_table.clone();
+        if let Some(race) = &row.race {
+            let bonus = entry
+                .talisman
+                .get()
+                .map_or(0, |snapshot| snapshot.bonuses(race.key())[2]);
+            apply_talisman_loot_bonus(&mut loot_table, bonus);
+        }
+        if entry.boss_reward.is_none() {
+            let bonus = entry
+                .boss_slot_bonuses
+                .get()
+                .and_then(|v| {
+                    v.iter()
+                        .find(|(c, _)| c == entry.facts.principal.character.as_bytes())
+                })
+                .map_or(0, |(_, b)| *b);
+            super::boss_encounter::apply_slot_loot_bonus(
+                &mut loot_table,
+                bonus,
+                entry.facts.occurrence,
+                |key| admission.reward_table().is_daily_boss_equipment(key),
+            );
+        }
+        // The captured reward principal is Global's highest-damage loot owner. Read its live
+        // session value only after the current fence has been requalified; party members' stamina
+        // affects their XP, not ownership of this corpse's loot.
+        let live_stamina = admission
+            .states
+            .spell_states
+            .lock()
+            .await
+            .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
+        apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
+        // SV09: two full rolls for Double Loot; Reward System loot is excluded.
+        if entry.boss_reward.is_none() {
+            apply_scheduled_loot_rate(&mut loot_table, self.event_rates.loot);
+        }
+        if !loot_table.entries.is_empty()
+            && admission
+                .root
+                .wealth_duplex_active(admission.character, fence.character_id)
+                .await
+                .map_err(|_| ())?
+            && let Ok(base) = admission.reward_table().row(&entry.creature)
+        {
+            Self::wealth_duplex(entry, row, &base, &mut loot_table);
+        }
+        super::quest_death_loot::append(&mut loot_table, entry);
+        // Crystal Monster::dropLoot adds the fiendish stack independently of ordinary rolls.
+        loot_table
+            .entries
+            .extend(entry.forge_sliver.as_deref().cloned());
+        let (table, tutorial) = admission
+            .tutorial_corruptor_table(fence, entry, loot_table)
+            .await?;
+        Ok(entry
+            .prepared_loot
+            .get_or_init(|| PreparedKillLoot { table, tutorial }))
+    }
+
     /// The durable settle of one entry. Its future holds the principal's progression binding,
     /// whose policy carries the whole `CHARACTER_EXPERIENCE_TABLE_LEVELS` threshold table by
     /// value, across the reward writes, so [`KillSettle::settle`] keeps it on the heap: inline,
@@ -4068,86 +4190,32 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             expected_character_revision,
             ..self.fence
         };
-        let mut loot_table = row.loot_table.clone();
-        if let Some(race) = &row.race {
-            let bonus = entry
-                .talisman
-                .get()
-                .map_or(0, |snapshot| snapshot.bonuses(race.key())[2]);
-            apply_talisman_loot_bonus(&mut loot_table, bonus);
-        }
-        if entry.boss_reward.is_none() {
-            let bonus = entry
-                .boss_slot_bonuses
-                .get()
-                .and_then(|v| {
-                    v.iter()
-                        .find(|(c, _)| c == entry.facts.principal.character.as_bytes())
-                })
-                .map_or(0, |(_, b)| *b);
-            super::boss_encounter::apply_slot_loot_bonus(
-                &mut loot_table,
-                bonus,
-                entry.facts.occurrence,
-                |key| admission.reward_table().is_daily_boss_equipment(key),
-            );
-        }
-        // The captured reward principal is Global's highest-damage loot owner. Read its live
-        // session value only after the current fence has been requalified; party members' stamina
-        // affects their XP, not ownership of this corpse's loot.
-        let live_stamina = admission
-            .states
-            .spell_states
-            .lock()
-            .await
-            .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
-        apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
-        // SV09: two full rolls for Double Loot; Reward System loot is excluded.
-        if entry.boss_reward.is_none() {
-            apply_scheduled_loot_rate(&mut loot_table, self.event_rates.loot);
-        }
-        if !loot_table.entries.is_empty() {
-            let Ok(active) = admission
-                .root
-                .wealth_duplex_active(admission.character, self.fence.character_id)
-                .await
-            else {
-                return SettleReport {
-                    verdict: SettleVerdict::Retry,
-                    no_progression: false,
-                };
-            };
-            if active
-                && let Ok(base) = admission.reward_table().row(&entry.creature)
-                && !self
-                    .wealth_duplex(&entry, &row, &base, &mut loot_table, inflight_before)
-                    .await
-            {
-                return SettleReport {
-                    verdict: SettleVerdict::Retry,
-                    no_progression: false,
-                };
-            }
-        }
-        super::quest_death_loot::append(&mut loot_table, &entry);
-        // Ordinary stamina/event/duplex transforms must never remove or multiply
-        // the one-shot tutorial reward. Its arm is consumed by the atomic MINT.
-        let Ok((loot_table, tutorial_corruptor)) = admission
-            .tutorial_corruptor_table(fence, &entry, loot_table)
-            .await
-        else {
+        let Ok(prepared) = self.prepare_loot(&entry, &row, fence).await else {
             return SettleReport {
                 verdict: SettleVerdict::Retry,
                 no_progression: false,
             };
         };
-        // The cached first table can contain more ordinary rolls than this
-        // retry's live modifiers reserved. Charge only its positive shortfall;
-        // the existing take and extras are both released on every requeue/end.
-        if tutorial_corruptor.is_some()
-            && let Some(reference) = row.loot_table_ref.as_ref()
-            && let Ok(plan) =
-                plan_creature_loot(loot_plan_seed(entry.facts.death), reference, &loot_table)
+        let tutorial_corruptor = match prepared.tutorial.clone() {
+            Some(claim) => {
+                let Some(claim) = claim.with_current_fence(fence) else {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                };
+                Some(claim)
+            }
+            None => None,
+        };
+        // A retry releases its old reservation. Reserve the exact same plan again.
+        if let Some(reference) = row.loot_table_ref.as_ref()
+            && let Ok(plan) = plan_creature_loot(
+                loot_plan_seed(entry.facts.death),
+                reference,
+                &prepared.table,
+            )
+            && check_inflight_loot_mint_capacity(0, plan.entries.len()).is_ok()
             && !admission
                 .states
                 .attack
@@ -4169,8 +4237,11 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             tutorial_corruptor,
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
-            loot_table,
-            ground: entry.ground.clone(),
+            loot_table: prepared.table.clone(),
+            ground: DeathGroundContext {
+                boss_spawn: None,
+                ..entry.ground.clone()
+            },
             inflight_loot_mints_before_this_death: inflight_before,
             reward_principals: vec![RewardPrincipal {
                 gameplay_fence: fence,

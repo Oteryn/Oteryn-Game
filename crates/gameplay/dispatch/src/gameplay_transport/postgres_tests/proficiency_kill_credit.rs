@@ -24,6 +24,7 @@ enum Scenario {
     CheckpointReplay,
     FenceReadFailure,
     GonePrincipal,
+    GoneBossPrincipal,
 }
 
 #[test]
@@ -39,6 +40,11 @@ fn proficiency_kill_credit_fence_read_failure_is_retryable() -> TestResult {
 #[test]
 fn proficiency_kill_credit_surviving_contributor_when_xp_principal_is_gone() -> TestResult {
     run(Scenario::GonePrincipal, "proficiency_gone_principal")
+}
+
+#[test]
+fn creatures_open_world_boss_respawns_after_top_damager_logs_out() -> TestResult {
+    run(Scenario::GoneBossPrincipal, "creatures_gone_boss_principal")
 }
 
 fn run(case: Scenario, name: &'static str) -> TestResult {
@@ -131,17 +137,49 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
     native
         .install_companion_policies(&mut runtime)
         .map_err(debug)?;
-    runtime
-        .realize_native_qualification_spawn(
-            pin.clone(),
-            "oteryn:creature.rat",
-            MovementLocalPosition {
-                x: 1,
-                y: 11,
-                floor: -7,
-            },
-        )
-        .map_err(debug)?;
+    let boss = matches!(case, Scenario::GoneBossPrincipal);
+    if boss {
+        use crate::durability::boss_encounter::{BossClockClaim, BossClockKey};
+        let policy = crate::content::BossPolicy::Respawn { min_s: 1, max_s: 1 };
+        let key = "creatures:gone-boss";
+        runtime
+            .configure_boss_spawns(vec![crate::foundation::BossSpawn {
+                key: key.into(),
+                creature: "oteryn:creature.rat".into(),
+                position: MovementLocalPosition { x: 1, y: 11, floor: -7 },
+                policy,
+                actor: None,
+                cycle: 0,
+                pending_claim: false,
+            }])
+            .map_err(debug)?;
+        sqlx::query("INSERT INTO game_boss_spawn_clocks VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,0,1,0,0,NULL)")
+            .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(key)
+            .execute(&h.pool).await?;
+        let BossClockClaim::Claimed(clock) = h.root.activate_boss_clock(
+            &recovery,
+            &h.node,
+            BossClockKey { world, channel, spawn: key.into() },
+            "oteryn:creature.rat".into(),
+            first.current_scope_generation(),
+            policy,
+        ).await? else {
+            return Err("initial boss clock claim".into());
+        };
+        assert!(runtime.realize_boss_spawn(key, clock.cycle).map_err(debug)?.is_some());
+    } else {
+        runtime
+            .realize_native_qualification_spawn(
+                pin.clone(),
+                "oteryn:creature.rat",
+                MovementLocalPosition {
+                    x: 1,
+                    y: 11,
+                    floor: -7,
+                },
+            )
+            .map_err(debug)?;
+    }
     let mut players = Vec::new();
     for (index, current) in [&first, &second, &third].into_iter().enumerate() {
         let session = current.current_game_session_id();
@@ -315,7 +353,7 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
             .await
             .ok_or("install changed weapon")?;
     }
-    if matches!(case, Scenario::GonePrincipal) {
+    if matches!(case, Scenario::GonePrincipal | Scenario::GoneBossPrincipal) {
         let queue = owner.states.attack.lock().await.kills().clone();
         {
             let mut runtime = owner.runtime.lock().await;
@@ -366,6 +404,27 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
                 .await,
             crate::gameplay_transport::actor_spell::TrainingSave::Saved
         );
+        if boss {
+            let clock: (String, i16, bool) = sqlx::query_as(
+                "SELECT cycle::text,state,due_at IS NOT NULL FROM game_boss_spawn_clocks",
+            ).fetch_one(&h.pool).await?;
+            eprintln!("CREATURES_GONE_BOSS_POSTGRES_CASE_EXECUTED");
+            assert_eq!(clock, ("1".into(), 1, true));
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_mint_receipts")
+                    .fetch_one(&h.pool).await?,
+                0,
+            );
+            sqlx::query("UPDATE game_boss_spawn_clocks SET due_at=0")
+                .execute(&h.pool).await?;
+            assert!(owner.boss_spawn_pass(&mut Default::default()).await.map_err(debug)?);
+            let runtime = owner.runtime.lock().await;
+            let replacement = &runtime.boss_spawns()[0];
+            assert_eq!(replacement.cycle, 1);
+            let actor = replacement.actor.ok_or("replacement boss")?;
+            assert_ne!(actor, creature.actor);
+            runtime.companion_snapshot(actor).map_err(debug)?;
+        }
         return Ok(());
     }
     // The oldest contributor is one ms outside the window; the other is exactly on it.

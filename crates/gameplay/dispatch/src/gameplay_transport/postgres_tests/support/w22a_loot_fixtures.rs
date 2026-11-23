@@ -22,6 +22,8 @@ pub(super) enum Case {
     DuplexOfflineIgnored,
     DuplexOnlineSpent,
     BoostedBossUnique,
+    FlatAtomic,
+    DuplexRetry,
 }
 
 /// W13: the next scenario kills a boosted boss whose table holds a unique amulet, a ring and
@@ -49,7 +51,7 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
         .ok_or("rat table")?;
     match case {
         Case::Large => table["entries"] = Value::Array(vec![entry(3031); 20]),
-        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent => {
+        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent | Case::FlatAtomic | Case::DuplexRetry => {
             table["entries"] = Value::Array(vec![entry(3031); DUPLEX_BASE_ENTRIES]);
         }
         Case::ChargedSubtype => {
@@ -118,7 +120,7 @@ pub(super) async fn before_kill(
     actor: crate::foundation::ExactActorRef,
     session: crate::foundation::GameSessionId,
 ) -> TestResult {
-    if matches!(CASE.get(), Some(Case::DuplexOn)) {
+    if matches!(CASE.get(), Some(Case::DuplexOn | Case::DuplexRetry)) {
         return use_wealth_duplex(owner, h, actor, session).await;
     }
     if let Some(case @ (Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent)) = CASE.get() {
@@ -367,6 +369,60 @@ async fn gut_widened_the_roll(
     Ok(())
 }
 
+pub(super) async fn fail_flat_mint_once(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+    let (ordinal, atomic) = match CASE.get() {
+        Some(Case::FlatAtomic) => (2, true),
+        Some(Case::DuplexRetry) => (6, false),
+        _ => return Ok(()),
+    };
+    sqlx::raw_sql("CREATE SEQUENCE creatures_mint_fault_hits;
+        GRANT USAGE ON SEQUENCE creatures_mint_fault_hits TO oteryn_game_runtime;
+        CREATE FUNCTION creatures_mint_fault() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+            IF NEW.placement_ordinal = TG_ARGV[0]::integer THEN
+                PERFORM nextval('creatures_mint_fault_hits');
+                RAISE EXCEPTION 'creatures loot fault';
+            END IF;
+            RETURN NEW;
+        END $$;")
+        .execute(&h.pool).await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "CREATE TRIGGER creatures_mint_fault BEFORE INSERT ON game_item_corpse_container_entries
+        FOR EACH ROW EXECUTE FUNCTION creatures_mint_fault('{ordinal}')"
+    )))
+    .execute(&h.pool).await?;
+    for attempt in 0..8 {
+        assert_eq!(owner.drain_kill_rewards(session).await, DrainOutcome::Deferred);
+        if sqlx::query_scalar::<_, bool>("SELECT is_called FROM creatures_mint_fault_hits")
+            .fetch_one(&h.pool).await?
+        {
+            break;
+        }
+        assert!(attempt < 7, "the real MINT reached the injected child failure");
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
+    let counts: (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_item_mint_receipts),
+                (SELECT count(*) FROM game_item_corpse_container_entries)",
+    )
+    .fetch_one(&h.pool).await?;
+    eprintln!("CREATURES_FLAT_MINT_POSTGRES_CASE_EXECUTED fault_ordinal={ordinal}");
+    if atomic {
+        assert_eq!(counts, (0, 0), "no corpse or child survives a child MINT failure");
+    } else {
+        age_wealth_duplex(h, session, true).await?;
+    }
+    sqlx::query("DROP TRIGGER creatures_mint_fault ON game_item_corpse_container_entries")
+        .execute(&h.pool).await?;
+    owner.root.maintain_ready_once().await.map_err(debug)?;
+    Ok(())
+}
+
 pub(super) async fn qualify(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -382,10 +438,10 @@ pub(super) async fn qualify(
         .await?;
     match case {
         Case::Gut => assert_eq!(nested, 0),
-        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent => {
+        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent | Case::FlatAtomic | Case::DuplexRetry => {
             // W22b: two wall-clock hours spent offline leave the online hour live; spent
             // online, they end it.
-            let rolls = if matches!(case, Case::DuplexOn | Case::DuplexOfflineIgnored) {
+            let rolls = if matches!(case, Case::DuplexOn | Case::DuplexOfflineIgnored | Case::DuplexRetry) {
                 2
             } else {
                 1

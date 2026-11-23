@@ -55,16 +55,6 @@ impl ChannelRuntimeV1 {
             (i128::from(base_maximum) * i128::from(kind.health_percent()) + 99) / 100,
         )
         .map_err(|_| CarrierError::DamageOverflow)?;
-        let current = if echo_minion {
-            maximum
-        } else {
-            i64::try_from(
-                i128::from(snapshot.health) * i128::from(maximum)
-                    / i128::from(snapshot.maximum_health),
-            )
-            .map_err(|_| CarrierError::DamageOverflow)?
-            .max(1)
-        };
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             health,
@@ -74,7 +64,7 @@ impl ChannelRuntimeV1 {
         else {
             return Err(CarrierError::NotCreature);
         };
-        *health = current;
+        *health = maximum;
         spell_combat.maximum_health = maximum;
         spell_combat.forge = Some(kind);
         Ok(())
@@ -192,7 +182,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn forge_creature_native_spawn_scales_health_retains_marker_and_replaces_incarnation() {
+    fn forge_creature_native_spawn_fills_health_retains_damage_and_replaces_incarnation() {
         let mut current = super::super::tests::runtime(16);
         let pin = current.content_pin().clone();
         let policy = CompiledCreaturePolicy {
@@ -275,7 +265,14 @@ mod tests {
                         .is_none()
                 })
         );
-        current.drive_forge_population(10_000_000).unwrap();
+        for (_, _, actor) in current.spawn_point_creatures() {
+            current
+                .set_test_creature_health(actor.unwrap(), 50)
+                .unwrap();
+        }
+        current
+            .drive_spawn_respawns(10_000_000, |_, _| true)
+            .unwrap();
         let fiends: Vec<_> = current
             .spawn_point_creatures()
             .into_iter()
@@ -357,24 +354,37 @@ mod tests {
                 .health_after,
             360
         );
+        let point = current
+            .spawn_point_creatures()
+            .into_iter()
+            .find(|(_, _, live)| *live == Some(actor))
+            .unwrap()
+            .0;
+        let surviving = fiends[1];
+        current.set_test_creature_health(surviving, 180).unwrap();
         current.set_test_creature_health(actor, 0).unwrap();
         current
             .drive_spawn_respawns(10_001_000, |_, _| true)
             .unwrap();
         current
-            .drive_spawn_respawns(71_001_000, |_, _| true)
+            .drive_spawn_respawns(10_001_000 + spawn::OWNER_WINDOW_MICROS, |_, _| true)
             .unwrap();
+        let warning = current.pending_respawn(point).unwrap().due_micros;
+        current.drive_spawn_respawns(warning, |_, _| true).unwrap();
+        assert_eq!(current.companion_snapshot(surviving).unwrap().health, 180);
+        let admission = current.pending_respawn(point).unwrap().due_micros;
         current
-            .drive_spawn_respawns(71_001_000 + spawn::SPAWN_WARNING_MICROS, |_, _| true)
+            .drive_spawn_respawns(admission, |_, _| true)
             .unwrap();
         assert!(current.companion_snapshot(actor).is_err());
         let replacement = current
             .spawn_point_creatures()
             .into_iter()
-            .filter_map(|(_, _, actor)| actor)
-            .filter_map(|actor| current.companion_snapshot(actor).ok())
-            .find(|snapshot| snapshot.forge.is_none())
+            .find(|(spawn, _, _)| *spawn == point)
+            .and_then(|(_, _, actor)| actor)
             .unwrap();
+        let replacement = current.companion_snapshot(replacement).unwrap();
+        assert_eq!(replacement.forge, None);
         assert_eq!((replacement.health, replacement.maximum_health), (100, 100));
         current.drive_forge_population(280_000_000).unwrap();
         assert_eq!(

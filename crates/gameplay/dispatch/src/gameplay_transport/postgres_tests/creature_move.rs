@@ -5,14 +5,32 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::time::Duration;
 
 #[test]
 fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
-    run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "creature_move_dispatch", false, false)
-                .await?;
+    scenario(false)
+}
+
+#[test]
+fn creatures_monster_swings_at_adjacent_target_with_65_players_in_view() -> TestResult {
+    scenario(true)
+}
+
+fn scenario(crowded: bool) -> TestResult {
+    run(async move |admin| {
+        let harness = Harness::create_with_admission_seed(
+            admin,
+            if crowded {
+                "creatures_crowded_melee"
+            } else {
+                "creature_move_dispatch"
+            },
+            false,
+            false,
+        )
+        .await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -33,7 +51,12 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
         let world =
             crate::map::spell_tiles::tests::movement_arena::world().with_spawns_for_test(Table {
                 creatures: vec![Creature {
-                    key: "canary:creature/rat".into(),
+                    key: if crowded {
+                        "oteryn:creature.rat"
+                    } else {
+                        "canary:creature/rat"
+                    }
+                    .into(),
                     period: Period::All,
                 }],
                 sources: vec![Source {
@@ -84,7 +107,7 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            4,
+            if crowded { 66 } else { 4 },
             pin,
         )
         .map_err(debug)?;
@@ -114,6 +137,18 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
         runtime
             .initialize_first_entry_position(deps.actor)
             .map_err(debug)?;
+        let mut bystanders = Vec::new();
+        if crowded {
+            for tag in 80..144 {
+                let session = crate::foundation::GameSessionId::decode(&id(tag)).map_err(debug)?;
+                let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+                let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                runtime
+                    .initialize_first_entry_position(actor)
+                    .map_err(debug)?;
+                bystanders.push((actor, session));
+            }
+        }
         let start = MovementLocalPosition {
             x: 104,
             y: 100,
@@ -134,6 +169,147 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
         owner.clock_origin = std::time::Instant::now();
         deps.initialize(&owner).await;
         owner.clock_origin -= Duration::from_secs(10);
+        if crowded {
+            // A due native attack out of reach leaves an extra melee pending.
+            // Keep the Rat out of reach while its source attack timer advances.
+            let mut pending = None;
+            for _ in 0..4 {
+                {
+                    let mut runtime = deps.runtime.lock().await;
+                    let mut from = runtime.read_actor_position(rat).map_err(debug)?;
+                    assert_eq!(from.position().y, start.y);
+                    while from.position().x < start.x {
+                        let to = MovementLocalPosition {
+                            x: from.position().x + 1,
+                            ..start
+                        };
+                        from = runtime
+                            .borrow_movement_position()
+                            .commit_cardinal(from, to)
+                            .map_err(debug)?;
+                    }
+                }
+                owner.drain_monster_melee().await;
+                let mut runtime = deps.runtime.lock().await;
+                let origin = runtime.read_actor_position(rat).map_err(debug)?.position();
+                let from = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                let next = MovementLocalPosition {
+                    x: from.position().x + 1,
+                    ..from.position()
+                };
+                let step = runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(from, next)
+                    .map_err(debug)?;
+                let states = owner.states.spell_states.lock().await;
+                if states
+                    .monster_melee
+                    .creature_ai
+                    .has_movement_melee_retry(&runtime)
+                {
+                    pending = Some(origin);
+                    break;
+                }
+                runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(step, from.position())
+                    .map_err(debug)?;
+                owner.clock_origin -= Duration::from_secs(2);
+            }
+            let origin = pending.ok_or("due out-of-reach Rat melee")?;
+            let now = owner.owner_now();
+            let time = SemanticTimeMicros::from_micros(now.get());
+            {
+                let states = owner.states.spell_states.lock().await;
+                let melee = &states.monster_melee;
+                let think = melee.creature_ai.state(rat).ok_or("native Rat Think")?;
+                assert_eq!(think.target(), Some(deps.actor));
+                assert!(
+                    melee
+                        .creature_ai
+                        .due(rat)
+                        .is_some_and(|due| now.get() < due)
+                );
+                let attack = owner.states.attack.lock().await;
+                assert!(
+                    !attack
+                        .combat_state(deps.actor, deps.admitted.game_session_id, time)
+                        .in_fight
+                );
+            }
+            for (actor, session) in bystanders {
+                deps.initialize_player(&owner, actor, session).await;
+            }
+            {
+                let mut runtime = deps.runtime.lock().await;
+                let mut from = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                assert_eq!(from.position().y, origin.y);
+                while from.position().x < origin.x - 1 {
+                    let to = MovementLocalPosition {
+                        x: from.position().x + 1,
+                        ..origin
+                    };
+                    from = runtime
+                        .borrow_movement_position()
+                        .commit_cardinal(from, to)
+                        .map_err(debug)?;
+                }
+                assert_eq!(origin.x - from.position().x, 1);
+                let states = owner.states.spell_states.lock().await;
+                assert!(
+                    states
+                        .monster_melee
+                        .creature_ai
+                        .has_movement_melee_retry(&runtime)
+                );
+                let attack = owner.states.attack.lock().await;
+                let census = runtime.positioned_melee_census().map_err(debug)?;
+                let room = owner.rooms().gate_monster_ai().ok_or("combat room")?;
+                let targets = crate::gameplay_transport::monster_ai_cycle::melee_targets(
+                    room,
+                    &runtime,
+                    &states,
+                    &attack,
+                    &census,
+                    now.get(),
+                );
+                assert_eq!(
+                    targets
+                        .iter()
+                        .filter(|(_, position, _, invisible, protected)| {
+                            !invisible
+                                && !protected
+                                && position.floor == origin.floor
+                                && crate::ai_think::targeting::sees(*position, origin)
+                        })
+                        .count(),
+                    65,
+                );
+            }
+            owner.drain_monster_melee_at(now).await;
+            let states = owner.states.spell_states.lock().await;
+            let melee = &states.monster_melee;
+            let selected = melee
+                .creature_ai
+                .native_melee_selection(rat, 0)
+                .ok_or("native movement melee selection")?;
+            assert_eq!(selected.target, Some(deps.actor));
+            eprintln!("CREATURES_CROWDED_MELEE_POSTGRES_CASE_EXECUTED");
+            let attack = owner.states.attack.lock().await;
+            assert!(
+                attack
+                    .combat_state(deps.actor, deps.admitted.game_session_id, time)
+                    .in_fight,
+                "the selected attack started the target's in-fight deadline"
+            );
+            drop(attack);
+            drop(states);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
         owner.drain_monster_melee().await;
         assert_eq!(
             deps.runtime

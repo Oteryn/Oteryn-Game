@@ -449,6 +449,55 @@ pub mod reward_chest;
 mod preparation;
 
 impl super::DurabilityRoot {
+    /// Settle the clock for a committed death captured from this exact spawn and cycle
+    /// by the Channel owner. The Character who receives loot is irrelevant to this write.
+    pub async fn settle_open_world_boss_clock(
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        authority: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        death: crate::foundation::CreatureDeathOccurrenceKey,
+        (spawn, cycle, policy): (String, u64, oteryn_gameplay_content::content::BossPolicy),
+    ) -> Result<()> {
+        permit.check_scope(death.runtime_scope())?;
+        let key = BossClockKey {
+            world: death.world_id(),
+            channel: death.channel_id().ok_or(BossClockError::InvalidInput)?,
+            spawn,
+        };
+        let generation = death.scope_ownership_generation();
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| BossClockError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = async {
+                        assert_clock_owner(&mut tx, &recovery, &node, &key, generation).await?;
+                        // A spawn cycle only advances on death. An uncertain commit can
+                        // replay even after the next incarnation has already been claimed.
+                        if !read_clock(&mut tx, &key)
+                            .await?
+                            .is_some_and(|clock| clock.cycle > cycle)
+                        {
+                            advance_death_in_transaction(&mut tx, &key, generation, cycle, policy)
+                                .await?;
+                        }
+                        Ok(())
+                    }
+                    .await;
+                    if result.is_ok() {
+                        commit_semantic_transaction(tx, deadline).await?;
+                    }
+                    Ok(result)
+                })
+            })
+            .await?
+    }
+
     /// One activation/timer pass. The current reset pointer and ownership are read under
     /// their database locks, never supplied by content or an old process snapshot.
     pub async fn activate_boss_clock(
@@ -545,8 +594,8 @@ impl super::DurabilityRoot {
     }
 }
 
-/// Called only after the corpse receipt's replay check and current-generation check.
-/// A failure rolls the corpse and clock back together; replay returns before this call.
+/// Advance a live clock after the caller qualifies the current generation and checks for a replay.
+/// The World spawn claim and Channel clock change in the same transaction.
 pub(crate) async fn advance_death_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     key: &BossClockKey,

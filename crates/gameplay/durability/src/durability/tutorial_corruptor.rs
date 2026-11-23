@@ -28,6 +28,23 @@ impl TutorialCorruptorClaim {
         &self.items
     }
 
+    /// Retain the frozen selection while the same lease reconnects or its revision cursor advances.
+    pub fn with_current_fence(
+        mut self,
+        fence: CurrentCharacterGameplayFence,
+    ) -> Option<Self> {
+        if self.fence.character_id != fence.character_id
+            || self.fence.game_session_id != fence.game_session_id
+            || self.fence.character_lease_generation != fence.character_lease_generation
+            || self.fence.runtime_scope != fence.runtime_scope
+            || self.fence.scope_ownership_generation != fence.scope_ownership_generation
+        {
+            return None;
+        }
+        self.fence = fence;
+        Some(self)
+    }
+
     /// Bind guaranteed outputs to distinct first-roll planner source ordinals.
     pub fn bind_draw_ordinals(mut self, first: u32) -> Option<Self> {
         self.draw_ordinals = (0..self.items.len())

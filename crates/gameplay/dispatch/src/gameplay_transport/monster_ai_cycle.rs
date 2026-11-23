@@ -858,7 +858,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // Perception's limit applies to this monster's eligible local
                     // candidates, not every player elsewhere in the Channel. Protected
                     // players cannot occupy the nearest-candidate slot.
-                    let Some(indices) = local_target_indices(
+                    let indices = local_target_indices(
                         p,
                         monster.behavior.targeting.sense_invisible,
                         targets.iter().map(|(target, p, _, invisible, protected)| {
@@ -870,9 +870,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                         != runtime.is_tibiadrome(*target),
                             )
                         }),
-                    ) else {
-                        continue;
-                    };
+                    );
                     attack.kills().boss_targets(
                         &runtime,
                         *actor,
@@ -1389,13 +1387,17 @@ pub(in crate::gameplay_transport) fn melee_targets(
     targets
 }
 
-/// Preserve census identity/order while bounding only eligible local perception.
+/// Keep the nearest eligible players in the same order as creature Think.
 fn local_target_indices(
     origin: MovementLocalPosition,
     sense_invisible: bool,
     targets: impl IntoIterator<Item = (MovementLocalPosition, bool, bool)>,
-) -> Option<Vec<usize>> {
-    let mut indices = Vec::new();
+) -> Vec<usize> {
+    use crate::ai_think::targeting::plane_distance;
+    use std::collections::BinaryHeap;
+
+    let limit = ResourceLimit::PerceptionCandidates.maximum();
+    let mut nearest = BinaryHeap::with_capacity(limit);
     for (index, (position, invisible, protected)) in targets.into_iter().enumerate() {
         // CREATURE-AI-1 §2.1 item 2: perception is VIS-1's `can_see` from the player.
         if protected
@@ -1405,12 +1407,21 @@ fn local_target_indices(
         {
             continue;
         }
-        if indices.len() == ResourceLimit::PerceptionCandidates.maximum() {
-            return None;
+        // The census is already sorted by placement identity, the distance tie-breaker.
+        let candidate = (plane_distance(origin, position), index);
+        if nearest.len() < limit {
+            nearest.push(candidate);
+        } else if let Some(mut farthest) = nearest.peek_mut()
+            && candidate < *farthest
+        {
+            *farthest = candidate;
         }
-        indices.push(index);
     }
-    Some(indices)
+    nearest
+        .into_sorted_vec()
+        .into_iter()
+        .map(|(_, index)| index)
+        .collect()
 }
 
 #[cfg(test)]
@@ -1808,15 +1819,13 @@ mod tests {
         targets.push((position(1, 7), false, false));
         assert_eq!(
             local_target_indices(position(0, 7), false, targets),
-            Some(vec![65])
+            vec![65]
         );
-        assert!(
-            local_target_indices(
-                position(0, 7),
-                false,
-                vec![(position(1, 7), false, false); 65]
-            )
-            .is_none()
+        let mut crowded = vec![(position(2, 7), false, false); 64];
+        crowded.push((position(1, 7), false, false));
+        assert_eq!(
+            local_target_indices(position(0, 7), false, crowded),
+            std::iter::once(64).chain(0..63).collect::<Vec<_>>()
         );
     }
     #[test]
@@ -1829,11 +1838,11 @@ mod tests {
         ];
         assert_eq!(
             local_target_indices(position(0, 7), false, targets.clone()),
-            Some(vec![3])
+            vec![3]
         );
         assert_eq!(
             local_target_indices(position(0, 7), true, targets),
-            Some(vec![1, 3])
+            vec![1, 3]
         );
     }
 
@@ -1966,7 +1975,7 @@ mod tests {
             });
         assert_eq!(
             local_target_indices(position(0, 7), false, eligible),
-            Some(vec![0])
+            vec![0]
         );
     }
     #[test]

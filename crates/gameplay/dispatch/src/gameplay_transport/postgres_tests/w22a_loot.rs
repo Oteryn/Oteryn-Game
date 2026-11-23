@@ -101,3 +101,23 @@ fn w22a_mint_into_a_container_outside_the_kill_corpse_is_refused() -> TestResult
         scenario()
     })
 }
+
+#[test]
+fn creatures_flat_loot_rolls_back_corpse_and_children_on_mint_failure() -> TestResult {
+    run_mint_failure(Case::FlatAtomic)
+}
+
+#[test]
+fn creatures_wealth_duplex_plan_survives_mint_failure_and_expiry() -> TestResult {
+    run_mint_failure(Case::DuplexRetry)
+}
+
+fn run_mint_failure(case: Case) -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    scenario_thread::run("creatures-mint-failure", move || {
+        CASE.set(Some(case));
+        scenario()
+    })
+}

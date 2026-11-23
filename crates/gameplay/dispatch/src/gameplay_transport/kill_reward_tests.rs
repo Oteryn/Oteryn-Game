@@ -178,6 +178,9 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         source_death_pending: false,
         source_drop_rates: None,
         prepared_experience: Arc::default(),
+        prepared_loot: Arc::default(),
+        boss_clock_settled: Arc::default(),
+        forge_sliver: None,
         source_completion: None,
         no_progression_logged: false,
     }

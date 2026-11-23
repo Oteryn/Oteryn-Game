@@ -1407,6 +1407,7 @@ fn scenario_with_creature_observed(
         } else {
             None
         };
+        super::w22a_loot_fixtures::fail_flat_mint_once(&owner, &harness, session).await?;
         let mut drains = 0;
         while owner.drain_kill_rewards(session).await != DrainOutcome::Drained {
             drains += 1;

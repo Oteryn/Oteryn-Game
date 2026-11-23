@@ -767,7 +767,15 @@ fn forge_dust_for_member(
         delta_y: u16::try_from(position.y.abs_diff(forge.origin.y)).unwrap_or(u16::MAX),
         floor_delta: u8::try_from(position.floor.abs_diff(forge.origin.floor)).unwrap_or(u8::MAX),
     });
-    eligible.then(|| forge.kind.dust(forge.roll))
+    eligible.then(|| {
+        use sha2::{Digest, Sha256};
+        let draw = Sha256::new()
+            .chain_update(b"oteryn:forge-dust-recipient:v1")
+            .chain_update(entry.facts.death.native_bytes())
+            .chain_update(member.character.as_bytes())
+            .finalize();
+        forge.kind.dust(draw[0])
+    })
 }
 
 // All recipients (including shared party members) use the same committed kill timestamp.

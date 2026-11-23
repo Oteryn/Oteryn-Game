@@ -76,6 +76,7 @@ pub(super) enum Case {
     CakeWorldBonusExpired,
     CakeKillBeforeActivation,
     CakeKillBeforeExpiry,
+    ForgeSliver,
 }
 
 impl Case {
@@ -91,6 +92,7 @@ impl Case {
                 | Self::ForgeStale
                 | Self::ForgeRollback
                 | Self::ForgeFar
+                | Self::ForgeSliver
                 | Self::ForgeForeign
         )
     }
@@ -298,6 +300,9 @@ async fn scenario(
             key.to_owned(),
             u64::try_from(policy.maximum_health)?,
         ));
+    }
+    if matches!(case, Case::ForgeSliver) {
+        super::forge_creature_fixtures::select_nominal_sliver_miss(&mut runtime, native.reward_table())?;
     }
     runtime.realize_activation_spawns(sources).map_err(debug)?;
     for creature in runtime.visible_entities().creatures {

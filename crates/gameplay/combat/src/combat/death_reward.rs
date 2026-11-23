@@ -585,103 +585,19 @@ async fn settle_loot(
         .freeze_item_mint(session.authority, session.node, corpse_request)
         .await
         .map_err(CombatDeathRewardLootError::Corpse)?;
-    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
-        let mut children = Vec::with_capacity(plan.entries.len());
-        for entry in &plan.entries {
-            let parent = match entry.parent {
-                Some(index) => children.get(index).map(
-                    |candidate: &crate::durability::item_mint::ItemMintCandidate| {
-                        *candidate.item_instance_id()
-                    },
-                ),
-                None => Some(*corpse_candidate.item_instance_id()),
-            }
-            .ok_or(CombatDeathRewardLootError::Corpse(
-                ItemMintError::InvalidInput,
-            ))?;
-            let request = CorpseLootMintRequest {
-                cause: ItemMintCause::from_creature_death(
-                    death,
-                    to_typed_definition(&plan.loot_table),
-                    entry.purpose_key.clone(),
-                    entry.draw_ordinal,
-                )
-                .map_err(CombatDeathRewardLootError::Corpse)?,
-                item: to_typed_definition(&entry.item),
-                quantity: entry.quantity,
-                placement: CorpseContainerPlacement {
-                    corpse_item_instance_id: parent,
-                    placement_ordinal: entry.placement_ordinal,
-                    fluid_subtype: entry.fluid_subtype(),
+    let mut children = Vec::with_capacity(plan.entries.len());
+    for entry in &plan.entries {
+        let parent = match entry.parent {
+            Some(index) => children.get(index).map(
+                |candidate: &crate::durability::item_mint::ItemMintCandidate| {
+                    *candidate.item_instance_id()
                 },
-                content_revision: ground.content_revision.clone(),
-                ruleset_revision: ground.ruleset_revision.clone(),
-                sim_revision: ground.sim_revision.clone(),
-            };
-            children.push(
-                session
-                    .root
-                    .freeze_kill_loot_entry(session.authority, session.node, request)
-                    .await
-                    .map_err(CombatDeathRewardLootError::Corpse)?,
-            );
+            ),
+            None => Some(*corpse_candidate.item_instance_id()),
         }
-        let outcomes = session
-            .root
-            .commit_kill_loot_mints(
-                permit,
-                session.authority,
-                session.node,
-                &mut corpse_candidate,
-                &mut children,
-                top_damage_character_id,
-                ground.boss_spawn.clone(),
-                tutorial_corruptor,
-            )
-            .await
-            .map_err(CombatDeathRewardLootError::Corpse)?;
-        let mut outcomes = outcomes.into_iter().map(committed);
-        let corpse = outcomes.next().ok_or(CombatDeathRewardLootError::Corpse(
+        .ok_or(CombatDeathRewardLootError::Corpse(
             ItemMintError::InvalidInput,
         ))?;
-        let entries: Vec<_> = outcomes.collect();
-        committed_loot.extend(
-            entries
-                .iter()
-                .zip(&plan.entries)
-                .map(|(mint, entry)| (mint.clone(), entry.item.clone(), entry.quantity)),
-        );
-        return Ok(Some(CommittedCorpseLoot { corpse, entries }));
-    }
-    let corpse_outcome = if let Some(boss) = &ground.boss_spawn {
-        session
-            .root
-            .commit_boss_corpse_mint(
-                permit,
-                session.authority,
-                session.node,
-                &mut corpse_candidate,
-                top_damage_character_id,
-                boss.clone(),
-            )
-            .await
-    } else {
-        session
-            .root
-            .commit_corpse_mint(
-                permit,
-                session.authority,
-                session.node,
-                &mut corpse_candidate,
-                top_damage_character_id,
-            )
-            .await
-    }
-    .map_err(CombatDeathRewardLootError::Corpse)?;
-    let corpse_mint = committed(corpse_outcome);
-
-    let mut entries = Vec::with_capacity(plan.entries.len());
-    for (index, entry) in plan.entries.iter().enumerate() {
         let request = CorpseLootMintRequest {
             cause: ItemMintCause::from_creature_death(
                 death,
@@ -689,42 +605,52 @@ async fn settle_loot(
                 entry.purpose_key.clone(),
                 entry.draw_ordinal,
             )
-            .map_err(|error| CombatDeathRewardLootError::Mint(error, corpse_mint.clone()))?,
+            .map_err(CombatDeathRewardLootError::Corpse)?,
             item: to_typed_definition(&entry.item),
             quantity: entry.quantity,
             placement: CorpseContainerPlacement {
-                corpse_item_instance_id: corpse_mint.item_instance_id,
-                // The preflight bounds `index` by the container capacity.
-                placement_ordinal: u32::try_from(index + 1).map_err(|_| {
-                    CombatDeathRewardLootError::Mint(
-                        ItemMintError::InvalidInput,
-                        corpse_mint.clone(),
-                    )
-                })?,
+                corpse_item_instance_id: parent,
+                placement_ordinal: entry.placement_ordinal,
                 fluid_subtype: entry.fluid_subtype(),
             },
             content_revision: ground.content_revision.clone(),
             ruleset_revision: ground.ruleset_revision.clone(),
             sim_revision: ground.sim_revision.clone(),
         };
-        let mut candidate = session
-            .root
-            .freeze_corpse_loot_mint(session.authority, session.node, request)
-            .await
-            .map_err(|error| CombatDeathRewardLootError::Mint(error, corpse_mint.clone()))?;
-        let outcome = session
-            .root
-            .commit_corpse_loot_mint(permit, session.authority, session.node, &mut candidate)
-            .await
-            .map_err(|error| CombatDeathRewardLootError::Mint(error, corpse_mint.clone()))?;
-        let mint = committed(outcome);
-        committed_loot.push((mint.clone(), entry.item.clone(), entry.quantity));
-        entries.push(mint);
+        children.push(
+            session
+                .root
+                .freeze_kill_loot_entry(session.authority, session.node, request)
+                .await
+                .map_err(CombatDeathRewardLootError::Corpse)?,
+        );
     }
-    Ok(Some(CommittedCorpseLoot {
-        corpse: corpse_mint,
-        entries,
-    }))
+    let outcomes = session
+        .root
+        .commit_kill_loot_mints(
+            permit,
+            session.authority,
+            session.node,
+            &mut corpse_candidate,
+            &mut children,
+            top_damage_character_id,
+            ground.boss_spawn.clone(),
+            tutorial_corruptor,
+        )
+        .await
+        .map_err(CombatDeathRewardLootError::Corpse)?;
+    let mut outcomes = outcomes.into_iter().map(committed);
+    let corpse = outcomes.next().ok_or(CombatDeathRewardLootError::Corpse(
+        ItemMintError::InvalidInput,
+    ))?;
+    let entries: Vec<_> = outcomes.collect();
+    committed_loot.extend(
+        entries
+            .iter()
+            .zip(&plan.entries)
+            .map(|(mint, entry)| (mint.clone(), entry.item.clone(), entry.quantity)),
+    );
+    Ok(Some(CommittedCorpseLoot { corpse, entries }))
 }
 
 fn committed(outcome: ItemMintOutcome) -> CommittedItemMint {

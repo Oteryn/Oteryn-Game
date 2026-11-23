@@ -6,6 +6,43 @@ use crate::foundation::{ExactActorRef, GameSessionId};
 
 use crate::gameplay_transport::ComposedFreshAdmission;
 
+pub(super) fn select_nominal_sliver_miss(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    rewards: &crate::content::creature_reward::CreatureRewardTable,
+) -> TestResult {
+    use oteryn_gameplay_items::loot_plan::{LootPlanDeathKey, plan_creature_loot};
+    let row = rewards.row("oteryn:creature.rat").map_err(debug)?;
+    let reference = row.loot_table_ref.as_ref().ok_or("rat loot reference")?;
+    let mut legacy = row.loot_table.clone();
+    let sliver = rewards.forge_sliver().ok_or("sliver item")?.clone();
+    legacy.entries.push(crate::combat::LootTableEntry {
+        item: sliver.clone(),
+        min_count: 3,
+        max_count: 3,
+        probability_ppm: Some(1_000_000),
+        details: Default::default(),
+    });
+    // Reuse the first carrier slot until the real activation-spawn incarnation
+    // has an occurrence whose ordinary 100% sliver entry would miss.
+    let position = crate::foundation::MovementLocalPosition { x: 1, y: 11, floor: -7 };
+    for _ in 0..2048 {
+        let probe = runtime.admit_pinned_test_creature(position).map_err(debug)?;
+        runtime.remove_test_actor(probe).map_err(debug)?;
+        let seed = LootPlanDeathKey::new(
+            *probe.world_id().as_bytes(),
+            *probe.channel_id().ok_or("Channel")?.as_bytes(),
+            probe.scope_generation().get(),
+            probe.actor_local_id(),
+            probe.actor_local_generation() + 1,
+        );
+        let plan = plan_creature_loot(seed, reference, &legacy).map_err(debug)?;
+        if !plan.entries.iter().any(|entry| entry.item == sliver) {
+            return Ok(());
+        }
+    }
+    Err("no nominal sliver miss found".into())
+}
+
 pub(super) async fn prepare(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -26,7 +63,7 @@ pub(super) async fn prepare(
                 .get_mut(&runtime, *actor, *session)
                 .ok_or("player")?
                 .apply_owner_premium_transition(
-                    !matches!(case, Case::ForgeAllFree)
+                    !matches!(case, Case::ForgeAllFree | Case::ForgeSliver)
                         && (!matches!(case, Case::ForgeFree) || index == 0),
                     Some(u64::MAX),
                 )
@@ -95,28 +132,33 @@ pub(super) async fn assert_receipts(h: &Harness, case: Case) -> TestResult {
             "5 rat XP * fiendish 2x, then 30% two-vocation bonus: ceil(10 * 1.3 / 2) = 7 per member; level 1 low-level bonus: 7 * 2 = 14; Premium stamina: floor(14 * 1.5) = 21 each, 42 total"
         );
     }
-    let entries: Vec<(i64, i64, i64, i64)> = sqlx::query_as("SELECT amount,lost_amount,balance_before,balance_after FROM game_character_forge_dust_entries WHERE cause_occurrence_id<>encode($1,'hex')::uuid ORDER BY balance_before LIMIT 3")
+    let entries: Vec<(Vec<u8>, i64, i64, i64, i64)> = sqlx::query_as("SELECT uuid_send(character_id),amount,lost_amount,balance_before,balance_after FROM game_character_forge_dust_entries WHERE cause_occurrence_id<>encode($1,'hex')::uuid ORDER BY balance_before LIMIT 3")
         .bind(id(200).as_slice()).fetch_all(&h.pool).await?;
     let expected = match case {
-        Case::ForgeAllFree => 0,
+        Case::ForgeAllFree | Case::ForgeSliver => 0,
         Case::ForgeFree | Case::ForgeIdle | Case::ForgeFar => 1,
         Case::ForgeForeign => 3,
         _ => 2,
     };
+    eprintln!("CREATURES_FORGE_POSTGRES_CASE_EXECUTED");
     assert_eq!(entries.len(), expected);
     if expected > 0 {
-        let capped = entries
-            .iter()
-            .find(|row| row.2 == 98)
-            .ok_or("capped recipient")?;
-        assert!((15..=45).contains(&capped.0));
-        assert_eq!((capped.1, capped.3), (capped.0 - 2, 100));
-        if expected >= 2 {
-            let full: Vec<_> = entries.iter().filter(|row| row.2 == 0).collect();
-            assert_eq!(full.len(), expected - 1);
-            for row in full {
-                assert_eq!((row.0, row.1, row.3), (capped.0, 0, capped.0));
-            }
+        use sha2::{Digest, Sha256};
+        let death_key: Vec<u8> = sqlx::query_scalar("SELECT death_key FROM game_party_kill_xp_receipts")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(entries.iter().filter(|row| row.3 == 98).count(), 1);
+        for (character, requested, lost, before, after) in &entries {
+            let digest = Sha256::new()
+                .chain_update(b"oteryn:forge-dust-recipient:v1")
+                .chain_update(&death_key)
+                .chain_update(character)
+                .finalize();
+            let expected = i64::from(crate::domain::forge_creature::ForgeCreature::Fiendish.dust(digest[0]));
+            let credited = expected.min(100 - before);
+            assert_eq!((*requested, *lost, *after), (expected, expected - credited, before + credited), "recipient-specific draw and cap");
+        }
+        if matches!(case, Case::ForgeReplay) {
+            assert_ne!(entries[0].1, entries[1].1, "fixture exercises distinct draws");
         }
     }
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_kill_xp_receipts")
