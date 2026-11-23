@@ -4,6 +4,9 @@ use std::time::Duration;
 
 #[derive(Clone)]
 pub(super) enum Control {
+    Character,
+    Floor,
+    Mount,
     Left,
     Right,
     Movement(bool),
@@ -11,6 +14,7 @@ pub(super) enum Control {
 pub(super) struct Playback {
     pub(super) direction: u32,
     pub(super) moving: bool,
+    pub(super) layers: preview::Layers,
     elapsed: Duration,
     sample: Option<u128>,
 }
@@ -19,6 +23,7 @@ impl Default for Playback {
         Self {
             direction: 2,
             moving: true,
+            layers: Default::default(),
             elapsed: Duration::ZERO,
             sample: None,
         }
@@ -30,6 +35,9 @@ impl Playback {
     }
     pub(super) fn edit(&mut self, control: &Control) {
         match control {
+            Control::Character => self.layers.character = !self.layers.character,
+            Control::Floor => self.layers.floor = !self.layers.floor,
+            Control::Mount => self.layers.mount = !self.layers.mount,
             Control::Left => self.direction = (self.direction + 3) % 4,
             Control::Right => self.direction = (self.direction + 1) % 4,
             Control::Movement(moving) => {
@@ -78,7 +86,7 @@ pub(super) fn animate(
     let Some(artwork) = artwork.as_mut() else {
         return;
     };
-    let Ok(pixels) = artwork.draw_panel(panel, direction, elapsed, moving) else {
+    let Ok(pixels) = artwork.draw_layers(panel, direction, elapsed, moving, playback.layers) else {
         return;
     };
     if let Some(mut target) = handle.as_ref().and_then(|handle| images.get_mut(handle)) {

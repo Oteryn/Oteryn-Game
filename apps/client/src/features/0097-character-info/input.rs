@@ -46,7 +46,7 @@ impl PlayLink {
     pub fn character_info_open(&self) {
         lock(&self.mailbox).properties.character_info.open = true;
     }
-    pub fn character_titles_open(&self) {
+    pub(crate) fn outfit_request_own_title(&self) {
         {
             let mut mailbox = lock(&self.mailbox);
             let panel = &mut mailbox.properties.character_info;
@@ -57,6 +57,9 @@ impl PlayLink {
                 submit(&mut mailbox, &self.commands, Intent::Query);
             }
         }
+    }
+    pub fn character_titles_open(&self) {
+        self.outfit_request_own_title();
         lock(&self.mailbox).properties.character_info.titles_open = true;
     }
     pub fn character_info_input(&self, events: &[NormalizedInputEvent]) -> bool {

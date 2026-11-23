@@ -66,6 +66,29 @@ pub fn observe(panel: &mut Panel, bosses: &BossEncounterPanel, response: &BossRe
         });
     }
 }
+pub fn rows<'a>(panel: &Panel, bosses: &'a BossEncounterPanel) -> Vec<&'a (String, u64)> {
+    let Some(snapshot) = &bosses.snapshot else {
+        return Vec::new();
+    };
+    let query = panel.display.boss_search.trim().to_lowercase();
+    let mut rows = snapshot
+        .cooldowns
+        .iter()
+        .filter(|(key, _)| {
+            key.to_lowercase().contains(&query)
+                || bosses
+                    .boss_names
+                    .get(key)
+                    .is_some_and(|name| name.to_lowercase().contains(&query))
+        })
+        .collect::<Vec<_>>();
+    if panel.display.boss_name_order {
+        rows.sort_by_key(|(key, _)| bosses.boss_names.get(key).unwrap_or(key).to_lowercase());
+    } else {
+        rows.sort_by(|a, b| a.1.cmp(&b.1).then_with(|| a.0.cmp(&b.0)));
+    }
+    rows
+}
 pub fn text(panel: &Panel, bosses: &BossEncounterPanel, rewards: &BossRewardsPanel) -> String {
     text_at(panel, bosses, rewards, Instant::now())
 }
@@ -78,9 +101,46 @@ pub fn text_at(
     let elapsed = bosses.cooldown_received_at.map_or(0, |at| {
         u64::try_from(now.saturating_duration_since(at).as_millis()).unwrap_or(u64::MAX)
     });
+    let cooldowns = if let Some(snapshot) = bosses.snapshot.as_ref().filter(|_| bosses.selected) {
+        let mut text = String::from(tr!("Boss cooldown tracker — Ctrl+Alt+Shift+J\r\n"));
+        let rows = rows(panel, bosses);
+        if snapshot.cooldowns.is_empty() {
+            text.push_str(tr!("No cooldown records on this page\r\n"));
+        } else if rows.is_empty() {
+            text.push_str("No matching cooldown records on this page\r\n");
+        }
+        for (key, deadline) in rows {
+            let key = bosses.boss_names.get(key).unwrap_or(key);
+            let remaining = deadline
+                .saturating_sub(snapshot.now)
+                .saturating_sub(elapsed);
+            if remaining == 0 {
+                let _ = lwrite!(text, "{key}: Ready — refresh to confirm\r\n", key = key);
+            } else {
+                let _ = lwrite!(
+                    text,
+                    "{key}: {remaining} ms remaining\r\n",
+                    key = key,
+                    remaining = remaining
+                );
+            }
+        }
+        if snapshot.cooldown_next.is_some() || snapshot.progress_next.is_some() {
+            text.push_str(tr!("More records available: Next page\r\n"));
+        }
+        if bosses.pending {
+            text.push_str(tr!("Waiting for the server\r\n"));
+        }
+        if let Some(feedback) = bosses.feedback {
+            text.push_str(feedback);
+        }
+        text
+    } else {
+        crate::boss_encounter::cooldown_text(bosses, elapsed)
+    };
     let mut text = lfmt!(
         "Boss Tracker\r\n{}\r\nPersonal drop chests (refresh confirms live contents)\r\n",
-        crate::boss_encounter::cooldown_text(bosses, elapsed)
+        cooldowns
     );
     if let Some(feedback) = panel.feedback {
         let _ = write!(text, "{feedback}\r\n");
