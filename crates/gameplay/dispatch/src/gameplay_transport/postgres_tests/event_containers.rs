@@ -300,18 +300,20 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             command_id,
             item_fence: Some(fence),
         };
+        let blue_present = bag_key == crate::durability::item_craft::BLUE_PRESENT;
         assert!(
             owner
                 .use_reward_bag_intent(
                     deps.actor,
                     command(fence),
                     &intent,
-                    Some(ItemKey::Instance(source))
+                    (!blue_present).then_some(ItemKey::Instance(source)),
+                    None,
                 )
                 .await
                 .map_err(debug)?
                 .is_none(),
-            "W19 pre-routing must defer to SP04"
+            "W19 pre-routing needs an admitted source or an exact receipt"
         );
         // Changing only the current connection generation cannot consume the source.
         let mut stale = fence;
@@ -499,11 +501,16 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         restarted.active_generation = Some(active);
         restarted.movement_cells = (&cells).into();
         deps.initialize(&restarted).await;
-        let replayed = restarted
-            .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
-            .await
-            .ok_or("SP04 route")?
-            .ok_or("restart replay without retired view handle")?;
+        let replayed = if blue_present {
+            let exact = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+                next.continuity.selected_capabilities.as_slice(), &payload,
+            ).map_err(debug)?;
+            restarted.use_reward_bag_intent(deps.actor, command(fence), &exact, None, None)
+                .await.map_err(debug)?
+        } else {
+            restarted.use_reward_bag(deps.actor, command(fence), ItemKey::Instance(source))
+                .await.ok_or("SP04 route")?
+        }.ok_or("restart replay without retired view handle")?;
         assert_eq!(replayed.disposition, UseDisposition::Committed);
         let changed = restarted
             .use_reward_bag(deps.actor, command(fence), ItemKey::Instance(id(99)))
@@ -517,8 +524,12 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
                 .await?;
         assert_eq!(
             recorded_intent,
-            [b"oteryn:reward-bag-use:v1".as_slice(), source.as_slice()].concat(),
-            "SP04 receipt binds the historical instance tag"
+            if blue_present {
+                payload
+            } else {
+                [b"oteryn:reward-bag-use:v1".as_slice(), source.as_slice()].concat()
+            },
+            "the receipt preserves the original routed intent"
         );
         assert_eq!(craft_count().await?, 1);
         let replay_outputs: serde_json::Value =

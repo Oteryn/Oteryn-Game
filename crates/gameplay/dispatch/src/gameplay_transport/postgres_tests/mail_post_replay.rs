@@ -5,7 +5,8 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{ChannelContentPin, MovementLocalPosition};
 use crate::gameplay_transport::{
-    capabilities::SelectedCapabilities, connection::FreshAdmissionAuthority, item_view::ItemKey,
+    capabilities::SelectedCapabilities, connection::{FreshAdmissionAuthority, route_mail_for_test},
+    item_view::{InventoryItems, ItemKey, ItemViewContinuity, SessionItemView, ViewItem},
 };
 use crate::map::{
     boot::{BootPins, boot, tests as bundle_fixture},
@@ -25,7 +26,7 @@ const START: TilePos = TilePos {
 };
 
 #[test]
-fn mail_post_retry_after_step_away_returns_receipt_without_second_delivery() -> TestResult {
+fn direct_post_wire_retry_without_original_handles_returns_exact_receipt() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -166,32 +167,54 @@ async fn scenario(admin: String) -> TestResult {
         })
     };
     let mailbox = map_item(mailbox_position)?;
-    let first = encode_intent(&MailIntent::Post {
-        item_handle: 1,
-        mailbox_handle: 2,
-    })
-    .map_err(debug)?;
-    let second = encode_intent(&MailIntent::Post {
-        item_handle: 3,
-        mailbox_handle: 2,
-    })
-    .map_err(debug)?;
-    let post = async |command_id, payload: &[u8], item, target| {
-        owner
-            .mail_command(
-                actor,
-                admitted,
-                command_id,
-                payload,
-                Some(ItemKey::Instance(item)),
-                Some(target),
-            )
-            .await
+    let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+    let letter_ref = reference(LETTER).ok_or("letter reference")?;
+    view.inventory_committed(InventoryItems {
+        main_backpack: Some(ViewItem {
+            appearance_id: 2854,
+            key: ItemKey::Instance(id(70)),
+            item_definition_ref: reference("oteryn:item.tibia.i2854").ok_or("backpack reference")?,
+            count: std::num::NonZeroU32::MIN,
+            sub_type: 0,
+        }),
+        entries: [id(71), id(72)].into_iter().map(|instance| ViewItem {
+            appearance_id: 3505,
+            key: ItemKey::Instance(instance),
+            item_definition_ref: letter_ref,
+            count: std::num::NonZeroU32::MIN,
+            sub_type: 0,
+        }).collect(),
+        ..InventoryItems::default()
+    }).map_err(debug)?;
+    let other_mailbox = map_item(START)?;
+    view.map_view(&[mailbox, other_mailbox], |_| Ok(())).map_err(debug)?;
+    let payload = |item, target| -> TestResult<Vec<u8>> {
+        encode_intent(&MailIntent::Post {
+            item_handle: view.table().handle(&ItemKey::Instance(item)).ok_or("letter handle")?.get(),
+            mailbox_handle: view.table().handle(&target).ok_or("mailbox handle")?.get(),
+        }).map_err(debug)
     };
-    assert_eq!(
-        post(500, &first, id(71), mailbox).await,
-        Some(MailOutcome::Posted)
-    );
+    let first = payload(id(71), mailbox)?;
+    let second = payload(id(72), mailbox)?;
+    let other_target = payload(id(71), other_mailbox)?;
+    let rebuilt_view = Some(SessionItemView::resume(view.continuity()).with_map_view());
+    assert!(rebuilt_view.as_ref().is_some_and(|rebuilt| {
+        view.table().handle(&ItemKey::Instance(id(71)))
+            .is_some_and(|handle| rebuilt.resolve(handle).is_none())
+    }));
+    let post = async |command_id, payload: &[u8], view: &Option<SessionItemView>| {
+        route_mail_for_test(
+            &owner, actor, &admitted,
+            oteryn_protocol_oteryn::ClientCommandView {
+                command_id,
+                command_type: u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL),
+                payload,
+            },
+            view,
+        ).await
+    };
+    let old_view = Some(view);
+    assert_eq!(post(500, &first, &old_view).await, Some(vec![MailOutcome::Posted as u8]));
 
     {
         let mut runtime = deps.runtime.lock().await;
@@ -215,34 +238,29 @@ async fn scenario(admin: String) -> TestResult {
     sqlx::query("ALTER TABLE game_mail_operations RENAME TO fixture_mail_operations_unavailable")
         .execute(&harness.pool)
         .await?;
-    let unavailable = post(500, &first, id(71), mailbox).await;
+    let unavailable = post(500, &first, &rebuilt_view).await;
     sqlx::query("ALTER TABLE fixture_mail_operations_unavailable RENAME TO game_mail_operations")
         .execute(&harness.pool)
         .await?;
     assert_eq!(unavailable, None, "receipt read failure leaves the outcome unknown");
     assert_eq!(
-        post(500, &first, id(71), mailbox).await,
-        Some(MailOutcome::Posted),
+        post(500, &first, &rebuilt_view).await,
+        Some(vec![MailOutcome::Posted as u8]),
         "exact retry after stepping away"
     );
     assert_eq!(
-        post(500, &second, id(72), mailbox).await,
-        Some(MailOutcome::Rejected),
+        post(500, &second, &rebuilt_view).await,
+        Some(vec![MailOutcome::Rejected as u8]),
         "same command with a different letter"
     );
-    let other_target = encode_intent(&MailIntent::Post {
-        item_handle: 1,
-        mailbox_handle: 4,
-    })
-    .map_err(debug)?;
     assert_eq!(
-        post(500, &other_target, id(71), map_item(START)?).await,
-        Some(MailOutcome::Rejected),
+        post(500, &other_target, &rebuilt_view).await,
+        Some(vec![MailOutcome::Rejected as u8]),
         "same command with a different placement"
     );
     assert_eq!(
-        post(501, &second, id(72), mailbox).await,
-        Some(MailOutcome::Rejected),
+        post(501, &second, &old_view).await,
+        Some(vec![MailOutcome::Rejected as u8]),
         "fresh post out of reach"
     );
     let posted: (i64, i64, i64) = sqlx::query_as(

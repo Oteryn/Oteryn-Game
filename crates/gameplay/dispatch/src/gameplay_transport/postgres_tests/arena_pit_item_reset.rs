@@ -1,4 +1,4 @@
-//! W17: exercise item retirement through the arena match wire owner.
+//! W17: exercise the item selector through the arena match wire owner.
 use super::arena_match_fixtures::fixture;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -65,7 +65,7 @@ fn arena_reset_proof_preserves_runtime_ground_removal_guard() -> TestResult {
 }
 
 #[test]
-fn svargrond_pit_reset_retires_only_the_movable_top_item_under_current_lease() -> TestResult {
+fn svargrond_pit_reset_preserves_items_below_the_crystal_thing_index() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -288,40 +288,22 @@ fn scenario() -> TestResult {
         assert!(!deps.runtime.lock().await.contains_live_creature(creature));
         assert_eq!(
             ground_roots(&h).await?,
-            3,
-            "only the exposed top root retires"
+            4,
+            "the donor lookup is empty on an ordinary tile"
         );
         let after = crate::gameplay_transport::loop_move::loop_ground(
             &owner, world.base(), Some(index),
-        ).await.ok_or("post-reset Ground rebuild")?;
+        ).await.ok_or("post-reset Ground projection")?;
         assert!(
-            !std::sync::Arc::ptr_eq(&rebuilt, &after),
-            "the committed reset invalidates the concurrent pre-reset projection",
+            std::sync::Arc::ptr_eq(&rebuilt, &after),
+            "the empty selection leaves the Ground projection current",
         );
-        let envelope: Vec<u8> = sqlx::query_scalar(
-            "SELECT o.envelope FROM game_item_decay_retire_receipts r JOIN game_item_audit_outbox o USING(event_id)
-             WHERE r.cause_kind='ARENA_RESET'",
-        ).fetch_one(&h.pool).await?;
-        let (_, retired) =
-            crate::durability::item_decay_retire_audit::decode_decay_retire_envelope(&envelope)
-                .map_err(debug)?;
-        let cause = retired.arena_reset.ok_or("arena audit cause")?;
-        assert_eq!(cause.game_session_id, admitted.game_session_id.as_bytes());
-        assert_eq!(cause.pit, 1);
-        assert_eq!(
-            retired
-                .before
-                .ok_or("before")?
-                .definition
-                .ok_or("definition")?
-                .production_key,
-            "oteryn:item.tibia.i3035"
-        );
-        assert!(sqlx::query_scalar::<_, bool>(
-            "SELECT EXISTS(SELECT 1 FROM game_svargrond_pit_leases
-             WHERE run_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND pit=$3 AND expires_at_ms=$4)",
-        ).bind(&cause.run_id).bind(&cause.game_session_id).bind(i16::try_from(cause.pit)?)
-            .bind(i64::try_from(cause.deadline_unix_ms)?).fetch_one(&h.pool).await?);
+        let counts: (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_item_decay_retire_receipts WHERE cause_kind='ARENA_RESET'),
+                    (SELECT count(*) FROM game_svargrond_pit_leases WHERE pit=1
+                     AND game_session_id=encode($1,'hex')::uuid)",
+        ).bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(counts, (0, 1));
         let replay = owner
             .arena_match_wire(admitted, entry, &payload)
             .await
@@ -329,8 +311,8 @@ fn scenario() -> TestResult {
         assert_eq!(replay, bytes);
         assert_eq!(
             ground_roots(&h).await?,
-            3,
-            "replay cannot peel another layer"
+            4,
+            "replay preserves the same Ground"
         );
         Ok(())
     })

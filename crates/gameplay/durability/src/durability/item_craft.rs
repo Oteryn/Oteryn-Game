@@ -23,6 +23,7 @@ use serde_json::{Value, json};
 use sqlx::Row;
 
 pub(crate) mod audit;
+mod blue_present_plan;
 mod elemental_energy;
 mod enchanting;
 mod event_containers;
@@ -568,63 +569,85 @@ async fn write<C: ItemLoopContent>(
     let full_backpack =
         occupied + output_count - i64::from(frees_output_slot) - i64::from(retires_ingredient)
             > i64::from(capacity);
-    // The donor tries to give the present's gift before removing the present.
-    let drop = if occupied + output_count > i64::from(capacity)
-        && conversion.recipe == event_containers::BLUE_PRESENT_RECIPE
+    let blue_present = conversion.recipe == event_containers::BLUE_PRESENT_RECIPE
         && definition.production_key == BLUE_PRESENT
         && consumed_quantity == 1
         && request.ingredient.is_none()
-        && output_count == 1
-        && let CraftVariant::BluePresentDrop(drop) = variant
-    {
-        Some(drop)
-    } else {
-        if full_backpack
+        && output_count == 1;
+    if blue_present && capacity == 0 {
+        return Ok(UseDisposition::NotPossible);
+    }
+    if !blue_present
+        && (full_backpack
             || tree_count + output_count - i64::from(retires_source) - i64::from(retires_ingredient)
-                > 500
-        {
-            return Ok(UseDisposition::NoRoom);
-        }
-        None
+                > 500)
+    {
+        return Ok(UseDisposition::NoRoom);
+    }
+    let carried = match carried_weight(tx, fence.character_id, *world.as_bytes(), content).await {
+        Ok(weight) => weight,
+        Err(_) => return Ok(UseDisposition::NotPossible),
     };
-    if drop.is_none() {
-        // Whole carried weight and capacity use the same locked projection as the item loop.
-        let carried = match carried_weight(tx, fence.character_id, *world.as_bytes(), content).await
-        {
-            Ok(w) => w,
-            Err(_) => return Ok(UseDisposition::NotPossible),
+    let mut output_weight = 0_u64;
+    let mut possible_merge = None;
+    for (reward, count) in &conversion.outputs {
+        let Some(facts) = content.loop_facts(reward) else {
+            return Ok(UseDisposition::NotPossible);
         };
+        let (Some(weight), Ok((maximum, stackable))) = (facts.weight, stack_maximum(facts.stack)) else {
+            return Ok(UseDisposition::NotPossible);
+        };
+        // A qualified container gift starts empty; the writer creates no children.
+        let empty_container = request.station.is_none()
+            && *count == 1
+            && (reward.production_key == "oteryn:item.tibia.i39150"
+                || oteryn_gameplay_items::reward_bag::event_containers::permits_empty_container(
+                    &conversion.recipe,
+                    &reward.production_key,
+                )
+                || is_reward_bag_output(&conversion.recipe, &reward.production_key));
+        if facts.container_capacity.is_some() && !empty_container || *count > maximum {
+            return Ok(UseDisposition::NotPossible);
+        }
+        if blue_present && stackable {
+            possible_merge = Some((reward, maximum, *count));
+        }
+        output_weight += u64::from(weight) * u64::from(*count);
+    }
+    let carrying_capacity =
+        read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
+    let mut drop = None;
+    let mut outputs = Vec::new();
+    let mut remaining_gift = None;
+    if blue_present {
+        // Crystal game.cpp:2782–2805 places the gift before consuming the present.
+        // Only the carried admission may use compatible stacks under the backpack lock.
+        let remaining = if let Some((reward, maximum, amount)) = possible_merge {
+            let (merges, remaining) =
+                event_containers::blue_present_stack_merges(tx, &parent, reward, amount, maximum).await?;
+            outputs = merges;
+            remaining
+        } else {
+            conversion.outputs[0].1
+        };
+        use blue_present_plan::Admission;
+        let admission = blue_present_plan::admit(
+            remaining, occupied < i64::from(capacity) && tree_count < 500,
+            carried, output_weight, carrying_capacity,
+        );
+        match (admission, variant) {
+            (Admission::Carried, _) => remaining_gift = Some(remaining),
+            (_, CraftVariant::BluePresentDrop(target)) => {
+                outputs.clear();
+                drop = Some(target);
+            }
+            (Admission::NoRoom, _) => return Ok(UseDisposition::NoRoom),
+            (Admission::TooHeavy, _) => return Ok(UseDisposition::NotPossible),
+        }
+    } else {
         let Some(used_weight) = content.loop_facts(&definition).and_then(|f| f.weight) else {
             return Ok(UseDisposition::NotPossible);
         };
-        let mut output_weight = 0_u64;
-        for (definition, count) in &conversion.outputs {
-            let Some(facts) = content.loop_facts(definition) else {
-                return Ok(UseDisposition::NotPossible);
-            };
-            let Some(weight) = facts.weight else {
-                return Ok(UseDisposition::NotPossible);
-            };
-            // Mint only an empty container admitted by the Primal Bag, W19 source
-            // table, or captured reward catalogue; the writer creates no children.
-            let empty_container = request.station.is_none()
-                && *count == 1
-                && (definition.production_key == "oteryn:item.tibia.i39150"
-                    || oteryn_gameplay_items::reward_bag::event_containers::permits_empty_container(
-                        &conversion.recipe,
-                        &definition.production_key,
-                    )
-                    || is_reward_bag_output(&conversion.recipe, &definition.production_key));
-            if (facts.container_capacity.is_some() && !empty_container)
-                || *count
-                    > stack_maximum(facts.stack)
-                        .map(|(maximum, _)| maximum)
-                        .unwrap_or(0)
-            {
-                return Ok(UseDisposition::NotPossible);
-            }
-            output_weight += u64::from(weight) * u64::from(*count);
-        }
         let ingredient_weight = match &ingredient_consumed {
             Some((target, _)) => {
                 let Some(weight) = content.loop_facts(target).and_then(|facts| facts.weight) else {
@@ -634,8 +657,6 @@ async fn write<C: ItemLoopContent>(
             }
             None => 0,
         };
-        let capacity =
-            read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
         if carried
             .checked_sub(if consumes_source {
                 u64::from(used_weight)
@@ -644,9 +665,9 @@ async fn write<C: ItemLoopContent>(
             } else {
                 0
             })
-            .and_then(|w| w.checked_sub(ingredient_weight))
-            .and_then(|w| w.checked_add(output_weight))
-            .is_none_or(|w| w > capacity)
+            .and_then(|weight| weight.checked_sub(ingredient_weight))
+            .and_then(|weight| weight.checked_add(output_weight))
+            .is_none_or(|weight| weight > carrying_capacity)
         {
             return Ok(UseDisposition::NotPossible);
         }
@@ -660,8 +681,11 @@ async fn write<C: ItemLoopContent>(
     } else {
         0
     };
-    let mut outputs = Vec::new();
     for (position, (definition, count)) in conversion.outputs.iter().enumerate() {
+        let count = remaining_gift.unwrap_or(*count);
+        if count == 0 {
+            continue;
+        }
         let item: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
             .fetch_one(&mut ***tx)
             .await?;
@@ -677,7 +701,7 @@ async fn write<C: ItemLoopContent>(
             else {
                 return Ok(UseDisposition::NotPossible);
             };
-            if !qualified.ground_destination || *count == 0 || *count > qualified.stack_maximum {
+            if !qualified.ground_destination || count > qualified.stack_maximum {
                 return Ok(UseDisposition::NotPossible);
             }
             let ground = match drop
@@ -692,7 +716,7 @@ async fn write<C: ItemLoopContent>(
                 .fetch_one(&mut ***tx)
                 .await?
                 .to_string()
-        } else if frees_output_slot && position == 0 {
+        } else if !blue_present && frees_output_slot && position == 0 {
             source.try_get::<String, _>("ordinal")?
         } else {
             ordinal = ordinal
@@ -785,6 +809,12 @@ async fn write<C: ItemLoopContent>(
             .await?;
     }
     for output in outputs {
+        if output.get("merge_before").is_some() {
+            sqlx::query("UPDATE game_item_instances SET quantity=quantity+($1->>'count')::bigint,
+                         last_transaction_id=$2::uuid WHERE item_instance_id=($1->>'item')::uuid")
+                .bind(&output).bind(&transaction).execute(&mut ***tx).await?;
+            continue;
+        }
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
         if output.get("ground").is_some() {

@@ -25,7 +25,7 @@ fn blue_present_full_backpack_drops_one_reward_and_consumes_one_present_once() -
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(admin, 2).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(admin, 2, PackSetup::Full).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "full backpack reward scenario thread")??;
     Ok(())
@@ -38,13 +38,57 @@ fn blue_present_last_unit_in_full_backpack_drops_before_freeing_source_slot() ->
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(admin, 1).map_err(|error| error.to_string()))?
+        .spawn(move || scenario(admin, 1, PackSetup::Full).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "last unit full backpack reward scenario thread")??;
     Ok(())
 }
 
-fn scenario(admin: String, quantity: i64) -> TestResult {
+#[test]
+fn blue_present_full_backpack_merges_the_gift_without_a_public_drop() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario(admin, 2, PackSetup::CompatibleStack).map_err(|error| error.to_string()))?
+        .join().map_err(|_| "compatible-stack scenario thread")??;
+    Ok(())
+}
+
+#[test]
+fn blue_present_with_a_free_slot_and_no_capacity_uses_ground() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario(admin, 1, PackSetup::Overweight).map_err(|error| error.to_string()))?
+        .join().map_err(|_| "overweight present scenario thread")??;
+    Ok(())
+}
+
+#[test]
+fn blue_present_legacy_receipt_uses_the_retained_original_handle_binding() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario(admin, 1, PackSetup::LegacyReceipt).map_err(|error| error.to_string()))?
+        .join().map_err(|_| "legacy present replay scenario thread")??;
+    Ok(())
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum PackSetup {
+    Full,
+    CompatibleStack,
+    Overweight,
+    LegacyReceipt,
+}
+
+fn scenario(admin: String, quantity: i64, setup: PackSetup) -> TestResult {
     run(async move |_| {
         let harness =
             Harness::create_with_admission_seed(admin, "w19a_full_pack", true, false).await?;
@@ -176,20 +220,50 @@ fn scenario(admin: String, quantity: i64) -> TestResult {
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(bundle_room.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
 
-        let mut entries = vec![(BLUE_PRESENT, quantity)];
-        entries.resize(20, ("oteryn:item.tibia.i3588", 1));
-        super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
-        let source = id(71);
         let source_ref = reference(BLUE_PRESENT).ok_or("Blue Present reference")?;
         let definition = crate::gameplay_transport::item_look::typed_definition(index, source_ref)
             .ok_or("Blue Present definition")?;
-        let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), 1, source);
-        let expected =
-            reward_bag_conversion(native, &definition, draw).ok_or("Blue Present reward")?;
+        let command_id = 1;
+        let source = if setup == PackSetup::CompatibleStack {
+            (4096_u32..8192).map(|candidate| {
+                let mut source = id(71);
+                source[12..].copy_from_slice(&candidate.to_be_bytes());
+                source
+            }).find(|source| {
+                let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), command_id, *source);
+                reward_bag_conversion(native, &definition, draw).is_some_and(|conversion|
+                    conversion.outputs.iter().any(|(reward, _)| reward.production_key == "oteryn:item.tibia.i3598"))
+            }).ok_or("stackable Blue Present draw")?
+        } else {
+            id(71)
+        };
+        let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), command_id, source);
+        let expected = reward_bag_conversion(native, &definition, draw).ok_or("Blue Present reward")?;
         assert_eq!(expected.recipe, "oteryn:reward-bag.event_6570");
         let [(reward, amount)] = expected.outputs.as_slice() else {
             return Err("Blue Present must select one reward".into());
         };
+        let mut entries = vec![(BLUE_PRESENT, quantity)];
+        if setup == PackSetup::CompatibleStack {
+            entries.push((reward.production_key.as_str(), 1));
+        }
+        if setup == PackSetup::Overweight {
+            entries.resize(19, ("oteryn:item.tibia.i43872", 1));
+        } else {
+            entries.resize(20, ("oteryn:item.tibia.i3588", 1));
+        }
+        super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
+
+        if source != id(71) {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_item_instances SET item_instance_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid")
+                .bind(source.as_slice()).bind(id(71).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_item_container_entries SET item_instance_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid")
+                .bind(source.as_slice()).bind(id(71).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
+
         let intent = UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("source handle")?),
             use_with: None,
@@ -201,14 +275,65 @@ fn scenario(admin: String, quantity: i64) -> TestResult {
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
+        admitted.continuity.next_command_id = command_id;
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
                 .ok_or("reward use capabilities")?;
         let command = UseCommand {
             game_session_id: fence.game_session_id,
-            command_id: 1,
+            command_id,
             item_fence: Some(fence),
         };
+        if setup == PackSetup::CompatibleStack {
+            let (_, result, _) = exchange(&owner, admitted, command_id, &payload, Some(source_ref)).await?;
+            assert_eq!(result, UseDisposition::Committed);
+            let state: (i64, bool, i64, i64, i64) = sqlx::query_as(
+                "SELECT i.quantity, i.state_revision=2,
+                        (SELECT count(*) FROM game_item_ground_locations),
+                        (SELECT count(*) FROM game_item_craft_records),
+                        (SELECT count(*) FROM game_item_audit_outbox)
+                 FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
+                 WHERE i.item_instance_id=encode($1,'hex')::uuid",
+            ).bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(state, (1 + i64::from(*amount), true, 0, 1, 1));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        if setup == PackSetup::LegacyReceipt {
+            use crate::gameplay_transport::item_view::{ItemViewContinuity, SessionItemView};
+            // Record a binding from the original server view. The replacement
+            // connection rebuilds the view after the last present is consumed.
+            let mut original = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+            let handle = original.map_view(&[ItemKey::Instance(source)], |table| {
+                table.handle(&ItemKey::Instance(source)).ok_or(crate::gameplay_transport::item_view::ItemViewError::Encode)
+            }).map_err(debug)?;
+            original.remember_plain_use(command_id, handle);
+            admitted.continuity.item_view = original.continuity();
+            let use_result = owner.use_reward_bag(deps.actor, command, ItemKey::Instance(source)).await
+                .flatten().ok_or("legacy commit")?;
+            assert_eq!(use_result.disposition, UseDisposition::Committed);
+            let no_binding = owner.use_reward_bag_intent(deps.actor, command, &intent, None, None).await
+                .map_err(debug)?.ok_or("unproved legacy replay")?;
+            assert_eq!(no_binding.disposition, UseDisposition::Rejected);
+            let raw = encode_item_use_intent(&UseIntent { target: UseTarget::Item(handle), ..intent })
+                .map_err(debug)?;
+            let (_, replayed, _) = exchange(&owner, admitted, command_id, &raw, None).await?;
+            assert_eq!(replayed, UseDisposition::Committed);
+            let counts: (i64, i64, i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_item_craft_records),
+                        (SELECT count(*) FROM game_item_ground_locations),
+                        (SELECT count(*) FROM game_item_audit_outbox)",
+            ).fetch_one(&harness.pool).await?;
+            assert_eq!(counts, (1, 1, 1));
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
         // Fail after the source debit, when the transaction inserts the reward's custody.
         sqlx::raw_sql(
             "CREATE SEQUENCE test_present_drop_reached;
@@ -248,7 +373,7 @@ fn scenario(admin: String, quantity: i64) -> TestResult {
             .execute(&harness.pool)
             .await?;
 
-        let (_, result, actual) = exchange(&owner, admitted, 1, &payload, Some(source_ref)).await?;
+        let (_, result, actual) = exchange(&owner, admitted, command_id, &payload, Some(source_ref)).await?;
         assert_eq!(result, UseDisposition::Committed);
 
         let check = async || -> TestResult {
@@ -269,8 +394,8 @@ fn scenario(admin: String, quantity: i64) -> TestResult {
                  (SELECT count(*) FROM game_item_audit_outbox a WHERE a.transaction_id=r.transaction_id)
                  FROM game_item_craft_records r JOIN game_item_instances i ON i.minted_transaction_id=r.transaction_id
                  JOIN game_item_ground_locations g USING(item_instance_id)
-                 WHERE r.command_id=1 AND r.source_item_instance_id=encode($1,'hex')::uuid",
-            ).bind(source.as_slice()).fetch_all(&harness.pool).await?;
+                 WHERE r.command_id=$2::text::numeric AND r.source_item_instance_id=encode($1,'hex')::uuid",
+            ).bind(source.as_slice()).bind(command_id.to_string()).fetch_all(&harness.pool).await?;
             let position = [
                 6_i32.to_be_bytes().as_slice(),
                 &0_i32.to_be_bytes(),
@@ -294,7 +419,7 @@ fn scenario(admin: String, quantity: i64) -> TestResult {
             )
             .fetch_one(&harness.pool)
             .await?;
-            assert_eq!(counts, (1, 1, if quantity == 1 { 19 } else { 20 }));
+            assert_eq!(counts, (1, 1, i64::try_from(entries.len())? - i64::from(quantity == 1)));
             Ok(())
         };
         check().await?;
@@ -304,7 +429,7 @@ fn scenario(admin: String, quantity: i64) -> TestResult {
             &actual,
         ).map_err(debug)?;
         let replay = owner
-            .use_reward_bag_intent(deps.actor, command, &intent, None)
+            .use_reward_bag_intent(deps.actor, command, &intent, None, None)
             .await.map_err(|()| "reward replay unavailable")?
             .ok_or("reward replay")?;
         assert_eq!(replay.disposition, UseDisposition::Committed);

@@ -86,7 +86,7 @@ pub struct PitLayout {
     pub summon: [i32; 3],
 }
 
-/// Original native stack-top observation, captured before removing Monsters.
+/// Native Thing observation at the donor stack index, before removing Monsters.
 /// Crystal201189f lib/quests/svargrond_arena.lua:217-232 checks only this Thing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ResetTopThing<T> {
@@ -100,8 +100,15 @@ pub enum ResetTopThing<T> {
 }
 
 impl PitLayout {
+    /// Crystal 201189f svargrond_arena.lua:217 calls Tile:getThing(255).
+    /// src/items/tile.cpp:1536–1564 interprets 255 as a literal index.
+    pub fn reset_thing<T>(entries: &[T]) -> Option<&T> {
+        const RESET_THING_INDEX: usize = 255;
+        entries.get(RESET_THING_INDEX)
+    }
+
     /// Read proposal only: the physical Item owner must revalidate this exact
-    /// original top Thing and retain its reservation, receipt and audit.
+    /// Thing and retain its reservation, receipt and audit.
     pub fn item_to_reset<T: Copy>(self, at: [i32; 3], top: ResetTopThing<T>) -> Option<T> {
         if !self.contains_reset(at) {
             return None;
@@ -256,3 +263,17 @@ const WARLORD: [&str; 10] = [
     "oteryn:creature.deathbringer",
     "oteryn:creature.the_obliverator",
 ];
+
+#[cfg(test)]
+mod reset_selection_tests {
+    use super::PitLayout;
+
+    #[test]
+    fn arena_reset_uses_crystal_thing_index() {
+        assert_eq!(PitLayout::reset_thing(&["floor", "coins"]), None);
+        let entries: Vec<_> = (0..257).collect();
+        assert_eq!(PitLayout::reset_thing(&entries[..255]), None);
+        assert_eq!(PitLayout::reset_thing(&entries[..256]), Some(&255));
+        assert_eq!(PitLayout::reset_thing(&entries), Some(&255));
+    }
+}

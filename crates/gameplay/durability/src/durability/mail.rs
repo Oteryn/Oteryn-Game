@@ -35,7 +35,11 @@ pub enum MailPostOutcome {
 #[derive(Debug, Clone, Copy)]
 pub enum MailPostTarget {
     Reachable(u64),
-    ReplayOnly(u64),
+    Direct {
+        placement_key: u64,
+        in_reach: bool,
+        intent: [u8; 17],
+    },
 }
 
 impl crate::durability::DurabilityRoot {
@@ -63,7 +67,48 @@ impl crate::durability::DurabilityRoot {
         .await
     }
 
-    /// `ReplayOnly` can return an existing receipt for the exact intent, but cannot post mail.
+    /// A Direct Post receipt can be reconciled without the old session's item view.
+    pub async fn replay_direct_mail(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command_id: u64,
+        intent: [u8; 17],
+    ) -> Result<Option<MailPostOutcome>, DurabilityError> {
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &record).await?;
+            lock_admission_relations(&mut tx).await?;
+            let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else {
+                return Ok(None);
+            };
+            let command = CommandRef::new(fence.game_session_id, CommandId::new(command_id).map_err(|_| DurabilityError::InvalidStoredState)?);
+            lock_mail_command(&mut tx, command).await?;
+            let stored: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT d.wire_intent FROM game_mail_operations m JOIN game_mail_direct_post_intents d USING(mail_id)
+                 WHERE m.game_session_id=encode($1,'hex')::uuid AND m.command_id=$2::text::numeric
+                   AND m.sender_character_id=encode($3,'hex')::uuid AND m.world_id=encode($4,'hex')::uuid",
+            )
+            .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string())
+            .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
+            .fetch_optional(&mut *tx).await?;
+            let Some(stored) = stored else { return Ok(None); };
+            let is_current = character_item_fence_is_current(
+                &mut tx, &node, &fence, command, fence.character_id,
+                *world_id.as_bytes(), *channel_id.as_bytes(),
+            ).await?;
+            Ok(Some(if is_current && stored == intent {
+                MailPostOutcome::AlreadyPosted
+            } else {
+                MailPostOutcome::Refused(MailPostRefusal::ReplayConflict)
+            }))
+        })).await
+    }
+
+    /// A Direct Post binds its original wire intent in the same transaction as delivery.
     pub async fn post_admitted_mail_with_target(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
@@ -73,9 +118,13 @@ impl crate::durability::DurabilityRoot {
         item: [u8; 16],
         target: MailPostTarget,
     ) -> Result<MailPostOutcome, DurabilityError> {
-        let (mailbox_placement_key, fresh_refusal) = match target {
-            MailPostTarget::Reachable(key) => (key, None),
-            MailPostTarget::ReplayOnly(key) => (key, Some(MailPostRefusal::MailboxOutOfReach)),
+        let (mailbox_placement_key, fresh_refusal, wire_intent) = match target {
+            MailPostTarget::Reachable(key) => (key, None, None),
+            MailPostTarget::Direct { placement_key, in_reach, intent } => (
+                placement_key,
+                (!in_reach).then_some(MailPostRefusal::MailboxOutOfReach),
+                Some(intent),
+            ),
         };
         let invalid_fence = fresh_refusal.unwrap_or(MailPostRefusal::NotMailable);
         let record = recovery
@@ -87,6 +136,7 @@ impl crate::durability::DurabilityRoot {
             assert_recovery_fence(&mut tx, &record).await?;
             lock_admission_relations(&mut tx).await?;
             let command = CommandRef::new(fence.game_session_id, CommandId::new(command_id).map_err(|_| DurabilityError::InvalidStoredState)?);
+            lock_mail_command(&mut tx, command).await?;
             let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else { return Ok(MailPostOutcome::Refused(invalid_fence)); };
             let world = WorldId::from_bytes(*world_id.as_bytes()).map_err(|_| DurabilityError::InvalidStoredState)?;
             if mailbox_placement_key == 0 || !character_item_fence_without_root(&mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(), *channel_id.as_bytes()).await? {
@@ -94,12 +144,23 @@ impl crate::durability::DurabilityRoot {
             }
             // A posted root is stamped and in the recipient's Inbox, so its address and stamp
             // cannot be derived again: the immutable receipt answers the replay first.
-            if let Some((root, mailbox)) = sqlx::query_as::<_, (Vec<u8>, Vec<u8>)>("SELECT uuid_send(root_item_instance_id), mailbox_placement_key FROM game_mail_operations WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND sender_character_id=encode($3,'hex')::uuid")
-                .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await? {
+            if let Some((root, mailbox, stored_intent)) = sqlx::query_as::<_, (Vec<u8>, Vec<u8>, Option<Vec<u8>>)>(
+                "SELECT uuid_send(m.root_item_instance_id), m.mailbox_placement_key, d.wire_intent
+                 FROM game_mail_operations m LEFT JOIN game_mail_direct_post_intents d USING(mail_id)
+                 WHERE m.game_session_id=encode($1,'hex')::uuid AND m.command_id=$2::text::numeric
+                   AND m.sender_character_id=encode($3,'hex')::uuid AND m.world_id=encode($4,'hex')::uuid",
+            )
+                .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string())
+                .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
+                .fetch_optional(&mut *tx).await? {
                 if !character_item_fence_is_current(&mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(), *channel_id.as_bytes()).await? {
                     return Ok(MailPostOutcome::Refused(invalid_fence));
                 }
-                return Ok(if replay_intent_matches(&root, &mailbox, &item, mailbox_placement_key) { MailPostOutcome::AlreadyPosted } else { MailPostOutcome::Refused(MailPostRefusal::ReplayConflict) });
+                let matches = match stored_intent {
+                    Some(stored) => wire_intent.is_some_and(|intent| stored == intent),
+                    None => replay_intent_matches(&root, &mailbox, &item, mailbox_placement_key),
+                };
+                return Ok(if matches { MailPostOutcome::AlreadyPosted } else { MailPostOutcome::Refused(MailPostRefusal::ReplayConflict) });
             }
             if let Some(refusal) = fresh_refusal {
                 return Ok(MailPostOutcome::Refused(refusal));
@@ -150,6 +211,11 @@ impl crate::durability::DurabilityRoot {
                 .into();
             sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
             let outcome=post_mail_item(&mut tx,mail_id,*fence.game_session_id.as_bytes(),command_id,world,*channel_id.as_bytes(),fence.character_id,recipient,item,key == "oteryn:item.tibia.i3503",stamp,&mailbox_placement_key.to_be_bytes(),hash,transaction_id,b"MAIL_POSTED").await?;
+            if let (MailPostOutcome::Posted, Some(intent)) = (outcome, wire_intent) {
+                sqlx::query("INSERT INTO game_mail_direct_post_intents(mail_id,wire_intent)
+                             VALUES(encode($1,'hex')::uuid,$2)")
+                    .bind(mail_id.as_slice()).bind(intent.as_slice()).execute(&mut *tx).await?;
+            }
             commit_semantic_transaction(tx,deadline).await?;
             Ok(outcome)
         })).await
@@ -364,6 +430,19 @@ pub async fn lock_mail_recipient_root(
     reason = "PostgreSQL exercises are registered in the canonical PG target; the library unit target has no database"
 )]
 pub mod tests;
+
+async fn lock_mail_command(
+    tx: &mut Transaction<'_, Postgres>,
+    command: CommandRef,
+) -> Result<(), DurabilityError> {
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended('oteryn:mail:' || encode($1,'hex') || ':' || $2,0))",
+    )
+    .bind(command.game_session_id().as_bytes().as_slice())
+    .bind(command.command_id().get().to_string())
+    .execute(&mut **tx).await?;
+    Ok(())
+}
 
 fn replay_intent_matches(root: &[u8], mailbox: &[u8], item: &[u8; 16], requested_mailbox: u64) -> bool {
     root == item && mailbox == requested_mailbox.to_be_bytes()

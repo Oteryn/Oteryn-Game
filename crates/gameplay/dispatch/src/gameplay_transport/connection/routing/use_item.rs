@@ -192,7 +192,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         let source = item_view.as_ref().and_then(|view| view.resolve(handle));
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
-            authority.use_event_item(
+            authority.use_event_item_with_binding(
                 actor,
                 UseCommand {
                     game_session_id: admitted.game_session_id,
@@ -201,6 +201,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 },
                 intent.clone(),
                 source,
+                admitted.continuity.item_view.plain_use_binding(command.command_id, handle),
                 intent.use_with.is_none_or(|target| {
                     visibility.as_ref().is_some_and(|view| view.shows(target))
                 }),

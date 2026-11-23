@@ -17,6 +17,17 @@ use oteryn_protocol_oteryn::world_map::MapDefinition;
 
 macro_rules! authority_methods {
     () => {
+        fn replay_mail_post(
+            &self,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            _command_id: u64,
+            _intent: [u8; 17],
+        ) -> impl std::future::Future<
+            Output = Result<Option<oteryn_protocol_oteryn::mail::MailOutcome>, ()>,
+        > {
+            async { Ok(None) }
+        }
+
         fn mail_command(
             &self,
             _actor: $crate::foundation::ExactActorRef,
@@ -33,6 +44,15 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn replay_mail_post(
+            &self,
+            admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            command_id: u64,
+            intent: [u8; 17],
+        ) -> Result<Option<oteryn_protocol_oteryn::mail::MailOutcome>, ()> {
+            $crate::gameplay_transport::mail::replay_post(self, admitted, command_id, intent).await
+        }
+
         async fn mail_command(
             &self,
             actor: $crate::foundation::ExactActorRef,
@@ -50,6 +70,30 @@ macro_rules! composed_methods {
     };
 }
 pub(super) use composed_methods;
+
+pub(super) async fn replay_post(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    intent: [u8; 17],
+) -> Result<Option<MailOutcome>, ()> {
+    if !admitted
+        .continuity
+        .selected_capabilities
+        .contains(u32::from(oteryn_protocol_oteryn::mail::CAPABILITY_MAIL_V1))
+    {
+        return Ok(Some(MailOutcome::Rejected));
+    }
+    let Some(fence) = admitted.item_fence else {
+        return Ok(Some(MailOutcome::Rejected));
+    };
+    owner
+        .root
+        .replay_direct_mail(owner.character, owner.holder, fence, command_id, intent)
+        .await
+        .map(|receipt| receipt.map(wire_post_outcome))
+        .map_err(|_| ())
+}
 
 pub(super) async fn execute(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -83,10 +127,10 @@ pub(super) async fn execute(
     else {
         return Some(MailOutcome::Rejected);
     };
-    let target = if in_reach {
-        MailPostTarget::Reachable(placement_key)
-    } else {
-        MailPostTarget::ReplayOnly(placement_key)
+    let target = MailPostTarget::Direct {
+        placement_key,
+        in_reach,
+        intent: payload.try_into().ok()?,
     };
     match owner
         .root

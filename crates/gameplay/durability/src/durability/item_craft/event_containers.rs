@@ -3,6 +3,7 @@ use super::*;
 
 pub enum EventContainerReplaySource {
     Wire([u8; 16]),
+    LegacyBluePresent([u8; 16]),
     InstanceTagged,
 }
 
@@ -26,9 +27,9 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             super::super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
-            let source: Option<(Vec<u8>, bool)> = sqlx::query_as(
+            let source: Option<(Vec<u8>, bool, bool)> = sqlx::query_as(
                 "SELECT uuid_send(source_item_instance_id), \
-                        intent = $5::bytea || uuid_send(source_item_instance_id) \
+                        intent = $5::bytea || uuid_send(source_item_instance_id), recipe=$4 \
                  FROM game_item_craft_records \
                  WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric \
                    AND character_id=encode($3,'hex')::uuid \
@@ -42,8 +43,11 @@ impl DurabilityRoot {
             .fetch_optional(&mut **tx).await?;
             tx.commit(deadline).await?;
             match source {
-                Some((_, true)) => Ok(Some(EventContainerReplaySource::InstanceTagged)),
-                Some((value, false)) => Ok(Some(EventContainerReplaySource::Wire(
+                Some((value, true, true)) => Ok(Some(EventContainerReplaySource::LegacyBluePresent(
+                    value.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
+                ))),
+                Some((_, true, false)) => Ok(Some(EventContainerReplaySource::InstanceTagged)),
+                Some((value, false, _)) => Ok(Some(EventContainerReplaySource::Wire(
                     value.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
                 ))),
                 None => Ok(None),
@@ -77,6 +81,53 @@ pub(super) async fn nested_source(
 
 pub const BLUE_PRESENT: &str = "oteryn:item.tibia.i6570";
 pub(super) const BLUE_PRESENT_RECIPE: &str = "oteryn:reward-bag.event_6570";
+
+/// Select plain matching stacks in the locked main backpack, newest first.
+pub(super) async fn blue_present_stack_merges(
+    tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
+    parent: &[u8],
+    reward: &TypedDefinitionRef,
+    mut remaining: u32,
+    maximum: u32,
+) -> Result<(Vec<Value>, u32), DurabilityError> {
+    let candidates = sqlx::query(
+        "SELECT i.item_instance_id::text, i.quantity, e.placement_ordinal::text AS ordinal,
+                to_jsonb(i) AS before_item
+         FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id)
+         WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1
+           AND i.world_id=e.world_id AND i.definition_family=$2 AND i.definition_production_key=$3
+           AND i.definition_revision_ref=$4 AND i.quantity BETWEEN 1 AND $5 - 1
+           AND NOT EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=i.item_instance_id)
+           AND NOT EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=i.item_instance_id)
+           AND NOT EXISTS(SELECT 1 FROM game_item_texts WHERE item_instance_id=i.item_instance_id)
+           AND NOT EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=i.item_instance_id)
+           AND NOT EXISTS(SELECT 1 FROM game_item_fluid_states WHERE item_instance_id=i.item_instance_id)
+           AND NOT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id)
+           AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id)
+         ORDER BY e.placement_ordinal DESC LIMIT 20 FOR UPDATE OF i,e",
+    )
+    .bind(parent).bind(&reward.family).bind(&reward.production_key).bind(&reward.revision_ref)
+    .bind(i64::from(maximum)).fetch_all(&mut ***tx).await?;
+    let mut outputs = Vec::new();
+    for row in candidates {
+        let quantity = u32::try_from(row.try_get::<i64, _>("quantity")?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let (added, rest) = oteryn_gameplay_items::stacking::plan_stack(remaining, maximum, quantity);
+        outputs.push(json!({
+            "item": row.try_get::<String, _>("item_instance_id")?,
+            "ordinal": row.try_get::<String, _>("ordinal")?,
+            "key": reward.production_key,
+            "revision": reward.revision_ref,
+            "count": added,
+            "merge_before": row.try_get::<Value, _>("before_item")?,
+        }));
+        remaining = rest;
+        if remaining == 0 {
+            break;
+        }
+    }
+    Ok((outputs, remaining))
+}
 
 pub(super) struct DropAdmission<'a> {
     pub(super) target: &'a LoopGround,

@@ -302,7 +302,25 @@ where
             route::StepAction::Dispatch(dispatch) => dispatch,
         }
     } else {
-        route::execute(stream, authority, session, command, &mut outcome).await?
+        if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+            && let Some(view) = session.item_view.as_mut()
+            && let Ok(oteryn_protocol_oteryn::world_object::UseIntent {
+                target: oteryn_protocol_oteryn::world_object::UseTarget::Item(handle),
+                use_with: None,
+                use_with_map_item: None,
+                use_with_position: None,
+            }) = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+                session.admitted.continuity.selected_capabilities.as_slice(),
+                command.payload,
+            )
+        {
+            view.remember_plain_use(command.command_id, handle);
+        }
+        let routed = route::execute(stream, authority, session, command, &mut outcome).await;
+        if let Some(view) = session.item_view.as_ref() {
+            session.admitted.continuity.item_view.last_plain_use = view.continuity().last_plain_use;
+        }
+        routed?
     };
     if let Dispatch::Training(result) = &dispatch
         && matches!(result.disposition, 1 | 2)

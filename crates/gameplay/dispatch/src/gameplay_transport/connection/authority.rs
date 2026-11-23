@@ -727,6 +727,18 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
+    fn use_event_item_with_binding(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: UseIntent,
+        source: Option<ItemKey>,
+        _legacy_binding: Option<[u8; 16]>,
+        visible_target: bool,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        self.use_event_item(actor, command, intent, source, visible_target)
+    }
+
     fn use_consume_transform(
         &self,
         _actor: ExactActorRef,

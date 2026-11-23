@@ -164,9 +164,16 @@ pub struct ItemViewContinuity {
     pub views_revision: u64,
     /// `BAGS0-RL-04`: the GameSession's recent view commands (capability 14).
     pub view_commands: ViewCommandWindow,
+    /// Proof of the last plain USE binding, retained across a rebuilt item view.
+    pub(super) last_plain_use: Option<(u64, ItemHandle, [u8; 16])>,
 }
 
 impl ItemViewContinuity {
+    pub(super) fn plain_use_binding(self, command_id: u64, handle: ItemHandle) -> Option<[u8; 16]> {
+        let (original_command, original_handle, instance) = self.last_plain_use?;
+        (original_command == command_id && original_handle == handle).then_some(instance)
+    }
+
     /// A channel transfer closes the open corpse (§4.3) and carries the rest.
     pub const fn across_channel_transfer(self) -> Self {
         Self {
@@ -555,6 +562,7 @@ pub struct SessionItemView {
     container_revision: u64,
     views_revision: u64,
     view_commands: ViewCommandWindow,
+    last_plain_use: Option<(u64, ItemHandle, [u8; 16])>,
     inventory: InventoryItems,
     /// A post-commit display read is retried on the existing visibility cadence.
     pub(super) inventory_refresh_pending: bool,
@@ -589,6 +597,7 @@ impl SessionItemView {
             container_revision: continuity.container_revision,
             views_revision: continuity.views_revision,
             view_commands: continuity.view_commands,
+            last_plain_use: continuity.last_plain_use,
             inventory: InventoryItems::default(),
             inventory_refresh_pending: false,
             open: None,
@@ -619,6 +628,7 @@ impl SessionItemView {
             open_corpse: self.open.map(|open| open.key).or(self.carried_open),
             views_revision: self.views_revision,
             view_commands: self.view_commands,
+            last_plain_use: self.last_plain_use,
         }
     }
 
@@ -783,6 +793,16 @@ impl SessionItemView {
     /// The item a handle names; `None` is `STALE`.
     pub fn resolve(&self, handle: ItemHandle) -> Option<ItemKey> {
         self.table.resolve(handle)
+    }
+
+    pub(super) fn remember_plain_use(&mut self, command_id: u64, handle: ItemHandle) {
+        if self
+            .last_plain_use
+            .is_none_or(|(original, _, _)| command_id > original)
+            && let Some(ItemKey::Instance(instance)) = self.resolve(handle)
+        {
+            self.last_plain_use = Some((command_id, handle, instance));
+        }
     }
 
     /// The domain 1 objects of a spatial snapshot or delta: each gets its handle (§4.1).

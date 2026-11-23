@@ -9,6 +9,23 @@ mod gameplay_idle;
 pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};
 mod moved_step;
 mod routing;
+
+#[cfg(test)]
+pub(super) async fn route_mail_for_test(
+    authority: &impl FreshAdmissionAuthority,
+    actor: ExactActorRef,
+    admitted: &AdmittedSession,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    item_view: &Option<SessionItemView>,
+) -> Option<Vec<u8>> {
+    match routing::mail::route(authority, actor, admitted, command, item_view).await? {
+        routing::Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload) => {
+            Some(payload)
+        }
+        _ => None,
+    }
+}
+
 mod serve;
 use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;
@@ -384,6 +401,7 @@ impl SessionContinuity {
             open_corpse: None,
             views_revision: 0,
             view_commands: ViewCommandWindow::EMPTY,
+            last_plain_use: None,
         },
         quest_log: QuestLogContinuity::FRESH,
         look: LookWindow::EMPTY,

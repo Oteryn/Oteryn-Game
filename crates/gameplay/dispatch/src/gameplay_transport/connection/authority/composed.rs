@@ -1288,6 +1288,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         source: Option<item_view::ItemKey>,
         visible_target: bool,
     ) -> Result<Option<UseOutcome>, ()> {
+        self.use_event_item_with_binding(actor, command, intent, source, None, visible_target)
+            .await
+    }
+
+    async fn use_event_item_with_binding(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        legacy_binding: Option<[u8; 16]>,
+        visible_target: bool,
+    ) -> Result<Option<UseOutcome>, ()> {
         if matches!(
             command.item_fence.map(|fence| fence.runtime_scope),
             Some(crate::foundation::RuntimeScopeRefV1::Instance { .. })
@@ -1324,7 +1337,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(outcome));
         }
         if let Some(outcome) = self
-            .use_reward_bag_intent(actor, command, &intent, source)
+            .use_reward_bag_intent(actor, command, &intent, source, legacy_binding)
             .await?
         {
             return Ok(Some(outcome));

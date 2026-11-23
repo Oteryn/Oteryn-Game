@@ -21,6 +21,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         intent: &UseIntent,
         source: Option<ItemKey>,
+        legacy_binding: Option<[u8; 16]>,
     ) -> Result<Option<UseOutcome>, ()> {
         let Some(fence) = command.item_fence else {
             return Ok(None);
@@ -35,6 +36,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_event_container_command_source(self.character, fence, command_ref)
             .await
             .map_err(|_| ())?;
+        if let Some(EventContainerReplaySource::LegacyBluePresent(id)) = historical {
+            let plain_use = intent.use_with.is_none()
+                && intent.use_with_map_item.is_none()
+                && intent.use_with_position.is_none();
+            let proved =
+                legacy_binding == Some(id) && source.is_none_or(|key| key == ItemKey::Instance(id));
+            if !plain_use || !proved {
+                return Ok(Some(UseOutcome::rejected()));
+            }
+            return match self
+                .use_reward_bag_request(
+                    actor,
+                    command,
+                    id,
+                    [REWARD_BAG_INSTANCE_INTENT_TAG, id.as_slice()].concat(),
+                    true,
+                )
+                .await
+            {
+                Some(Some(outcome)) => Ok(Some(outcome)),
+                Some(None) => Err(()),
+                None => Ok(Some(UseOutcome::rejected())),
+            };
+        }
         // The existing item-completion route reconciles instance-tagged receipts.
         if matches!(historical, Some(EventContainerReplaySource::InstanceTagged)) {
             return Ok(None);
@@ -80,7 +105,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             id
         };
         match self
-            .use_reward_bag_request(actor, command, id, encoded)
+            .use_reward_bag_request(actor, command, id, encoded, false)
             .await
         {
             Some(Some(outcome)) => Ok(Some(outcome)),
@@ -103,6 +128,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command,
             id,
             [REWARD_BAG_INSTANCE_INTENT_TAG, id.as_slice()].concat(),
+            false,
         )
         .await
     }
@@ -115,6 +141,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         id: [u8; 16],
         intent: Vec<u8>,
+        replay_only: bool,
     ) -> Option<Option<UseOutcome>> {
         let native = self.active_generation?.native_gameplay()?;
         let fence = command.item_fence?;
@@ -156,6 +183,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(result)) => return outcome(result),
+            Ok(None) if replay_only => return outcome(UseDisposition::Rejected),
             Ok(None) => {}
             Err(_) => return Some(None),
         }

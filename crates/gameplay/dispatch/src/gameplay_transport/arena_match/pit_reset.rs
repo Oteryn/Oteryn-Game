@@ -135,11 +135,11 @@ pub(super) async fn reset_items(
             let Ok(Some(stack)) = compose_tile(ground.overlay(), &facts, tile) else {
                 continue;
             };
-            let Some(top) = stack.entries.last() else {
+            let Some(selected) = PitLayout::reset_thing(&stack.entries) else {
                 continue;
             };
             let (EntrySource::Ground(identity), MapDefinition::Item(definition)) =
-                (top.source, top.facts.definition)
+                (selected.source, selected.facts.definition)
             else {
                 continue;
             };
