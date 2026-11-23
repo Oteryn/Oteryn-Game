@@ -4,18 +4,21 @@ import argparse
 import json
 from functools import lru_cache
 
+from activity_static import REGIONAL_NPC_GROUND_NOTE as NOTE
+from activity_static import compose_terrain_notes
 from grizzly_ground import ROOT, appearance_only_ground
 
 GROUNDS = {20658: 100, 53254: 150}
 SHARD = "content/world/terrain/terrain-08751-08752.json"
-NOTE = " Additionally two appearance-only floors for Doubleday and Javala."
 PALETTE = "content/world/placements/index.json"
 MARKER = "content/world/terrain/index.json"
 
 
 @lru_cache(maxsize=4)
 def records(root=ROOT):
-    return [appearance_only_ground(item, speed, root) for item, speed in GROUNDS.items()]
+    return [
+        appearance_only_ground(item, speed, root) for item, speed in GROUNDS.items()
+    ]
 
 
 def outputs(root=ROOT):
@@ -26,10 +29,14 @@ def outputs(root=ROOT):
         (entry,) = [row for row in palette["palette"] if row["source_item_id"] == item]
         entry.update(key=record["identity"]["key"], provisional=False)
     marker = json.loads((root / MARKER).read_bytes())
-    marker["notes"] = marker["notes"].replace(NOTE, "") + NOTE
+    marker["notes"] = compose_terrain_notes(marker["notes"].replace(NOTE, "") + NOTE)
     return {
-        SHARD: json.dumps({"family": "Terrain", "records": catalogue},
-                          sort_keys=True, separators=(",", ":")) + "\n",
+        SHARD: json.dumps(
+            {"family": "Terrain", "records": catalogue},
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n",
         PALETTE: json.dumps(palette, sort_keys=True, separators=(",", ":")) + "\n",
         MARKER: json.dumps(marker, indent=2, ensure_ascii=False) + "\n",
     }

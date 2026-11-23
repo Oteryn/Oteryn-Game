@@ -91,14 +91,30 @@ fn tarak_uses_the_paid_travel_service_for_both_donor_fares() -> Result<(), Strin
         ("tarak_inner", "trip", 50, (32940, 31182, 7)),
         ("tarak_sunken", "passage", 0, (32916, 31199, 7)),
     ] {
+        let npc = format!("oteryn:npc.{stem}");
         let entry = book
-            .get(&format!("oteryn:npc.{stem}"))
+            .get(&npc)
             .ok_or_else(|| format!("{stem} missing from NPC talk book"))?;
         let route = entry
             .travel_routes
             .iter()
-            .find(|route| route.keyword == keyword && !route.held)
+            .find(|route| route.route.key.replace('_', " ") == keyword && !route.held)
             .ok_or_else(|| format!("{stem} does not serve {keyword}"))?;
+        let greeting = regional_contacts::get(&npc)
+            .and_then(|contact| contact.greet.as_deref())
+            .ok_or("Tarak source greeting")?;
+        let destination = if stem == "tarak_inner" {
+            greeting
+                .split_once('{')
+                .and_then(|(_, tail)| tail.split_once('}'))
+        } else {
+            greeting
+                .split_once("back to ")
+                .and_then(|(_, tail)| tail.split_once('?'))
+        }
+        .map(|(name, _)| name.to_ascii_lowercase())
+        .ok_or("Tarak destination in source greeting")?;
+        assert_eq!(route.keyword, destination, "{stem}/{keyword}");
         assert_eq!(route.route.price, cost);
         let destination = &route.route.destination;
         assert_eq!((destination.x, destination.y, destination.floor), cell);

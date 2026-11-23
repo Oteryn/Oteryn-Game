@@ -488,8 +488,8 @@ def outputs(
         files[regional_npc_ground.SHARD] = regional_npc_ground.outputs()[
             regional_npc_ground.SHARD
         ].encode()
-        index["notes"] = activity_static.compose_terrain_notes(index["notes"])
         index["notes"] += regional_npc_ground.NOTE
+        index["notes"] = activity_static.compose_terrain_notes(index["notes"])
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()

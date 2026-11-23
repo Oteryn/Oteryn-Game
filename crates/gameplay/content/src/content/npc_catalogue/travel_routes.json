@@ -2582,7 +2582,7 @@
   },
   {
     "key": "oteryn:service.travel.tarak_inner/passage",
-    "keyword": "passage",
+    "keyword": "monument tower",
     "price": 50,
     "premium": false,
     "x": 32940,
@@ -2595,7 +2595,7 @@
   },
   {
     "key": "oteryn:service.travel.tarak_inner/trip",
-    "keyword": "trip",
+    "keyword": "monument tower",
     "price": 50,
     "premium": false,
     "x": 32940,
@@ -2608,7 +2608,7 @@
   },
   {
     "key": "oteryn:service.travel.tarak_sunken/passage",
-    "keyword": "passage",
+    "keyword": "yalahar",
     "price": 0,
     "premium": false,
     "x": 32916,
