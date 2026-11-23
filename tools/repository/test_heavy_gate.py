@@ -425,7 +425,7 @@ class HeavyGateTests(unittest.TestCase):
             gh.write_text(
                 '#!/bin/bash\nset -eu\n'
                 'printf "called\\n" >> "$API_CALLS"\n'
-                'if [[ "$*" == "api --paginate --slurp repos/Oteryn/Oteryn-Game/commits/head/check-runs?check_name=heavy-gate&filter=all&per_page=100" ]]; then\n'
+                'if [[ "$*" == "api --paginate --slurp repos/Oteryn/Oteryn-Game/commits/head/check-runs?filter=all&per_page=100" ]]; then\n'
                 '  printf "%s" "$CHECK_PAGES"\nexit "$API_EXIT"\n'
                 'fi\n'
                 'test "$#" = 5 && test "$1" = api && test "$2" = repos/Oteryn/Oteryn-Game/issues/123/labels\n'
@@ -505,20 +505,62 @@ class HeavyGateTests(unittest.TestCase):
         result = self.run_gate(heavy="false", labels_exit=1)
         self.assertNotEqual(result.returncode, 0)
 
-    def test_mirror_uses_latest_completed_across_pages(self):
+    @staticmethod
+    def check(run, name, status="completed", conclusion="success", completed_at=None, check_id=0):
+        return {"id": check_id, "name": name, "status": status, "conclusion": conclusion,
+                "completed_at": completed_at,
+                "details_url": f"https://github.com/Oteryn/Oteryn-Game/actions/runs/{run}/job/{check_id}"}
+
+    def real_run(self, run, gate_status="completed", conclusion="success", completed_at=None, check_id=0):
+        return [self.check(run, "PR early signal / PostgreSQL scope and routing", check_id=check_id + 100),
+                self.check(run, "heavy-gate", gate_status, conclusion if gate_status == "completed" else None,
+                           completed_at, check_id)]
+
+    def mirror_run(self, run, gate_status="completed", conclusion="success", completed_at=None, check_id=0):
+        return [self.check(run, "PR early signal / PostgreSQL scope and routing", conclusion="skipped",
+                           check_id=check_id + 100),
+                self.check(run, "heavy-gate", gate_status, conclusion if gate_status == "completed" else None,
+                           completed_at, check_id)]
+
+    def test_mirror_uses_latest_completed_real_run_across_pages(self):
         for conclusion in ("success", "failure", "cancelled", "neutral", "skipped", "timed_out"):
             with self.subTest(conclusion=conclusion):
                 pages = [{"check_runs": [
-                    {"id": 4, "status": "in_progress", "conclusion": None},
-                    {"id": 1, "status": "completed", "completed_at": "2026-11-04T01:00:00Z", "conclusion": "success"},
+                    *self.real_run(10, completed_at="2026-11-04T01:00:00Z", check_id=1),
+                    *self.mirror_run(11, gate_status="in_progress", check_id=4),
+                    self.check(12, "heavy-gate", completed_at="2026-11-04T03:00:00Z", check_id=5),
                 ]}, {"check_runs": [
-                    {"id": 3, "status": "completed", "completed_at": "2026-11-04T02:00:00Z", "conclusion": conclusion},
+                    *self.real_run(13, conclusion=conclusion, completed_at="2026-11-04T02:00:00Z", check_id=3),
+                    *self.mirror_run(14, completed_at="2026-11-04T04:00:00Z", check_id=6),
                 ]}]
                 result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
                 self.assertEqual(result.returncode == 0, conclusion == "success", result.stderr)
 
+    def test_mirror_never_republishes_a_non_heavy_success(self):
+        # A non-heavy run (skipped PostgreSQL scope) passed before heavy-tests was added.
+        pages = [{"check_runs": [*self.mirror_run(20, completed_at="2026-11-04T01:00:00Z", check_id=1)]}]
+        result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("still running", result.stdout)
+
+    def test_mirror_waits_for_a_pending_real_run(self):
+        # An older real success must not be republished while a newer real run is pending.
+        pages = [{"check_runs": [
+            *self.real_run(30, completed_at="2026-11-04T01:00:00Z", check_id=1),
+            *self.real_run(31, gate_status="queued", check_id=2),
+        ]}]
+        result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("still running", result.stdout)
+        # A pending real run whose scope job is still running counts as real too.
+        pages[0]["check_runs"][2]["status"] = "in_progress"
+        pages[0]["check_runs"][2]["conclusion"] = None
+        result = self.run_gate(real="false", archive="skipped", legacy="skipped", pages=pages)
+        self.assertNotEqual(result.returncode, 0)
+
     def test_mirror_fails_closed_without_completed_check_or_on_api_error(self):
-        for pages, api_exit in ((None, 0), ([{"check_runs": [{"status": "in_progress"}]}], 0), (None, 1)):
+        for pages, api_exit in ((None, 0), ([{"check_runs": [*self.real_run(40, gate_status="in_progress")]}], 0),
+                                (None, 1)):
             result = self.run_gate(real="false", pages=pages, api_exit=api_exit)
             self.assertNotEqual(result.returncode, 0)
             if api_exit == 0:

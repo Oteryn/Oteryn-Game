@@ -731,12 +731,22 @@ jobs:
             esac
             exit
           fi
-          # Other label events have skipped dependencies: mirror the latest
-          # completed gate on this exact head without cancelling the real run.
-          conclusion=$(gh api --paginate --slurp \
-            "repos/$REPOSITORY/commits/$HEAD_SHA/check-runs?check_name=heavy-gate&filter=all&per_page=100" |
-            jq -r '[.[].check_runs[] | select(.status == "completed")] | max_by([.completed_at, .id]) | .conclusion // "none"')
-          if [[ "$conclusion" == 'none' ]]; then
+          # Other label events and title/body edits have skipped dependencies:
+          # mirror the latest heavy-gate of a real run (one whose PostgreSQL
+          # scope job was not skipped) on this exact head, without cancelling
+          # it. A non-heavy run's success is never republished, and while a
+          # real run is pending the mirror fails and that run publishes.
+          runs=$(gh api --paginate --slurp \
+            "repos/$REPOSITORY/commits/$HEAD_SHA/check-runs?filter=all&per_page=100")
+          conclusion=$(jq -r '
+            def run_id: (.details_url // "") | capture("/actions/runs/(?<id>[0-9]+)/") | .id;
+            [.[].check_runs[]] as $all
+            | [$all[] | select(.name == "PR early signal / PostgreSQL scope and routing" and .conclusion != "skipped") | run_id] as $real
+            | [$all[] | select(.name == "heavy-gate") | select((run_id) as $id | any($real[]; . == $id))] as $gates
+            | if any($gates[]; .status != "completed") then "pending"
+              else ([$gates[] | select(.status == "completed")] | max_by([.completed_at, .id]) | .conclusion // "none") end
+          ' <<< "$runs")
+          if [[ "$conclusion" == 'pending' || "$conclusion" == 'none' ]]; then
             echo 'The real heavy-tests run is still running and will publish the final heavy-gate.'
             exit 1
           fi
