@@ -13,7 +13,7 @@ pub const ITEM_NUMERIC_MODIFIER_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json"
 );
 pub const ITEM_NUMERIC_MODIFIER_PACKET_SHA256: &str =
-    "e644d328dbe015ba12105e770543096f71cd20078fd1a21b7a44828c0428fab3";
+    "b55e84d246c0b7503d9e1ce79d73cc14dd58de4453275157be0c2da31d3a7955";
 const IDS: [u32; 17] = [
     36656, 36657, 36658, 36659, 36660, 36661, 36662, 36666, 36672, 36673, 39147, 39148, 39150,
     45639, 45640, 50169, 50170,
@@ -267,6 +267,34 @@ mod tests {
             p["counts"]["atoms"].as_u64().expect("atoms") as usize,
         )
     }
+    #[test]
+    fn sealed_packet_applies_to_historical_item_headers() {
+        let packet = serde_json::from_slice(ITEM_NUMERIC_MODIFIER_PACKET).expect("full packet");
+        let mut items = fixture(&packet);
+        let proofs = [
+            include_str!(
+                "../../../../../docs/agents/evidence/OTV2-20261002-item-numeric-modifier13-source-proof-v2.json"
+            ),
+            include_str!(
+                "../../../../../docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json"
+            ),
+        ];
+        for source in proofs {
+            let proof: serde_json::Value = serde_json::from_str(source).expect("source proof");
+            for row in proof["records"].as_array().expect("qualified source rows") {
+                let (_, headers, _) = items
+                    .iter_mut()
+                    .find(|(identity, _, _)| identity.key == row["item_key"])
+                    .expect("exact packet row");
+                *headers = serde_json::from_value(
+                    row["current_published_scope_receipt"]["native_headers"].clone(),
+                )
+                .expect("historical headers");
+            }
+        }
+        assert_eq!(run(&packet, &mut items), Ok(IDS.len()));
+    }
+
     #[test]
     fn whole_vector_idempotence_and_siblings_are_preserved() {
         let p = rows();

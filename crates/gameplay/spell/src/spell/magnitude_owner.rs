@@ -431,12 +431,21 @@ pub struct DamageComponents {
     pub secondary_element: Option<oteryn_protocol_oteryn::damage_element::DamageElement>,
     finish: DamageFinish,
     hit_bonus: u32,
+    effect_ordinal: Option<u16>,
 }
 
 impl DamageComponents {
     /// Components after source and target block, before HealthChange.
     pub fn post_block(self) -> [i64; 2] {
         self.finish.post_block
+    }
+
+    pub fn matches_effect(self, target: ExactActorRef, ordinal: u16, total: i64) -> bool {
+        self.target == target
+            && self
+                .effect_ordinal
+                .is_none_or(|expected| expected == ordinal)
+            && self.final_parts[0].checked_add(self.final_parts[1]) == Some(total)
     }
 }
 
@@ -527,6 +536,7 @@ impl PreparedMagnitudeOwner {
         &mut self,
         cursor: &mut usize,
         actor: ExactActorRef,
+        ordinal: u16,
         magnitude: i64,
         (prey, talisman, elite): (u8, u16, bool),
     ) -> Result<Option<(i64, i64)>, Error> {
@@ -535,10 +545,7 @@ impl PreparedMagnitudeOwner {
             .get(*cursor..)
             .ok_or(Error::InvalidBatch)?
             .iter()
-            .position(|parts| {
-                parts.target == actor
-                    && parts.final_parts[0].checked_add(parts.final_parts[1]) == Some(magnitude)
-            })
+            .position(|parts| parts.matches_effect(actor, ordinal, magnitude))
         else {
             return Ok(None);
         };
@@ -582,6 +589,7 @@ impl PreparedMagnitudeOwner {
             total(finish(0)?)?
         };
         self.damage_components[index].final_parts = parts;
+        self.damage_components[index].effect_ordinal = Some(ordinal);
         Ok(Some((final_damage, leech_damage)))
     }
 
@@ -1356,6 +1364,7 @@ impl PreparedMagnitudeOwner {
                 secondary_element: secondary_element.map(analyser_damage_element),
                 finish,
                 hit_bonus: hit.bonus_percent,
+                effect_ordinal: None,
             });
         }
         if magnitude > 0

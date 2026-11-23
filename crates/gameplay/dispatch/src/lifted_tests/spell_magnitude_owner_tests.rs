@@ -581,6 +581,7 @@ fn spell_reflection(capped: bool, split: bool, elite: bool) {
     }
     combat.hits[0].side_percent = None;
     combat.block_armor = false;
+    let mut expected_elite = None;
     if elite {
         f.attributes.wheel_flat_damage = Some(11);
         plan = (130..200)
@@ -715,6 +716,8 @@ fn spell_reflection(capped: bool, split: bool, elite: bool) {
             lowered.batch.effects[0].change,
             OwnerCombatChange::Damage { magnitude, .. } if magnitude == physical / 2 + fire / 2
         ), "elite halves physical {physical} and fire {fire} independently");
+        states.open_analyser_for_test(f.caster, f.session);
+        expected_elite = Some([physical / 2, fire / 2]);
     }
     let before = f.state.vitals();
     let preflight = stage_player_batch_with_magnitude(
@@ -732,6 +735,25 @@ fn spell_reflection(capped: bool, split: bool, elite: bool) {
     let receipt = commit_owner_batch(&mut f.runtime, &mut states, staged, Some(preflight))
         .expect("actual combat commit");
     assert!(receipt.applied);
+    if let Some(expected) = expected_elite {
+        use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact, decode_analyser_facts};
+        use oteryn_protocol_oteryn::damage_element::DamageElement;
+
+        let facts = decode_analyser_facts(
+            &states
+                .analyser_update_for_test(f.caster, f.session)
+                .expect("damage facts"),
+        )
+        .expect("typed damage facts");
+        let actual = [DamageElement::Physical, DamageElement::Fire].map(|kind| {
+            facts.iter().filter_map(|fact| match fact {
+                AnalyserFact::Impact(AnalyserImpact::Damage { value, element })
+                    if *element == kind => Some(i64::from(value.get())),
+                _ => None,
+            }).sum::<i64>()
+        });
+        assert_eq!(actual, expected);
+    }
     let after = states
         .read_owned_player_state_test_snapshot(&f.runtime, f.caster, f.session)
         .expect("committed caster")

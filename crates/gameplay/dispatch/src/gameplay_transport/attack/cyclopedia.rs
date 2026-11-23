@@ -358,13 +358,17 @@ impl Observation<'_> {
                 }
                 ranged::RangedDamage::Distance {
                     attack,
+                    launcher_attack,
                     elemental_attack,
                     element,
                     cap,
                     chance,
                     launcher_bonus,
                 } => {
-                    let total = attack.checked_add(elemental_attack).ok_or(TabWireError)?;
+                    let total = attack
+                        .checked_add(launcher_attack)
+                        .and_then(|total| total.checked_add(elemental_attack))
+                        .ok_or(TabWireError)?;
                     out.set(Stat::AttackEquipment, i64::from(total))?;
                     out.set(Stat::AttackSkillId, 7)?;
                     out.set(Stat::AttackElement, 0)?;

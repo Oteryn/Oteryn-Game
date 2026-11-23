@@ -284,7 +284,7 @@ def qualify(entry, definition, binding, obj, members, routed, vector, profile=No
     return {
         "source_item_id": iid,
         "target": target,
-        # The WorldProject replay applies this packet before Crystal admission.
+        # WorldProject replays the promotion before the current native admission overlay.
         "headers": historical,
         "expected_name": obj["name"],
         "modifiers": vector,

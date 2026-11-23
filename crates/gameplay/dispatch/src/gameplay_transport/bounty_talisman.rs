@@ -135,6 +135,7 @@ pub(in crate::gameplay_transport) fn apply_spell_bonuses_with_leech(
                 .apply_creature_damage_modifiers(
                     &mut cursor,
                     effect.target,
+                    effect.sub_ordinal,
                     *magnitude,
                     (prey, extra_damage, elite),
                 )

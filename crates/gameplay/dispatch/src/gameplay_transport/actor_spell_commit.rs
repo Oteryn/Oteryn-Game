@@ -441,10 +441,10 @@ pub fn stage_player_batch_with_magnitude(
                 OwnerCombatChange::DamageWithHealing { damage, .. } => damage,
                 _ => continue,
             };
-            if let Some(index) = components.iter().position(|parts| {
-                parts.target == effect.target
-                    && parts.final_parts[0].checked_add(parts.final_parts[1]) == Some(total)
-            }) {
+            if let Some(index) = components
+                .iter()
+                .position(|parts| parts.matches_effect(effect.target, effect.sub_ordinal, total))
+            {
                 splits.push((effect.sub_ordinal, components.remove(index)));
             }
         }
@@ -519,13 +519,14 @@ impl PlayerBatchPreflight {
                 OwnerCombatChange::Heal { magnitude, .. } => (*magnitude, true),
                 _ => continue,
             };
-            if magnitude <= 0 || !runtime.contains_live_creature(effect.target) {
+            let observed = splits.iter().find(|split| split.0 == effect.sub_ordinal);
+            if (magnitude <= 0 && observed.is_none())
+                || !runtime.contains_live_creature(effect.target)
+            {
                 continue;
             }
             let mut lua_reflected = Vec::new();
-            let parts = if let Some((_, split)) =
-                splits.iter().find(|split| split.0 == effect.sub_ordinal)
-            {
+            let parts = if let Some((_, split)) = observed {
                 [
                     (split.post_block()[0], self.analyser_element),
                     (

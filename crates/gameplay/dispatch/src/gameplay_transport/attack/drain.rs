@@ -399,9 +399,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && points > 0
             {
                 if let Some(ranged) = &mut selected.weapon.ranged {
-                    if matches!(ranged.damage, ranged::RangedDamage::Distance { .. })
-                        && let ranged::RangedDamage::Distance { attack, .. } =
-                            &mut Arc::make_mut(ranged).damage
+                    if let ranged::RangedDamage::Distance { attack, .. } =
+                        &mut Arc::make_mut(ranged).damage
                     {
                         *attack = attack.saturating_add(points);
                     }
@@ -1189,7 +1188,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .max(0),
                     )
                     .unwrap_or(0);
-                    let primary = reported_primary(final_parts, value);
+                    let primary =
+                        super::super::item_spell_augments::leech_projection::owner_damage_amount(
+                            &runtime,
+                            target,
+                            final_parts[0],
+                            result.health_before,
+                            0,
+                        )
+                        .unwrap_or(final_parts[0]);
+                    let primary = reported_primary(primary, value);
                     let element = ranged::analyser_element(resolved_element);
                     states.analyser.impact(
                         entry.actor,
@@ -2519,8 +2527,8 @@ fn elite_attack_components(parts: [i64; 2], elite: bool) -> [i64; 2] {
 }
 
 // Creature health is consumed in component order on a lethal hit.
-fn reported_primary(parts: [i64; 2], committed: u32) -> u32 {
-    u32::try_from(parts[0].clamp(0, i64::from(committed))).unwrap_or(0)
+fn reported_primary(primary: i64, committed: u32) -> u32 {
+    u32::try_from(primary.clamp(0, i64::from(committed))).unwrap_or(0)
 }
 
 #[cfg(test)]
@@ -2599,17 +2607,17 @@ mod tests {
         let boosted = super::boost_attack_components([50, 50], 20, 2500);
         assert_eq!(boosted, [75, 75]);
         assert_eq!(super::boost_attack_components([50, 50], 25, 0), [62, 62]);
-        assert_eq!(super::reported_primary(boosted, 150), 75);
+        assert_eq!(super::reported_primary(boosted[0], 150), 75);
         // Lethal clipping uses all of the available primary before spending secondary.
-        assert_eq!(super::reported_primary(boosted, 120), 75);
-        assert_eq!(super::reported_primary(boosted, 0), 0);
+        assert_eq!(super::reported_primary(boosted[0], 120), 75);
+        assert_eq!(super::reported_primary(boosted[0], 0), 0);
     }
 
     #[test]
     fn crystal_equipment_zero_talisman_contribution_preserves_prey_rounding() {
         assert_eq!(
-            super::boost_attack_components([50, 50], 25, 1),
-            super::boost_attack_components([50, 50], 25, 0),
+            super::boost_attack_components([1, 1], 25, 300),
+            super::boost_attack_components([1, 1], 25, 0),
         );
     }
 
@@ -2648,7 +2656,7 @@ mod tests {
         // Halving the combined 150 would incorrectly land 75 instead of 74.
         assert_eq!(parts, [37, 37]);
         let landed = u32::try_from(parts[0] + parts[1]).map_err(|_| "landed")?;
-        let reported_physical = super::reported_primary(parts, landed);
+        let reported_physical = super::reported_primary(parts[0], landed);
         let reported_elemental = landed - reported_physical;
         assert_eq!(
             (reported_physical, reported_elemental, landed),

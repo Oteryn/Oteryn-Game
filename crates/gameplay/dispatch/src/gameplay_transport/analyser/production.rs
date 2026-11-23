@@ -198,6 +198,19 @@ impl crate::gameplay_transport::actor_spell::ChannelSpellStates {
                 .copied()
                 .find(|split| split.0 == effect.sub_ordinal)
             {
+                let healing = match effect.change {
+                    C::DamageWithHealing { healing, .. } => healing,
+                    _ => 0,
+                };
+                let primary =
+                    super::super::item_spell_augments::leech_projection::owner_damage_amount(
+                        runtime,
+                        effect.target,
+                        primary,
+                        health.health_before,
+                        healing,
+                    )
+                    .unwrap_or(primary);
                 let primary = u64::try_from(primary).unwrap_or(0).min(value);
                 [(primary, first), (value - primary, second)]
             } else {
