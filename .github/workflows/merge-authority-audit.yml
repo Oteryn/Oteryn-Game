@@ -26,9 +26,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "32f0bea7c7e0d071888670c36c39181697fb021b"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "5ccb7d64dc78a2591c9577166ea12e1e7037e8c0"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
-      EXPECTED_MERGE_GATE_BLOB: "af3519d8c257dbcd5c493146e7ee5e3cc8e36d4a"
+      EXPECTED_MERGE_GATE_BLOB: "43056fce49b11de39453ad706d318d320d1786cf"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash

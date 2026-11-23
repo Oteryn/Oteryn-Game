@@ -38,10 +38,9 @@ pub(in crate::play) fn refresh(
     }
 }
 impl Mailbox {
-    pub(in crate::play) fn party_summons(
-        &self,
-    ) -> std::collections::BTreeMap<oteryn_session::EntityRef, oteryn_session::EntityRef> {
-        self.party
+    pub(in crate::play) fn refresh_party_summons(&mut self) {
+        let pairs = self
+            .party
             .state
             .iter()
             .flat_map(|p| &p.members)
@@ -56,8 +55,14 @@ impl Mailbox {
                     .iter()
                     .filter(|entry| entry.summon)
                     .filter_map(move |entry| owner.map(|master| (entry.entity, master)))
-            })
-            .collect()
+            });
+        if pairs.clone().count() != self.party_summons.len()
+            || pairs
+                .clone()
+                .any(|(pet, owner)| self.party_summons.get(&pet) != Some(&owner))
+        {
+            self.party_summons = std::sync::Arc::new(pairs.collect());
+        }
     }
 }
 impl PlayLink {
@@ -77,7 +82,6 @@ impl Mailbox {
     ) -> Vec<oteryn_session::WorldSpatialEntity> {
         let mailbox = self;
         let list = &mailbox.battle_lists.preferences[index];
-        let summons = list.hide_summons.then(|| mailbox.party_summons());
         let icons = &mailbox.properties.party_skull.icons;
         list.rows_with_metadata(
             &mailbox.battle.visible_actors,
@@ -86,10 +90,7 @@ impl Mailbox {
         )
         .into_iter()
         .filter(|row| {
-            if summons
-                .as_ref()
-                .is_some_and(|summons| summons.contains_key(&row.entity))
-            {
+            if list.hide_summons && mailbox.party_summons.contains_key(&row.entity) {
                 return false;
             }
             if row.kind != oteryn_session::EntityKind::Player

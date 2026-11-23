@@ -214,6 +214,9 @@ fn confirmed_party_summons_are_excluded_only_from_lists_that_hide_them()
         view.scene().sprites().len() > plain,
         "known summon draws its overhead badge"
     );
+    let previous = view.party_summons.clone();
+    view.tick(&link).map_err(|_| "tick")?;
+    assert!(std::ptr::eq(&previous[&pet], &view.party_summons[&pet]));
     outbox.battle_publish(None, Some(7), &[creature]);
     for hide in [true, false] {
         let mut lists = vec![serde_json::from_value(
