@@ -22,6 +22,9 @@ mod speed;
 mod storage;
 mod world;
 pub use world::CyclopediaWorldBinding;
+
+pub type DiscoveryRoster = std::sync::Arc<[(u32, u32)]>;
+
 #[derive(Debug, Clone)]
 pub struct MapRequest {
     pub command: CommandRef,
@@ -34,7 +37,7 @@ pub struct MapRequest {
     pub legacy_area: u32,
     pub subarea: Option<u32>,
     pub subareas: Vec<(u32, u32)>,
-    pub milestone_subareas: std::sync::Arc<[(u32, u32)]>,
+    pub milestone_subareas: DiscoveryRoster,
     pub pool: Vec<Point>,
     pub at: Point,
     pub fee: Option<FeeChangeFacts>,
@@ -127,6 +130,11 @@ impl DurabilityRoot {
             let advanced=changed || donation>0;
             let revision=root.revision.checked_add(u64::from(advanced)).ok_or(DurabilityError::InvalidStoredState)?;
             let bytes=projection(0,revision,&progress,pool_after,improved,&request,storage::percentage(&mut tx,&fence,&request,&progress).await?)?;
+            if request.action == MapAction::Shuffle {
+                // A successful Shuffle can erase eligibility. Use the pre-reset row
+                // under the current fence and commit its grants with the reset.
+                milestones::reconcile(&mut tx, &fence, &request).await?;
+            }
             if advanced || request.action != MapAction::Query {
                 storage::save(&mut tx,&fence,&request,&progress,advanced,donation,pool,pool_after,&bytes).await?;
             }
@@ -138,6 +146,28 @@ impl DurabilityRoot {
         })).await?
     }
 }
+/// Titles require canonical discovery evidence from the admitted completion roster.
+pub(super) fn canonical_discovery_percent(
+    roster: &[(u32, u32)],
+    progress: &serde_json::Value,
+) -> u8 {
+    let Some(subareas) = progress
+        .get("subareas")
+        .and_then(serde_json::Value::as_object)
+    else {
+        return 0;
+    };
+    storage::DiscoveryCompletion::new(roster, |id| {
+        subareas
+            .get(&id.to_string())
+            .and_then(|state| state.get("discovered"))
+            .and_then(serde_json::Value::as_bool)
+            == Some(true)
+    })
+    .mains()
+    .percent()
+}
+
 #[allow(clippy::too_many_arguments, reason = "fixed bounded wire projection")]
 fn projection(
     code: u8,

@@ -64,35 +64,65 @@ fn execute(relogin: bool, name: &'static str) -> TestResult {
 
 #[test]
 fn discovery_milestone_reconciliation_keeps_existing_progress_and_replies() -> TestResult {
+    reconcile_cases(
+        [MapAction::Query, MapAction::Find],
+        &[],
+        "discovery_milestone_reconciliation_keeps_existing_progress_and_replies",
+    )
+}
+
+#[test]
+fn discovery_milestone_map_percent_counts_only_required_subareas() -> TestResult {
+    reconcile_cases(
+        [MapAction::Query],
+        &[(1, 12)],
+        "discovery_milestone_map_percent_counts_only_required_subareas",
+    )
+}
+
+#[test]
+fn discovery_milestone_shuffle_reconciles_grandfathered_progress() -> TestResult {
+    reconcile_cases(
+        [MapAction::Shuffle],
+        &[],
+        "discovery_milestone_shuffle_reconciles_grandfathered_progress",
+    )
+}
+
+fn reconcile_cases<const N: usize>(
+    actions: [MapAction; N],
+    extra_subareas: &'static [(u32, u32)],
+    name: &'static str,
+) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| reconcile_scenario().map_err(|error| error.to_string()))?
+        .spawn(move || reconcile_scenario(actions, extra_subareas, name).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "discovery reconciliation PostgreSQL scenario panicked")??;
     eprintln!(
-        "POSTGRES_EXECUTED discovery_milestone_reconciliation_keeps_existing_progress_and_replies elapsed_ms={}",
+        "POSTGRES_EXECUTED {name} elapsed_ms={}",
         started.elapsed().as_millis()
     );
     Ok(())
 }
 
-fn reconcile_scenario() -> TestResult {
+fn reconcile_scenario(
+    actions: impl IntoIterator<Item = MapAction>,
+    extra_subareas: &[(u32, u32)],
+    name: &str,
+) -> TestResult {
     run(async |admin| {
-        for (progress, action) in [
-            (
+        for action in actions {
+            let progress = if action == MapAction::Query {
                 serde_json::json!({"legacy": {"discovered": false, "exploration": null},
-                "subareas": {"11": {"discovered": true, "exploration": null}}}),
-                MapAction::Query,
-            ),
-            (
-                serde_json::json!({"discovered": true, "exploration": null}),
-                MapAction::Find,
-            ),
-        ] {
+                    "subareas": {"11": {"discovered": true, "exploration": null}}})
+            } else {
+                serde_json::json!({"discovered": true, "exploration": null})
+            };
             let h = Harness::create_with_admission_seed(
                 admin.clone(),
                 "discovery_reconcile",
@@ -136,18 +166,30 @@ fn reconcile_scenario() -> TestResult {
                 call(&mut slot, &h, &authority, fence, start.clone()).await?,
                 retained
             );
-            eprintln!(
-                "POSTGRES_STARTED discovery_milestone_reconciliation_keeps_existing_progress_and_replies {action:?}"
-            );
+            eprintln!("POSTGRES_STARTED {name} {action:?}");
 
-            for command in [2, 3] {
-                let read = request(session, command, &roster, 1, 11, action, 20)?;
-                let reply = call(&mut slot, &h, &authority, fence, read).await?;
+            if action == MapAction::Shuffle {
+                let shuffle = request(session, 2, &roster, 1, 11, action, 0)?;
+                let reply = call(&mut slot, &h, &authority, fence, shuffle.clone()).await?;
                 let result = decode_retained_result(&reply).map_err(debug)?;
-                assert!(result.discovered);
-                assert_eq!(result.area_percent, 100);
-                assert_eq!(result.revision, revision);
+                assert_eq!(result.code, 0);
+                assert!(!result.discovered);
+                assert_eq!(result.area_percent, 0);
+                assert_eq!(result.revision, revision + 1);
                 assert_rewards(&h, &[BASE, ADDON_ONE, ADDON_TWO], &[MEASURING, WIDELY]).await?;
+                assert_eq!(call(&mut slot, &h, &authority, fence, shuffle).await?, reply);
+                assert_rewards(&h, &[BASE, ADDON_ONE, ADDON_TWO], &[MEASURING, WIDELY]).await?;
+            } else {
+                for command in [2, 3] {
+                    let mut read = request(session, command, &roster, 1, 11, action, 20)?;
+                    read.subareas.extend_from_slice(extra_subareas);
+                    let reply = call(&mut slot, &h, &authority, fence, read).await?;
+                    let result = decode_retained_result(&reply).map_err(debug)?;
+                    assert!(result.discovered);
+                    assert_eq!(result.area_percent, 100);
+                    assert_eq!(result.revision, revision);
+                    assert_rewards(&h, &[BASE, ADDON_ONE, ADDON_TWO], &[MEASURING, WIDELY]).await?;
+                }
             }
             assert_eq!(
                 call(&mut slot, &h, &authority, fence, start).await?,
@@ -157,7 +199,13 @@ fn reconcile_scenario() -> TestResult {
                 sqlx::query_scalar("SELECT progress::text FROM game_character_cyclopedia")
                     .fetch_one(&h.pool)
                     .await?;
-            assert_eq!(serde_json::from_str::<serde_json::Value>(&after)?, progress);
+            let after: serde_json::Value = serde_json::from_str(&after)?;
+            if action == MapAction::Shuffle {
+                assert_eq!(after["subareas"]["11"]["discovered"], false);
+                assert!(after["subareas"]["11"]["exploration"].is_object());
+            } else {
+                assert_eq!(after, progress);
+            }
             drop(owner);
             drop(authority);
             drop(seal);

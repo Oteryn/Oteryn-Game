@@ -5,6 +5,7 @@ use super::DurabilityRoot;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
+use super::character_cyclopedia::DiscoveryRoster;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
@@ -39,7 +40,7 @@ struct Sources {
 impl Sources {
     fn new(
         cosmetics: Option<NativeCosmeticsView>,
-        discovery: Option<&oteryn_world_bundle::subarea::Table>,
+        discovery: Option<DiscoveryRoster>,
     ) -> Self {
         Self {
             charm: charm::source(),
@@ -234,7 +235,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         now_unix_ms: i64,
         cosmetics: Option<NativeCosmeticsView>,
-        discovery: Option<&oteryn_world_bundle::subarea::Table>,
+        discovery: Option<DiscoveryRoster>,
     ) -> Result<Vec<CharacterTitle>, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
@@ -361,7 +362,7 @@ impl DurabilityRoot {
         character: CharacterId,
         now_unix_ms: i64,
         cosmetics: Option<NativeCosmeticsView>,
-        discovery: Option<&oteryn_world_bundle::subarea::Table>,
+        discovery: Option<DiscoveryRoster>,
     ) -> Result<CharacterTitleState, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
@@ -425,7 +426,7 @@ impl DurabilityRoot {
         title: CharacterTitle,
         now_unix_ms: i64,
         cosmetics: Option<NativeCosmeticsView>,
-        discovery: Option<&oteryn_world_bundle::subarea::Table>,
+        discovery: Option<DiscoveryRoster>,
     ) -> Result<bool, CharacterAuthorityError> {
         if now_unix_ms < 0 {
             return Err(CharacterAuthorityError::Rejected);

@@ -119,7 +119,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 item_fence,
                 now,
                 self.appearance_context().map(|(_, content)| content),
-                self.bundle_map().map(|map| &map.overlay.base().subareas),
+                self.bundle_map().map(super::cyclopedia::discovery_roster),
             )
             .await;
         // PAR-P12b: badges share the trigger points (Crystal checks both at login).
@@ -192,7 +192,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         title,
                         now,
                         self.appearance_context().map(|(_, content)| content),
-                        self.bundle_map().map(|map| &map.overlay.base().subareas),
+                        self.bundle_map().map(super::cyclopedia::discovery_roster),
                     )
                     .await
                 {
@@ -259,7 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     now,
                     self.appearance_context().map(|(_, content)| content),
-                    self.bundle_map().map(|map| &map.overlay.base().subareas),
+                    self.bundle_map().map(super::cyclopedia::discovery_roster),
                 )
                 .await
                 .is_err()
@@ -283,7 +283,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 target,
                 now,
                 self.appearance_context().map(|(_, content)| content),
-                self.bundle_map().map(|map| &map.overlay.base().subareas),
+                self.bundle_map().map(super::cyclopedia::discovery_roster),
             )
             .await
         {

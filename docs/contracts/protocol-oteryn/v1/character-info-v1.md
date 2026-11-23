@@ -138,10 +138,14 @@ payload formats remain unchanged; the existing `u8` title field admits these val
 | --- | --- |
 | 85–87 | Aspiring Huntsman, Competent Beastslayer, Feared Bountyhunter: existing Task Board points at 160000, 320000 and 430000 (explicit owner replacement of excluded hunting tasks). |
 | 88 | Chompmeister: all fifteen Jean Pierre dish counters at least once. |
-| 89 | Dedicated Entrepreneur: completed canonical main-area percentage at least 50; conditional. |
+| 89 | Dedicated Entrepreneur requires canonical completion in at least 50 percent of the discovery roster. Qualification is conditional. |
 | 90–91 | Hero of Bounac and Planegazer: their exact fenced final NPC reports. |
 | 92–93 | Time Traveller: compatible quest Formal Dress base grant; Proconsul of Iksupan: compatible full Ancient Aucar grant. Store facts never qualify. |
 | 94 | Robinson Crusoe: committed source action 15998 island ingress, level at least 999. |
+
+Dedicated Entrepreneur and Globetrotter count canonical main-area completion against the
+same roster as the map. Globetrotter requires 100 percent completion.
+See [Basic Cyclopedia map v1](cyclopedia-basic-v1.md#automatic-discovery-and-poi-reset-t186t187-2026-11-09).
 
 All appended titles except 89 are permanent. Source qualification, exact donor/retained-wiki
 citations, interface copy differences and cross-task producer boundaries are recorded in

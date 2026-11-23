@@ -200,8 +200,9 @@ fn scenario(canonical: bool) -> TestResult {
             owner.offered_capabilities(),
             owner.cyclopedia_available(),
         );
+        let offers = crate::gameplay_transport::character_info::offered(&offers, true);
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offers, &[4, 6, 57]).ok_or("capability selection")?;
+            SelectedCapabilities::select(&offers, &[4, 6, 57, 97]).ok_or("capability selection")?;
         // Unnegotiated clients cannot enter the handler or observe private map facts.
         let mut old = admitted;
         old.continuity.selected_capabilities = SelectedCapabilities::NONE;
@@ -388,8 +389,8 @@ fn scenario(canonical: bool) -> TestResult {
             );
             assert_eq!(
                 percentage(&reset_points),
-                50,
-                "completed canonical subareas survive changed geometry"
+                0,
+                "completion in the compact subarea does not count toward the meter"
             );
             let (_, restarted) =
                 support::exchange(&owner, &mut admitted, 6, 73, &request(1, 0)).await?;
@@ -603,7 +604,7 @@ fn scenario(canonical: bool) -> TestResult {
             assert_eq!(found[0], 0);
             assert_eq!(count(&found), index as u8 + 1);
             assert_eq!(found[9], u8::from(index == 6));
-            assert_eq!(percentage(&found), if index == 6 { 50 } else { 0 });
+            assert_eq!(percentage(&found), if index == 6 { 100 } else { 0 });
             assert_eq!(
                 owner
                     .states
@@ -636,7 +637,7 @@ fn scenario(canonical: bool) -> TestResult {
         }
         let (_, discovered) = support::exchange(&owner, &mut admitted, 13, 72, &[]).await?;
         assert_eq!(discovered[9], 1);
-        assert_eq!(percentage(&discovered), 50);
+        assert_eq!(percentage(&discovered), 100);
         assert_eq!(discovered[29], 0);
         assert!(
             owner

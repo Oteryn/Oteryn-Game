@@ -26,7 +26,9 @@ of x u16, y u16, Global floor i8 from 0 through 15. At most eight records. Code 
 2 historical Premium refusal, 3 already discovered, 4 historical no-exploration
 refusal, 5 insufficient reachable pool, 6 insufficient funds, 7 historical area-improved
 refusal. Current donations remain allowed during an active boost and fund a future
-save. Area percent counts completed canonical subareas within the current main area.
+save. Area percent is the completed share of the current main area's required discovery
+subareas, rounded down to an integer. A main area absent from the discovery roster
+reports zero.
 Only the requesting character's unfound same-floor POIs in its viewport are sent.
 Committed intent and initializing-query receipts retain the exact result, including query-time facts, for retries.
 New queries read current facts; progress survives session and process replacement.
@@ -67,8 +69,15 @@ subareas.
 
 Shuffle resets POIs, found count and completion. A same-transaction typed reset
 receipt permits the affected canonical subarea to lose completion; other progress
-regressions remain rejected. Area percentages and completed-area census are derived
-from current subarea rows. Completion is persisted, not the resulting bonus.
+regressions remain rejected. The server derives one completion roster from the
+admitted bundle. It includes source discovery mains with at least one subarea that
+supports a native seven-POI discovery run and counts only those supported subareas.
+A roster main is complete when every required subarea is complete. The area meter,
+discovery speed, milestone grants, and exploration title census use this roster.
+Titles require canonical completion evidence. Existing legacy discovery credit is
+preserved by canonical conversion. A successful Shuffle reconciles pending milestone
+grants from pre-reset progress in the same transaction as the reset. Discovery speed
+is derived from persisted completion.
 
 The seventh accepted STEP queues the completion banner through the existing
 capability-31 status-text channel. The capability-57 client presents completion

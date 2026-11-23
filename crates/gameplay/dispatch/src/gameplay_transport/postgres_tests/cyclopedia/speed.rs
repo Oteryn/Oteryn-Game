@@ -69,7 +69,7 @@ pub(super) async fn verify(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE game_character_cyclopedia SET progress='{\"legacy\":{\"discovered\":false,\"exploration\":null},\"subareas\":{\"2\":{\"discovered\":true,\"exploration\":null},\"3\":{\"discovered\":true,\"exploration\":null}}}'")
+    sqlx::query("UPDATE game_character_cyclopedia SET progress='{\"legacy\":{\"discovered\":false,\"exploration\":null},\"subareas\":{\"2\":{\"discovered\":true,\"exploration\":null}}}'")
         .execute(&mut *tx).await?;
     tx.commit().await?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
@@ -164,6 +164,14 @@ pub(super) async fn verify(
         195,
         "T187: contribution reloads from PostgreSQL"
     );
+    let title = oteryn_protocol_oteryn::character_info::CharacterTitle::Globetrotter;
+    let unlock = [2, title.id()];
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        support::exchange(owner, admitted, command, 113, &unlock).await?,
+        (CommandStatus::Accepted, unlock.to_vec()),
+        "completing the required subareas qualifies for Globetrotter"
+    );
     let query_id = admitted.continuity.next_command_id;
     let (status, value) = support::exchange(owner, admitted, query_id, 6178, &[]).await?;
     assert_eq!(status, CommandStatus::Accepted);
@@ -175,6 +183,12 @@ pub(super) async fn verify(
         bonus(owner, deps, *admitted).await?,
         0,
         "T187: reset immediately removes bonus"
+    );
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        support::exchange(owner, admitted, command, 113, &unlock).await?.0,
+        CommandStatus::Rejected,
+        "resetting a required subarea removes Globetrotter qualification"
     );
     let stored: bool = sqlx::query_scalar(
         "SELECT (progress->'subareas'->'2'->>'discovered')::boolean FROM game_character_cyclopedia",

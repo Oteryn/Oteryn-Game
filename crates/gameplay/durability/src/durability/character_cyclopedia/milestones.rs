@@ -6,7 +6,6 @@ use crate::durability::{
 };
 use oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE;
 use sqlx::types::Uuid;
-use std::collections::BTreeMap;
 
 // These existing earned mappings each cover both Discoverer appearances (1094/1095).
 const DISCOVERER: [&str; 3] = [
@@ -46,21 +45,12 @@ pub(super) async fn reconcile(
         return Ok(());
     };
     let progress = CanonicalProgress::decode(&text)?;
-    let mut mains = BTreeMap::new();
-    for &(main, subarea) in request.milestone_subareas.as_ref() {
-        // Match legacy conversion: an explicitly stored subarea takes precedence.
-        let discovered = progress
-            .subareas
-            .get(&subarea)
-            .map_or(progress.legacy.discovered, |state| state.discovered);
-        *mains.entry(main).or_insert(true) &= discovered;
-    }
-    let completed = mains.values().filter(|&&complete| complete).count();
-    if completed == 0 {
+    let mains = progress.completion(&request.milestone_subareas).mains();
+    if mains.completed == 0 {
         return Ok(());
     }
-    let halfway = completed * 2 >= mains.len();
-    let all = completed == mains.len();
+    let halfway = mains.completed * 2 >= mains.total;
+    let all = mains.is_complete();
     let outfit_count = 1 + usize::from(halfway) + usize::from(all);
     let achievement_count = 1 + usize::from(all);
     if DISCOVERER[..outfit_count]

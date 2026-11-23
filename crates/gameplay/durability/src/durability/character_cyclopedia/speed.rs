@@ -1,6 +1,5 @@
 //! Derive the bonus from fenced, persisted completion; never retain a drifting count.
 use super::*;
-use std::collections::BTreeMap;
 impl DurabilityRoot {
     pub async fn read_cyclopedia_speed(
         &self,
@@ -27,24 +26,21 @@ impl DurabilityRoot {
             }
             let row = sqlx::query("SELECT catalogue_digest,progress::text FROM game_character_cyclopedia WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-            let mut areas = BTreeMap::<u32, bool>::new();
-            if let Some(row) = row {
-                if !BasicArea::reads_content_digest(&row.try_get::<Vec<u8>,_>("catalogue_digest")?) {
-                    return Err(DurabilityError::InvalidStoredState);
-                }
-                let text: String = row.try_get("progress")?;
-                if text.len() > 262144 { return Err(DurabilityError::InvalidStoredState); }
-                let progress = storage::CanonicalProgress::decode(&text)?;
-                for (area, subarea) in &subareas {
-                    let done = progress.subareas.get(subarea).map_or(progress.legacy.discovered, |p| p.discovered);
-                    *areas.entry(*area).or_insert(true) &= done;
-                }
+            let Some(row) = row else {
+                tx.commit(deadline).await?;
+                return Ok(Ok(0));
+            };
+            if !BasicArea::reads_content_digest(&row.try_get::<Vec<u8>,_>("catalogue_digest")?) {
+                return Err(DurabilityError::InvalidStoredState);
             }
+            let text: String = row.try_get("progress")?;
+            if text.len() > 262144 { return Err(DurabilityError::InvalidStoredState); }
+            let progress = storage::CanonicalProgress::decode(&text)?;
+            let completion = progress.completion(&subareas);
+            let mains = completion.mains();
             let rules = crate::domain::cyclopedia::DiscoverySpeed::embedded().ok_or(DurabilityError::InvalidStoredState)?;
-            let completed = areas.values().filter(|complete| **complete).count() as u32;
-            let total = subareas.iter().map(|(area,_)| *area).collect::<std::collections::BTreeSet<_>>().len() as u32;
-            let eligible = current_area.and_then(|area| areas.get(&area)).copied().unwrap_or(false);
-            let bonus = rules.bonus(completed, total, eligible);
+            let eligible = current_area.is_some_and(|area| completion.area(area).is_complete());
+            let bonus = rules.bonus(mains.completed as u32, mains.total as u32, eligible);
             tx.commit(deadline).await?;
             Ok(Ok(bonus))
         })).await?

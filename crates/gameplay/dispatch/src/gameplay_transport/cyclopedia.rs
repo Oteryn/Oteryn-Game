@@ -4,7 +4,7 @@ use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection:
 use crate::content::{CollisionClass, LogicalCell};
 use crate::domain::cyclopedia::{BasicArea, MapAction, Point};
 use crate::durability::DurabilityError;
-use crate::durability::character_cyclopedia::{CyclopediaPremiumGate, MapRequest};
+use crate::durability::character_cyclopedia::{CyclopediaPremiumGate, DiscoveryRoster, MapRequest};
 use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::item_fee_burn::FeeChangeFacts;
 use crate::durability::item_mint_audit::Type2Transaction;
@@ -33,15 +33,13 @@ const DISCOVERY_MAINS: [u32; 26] = [
     434, 466,
 ];
 
-type MilestoneSubareas = std::sync::Arc<[(u32, u32)]>;
-
-struct PinnedMilestones {
+struct PinnedDiscoveryRoster {
     digest: [u8; 32],
-    subareas: MilestoneSubareas,
+    subareas: DiscoveryRoster,
 }
 
-fn milestone_subareas(map: &crate::map::boot::BundleMap) -> MilestoneSubareas {
-    static PINNED: std::sync::Mutex<Option<PinnedMilestones>> = std::sync::Mutex::new(None);
+pub(super) fn discovery_roster(map: &crate::map::boot::BundleMap) -> DiscoveryRoster {
+    static PINNED: std::sync::Mutex<Option<PinnedDiscoveryRoster>> = std::sync::Mutex::new(None);
     let base = map.overlay.base();
     let digest = base.digest();
     let mut pinned = PINNED
@@ -50,12 +48,12 @@ fn milestone_subareas(map: &crate::map::boot::BundleMap) -> MilestoneSubareas {
     if let Some(roster) = pinned.as_ref().filter(|roster| roster.digest == digest) {
         return roster.subareas.clone();
     }
-    let subareas: MilestoneSubareas = BasicArea::embedded()
+    let subareas: DiscoveryRoster = BasicArea::embedded()
         .map_or_else(Vec::new, |sampling| {
             discoverable_subareas(&base.subareas, &sampling, |pos| map.facts.doors().at(pos))
         })
         .into();
-    *pinned = Some(PinnedMilestones {
+    *pinned = Some(PinnedDiscoveryRoster {
         digest,
         subareas: subareas.clone(),
     });
@@ -338,7 +336,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             legacy_area: area.legacy_area,
             subarea: area.subarea,
             subareas: area.subareas,
-            milestone_subareas: milestone_subareas(position.map),
+            milestone_subareas: discovery_roster(position.map),
             epoch: self.reset_epoch,
             pool: area.pool,
             at,

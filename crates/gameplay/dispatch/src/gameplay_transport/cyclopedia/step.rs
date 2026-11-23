@@ -74,7 +74,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             legacy_area: area.legacy_area,
             subarea: area.subarea,
             subareas: area.subareas,
-            milestone_subareas: milestone_subareas(map),
+            milestone_subareas: discovery_roster(map),
             pool: area.pool,
             at,
             fee: None,

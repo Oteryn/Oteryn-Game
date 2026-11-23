@@ -11,6 +11,47 @@ pub(super) fn select_epoch(pool: u64) -> (bool, u64) {
     }
 }
 
+#[derive(Clone, Copy, Default)]
+pub(super) struct AreaCompletion {
+    pub(super) completed: usize,
+    pub(super) total: usize,
+}
+
+impl AreaCompletion {
+    pub(super) fn percent(self) -> u8 {
+        (self.completed * 100).checked_div(self.total).unwrap_or(0) as u8
+    }
+
+    pub(super) fn is_complete(self) -> bool {
+        self.total > 0 && self.completed == self.total
+    }
+}
+
+pub(super) struct DiscoveryCompletion(BTreeMap<u32, AreaCompletion>);
+
+impl DiscoveryCompletion {
+    pub(super) fn new(roster: &[(u32, u32)], discovered: impl Fn(u32) -> bool) -> Self {
+        let mut areas = BTreeMap::<u32, AreaCompletion>::new();
+        for &(area, subarea) in roster {
+            let count = areas.entry(area).or_default();
+            count.total += 1;
+            count.completed += usize::from(discovered(subarea));
+        }
+        Self(areas)
+    }
+
+    pub(super) fn area(&self, area: u32) -> AreaCompletion {
+        self.0.get(&area).copied().unwrap_or_default()
+    }
+
+    pub(super) fn mains(&self) -> AreaCompletion {
+        AreaCompletion {
+            completed: self.0.values().filter(|count| count.is_complete()).count(),
+            total: self.0.len(),
+        }
+    }
+}
+
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct CanonicalProgress {
@@ -27,6 +68,13 @@ impl CanonicalProgress {
                 })
             })
             .map_err(|_| DurabilityError::InvalidStoredState)
+    }
+    pub(super) fn completion(&self, roster: &[(u32, u32)]) -> DiscoveryCompletion {
+        DiscoveryCompletion::new(roster, |id| {
+            self.subareas
+                .get(&id)
+                .map_or(self.legacy.discovered, |state| state.discovered)
+        })
     }
     fn convert(&mut self, request: &MapRequest) {
         for (_, id) in &request.subareas {
@@ -128,20 +176,10 @@ pub(super) async fn percentage(
     if let Some(id) = request.subarea {
         progress.subareas.insert(id, current.clone());
     }
-    let ids: Vec<_> = request
-        .subareas
-        .iter()
-        .filter(|(area, _)| *area == request.area)
-        .map(|(_, id)| *id)
-        .collect();
-    if ids.is_empty() {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    let done = ids
-        .iter()
-        .filter(|id| progress.subareas.get(*id).is_some_and(|p| p.discovered))
-        .count();
-    Ok((done * 100 / ids.len()) as u8)
+    Ok(progress
+        .completion(&request.milestone_subareas)
+        .area(request.area)
+        .percent())
 }
 // One row per canonical main area; the shared row serializes all Channels of this World.
 pub(super) async fn world(

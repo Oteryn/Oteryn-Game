@@ -17,7 +17,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             super::super::character_gameplay_fence::current(self, session, false).await?;
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         fence.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
-        let (position, subareas, area) = {
+        let (position, map, area) = {
             let mut runtime = self.runtime.lock().await;
             let binding = runtime.binding();
             if runtime.owner_fence().is_err()
@@ -38,11 +38,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(0);
             };
             let table = &map_position.map.overlay.base().subareas;
-            let subareas = table
-                .areas
-                .iter()
-                .filter_map(|a| a.parent.map(|parent| (parent, a.id)))
-                .collect::<Vec<_>>();
             let membership = table
                 .resolve(
                     u16::try_from(map_position.at.x).ok()?,
@@ -50,8 +45,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     i8::try_from(map_position.at.floor).ok()?,
                 )
                 .map(|(area, _)| area);
-            (snapshot, subareas, membership)
+            (snapshot, map_position.map, membership)
         };
+        let subareas = discovery_roster(map);
         let bonus = self
             .root
             .read_cyclopedia_speed(self.character, self.holder, fence, &subareas, area)

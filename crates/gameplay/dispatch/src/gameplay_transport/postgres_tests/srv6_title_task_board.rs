@@ -58,16 +58,7 @@ fn srv6_title_task_board_real_dispatch_boundaries_reload_and_fence() -> TestResu
             assert!(reloaded.earned.iter().any(|(title,_)|title.name()=="Feared Bountyhunter"));
             // WORLD-SRC owns the canonical producer. Seed only its documented projection
             // shape here; qualification and durable title writes use the production owner.
-            let table:oteryn_world_bundle::subarea::Table=serde_json::from_value(serde_json::json!({
-                "default_town":null,"client_version":"15.30","candidate_sha256":"fixture",
-                "masks":[],"runs":[],"areas":[
-                    {"id":1,"key":"one","name":"One","parent":null,"source_record_sha256":"fixture","town_id":null,"hometown":false,"temple":null},
-                    {"id":2,"key":"two","name":"Two","parent":null,"source_record_sha256":"fixture","town_id":null,"hometown":false,"temple":null},
-                    {"id":11,"key":"one.a","name":"One A","parent":1,"source_record_sha256":"fixture","town_id":null,"hometown":false,"temple":null},
-                    {"id":12,"key":"one.b","name":"One B","parent":1,"source_record_sha256":"fixture","town_id":null,"hometown":false,"temple":null},
-                    {"id":21,"key":"two.a","name":"Two A","parent":2,"source_record_sha256":"fixture","town_id":null,"hometown":false,"temple":null}
-                ]
-            }))?;
+            let roster: crate::durability::character_cyclopedia::DiscoveryRoster = [(1, 11), (1, 12), (2, 21)].into();
             let title=CharacterTitle::ALL.into_iter().find(|title|title.name()=="Dedicated Entrepreneur").ok_or("missing exploration title")?;
             for (progress,qualifies) in [
                 (serde_json::json!({"discovered":true,"exploration":null}),false),
@@ -79,7 +70,7 @@ fn srv6_title_task_board_real_dispatch_boundaries_reload_and_fence() -> TestResu
                 sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,catalogue_digest,progress,occurrence) VALUES(encode($1,'hex')::uuid,$2,$5,$3,encode($4,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET progress=EXCLUDED.progress")
                     .bind(id(41).as_slice()).bind([7_u8;32].as_slice()).bind(progress).bind(id(91).as_slice()).bind(crate::domain::cyclopedia::BasicArea::content_digest().as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
-                let result=h.root.qualify_and_unlock_character_title(&authority,&h.node,fence,title,1_800_000_000_000,None,Some(&table)).await;
+                let result=h.root.qualify_and_unlock_character_title(&authority,&h.node,fence,title,1_800_000_000_000,None,Some(roster.clone())).await;
                 assert_eq!(result.is_ok(),qualifies,"only complete canonical main areas count");
             }
             {
@@ -88,11 +79,11 @@ fn srv6_title_task_board_real_dispatch_boundaries_reload_and_fence() -> TestResu
                 sqlx::query("UPDATE game_character_cyclopedia SET catalogue_digest=$2 WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).bind([8_u8;32].as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
-                assert!(h.root.qualify_and_unlock_character_title(&authority,&h.node,fence,title,1_800_000_000_000,None,Some(&table)).await.is_err(),"unadmitted stored catalogue cannot supply discovery facts");
+                assert!(h.root.qualify_and_unlock_character_title(&authority,&h.node,fence,title,1_800_000_000_000,None,Some(roster.clone())).await.is_err(),"unadmitted stored catalogue cannot supply discovery facts");
             }
             let mut stale=fence;
             stale.connection_generation=crate::foundation::ConnectionGeneration::new(2).map_err(debug)?;
-            assert!(h.root.qualify_and_unlock_character_title(&authority,&h.node,stale,title,1_800_000_000_000,None,Some(&table)).await.is_err());
+            assert!(h.root.qualify_and_unlock_character_title(&authority,&h.node,stale,title,1_800_000_000_000,None,Some(roster.clone())).await.is_err());
             let revoked=h.root.read_and_requalify_character_titles(&authority,&h.node,fence,fence.character_id,1_800_000_000_000,None,None).await.map_err(debug)?;
             assert!(!revoked.earned.iter().any(|(earned,_)|*earned==title),"absent current catalogue cannot retain a conditional title");
             eprintln!("SRV6_TITLE_TASKS_POSTGRES_COMPLETED elapsed={:?}",began.elapsed());
