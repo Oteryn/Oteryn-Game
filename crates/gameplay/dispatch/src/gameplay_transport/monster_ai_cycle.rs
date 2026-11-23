@@ -392,9 +392,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // most the carrier's slots, and the work below is budgeted per pass instead, so a Channel
         // past the old `AI01-ACTIVE-ACTORS` 256 keeps thinking and swinging.
         // Codex 4243397472: only a swing pass (one per think interval) takes the census and
-        // admits, forgets and wakes creatures. A pass between them only runs thinks left due by
-        // `CREATUREAI0-RL-05`, against the last swing pass's players at their current positions,
-        // so a think backlog costs each window its thinks, not a census of every actor.
+        // admits, forgets and wakes creatures. Between those passes, the carried movement
+        // and bounded thinks need only the current player actors, including new arrivals.
         #[cfg(test)]
         trace.set("ai_census");
         let swing_pass = periodic_pass && now.get() >= states.monster_melee.next_swing_pass_us;
@@ -404,7 +403,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             census
         } else {
-            think_player_census(&runtime, &states.monster_melee.think_players)
+            think_player_census(
+                &runtime,
+                states
+                    .actors
+                    .iter()
+                    .map(|(actor, session, _)| (*actor, *session)),
+            )
         };
         if swing_pass {
             // Dormant distant creatures need no executable profile. In particular,
@@ -793,7 +798,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Re-read current player positions and vitals after profile movement and after
             // the first melee batch. No all-actor census is needed for a movement-only pass.
-            let player_census = think_player_census(&runtime, &melee_owner.think_players);
+            let player_census =
+                think_player_census(&runtime, melee_owner.think_players.iter().copied());
             let targets =
                 melee_targets(room, &runtime, &states, &attack, &player_census, now.get());
             let batch = if movement_retry {
@@ -1112,23 +1118,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-/// SPAWN-CEILINGS-1 (Codex 4243397472): the census of a pass between swing passes: the last swing
-/// pass's `players` whose position still reads, in that census's order. Such a pass only runs
-/// thinks, so it needs no creature rows; `melee_targets` still checks each player's session,
-/// vitals, invisibility and protection now. It reads one position per player, not every actor.
+/// SPAWN-CEILINGS-1 (Codex 4243397472): read one position per supplied player.
+/// `melee_targets` verifies each player's current session, vitals, invisibility and protection.
 fn think_player_census(
     runtime: &ChannelRuntimeV1,
-    players: &[(ExactActorRef, GameSessionId)],
+    players: impl IntoIterator<Item = (ExactActorRef, GameSessionId)>,
 ) -> Vec<(
     ExactActorRef,
     MovementPositionSnapshot,
     Option<GameSessionId>,
 )> {
     players
-        .iter()
+        .into_iter()
         .filter_map(|(actor, session)| {
-            let position = runtime.read_actor_position(*actor).ok()?;
-            Some((*actor, position, Some(*session)))
+            let position = runtime.read_actor_position(actor).ok()?;
+            Some((actor, position, Some(session)))
         })
         .collect()
 }

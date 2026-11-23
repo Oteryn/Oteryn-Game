@@ -23,6 +23,7 @@ impl Channel {
             })
             .collect();
         let navigation = self.runtime.content_pin().map_revision_digest();
+        let players = [self.player_candidate()];
         let mut time = self.movement_time;
         loop {
             self.table.drive_movement(
@@ -33,6 +34,7 @@ impl Channel {
                 &sources,
                 &EngineeringGroundSpeed,
                 &self.root,
+                &players,
                 time,
                 &mut self.path_budget,
                 false,

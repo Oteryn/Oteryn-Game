@@ -1030,16 +1030,11 @@ fn scenario_case(
             .await
             .map_err(|e| format!("callback authority: {e:?}"))?;
         let mut deps = Dependencies::new()?;
-        let (controller, activated) = if name == "questpc7-grave" {
-            super::super::questpc7_grave_fixtures::generation_with_qualified_grave_rewards(
-                deps.admitted.world_id,
-            )?
-        } else {
+        let (controller, activated) =
             super::super::death_ml_loss_composed_fixtures::production_generation_with_pin(
                 deps.admitted.world_id,
                 "content-1",
-            )?
-        };
+            )?;
         let generation = controller.active().ok_or("generation")?;
         let world = if pinned_qc_world {
             super::super::qc_pinned_world::world(
