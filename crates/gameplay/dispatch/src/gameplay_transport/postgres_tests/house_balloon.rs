@@ -1,6 +1,6 @@
 //! W19: ordinary framed USE in actual House custody, including a real guest ACL.
-use super::house_balloon_fixtures::{Case, run_case};
 use super::TestResult;
+use super::house_balloon_fixtures::{Case, run_case};
 
 #[test]
 fn w19_house_balloon_guest_uses_real_map_handle_and_replays() -> TestResult {
@@ -136,6 +136,14 @@ fn w18_house_static_aqueduct_rotates_and_decays() -> TestResult {
 #[test]
 fn w18_house_bed_kit_replaces_both_tiles_and_replays() -> TestResult {
     run_case(Case::BedKit(831))
+}
+
+#[test]
+fn w18_house_remaining_bed_kits_persist_both_source_parts() -> TestResult {
+    for kit in [832, 833, 834, 17972] {
+        run_case(Case::BedKit(kit))?;
+    }
+    Ok(())
 }
 
 #[test]

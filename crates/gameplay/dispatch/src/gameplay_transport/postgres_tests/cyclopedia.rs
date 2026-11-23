@@ -38,7 +38,7 @@ fn cyclopedia_postgres_real_dispatch() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Cyclopedia PostgreSQL scenario panicked")??;
     Ok(())
@@ -51,12 +51,22 @@ fn cyclopedia_postgres_canonical_conversion_preserves_completed_legacy_progress(
     drop(admin);
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "canonical Cyclopedia scenario panicked")??;
     Ok(())
 }
-fn scenario(canonical: bool) -> TestResult {
+#[test]
+fn w12_shipped_area_entry_and_exit_reply() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "shipped Cyclopedia scenario panicked")??;
+    Ok(())
+}
+
+fn scenario(canonical: bool, shipped: bool) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "cyclopedia_wire", true, false).await?;
@@ -75,7 +85,16 @@ fn scenario(canonical: bool) -> TestResult {
                 "content-1",
             )?;
         let generation = controller.active().ok_or("active generation")?;
-        let world = support::world_with_subareas(&deps, generation, true)?;
+        let started = std::time::Instant::now();
+        let (world, boundary) = if shipped {
+            let native = generation.native_gameplay().ok_or("native gameplay")?;
+            let world = speed::shipped_world(native)?;
+            let boundary = speed::boundary(&world)?;
+            (world, Some(boundary))
+        } else {
+            (support::world_with_subareas(&deps, generation, true)?, None)
+        };
+        let (x, y, floor) = boundary.as_ref().map_or((1, 0, 7), |edge| edge.start());
         let cells = world
             .movement_cells(activation_pin.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -114,11 +133,7 @@ fn scenario(canonical: bool) -> TestResult {
                 cells.clone(),
                 activation_pin.frame_binding().digest(),
                 world.map_revision_digest(),
-                crate::content::NativeEntryStart {
-                    x: 1,
-                    y: 0,
-                    floor: 7,
-                },
+                crate::content::NativeEntryStart { x, y, floor },
             )
             .ok_or("Cyclopedia combat room")?;
         let pin = ChannelContentPin::from_activation(
@@ -128,7 +143,7 @@ fn scenario(canonical: bool) -> TestResult {
             generation.identity().client_artifact_digest(),
             activation_pin.frame_binding().digest(),
             world.map_revision_digest(),
-            (1, 0, 7),
+            (x, y, floor),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -149,7 +164,7 @@ fn scenario(canonical: bool) -> TestResult {
         runtime
             .initialize_first_entry_position(deps.actor)
             .map_err(debug)?;
-        if !canonical {
+        if !canonical && !shipped {
             runtime
                 .realize_activation_spawns(vec![(
                     vec![(1, 1, 7)],
@@ -202,6 +217,27 @@ fn scenario(canonical: bool) -> TestResult {
         );
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[4, 6, 57]).ok_or("capability selection")?;
+        if let Some(edge) = boundary {
+            speed::seed_shipped_completion(&h, &world, &edge).await?;
+            speed::prepare_steps(
+                &admitted,
+                &h,
+                &authority,
+                generation,
+                activation_pin.frame_binding().digest(),
+            )
+            .await?;
+            speed::verify_shipped(&mut owner, &deps, &mut admitted, edge).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            eprintln!(
+                "W12_SHIPPED_POSTGRES_EXECUTED duration={:.3}s",
+                started.elapsed().as_secs_f64()
+            );
+            return Ok(());
+        }
         // Unnegotiated clients cannot enter the handler or observe private map facts.
         let mut old = admitted;
         old.continuity.selected_capabilities = SelectedCapabilities::NONE;

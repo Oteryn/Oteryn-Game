@@ -203,13 +203,49 @@ pub(super) async fn window_scenario(
             object_revision: 1
         }
     );
+    // Remove the actual guest grant while the House session still holds its actor and fence.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let revoked = sqlx::query("DELETE FROM game_house_acl_entries WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND list_key='guest' AND character_id=encode($3,'hex')::uuid")
+        .bind(context.house().world_id().as_bytes().as_slice())
+        .bind(context.house().house_key())
+        .bind(fence.character_id.as_bytes().as_slice())
+        .execute(&mut *tx).await?;
+    assert_eq!(revoked.rows_affected(), 1);
+    tx.commit().await?;
+    let denied = owner
+        .use_world_object(
+            actor,
+            UseCommand {
+                command_id: 407,
+                ..command
+            },
+            WorldObjectTarget {
+                placement: bundle.into_iter().chain(placement.to_be_bytes()).collect(),
+                expected_revision: 1,
+            },
+        )
+        .await;
+    assert_eq!(
+        denied.disposition,
+        UseDisposition::StaleState,
+        "the durable House fence invalidates the session's revoked guest access"
+    );
+    let persisted: (String, String) = sqlx::query_as("SELECT definition_key,revision::text FROM game_house_base_decorations WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND bundle_digest=$3 AND placement_key=$4::text::numeric")
+        .bind(context.house().world_id().as_bytes().as_slice()).bind(context.house().house_key())
+        .bind(bundle.as_slice()).bind(placement.to_string()).fetch_one(&h.pool).await?;
+    assert_eq!(persisted, ("oteryn:item.tibia.i6447".into(), "1".into()));
     let total: i64 = sqlx::query_scalar("SELECT count(*) FROM game_house_base_decoration_receipts WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(fence.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
         total, 2,
         "actual caller replay and stale input create no extra transition"
     );
-    eprintln!("W18_STATIC_POSTGRES_COMPLETED window_fenced_commit_replay_stale_and_wrong_pair");
+    eprintln!(
+        "W18_STATIC_POSTGRES_COMPLETED window_fenced_commit_replay_stale_wrong_pair_and_revoked_acl"
+    );
     Ok(())
 }
 
@@ -353,10 +389,16 @@ pub(super) async fn bed_scenario(
     assert_eq!(outcome, UseDisposition::Committed);
     let keys: Vec<String> = sqlx::query_scalar("SELECT definition_key FROM game_house_base_decorations WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 ORDER BY placement_key")
         .bind(context.house().world_id().as_bytes().as_slice()).bind(context.house().house_key()).fetch_all(&h.pool).await?;
-    assert_eq!(
-        keys,
-        vec!["oteryn:item.tibia.i734", "oteryn:item.tibia.i735"]
-    );
-    eprintln!("W18_STATIC_POSTGRES_COMPLETED bed_kit_atomic_dual_part");
+    // Crystal 201189f8 bed_modification_kits.lua:1-7, south-facing pairs.
+    let expected = match kit {
+        831 => [734, 735],
+        832 => [742, 743],
+        833 => [738, 739],
+        834 => [2487, 2488],
+        17972 => [17917, 17918],
+        _ => return Err(format!("no Crystal bed kit {kit}").into()),
+    };
+    assert_eq!(keys, expected.map(|id| format!("oteryn:item.tibia.i{id}")));
+    eprintln!("W18_STATIC_POSTGRES_COMPLETED bed_kit_atomic_dual_part kit={kit}");
     Ok(())
 }
