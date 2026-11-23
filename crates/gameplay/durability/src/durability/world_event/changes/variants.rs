@@ -185,12 +185,11 @@ async fn record_entry(
                 .fetch_one(&mut **tx).await?;
             let previous: Option<i64> = sqlx::query_scalar("SELECT last_entry_attempt_ms FROM game_daily_variant_warpath WHERE character_id=encode($1,'hex')::uuid")
                 .bind(character).fetch_optional(&mut **tx).await?;
-            let allowed = previous.is_none_or(|previous| now.saturating_sub(previous) >= WARPATH_COOLDOWN_MS);
-            if allowed {
-                sqlx::query("INSERT INTO game_daily_variant_warpath VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(character_id) DO UPDATE SET last_entry_attempt_ms=greatest(game_daily_variant_warpath.last_entry_attempt_ms,excluded.last_entry_attempt_ms)")
-                    .bind(character).bind(now).execute(&mut **tx).await?;
-            }
-            allowed
+            // Dispatch reaches this policy only after reserving the exact landing.
+            // An eligible attempt still restarts the authored cooldown window.
+            sqlx::query("INSERT INTO game_daily_variant_warpath VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT(character_id) DO UPDATE SET last_entry_attempt_ms=greatest(game_daily_variant_warpath.last_entry_attempt_ms,excluded.last_entry_attempt_ms)")
+                .bind(character).bind(now).execute(&mut **tx).await?;
+            previous.is_none_or(|previous| now.saturating_sub(previous) >= WARPATH_COOLDOWN_MS)
         }
         "spider_nest" => {
             let deaths: i64 = sqlx::query_scalar("SELECT coalesce(sum(deaths),0)::bigint FROM game_daily_variant_spider_progress WHERE character_id=encode($1,'hex')::uuid")

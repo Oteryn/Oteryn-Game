@@ -1,4 +1,7 @@
 use crate::bestiary_postgres_harness as fixture;
+use crate::durability::character_last_position::{
+    FinalLastPosition, LastPositionCell, LastPositionRecord,
+};
 use crate::durability::world_event::changes::{
     finalize_reset_for_test,
     variants::{PassageStep, SPIDER_BOSS, SpiderDeath},
@@ -120,11 +123,27 @@ async fn passage(
     let seal = h.recovery.seal_current().map_err(fixture::debug)?;
     let authority = h.root.open_character_authority(&seal).await.map_err(fixture::debug)?;
     let fence = fixture::fence(1)?.item_fence();
+    let world_id = fence.runtime_scope.world_id();
+    let (x, y, floor) = Selected::roll(world_id.as_bytes(), epoch)?
+        .passage(position)
+        .map_or(position, |(_, portal)| portal.destination);
     let step = PassageStep {
         epoch,
         position,
         command: CommandRef::new(fence.game_session_id, CommandId::new(u64::from(command)).map_err(fixture::debug)?),
         binding: [command; 32],
+        arrival: FinalLastPosition {
+            record: LastPositionRecord {
+                world_id,
+                cell: LastPositionCell { x: i32::from(x), y: i32::from(y), floor: i16::from(floor) },
+                coordinate_frame_digest: [7; 32],
+                map_revision_digest: [7; 32],
+                server_artifact_digest: [7; 32],
+                vitals: None,
+                rest: None,
+            },
+            write_sequence: u64::from(command),
+        },
     };
     h.root.daily_variant_passage(&authority, &h.node, fence, step).await.map_err(|e| fixture::debug(e).into())
 }
@@ -135,6 +154,9 @@ async fn warpath(h: &fixture::Harness) -> fixture::TestResult {
     make_session_current(h).await?;
     let entry = (32617, 31828, 7);
     assert_eq!(passage(h, epoch, entry, 1).await?, Some((32619, 31828, 7)));
+    let saved: (i32, i32, i16) = sqlx::query_as("SELECT tile_x,tile_y,tile_floor FROM game_character_last_positions")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(saved, (32619, 31828, 7));
     sqlx::query("UPDATE game_daily_variant_warpath SET last_entry_attempt_ms=last_entry_attempt_ms-10000")
         .execute(&h.pool).await?;
     let timestamp = || sqlx::query_scalar::<_, i64>("SELECT last_entry_attempt_ms FROM game_daily_variant_warpath").fetch_one(&h.pool);
