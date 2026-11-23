@@ -11,6 +11,8 @@ already reads:
 * ``NODE_BOOT_SKIP_BASIC=1``: the World pass without the basic pass;
 * ``NODE_BOOT_E2E_ONLY``: the journey groups in ``verdict.rs`` ``GROUPS``;
 * ``OTERYN_E2E_ROW_BATCH=start:len``: the row journeys in ``world.rs``;
+* ``OTERYN_E2E_CREATURE_BATCH=start:len``: the species slice selected with custom
+  groups ``csweep@start:end`` (exclusive end, up to 28 species per shard);
 * ``NODE_BOOT_SPELLS=1``: the spell scenarios.
 
 Group names and row indices come from the sources, so a new group or row is
@@ -45,6 +47,7 @@ PR_ROW_BATCHES = ((0, 5), (5, 5), (10, 5))
 # The last batch is open-ended so rows added after planning still run.
 OPEN_END = 1_000_000
 MAX_SHARDS = 64
+CREATURE_BATCH_SIZE = 28
 SHARD_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,62}$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
 ENTRIES = ("node_boot", "game_platform")
@@ -104,7 +107,7 @@ def group_partition(groups: list[str]) -> list[list[str]]:
     These are the combinations the single-machine run already executes
     together; a group gets its own shard only through the custom set.
     """
-    journey = [g for g in groups if g != "rows"]
+    journey = [g for g in groups if g not in ("rows", "csweep")]
     numbered = {g: int(m[1]) for g in journey if (m := re.fullmatch(r"f(\d+)[a-z]*", g))}
     parts = [
         [g for g in journey if g not in numbered],
@@ -187,14 +190,32 @@ def plan(
         known = set(registry) - {"rows"}
         seen: set[str] = set()
         for chunk in filter(None, (part.strip() for part in groups.split(";"))):
-            names = [name.strip() for name in chunk.split(",") if name.strip()]
+            sweep_range = re.fullmatch(r"csweep@([0-9]{1,7}):([0-9]{1,7})", chunk)
+            names = (["csweep"] if sweep_range else [
+                "csweep" if name == "creature_sweep" else name
+                for part in chunk.split(",") if (name := part.strip())
+            ])
             unknown = [name for name in names if name not in known]
             if unknown:
                 raise PlanError(f"unknown journey group(s) {unknown}; rows are selected with the rows input")
             if seen & set(names) or len(set(names)) != len(names):
                 raise PlanError("a journey group appears in two shards")
             seen |= set(names)
-            shards.append(group_shard(names))
+            if sweep_range:
+                start, end = map(int, sweep_range.groups())
+                if end <= start:
+                    raise PlanError("csweep range is start:end with end greater than start")
+                starts = range(start, end, CREATURE_BATCH_SIZE)
+                if len(starts) > MAX_SHARDS:
+                    raise PlanError(f"{len(starts)} shards exceed the limit of {MAX_SHARDS}")
+                for first in starts:
+                    length = min(CREATURE_BATCH_SIZE, end - first)
+                    shards.append(shard(f"csweep-{first}", "node_boot", platform, True, {
+                        **world, "NODE_BOOT_E2E_ONLY": "csweep",
+                        "OTERYN_E2E_CREATURE_BATCH": f"{first}:{length}",
+                    }))
+            else:
+                shards.append(group_shard(names))
         text = rows.strip()
         if text:
             if text == "all":
@@ -249,6 +270,10 @@ def validate_shard(item: dict, registry: list[str] | None = None) -> None:
             ok = bool(value) and all(name in groups for name in names) and len(set(names)) == len(names)
         elif key == "OTERYN_E2E_ROW_BATCH":
             ok = bool(ROW_BATCH.fullmatch(value)) and int(value.split(":")[1]) > 0
+        elif key == "OTERYN_E2E_CREATURE_BATCH":
+            ok = (bool(ROW_BATCH.fullmatch(value))
+                  and 1 <= int(value.split(":")[1]) <= CREATURE_BATCH_SIZE
+                  and item["env"].get("NODE_BOOT_E2E_ONLY") == "csweep")
         else:
             raise PlanError(f"knob {key} is not allowed")
         if not ok:

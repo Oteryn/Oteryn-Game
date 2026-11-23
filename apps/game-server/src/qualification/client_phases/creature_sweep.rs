@@ -2,7 +2,7 @@
 //! qualification `spawn` control command, fought, killed and looted by a real bot over the real wire,
 //! with XP, corpse and loot checked against content.
 //!
-//! Select with `NODE_BOOT_E2E_ONLY=creature_sweep` (never part of the default run).
+//! Select with `NODE_BOOT_E2E_ONLY=csweep` (never part of the default run).
 //! `OTERYN_E2E_CREATURE_BATCH=start:len` selects a slice of the key-sorted species list of
 //! `content/creatures/definitions` (default `0:3`). Use `plan` to print the ranges for parallel jobs.
 //!
@@ -39,6 +39,9 @@ const BATCH_VARIABLE: &str = "OTERYN_E2E_CREATURE_BATCH";
 const BATCH_DEFAULT: (usize, usize) = (0, 3);
 const STEPS: [&str; 5] = ["spawn", "kill", "xp", "corpse", "loot"];
 const SWEEP_LEVEL: u32 = 100;
+const SWEEP_WEAPON: u32 = 3272;
+const SWEEP_WEAPON_SLOT: oteryn_protocol_oteryn::item_view::EquipmentSlot =
+    oteryn_protocol_oteryn::item_view::EquipmentSlot::RightHand;
 const SWEEP_CHARACTER: usize = 0;
 const VISIBLE_SECONDS: u64 = 30;
 const SPECIES_SECONDS: u64 = 60;
@@ -398,7 +401,7 @@ pub(super) async fn run(
         evidence("e2e_groups creature_sweep=skipped reason=opt_in_with_NODE_BOOT_E2E_ONLY");
         return Ok(());
     }
-    let batch = match std::env::var(BATCH_VARIABLE) {
+    let batch = match std::env::var("OTERYN_E2E_CREATURE_BATCH") {
         Ok(value) => Some(value),
         Err(std::env::VarError::NotPresent) => None,
         Err(error) => return Err(format!("invalid {BATCH_VARIABLE}: {error}").into()),
@@ -817,7 +820,7 @@ async fn recover_player(
     if !full(client) {
         return Err("temple or fresh admission did not restore full health and mana".into());
     }
-    ready(clients, world, session).await
+    ready(clients, world, session, false).await
 }
 
 /// The sweep owns a dedicated classed Character and carries its progression between hunts.
@@ -825,11 +828,12 @@ async fn ready(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     session: &mut Option<DevClientSession>,
+    initial: bool,
 ) -> TestResult {
     if session.is_none() {
         *session = Some(connect_character(clients, 0x80, SWEEP_CHARACTER).await?);
     }
-    prepare_player(clients, session).await?;
+    prepare_player(clients, session, initial).await?;
     let client = session.as_mut().ok_or("session absent")?;
     restore_fixture_health(client).await?;
     leave_protection_zone(client, world).await
@@ -993,7 +997,7 @@ async fn hunt(
             "no creature definition with a display name in content/creatures/definitions",
         )
     })?;
-    if let Err(error) = ready(clients, world, session).await {
+    if let Err(error) = ready(clients, world, session, rows.calibrating).await {
         // A failed setup leaves no trusted session; the next species starts fresh.
         *session = None;
         return Err(failure("spawn", "precondition", format!("setup:{error}")));
@@ -1632,8 +1636,8 @@ async fn open_corpse(
     Ok(got)
 }
 
-fn fixture_ready(_level: u32, classed: bool, equipped_and_supplied: bool) -> bool {
-    classed && equipped_and_supplied
+fn fixture_ready(level: u32, classed: bool, equipped_and_supplied: bool, initial: bool) -> bool {
+    classed && equipped_and_supplied && (!initial || level >= SWEEP_LEVEL)
 }
 
 fn expects_physical_loot(private_reward: bool, stamina: u16) -> bool {
@@ -1644,14 +1648,17 @@ fn matches_seeded_loot<K: Ord>(got: &BTreeMap<K, u64>, expected: &BTreeMap<K, u6
     got == expected
 }
 
-/// Provision the level-100 axe build once (the fenced fixture command), then reuse it.
+/// Keep the Newhaven Knight's equipped rapier while applying the fenced level-100 build.
+/// Replacing the rapier asks the equipment owner to requalify every worn starter item.
+/// Some starter armor lacks the authored requirements needed for that transaction.
 async fn prepare_player(
     clients: &SeamClients<'_>,
     session: &mut Option<DevClientSession>,
+    initial: bool,
 ) -> TestResult {
     let expected = character::vocation_id("knight");
     let items = provisioning::item_index()?;
-    let axe = provisioning::item_reference(&items, 3276)?;
+    let weapon = provisioning::item_reference(&items, SWEEP_WEAPON)?;
     let rope = provisioning::item_reference(&items, 3003)?;
     let shovel = provisioning::item_reference(&items, 3457)?;
     for verify in [false, true] {
@@ -1660,10 +1667,11 @@ async fn prepare_player(
         let classed = vocation.is_some() && vocation == expected;
         let supplied = client.inventory().is_some_and(|inventory| {
             inventory.main_backpack.is_some()
-                && inventory
-                    .equipment
-                    .iter()
-                    .any(|slot| slot.item.item_definition_ref == axe && slot.item.count.get() == 1)
+                && inventory.equipment.iter().any(|slot| {
+                    slot.slot == SWEEP_WEAPON_SLOT
+                        && slot.item.item_definition_ref == weapon
+                        && slot.item.count.get() == 1
+                })
                 && [rope, shovel].iter().all(|reference| {
                     inventory
                         .entries
@@ -1672,7 +1680,7 @@ async fn prepare_player(
                         .any(|item| item.item_definition_ref == *reference && item.count.get() == 1)
                 })
         });
-        if fixture_ready(level, classed, supplied) {
+        if fixture_ready(level, classed, supplied, initial) {
             return Ok(());
         }
         if verify {
@@ -1683,7 +1691,7 @@ async fn prepare_player(
             provisioning::provision_fixture(fresh, clients, SWEEP_CHARACTER, SWEEP_LEVEL).await?,
         );
     }
-    Err("classed sweep fixture missing equipped axe or supplies".into())
+    Err("classed sweep fixture missing required level, equipped Newhaven rapier or supplies".into())
 }
 
 /// Experience and level from the Cyclopedia GeneralStats tab (the same panel MP09 reads).
@@ -1757,6 +1765,24 @@ mod evidence_tests {
     use super::*;
     use oteryn_dev_client::{EntityRef, WorldSpatialEntity};
     use oteryn_protocol_oteryn::{entity_names::EntityDisplayName, world_spatial::ActorPosition};
+
+    #[test]
+    fn sweep_weapon_is_equipped_by_knight_first_entry() -> TestResult {
+        use oteryn_gameplay_items::starter_grant::{
+            NewhavenStarterDestination, newhaven_starter_items,
+        };
+
+        let kit = newhaven_starter_items("knight").ok_or("missing Knight starter kit")?;
+        let slot = oteryn_protocol_oteryn::item_view::durable_slot(SWEEP_WEAPON_SLOT)
+            .ok_or("sweep weapon has no durable slot")?;
+        let weapon = kit
+            .iter()
+            .find(|item| item.destination == NewhavenStarterDestination::Equipment(slot))
+            .ok_or("Knight starter kit has no weapon")?;
+        assert_eq!(SWEEP_WEAPON, weapon.tibia_id);
+        assert_eq!(weapon.quantity, 1);
+        Ok(())
+    }
 
     #[test]
     fn creature_sweep_plan_covers_sorted_species_within_job_budget() -> TestResult {
@@ -2052,9 +2078,11 @@ mod evidence_tests {
 
     #[test]
     fn delta_sweep_resumes_incomplete_build_and_reuses_equipped_class_after_death() {
-        assert!(!fixture_ready(100, false, false));
-        assert!(!fixture_ready(100, true, false));
-        assert!(fixture_ready(99, true, true));
+        assert!(!fixture_ready(100, false, false, true));
+        assert!(!fixture_ready(100, true, false, true));
+        assert!(!fixture_ready(1, true, true, true));
+        assert!(fixture_ready(100, true, true, true));
+        assert!(fixture_ready(99, true, true, false));
     }
 
     #[test]
@@ -2103,7 +2131,7 @@ mod evidence_tests {
             .map(|(body, _)| body)
             .ok_or("missing sweep setup boundary")?;
         assert!(prepare.contains("inventory.main_backpack.is_some()"));
-        assert!(prepare.contains("fixture_ready(level, classed, supplied)"));
+        assert!(prepare.contains("fixture_ready(level, classed, supplied, initial)"));
         assert!(prepare.contains("provisioning::provision_fixture("));
 
         let mp = include_str!("mp/mp09_party_xp.rs");

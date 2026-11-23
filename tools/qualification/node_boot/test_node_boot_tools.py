@@ -143,15 +143,37 @@ class KnobTests(unittest.TestCase):
 
 
 class WorldFixtureTests(unittest.TestCase):
-    def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
+    def test_fresh_world_has_disjoint_core_packet_mp_sweep_and_light_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
         fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
         result = bash('set -Eeuo pipefail\nNODE_BOOT_WORLD=1\n' + fixtures
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 10)
-        self.assertEqual(len(set(accounts)), 10)
+        self.assertEqual(len(accounts), 11)
+        self.assertEqual(len(set(accounts)), len(accounts))
+
+    def test_sweep_intents_select_knight_under_druid_profile(self):
+        fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
+        fixtures += section("readonly INTENT_OPERATIONS=", "# Runtime build writers")
+        fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
+        script = (
+            'set -Eeuo pipefail\nNODE_BOOT_WORLD=1 NODE_BOOT_PROFILE=druid\n'
+            'GAME_SOURCE=. WORK=. WORLD_ID=world BASE=. INTERPRETATION=()\n'
+            + fixtures
+            + 'python3() { printf "%s|%s\\n" "${@: -2:1}" "${@: -1}"; }\n'
+            + 'ops() { :; }\nevidence() { :; }\n'
+            + function('character_bootstrap')
+            + '\ncharacter_bootstrap\n'
+        )
+        result = bash(script)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        intents = dict(line.split('|') for line in result.stdout.splitlines())
+        self.assertEqual(intents['Sweep One'], 'Knight')
+        self.assertEqual(intents['Sweep Two'], 'Knight')
+        self.assertEqual(intents['Qualification One'], 'Druid')
+        self.assertEqual(intents['Party One'], 'Druid')
+        self.assertEqual(intents['Light Caster'], 'Sorcerer')
 
 
 class ReuseTests(unittest.TestCase):

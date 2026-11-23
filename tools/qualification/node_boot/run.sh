@@ -1263,6 +1263,10 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     name="${INTENT_NAMES[$index]}"
     index=$((index + 1))
     requested_vocation="$vocation"
+    # The sweep keeps its first-entry Knight weapon when raising the fixture level.
+    if [[ "$account" == "${EXTRA_WORLD_ACCOUNTS[4]}" || "$account" == "${EXTRA_WORLD_ACCOUNTS[5]}" ]]; then
+      requested_vocation=Knight
+    fi
     [[ "$account" != "$LIGHT_ACCOUNT_ID" ]] || requested_vocation=Sorcerer
     if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
       "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "$requested_vocation"; then

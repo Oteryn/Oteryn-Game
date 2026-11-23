@@ -33,7 +33,7 @@ class CoverageTests(unittest.TestCase):
     def assert_groups_once(self, shards):
         planned = [name for s in shards if s["env"].get("NODE_BOOT_E2E_ONLY", "rows") != "rows"
                    for name in s["env"]["NODE_BOOT_E2E_ONLY"].split(",")]
-        self.assertEqual(sorted(planned), sorted(g for g in self.groups if g != "rows"))
+        self.assertEqual(sorted(planned), sorted(g for g in self.groups if g not in ("rows", "csweep")))
 
     def test_full_set_runs_every_group_row_and_mode_once(self):
         shards = matrix.plan("full")
@@ -78,6 +78,22 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(matrix.plan("custom", rows="all", batch="50")[-1]["env"]["OTERYN_E2E_ROW_BATCH"],
                          f"300:{matrix.OPEN_END}")
 
+    def test_custom_creature_sweep_batches_export_exact_ranges(self):
+        shard, = matrix.plan("custom", groups="creature_sweep")
+        self.assertEqual(shard["env"]["NODE_BOOT_E2E_ONLY"], "csweep")
+        shards = matrix.plan("custom", groups="csweep@0:60;core")
+        for shard, batch in zip(shards[:3], ("0:28", "28:28", "56:4"), strict=True):
+            self.assertEqual(shard["env"]["NODE_BOOT_E2E_ONLY"], "csweep")
+            self.assertIn(f"OTERYN_E2E_CREATURE_BATCH={batch}\n", matrix.export_env(shard))
+        self.assertEqual(shards[3]["env"]["NODE_BOOT_E2E_ONLY"], "core")
+
+    def test_creature_sweep_range_respects_dispatch_limit(self):
+        self.assertEqual(len(matrix.plan("custom", groups="csweep@0:1792")), 64)
+        for groups in ("csweep@0:1865", "csweep@40:40", "csweep@0:28;csweep",
+                       "csweep@0:28;csweep@28:56", "csweep@0:28,core"):
+            with self.subTest(groups=groups), self.assertRaises(matrix.PlanError):
+                matrix.plan("custom", groups=groups)
+
     def test_invalid_inputs_fail_the_plan(self):
         for kwargs in ({"groups": "corr"}, {"groups": "rows"}, {"groups": "core;core"},
                        {"rows": "45:20"}, {"rows": "5"}, {"batch": "0"}, {"batch": "x"}, {}):
@@ -95,8 +111,10 @@ class KnobTests(unittest.TestCase):
         readers = {
             "NODE_BOOT_WORLD": harness, "NODE_BOOT_SKIP_BASIC": harness, "NODE_BOOT_SPELLS": harness,
             "NODE_BOOT_E2E_ONLY": rust, "OTERYN_E2E_ROW_BATCH": rust,
+            "OTERYN_E2E_CREATURE_BATCH": rust,
         }
         emitted = {key for set_name in ("reference", "pr", "full") for s in matrix.plan(set_name) for key in s["env"]}
+        emitted.update(matrix.plan("custom", groups="csweep@0:28")[0]["env"])
         self.assertLessEqual(emitted, set(readers))
         for key in emitted:
             with self.subTest(key=key):

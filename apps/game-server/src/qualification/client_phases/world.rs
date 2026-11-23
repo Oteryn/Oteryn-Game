@@ -3195,7 +3195,7 @@ pub(super) async fn journeys(
         ));
     }
     let mp_selected = groups.runs("mp");
-    let sweep_selected = groups.runs("creature_sweep")
+    let sweep_selected = groups.runs("csweep")
         && std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty());
     if mp_selected || sweep_selected {
         let [mp_first, mp_second, sweep] = extra_world_fixtures(clients, packet_clients).await?;

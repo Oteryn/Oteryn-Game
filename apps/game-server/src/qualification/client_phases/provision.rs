@@ -19,7 +19,7 @@ pub(super) async fn provision_at_level(
     provision_profile(client, clients, index, expected_level, &profile).await
 }
 
-pub(in crate::qualification) async fn provision_profile(
+pub(super) async fn provision_build(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
     index: usize,
@@ -67,11 +67,22 @@ pub(in crate::qualification) async fn provision_profile(
         return Err(format!("fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
     drop(client);
-    let mut client = connect_character(clients, 0x70, index).await?;
+    let client = connect_character(clients, 0x70, index).await?;
     let vitals = client.actor_vitals().ok_or("provisioned vitals missing")?;
     if vitals.max_health != max_health || vitals.max_mana != max_mana || vitals.mana == 0 {
         return Err("fresh admission did not load the provisioned build and mana".into());
     }
+    Ok(client)
+}
+
+async fn provision_profile(
+    client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+    index: usize,
+    expected_level: u32,
+    profile: &str,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
+    let mut client = provision_build(client, clients, index, expected_level, profile).await?;
     let definitions = item_index()?;
     for id in [3276, 3003, 3457] {
         let reference = item_reference(&definitions, id)?;

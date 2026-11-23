@@ -24,15 +24,14 @@ pub(super) fn item_reference(
 ) -> TestResult<std::num::NonZeroU32> {
     original::item_reference(index, id)
 }
-/// The fixture provisioning alone, without the E2EF1 movement journey; for
-/// groups (creature sweep) that provision a character more than once.
+/// Raise the dedicated sweep Knight through the fenced fixture without changing its starter gear.
 pub(super) async fn provision_fixture(
     client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
     index: usize,
     expected_level: u32,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    original::provision_profile(client, clients, index, expected_level, "knight").await
+    original::provision_build(client, clients, index, expected_level, "knight").await
 }
 
 pub(super) async fn provision(

@@ -764,7 +764,7 @@ impl Row {
 /// each row owns its admissions and cleanup.
 const GROUPS: &[(&str, &[&str])] = &[
     ("core", &[]),
-    ("creature_sweep", &[]),
+    ("csweep", &[]),
     ("f4", &[]),
     ("f5", &[]),
     ("f6", &[]),
@@ -804,6 +804,11 @@ impl Groups {
             .filter(|name| !name.is_empty())
             .collect::<Vec<_>>();
         while let Some(name) = pending.pop() {
+            let name = if name == "creature_sweep" {
+                "csweep"
+            } else {
+                name
+            };
             let (group, after) = registry
                 .iter()
                 .find(|(group, _)| *group == name)
