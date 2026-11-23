@@ -110,6 +110,7 @@ pub(super) enum Case {
     PositionAcl,
     PositionOccupied,
     BedRest,
+    BedOwnerWake,
     CakeHouseRegeneration,
 }
 
@@ -138,7 +139,7 @@ pub(super) fn run_case_with_admin(case: Case, admin: String) -> TestResult {
             run(async move |_| {
                 // The fresh-relog composition case obtains its progression from the
                 // actual native admission owner, not the generic level-50 row seed.
-                let initialized = !matches!(case, Case::PositionRelog | Case::BedRest);
+                let initialized = !matches!(case, Case::PositionRelog | Case::BedRest | Case::BedOwnerWake);
                 let h = Harness::create_with_admission_seed(
                     admin,
                     "hireling_lifecycle",
@@ -182,7 +183,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     // This scenario boots its genuine bounded BundleWorld separately.
     input.source_world = None;
-    if matches!(case, Case::BedRest) {
+    if matches!(case, Case::BedRest | Case::BedOwnerWake) {
         super::bed_sleep_fixture::bed_profiles(&input)?;
     }
     if matches!(
@@ -193,6 +194,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::PositionAcl
             | Case::PositionOccupied
             | Case::BedRest
+            | Case::BedOwnerWake
     ) {
         // Use the same qualified training fixture as the existing native
         // death/relog tests: source formula bytes are unchanged, while its
@@ -228,7 +230,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         generation.identity().server_artifact_digest(),
         "fixture movement and Item facts must share one qualified native generation"
     );
-    let bed_index = if matches!(case, Case::BedRest) {
+    let bed_index = if matches!(case, Case::BedRest | Case::BedOwnerWake) {
         generation.native_gameplay().and_then(|n| n.item_index())
     } else {
         None
@@ -292,7 +294,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         (32309, 32805, 7),
     );
     let deps = Dependencies::with_content(pin, room, base.spells)?;
-    let bed_premium = if matches!(case, Case::BedRest) {
+    let bed_premium = if matches!(case, Case::BedRest | Case::BedOwnerWake) {
         let (consumer, clock, activation, _) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
         h.root
@@ -395,7 +397,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // Bed USE and its modal must belong to the same boot offer that the real
     // House handoff authenticates. Keep the other service fixtures unchanged.
     static BED_OFFERS: std::sync::OnceLock<Vec<OfferedCapability>> = std::sync::OnceLock::new();
-    let boot_offers = if matches!(case, Case::BedRest) {
+    let boot_offers = if matches!(case, Case::BedRest | Case::BedOwnerWake) {
         BED_OFFERS
             .get_or_init(|| {
                 owner
@@ -412,7 +414,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     } else {
         OFFERS
     };
-    let declared: &[u32] = if matches!(case, Case::BedRest) {
+    let declared: &[u32] = if matches!(case, Case::BedRest | Case::BedOwnerWake) {
         &[11, 18]
     } else {
         &[]
@@ -433,7 +435,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     ).map_err(debug)?;
 
     deps.initialize(&owner).await;
-    if matches!(case, Case::BedRest) {
+    if matches!(case, Case::BedRest | Case::BedOwnerWake) {
         owner.admit_premium(id(40), deps.admitted.game_session_id);
     }
     {
@@ -530,11 +532,12 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::PositionAcl
             | Case::PositionOccupied
             | Case::BedRest
+            | Case::BedOwnerWake
     ) {
         // This source is really positioned in its Channel. Use the ordinary
         // native login settlement and runtime install before the House handoff.
         // Other service fixtures deliberately retain their revision-one seed.
-        if matches!(case, Case::PositionRelog | Case::BedRest) {
+        if matches!(case, Case::PositionRelog | Case::BedRest | Case::BedOwnerWake) {
             owner.admit_progression_session(&mut admitted).await;
             assert!(
                 owner
@@ -553,13 +556,13 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // As in the existing Store PostgreSQL fixture, capability154 is offered
     // only by this test producer. It is selected in the genuine source session
     // against the same boot offer already bound above, before the native handoff.
-    let offers = if matches!(case, Case::Store | Case::BedRest) {
+    let offers = if matches!(case, Case::Store | Case::BedRest | Case::BedOwnerWake) {
         boot_offers
     } else {
         owner.offered_capabilities()
     };
     let mut supported = vec![3, 4, 6, 15, 21, 37, 49, 51, 62, 86, 154, 165, 207, 250];
-    if matches!(case, Case::BedRest) {
+    if matches!(case, Case::BedRest | Case::BedOwnerWake) {
         supported.retain(|id| ![165, 250].contains(id));
         supported.extend([11, 18, 92, 450]);
     }
@@ -589,7 +592,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         source_selection,
         "the source selection must authenticate against its actual boot offer before House transfer"
     );
-    if matches!(case, Case::BedRest) {
+    if matches!(case, Case::BedRest | Case::BedOwnerWake) {
         assert!(
             [11, 18, 92, 450]
                 .iter()
@@ -639,6 +642,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         return super::cake_world_bonus_fixtures::assert_house_regeneration(
             h, &owner, admitted, deps.actor,
         ).await;
+    }
+    if matches!(case, Case::BedOwnerWake) {
+        return super::bed_owner_wake_fixtures::scenario(h, &owner, admitted).await;
     }
     if matches!(case, Case::BedRest) {
         return super::bed_sleep_dispatch_fixtures::production_rest(h, &owner, admitted, deps.actor).await;
@@ -1332,7 +1338,7 @@ async fn seed_identity(h: &Harness, hireling: [u8; 16], lamp: [u8; 16]) -> TestR
     Ok(())
 }
 
-async fn insert_character_root_copy(
+pub(super) async fn insert_character_root_copy(
     connection: &mut sqlx::PgConnection,
     record: &str,
 ) -> TestResult {

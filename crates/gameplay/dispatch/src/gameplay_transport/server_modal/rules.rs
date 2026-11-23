@@ -1,5 +1,8 @@
 //! Server rules retain exact callback inputs; answers never supply gameplay authority.
 use super::{ComposedFreshAdmission, ServerModalOutcome, actor_is_current, owner::Root};
+use crate::content::LogicalCell;
+use crate::durability::bed_sleep::BedUseOutcome;
+use crate::durability::consume_transform::HouseActionContext;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::gameplay_transport::{
     connection::{AdmittedSession, UseCommand, UseOutcome},
@@ -61,9 +64,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn offer_bed_modal(
         &self,
         admitted: AdmittedSession,
+        command_id: u64,
         target: UseTarget,
         resolved: Option<ItemKey>,
-    ) -> Option<UseOutcome> {
+    ) -> Result<Option<UseOutcome>, crate::durability::DurabilityError> {
+        let Some((root, context, head, selection)) =
+            self.resolve_bed_use(admitted, target, resolved).await
+        else {
+            return Ok(None);
+        };
+        // Crystal 201189f bed.cpp:162-175,221-259: occupied USE ends at
+        // refusal or wake. Only a vacant pair can offer skill selection.
+        let decision = Box::pin(self.production_bed_use(admitted, command_id, context, head)).await?;
+        let disposition = match decision {
+            BedUseOutcome::Occupied => UseDisposition::BedOccupied,
+            BedUseOutcome::Woken => UseDisposition::BedWoken,
+            BedUseOutcome::Denied => UseDisposition::Rejected,
+            BedUseOutcome::Stale => UseDisposition::StaleState,
+            BedUseOutcome::Vacant => {
+                let runtime = self.runtime.lock().await;
+                if actor_is_current(&runtime, admitted)
+                    && self.states.server_messages.connection_root(
+                        admitted.game_session_id,
+                        admitted.continuity.connection_generation,
+                    ) == Some(root)
+                    && self.states.server_modals.accepts_terminal_reply(root)
+                    && self
+                        .states
+                        .server_modals
+                        .offer_rule(root, bed_dialog(), Selection::Bed(selection))
+                        .is_some()
+                {
+                    UseDisposition::BedChooseSkill
+                } else {
+                    UseDisposition::Rejected
+                }
+            }
+        };
+        Ok(Some(UseOutcome {
+            disposition,
+            ..UseOutcome::rejected()
+        }))
+    }
+
+    async fn resolve_bed_use(
+        &self,
+        admitted: AdmittedSession,
+        target: UseTarget,
+        resolved: Option<ItemKey>,
+    ) -> Option<(Root, HouseActionContext, LogicalCell, BedSelection)> {
         if ![CAPABILITY_SERVER_MODAL_V1, CAPABILITY_WORLD_INTERACTION_V1]
             .iter()
             .all(|id| admitted.continuity.selected_capabilities.contains(*id))
@@ -79,16 +128,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.game_session_id,
             admitted.continuity.connection_generation,
         )?;
-        if !self.states.server_modals.accepts_terminal_reply(root) {
-            return None;
-        }
         let map = self.bundle_map()?;
         let context = {
             let runtime = self.runtime.lock().await;
             if !actor_is_current(&runtime, admitted) {
                 return None;
             }
-            crate::durability::consume_transform::HouseActionContext::from_native_owner(
+            HouseActionContext::from_native_owner(
                 &runtime,
                 admitted.runtime_actor?,
                 admitted.game_session_id,
@@ -128,7 +174,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             _ => return None,
         };
         if !actor_is_current(&runtime, admitted)
-            || !self.bed_modal_target(&runtime, admitted, target, &changes)
             || self.states.server_messages.connection_root(
                 admitted.game_session_id,
                 admitted.continuity.connection_generation,
@@ -139,23 +184,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let ItemKey::MapBase { placement_key, .. } = target else {
             return None;
         };
-        let offered = self.states.server_modals.offer_rule(
-            root,
-            bed_dialog(),
-            Selection::Bed(BedSelection {
-                target,
-                revision: facts.object_revision(placement_key),
-                fence: admitted.item_fence?,
-            }),
-        );
-        Some(UseOutcome {
-            disposition: if offered.is_some() {
-                UseDisposition::BedChooseSkill
-            } else {
-                UseDisposition::Rejected
-            },
-            ..UseOutcome::rejected()
-        })
+        let head = self.bed_modal_head(&runtime, admitted, target, &changes)?;
+        let selection = BedSelection {
+            target,
+            revision: facts.object_revision(placement_key),
+            fence: admitted.item_fence?,
+        };
+        Some((root, context, head, selection))
     }
 }
 

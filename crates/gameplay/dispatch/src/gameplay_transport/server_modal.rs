@@ -150,10 +150,16 @@ macro_rules! authority_methods {
         fn server_modal_offer_bed(
             &self,
             _admitted: $crate::gameplay_transport::AdmittedSession,
+            _command_id: u64,
             _target: oteryn_protocol_oteryn::world_object::UseTarget,
             _resolved: Option<$crate::gameplay_transport::item_view::ItemKey>,
-        ) -> impl std::future::Future<Output = Option<$crate::gameplay_transport::connection::UseOutcome>> {
-            async { None }
+        ) -> impl std::future::Future<
+            Output = Result<
+                Option<$crate::gameplay_transport::connection::UseOutcome>,
+                $crate::durability::DurabilityError,
+            >,
+        > {
+            async { Ok(None) }
         }
     };
 }
@@ -178,10 +184,11 @@ macro_rules! composed_methods {
         async fn server_modal_offer_bed(
             &self,
             admitted: connection::AdmittedSession,
+            command_id: u64,
             target: oteryn_protocol_oteryn::world_object::UseTarget,
             resolved: Option<$crate::gameplay_transport::item_view::ItemKey>,
-        ) -> Option<connection::UseOutcome> {
-            self.offer_bed_modal(admitted, target, resolved).await
+        ) -> Result<Option<connection::UseOutcome>, $crate::durability::DurabilityError> {
+            self.offer_bed_modal(admitted, command_id, target, resolved).await
         }
     };
 }

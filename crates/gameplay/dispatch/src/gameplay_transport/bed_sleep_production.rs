@@ -1,8 +1,9 @@
 //! Production House-runtime qualification for bed sleep.
 use super::*;
 use crate::content::LogicalCell;
-use crate::durability::bed_sleep::{BedSleepOwner, BedSleepRequest};
+use crate::durability::bed_sleep::{BedSleepOwner, BedSleepRequest, BedUseOutcome, BedUseRequest};
 use crate::durability::character_last_position::{HouseLastPosition, LastPositionCell};
+use crate::durability::consume_transform::HouseActionContext;
 use crate::durability::house_scope_handoff::HouseId;
 use crate::gameplay_transport::connection::{UseCommand, UseOutcome};
 use crate::gameplay_transport::item_view::ItemKey;
@@ -194,23 +195,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .await
     }
 
-    /// Read-only selection admission. The ordinary sleep owner repeats this proof
-    /// and independently checks Premium, combat, ACL, occupancy and durable fences.
-    pub(super) fn bed_modal_target(
+    pub(super) async fn production_bed_use(
+        &self,
+        admitted: connection::AdmittedSession,
+        command_id: u64,
+        context: HouseActionContext,
+        head: LogicalCell,
+    ) -> Result<BedUseOutcome, crate::durability::DurabilityError> {
+        let Some(controller) = admitted.controller else {
+            return Ok(BedUseOutcome::Denied);
+        };
+        // Crystal 201189f bed.cpp:102-123 applies Premium before USE.
+        if !self
+            .session_premium_gate(admitted.game_session_id)
+            .await
+            .premium_current()
+        {
+            return Ok(BedUseOutcome::Denied);
+        }
+        self.root
+            .use_house_bed(
+                self.character,
+                self.holder,
+                BedUseRequest {
+                    context,
+                    origin_channel: admitted.channel_id,
+                    transport: controller.transport,
+                    command_id,
+                    head,
+                },
+            )
+            .await
+    }
+
+    /// Resolve a fixed, reachable pair before the owner decides the USE.
+    pub(super) fn bed_modal_head(
         &self,
         runtime: &crate::foundation::ChannelRuntimeV1,
         admitted: connection::AdmittedSession,
         target: ItemKey,
         changes: &[super::world_map::HouseBaseMapEntry],
-    ) -> bool {
-        let Some(actor) = admitted.runtime_actor else {
-            return false;
-        };
-        let Ok(state) = runtime.house_actor_state(actor, admitted.game_session_id) else {
-            return false;
-        };
+    ) -> Option<LogicalCell> {
+        let state = runtime
+            .house_actor_state(admitted.runtime_actor?, admitted.game_session_id)
+            .ok()?;
         self.bed_head_for_item(runtime, &state.house, state.position, target, Some(changes))
-            .is_some()
     }
 
     fn bed_head_for_item(

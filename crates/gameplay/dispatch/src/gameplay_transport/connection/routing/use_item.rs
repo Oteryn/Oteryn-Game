@@ -131,7 +131,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
         };
-        if let Some(outcome) = authority.server_modal_offer_bed(*admitted, intent.target.clone(), resolved).await {
+        if let Some(outcome) = authority
+            .server_modal_offer_bed(*admitted, command.command_id, intent.target.clone(), resolved)
+            .await
+            .ok()?
+        {
             return Some(Dispatch::Use(outcome));
         }
     }
