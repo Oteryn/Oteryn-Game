@@ -790,11 +790,11 @@ pub(super) async fn npc_bank_talk(
     actor: ExactActorRef,
     command: super::connection::UseCommand,
     intent: NpcTalkIntent,
+    received_at: SemanticTimeMicros,
 ) -> NpcTalkOutcome {
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef};
-    let received_at = admission.owner_now();
     if let Some(outcome) = marriage::replay(admission, command, Some(&intent)).await {
         return outcome;
     }
@@ -911,7 +911,9 @@ pub(super) async fn npc_bank_talk(
         .states
         .npc_conversations
         .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
-        .is_some_and(|context| admission.has_pending_paid_confirmation(command, &intent, &context))
+        .is_some_and(|context| {
+            admission.has_pending_paid_confirmation(command, &intent, &context, received_at)
+        })
     {
         return ordinary;
     }
@@ -1159,7 +1161,14 @@ pub(super) async fn npc_bank_talk(
         .current_bank(&admission.states.chat, &runtime, actor, session, &intent)
     else {
         admission.states.npc_conversations.cancel_bank(session);
-        if reward_callbacks::unhandled_confirmation(admission, actor, command, &intent, &runtime) {
+        if reward_callbacks::unhandled_confirmation(
+            admission,
+            actor,
+            command,
+            &intent,
+            &runtime,
+            received_at,
+        ) {
             return rejected();
         }
         return ordinary;

@@ -25,6 +25,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: &NpcTalkIntent,
         context: &(u64, u64, String),
+        received_at: SemanticTimeMicros,
     ) -> bool {
         if !intent.text.trim().eq_ignore_ascii_case("yes") {
             return false;
@@ -38,12 +39,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .is_ok_and(|prompts| {
                 prompts.get(&command.game_session_id).is_some_and(|prompt| {
-                    prompt.matches_confirmation(
-                        intent.npc_actor,
-                        context,
-                        fence,
-                        self.owner_now().get(),
-                    )
+                    prompt.matches_confirmation(intent.npc_actor, context, fence, received_at.get())
                 })
             })
     }
