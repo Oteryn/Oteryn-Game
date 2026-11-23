@@ -196,6 +196,8 @@ mod tests {
                 .checkpoint_due
         );
         assert_eq!(state.live_skill(2, 0), Some(102));
+        // Crystal fishing.lua reads the effective skill, which includes loyalty.
+        assert_eq!(state.live_skill(6, 0), Some(104));
 
         let definition = ConditionDefinition::new(
             "source.native.attributes",

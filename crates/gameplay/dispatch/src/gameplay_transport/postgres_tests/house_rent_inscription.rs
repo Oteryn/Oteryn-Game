@@ -43,6 +43,11 @@ fn rent_warning_letter_is_readable_after_inbox_claim_postgres() -> TestResult {
 }
 
 async fn scenario(h: &Harness) -> TestResult {
+    sqlx::raw_sql(include_str!(
+        "../../../../../../apps/game-server/migrations/3121_house_rent_warning_text.sql"
+    ))
+    .execute(&h.pool)
+    .await?;
     super::reset();
     prepare_current_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;

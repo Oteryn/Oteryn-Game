@@ -26,11 +26,14 @@ $old$;
     8-s.warnings),NULL,statement_timestamp(),1);
   PERFORM game_character_inbox_deliver(letter,p.owner_character_id,w,'HOUSE_RENT_WARNING',letter::text);
 $new$;
+ old_count INTEGER := cardinality(string_to_array(definition,old_mint));
+ new_count INTEGER := cardinality(string_to_array(definition,new_mint));
 BEGIN
- IF cardinality(string_to_array(definition,old_mint)) IS DISTINCT FROM 2 THEN
+ IF old_count = 2 AND new_count = 1 THEN
+  EXECUTE replace(definition,old_mint,new_mint);
+ ELSIF old_count IS DISTINCT FROM 1 OR new_count IS DISTINCT FROM 2 THEN
   RAISE EXCEPTION 'expected one 0941 house rent warning mint in %',tick;
  END IF;
- EXECUTE replace(definition,old_mint,new_mint);
  EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',tick,current_schema());
 END $migration$;
 

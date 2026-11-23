@@ -62,7 +62,13 @@ fn scenario(bar_id: u16, refusals: bool) -> TestResult {
 async fn exercise(admin: String, bar_id: u16, refusals: bool) -> TestResult {
     let harness =
         Harness::create_with_admission_seed(admin, "world_furniture_break", true, false).await?;
-    prepare_current_session(&harness).await?;
+    let result = exercise_with_harness(&harness, bar_id, refusals).await;
+    harness.cleanup().await?;
+    result
+}
+
+async fn exercise_with_harness(harness: &Harness, bar_id: u16, refusals: bool) -> TestResult {
+    prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
         .root
@@ -175,7 +181,7 @@ async fn exercise(admin: String, bar_id: u16, refusals: bool) -> TestResult {
         )
         .map_err(debug)?;
     deps.runtime = tokio::sync::Mutex::new(runtime);
-    let mut owner = deps.owner(&harness, &authority);
+    let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = (&cells).into();
     deps.initialize(&owner).await;
@@ -200,7 +206,7 @@ async fn exercise(admin: String, bar_id: u16, refusals: bool) -> TestResult {
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice())
         .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-    seed_main_backpack(&harness, &[(WEAPON, 1)]).await?;
+    seed_main_backpack(harness, &[(WEAPON, 1)]).await?;
     let weapon = reference(WEAPON).ok_or("weapon definition")?;
 
     if refusals {
@@ -229,7 +235,7 @@ async fn exercise(admin: String, bar_id: u16, refusals: bool) -> TestResult {
                 .fetch_one(&harness.pool)
                 .await?;
         assert_eq!(transforms, 0);
-        assert_eq!(receipts(&harness).await?, 0);
+        assert_eq!(receipts(harness).await?, 0);
         return Ok(());
     }
 
@@ -246,7 +252,7 @@ async fn exercise(admin: String, bar_id: u16, refusals: bool) -> TestResult {
         "SELECT state_item_id, object_revision, decay_states, decay_delays, decay_at_unix_ms > floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_terrain_tool_transforms"
     ).fetch_one(&harness.pool).await?;
     assert_eq!(state, (3145, 1, vec![2295], vec![120_000], true));
-    assert_eq!(receipts(&harness).await?, 1);
+    assert_eq!(receipts(harness).await?, 1);
     assert_eq!(map.facts().object_revision(key), 1);
     assert!(map.enterable(BAR_POS));
     assert_eq!(appearance(&map, bar_reference)?, 3145);
@@ -255,14 +261,14 @@ async fn exercise(admin: String, bar_id: u16, refusals: bool) -> TestResult {
     let restored_cells = restored
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
-    let mut restarted = deps.owner(&harness, &authority);
+    let mut restarted = deps.owner(harness, &authority);
     restarted.active_generation = Some(active);
     restarted.movement_cells = (&restored_cells).into();
     deps.initialize(&restarted).await;
     assert_eq!(restored.facts().object_revision(key), 0);
     let (next, replay, _) = exchange(&restarted, admitted, 1, &wire_payload, None).await?;
     assert_eq!(replay, UseDisposition::Committed);
-    assert_eq!(receipts(&harness).await?, 1);
+    assert_eq!(receipts(harness).await?, 1);
     restarted.refresh_terrain_tools().await;
     assert_eq!(restored.facts().object_revision(key), 1);
     assert_eq!(appearance(&restored, bar_reference)?, 3145);
@@ -293,20 +299,20 @@ async fn exercise(admin: String, bar_id: u16, refusals: bool) -> TestResult {
     assert_eq!(miss, UseDisposition::Committed);
     assert_eq!(restored.facts().object_revision(key), 2);
     assert_eq!(appearance(&restored, bar_reference)?, 2295);
-    assert_eq!(receipts(&harness).await?, 1, "a miss creates no receipt");
+    assert_eq!(receipts(harness).await?, 1, "a miss creates no receipt");
 
     let late = boot()?;
     let late_cells = late
         .movement_cells(deps.room.movement_cells())
         .map_err(debug)?;
-    let mut late_owner = deps.owner(&harness, &authority);
+    let mut late_owner = deps.owner(harness, &authority);
     late_owner.active_generation = Some(active);
     late_owner.movement_cells = (&late_cells).into();
     late_owner.refresh_terrain_tools().await;
     assert_eq!(late.facts().object_revision(key), 2);
     assert_eq!(appearance(&late, bar_reference)?, 2295);
     assert!(!late.enterable(BAR_POS));
-    assert_eq!(receipts(&harness).await?, 1);
+    assert_eq!(receipts(harness).await?, 1);
     Ok(())
 }
 
