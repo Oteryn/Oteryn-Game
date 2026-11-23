@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LogsResult",
+  "type": "object",
+  "properties": {
+    "lines": {
+      "$ref": "#/$defs/LogLines"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "lines"
+  ],
+  "$defs": {
+    "DiagnosticLine": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticToken"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "channel": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticToken"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticToken"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event": {
+          "$ref": "#/$defs/DiagnosticToken"
+        },
+        "level": {
+          "$ref": "#/$defs/LogLevel"
+        },
+        "module": {
+          "$ref": "#/$defs/DiagnosticToken"
+        },
+        "process": {
+          "$ref": "#/$defs/DiagnosticToken"
+        },
+        "ts": {
+          "$ref": "#/$defs/UnixMillis"
+        },
+        "wire": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "world": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticToken"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "process",
+        "ts",
+        "level",
+        "module",
+        "event"
+      ]
+    },
+    "DiagnosticToken": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:/+-]+$"
+    },
+    "LogLevel": {
+      "type": "string",
+      "enum": [
+        "error",
+        "warn",
+        "info",
+        "debug"
+      ]
+    },
+    "LogLines": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/DiagnosticLine"
+      },
+      "maxItems": 2000
+    },
+    "UnixMillis": {
+      "type": "integer",
+      "format": "uint64",
+      "maximum": 9007199254740991,
+      "minimum": 0
+    }
+  }
+}

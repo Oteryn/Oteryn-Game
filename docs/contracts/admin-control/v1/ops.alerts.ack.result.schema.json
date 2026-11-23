@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlertAckResult",
+  "type": "object",
+  "properties": {
+    "acknowledged_at": {
+      "type": "string"
+    },
+    "alert_id": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "alert_id",
+    "acknowledged_at"
+  ]
+}
