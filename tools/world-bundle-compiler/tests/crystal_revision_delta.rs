@@ -31,6 +31,17 @@ struct DonorPoint {
     direction: usize,
 }
 
+#[derive(Deserialize)]
+struct Removals {
+    points: Vec<RemovedPoint>,
+}
+
+#[derive(Deserialize)]
+struct RemovedPoint {
+    name: String,
+    cell: (u16, u16, i8),
+}
+
 #[test]
 fn crystal_revision_delta_reaches_the_spawn_table() -> Result<(), Box<dyn std::error::Error>> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -47,6 +58,10 @@ fn crystal_revision_delta_reaches_the_spawn_table() -> Result<(), Box<dyn std::e
         700
     );
 
+    let removed: Removals = serde_json::from_str(include_str!(
+        "../../../imports/crystalserver/spawn-removals-201189f8.json"
+    ))?;
+    assert_eq!(removed.points.len(), 17);
     let regions: BTreeSet<_> = capture
         .groups
         .iter()
@@ -56,6 +71,12 @@ fn crystal_revision_delta_reaches_the_spawn_table() -> Result<(), Box<dyn std::e
                 .iter()
                 .map(|point| (point.cell.0 / 256, point.cell.1 / 256))
         })
+        .chain(
+            removed
+                .points
+                .iter()
+                .map(|point| (point.cell.0 / 256, point.cell.1 / 256)),
+        )
         .collect();
     let project = source::project_regions(&root, &regions.into_iter().collect::<Vec<_>>())?;
     let (registry, palette) = source::registry(&root, &project)?;
@@ -174,5 +195,20 @@ fn crystal_revision_delta_reaches_the_spawn_table() -> Result<(), Box<dyn std::e
             ),
         "a predecessor point still occupies a Stag cell"
     );
+    for point in removed.points {
+        let creature = format!("oteryn:creature.{}", point.name.replace(' ', "_"));
+        let (x, y, floor) = point.cell;
+        assert!(
+            !table.sources.iter().any(|source| {
+                source.floor == -floor
+                    && source.points.iter().any(|spawn| {
+                        spawn.x == x
+                            && spawn.y == y
+                            && table.creatures[spawn.creature as usize].key == creature
+                    })
+            }),
+            "removed spawn still realized: {creature} at ({x}, {y}, {floor})"
+        );
+    }
     Ok(())
 }

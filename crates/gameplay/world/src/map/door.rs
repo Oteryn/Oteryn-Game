@@ -1010,6 +1010,41 @@ mod authored_open_tests {
             floor: -7,
         };
         let placement = crate::map::view::placement_key(at, 1).ok_or("placement")?;
+        // These open appearances are registered to the level-door action.
+        for (open, closed) in [
+            (30035, 30049),
+            (30036, 30050),
+            (30039, 30051),
+            (30040, 30052),
+        ] {
+            let (facts, id) = load(open, None)?;
+            assert_eq!(
+                facts.doors().toggle(placement, 0, false, 100, true),
+                None,
+                "open level-door pose {open}"
+            );
+            assert_eq!(
+                facts
+                    .base_entry(at, 1, id)
+                    .ok_or("open level-door pose")?
+                    .appearance_id,
+                open
+            );
+            assert!(!facts.doors().blocks(at));
+            let (facts, id) = load(closed, None)?;
+            assert_eq!(
+                facts.doors().toggle(placement, 0, false, 100, true),
+                None,
+                "disabled ordinary-door pose {closed}"
+            );
+            assert_eq!(
+                facts
+                    .base_entry(at, 1, id)
+                    .ok_or("disabled door pose")?
+                    .appearance_id,
+                closed
+            );
+        }
         for (closed, open, locked) in [
             (8255, 8256, false),
             (8257, 8258, false),
@@ -1021,10 +1056,6 @@ mod authored_open_tests {
             (22502, 22503, false),
             (22504, 22505, false),
             (24903, 28520, false),
-            (30049, 30035, false),
-            (30050, 30036, false),
-            (30051, 30039, false),
-            (30052, 30040, false),
             (30833, 30837, false),
             (30834, 30837, false),
             (30835, 30838, false),
@@ -1135,14 +1166,10 @@ mod authored_open_tests {
             }
         }
         // An authored open pose has no prior closed state. Use the first Crystal
-        // custom pair when the placement has no action, including shared level poses.
+        // custom pair when the placement has no action.
         for (open, closed) in [
             (18026, 18025),
             (28520, 24903),
-            (30035, 30049),
-            (30036, 30050),
-            (30039, 30051),
-            (30040, 30052),
             (30837, 30833),
             (30838, 30835),
             (48524, 48520),
