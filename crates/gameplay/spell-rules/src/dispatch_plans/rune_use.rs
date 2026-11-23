@@ -5,6 +5,14 @@ use oteryn_gameplay_content::content::spell_data::{
     Carrier, Execution, SpellDefinition, SpellEffect,
 };
 
+/// The CrystalServer 3152 script limits ordinary healing to the caster.
+pub fn target_rule(spell: &SpellDefinition) -> AllowedTargets {
+    match spell.carrier {
+        Carrier::Rune { item: 3152, .. } => AllowedTargets::SelfOnly,
+        _ => spell.allowed_targets,
+    }
+}
+
 /// Rune families implemented by the admitted USE adapter. Geometry, source Item
 /// policy, World policy and payment remain qualified by the existing cast owner.
 pub fn direct_rune(spell: &SpellDefinition) -> bool {
@@ -26,7 +34,11 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
         (Carrier::Rune { item: 3152, .. }, Execution::Effects(effects)) => {
             !spell.aggressive
                 && spell.needs_target
-                && spell.allowed_targets == AllowedTargets::SelfOrOwnSummons
+                // Accept the existing authored shape, then apply the narrower cast rule.
+                && matches!(
+                    spell.allowed_targets,
+                    AllowedTargets::SelfOnly | AllowedTargets::SelfOrOwnSummons
+                )
                 && !has_world_geometry(spell)
                 && matches!(
                     effects.as_slice(),
@@ -123,6 +135,28 @@ mod tests {
         assert!(direct_rune(&spell));
         spell.allowed_targets = AllowedTargets::Any;
         assert!(!direct_rune(&spell));
+    }
+
+    #[test]
+    fn intense_healing_rejects_owned_summons_and_other_players() {
+        use crate::target::{AllowedTargetsExt, CastTarget};
+
+        let spell = test_source("candidate:spell/rune/intense_healing_rune");
+        let rule = target_rule(&spell);
+        let mut target = CastTarget {
+            caster: 1,
+            creature: 2,
+            actor: String::new(),
+            master: Some(1),
+        };
+        assert!(
+            !rule.allows(&target),
+            "Intense Healing admitted an owned summon"
+        );
+        target.master = None;
+        assert!(!rule.allows(&target));
+        target.creature = target.caster;
+        assert!(rule.allows(&target));
     }
 
     #[test]
