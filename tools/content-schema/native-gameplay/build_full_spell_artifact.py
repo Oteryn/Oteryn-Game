@@ -815,25 +815,21 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                 facts[key].update(native)
     # Complete the selected portable loot and source-qualified corpse closures.
     # A loot yield requires carried and Ground custody plus pickup physics.
-    def admit_yields(entries, *, retain_native_stacks=False):
+    def admit_yields(entries):
         for entry in entries:
             key = entry['item']['key']
             profiles = native_by_key.get(key, [])
             fact = facts[key]
-            if len(profiles) == 1 and (retain_native_stacks or not fact['materializable']):
+            if len(profiles) == 1 and not fact['materializable']:
                 native = native_loot_yield_facts(entry['item'], profiles[0])
                 if native is not None:
-                    if not fact['materializable']:
-                        fact.update(native)
-                    elif retain_native_stacks and native['stackable']:
-                        # Static facts omit stackability for uncharged Items.
-                        fact.setdefault('stackable', True)
-            admit_yields(entry.get('children', []), retain_native_stacks=retain_native_stacks)
+                    fact.update(native)
+            admit_yields(entry.get('children', []))
     for creature in sorted(slice_creatures & bindings.keys()):
         reference = bindings[creature]['loot']
         if reference is None:
             raise ValueError(f'Selected creature has no loot binding: {creature}')
-        admit_yields(used[reference['key']]['entries'], retain_native_stacks=True)
+        admit_yields(used[reference['key']]['entries'])
     for key, corpses in corpse_tables.items():
         if corpses & qualified_corpses:
             admit_yields(used[key]['entries'])
@@ -841,6 +837,21 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         binding = bindings.get(creature)
         if binding is not None and binding['loot'] is not None:
             admit_yields(used[binding['loot']['key']]['entries'])
+    # Static facts omit stackability for uncharged Items. Already-admitted
+    # yields take their stack class from the exact active Item policy.
+    for key in yield_keys:
+        fact = facts[key]
+        profiles = native_by_key.get(key, [])
+        if fact['materializable'] and 'stackable' not in fact and len(profiles) == 1:
+            profile = profiles[0]
+            expected = {'family': 'Item', 'production_key': key, 'revision_ref': fact['item']['revision']}
+            binding = profile.get('production_binding', {})
+            admission = profile.get('admission', {})
+            if (profile['production_definition'] == expected
+                    and binding.get('disposition') == 'EXACT' and binding.get('target') == fact['item']
+                    and admission.get('materializable') is True
+                    and admission.get('stack_class') == 'StackCapable'):
+                fact['stackable'] = True
     # FORGECREATURE: this resource is added by the live fiend's death classification,
     # rather than by every creature's static loot table. Preserve core admission facts.
     sliver = facts.get('oteryn:item.tibia.i37109')

@@ -2399,7 +2399,10 @@ pub fn record_creature_kill(
                     min_count: count,
                     max_count: count,
                     probability_ppm: Some(1_000_000),
-                    details: Default::default(),
+                    details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                        stackable: true,
+                        ..Default::default()
+                    },
                 });
         }
     }
