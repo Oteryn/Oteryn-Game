@@ -613,23 +613,7 @@ impl Journey<'_, '_, '_, '_> {
     async fn confirm_storm_roll(&mut self, expect_wreck: bool) -> TestResult {
         self.wait_for_passage().await?;
         let jack = self.contact("jack_fate").await?;
-        // Select a command that rolls the storm, so the production one-in-eight
-        // branch remains deterministic and the case need only buy one ticket.
-        let session = self.admitted.game_session_id;
-        let first = self.admitted.continuity.next_command_id;
-        let confirming = (first + 2..first + 258)
-            .find(|command| {
-                crate::gameplay_transport::npc_trade_command::derived(
-                    b"oteryn:npc-travel:jack-fate-storm",
-                    session,
-                    *command,
-                )[0] & 7
-                    == 0
-            })
-            .ok_or("storm command")?;
-        while self.admitted.continuity.next_command_id < confirming - 2 {
-            self.talk(jack, "job").await?;
-        }
+        assert!(self.owner.states.newhaven_travel.set_jack_fate_test_roll(true));
         assert_eq!(self.talk(jack, "thais").await?, NpcIntentDisposition::Ok);
         let before = super::full_world_support::position(
             self.owner,
