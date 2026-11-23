@@ -1539,6 +1539,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && replacements.is_empty()
                 && projection.is_none()
                 && scene_moves.is_none();
+            // These source mechanisms only move the player. Both uses of a
+            // projected revision must leave the shared scenery unchanged.
+            let public_yalahar_travel = matches!(
+                callback.key.as_str(),
+                "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1018"
+                    | "oteryn:quest-callback/batch3/in_service_of_yalahar/mechanism-1019"
+            );
             let apply_scene = || {
                 map.facts.apply_quest_callback(
                     key,
@@ -1588,6 +1595,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else if !merchant_projected
                 && !callback.is_read_only()
                 && !personal_claim_preserves_object
+                && !public_yalahar_travel
                 && !apply_scene()
             {
                 return UseDisposition::Rejected;

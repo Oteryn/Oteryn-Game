@@ -9,9 +9,11 @@ use crate::content::world_reward_claims::{bind_embedded_reward_claims, bind_rewa
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::reward_claim_mint::{
     RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
+    RewardClaimRefusal,
 };
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::interaction_chest_use::{ChestUseError, chest_use_disposition, entry_chest};
+use oteryn_protocol_oteryn::refusal_detail::RefusalDetail;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 pub(super) fn outcome(disposition: UseDisposition) -> UseOutcome {
@@ -232,16 +234,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ) else {
                     return outcome(UseDisposition::Rejected);
                 };
-                let Ok(Some(bag)) = self
+                let command_ref = CommandRef::new(command.game_session_id, command_id);
+                let claim_ref = TypedDefinitionRef {
+                    family: "RewardClaim".into(),
+                    production_key: claim.key.as_str().into(),
+                    revision_ref: claim.revision.as_str().into(),
+                };
+                let bag = match self
                     .root
-                    .read_character_backpack(self.character, fence.character_id)
+                    .reward_claim_backpack_for_use(
+                        self.character,
+                        self.holder,
+                        fence,
+                        command_ref,
+                        claim_ref.clone(),
+                    )
                     .await
-                else {
-                    return outcome(UseDisposition::Rejected);
+                {
+                    Ok(bag) => bag,
+                    Err(error) => return mint_refusal(error),
                 };
                 let (Ok(item), Ok(backpack)) = (
                     generation_item_facts(native, &item_ref(&reward.item)),
-                    generation_item_facts(native, &bag.backpack.definition),
+                    generation_item_facts(native, &bag),
                 ) else {
                     return outcome(UseDisposition::Rejected);
                 };
@@ -305,12 +320,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let request = RewardClaimMintRequest {
                     backpack_outputs: false,
                     additional_items,
-                    command: CommandRef::new(command.game_session_id, command_id),
-                    claim: TypedDefinitionRef {
-                        family: "RewardClaim".into(),
-                        production_key: claim.key.as_str().into(),
-                        revision_ref: claim.revision.as_str().into(),
-                    },
+                    command: command_ref,
+                    claim: claim_ref,
                     source_placement: bound.placement.placement.as_str().into(),
                     item,
                     quantity: reward.count,
@@ -396,5 +407,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 fn mint_refusal(error: RewardClaimMintError) -> UseOutcome {
-    outcome(chest_use_disposition(&ChestUseError::Mint(error)))
+    match error {
+        RewardClaimMintError::Refused(RewardClaimRefusal::MainBackpackFull) => {
+            outcome(UseDisposition::NoRoom)
+        }
+        RewardClaimMintError::Refused(RewardClaimRefusal::CarryingCapacity) => UseOutcome {
+            refusal_detail: Some(RefusalDetail::NotEnoughCapacity),
+            ..outcome(UseDisposition::Rejected)
+        },
+        _ => outcome(chest_use_disposition(&ChestUseError::Mint(error))),
+    }
 }

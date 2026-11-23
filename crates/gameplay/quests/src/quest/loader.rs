@@ -665,6 +665,9 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/m07-too-hot-columns.json"),
             include_str!("../../../../../content/quests/world-callbacks/m09-treasure.json"),
             include_str!("../../../../../content/quests/world-callbacks/m39-stories.json"),
+            include_str!(
+                "../../../../../content/quests/world-callbacks/n4-yalahar-mechanisms.json"
+            ),
             include_str!("../../../../../content/quests/world-callbacks/oramond-native-roots.json"),
             include_str!("../../../../../content/quests/world-callbacks/qc-chests.json"),
             include_str!("../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"),

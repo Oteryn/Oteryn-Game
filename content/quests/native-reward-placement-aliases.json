@@ -152,6 +152,11 @@
       },
       "appearance": 2473,
       "ordinal": 1,
+      "display": {
+        "position": { "x": 33078, "y": 31169, "z": 8 },
+        "appearance": 11686,
+        "ordinal": 3
+      },
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2830-L2835",
         "content/world/placements/region-z08-x129-y121.b3:sha256:824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4 selector 33078,31170,8 ordinal 1 has appearance 2473 and the tile has no unique tags."
@@ -168,6 +173,11 @@
       },
       "appearance": 2473,
       "ordinal": 1,
+      "display": {
+        "position": { "x": 33080, "y": 31169, "z": 8 },
+        "appearance": 11689,
+        "ordinal": 3
+      },
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2837-L2842",
         "content/world/placements/region-z08-x129-y121.b3:sha256:824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4 selector 33080,31170,8 ordinal 1 has appearance 2473 and the tile has no unique tags."
@@ -184,6 +194,11 @@
       },
       "appearance": 2473,
       "ordinal": 1,
+      "display": {
+        "position": { "x": 33076, "y": 31169, "z": 8 },
+        "appearance": 11687,
+        "ordinal": 4
+      },
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2901-L2906",
         "content/world/placements/region-z08-x129-y121.b3:sha256:824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4 selector 33076,31170,8 ordinal 1 has appearance 2473 and the tile has no unique tags."
@@ -200,6 +215,11 @@
       },
       "appearance": 2473,
       "ordinal": 1,
+      "display": {
+        "position": { "x": 33080, "y": 31173, "z": 8 },
+        "appearance": 50263,
+        "ordinal": 2
+      },
       "sources": [
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L3174-L3179",
         "content/world/placements/region-z08-x129-y121.b3:sha256:824f5682e85b1ac5e4ff9a22836a12b5cee6f3c07d285118f1091d54229348f4 selector 33079,31173,8 ordinal 1 has appearance 2473 and the tile has no unique tags."

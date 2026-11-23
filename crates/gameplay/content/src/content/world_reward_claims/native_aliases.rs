@@ -13,7 +13,18 @@ pub(super) struct NativePlacementAlias {
     pub project_position: AliasPosition,
     pub appearance: u16,
     pub ordinal: u8,
+    // A physical display paired with a single-item source reward. Both placements
+    // belong to the claim and must never enter the physical pickup owner.
+    pub display: Option<FixedRewardDisplay>,
     pub sources: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct FixedRewardDisplay {
+    position: AliasPosition,
+    appearance: u16,
+    ordinal: u8,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -91,7 +102,55 @@ fn parse(text: &str) -> Result<Vec<NativePlacementAlias>, ClaimsError> {
             return Err(ClaimsError("invalid or ambiguous native placement alias"));
         }
     }
+    for display in document
+        .aliases
+        .iter()
+        .filter_map(|alias| alias.display.as_ref())
+    {
+        let p = display.position;
+        if display.appearance == 0
+            || display.ordinal > 63
+            || p.z > 15
+            || !targets.insert((p.x, p.y, p.z, display.ordinal))
+        {
+            return Err(ClaimsError("invalid or ambiguous native reward display"));
+        }
+    }
     Ok(document.aliases)
+}
+
+pub(super) fn is_fixed_fixture(cell: BoundCell, ordinal: u8, appearance: u16) -> bool {
+    type Fixture = (i8, u16, u16, u8, u16);
+    static FIXTURES: OnceLock<BTreeSet<Fixture>> = OnceLock::new();
+    FIXTURES
+        .get_or_init(|| {
+            let mut fixtures = BTreeSet::new();
+            for alias in load().into_iter().flatten() {
+                let Some(display) = &alias.display else {
+                    continue;
+                };
+                if let (Some(chest), Some(cell)) =
+                    (alias.project_position.cell(), display.position.cell())
+                {
+                    fixtures.insert((
+                        chest.floor,
+                        chest.x,
+                        chest.y,
+                        alias.ordinal,
+                        alias.appearance,
+                    ));
+                    fixtures.insert((
+                        cell.floor,
+                        cell.x,
+                        cell.y,
+                        display.ordinal,
+                        display.appearance,
+                    ));
+                }
+            }
+            fixtures
+        })
+        .contains(&(cell.floor, cell.x, cell.y, ordinal, appearance))
 }
 
 impl NativePlacementAlias {
@@ -114,6 +173,12 @@ impl NativePlacementAlias {
                 let binding = &placement["source_binding"];
                 self.project_position.matches(&binding["project_position"])
                     && placement["appearance_tibia_id"].as_u64() == Some(u64::from(self.appearance))
+                    && self.display.as_ref().is_none_or(|display| {
+                        let key = format!("oteryn:item.tibia.i{}", display.appearance);
+                        placement["reward"]["items"].as_array().is_some_and(|items| {
+                            matches!(items.as_slice(), [item] if item["item"]["key"] == key)
+                        })
+                    })
                     && binding.get("native_ordinal").is_none()
                     && binding["legacy_unique_ids"].as_array().is_some_and(|ids| {
                         ids.iter().any(|id| {

@@ -53,6 +53,11 @@ pub trait RewardClaimTile {
 
 mod native_aliases;
 
+/// Exact placements owned by a reward alias with a physical source display.
+pub fn is_fixed_native_reward_fixture(cell: BoundCell, ordinal: u8, appearance: u16) -> bool {
+    native_aliases::is_fixed_fixture(cell, ordinal, appearance)
+}
+
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
 /// variant shards. Keys and the exact W15b native container projection are served;
 /// other source dispositions remain closed.

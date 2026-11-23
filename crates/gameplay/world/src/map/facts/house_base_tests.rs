@@ -33,6 +33,7 @@ fn w19_house_base_facts_exclude_channel_door_rotation_and_callback_overrides() {
         Placement {
             palette: 0,
             bound: false,
+            fixed_reward: false,
             dropped: false,
             count: 1,
             sub_type: 0,

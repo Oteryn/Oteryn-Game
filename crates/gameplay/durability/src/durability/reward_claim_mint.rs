@@ -1126,16 +1126,9 @@ async fn admit(
     let granter =
         FencedGrantingCharacter::after_fence(tx, fence.character_id, RewardClaimFenceChecked(()))
             .await?;
-    let already_claimed: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 FROM game_reward_claims \
-                         WHERE character_id = encode($1,'hex')::uuid \
-                           AND claim_family = $2 AND claim_production_key = $3)",
-    )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(&request.claim.family)
-    .bind(&request.claim.production_key)
-    .fetch_one(&mut **tx)
-    .await?;
+    let already_claimed = claimed::is_claim_spent(
+        tx, fence.character_id, &request.claim.family, &request.claim.production_key,
+    ).await?;
     // §17.2: a pending MINT of this claim under another CommandRef. It is
     // pending while it has no receipt, its RL-08 budget is not exhausted and
     // its GameSession is not terminal: only then can it still commit. The
@@ -1528,6 +1521,7 @@ async fn load_receipt(
 ) -> std::result::Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
     Ok(sqlx::query(
         "SELECT intent_binding, transaction_id::text, event_id::text, \
+                character_id::text, claim_family, claim_production_key, claim_revision_ref, \
                 item_instance_id::text, quantity, destination_parent_item_instance_id::text, \
                 destination_ordinal::text, occurred_at, envelope_sha256 \
            FROM game_reward_claim_mint_receipts \

@@ -9,7 +9,8 @@
 //! - **Definitions.** Appearance comes from the palette key ([`view::appearance_id`]);
 //!   `blocks_projectile` and pickup eligibility come from the served item definition.
 //! - **Placements.** A top-level entry with an action, unique, door, depot, teleport, text or
-//!   description attribute, or a dropped teleport, is bound; `count` is its stack count in
+//!   description attribute, a dropped teleport or an exact native reward fixture is bound.
+//!   `count` is its stack count in
 //!   `1..=100`, else 1, and `sub_type` its charges, else 0. A placement whose compact id names both
 //!   an Item and a Terrain record keeps its palette index, because the base keeps the id alone.
 //! - **Pickup.** The original attributes and exact pickup-wrapper decision are retained
@@ -29,6 +30,9 @@ use super::floor::palette_mask;
 use super::overlay::{AddedItem, EntryId, TilePos, pickup};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
 use super::{LoadError, palette_appearance};
+use oteryn_gameplay_content::content::world_reward_claims::{
+    BoundCell, is_fixed_native_reward_fixture,
+};
 use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
 use oteryn_world_bundle::bundle::{Family, Manifest, PaletteEntry, Sector, TerrainKind};
 use oteryn_world_bundle::sector::Attrs;
@@ -160,6 +164,7 @@ struct PaletteFacts {
 struct Placement {
     palette: u32,
     bound: bool,
+    fixed_reward: bool,
     dropped: bool,
     count: u8,
     sub_type: u16,
@@ -611,9 +616,25 @@ impl BundleFacts {
                     }
                     PaletteDoor::No => {}
                 }
+                let ordinal = ordinal as u8;
+                let fixed_reward = tile.house == 0
+                    && item.attrs == Attrs::default()
+                    && self.palette.get(item.palette as usize).is_some_and(|p| {
+                        p.facts.pickupable
+                            && is_fixed_native_reward_fixture(
+                                BoundCell {
+                                    x: pos.x,
+                                    y: pos.y,
+                                    floor: pos.floor,
+                                },
+                                ordinal,
+                                p.facts.appearance_id,
+                            )
+                    });
                 let placement = Placement {
                     palette: item.palette,
-                    bound: dropped || bound(&item.attrs),
+                    bound: dropped || bound(&item.attrs) || fixed_reward,
+                    fixed_reward,
                     dropped,
                     count: item
                         .attrs
@@ -625,10 +646,12 @@ impl BundleFacts {
                     pickup: pickup::eligibility(
                         tile,
                         sector.floor,
-                        ordinal as u8,
-                        self.palette
-                            .get(item.palette as usize)
-                            .is_some_and(|p| p.facts.pickupable),
+                        ordinal,
+                        !fixed_reward
+                            && self
+                                .palette
+                                .get(item.palette as usize)
+                                .is_some_and(|p| p.facts.pickupable),
                         &manifest.dropped_teleports,
                     )
                     .map(|entry| entry.quantity)
@@ -645,6 +668,7 @@ impl BundleFacts {
                 let plain = Placement {
                     palette: item.palette,
                     bound: false,
+                    fixed_reward: false,
                     dropped: false,
                     count: 1,
                     sub_type: 0,
@@ -953,6 +977,7 @@ impl BundleFacts {
                 plain = Placement {
                     palette: self.unique_index(id)?,
                     bound: false,
+                    fixed_reward: false,
                     dropped: false,
                     count: 1,
                     sub_type: 0,
@@ -968,6 +993,7 @@ impl BundleFacts {
         }
         let facts = EntryFacts {
             bound: placement.bound,
+            pickupable: entry.facts.pickupable && !placement.fixed_reward,
             count: u32::from(placement.count),
             sub_type: u32::from(placement.sub_type),
             ..entry.facts
@@ -1805,6 +1831,7 @@ mod tests {
             Placement {
                 palette: 0,
                 bound: true,
+                fixed_reward: false,
                 dropped: true,
                 count: 1,
                 sub_type: 0,
@@ -1865,6 +1892,7 @@ mod tests {
                 Placement {
                     palette: 0,
                     bound: true,
+                    fixed_reward: false,
                     dropped: false,
                     count: 1,
                     sub_type: 0,
