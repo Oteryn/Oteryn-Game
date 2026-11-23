@@ -21,6 +21,18 @@ fn named_item(profile: &str) -> Option<(u32, u32)> {
     (id != 0 && (1..=20).contains(&count)).then_some((id, count))
 }
 
+fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
+    match profile {
+        "c05-exiva" => Some(("sorcerer", 8)),
+        "f5-c17a" => Some(("sorcerer", 20)),
+        "f5-c17c" => Some(("sorcerer", 23)),
+        "f5-c13" => Some(("sorcerer", 200)),
+        "f5-c18a" => Some(("sorcerer", 1)),
+        "f5-c17d" => Some(("knight", 20)),
+        _ => None,
+    }
+}
+
 fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
@@ -29,7 +41,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
         profile,
         "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
     ) || (cfg!(any(test, feature = "qualification-spawn"))
-        && (profile == "c05-exiva" || named_item(profile).is_some())))
+        && (spell_build(profile).is_some() || named_item(profile).is_some())))
     .then_some((session, profile))
 }
 
@@ -708,12 +720,12 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
-    let (vocation, level) = match profile {
-        "c05-exiva" => ("sorcerer", 8),
+    let spell = spell_build(profile);
+    let (vocation, level) = spell.unwrap_or(match profile {
         "knight-underlevel" => ("knight", 66),
         "explorer" => ("knight", 100),
         _ => (profile, 100),
-    };
+    });
     let occurrence_profile = if level == 100 { vocation } else { profile };
     qualification_build::prepare_character_with_policy_until(
         root,
@@ -735,7 +747,7 @@ async fn prepare_build(
         deadline,
     )
     .await?;
-    if profile == "c05-exiva" {
+    if spell.is_some() {
         return Ok(());
     }
     prepare_items(root, authority, proof, &current, native, deadline, None).await
@@ -1787,6 +1799,11 @@ mod tests {
             "druid",
             "monk",
             "c05-exiva",
+            "f5-c17a",
+            "f5-c17c",
+            "f5-c13",
+            "f5-c18a",
+            "f5-c17d",
             "item-43895-1",
             "item-6506-2",
         ] {

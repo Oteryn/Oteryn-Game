@@ -89,6 +89,12 @@ served item definition and commits a fenced reward claim into the main backpack
 for counts 1 through 20. An exact retry in the same admission replays its claim.
 Rows re-admit to observe the backpack through the normal client snapshot.
 
+The f5 spell rows use dedicated Platform-created Sorcerers and a Knight. The
+node fixture awards their starting XP through the progression owner. The rune
+rows seed platinum, then walk to a served seller and buy from its live shop
+window. Rune grants are reserved for a bundle with no placement for any authored
+seller of that rune.
+
 To qualify the preserved full spell manifest through the same topology:
 
 ```sh

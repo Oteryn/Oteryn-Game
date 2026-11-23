@@ -46,6 +46,22 @@ pub(super) struct DedicatedCharacter {
 }
 
 impl DedicatedCharacter {
+    pub(super) fn replace_slot(
+        &self,
+        scope: &SeamClients<'_>,
+        index: usize,
+    ) -> TestResult<(Vec<String>, Vec<[u8; 16]>)> {
+        let mut accounts = scope.accounts.to_vec();
+        let mut characters = scope.characters.to_vec();
+        *accounts
+            .get_mut(index)
+            .ok_or("preparation account slot absent")? = self.accounts[0].clone();
+        *characters
+            .get_mut(index)
+            .ok_or("preparation character slot absent")? = self.characters[0];
+        Ok((accounts, characters))
+    }
+
     pub(super) fn clients<'a>(&'a self, scope: &SeamClients<'a>) -> SeamClients<'a> {
         SeamClients {
             accounts: &self.accounts,
