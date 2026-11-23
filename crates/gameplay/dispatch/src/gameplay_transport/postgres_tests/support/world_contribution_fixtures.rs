@@ -54,7 +54,7 @@ pub(super) async fn quote_junkar_route(
     route: &crate::content::npc_catalogue::travel::TravelRoute,
 ) -> TestResult<Result<u64, TravelRefusal>> {
     let fence = super::death_ml_loss_composed_fixtures::current_fence(owner, session).await?;
-    Ok(h.root
+    h.root
         .quote_npc_travel(
             owner.character,
             &h.node,
@@ -63,7 +63,7 @@ pub(super) async fn quote_junkar_route(
             &super::npcfix_m38_travel_guards_fixtures::NoPremium,
         )
         .await
-        .map_err(super::fixture::debug)?)
+        .map_err(super::fixture::debug)
 }
 
 pub(super) async fn steamship_donation(
