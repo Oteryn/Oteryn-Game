@@ -17,11 +17,30 @@ pub struct WoodenBarCollision {
 }
 
 pub fn wooden_bar_collision(appearance: u16) -> Option<WoodenBarCollision> {
+    match appearance {
+        2291..=2296 | 3145 | 3146 => pinned_collision(appearance),
+        _ => None,
+    }
+}
+
+fn pinned_collision(appearance: u16) -> Option<WoodenBarCollision> {
     static COLLISION: OnceLock<BTreeMap<u16, WoodenBarCollision>> = OnceLock::new();
     COLLISION
         .get_or_init(load_collision)
         .get(&appearance)
         .copied()
+}
+
+pub(crate) fn qualified_bar_tile_collision(key: &str) -> Option<WoodenBarCollision> {
+    let id = key
+        .strip_prefix("oteryn:item.tibia.i")
+        .or_else(|| key.strip_prefix("oteryn:terrain.tibia.i"))?
+        .parse::<u16>()
+        .ok()?;
+    match id {
+        2291..=2296 | 7593 => pinned_collision(id),
+        _ => None,
+    }
 }
 
 fn load_collision() -> BTreeMap<u16, WoodenBarCollision> {
@@ -36,6 +55,18 @@ fn load_collision() -> BTreeMap<u16, WoodenBarCollision> {
             ))
             .as_slice(),
             &[2291, 2292, 2293, 2294, 2295, 2296][..],
+        ),
+        (
+            "Terrain",
+            "terrain",
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/terrain/terrain-02000-02499.json"
+            ))
+            .as_slice(),
+            // The published 2295 bars at (33214, 31489, 7) stand on this ground.
+            // Its pinned sight flag also supersedes the missing Item policy.
+            &[7593][..],
         ),
         (
             "WorldObject",
@@ -74,13 +105,18 @@ fn load_collision() -> BTreeMap<u16, WoodenBarCollision> {
                 continue;
             }
             let qualified = if family == "Terrain" {
-                if record["kind"]["state"] != "KNOWN" || record["kind"]["value"] != "wall" {
+                let (kind_name, kind) = if id == 7593 {
+                    ("ground", TerrainKind::Ground)
+                } else {
+                    ("wall", TerrainKind::Wall)
+                };
+                if record["kind"]["state"] != "KNOWN" || record["kind"]["value"] != kind_name {
                     continue;
                 }
                 let Some(walkable) = known_bool(&record["walkable"]) else {
                     continue;
                 };
-                (Some(TerrainKind::Wall), !walkable, record)
+                (Some(kind), !walkable, record)
             } else {
                 let collision = &record["collision"];
                 let Some(solid) = known_bool(&collision["blocks_movement"]) else {

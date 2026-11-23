@@ -929,6 +929,23 @@ pub trait FreshAdmissionAuthority {
         async { Some(UseOutcome::rejected()) }
     }
 
+    /// Map craft results keep the revision conflict until the command encoder.
+    fn use_craft_map_result(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: UseIntent,
+        source: Option<ItemKey>,
+        target: Option<ItemKey>,
+    ) -> impl Future<
+        Output = Result<
+            Option<UseOutcome>,
+            crate::gameplay_transport::item_craft::MapResyncRequired,
+        >,
+    > {
+        async move { Ok(self.use_craft(actor, command, intent, source, target).await) }
+    }
+
     /// Capability 22's exact direct-entry Rune adapter. Unknown commits keep the command open.
     fn use_rune(
         &self,

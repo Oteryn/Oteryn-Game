@@ -430,13 +430,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 }, intent.clone(), item_view.as_ref()).await {
                     return Some(Dispatch::Use(outcome));
                 }
-                match transport::mining::dispatch_map_use(authority, actor, UseCommand {
+                match transport::mining::dispatch_map_result(authority, actor, UseCommand {
                     game_session_id: admitted.game_session_id,
                     command_id: command.command_id,
                     item_fence: admitted.item_fence,
                 }, intent, item_view.as_ref()).await {
-                    Some(outcome) => Dispatch::Use(outcome),
-                    None => return None,
+                    Ok(Some(outcome)) => Dispatch::Use(outcome),
+                    Ok(None) => return None,
+                    Err(transport::item_craft::MapResyncRequired) => Dispatch::MapResyncRequired,
                 }
             }
             Ok(intent) if transport::rune_use_bridge::routes(

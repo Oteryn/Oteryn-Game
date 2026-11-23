@@ -99,6 +99,11 @@ where
             }
             return Ok(());
         }
+        Ok(crate::gameplay_transport::session_ingress::CommandAction::ReplayControl(frame)) => {
+            return write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected);
+        }
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Pending) => return Ok(()),
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Execute) => {}
     }
@@ -389,11 +394,13 @@ where
     if matches!(dispatch, Dispatch::Vip(None)) {
         return Err(ServeEnd::Disconnected);
     }
-    let Some(result_sequence) = session.sequence.checked_add(1) else {
-        return Err(ServeEnd::Disconnected);
-    };
-    session.sequence = result_sequence;
-    session.admitted.continuity.server_sequence = session.sequence;
+    if !matches!(dispatch, Dispatch::MapResyncRequired) {
+        let Some(result_sequence) = session.sequence.checked_add(1) else {
+            return Err(ServeEnd::Disconnected);
+        };
+        session.sequence = result_sequence;
+        session.admitted.continuity.server_sequence = session.sequence;
+    }
     outcome.training_logged_out =
         matches!(&dispatch, Dispatch::Training(result) if result.disposition == 3);
     // Encode a typed refusal without running STEP or CHAT post-dispatch effects.

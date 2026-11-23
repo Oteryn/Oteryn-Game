@@ -72,17 +72,31 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    if session
-        .commands
-        .terminalize_with(command.command_id, &result, || {
-            authority
-                .player_trade_terminalized(session.admitted.game_session_id, command.command_id)
-        })
-        .is_none()
-    {
+    let terminalized = || {
+        authority.player_trade_terminalized(session.admitted.game_session_id, command.command_id)
+    };
+    let resync = matches!(dispatch, Dispatch::MapResyncRequired);
+    let retained = if resync {
+        session.commands.terminalize_map_resync(
+            command.command_id,
+            &result,
+            session.sequence,
+            terminalized,
+        )
+    } else {
+        session
+            .commands
+            .terminalize_with(command.command_id, &result, terminalized)
+    };
+    if retained.is_none() {
         return Err(ServeEnd::Disconnected);
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
+    if resync {
+        return write_frame(stream, &result)
+            .await
+            .map_err(|_| ServeEnd::Disconnected);
+    }
     if matches!(dispatch, Dispatch::Depot(_))
         && let Some(view) = &session.item_view
     {
@@ -481,6 +495,7 @@ where
         | Dispatch::Training(_)
         | Dispatch::Logout(LogoutResult::Accepted | LogoutResult::Busy)
         | Dispatch::House(_)
+        | Dispatch::MapResyncRequired
         | Dispatch::Unregistered => {}
     }
     refresh::sounds(stream, authority, session).await?;

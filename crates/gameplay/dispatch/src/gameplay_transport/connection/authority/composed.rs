@@ -1462,6 +1462,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn use_craft_map_result(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, crate::gameplay_transport::item_craft::MapResyncRequired> {
+        self.use_cooking_conversion_map_result(actor, command, intent, source, target)
+            .await
+    }
+
     async fn use_rune(
         &self,
         actor: ExactActorRef,

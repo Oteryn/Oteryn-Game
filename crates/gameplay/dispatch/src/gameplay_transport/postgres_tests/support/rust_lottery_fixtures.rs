@@ -55,6 +55,7 @@ pub(super) async fn exchange(
         current_target,
         false,
         None,
+        false,
     )
     .await
 }
@@ -77,6 +78,7 @@ pub(super) async fn exchange_latest_source(
         None,
         true,
         None,
+        false,
     )
     .await
 }
@@ -104,9 +106,31 @@ pub(super) async fn exchange_with_visuals(
         None,
         false,
         Some(&visuals),
+        false,
     )
     .await?;
     Ok((end, result, actual, visuals.into_inner()))
+}
+
+pub(super) async fn expect_map_resync(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    source: std::num::NonZeroU32,
+) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    exchange_selected_source(
+        owner,
+        admitted,
+        command_id,
+        payload,
+        Some(source),
+        None,
+        false,
+        None,
+        true,
+    )
+    .await
 }
 
 #[allow(
@@ -124,6 +148,7 @@ async fn exchange_selected_source(
     visuals: Option<
         &std::cell::RefCell<Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>>,
     >,
+    expect_resync: bool,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     if owner.root.has_ready_demand() {
         owner.root.maintain_ready_once().await.map_err(debug)?;
@@ -341,9 +366,26 @@ async fn exchange_selected_source(
                     );
                 }
             }
+            if expect_resync
+                && envelope.message_type() == crate::foundation::MessageType::ProtocolError
+            {
+                let error = oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?;
+                assert_eq!(
+                    error.error_code,
+                    oteryn_protocol_oteryn::FoundationProtocolError::StateRevisionMismatch.code()
+                );
+                assert_eq!(
+                    error.disposition,
+                    oteryn_protocol_oteryn::ProtocolDisposition::ResyncRequired
+                );
+                assert_eq!(envelope.server_sequence(), 0);
+                assert_eq!(error.related_command_id, command_id);
+                return Ok((UseDisposition::Rejected, actual));
+            }
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let reply = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                 if reply.command_id == command_id {
+                    assert!(!expect_resync, "expected STATE_REVISION_MISMATCH, got {reply:?}");
                     let disposition =
                         oteryn_protocol_oteryn::world_object::decode_use_result(reply.payload)
                             .map_err(debug)?;

@@ -23,6 +23,7 @@ use sha2::{Digest, Sha256};
 /// live instance is a pick target. An unresolved handle may still be a retained pick
 /// receipt whose last stone was transformed, so only its committed replay is kept
 /// before the station owner.
+#[cfg(test)]
 pub(super) async fn dispatch_map_use<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
@@ -30,31 +31,54 @@ pub(super) async fn dispatch_map_use<A: FreshAdmissionAuthority>(
     intent: UseIntent,
     view: Option<&SessionItemView>,
 ) -> Option<UseOutcome> {
+    let result = dispatch_map_result(authority, actor, command, intent, view).await;
+    assert!(
+        result.is_ok(),
+        "mining fixture must use the active map revision"
+    );
+    result.ok().flatten()
+}
+
+pub(super) async fn dispatch_map_result<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: UseIntent,
+    view: Option<&SessionItemView>,
+) -> Result<Option<UseOutcome>, super::item_craft::MapResyncRequired> {
     let target = match intent.use_with_map_item {
         Some(MapUseTarget::Item(handle)) => Some(view.and_then(|v| v.resolve(handle))),
         _ => None,
     };
     match target {
         Some(Some(ItemKey::Instance(_))) => {
-            let result = dispatch(authority, actor, command, intent.clone(), view).await?;
+            let Some(result) = dispatch(authority, actor, command, intent.clone(), view).await
+            else {
+                return Ok(None);
+            };
             // Shrine enchanting resolves only a handle source; a definition-sourced use keeps the pick's NothingToUse.
             if result.disposition == UseDisposition::NothingToUse
                 && matches!(intent.target, UseTarget::Item(_))
             {
-                super::item_craft::dispatch(authority, actor, command, intent, view).await
+                super::item_craft::dispatch_map_result(authority, actor, command, intent, view)
+                    .await
             } else {
-                Some(result)
+                Ok(Some(result))
             }
         }
         Some(None) => {
-            let replay = dispatch(authority, actor, command, intent.clone(), view).await?;
+            let Some(replay) = dispatch(authority, actor, command, intent.clone(), view).await
+            else {
+                return Ok(None);
+            };
             if replay.disposition == UseDisposition::Committed {
-                Some(replay)
+                Ok(Some(replay))
             } else {
-                super::item_craft::dispatch(authority, actor, command, intent, view).await
+                super::item_craft::dispatch_map_result(authority, actor, command, intent, view)
+                    .await
             }
         }
-        _ => super::item_craft::dispatch(authority, actor, command, intent, view).await,
+        _ => super::item_craft::dispatch_map_result(authority, actor, command, intent, view).await,
     }
 }
 
