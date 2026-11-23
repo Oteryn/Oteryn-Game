@@ -39,6 +39,12 @@ const CHOICES: [(u16, u16, u16, u32); 4] = [
     (33080, 31170, 6300, 11689),
     (33079, 31173, 7825, 50263),
 ];
+const DISPLAYS: [(u16, u16, u8, u16); 4] = [
+    (33076, 31169, 4, 11687),
+    (33078, 31169, 3, 11686),
+    (33080, 31169, 3, 11689),
+    (33080, 31173, 2, 50263),
+];
 
 #[test]
 fn n4_yalahar_mechanism_checks_durable_progress_without_rewriting_it() -> TestResult {
@@ -54,10 +60,13 @@ fn n4_wrath_choice_claims_exactly_once_across_chests_and_owner_reload() -> TestR
 enum Case {
     Guarded,
     Public(u16),
+    Facing,
     Claim,
     Projection,
     Display,
+    DisplayReplay,
     Capacity,
+    Wheel,
 }
 
 #[test]
@@ -68,6 +77,16 @@ fn n4_wrath_chests_are_usable_from_projected_targets() -> TestResult {
 #[test]
 fn n4_wrath_reward_displays_refuse_map_move() -> TestResult {
     scenario("n4_wrath_display", Case::Display)
+}
+
+#[test]
+fn n4_wrath_reward_displays_resume_only_their_historical_mint() -> TestResult {
+    scenario("n4_wrath_display_replay", Case::DisplayReplay)
+}
+
+#[test]
+fn n4_wrath_reward_uses_live_wheel_capacity() -> TestResult {
+    scenario("n4_wrath_wheel", Case::Wheel)
 }
 
 #[test]
@@ -82,6 +101,11 @@ fn n4_yalahar_public_gates_keep_the_revision_for_two_players() -> TestResult {
     first.and(second)
 }
 
+#[test]
+fn n4_yalahar_teleport_faces_from_the_actual_departure() -> TestResult {
+    scenario("n4_yalahar_facing", Case::Facing)
+}
+
 fn scenario(name: &'static str, case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -89,7 +113,9 @@ fn scenario(name: &'static str, case: Case) -> TestResult {
     let started = std::time::Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
         run(async |admin| {
-            let harness = Harness::create_with_admission_seed(admin, name, false, false).await?;
+            let harness =
+                Harness::create_with_admission_seed(admin, name, matches!(case, Case::Wheel), false)
+                    .await?;
             let result = exercise(&harness, case).await;
             harness.cleanup().await?;
             result
@@ -117,8 +143,12 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             "content-1",
         )?;
     let generation = controller.active().ok_or("active generation")?;
-    let wrath = !matches!(case, Case::Guarded | Case::Public(_));
-    let crop = if let Case::Public(x) = case {
+    let public_x = match case {
+        Case::Public(x) => Some(x),
+        Case::Facing => Some(32775),
+        _ => None,
+    };
+    let crop = if let Some(x) = public_x {
         NativeCrop {
             bytes: include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
@@ -133,7 +163,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
                 counted_entry: None,
             }],
         }
-    } else if wrath {
+    } else if !matches!(case, Case::Guarded) {
         NativeCrop {
             bytes: include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
@@ -168,7 +198,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         }
     };
     let native = generation.native_gameplay().ok_or("native item facts")?;
-    let world = if matches!(case, Case::Public(_)) {
+    let world = if public_x.is_some() {
         use super::l6_world_pickups_fixtures::{ExpectedTeleport, native_scene};
         native_scene(
             native,
@@ -225,7 +255,30 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         2,
     )?;
     deps.combat_room = Some(room.clone());
+    let premium = if matches!(case, Case::Wheel) {
+        use crate::gameplay_transport::spell_premium_coordinator::{
+            SpellPremiumCoordinator, purchase_fixture,
+        };
+        let (consumer, clock, activation, _) = purchase_fixture::current(super::fixture::id(40));
+        h.root
+            .latch_premium_activation(
+                &activation.activation_id,
+                activation.switch_over_us,
+                activation.switch_over_us + 60_000_000,
+            )
+            .await
+            .map_err(debug)?;
+        Some(SpellPremiumCoordinator::new(
+            consumer,
+            Some(clock),
+            Some(activation),
+            Some(h.root.clone()),
+        ))
+    } else {
+        None
+    };
     let mut owner = deps.owner(h, &authority);
+    owner.premium_coordinator = premium.as_ref();
     owner.active_generation = Some(generation);
     owner.movement_cells = room.movement_cells().into();
     let content = load_embedded_quest_state("content-1").map_err(debug)?;
@@ -258,10 +311,13 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     match case {
         Case::Guarded => {}
         Case::Public(x) => return public_gate(h, &deps, &owner, admitted, x).await,
+        Case::Facing => return public_gate_facing(&owner, admitted).await,
         Case::Claim => return wrath_chest(h, &deps, &authority, &owner, admitted).await,
         Case::Projection => return wrath_projection(h, &owner, admitted).await,
         Case::Display => return wrath_displays(h, &owner, admitted).await,
+        Case::DisplayReplay => return wrath_display_replay(h, &owner, admitted).await,
         Case::Capacity => return wrath_capacity(h, &owner, admitted).await,
+        Case::Wheel => return wrath_wheel(h, &owner, admitted).await,
     }
     owner.quest_log_content = Some(
         QuestLogLines::new(
@@ -719,12 +775,7 @@ async fn wrath_displays(
     super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
     let map = owner.bundle_map().ok_or("map")?;
     let mut results = Vec::new();
-    for (x, y, ordinal, id) in [
-        (33076, 31169, 4, 11687),
-        (33078, 31169, 3, 11686),
-        (33080, 31169, 3, 11689),
-        (33080, 31173, 2, 50263),
-    ] {
+    for (x, y, ordinal, id) in DISPLAYS {
         let target = Position { x, y, floor: -8 };
         let at = if y == 31169 {
             Position { y: y + 1, ..target }
@@ -771,6 +822,332 @@ async fn wrath_displays(
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(minted, 0);
+    Ok(())
+}
+
+async fn wrath_display_replay(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use crate::durability::map_item_mint::{MapItemMintOutcome, MapItemMintRequest};
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::item_move::{
+        LoopMove, LoopMoveRefusal, LoopMoveResult, LoopTarget,
+    };
+    use crate::gameplay_transport::item_ref_admission::generation_item_facts;
+    use crate::gameplay_transport::item_view::ItemKey;
+
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let fence = admitted.item_fence.ok_or("item fence")?;
+    let map = owner.bundle_map().ok_or("native map")?;
+    let digest = map.overlay.base().digest();
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native items")?;
+    let content_revision = format!(
+        "sha256:{}",
+        native
+            .source_digest()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    );
+    super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
+    let mut expected = Vec::new();
+    let mut results = Vec::new();
+    for (x, y, ordinal, id) in DISPLAYS {
+        let at = Position {
+            x,
+            y: if y == 31169 { y + 1 } else { y },
+            floor: -8,
+        };
+        let at = if y == 31169 {
+            at
+        } else {
+            Position { x: x - 1, ..at }
+        };
+        relocate(owner, admitted, at).await?;
+        let key =
+            oteryn_world_bundle::bundle::placement_key(-8, x, y, ordinal).ok_or("display key")?;
+        let command_id = 100 + u64::from(id);
+        let command = UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id,
+            item_fence: Some(fence),
+        };
+        let mint = MapItemMintRequest {
+            flat_crate: None,
+            key_number: None,
+            command: CommandRef::new(
+                admitted.game_session_id,
+                CommandId::new(command_id).map_err(debug)?,
+            ),
+            base_bundle_digest: digest,
+            placement_key: key,
+            reset_epoch: owner.reset_epoch,
+            item: generation_item_facts(
+                native,
+                &crate::durability::item_mint::TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: format!("oteryn:item.tibia.i{id}"),
+                    revision_ref: "definition-r1".into(),
+                },
+            )
+            .map_err(debug)?,
+            quantity: 1,
+            content_revision: content_revision.clone(),
+            ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),
+            sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
+        };
+        // Commit only the first phase of a pre-upgrade MOVE, then retry via the current owner.
+        let committed = {
+            let permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
+            let mut frozen = h
+                .root
+                .freeze_map_item_mint(owner.character, owner.holder, fence, mint)
+                .await
+                .map_err(debug)?;
+            h.root
+                .commit_map_item_mint(&permit, owner.character, owner.holder, fence, &mut frozen)
+                .await
+                .map_err(debug)?
+        };
+        let MapItemMintOutcome::Committed(minted) = committed else {
+            return Err("historical mint".into());
+        };
+        expected.push(minted.item_instance_id);
+        owner.states.loop_ground.invalidate();
+        let request = LoopMove {
+            item: ItemKey::MapBase {
+                bundle_digest: digest,
+                placement_key: key,
+                reset_epoch: owner.reset_epoch,
+            },
+            count: None,
+            target: LoopTarget::MainBackpack,
+            slot: None,
+        };
+        let fresh = owner
+            .move_loop_item(
+                actor,
+                UseCommand {
+                    command_id: command_id + 1,
+                    ..command
+                },
+                request,
+            )
+            .await;
+        assert_eq!(fresh, LoopMoveResult::Refused(LoopMoveRefusal::Stale));
+        let resumed = owner.move_loop_item(actor, command, request).await;
+        results.push((id, resumed));
+    }
+    for (id, resumed) in results {
+        assert_eq!(
+            resumed,
+            LoopMoveResult::Committed,
+            "historical MOVE of display {id}"
+        );
+    }
+    let bag = h
+        .root
+        .read_character_backpack(owner.character, fence.character_id)
+        .await?
+        .ok_or("backpack")?;
+    let mut carried: Vec<_> = bag
+        .entries
+        .iter()
+        .map(|entry| entry.item.item_instance_id)
+        .collect();
+    carried.sort_unstable();
+    expected.sort_unstable();
+    assert_eq!(carried, expected);
+    let receipt_counts: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_map_item_mint_receipts), (SELECT count(*) FROM game_item_loop_move_receipts)")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(receipt_counts, (4, 4));
+    Ok(())
+}
+
+async fn wrath_wheel(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+) -> TestResult {
+    use super::atelier_fixtures::fixture as atelier;
+    use super::fixture::id;
+    use crate::durability::character_wheel::{
+        WheelChangeFacts, WheelChangeRequest, WheelCommitOutcome, WheelOccurrence, WheelRuleset,
+        WheelSlots,
+    };
+    use crate::durability::item_mint::TypedDefinitionRef;
+    use crate::durability::item_transfer::ItemWeightLookup;
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+    use oteryn_gameplay_progression::wheel_gem_data::WheelGemData;
+    use oteryn_protocol_oteryn::refusal_detail::split_refusal_detail;
+
+    let premium = owner.premium_coordinator.ok_or("Premium coordinator")?;
+    let session = admitted.game_session_id;
+    owner.admit_premium(id(40), session);
+    atelier::eligible(&h.pool).await?;
+    let purchase = atelier::prepare(h).await?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(debug)?
+        .ok_or("promotion fence")?;
+    let promoted = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_npc_purchase(
+            &h.root,
+            owner.character,
+            owner.holder,
+            fence,
+            purchase,
+            premium,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(
+            promoted,
+            crate::durability::npc_purchase::PurchaseOutcome::Committed(_)
+        ),
+        "{promoted:?}"
+    );
+
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native items")?;
+    let weights = NativeItemWeights(native);
+    let weight = |key: &str| -> TestResult<u64> {
+        Ok(u64::from(
+            weights
+                .weight_of(&TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: key.into(),
+                    revision_ref: "definition-r1".into(),
+                })
+                .map_err(debug)?,
+        ))
+    };
+    let (bag, spear, coin) = (
+        "oteryn:item.tibia.i2854",
+        "oteryn:item.tibia.i3277",
+        "oteryn:item.tibia.i3031",
+    );
+    let base =
+        oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(60, "sorcerer")
+            .map_err(debug)?;
+    let to_fill = base - 12_900 - weight(bag)?;
+    let (spear_weight, coin_weight) = (weight(spear)?, weight(coin)?);
+    let (spears, remainder) = (to_fill / spear_weight, to_fill % spear_weight);
+    assert_eq!(remainder % coin_weight, 0);
+    let mut entries = Vec::new();
+    for (key, mut quantity) in [(spear, spears), (coin, remainder / coin_weight)] {
+        while quantity != 0 {
+            let stack = quantity.min(100);
+            entries.push((key, i64::try_from(stack)?));
+            quantity -= stack;
+        }
+    }
+    replace_backpack(h, None).await?;
+    super::item_look_fixtures::seed_main_backpack(h, &entries).await?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(debug)?
+        .ok_or("allocation fence")?;
+    admitted.item_fence = Some(fence.item_fence());
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18, 66, 508])
+            .ok_or("capacity capabilities")?;
+    assert_eq!(
+        owner
+            .observe_own_capacity(admitted)
+            .await
+            .ok_or("capacity projection")?
+            .free,
+        12_900
+    );
+    let target = Position {
+        x: 33078,
+        y: 31170,
+        floor: -8,
+    };
+    relocate(owner, admitted, target).await?;
+    let payload = projected_target(owner, target, target, 2473)?;
+    let denied = wire(owner, &mut admitted, 1, 2, payload.clone()).await?;
+    assert_eq!(
+        split_refusal_detail(&denied).map_err(debug)?.1,
+        Some(oteryn_protocol_oteryn::refusal_detail::RefusalDetail::NotEnoughCapacity)
+    );
+
+    let data = WheelGemData::embedded().map_err(debug)?;
+    let rules =
+        Arc::new(WheelRuleset::from_catalogue(data.revision(), data.wheel()).map_err(debug)?);
+    let mut points = [0; 36];
+    points[14] = 3; // Sorcerer's 2 oz per point grants 6 oz at this allocation.
+    let allocated = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_wheel(
+            &h.root,
+            owner.character,
+            owner.holder,
+            fence,
+            WheelChangeRequest {
+                occurrence: WheelOccurrence::from_bytes(id(188)).map_err(debug)?,
+                expected_wheel_revision: 0,
+                slots: WheelSlots::new(points).map_err(debug)?,
+                vessels: None,
+            },
+            rules,
+            WheelChangeFacts { at_temple: false },
+            premium,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(allocated, WheelCommitOutcome::Committed(_)),
+        "{allocated:?}"
+    );
+    admitted.item_fence = Some(
+        owner
+            .current_quest_fence(session)
+            .await
+            .map_err(debug)?
+            .ok_or("reward fence")?
+            .item_fence(),
+    );
+    assert_eq!(
+        owner
+            .observe_own_capacity(admitted)
+            .await
+            .ok_or("Wheel capacity projection")?
+            .free,
+        13_500
+    );
+    tokio::time::sleep(WORLD_ACTION_COOLDOWN).await;
+    let claimed = wire(owner, &mut admitted, 2, 2, payload).await?;
+    let (result, detail) = split_refusal_detail(&claimed).map_err(debug)?;
+    assert_eq!(
+        (decode_use_result(result).map_err(debug)?, detail),
+        (UseDisposition::Committed, None)
+    );
+    assert_eq!(
+        owner
+            .observe_own_capacity(admitted)
+            .await
+            .ok_or("capacity after reward")?
+            .free,
+        500
+    );
     Ok(())
 }
 
@@ -913,12 +1290,79 @@ async fn public_gate(
         decode_use_result(&used).map_err(debug)?,
         UseDisposition::Committed
     );
-    relocate(owner, first, at).await?;
     let used = wire(owner, &mut second, 1, 2, second_target).await?;
     assert_eq!(
         decode_use_result(&used).map_err(debug)?,
         UseDisposition::Committed
     );
+    let destination = if x == 32775 {
+        Position {
+            x: 32773,
+            y: 31116,
+            floor: -7,
+        }
+    } else {
+        Position {
+            x: 32780,
+            y: 31115,
+            floor: -7,
+        }
+    };
+    let runtime = owner.runtime.lock().await;
+    for actor in [first.runtime_actor.ok_or("first actor")?, second_actor] {
+        assert_eq!(
+            runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            local(destination)
+        );
+    }
     assert_eq!(projected_target(owner, at, target, 8618)?, first_target);
+    Ok(())
+}
+
+async fn public_gate_facing(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+) -> TestResult {
+    use crate::foundation::MovementFacing;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let at = Position {
+        x: 32775,
+        y: 31117,
+        floor: -7,
+    };
+    let target = Position { y: 31118, ..at };
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let before = runtime.read_actor_position(actor).map_err(debug)?;
+        assert_eq!(before.position(), local(at));
+        runtime
+            .borrow_movement_position()
+            .commit_turn(before, MovementFacing::East)
+            .map_err(debug)?;
+    }
+    let payload = projected_target(owner, at, target, 8618)?;
+    let used = wire(owner, &mut admitted, 1, 2, payload).await?;
+    assert_eq!(
+        decode_use_result(&used).map_err(debug)?,
+        UseDisposition::Committed
+    );
+    let arrived = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
+    assert_eq!(
+        arrived.position(),
+        local(Position {
+            x: 32773,
+            y: 31116,
+            floor: -7
+        })
+    );
+    assert_eq!(arrived.facing(), Some(MovementFacing::West));
     Ok(())
 }

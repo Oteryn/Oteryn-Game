@@ -354,6 +354,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if quest_transition.is_some() {
                     self.schedule_quest_refresh(command.game_session_id);
                 }
+                let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
                 let result = async {
                     let mut candidate = self
                         .root
@@ -362,7 +363,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             self.holder,
                             fence,
                             request,
-                            &NativeItemWeights(native),
+                            &weights,
                         )
                         .await?;
                     self.root
@@ -372,7 +373,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             fence,
                             &mut candidate,
                             Some(self.achievements.len()),
-                            &NativeItemWeights(native),
+                            &weights,
                         )
                         .await
                 }

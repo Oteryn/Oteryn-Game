@@ -647,11 +647,9 @@ impl BundleFacts {
                         tile,
                         sector.floor,
                         ordinal,
-                        !fixed_reward
-                            && self
-                                .palette
-                                .get(item.palette as usize)
-                                .is_some_and(|p| p.facts.pickupable),
+                        self.palette
+                            .get(item.palette as usize)
+                            .is_some_and(|p| p.facts.pickupable),
                         &manifest.dropped_teleports,
                     )
                     .map(|entry| entry.quantity)
@@ -1037,14 +1035,39 @@ impl BundleFacts {
         ordinal: u8,
         id: u32,
     ) -> Result<pickup::EligibleEntry, pickup::Ineligible> {
+        self.pickup_entry_for(pos, ordinal, id, false)
+    }
+
+    /// Recover the former pickup facts of an exact reward fixture to verify a retained mint.
+    /// Only the receipt owner can authorize using those facts for a MOVE.
+    pub fn historical_reward_fixture_entry(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+    ) -> Option<pickup::EligibleEntry> {
+        self.pickup_entry_for(pos, ordinal, id, true).ok()
+    }
+
+    fn pickup_entry_for(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+        historical_fixture: bool,
+    ) -> Result<pickup::EligibleEntry, pickup::Ineligible> {
         let missing = pickup::Ineligible::NotTopLevel;
         let key = placement_key(pos, ordinal).ok_or(missing)?;
         let (palette, quantity) = match self.placements.binary_search_by_key(&key, |(key, _)| *key)
         {
             Ok(found) => {
                 let placement = &self.placements[found].1;
+                if placement.fixed_reward != historical_fixture {
+                    return Err(pickup::Ineligible::NotPickupable);
+                }
                 (placement.palette, placement.pickup?)
             }
+            Err(_) if historical_fixture => return Err(missing),
             Err(_) => {
                 let palette = self.unique_index(id).ok_or(missing)?;
                 if !self
