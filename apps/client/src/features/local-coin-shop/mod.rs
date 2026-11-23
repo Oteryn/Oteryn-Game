@@ -30,9 +30,11 @@ pub struct View {
     pub feedback: String,
     pub unavailable: bool,
     character_id: Option<String>,
+    prior: crate::account_services::PriorRequests,
     pending: Option<CoinOrderRequest>,
     post_refusal_status: Option<u16>,
     checkout_unverified: bool,
+    history: crate::account_services::HistoryStatus<CoinOrder>,
     confirmed: Option<CoinPackage>,
     quote_until: BTreeMap<String, Instant>,
 }
@@ -47,17 +49,27 @@ impl View {
             ..Self::default()
         }
     }
+    pub(crate) fn with_prior(
+        character: Option<String>,
+        prior: crate::account_services::PriorRequests,
+    ) -> Self {
+        Self {
+            prior,
+            ..Self::new(character)
+        }
+    }
     pub fn pending(&self) -> bool {
-        self.pending.is_some()
+        self.pending.is_some() || !self.history.unverified.is_empty()
     }
     pub fn can_retry(&self) -> bool {
-        self.pending() && self.post_refusal_status.is_none()
+        self.pending.is_some() && self.post_refusal_status.is_none()
     }
     pub fn can_purchase(&self, id: &str) -> bool {
         self.can_purchase_at(id, Instant::now())
     }
     pub(crate) fn can_purchase_at(&self, id: &str, now: Instant) -> bool {
         !self.unavailable
+            && !self.prior.post_in_flight()
             && !self.pending()
             && self.balance.as_ref().is_some_and(|b| !b.review_required)
             && self.catalogue.as_ref().is_some_and(|c| {
@@ -78,6 +90,12 @@ impl View {
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
+        if self.prior.post_in_flight() {
+            text.push('\n');
+            text.push_str(tr!(
+                "Resolve the pending operation before starting another."
+            ));
+        }
         if let Some(request) = &self.pending {
             text.push_str(&lfmt!(
                 "\nUnresolved order request {}: retry this request or check status.",
@@ -169,6 +187,10 @@ pub(crate) async fn run(
                 )
             })?;
         if matches!(action, Action::Back) || cancel.is_cancelled() {
+            if view.post_refusal_status == Some(409) {
+                controller::execute(view, Action::Status, client, token, browser, cancel.clone())
+                    .await;
+            }
             return Ok(());
         }
         controller::execute(view, action, client, token, browser, cancel.clone()).await;

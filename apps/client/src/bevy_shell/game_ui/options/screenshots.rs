@@ -47,9 +47,23 @@ pub(super) fn build(
         .spawn(source::button_caption("Use folder", skins.font.clone()))
         .id();
     commands.entity(button).add_child(caption);
+    let open = commands
+        .spawn((
+            source::button(skins.buttons.clone(), 180.),
+            Name::new("screenshots.open-directory"),
+        ))
+        .observe(open_directory)
+        .id();
+    let caption = commands
+        .spawn(source::button_caption(
+            "Open screenshots directory",
+            skins.font.clone(),
+        ))
+        .id();
+    commands.entity(open).add_child(caption);
     commands
         .entity(parent)
-        .add_children(&[label, field, button]);
+        .add_children(&[label, field, button, open]);
 }
 pub(super) fn project(
     owner: NonSend<HostOwner>,
@@ -65,6 +79,49 @@ pub(super) fn project(
             held.0.clone_from(&directory);
         }
     }
+}
+
+#[derive(Resource)]
+struct FolderOpener(fn(&std::path::Path) -> std::io::Result<()>);
+
+fn system_open(folder: &std::path::Path) -> std::io::Result<()> {
+    let status = crate::bevy_shell::diagnostics::folder_command(folder).status()?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(std::io::Error::other(format!(
+            "file manager exited with {status}"
+        )))
+    }
+}
+
+fn open_directory(
+    event: On<Activate>,
+    owner: NonSend<HostOwner>,
+    state: Res<OptionsState>,
+    guard: ModalGuard,
+    opener: Option<Res<FolderOpener>>,
+) {
+    if !guard.allows(event.entity)
+        || state.page != Page::Screenshots
+        || state.generation != Some(owner.generation())
+        || top_server_dialog(&owner)
+    {
+        return;
+    }
+    let configured = owner.settings.preferences.screenshots.effective().directory;
+    let open: fn(&std::path::Path) -> std::io::Result<()> = opener.map_or(system_open, |o| o.0);
+    std::thread::spawn(move || {
+        let result =
+            crate::play::screenshot::screenshot_directory(std::path::Path::new(&configured))
+                .and_then(|directory| {
+                    crate::play::screenshot::ensure_screenshot_directory(&directory)?;
+                    open(&directory)
+                });
+        if let Err(error) = result {
+            warn!("Open screenshots directory: {error}");
+        }
+    });
 }
 
 fn use_folder(
@@ -93,6 +150,34 @@ fn use_folder(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn folder_action_uses_applied_capture_directory() -> Result<(), Box<dyn std::error::Error>> {
+        let fixture = tempfile::tempdir()?;
+        let folder = fixture.path().join("captures with spaces");
+        let mut app = super::super::tests::app(Page::Screenshots, None)?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .screenshots
+            .directory = folder.to_string_lossy().into_owned();
+        app.insert_resource(FolderOpener(|directory| {
+            std::fs::write(directory.join("opened"), [])
+        }));
+        let button = app.world_mut().spawn_empty().observe(open_directory).id();
+        app.world_mut().trigger(Activate { entity: button });
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while !folder.join("opened").exists() && std::time::Instant::now() < deadline {
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert!(folder.join("opened").is_file());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(folder.metadata()?.permissions().mode() & 0o077, 0);
+        }
+        Ok(())
+    }
     #[test]
     fn destination_uses_draft_cancel_and_persisted_apply() -> Result<(), Box<dyn std::error::Error>>
     {
@@ -145,6 +230,94 @@ mod automatic_tests {
     use crate::play::screenshot::CaptureAction;
     use bevy::ui_widgets::ValueChange;
 
+    #[test]
+    fn low_health_crossing_requests_one_capture() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = super::super::tests::app(Page::Screenshots, None)?;
+        let checkbox = app
+            .world_mut()
+            .spawn(Control::Check("screenshots.low-health"))
+            .observe(super::super::toggle)
+            .id();
+        app.world_mut().trigger(ValueChange {
+            source: checkbox,
+            value: true,
+            is_final: true,
+        });
+        let (link, _, outbox) = crate::play::play_channel();
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.apply(true);
+        for (seq, health, save) in [(1, 100, false), (2, 4, true), (3, 1, false), (4, 0, false)] {
+            outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
+                oteryn_session::AppliedDelta {
+                    server_sequence: seq,
+                    base_revision: seq - 1,
+                    new_revision: seq,
+                    value: oteryn_session::ActorVitals {
+                        health,
+                        max_health: 100,
+                        ..default()
+                    },
+                },
+            )]);
+            assert_eq!(
+                matches!(
+                    owner
+                        .settings
+                        .prepare_screenshots(std::time::Instant::now(), Some(&link)),
+                    CaptureAction::Save
+                ),
+                save
+            );
+            owner.settings.cancel_screenshot();
+        }
+        Ok(())
+    }
+    #[test]
+    fn master_switch_preserves_death_selection_and_suppresses_capture()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = super::super::tests::app(Page::Screenshots, None)?;
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner.settings.preferences.screenshots.on_death = true;
+            owner.cancel();
+            owner.open_graphics();
+        }
+        let checkbox = app
+            .world_mut()
+            .spawn(Control::Check("screenshots.automatic"))
+            .observe(super::super::toggle)
+            .id();
+        app.world_mut().trigger(ValueChange {
+            source: checkbox,
+            value: false,
+            is_final: true,
+        });
+        let (link, _, outbox) = crate::play::play_channel();
+        let now = std::time::Instant::now();
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        assert!(owner.settings.preferences.screenshots.on_death);
+        owner.apply(true);
+        assert!(owner.settings.preferences.screenshots.on_death);
+        for (seq, health) in [(1, 100), (2, 0)] {
+            outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
+                oteryn_session::AppliedDelta {
+                    server_sequence: seq,
+                    base_revision: seq - 1,
+                    new_revision: seq,
+                    value: oteryn_session::ActorVitals {
+                        health,
+                        max_health: 100,
+                        ..default()
+                    },
+                },
+            )]);
+            assert!(matches!(
+                owner.settings.prepare_screenshots(now, Some(&link)),
+                CaptureAction::Idle
+            ));
+        }
+        Ok(())
+    }
     #[test]
     fn unchecking_death_capture_and_applying_prevents_a_death_capture()
     -> Result<(), Box<dyn std::error::Error>> {

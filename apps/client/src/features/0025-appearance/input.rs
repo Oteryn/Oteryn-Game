@@ -42,6 +42,22 @@ impl PlayLink {
     pub fn appearance_edit(&self, field: usize, value: String) {
         edit(&mut lock(&self.mailbox).properties.appearance, field, value);
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn appearance_preset(&self, expected: &oteryn_client_ui::appearance::Panel, fields: &[String; 4]) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.appearance;
+        if panel != expected || !panel.open || !panel.selected || panel.pending { return false; }
+        panel.fields[..4].clone_from_slice(fields);
+        true
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn appearance_accept_preset(&self, riding: bool) -> Option<bool> {
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.properties.appearance.open || mailbox.properties.appearance.pending { return None; }
+        submit(&mut mailbox, &self.commands, Intent::Apply);
+        let panel = &mailbox.properties.appearance;
+        panel.pending.then_some(riding && !panel.fields[2].is_empty())
+    }
     pub fn appearance_request(&self, intent: Intent) {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }

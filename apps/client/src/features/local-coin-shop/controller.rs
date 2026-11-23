@@ -77,6 +77,7 @@ async fn apply(
                     .pending
                     .as_ref()
                     .map(|p| &p.request_id)
+                    .or_else(|| view.history.unverified.keys().next())
                     .or_else(|| view.order.as_ref().map(|o| &o.request_id))
                 {
                     Some(id) => id.clone(),
@@ -89,20 +90,40 @@ async fn apply(
                         .into();
                 return Ok(());
             }
+            if view
+                .order
+                .as_ref()
+                .is_some_and(|order| order.request_id == id)
+            {
+                view.checkout_unverified = true;
+            }
             match client.coin_order_status(token, &id, cancel.clone()).await {
                 Ok(order) => accept(view, order)?,
+                // The initial create itself was refused. A missing ID can confirm there
+                // was no order only while this grant has never observed a row for it.
                 Err(NativeLoginError::Platform(HttpStatus(404)))
-                    if view.post_refusal_status == Some(409) && view.pending() =>
+                    if view.post_refusal_status == Some(409)
+                        && !view.history.unverified.contains_key(&id)
+                        && view.order.as_ref().is_none_or(|o| o.request_id != id) =>
                 {
+                    view.prior.reconcile(&id);
                     clear_refused_order(view);
                     view.feedback = tr!("The server refused the request").into();
                     return Ok(());
                 }
-                Err(error @ NativeLoginError::Platform(HttpStatus(404))) => {
-                    view.post_refusal_status = None;
+                Err(error) => {
+                    if matches!(error, NativeLoginError::Platform(HttpStatus(404))) {
+                        view.post_refusal_status = None;
+                    }
+                    if known_open_order(view, &id) {
+                        view.history
+                            .unverified
+                            .insert(id, crate::account_services::history::Evidence::Pending);
+                    } else if matches!(error, NativeLoginError::Platform(HttpStatus(404))) {
+                        view.history.missing(&id);
+                    }
                     return Err(error);
                 }
-                Err(error) => return Err(error),
             }
             refresh(view, client, token, cancel).await?;
             view.feedback = tr!("Purchase status and wallet balance refreshed from Oteryn.").into();
@@ -134,15 +155,27 @@ async fn submit(
     let Some(request) = &view.pending else {
         return Ok(());
     };
+    let Some(post) = view.prior.start() else {
+        if !retry {
+            view.confirmed = None;
+            view.pending = None;
+        }
+        view.feedback = tr!("Resolve the pending operation before starting another.").into();
+        return Ok(());
+    };
+    view.prior.retain(request.request_id.clone());
     let result = client
         .create_coin_order(token, request, cancel.clone())
         .await;
-    // A retry's 403 does not bound the earlier POST. Keep its identity even after status 404.
+    drop(post);
+    // Only a refusal of the initial POST can rule out its effect.
     view.post_refusal_status = match &result {
-        Err(NativeLoginError::Platform(HttpStatus(status @ (403 | 409)))) => Some(*status),
+        Err(NativeLoginError::Platform(HttpStatus(409))) if !retry => Some(409),
+        Err(NativeLoginError::Platform(HttpStatus(403))) => Some(403),
         _ => None,
     };
     if !retry && matches!(result, Err(NativeLoginError::Platform(HttpStatus(403)))) {
+        view.prior.reconcile(&request.request_id);
         clear_refused_order(view);
     }
     let order = result?;
@@ -164,20 +197,32 @@ async fn refresh(
     cancel: CancellationToken,
 ) -> Result<(), NativeLoginError> {
     view.quote_until.clear();
-    let requested_at = Instant::now();
-    let catalogue = client
+    // Platform issues the relative lifetime during this request. Use its earliest possible start.
+    let quoted_at = Instant::now();
+    let mut catalogue = client
         .coin_catalogue(token, view.character_id.as_deref(), cancel.clone())
         .await?;
-    let mut quote_until: std::collections::BTreeMap<_, _> = catalogue
-        .packages
+    let listed = std::mem::take(&mut catalogue.recent_orders);
+    if view.order.as_ref().is_some_and(|selected| {
+        listed
+            .iter()
+            .any(|row| row.request_id == selected.request_id)
+    }) {
+        view.checkout_unverified = true;
+    }
+    let lookups = listed
         .iter()
-        .map(|p| {
-            (
-                p.quote_id.clone(),
-                requested_at + Duration::from_secs(u64::from(p.valid_for_seconds)),
-            )
-        })
-        .collect();
+        .map(|row| client.coin_order_status(token, &row.request_id, cancel.clone()));
+    let results = crate::account_services::status_lookup::collect(lookups).await;
+    for (row, result) in listed.into_iter().zip(results) {
+        let pending = view
+            .pending
+            .as_ref()
+            .is_some_and(|request| request.request_id == row.request_id);
+        if let Some(order) = view.history.lookup_result(row.request_id, pending, result) {
+            catalogue.recent_orders.push(order);
+        }
+    }
     if let Some(request_id) = view
         .pending
         .as_ref()
@@ -190,6 +235,12 @@ async fn refresh(
     {
         accept(view, order.clone())?;
     }
+    for order in &catalogue.recent_orders {
+        if view.order.is_none() && view.pending.is_none() && view.prior.contains(&order.request_id)
+        {
+            accept(view, order.clone())?;
+        }
+    }
     if view.order.is_none()
         && !view.pending()
         && let Some(order) = catalogue
@@ -199,12 +250,27 @@ async fn refresh(
     {
         accept(view, order.clone())?;
     }
+    for order in &catalogue.recent_orders {
+        if !view.history.record(order) {
+            return Err(PlatformClientError::InvalidPayload.into());
+        }
+    }
     let balance = client.coin_balance(token, cancel).await?;
     if view.balance.as_ref().is_some_and(|old| {
         balance.revision < old.revision || (balance.revision == old.revision && &balance != old)
     }) {
         return Err(PlatformClientError::InvalidPayload.into());
     }
+    let mut quote_until: std::collections::BTreeMap<_, _> = catalogue
+        .packages
+        .iter()
+        .map(|p| {
+            (
+                p.quote_id.clone(),
+                quoted_at + Duration::from_secs(u64::from(p.valid_for_seconds)),
+            )
+        })
+        .collect();
     if let Some(order) = &view.order {
         quote_until.remove(&order.quote_id);
     }
@@ -215,6 +281,12 @@ async fn refresh(
         view.post_refusal_status = None;
     }
     Ok(())
+}
+fn known_open_order(view: &View, id: &str) -> bool {
+    view.pending
+        .as_ref()
+        .is_some_and(|request| request.request_id == id)
+        || view.history.known_open(id)
 }
 fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
     if let Some(request) = &view.pending {
@@ -231,18 +303,7 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
             return Err(PlatformClientError::InvalidPayload.into());
         }
     }
-    if let Some(old) = &view.order
-        && old.request_id == order.request_id
-        && (old.order_id != order.order_id
-            || old.package_id != order.package_id
-            || old.quote_id != order.quote_id
-            || old.character_id != order.character_id
-            || old.coins != order.coins
-            || old.price != order.price
-            || order.revision < old.revision
-            || (order.revision == old.revision && old != &order)
-            || !order.state.can_follow(old.state))
-    {
+    if !view.history.record(&order) {
         return Err(PlatformClientError::InvalidPayload.into());
     }
     if view
@@ -254,6 +315,7 @@ fn accept(view: &mut View, order: CoinOrder) -> Result<(), NativeLoginError> {
         view.confirmed = None;
         view.post_refusal_status = None;
     }
+    view.prior.reconcile(&order.request_id);
     view.quote_until.remove(&order.quote_id);
     view.order = Some(order);
     view.checkout_unverified = false;
@@ -279,7 +341,11 @@ fn open_checkout(
     if cancel.is_cancelled() {
         return;
     }
-    view.feedback = if browser(url.as_str()) {
+    let opened = browser(url.as_str());
+    if cancel.is_cancelled() {
+        return;
+    }
+    view.feedback = if opened {
         tr!("Sandbox checkout opened. Return here and check purchase status after completing it.")
     } else {
         tr!(

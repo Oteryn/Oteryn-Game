@@ -1,5 +1,9 @@
 //! Native account services run outside an admitted character session.
 mod controller;
+pub(crate) mod history;
+mod session;
+pub(crate) mod status_lookup;
+pub(crate) use session::{PriorRequests, Session};
 #[cfg(test)]
 mod native;
 #[cfg(test)]
@@ -11,6 +15,8 @@ use oteryn_foundation::CancellationToken;
 use oteryn_platform_client::native_login::bazaar::*;
 use oteryn_platform_client::native_login::{AccessToken, AttemptRef, NativeLoginClient};
 use std::{sync::Arc, time::Instant};
+
+pub(crate) use history::HistoryStatus;
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -49,8 +55,10 @@ pub struct View {
     pub receipt: Option<OperationReceipt>,
     pub feedback: String,
     pub selected_view: AuctionView,
+    prior: PriorRequests,
     pending: Option<BazaarRequest>,
     post_refusal_status: Option<u16>,
+    history: HistoryStatus<OperationReceipt>,
     unresolved: std::collections::BTreeSet<String>,
     quote_until: Option<Instant>,
 }
@@ -63,8 +71,10 @@ impl Default for View {
             feedback: tr!("Browse Oteryn auctions, sell an offline character, or transfer worlds.")
                 .into(),
             selected_view: AuctionView::All,
+            prior: Default::default(),
             pending: None,
             post_refusal_status: None,
+            history: Default::default(),
             unresolved: Default::default(),
             quote_until: None,
         }
@@ -72,27 +82,53 @@ impl Default for View {
 }
 impl View {
     pub fn pending(&self) -> bool {
-        self.pending.is_some() || !self.unresolved.is_empty()
+        self.prior.post_in_flight()
+            || self.pending.is_some()
+            || !self.unresolved.is_empty()
+            || !self.history.unverified.is_empty()
     }
     pub fn can_retry(&self) -> bool {
         self.pending.is_some() && self.post_refusal_status.is_none()
     }
-    fn pending_id(&self) -> Option<&str> {
+    pub(crate) fn pending_id(&self) -> Option<&str> {
         self.pending
             .as_ref()
             .map(|r| r.request_id.as_str())
             .or_else(|| self.unresolved.iter().next().map(String::as_str))
     }
-    fn install_page(&mut self, page: BazaarPage) {
-        for receipt in &page.recent_operations {
-            if self
-                .pending
-                .as_ref()
-                .is_some_and(|request| request.request_id == receipt.request_id)
+    async fn install_page(
+        &mut self,
+        mut page: BazaarPage,
+        client: &NativeLoginClient,
+        token: &AccessToken,
+        cancel: CancellationToken,
+    ) {
+        let listed = std::mem::take(&mut page.recent_operations);
+        let lookups = listed
+            .iter()
+            .map(|row| client.bazaar_status(token, &row.request_id, cancel.clone()));
+        let results = status_lookup::collect(lookups).await;
+        for (row, result) in listed.into_iter().zip(results) {
+            let pending = row.state == OperationState::Pending
+                || self
+                    .pending
+                    .as_ref()
+                    .is_some_and(|request| request.request_id == row.request_id);
+            let Some(receipt) = self.history.lookup_result(row.request_id, pending, result) else {
+                continue;
+            };
+            if !controller::verify(self, &receipt) {
+                continue;
+            }
+            if self.prior.contains(&receipt.request_id)
+                || self
+                    .pending
+                    .as_ref()
+                    .is_some_and(|request| request.request_id == receipt.request_id)
                 || self
                     .receipt
                     .as_ref()
-                    .is_some_and(|old| old.request_id == receipt.request_id && old != receipt)
+                    .is_some_and(|old| old.request_id == receipt.request_id && old != &receipt)
             {
                 controller::accept(self, receipt.clone());
             } else if receipt.state == OperationState::Pending {
@@ -100,6 +136,7 @@ impl View {
             } else {
                 self.unresolved.remove(&receipt.request_id);
             }
+            page.recent_operations.push(receipt);
         }
         self.page = Some(page);
     }
@@ -137,6 +174,12 @@ impl View {
     }
     pub fn status_text(&self) -> String {
         let mut text = self.feedback.clone();
+        if self.prior.post_in_flight() || !self.history.unverified.is_empty() {
+            text.push('\n');
+            text.push_str(tr!(
+                "Resolve the pending operation before starting another."
+            ));
+        }
         if let Some(id) = self.pending_id() {
             text.push_str(&lfmt!(
                 "\nUnresolved operation {id}: check status before another action.",
@@ -176,12 +219,6 @@ pub fn present(view: &View, cancel: CancellationToken) -> Action {
     }
 }
 
-#[derive(Default)]
-pub(crate) struct Session {
-    account: View,
-    coin: crate::coin_shop::View,
-}
-
 pub(crate) async fn run(
     client: &NativeLoginClient,
     token: &AccessToken,
@@ -204,6 +241,9 @@ pub(crate) async fn run(
     loop {
         let (_, action) = ask(view.clone(), &config.account_services, cancel.clone()).await?;
         if matches!(action, Action::Back) || cancel.is_cancelled() {
+            if view.post_refusal_status == Some(409) {
+                controller::execute(view, Action::Status, client, token, cancel.clone()).await;
+            }
             return Ok(());
         }
         if matches!(action, Action::Premium) {

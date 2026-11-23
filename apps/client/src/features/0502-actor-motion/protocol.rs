@@ -8,6 +8,7 @@ use oteryn_session::{CommandStatus, SessionEvent};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub(in crate::play) struct PendingMount {
+    requested: bool,
     sent: bool,
     accepted: bool,
     motion_seen: bool,
@@ -32,17 +33,18 @@ impl Outbox {
     pub(in crate::play) fn mount_result(&self, status: CommandStatus) {
         let mut mailbox = lock(&self.0);
         if let Some(pending) = mailbox.mount_pending {
-            mailbox.mount_pending = (status == CommandStatus::Accepted && !pending.motion_seen)
-                .then_some(PendingMount {
-                    accepted: true,
-                    ..pending
-                });
+            mailbox.mount_pending = (status == CommandStatus::Accepted
+                && !pending.motion_seen
+                && mailbox.riding() != Some(pending.requested))
+            .then_some(PendingMount {
+                accepted: true,
+                ..pending
+            });
         }
     }
 }
 
 impl Mailbox {
-    #[cfg(bevy_shell)]
     fn riding(&self) -> Option<bool> {
         if !self.motion_selected {
             return None;
@@ -85,7 +87,9 @@ impl PlayLink {
         lock(&self.mailbox).riding()
     }
 
-    pub(crate) fn mount_request(&self) {
+    pub(crate) fn mount_request(&self) { self.mount_request_to(None); }
+
+    pub(crate) fn mount_request_to(&self, desired: Option<bool>) {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.mount_pending.is_some() || mailbox.world_input_blocked() {
             return;
@@ -93,7 +97,9 @@ impl PlayLink {
         let Some(riding) = mailbox.riding() else {
             return;
         };
-        let riding = !riding;
+        let next = desired.unwrap_or(!riding);
+        if next == riding { return; }
+        let riding = next;
         if let Some(command) =
             oteryn_client_ui::actor_motion::mount_command(mailbox.motion_selected, riding)
         {
@@ -101,7 +107,10 @@ impl PlayLink {
                 .commands
                 .send(crate::combat_input::PlayCommand::Feature(command))
                 .is_ok()
-                .then(PendingMount::default);
+                .then_some(PendingMount {
+                    requested: riding,
+                    ..Default::default()
+                });
         }
     }
 

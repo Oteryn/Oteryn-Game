@@ -41,6 +41,7 @@ fn bazaar_reopened_window_recovers_pending_before_allowing_another_mutation() ->
             .await;
             assert!(reopened.pending());
             assert!(!reopened.can_retry());
+            mock.authority.lock().map_err(|_| "lock")?.pending_first = false;
             controller::execute(
                 &mut reopened,
                 Action::Sell {
@@ -106,6 +107,7 @@ fn bazaar_resolving_one_pending_with_failed_refresh_keeps_other_mutations_fenced
             )
             .await;
             assert!(view.pending());
+            mock.authority.lock().map_err(|_| "lock")?.pending_first = false;
             mock.authority.lock().map_err(|_| "lock")?.fail_pages = true;
             controller::execute(
                 &mut view,
@@ -287,12 +289,12 @@ fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResu
                     .bazaar_post_failure = Some(refusal);
                 execute(&mut view, Action::Retry);
                 assert_eq!(view.pending.as_ref(), Some(&request));
-                assert!(!view.can_retry());
+                assert_eq!(view.can_retry(), refusal == 409);
                 execute(&mut view, Action::Status);
             }
             settled.push(!view.pending());
             assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 0);
-            if retry == Some(403) {
+            if retry.is_some() {
                 let pending = view.pending.clone().ok_or("missing unresolved request")?;
                 assert!(view.can_retry());
                 mock.authority
@@ -313,8 +315,8 @@ fn bazaar_retry_and_precreate_refusals_settle_after_missing_status() -> TestResu
         }
         assert_eq!(
             settled,
-            [true, true, false],
-            "bazaar retry 409 and pre-create 403 must settle, but retry 403 plus 404 must keep the original pending"
+            [false, true, false],
+            "only the initial definitive refusal settles the request"
         );
         Ok(())
     })
@@ -362,6 +364,273 @@ fn bazaar_reopen_with_same_authorization_keeps_retry_before_first_receipt() -> T
             ))?;
         }
         assert_eq!(mock.authority.lock().map_err(|_| "lock")?.effects, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn fresh_grant_filters_previously_accepted_bazaar_receipt() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let next = mock.token(&client)?;
+        let execute = |view: &mut View, action, grant| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                grant,
+                CancellationToken::new(),
+            ));
+        };
+        let mut first = View::default();
+        execute(&mut first, Action::Refresh(AuctionView::All), &token);
+        execute(
+            &mut first,
+            Action::Bid {
+                auction_id: AUCTION.into(),
+                coins: 50,
+                confirmed: true,
+            },
+            &token,
+        );
+        let id = first.receipt.ok_or("receipt")?.request_id;
+        {
+            let mut state = mock.authority.lock().map_err(|_| "lock")?;
+            let listed = state.commands.remove(&id).ok_or("listed receipt")?;
+            state.commands.insert("stale-index".into(), listed);
+        }
+        let mut fresh = View {
+            prior: first.prior,
+            ..Default::default()
+        };
+        execute(&mut fresh, Action::Refresh(AuctionView::Own), &next);
+        assert!(fresh.page.is_some());
+        assert!(!format!("{fresh:?}").contains(&id));
+        assert!(!fresh.pending());
+        Ok(())
+    })
+}
+
+fn seed_bids(
+    mock: &MockPlatform,
+    client: &NativeLoginClient,
+    token: &AccessToken,
+    count: usize,
+) -> TestResult {
+    for _ in 0..count {
+        let request = BazaarRequest {
+            version: 1,
+            request_id: AttemptRef::generate()?.as_str().into(),
+            command: BazaarCommand::Bid {
+                auction_id: AUCTION.into(),
+                expected_revision: 1,
+                coins: 50,
+            },
+        };
+        mock.runtime
+            .block_on(client.bazaar_command(token, &request, CancellationToken::new()))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn transient_status_failure_fences_until_status_retry() -> TestResult {
+    test_thread(|| {
+        for (status, retry) in [(503, 503), (503, 403), (503, 404), (403, 403), (404, 404)] {
+            let mock = MockPlatform::start()?;
+            let client = mock.client()?;
+            let token = mock.token(&client)?;
+            mock.authority.lock().map_err(|_| "lock")?.pending_first = true;
+            seed_bids(&mock, &client, &token, 1)?;
+            mock.authority.lock().map_err(|_| "lock")?.status_failure = Some(status);
+            let mut view = View::default();
+            let execute = |view: &mut View, action| {
+                mock.runtime.block_on(controller::execute(
+                    view,
+                    action,
+                    &client,
+                    &token,
+                    CancellationToken::new(),
+                ))
+            };
+            execute(&mut view, Action::Refresh(AuctionView::All));
+            assert!(view.pending(), "lookup {status}");
+            mock.authority.lock().map_err(|_| "lock")?.status_failure = Some(retry);
+            execute(&mut view, Action::Status);
+            execute(
+                &mut view,
+                Action::Bid {
+                    auction_id: AUCTION.into(),
+                    coins: 50,
+                    confirmed: true,
+                },
+            );
+            assert!(view.pending());
+            assert_eq!(
+                mock.authority
+                    .lock()
+                    .map_err(|_| "lock")?
+                    .requests
+                    .iter()
+                    .filter(|request| request
+                        .starts_with("POST /api/v1/native-account/bazaar/commands "))
+                    .count(),
+                1
+            );
+            mock.authority.lock().map_err(|_| "lock")?.status_failure = None;
+            execute(&mut view, Action::Status);
+            assert!(view.pending());
+            mock.authority.lock().map_err(|_| "lock")?.pending_first = false;
+            execute(&mut view, Action::Status);
+            assert!(!view.pending());
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn bazaar_refresh_looks_up_both_rows_concurrently() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        seed_bids(&mock, &client, &token, 2)?;
+        mock.authority.lock().map_err(|_| "lock")?.status_barrier =
+            Some(Arc::new(tokio::sync::Barrier::new(2)));
+        let mut view = View::default();
+        mock.runtime.block_on(controller::execute(
+            &mut view,
+            Action::Refresh(AuctionView::All),
+            &client,
+            &token,
+            CancellationToken::new(),
+        ));
+        assert_eq!(view.page.ok_or("page")?.recent_operations.len(), 2);
+        Ok(())
+    })
+}
+
+#[test]
+fn terminal_bid_survives_history_lookup_outage() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        let mut view = View::default();
+        let execute = |view: &mut View, action| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                &token,
+                CancellationToken::new(),
+            ))
+        };
+        execute(&mut view, Action::Refresh(AuctionView::All));
+        execute(
+            &mut view,
+            Action::Bid {
+                auction_id: AUCTION.into(),
+                coins: 50,
+                confirmed: true,
+            },
+        );
+        assert_eq!(
+            view.receipt.as_ref().ok_or("receipt")?.state,
+            OperationState::Committed
+        );
+        mock.authority.lock().map_err(|_| "lock")?.status_failure = Some(503);
+        execute(&mut view, Action::Refresh(AuctionView::Own));
+        assert!(!view.pending(), "a committed bid became pending again");
+        Ok(())
+    })
+}
+
+#[test]
+fn history_rejects_a_regressing_receipt_after_selection_changes() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let token = mock.token(&client)?;
+        seed_bids(&mock, &client, &token, 2)?;
+        let mut view = View::default();
+        let execute = |view: &mut View, action| {
+            mock.runtime.block_on(controller::execute(
+                view,
+                action,
+                &client,
+                &token,
+                CancellationToken::new(),
+            ))
+        };
+        execute(&mut view, Action::Refresh(AuctionView::History));
+        let rows = view.page.as_ref().ok_or("page")?.recent_operations.clone();
+        assert_eq!(rows.len(), 2);
+        execute(&mut view, Action::Receipt(rows[1].request_id.clone()));
+        {
+            let mut authority = mock.authority.lock().map_err(|_| "lock")?;
+            authority.pending_first = true;
+            let receipt = &mut authority
+                .commands
+                .get_mut(&rows[0].request_id)
+                .ok_or("bid")?
+                .1;
+            receipt.state = OperationState::Pending;
+            receipt.receipt_id = None;
+            receipt.charged_coins = 0;
+        }
+        execute(&mut view, Action::Refresh(AuctionView::History));
+        assert!(!view.pending(), "a stale history row fenced another bid");
+        execute(&mut view, Action::Receipt(rows[0].request_id.clone()));
+        assert!(!view.pending());
+        assert!(
+            !view
+                .page
+                .as_ref()
+                .ok_or("history")?
+                .recent_operations
+                .iter()
+                .any(|r| r.state == OperationState::Pending)
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn fresh_grant_missing_terminal_bid_releases_history_only_fence() -> TestResult {
+    test_thread(|| {
+        let mock = MockPlatform::start()?;
+        let client = mock.client()?;
+        let original = mock.token(&client)?;
+        seed_bids(&mock, &client, &original, 1)?;
+        let token = mock.token(&client)?;
+        let mut authority = mock.authority.lock().map_err(|_| "lock")?;
+        let (_, row) = authority.commands.pop_first().ok_or("bid")?;
+        authority.commands.insert("stale-index".into(), row);
+        drop(authority);
+        for resolve in [Action::Refresh(AuctionView::All), Action::Status] {
+            let mut view = View::default();
+            let execute = |view: &mut View, action| {
+                mock.runtime.block_on(controller::execute(
+                    view,
+                    action,
+                    &client,
+                    &token,
+                    CancellationToken::new(),
+                ))
+            };
+            mock.authority.lock().map_err(|_| "lock")?.status_failure = Some(503);
+            execute(&mut view, Action::Refresh(AuctionView::All));
+            assert!(view.pending());
+            mock.authority.lock().map_err(|_| "lock")?.status_failure = None;
+            execute(&mut view, resolve);
+            assert!(
+                !view.pending(),
+                "stale bid blocked the fresh grant after 404"
+            );
+        }
         Ok(())
     })
 }
