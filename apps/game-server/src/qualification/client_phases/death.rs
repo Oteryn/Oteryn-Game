@@ -11,7 +11,7 @@ pub(super) async fn death(
         evidence("mechanic=death skipped=entry_room_has_no_native_lethal_encounter_content");
         return Ok(());
     }
-    let previous_receipt = latest_receipt(clients).await?;
+    let previous_receipt = latest_receipt(clients, 1).await?;
     client.session_mut().attack_target(None).await?;
     let before = client
         .actor_vitals()
@@ -39,7 +39,7 @@ pub(super) async fn death(
                 .actor_vitals()
                 .is_some_and(|vitals| vitals.health == vitals.max_health)
         {
-            let receipt = latest_receipt(clients)
+            let receipt = latest_receipt(clients, 1)
                 .await?
                 .ok_or("death respawn has no durable server receipt")?;
             if Some(&receipt) == previous_receipt.as_ref() || receipt.1 == receipt.2 {
@@ -66,10 +66,15 @@ pub(super) async fn death(
     }
 }
 
-async fn latest_receipt(clients: &SeamClients<'_>) -> TestResult<Option<(String, String, String)>> {
+pub(super) type DeathReceipt = (String, String, String);
+
+pub(super) async fn latest_receipt(
+    clients: &SeamClients<'_>,
+    index: usize,
+) -> TestResult<Option<DeathReceipt>> {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let receipt = sqlx::query_as("SELECT death_occurrence_id::text, original_character_revision::text, committed_character_revision::text FROM game_character_death_receipts WHERE character_id = encode($1, 'hex')::uuid AND death_world_id = encode($2, 'hex')::uuid AND death_channel_id = encode($3, 'hex')::uuid ORDER BY committed_at DESC, death_occurrence_id DESC LIMIT 1")
-        .bind(clients.characters[1].as_slice()).bind(clients.world.as_slice()).bind(clients.channel.as_slice()).fetch_optional(&mut database).await?;
+        .bind(clients.characters[index].as_slice()).bind(clients.world.as_slice()).bind(clients.channel.as_slice()).fetch_optional(&mut database).await?;
     database.close().await?;
     Ok(receipt)
 }
