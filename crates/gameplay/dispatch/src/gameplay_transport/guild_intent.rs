@@ -6,9 +6,10 @@ use crate::domain::{
     guild::{GuildId, GuildName},
 };
 use crate::durability::guild::{
-    GuildCommand, GuildError, GuildFoundRequest, GuildOperationIdentity, GuildOutcome,
-    GuildRankRequest, GuildRequest,
+    GuildCommand, GuildEditRanksRequest, GuildError, GuildFoundRequest, GuildOperationIdentity,
+    GuildOutcome, GuildRankRequest, GuildRequest, GuildTextRequest,
 };
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::guild::{self as wire, GuildIntent};
 use sha2::{Digest, Sha256};
@@ -96,13 +97,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .guildhall_leadership(admitted, command_id, payload)
                 .await;
         }
-        if command_type != wire::COMMAND_TYPE_GUILD_INTENT {
-            return GuildReply::Rejected;
-        }
-        let Ok(intent) = wire::decode_guild_intent(payload) else {
-            return GuildReply::Rejected;
-        };
-        if wire::encode_guild_intent(&intent).is_err() {
+        let text_edit = command_type == wire::COMMAND_TYPE_GUILD_TEXT_INTENT;
+        if text_edit
+            && !admitted
+                .continuity
+                .selected_capabilities
+                .contains(wire::CAPABILITY_GUILD_TEXT_V1)
+        {
             return GuildReply::Rejected;
         }
         let Ok(id) = CommandId::new(command_id) else {
@@ -125,6 +126,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             occurred_at_unix_ms: now,
             wire_digest: Some(Sha256::digest(payload).into()),
         };
+        if text_edit {
+            return self
+                .edit_guild_text(fence, identity, command, payload)
+                .await;
+        }
+        if command_type != wire::COMMAND_TYPE_GUILD_INTENT {
+            return GuildReply::Rejected;
+        }
+        let Ok(intent) = wire::decode_guild_intent(payload) else {
+            return GuildReply::Rejected;
+        };
+        if wire::encode_guild_intent(&intent).is_err() {
+            return GuildReply::Rejected;
+        }
         let guild = match &intent {
             GuildIntent::Found { .. } => derived(b"oteryn:guild-wire-guild:v1"),
             GuildIntent::Invite { guild, .. }
@@ -226,36 +241,128 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
             }
         };
-        match outcome {
-            Ok(GuildOutcome::Committed(receipt) | GuildOutcome::Replayed(receipt)) => {
-                let Ok(code) = u8::try_from(receipt.result.code() + 1) else {
-                    return GuildReply::Unavailable;
+        reply(guild, outcome)
+    }
+
+    async fn edit_guild_text(
+        &self,
+        fence: CurrentCharacterItemFence,
+        identity: GuildOperationIdentity,
+        command: CommandRef,
+        payload: &[u8],
+    ) -> GuildReply {
+        use wire::GuildTextEdit::{Message, RankName, Title};
+        let Ok(intent) = wire::decode_guild_text_intent(payload) else {
+            return GuildReply::Rejected;
+        };
+        let Ok(guild_id) = GuildId::from_bytes(intent.guild) else {
+            return GuildReply::Rejected;
+        };
+        let operation = match &intent.edit {
+            Message(_) => GuildCommand::SetMessage,
+            Title { character, .. } => match CharacterId::from_bytes(*character) {
+                Ok(character) => GuildCommand::SetTitle(character),
+                Err(_) => return GuildReply::Rejected,
+            },
+            RankName { .. } => GuildCommand::EditRanks,
+        };
+        let request = GuildRequest {
+            identity,
+            command,
+            guild_id,
+            operation,
+        };
+        let revision = intent.expected_revision;
+        let outcome = match intent.edit {
+            Message(text) | Title { title: text, .. } => {
+                let Ok(edit) = GuildTextRequest::new(request, revision, &text) else {
+                    return GuildReply::Rejected;
                 };
-                wire::encode_guild_intent_result(&wire::GuildIntentResult {
-                    code,
-                    guild,
-                    revision: receipt.revision,
-                })
-                .map_or(GuildReply::Unavailable, GuildReply::Payload)
+                self.root
+                    .commit_guild_text(self.character, self.holder, fence, edit)
+                    .await
             }
-            Err(error) => failure(error),
+            RankName { level, names } => {
+                let summary = match self
+                    .root
+                    .query_guild(self.character, self.holder, fence, wire::GuildQuery::Own)
+                    .await
+                {
+                    Ok(wire::GuildQueryResult::Own(Some(summary)))
+                        if summary.guild == intent.guild =>
+                    {
+                        summary
+                    }
+                    Ok(_) => return GuildReply::Rejected,
+                    Err(error) => return failure(error),
+                };
+                // The native writer can also change the rank count. A matching revision permits
+                // only the selected name. An older revision can only replay or be refused.
+                // A future revision could become current between this read and the write.
+                if revision > summary.revision
+                    || (revision == summary.revision
+                        && (summary.ranks.len() != names.len()
+                            || summary.ranks.iter().zip(&names).enumerate().any(
+                                |(index, (old, new))| index + 1 != usize::from(level) && old != new,
+                            )))
+                {
+                    return GuildReply::Rejected;
+                }
+                let Ok(edit) = GuildEditRanksRequest::new(request, revision, names) else {
+                    return GuildReply::Rejected;
+                };
+                self.root
+                    .commit_guild_edit_ranks(self.character, self.holder, fence, edit)
+                    .await
+            }
+        };
+        reply(intent.guild, outcome)
+    }
+}
+fn reply(guild: [u8; 16], outcome: Result<GuildOutcome, GuildError>) -> GuildReply {
+    match outcome {
+        Ok(GuildOutcome::Committed(receipt) | GuildOutcome::Replayed(receipt)) => {
+            let Ok(code) = u8::try_from(receipt.result.code() + 1) else {
+                return GuildReply::Unavailable;
+            };
+            wire::encode_guild_intent_result(&wire::GuildIntentResult {
+                code,
+                guild,
+                revision: receipt.revision,
+            })
+            .map_or(GuildReply::Unavailable, GuildReply::Payload)
         }
+        Err(error) => failure(error),
     }
 }
 fn failure(error: GuildError) -> GuildReply {
     match error {
         // No semantic pass was issued, so this command cannot have committed.
         GuildError::Unavailable(crate::durability::DurabilityError::RootUnavailable)
-        | GuildError::InvalidInput | GuildError::NotCurrent | GuildError::ConflictingOccurrence => {
-            GuildReply::Rejected
-        }
+        | GuildError::InvalidInput
+        | GuildError::NotCurrent
+        | GuildError::ConflictingOccurrence => GuildReply::Rejected,
         // Never sequence an unknown commit as a rejection. Disconnect; the retained command
         // replays its immutable native receipt after reconnect, including after process restart.
         GuildError::Unavailable(_) => GuildReply::Unavailable,
     }
 }
+
+pub(super) fn offer_guild_text(
+    base: &[super::capabilities::OfferedCapability],
+    available: bool,
+) -> Vec<super::capabilities::OfferedCapability> {
+    base.iter()
+        .copied()
+        .filter(|offer| available || offer.id != wire::CAPABILITY_GUILD_TEXT_V1)
+        .collect()
+}
+
 macro_rules! authority_methods {
     () => {
+        fn guild_text_available(&self) -> bool {
+            false
+        }
         fn guild_command(
             &self,
             _admitted: $crate::gameplay_transport::connection::AdmittedSession,
@@ -271,6 +378,9 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        fn guild_text_available(&self) -> bool {
+            true
+        }
         async fn guild_command(
             &self,
             admitted: connection::AdmittedSession,

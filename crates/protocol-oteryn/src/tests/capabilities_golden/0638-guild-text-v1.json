@@ -1,0 +1,19 @@
+{
+  "id": 638,
+  "name": "GUILD_TEXT_V1",
+  "constant": "guild::CAPABILITY_GUILD_TEXT_V1",
+  "requires": [
+    40
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6411
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}
