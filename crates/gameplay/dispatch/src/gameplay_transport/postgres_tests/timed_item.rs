@@ -156,11 +156,19 @@ async fn exchange_kind(
 #[test]
 fn timed_item_postgres_wire_charges_replay_repair_and_owner_expiry() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(|| scenario().map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "timed item thread")??;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED timed_item_wire elapsed={:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 fn scenario() -> TestResult {

@@ -79,7 +79,7 @@ use foundation::{
 use native_admission_source::{TransientCapacity, descriptor::ProducerDescriptor};
 use oteryn_gameplay_durability::character_bootstrap_intent::read_authenticated_intent;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
-use sqlx::{Connection, Executor};
+use sqlx::Connection;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{env, fs, io};
 
@@ -659,16 +659,21 @@ async fn database() -> TestResult<(String, String)> {
     {
         return Err("unsafe PostgreSQL test admin URL".into());
     }
-    let name = format!(
-        "s3b_{}",
-        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
-    );
+    let name = oteryn_test_support::postgres::database_name("s3b");
     let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
-    admin
-        .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-            "CREATE DATABASE {name}"
-        ))))
+    let version: String = sqlx::query_scalar("SHOW server_version_num")
+        .fetch_one(&mut admin)
         .await?;
+    if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
+        return Err(format!("S3-B requires PostgreSQL 18.6, found {version}").into());
+    }
+    oteryn_test_support::postgres::create_migrated_database(
+        &mut admin,
+        &admin_url,
+        &name,
+        &oteryn_gameplay_durability::GAME_MIGRATOR,
+    )
+    .await?;
     admin.close().await?;
     let url = format!(
         "{}/{name}",
@@ -676,17 +681,6 @@ async fn database() -> TestResult<(String, String)> {
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?
     );
-    let mut connection = sqlx::PgConnection::connect(&url).await?;
-    let version: String = sqlx::query_scalar("SHOW server_version_num")
-        .fetch_one(&mut connection)
-        .await?;
-    if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
-        return Err(format!("S3-B requires PostgreSQL 18.6, found {version}").into());
-    }
-    oteryn_gameplay_durability::GAME_MIGRATOR
-        .run(&mut connection)
-        .await?;
-    connection.close().await?;
     Ok((url, version))
 }
 

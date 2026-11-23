@@ -43,3 +43,47 @@ fn pcake_world_bonus_real_creature_death_postgres() -> TestResult {
     };
     run_with_admin(Case::CakeWorldBonus, admin)
 }
+
+#[test]
+fn pcake_regeneration_failed_poll_is_backed_off_postgres() -> TestResult {
+    use super::Dependencies;
+    use super::fixture::{Harness, debug, run};
+
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cake-poll-backoff", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, "cake_poll_backoff", true, false)
+                .await?;
+            {
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let deps = Dependencies::new()?;
+                let owner = deps.owner(&h, &authority);
+                sqlx::query("ALTER TABLE game_cake_phases RENAME TO test_unavailable_cake_phases")
+                    .execute(&h.pool)
+                    .await?;
+                assert!(matches!(
+                    owner.refresh_cake_regeneration().await,
+                    Err(crate::durability::DurabilityError::Database(_))
+                ));
+                assert!(
+                    owner.refresh_cake_regeneration().await.is_ok(),
+                    "the failed query starts the same backoff as a successful poll"
+                );
+            }
+            h.cleanup().await
+        })
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED cake_poll_backoff elapsed={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
