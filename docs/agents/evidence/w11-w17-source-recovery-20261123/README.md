@@ -1,66 +1,67 @@
 # W11 / W15b / W16 / W17 source recovery
 
-Research date: 2026-11-23. Inspected implementation base:
-`staging@4f13511ca9ec3fb152f11299bb5cf7c71de16c41`; protected-main cross-check:
-`5a1e783826af7421c1c18bae99196178e58089e5`.
+Research date: 2026-11-23. Base: `staging@4f13511ca9ec3fb152f11299bb5cf7c71de16c41`.
+This checkpoint continues draft PR #3459 after `f3ca41df2264414a2d64673b2735cc2d38ee0e0f`.
+The live PR records each published head and its exact validation.
 
-The owner requested a working PR to research four reported data gaps and help
-complete their implementation. This packet reconciles those reports with the
-actual code, retains new source evidence and specifies the remaining production
-work. It does not qualify a playable encounter or change a runtime admission.
+## Published findings
 
-## Findings
-
-| Row | Verified result | Remaining work |
+| Area | Verified result | Remaining work |
 | --- | --- | --- |
-| W11, second Claustrophobic Inferno raid | Crystal supplies seven Phantom positions and the unresolved token `Pos`. The original change and inspected descendants do not recover an eighth coordinate. | Establish the intended cardinality and, if applicable, observe the additional spawn before movement; reconcile it with the admitted map. Preserve `unresolved_phantom: Some(8)`. |
-| W15b, Goblin Temple | Existing authoring and native validation already select one vial, item 2874, milk subtype 9, for UID 6119. Literal donor subtype 1 is water. | No second milk override is needed. Fresh Python verification below confirms the authored recipe; this research run does not claim a new real-PostgreSQL journey result. |
-| W16, Mimar Haffar | Sources recover the two-cannon shield cycle and distinguish the first fight from the later Phosphorus rematch. Official fixes constrain shield release, fresh charge state and percentage agony. | Bind exact admission/map facts and shared owners; resolve the 30/45-second vulnerability conflict and missing actor schedules before activation. |
-| W17, Tibiadrome | Five named roles, group counts, timers and nine modifiers are already represented in repository rules. The working damage curve and several details are explicit Oteryn choices. | Qualify five native creature profiles and the real room, then replace the existing test-only Svargrond opponent substitution with the accepted Drome pool and draw. |
+| W11 Soul War | Crystal and the inspected original-author revision retain seven Phantom coordinates followed by bare `Pos`. Alternate generic spawn lists do not establish Phantom slot eight. | The eighth initial coordinate and intended Global cardinality remain UNKNOWN. Preserve `unresolved_phantom: Some(8)`. |
+| W15b Goblin Temple | Existing authoring selects UID 6119, item 2874, quantity 1, milk subtype 9. Crystal's tuple supplies subtype 1, which means water. | Preserve the existing reconciliation. No duplicate override is introduced. |
+| W16 Mimar Haffar | The evidence packet recovers the two-cannon loop and separates the standalone fight from the later Phosphorus rematch. | Complete entry, actor schedules and the precise vulnerability timer remain unqualified. A bounded crystal-lifetime implementation is under separate validation and is not included in this checkpoint. |
+| W17 Tibiadrome | Five appearance mappings and the 252-cell Thais battle mask are recovered. The reproducible source importer is included in this checkpoint. Existing owners already contain substantial wave policy. | Executable creature profiles, attack clocks/masks, native admission and exact historical wave-skip thresholds remain incomplete. Public admission stays disabled. |
 
-Details and field-level provenance:
+Detailed provenance and limitations:
 
-- [W11 Phantom investigation and W15b milk reconciliation](w11-w15b.md).
-- [W16 entry, cycle, hazards, rematch and acceptance packet](w16.md).
-- [W17 rules, native-profile gaps and capture checklist](w17.md).
+- [W11 Phantom and W15b milk](w11-w15b.md).
+- [W16 admission and phases](w16.md).
+- [W17 sources, wave policy and native integration](w17.md).
 
-The new W17 asset comparison confirms that look types 1422–1426 exist in
-retained 15.30 observations and have identical raw appearance records in the
-inspected 15.33 snapshot. Their proposed creature-name mappings remain
-community candidates; matching records do not establish combat parameters
-or the identity of the referenced sprite images.
+## W17 source importer
 
-## Implementation order
+[tibiadrome_source_profile.py](../../../../tools/content-migration/tibiadrome_source_profile.py)
+provides `capture` and read-only `check` commands for
+[tibiadrome-source-profile.json](../../../../tools/content-schema/native-gameplay/tibiadrome-source-profile.json).
+It validates the pinned appearance manifest/catalog, selected outfit records,
+six sprite sheets and eight minimap PNGs. Changed bytes, duplicate/unknown
+fields and invented gameplay defaults are refused.
 
-1. **Preserve the existing milk recipe.** Use its source discriminator
-   `WIKI_MILK_OVERRIDES_DONOR_WATER`; do not reinterpret the Lua tuple's
-   second value as an item quantity for a fluid container.
-2. **Complete Mimar's source packet before wiring admission.** Use the
-   shared boss activity and phase owners. Cannon charges are encounter-local
-   state; collecting twenty crystals is not an external entry prerequisite.
-   Keep the first fight and the later `mimar_haffar_final` rematch distinct.
-3. **Complete Drome's native profiles and map.** Existing modifier rules can
-   be reused, but their mechanics fixtures cannot authorize production.
-   Native admission, actual opponent identities and the accepted random draw
-   must be qualified together through the real command path.
-4. **Resolve only W11's missing source fact.** A map-valid point, symmetry,
-   a Canary generic spawn or Lua's handling of an absent token cannot prove
-   the missing Phantom position. Do not rewrite the seven known coordinates.
-
-These are recommendations for the existing owners, not allocations of their
-shared implementation paths. This branch owns only its evidence directory
-and task record; it does not duplicate the active quest lanes or edit their
-status ledger.
-
-## Validation and limits
-
-| Check | Result on the inspected base plus this documentation |
+| Creature | Qualified look type |
 | --- | --- |
-| `python3 -m unittest discover -s tools/content-schema/reward-claim-authoring -p test_container_native.py -v` | PASS: 23 tests, including Goblin bag contents, milk/wine/source preservation and refusal cases. The first run lacked `imports/tibiawiki/facts/items-stats.json` in the sparse checkout; after retrieving the unchanged fixture, the complete suite passed. |
-| `python3 tools/agents/validate_governance.py` | PASS: 22 required documents and 9 project lanes. Missing client paths in an early sparse read were retrieved unchanged before this result. |
-| `python3 -m unittest discover -s tools/agents/tests` | PASS: 135 tests. |
-| New PostgreSQL / end-to-end gameplay execution | Not performed in this research run. Existing test source is identified, not relabelled as a fresh passing execution. |
-| Runtime / generated content / pins | Unchanged. No test grant, placeholder profile, guessed coordinate or conflicting timer is promoted to production. |
+| Murmillion | 1422 |
+| Scissorion | 1423 |
+| Hoodinion | 1424 |
+| Mearidion | 1425 |
+| Domestikion | 1426 |
 
-Exact candidate CI and review state belong to the live PR. A documentation
-gate cannot prove any of these unfinished mechanics playable.
+The source-derived Thais mask is `x=32283..32298, y=32179..32194, z=12`,
+excluding four corners: 252 cells. The lever is at `32289,32198,12`; the five
+waiting pads are `x=32289, y=32199..32203, z=12`. These coordinates are derived
+from retained minimap data and original footage, not a complete terrain/item
+stack import. One observed historical solo arrival is documented separately
+and is not promoted to a general party-admission rule.
+
+The retained packet has SHA-256
+`42760285635e2d4f51a3960e5ddf19762dba66fae244e50c5ee97164959bbcbb`
+and keeps `runtime_admission: false`. Original footage shows skips of three,
+two and one waves; it does not establish exact speed thresholds, scoring or
+continuity to the target 15.30 build. Existing accepted Oteryn defaults remain
+explicitly separate from measured source facts.
+
+## Validation of this checkpoint
+
+- Eight source-importer Python tests passed, including CLI idempotency,
+  read-only checking, input drift refusal, pool/geometry and historical skips.
+- The importer successfully checked the actual retained appearance/catalog,
+  six sprite sheets and eight minimap PNGs.
+- Twenty-three existing Goblin reward-authoring tests passed; no new
+  PostgreSQL chest journey is claimed.
+- Governance checks passed (22 required documents, 9 lanes; 135 tests).
+- The lead repeats bounded checks on the returned published head. Exact-head
+  CI/review state is recorded in the PR; this packet does not imply CI success.
+
+No mechanics ledger is marked DONE. This checkpoint does not enable a public
+Mimar or Tibiadrome entry, guess the Phantom coordinate, or qualify a complete
+boss encounter. Runtime work is published in a later verified commit.
