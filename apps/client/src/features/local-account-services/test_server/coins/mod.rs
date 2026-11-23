@@ -16,6 +16,7 @@ pub(crate) struct CoinAuthority {
     pub drop_after_create: bool,
     pub fail_after_create: bool,
     pub fail_balance: bool,
+    pub status_failure: Option<u16>,
     pub fail_catalogue: bool,
     pub hide_recent_orders: bool,
     pub creations: u32,
@@ -51,6 +52,7 @@ impl CoinAuthority {
             drop_after_create: false,
             fail_after_create: false,
             fail_balance: false,
+            status_failure: None,
             fail_catalogue: false,
             hide_recent_orders: false,
             creations: 0,
@@ -59,6 +61,12 @@ impl CoinAuthority {
             tamper_checkout: None,
         })
     }
+    pub fn quote_deadline(&self, id: &str) -> Option<Instant> {
+        self.quotes.get(id).map(|(package, _, issued, _)| {
+            *issued + std::time::Duration::from_secs(package.valid_for_seconds.into())
+        })
+    }
+
     #[cfg(bevy_shell)]
     pub fn expire_quotes(&mut self) {
         self.quotes.clear();
@@ -181,6 +189,9 @@ impl CoinAuthority {
         if method == "GET"
             && let Some(id) = target.strip_prefix("/api/v1/native-account/coin-purchases/requests/")
         {
+            if let Some(status) = self.status_failure {
+                return Some((status, String::new()));
+            }
             return Some(self.orders.get(id).map_or((404, String::new()), |(_, o)| {
                 (200, serde_json::to_string(o).unwrap_or_default())
             }));

@@ -92,6 +92,53 @@ pub(super) fn use_item(
     }
 }
 
+#[cfg(bevy_shell)]
+impl crate::play::PlayLink {
+    pub(crate) fn carried_shortcut_items(&self) -> Vec<oteryn_session::ItemEntry> {
+        carried_items(&crate::play::mailbox::lock(&self.mailbox))
+    }
+}
+
+/// A retained container is carried only when its handle or parent belongs to the inventory tree.
+pub(in crate::play) fn carried_items(mailbox: &Mailbox) -> Vec<oteryn_session::ItemEntry> {
+    let Some(inventory) = mailbox.inventory.inventory.as_ref() else {
+        return Vec::new();
+    };
+    let mut items: Vec<_> = inventory
+        .main_backpack
+        .into_iter()
+        .chain(inventory.entries.iter().copied())
+        .chain(inventory.equipment.iter().map(|e| e.item))
+        .collect();
+    let mut handles: std::collections::BTreeSet<_> = items.iter().map(|item| item.handle).collect();
+    if let Some(views) = mailbox.containers.views.as_ref() {
+        let mut admitted = std::collections::BTreeSet::new();
+        for _ in 0..views.views.len() {
+            let before = admitted.len();
+            for view in &views.views {
+                if view.browse.is_none()
+                    && !admitted.contains(&view.view_id)
+                    && (handles.contains(&view.container_handle)
+                        || view
+                            .parent_handle
+                            .is_some_and(|parent| handles.contains(&parent)))
+                {
+                    admitted.insert(view.view_id);
+                    handles.insert(view.container_handle);
+                    handles.extend(view.entries.iter().map(|item| item.handle));
+                    items.extend_from_slice(&view.entries);
+                }
+            }
+            if before == admitted.len() {
+                break;
+            }
+        }
+    }
+    items.sort_by_key(|item| item.handle);
+    items.dedup_by_key(|item| item.handle);
+    items
+}
+
 pub(in crate::play) fn visible_items(
     mailbox: &Mailbox,
 ) -> impl Iterator<Item = oteryn_session::ItemEntry> + '_ {

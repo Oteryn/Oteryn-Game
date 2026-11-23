@@ -13,6 +13,7 @@ pub(super) fn read_fields(
             }
         }
         owner.login.form.settings = LoginSettings::from_values(values);
+        owner.login.record_edits();
     }
 }
 

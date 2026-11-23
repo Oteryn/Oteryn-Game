@@ -51,6 +51,14 @@ archives remain untouched. Missing build products must rebuild through Cargo.
 Report actual before/after bytes and preserve exact-candidate tests independently.
 A protected-main warmer finishes before the newest queued main revision starts;
 frequent merges must not continually cancel cache preparation.
+Warm workspace library tests with `--lib --no-run`: keep their dev-dependency
+features, but avoid linking integration executables that the bounded cache
+discards. Full selected tests, binary targets and strict all-target Clippy remain
+in their qualification lanes. Use the archive producers' checksum-pinned mold
+through `LD_PRELOAD`, without adding linker-specific Cargo flags. A cache-only
+warmup is not evidence that the candidate's tests passed. On Windows, run strict
+Clippy before the release build so a lint failure stops before expensive linking;
+retain the release smoke and installer checks after the build.
 
 ## Shared build artifacts and partial reruns
 
@@ -76,6 +84,8 @@ If no compatible producer is available, it builds locally; an invalid selected
 artifact fails. Route-less fast results never count as PostgreSQL qualification.
 For a deliberate reuse qualification, apply `heavy-tests` to the frozen head
 once all three dedicated producers are active or their artifacts are available.
+An overall workflow can still report `queued` while its selected producer is
+active; honor the bounded active-producer wait in either workflow state.
 Queued or undiscovered producers can exhaust the bounded discovery window and
 cause local fallback; report those builds separately from successful reuse.
 Waiting for producer admission can delay other PG archives, so measure the

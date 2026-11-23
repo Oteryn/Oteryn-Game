@@ -35,7 +35,33 @@ impl MockPlatform {
                 let (status,reply)={let Ok(mut state)=state.lock() else {return;};let headers = head.lines().filter(|line| !line.to_ascii_lowercase().starts_with("authorization:"));
                     state.requests.push(format!("{}\r\n\r\n{body}", headers.collect::<Vec<_>>().join("\r\n")));state.respond(method,target,body,grant,signature)};
                 if status == 0 { continue; }
-                let _=stream.write_all(format!("HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{reply}",reply.len()).as_bytes()).await;
+                let response = format!("HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{reply}", reply.len());
+                let status_gate = (method == "GET" && (target.contains("/bazaar/commands/") || target.contains("/coin-purchases/requests/")))
+                    .then(|| state.lock().ok().and_then(|s| s.status_barrier.clone())).flatten();
+                if method == "GET" && state.lock().ok().and_then(|s| s.held_bazaar_status.clone())
+                    .is_some_and(|id| target.strip_prefix("/api/v1/native-account/bazaar/commands/") == Some(id.as_str()))
+                {
+                    tokio::spawn(async move {
+                        let mut byte = [0];
+                        let _ = stream.read(&mut byte).await;
+                    });
+                } else if let Some(gate) = status_gate {
+                    tokio::spawn(async move {
+                        if tokio::time::timeout(std::time::Duration::from_secs(2), gate.wait()).await.is_ok() {
+                            let _ = stream.write_all(response.as_bytes()).await;
+                        }
+                    });
+                } else if method == "POST" && target == "/api/v1/native-account/coin-purchases/orders"
+                    && let Some((ready, release)) = state.lock().ok().and_then(|mut s| s.hold_coin_response.take())
+                {
+                    tokio::spawn(async move {
+                        let _ = ready.send(());
+                        let _ = release.await;
+                        let _ = stream.write_all(response.as_bytes()).await;
+                    });
+                } else {
+                    let _ = stream.write_all(response.as_bytes()).await;
+                }
             }
         });
         Ok(Self {
@@ -102,4 +128,13 @@ impl Authority {
         }
         self.route(method, target, body, authorized, signature)
     }
+}
+
+pub(crate) fn test_thread(test: impl FnOnce() -> TestResult + Send + 'static) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || test().map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "test thread failed")?
+        .map_err(Into::into)
 }
