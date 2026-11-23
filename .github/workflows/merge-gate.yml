@@ -45,6 +45,7 @@ jobs:
           EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
           EVENT_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           EVENT_PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_BASE_FROM: ${{ github.event.changes.base.ref.from }}
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
         run: |
@@ -60,7 +61,15 @@ jobs:
           expected_head = os.environ.get('EVENT_PR_HEAD_SHA', '').strip().lower()
           # A rerun keeps the original event: qualify only the base that event targeted.
           event_base_ref = os.environ.get('EVENT_PR_BASE_REF', '').strip()
+          # game-gate has one name for both bases: a retarget must not let the
+          # old base's success stand while the new run is pending. It fails
+          # until a new push qualifies the head for the new base.
+          retarget_from = os.environ.get('EVENT_BASE_FROM', '').strip()
           errors: list[str] = []
+          if retarget_from:
+              errors.append(
+                  f'pull request was retargeted from {retarget_from}; push a new commit to qualify the new base'
+              )
 
           if re.fullmatch(r'[1-9][0-9]*', number_text) is None:
               errors.append('pull request number must be a positive integer')

@@ -139,8 +139,11 @@ When one of them turns `main` red, fix it with `oteryn-debugging` section 6
 Owner decision 2026-11-23. `staging` is a long-lived integration branch
 between the lanes and `main`. Create both rulesets below and verify them
 before the first lane PR, and in any case before the first promotion. To
-verify, read them back with `gh api repos/Oteryn/Oteryn-Game/rulesets` and
-confirm that a force-push to `staging` is refused.
+verify, read back the effective rules with
+`gh api repos/Oteryn/Oteryn-Game/rules/branches/staging` and confirm that
+`deletion`, `non_fast_forward`, `pull_request` (squash only) and
+`required_status_checks` (`game-gate`) are listed. Never test them with a real
+force-push or deletion.
 
 - **Lane PRs go into `staging`.** Each lane works on its own short branch and
   opens its PR with base `staging`. Such a PR runs the light `game-gate`
@@ -166,11 +169,13 @@ confirm that a force-push to `staging` is refused.
   the `main` rules in *Merge conditions*. If `main` moved after the promotion
   head was qualified, run the sync below first: merge `main` into `staging`,
   then qualify the new head again.
-- **Retargets.** A retarget into `main` fires `edited`. `game-gate`, the
-  PostgreSQL harness and `codex-review-gate` run again for the new base, and
-  `game-gate` qualifies only the base its event named. Other edits (title,
-  body) cancel nothing: in the harness they only mirror the head's latest
-  `heavy-gate`.
+- **No retargets.** Do not retarget a PR between `staging` and `main`;
+  close it and open a new PR with the right base. `game-gate` has one name
+  for both bases, so a retarget fails `game-gate` at once (the scope job
+  rejects any `edited` event that changed the base) and it stays red until a
+  new push qualifies the head for the new base. Other edits (title, body)
+  cancel nothing: in the harness they only mirror the `heavy-gate` of the
+  latest real heavy run on the head, and fail while one is still running.
 - **Codex review status.** A PR into `staging` publishes the status
   `codex-review-gate (staging)`, so it never replaces the `codex-review-gate`
   of a `main` PR on the same head SHA. The `heavy-tests` exemption applies

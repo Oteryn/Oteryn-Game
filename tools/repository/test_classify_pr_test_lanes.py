@@ -745,7 +745,7 @@ def scope_pull(count, head="a" * 40, base="b" * 40):
     }
 
 
-def run_scope(before, after, records=(), *, expected_head="a" * 40, event_base="main"):
+def run_scope(before, after, records=(), *, expected_head="a" * 40, event_base="main", base_from=""):
     """Execute the production scope body; replace only its API and output boundary."""
     import urllib.request
 
@@ -773,7 +773,7 @@ def run_scope(before, after, records=(), *, expected_head="a" * 40, event_base="
         env = {
             "REPOSITORY": "Oteryn/Oteryn-Game", "EVENT_PR_NUMBER": "42",
             "EVENT_PR_HEAD_SHA": expected_head, "EVENT_PR_BASE_REF": event_base,
-            "GH_TOKEN": "fixture", "GITHUB_OUTPUT": str(output),
+            "EVENT_BASE_FROM": base_from, "GH_TOKEN": "fixture", "GITHUB_OUTPUT": str(output),
         }
         errors = io.StringIO()
         code = 0
@@ -930,7 +930,13 @@ def test_scope_event_base_binding():
                              ("other", dict(scope_pull(1), base={"ref": "other", "sha": "b" * 40}))):
         code, wire, errors, _ = run_scope(live, live, records, event_base=event_base)
         assert code == 1 and wire == "" and ("base ref" in errors or "targeting" in errors), (event_base, code, wire, errors)
-    print("Scope base binding PASS: only the event's base ref (main or staging) qualifies")
+    # A retarget (staging -> main or back) fails until a new push qualifies the new base,
+    # so the old base's game-gate success cannot stand for it.
+    for event_base, live, base_from in (("main", scope_pull(1), "staging"), ("staging", staging, "main")):
+        code, wire, errors, requests = run_scope(live, live, records, event_base=event_base, base_from=base_from)
+        assert code == 1 and wire == "" and f"retargeted from {base_from}" in errors and requests == [], (
+            event_base, code, wire, errors, requests)
+    print("Scope base binding PASS: only the event's base ref (main or staging) qualifies; retargets fail")
 
 
 def test_scope_count_drift(module):
