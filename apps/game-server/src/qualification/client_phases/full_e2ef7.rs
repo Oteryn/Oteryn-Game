@@ -3899,26 +3899,29 @@ impl HuntCorpseEvidence {
         }
     }
 
+    fn corpse_candidate(&self, entity: &spatial::WorldSpatialEntity) -> bool {
+        self.removed
+            && entity.kind == spatial::EntityKind::Corpse
+            && hunt_corpse_matches(
+                self.last_position,
+                entity.position,
+                !self.excluded_corpses.contains(&entity.entity),
+                true,
+            )
+    }
+
     fn corpse<'a>(
         &self,
         entities: impl Iterator<Item = &'a spatial::WorldSpatialEntity>,
         earned_xp: bool,
     ) -> Option<spatial::WorldSpatialEntity> {
-        if !self.removed {
+        if !earned_xp {
             return None;
         }
         let mut nearest = None;
         let mut distance = u32::MAX;
         let mut ambiguous = false;
-        for entity in entities.filter(|e| {
-            e.kind == spatial::EntityKind::Corpse
-                && hunt_corpse_matches(
-                    self.last_position,
-                    e.position,
-                    !self.excluded_corpses.contains(&e.entity),
-                    earned_xp,
-                )
-        }) {
+        for entity in entities.filter(|entity| self.corpse_candidate(entity)) {
             let candidate_distance = self
                 .last_position
                 .x
@@ -3962,11 +3965,11 @@ async fn wait_for_hunt_target<T>(
 
 fn hunt_target_lost(
     alive: bool,
-    earned_xp: bool,
+    has_kill_evidence: bool,
     missing_since: &mut Option<tokio::time::Instant>,
     now: tokio::time::Instant,
 ) -> bool {
-    if alive || earned_xp {
+    if alive || has_kill_evidence {
         *missing_since = None;
         return false;
     }
@@ -4317,9 +4320,16 @@ async fn hunt_rat(
         {
             break corpse;
         }
+        let has_kill_evidence = earned_xp
+            || (!alive
+                && client.world_entities().is_some_and(|entities| {
+                    entities
+                        .iter()
+                        .any(|entity| corpse_evidence.corpse_candidate(entity))
+                }));
         if hunt_target_lost(
             alive,
-            earned_xp,
+            has_kill_evidence,
             &mut missing_since,
             tokio::time::Instant::now(),
         ) {
@@ -7008,9 +7018,16 @@ async fn forge_attack_corpse(
             {
                 break (handle, tile(corpse.position)?);
             }
+            let has_kill_evidence = earned_xp
+                || client.hunt.as_ref().is_some_and(|hunt| {
+                    client
+                        .entities
+                        .iter()
+                        .any(|entity| hunt.corpse_candidate(entity))
+                });
             if hunt_target_lost(
                 false,
-                earned_xp,
+                has_kill_evidence,
                 &mut missing_since,
                 tokio::time::Instant::now(),
             ) {

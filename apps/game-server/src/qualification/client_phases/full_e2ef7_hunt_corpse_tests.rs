@@ -54,6 +54,7 @@ enum Replay {
     Nearest,
     Ambiguous,
     Disappeared,
+    DelayedXp,
 }
 
 type ServerStream = tokio_rustls::server::TlsStream<TcpStream>;
@@ -132,6 +133,17 @@ async fn replay_peer(mut stream: ServerStream, scenario: Replay) -> TestResult {
                             &mut sequence,
                             &mut revision,
                             vec![],
+                            vec![],
+                            vec![creature().entity],
+                        )
+                        .await?;
+                    }
+                    (Replay::DelayedXp, 1) => {
+                        delta(
+                            &mut stream,
+                            &mut sequence,
+                            &mut revision,
+                            vec![corpse(13, 101)],
                             vec![],
                             vec![creature().entity],
                         )
@@ -243,16 +255,19 @@ async fn replay_peer(mut stream: ServerStream, scenario: Replay) -> TestResult {
                     }
                     _ => {}
                 }
+                let xp = match scenario {
+                    Replay::Disappeared => 0,
+                    Replay::DelayedXp => u64::from(combat_reads >= 14),
+                    _ => u64::from(combat_reads >= 2),
+                };
                 let mut payload = vec![character::CharacterTab::GeneralStats as u8];
-                payload.extend_from_slice(
-                    &u64::from(combat_reads >= 2 && !matches!(scenario, Replay::Disappeared))
-                        .to_le_bytes(),
-                );
+                payload.extend_from_slice(&xp.to_le_bytes());
                 payload
             }
             attacks::COMMAND_TYPE_ATTACK_TARGET_INTENT => {
                 let target = creature().entity;
-                let stopping = matches!(scenario, Replay::Disappeared) && attacked;
+                let stopping =
+                    matches!(scenario, Replay::Disappeared | Replay::DelayedXp) && attacked;
                 assert_eq!(
                     command.payload,
                     attacks::encode_attack_target_intent((!stopping).then_some(&target))
@@ -484,4 +499,9 @@ fn hunt_corpse_replay_approaches_accepted_ranged_corpse_before_looting() -> Test
 #[test]
 fn hunt_corpse_replay_reacquires_a_target_gone_without_xp() -> TestResult {
     run_replay(Replay::Disappeared)
+}
+
+#[test]
+fn hunt_corpse_replay_waits_for_delayed_xp_after_fresh_corpse() -> TestResult {
+    run_replay(Replay::DelayedXp)
 }
