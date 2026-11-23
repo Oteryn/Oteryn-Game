@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import os
 import shlex
 import subprocess
@@ -12,6 +13,34 @@ from textwrap import dedent
 from unittest.mock import patch
 
 from producer import CONTENT_AUTHORITY_ID, load_json_file, verify_snapshot
+
+
+class CatalogueBuildStorageTests(unittest.TestCase):
+    def test_committed_build_fits_materialization_budget(self):
+        from build import build
+
+        root = Path(__file__).resolve().parents[2]
+        write_bytes = Path.write_bytes
+        for preproduction in (False, True):
+            with (
+                self.subTest(preproduction=preproduction),
+                tempfile.TemporaryDirectory() as temporary,
+            ):
+                output = Path(temporary) / "catalog.json"
+                remaining = 2 * 1024**3
+
+                def constrained_write(path, data):
+                    nonlocal remaining
+                    remaining -= len(data)
+                    if remaining < 0:
+                        raise OSError(errno.ENOSPC, os.strerror(errno.ENOSPC), path)
+                    return write_bytes(path, data)
+
+                with patch.object(Path, "write_bytes", constrained_write):
+                    build(root, output, preproduction=preproduction)
+                snapshot = load_json_file(output)
+                verify_snapshot(snapshot)
+                self.assertEqual(bool(snapshot["entities"]), preproduction)
 
 
 class CatalogueBuildIsolationTests(unittest.TestCase):

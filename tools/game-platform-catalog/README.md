@@ -12,6 +12,8 @@ export the populated revision 1 WorldProject for offline use under
 Support follows emitted records and completeness follows admitted source coverage.
 Both builds pin the Rust projection, WorldProject, Python producer and UTC commit
 timestamp to the same Git commit captured from HEAD.
+Builds stage the committed workspace sources and catalogue data listed in
+`build.py` in a private directory on the output volume.
 The Rust filesystem adapter runs on Linux, matching the existing CONTENT
 capture boundary. Test discovery requires Cargo and the repository's existing
 `jsonschema` schema-tool dependency; the Python producer itself remains portable.
@@ -31,8 +33,9 @@ The producer writes:
 - canonical `game-platform-catalog.json`;
 - `game-platform-catalog.json.sha256` over the exact artifact bytes.
 
-The local output paths are symlinks to one generation under the output directory's
-`.catalogue` directory. Publication requires a filesystem and account that can
+The local output paths are symlinks to one generation in a sibling
+`.catalogue.<basename-digest>` directory. Existing aliases under `.catalogue/<output-basename>`
+continue to use that directory. Publication requires a filesystem and account that can
 create symlinks. Use a regular output basename that does not end in `.sha256`.
 The producer preserves a valid regular-file pair during migration and recovers
 an incomplete or mismatched pair using the new snapshot. It retains published

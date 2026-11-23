@@ -21,6 +21,9 @@ const WIRE_MAX_STRING_BYTES: usize = 2_048;
 const WIRE_MAX_ARRAY_ENTRIES: usize = 200_000;
 const WIRE_MAX_RELATIONS: usize = 1_000_000;
 const WIRE_MAX_FILE_BYTES: usize = 256 * 1024 * 1024;
+// Each capability gets a work limit independent of the shared wire row/byte
+// limits. Shared definitions can fan out even if no candidate makes a row.
+const MAX_RELATION_CANDIDATES_PER_CAPABILITY: usize = 2 * WIRE_MAX_RELATIONS;
 // Covers the fixed v1 preproduction envelope, manifests, digests and final newline.
 const WIRE_ENVELOPE_BYTES: usize = 2_048;
 
@@ -376,9 +379,23 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
             ProjectReferenceRecord::Loot {
                 algorithm, entries, ..
             } => {
+                let conditional = matches!(
+                    profiles.get(&profile_key),
+                    Some(ProjectV2AuthoringProfileData::Loot(profile))
+                        if profile.entries.iter().any(|entry| entry.skip_later_same_item_after_success)
+                );
+                let wire_eligible =
+                    matches!(algorithm, LootAlgorithmDocument::IndependentBernoulliPpm)
+                        && !conditional
+                        && entries.iter().all(|entry| {
+                            entry.children.is_empty()
+                                && !entry.unique
+                                && entry.subtype.is_none()
+                                && entry.probability_ppm.is_some()
+                        });
                 loot.insert(
                     (identity.key.as_str(), identity.revision.as_str()),
-                    (algorithm, entries),
+                    (algorithm, entries, wire_eligible),
                 );
                 None
             }
@@ -579,8 +596,10 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
 
     // Drop an overflowing capability as a unit. Keeping a prefix could keep
     // one claimant of an ambiguous relation key whose other claimant was cut off.
+    let mut shop_candidates = MAX_RELATION_CANDIDATES_PER_CAPABILITY;
     'shops: for (identity, services) in npcs {
         let npc = identity.key.as_str();
+        let npc_exported = is_exported("npc", npc, &identity.revision);
         let mut seen = BTreeSet::new();
         for service in services {
             if !seen.insert(service) {
@@ -592,9 +611,19 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
                 view.incomplete.insert("npc_shop");
                 continue;
             };
+            if !npc_exported && !offers.is_empty() {
+                view.incomplete.insert("npc_shop");
+                continue;
+            }
+            let Some(remaining_candidates) = shop_candidates.checked_sub(offers.len()) else {
+                view.relations.clear();
+                remaining_bytes = relation_budget;
+                view.incomplete.insert("npc_shop");
+                break 'shops;
+            };
+            shop_candidates = remaining_candidates;
             for (ordinal, offer) in offers.iter().enumerate() {
-                if !is_exported("npc", npc, &identity.revision)
-                    || offer.parity_pending
+                if offer.parity_pending
                     || i64::try_from(offer.unit_price).is_err()
                     || !is_exported(
                         "item",
@@ -632,6 +661,7 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
         }
     }
     let shop_rows = view.relations.len();
+    let mut loot_candidates = MAX_RELATION_CANDIDATES_PER_CAPABILITY;
     'loot: for record in &project.reference.records {
         let ProjectReferenceRecord::Creature {
             identity,
@@ -641,7 +671,8 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
         else {
             continue;
         };
-        let Some((algorithm, entries)) = loot.get(&(table.key.as_str(), table.revision.as_str()))
+        let Some((algorithm, entries, wire_eligible)) =
+            loot.get(&(table.key.as_str(), table.revision.as_str()))
         else {
             view.incomplete.insert("creature_loot");
             continue;
@@ -649,27 +680,21 @@ pub fn public_content_view(project: &WorldProject) -> Result<PublicContentView, 
         if entries.is_empty() {
             continue;
         }
-        let conditional = matches!(
-            profiles.get(&(ProjectV2Family::Loot, table.key.as_str(), table.revision.as_str())),
-            Some(ProjectV2AuthoringProfileData::Loot(profile))
-                if profile.entries.iter().any(|entry| entry.skip_later_same_item_after_success)
-        );
         if !is_exported(
             "creature",
             identity.key.as_str(),
             identity.revision.as_str(),
-        ) || !matches!(algorithm, LootAlgorithmDocument::IndependentBernoulliPpm)
-            || conditional
-            || entries.iter().any(|entry| {
-                !entry.children.is_empty()
-                    || entry.unique
-                    || entry.subtype.is_some()
-                    || entry.probability_ppm.is_none()
-            })
+        ) || !wire_eligible
         {
             view.incomplete.insert("creature_loot");
             continue;
         }
+        let Some(remaining_candidates) = loot_candidates.checked_sub(entries.len()) else {
+            view.relations.truncate(shop_rows);
+            view.incomplete.insert("creature_loot");
+            break 'loot;
+        };
+        loot_candidates = remaining_candidates;
         for (ordinal, entry) in entries.iter().enumerate() {
             let relation_key = format!("{}.loot.{ordinal}", identity.key);
             if !wire_key(&relation_key)
@@ -790,8 +815,17 @@ mod tests {
 
     #[test]
     fn admitted_shared_service_stays_within_catalogue_limits() -> TestResult {
+        shared_service_projection(false)
+    }
+
+    #[test]
+    fn rejected_shared_offers_spend_projection_budget() -> TestResult {
+        shared_service_projection(true)
+    }
+
+    fn shared_service_projection(reject_rows: bool) -> TestResult {
         project_mutation(
-            |draft| {
+            move |draft| {
                 let npc = draft
                     .state
                     .declarations
@@ -815,10 +849,11 @@ mod tests {
                     })
                     .ok_or("Cledwyn service missing")?;
                 let template = offers.first().ok_or("Cledwyn offer missing")?.clone();
-                *offers = (1..=1_000)
+                let offer_count = if reject_rows { 2_100 } else { 1_000 };
+                *offers = (1..=offer_count)
                     .map(|count| ProjectV2ServiceOffer {
                         count: Some(count),
-                        parity_pending: false,
+                        parity_pending: reject_rows,
                         ..template.clone()
                     })
                     .collect();
@@ -843,8 +878,17 @@ mod tests {
 
     #[test]
     fn admitted_shared_loot_stays_within_catalogue_limits() -> TestResult {
+        shared_loot_projection(false)
+    }
+
+    #[test]
+    fn rejected_shared_loot_entries_spend_projection_budget() -> TestResult {
+        shared_loot_projection(true)
+    }
+
+    fn shared_loot_projection(reject_rows: bool) -> TestResult {
         project_mutation(
-            |draft| {
+            move |draft| {
                 let table = draft
                     .core
                     .records
@@ -878,17 +922,22 @@ mod tests {
                     .ok_or("loot item missing")?
                     .clone();
                 let ProjectReferenceRecord::Item {
-                    identity: item_id, ..
+                    identity: item_id,
+                    client_projection,
+                    ..
                 } = &mut item
                 else {
                     return Err("expected Item record".into());
                 };
+                if reject_rows {
+                    *client_projection = ProjectionDocument::ServerOnly;
+                }
                 item_id.key.push_str(&"x".repeat(450));
                 entry.item.key.clone_from(&item_id.key);
                 let table = ProjectReferenceRecord::Loot {
                     identity,
                     algorithm: *algorithm,
-                    entries: vec![entry; 1_000],
+                    entries: vec![entry; if reject_rows { 3_500 } else { 1_000 }],
                 };
                 for loot in draft
                     .core

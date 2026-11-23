@@ -7,6 +7,7 @@ import math
 import os
 import re
 import shutil
+import stat
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -864,13 +865,46 @@ def _install_public_paths(
     return recovered
 
 
+def _ensure_storage_directory(directory: Path) -> None:
+    try:
+        directory.mkdir(mode=0o755)
+    except FileExistsError:
+        pass
+    info = directory.lstat()
+    if not stat.S_ISDIR(info.st_mode) or (
+        getattr(info, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT
+    ):
+        raise CatalogValidationError(f"unexpected catalogue storage path: {directory}")
+    if os.name == "posix" and (info.st_uid != os.geteuid() or info.st_mode & 0o022):
+        raise CatalogValidationError(
+            f"unsafe catalogue storage permissions: {directory}"
+        )
+
+
+def _publication_storage(output: Path, sidecar: Path) -> Path:
+    # Keep updating the original generation directory for existing public aliases.
+    legacy = Path(".catalogue") / output.name
+    if any(
+        path.is_symlink() and path.readlink() == legacy / "current" / path.name
+        for path in (output, sidecar)
+    ):
+        _ensure_storage_directory(output.parent / legacy.parent)
+        storage = output.parent / legacy
+    else:
+        # Keep the directory component within filesystem limits even when the
+        # basename uses the full space available alongside its .sha256 suffix.
+        basename = os.fsencode(os.path.normcase(output.name))
+        storage = output.with_name(f".catalogue.{hashlib.sha256(basename).hexdigest()}")
+    _ensure_storage_directory(storage)
+    return storage
+
+
 def write_snapshot_files(snapshot: dict, output: Path) -> None:
     verify_snapshot(snapshot)
     output = output.parent.resolve() / output.name
-    if (
-        output.name.casefold().endswith(".sha256")
-        or any(part.casefold() == ".catalogue" for part in output.parts)
-        or output.name.casefold() == ".catalogue.lock"
+    if output.name.casefold().endswith(".sha256") or any(
+        part.casefold() == ".catalogue" or part.casefold().startswith(".catalogue.")
+        for part in output.parts
     ):
         raise CatalogValidationError(f"reserved catalogue output path: {output}")
     if not output.parent.exists():
@@ -878,7 +912,6 @@ def write_snapshot_files(snapshot: dict, output: Path) -> None:
             f"output directory does not exist: {output.parent}"
         )
     sidecar = output.with_name(output.name + ".sha256")
-    storage = output.parent / ".catalogue" / output.name
     try:
         with tempfile.TemporaryDirectory(
             prefix=".catalogue-", dir=output.parent
@@ -889,7 +922,7 @@ def write_snapshot_files(snapshot: dict, output: Path) -> None:
             artifact_hex = _stage_snapshot(pair / output.name, snapshot)
             (pair / sidecar.name).write_bytes((artifact_hex + "\n").encode("ascii"))
             with _publication_lock(output.parent):
-                storage.mkdir(parents=True, exist_ok=True)
+                storage = _publication_storage(output, sidecar)
                 if not _install_public_paths(
                     output, sidecar, storage, pair, artifact_hex
                 ):

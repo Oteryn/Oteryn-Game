@@ -25,6 +25,81 @@ from test_producer import valid_source
 
 
 class ProducerIoTests(unittest.TestCase):
+    def test_produce_refuses_symlinked_storage(self) -> None:
+        source = HERE / "fixtures/supported-native-input.json"
+        for ancestor in ("legacy root", "legacy output", "output sibling"):
+            with (
+                self.subTest(ancestor=ancestor),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                parent = Path(directory)
+                output = parent / "catalog.json"
+                elsewhere = parent / "unrelated"
+                elsewhere.mkdir()
+                legacy_root = parent / ".catalogue"
+                storage = legacy_root / output.name
+                if ancestor != "output sibling":
+                    public_target = Path(".catalogue") / output.name / "current"
+                    output.symlink_to(public_target / output.name)
+                if ancestor == "legacy root":
+                    legacy_root.symlink_to(elsewhere, target_is_directory=True)
+                    redirected = elsewhere / output.name
+                    redirected.mkdir()
+                elif ancestor == "legacy output":
+                    legacy_root.mkdir()
+                    storage.symlink_to(elsewhere, target_is_directory=True)
+                    redirected = elsewhere
+                else:
+                    basename_digest = hashlib.sha256(output.name.encode()).hexdigest()
+                    (parent / f".catalogue.{basename_digest}").symlink_to(
+                        elsewhere, target_is_directory=True
+                    )
+                    redirected = elsewhere
+                pointer = redirected / "current"
+                pointer.write_bytes(b"unrelated file")
+
+                self.assertEqual(
+                    main(["produce", str(source), str(output)]),
+                    2,
+                    f"publication replaced the unrelated pointer: {pointer.is_symlink()}",
+                )
+                self.assertEqual(list(redirected.iterdir()), [pointer])
+                self.assertFalse(pointer.is_symlink())
+                self.assertEqual(pointer.read_bytes(), b"unrelated file")
+
+    def test_produce_updates_existing_legacy_aliases(self) -> None:
+        source = HERE / "fixtures/supported-native-input.json"
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            output = parent / "catalog.json"
+            sidecar = output.with_suffix(".json.sha256")
+            legacy = Path(".catalogue") / output.name
+            for path in (output, sidecar):
+                path.symlink_to(legacy / "current" / path.name)
+            self.assertEqual(main(["produce", str(source), str(output)]), 0)
+            self.assertTrue(output.resolve(strict=True).is_relative_to(parent / legacy))
+            self.assertEqual(
+                sidecar.read_text(encoding="ascii"),
+                hashlib.sha256(output.read_bytes()).hexdigest() + "\n",
+            )
+
+    def test_distinct_outputs_can_use_shared_directory(self) -> None:
+        source = HERE / "fixtures/supported-native-input.json"
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            first = parent / "first.json"
+            second = parent / "second.json"
+            self.assertEqual(main(["produce", str(source), str(first)]), 0)
+            shared_storage = parent / ".catalogue"
+            shared_storage.mkdir(exist_ok=True)
+            # Emulate the access of a second user to the first user's 0755 directory.
+            shared_storage.chmod(0o555)
+            try:
+                self.assertEqual(main(["produce", str(source), str(second)]), 0)
+                self.assertEqual(second.read_bytes(), first.read_bytes())
+            finally:
+                shared_storage.chmod(0o755)
+
     def test_public_payload_fixture_and_fail_closed_validation(self) -> None:
         source = load_json_file(HERE / "fixtures/supported-native-input.json")
         snapshot = build_snapshot(source)

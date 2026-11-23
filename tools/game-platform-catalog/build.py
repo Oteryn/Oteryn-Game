@@ -13,10 +13,46 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Cargo opens all workspace member manifests. The catalogue also reads the world
+# project and compiles the data embedded by the content crate and its dependencies.
+BUILD_INPUTS = (
+    ".cargo",
+    "Cargo.toml",
+    "Cargo.lock",
+    "rust-toolchain.toml",
+    "apps",
+    "crates",
+    "tests",
+    "vendor",
+    "content",
+    "rulesets",
+    "docs/contracts",
+    "docs/agents/evidence/OTV2-20261003-equip-abilities-v1.json",
+    "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json",
+    "imports/crystalserver/bindings",
+    "imports/crystalserver/grimvale-full-moon-maps.json",
+    "imports/official/appearance-membership",
+    "tools/architecture-check",
+    "tools/content-schema/craft-authoring/samples",
+    "tools/content-schema/item-authoring/samples",
+    "tools/content-schema/native-gameplay",
+    "tools/content-schema/reward-claim-authoring",
+    "tools/content-schema/spell-authoring/samples",
+    "tools/dev-client",
+    "tools/game-platform-catalog/producer.py",
+    "tools/oteryn-game-ops-top",
+    "tools/player-bots",
+    "tools/synthetic-asset-compiler",
+    "tools/synthetic-client-harness",
+    "tools/world-bundle-compiler",
+)
+
 
 def _materialize_tree(root: Path, checkout: Path, revision: str, git_env: dict) -> None:
     tree = subprocess.check_output(
-        ["git", "ls-tree", "-rz", "--full-tree", revision], cwd=root, env=git_env
+        ["git", "ls-tree", "-rz", "--full-tree", revision, "--", *BUILD_INPUTS],
+        cwd=root,
+        env=git_env,
     )
     entries = []
     with tempfile.TemporaryFile() as requests:
@@ -83,7 +119,10 @@ def build(root: Path, output: Path, *, preproduction: bool = False) -> str:
         .strftime("%Y-%m-%dT%H:%M:%SZ")
     )
 
-    with tempfile.TemporaryDirectory(prefix="oteryn-public-catalog-") as temporary:
+    # Build on the output volume so compilation does not fill a system TMPDIR.
+    with tempfile.TemporaryDirectory(
+        prefix=".oteryn-public-catalog-", dir=output.parent
+    ) as temporary:
         directory = Path(temporary)
         checkout = directory / "checkout"
         _materialize_tree(root, checkout, revision, git_env)
