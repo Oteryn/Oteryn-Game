@@ -33,6 +33,72 @@ then holds per-run secrets).
 same host as the services (on a Windows PC run the script under WSL2 with Docker). To serve from another machine
 on the same LAN, such as a Synology NAS, set `LOGIN_LOCAL_HOST` (next section).
 
+## Native Windows acceptance on WSL2 loopback
+
+From a Game checkout at the SHA under test, start a fresh run with the pinned
+Platform checkout. Wait for both `ready client_env=...` and `holding services`.
+
+```bash
+LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0 bash tools/qualification/login_local/run.sh
+```
+
+On Windows, use the native executable from that SHA. For CI packages, verify the
+installer against the artifact's `SHA256SUMS` and use a test Windows account or
+machine if the existing installation must be preserved. The executable has a
+bundled UI theme in the installed release. For a source build, pass
+`--ui-assets` with the checkout's `apps/client/installer/ui-assets` directory or
+with the approved private UI-art directory.
+
+In a fresh PowerShell session, set the three paths below to the run's
+Windows-readable profile, the matching pinned world-asset root and the native
+executable. Load only the six connection settings into this process. Splitting
+on the first equals sign preserves the Windows certificate path verbatim.
+
+```powershell
+$profilePath = '\\wsl.localhost\UbuntuNew\tmp\login-local.REPLACE\client.env'
+$assetRoot = 'C:\test\matching-world-asset-root'
+$clientExe = 'C:\test\release\oteryn-client.exe'
+$keys = 'OTERYN_PLATFORM_URL', 'OTERYN_GATEWAY_URL', 'OTERYN_OAUTH_CLIENT_ID',
+        'OTERYN_WORLD', 'OTERYN_CHARACTER_ID', 'OTERYN_DEV_ROOT'
+$settings = @{}
+foreach ($line in Get-Content -LiteralPath $profilePath -ErrorAction Stop) {
+    $name, $value = $line -split '=', 2
+    if ($name -in $keys) { $settings[$name] = $value }
+}
+foreach ($name in $keys) {
+    if ([string]::IsNullOrWhiteSpace($settings[$name])) { throw "Missing $name" }
+    [Environment]::SetEnvironmentVariable($name, $settings[$name], 'Process')
+}
+if (-not (Test-Path -LiteralPath $env:OTERYN_DEV_ROOT -PathType Leaf)) {
+    throw 'Gameplay certificate is missing'
+}
+foreach ($path in 'content/assets/files/catalog-content.json',
+                  'imports/official/client-assets/15.30/manifest.json') {
+    if (-not (Test-Path -LiteralPath (Join-Path $assetRoot $path) -PathType Leaf)) {
+        throw "World asset root is missing $path"
+    }
+}
+foreach ($port in 18564, 18565, 17281) {
+    if (-not (Test-NetConnection 127.0.0.1 -Port $port -InformationLevel Quiet)) {
+        throw "RUNBOOK-1 loopback port $port is unreachable from Windows"
+    }
+}
+$env:OTERYN_ASSET_DIR = $assetRoot
+$evidence = Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString())
+New-Item -ItemType Directory -Path $evidence | Out-Null
+& $clientExe --preferences (Join-Path $evidence 'preferences.toml') `
+    --login-settings (Join-Path $evidence 'login-settings.toml') `
+    --ui-audit (Join-Path $evidence 'ui-audit.json')
+```
+
+Complete ordinary browser sign-in using the disposable account from the private
+handoff. Choose the test character and active channel in Bevy, wait for the map,
+then walk one tile. In `ui-audit.json`, compare `play_observation` before and after
+the input. Require the same generation, a new `last_step` receipt with
+`accepted: true` and `moved: true`, and a changed `map_center`. Record the current
+run ID in `walked.attest` only after that evidence. Keep the profile, browser
+URLs and any raw UI captures private.
+
 ## NAS server + PC client
 
 `LOGIN_LOCAL_HOST=<private LAN IPv4>` (default `127.0.0.1`, which keeps the loopback behaviour unchanged). Only
