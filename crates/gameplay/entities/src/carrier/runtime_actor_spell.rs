@@ -123,6 +123,7 @@ pub struct ActorCombatState {
     pub(super) herald_fire_field_map: Option<oteryn_gameplay_content::content::native_cell_lookup::BundleCollisionIndex>,
     pub(super) herald_uncredited_death_at: Option<i64>,
     pub(super) herald_uncredited_defeat_settled: bool,
+    pub(super) herald_periodic_kill_queued: bool,
     /// Literal absent-KV state differs from an explicitly reduced zero.
     pub(super) soul_war_cruelty_drain: Option<u64>,
     pub(super) soul_war_player_source: Option<Arc<super::soul_war_player_source::CurrentPlayerSource>>,

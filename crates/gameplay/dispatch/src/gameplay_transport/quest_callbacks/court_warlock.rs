@@ -4,7 +4,6 @@ use crate::durability::{
     DurabilityError,
     boss_encounter::{SourceBossAdmission, SourceBossLever, SourceBossReservation},
 };
-use crate::foundation::CommandStatus;
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 
 pub(super) struct SourceBossUse<'a> {
@@ -31,49 +30,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         target: &WorldObjectTarget,
-    ) -> Option<UseOutcome> {
+    ) -> Result<Option<UseOutcome>, ()> {
         use super::super::world_map::{MapViewSource, resolve_map_target};
         if !matches!(
             actor.runtime_scope(),
             crate::foundation::RuntimeScopeRefV1::Channel { .. }
         ) {
-            return None;
+            return Ok(None);
         }
-        let map = self.bundle_map()?;
+        let (Some(map), Some(active)) = (self.bundle_map(), self.active_generation) else {
+            return Ok(None);
+        };
         let source = MapViewSource {
             overlay: &map.overlay,
             facts: &map.facts,
-            content_generation: self.active_generation?.identity().client_artifact_digest(),
+            content_generation: active.identity().client_artifact_digest(),
             reset_epoch: self.reset_epoch,
         };
-        let target = resolve_map_target(&source, target, |_| None::<()>).ok()?;
+        let Ok(target) = resolve_map_target(&source, target, |_| None::<()>) else {
+            return Ok(None);
+        };
         if (target.pos.x, target.pos.y, target.pos.floor) != (32435, 32653, -15)
             || map
                 .overlay
                 .base()
-                .tile(target.pos.x, target.pos.y, target.pos.floor)?
-                .appearance(target.ordinal)
+                .tile(target.pos.x, target.pos.y, target.pos.floor)
+                .and_then(|tile| tile.appearance(target.ordinal))
                 != Some(8911)
         {
-            return None;
+            return Ok(None);
         }
         let disposition = if let Some(admitted) =
             self.activity_runtimes.connection(command.game_session_id)
             && admitted.runtime_actor == Some(actor)
             && admitted.item_fence.is_some()
             && admitted.item_fence == command.item_fence
-            && let Some((CommandStatus::Accepted, _)) = self
-                .boss_activity_source_lever(admitted, command.command_id)
-                .await
         {
-            UseDisposition::Committed
+            self.boss_activity_source_lever(
+                admitted,
+                command.command_id,
+                crate::content::LogicalCell {
+                    x: i32::from(target.pos.x),
+                    y: i32::from(target.pos.y),
+                    z: -i32::from(target.pos.floor),
+                },
+            )
+            .await?
         } else {
             UseDisposition::Rejected
         };
-        Some(UseOutcome {
+        Ok(Some(UseOutcome {
             disposition,
             ..UseOutcome::rejected()
-        })
+        }))
     }
 
     pub(super) async fn execute_source_boss_lever(

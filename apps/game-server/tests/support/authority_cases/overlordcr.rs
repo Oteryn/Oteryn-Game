@@ -82,6 +82,7 @@ async fn exercise(h: &fixture::Harness, element: &str) -> fixture::TestResult {
             position: [100, 100, -7],
             dealt_damage: false,
             top_damage_character: None,
+            shared_party: None,
         }),
     };
     let cause = QuestCause::CreatureDeath(

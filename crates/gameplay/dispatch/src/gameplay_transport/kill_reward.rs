@@ -1253,6 +1253,10 @@ impl KillSettlementQueue {
         table
     }
 
+    pub(super) fn holds_death(&self, death: CreatureDeathOccurrenceKey) -> bool {
+        self.state().holds(death)
+    }
+
     pub fn append(&self, entry: PendingKillSettlement) -> AppendOutcome {
         let mut state = self.state();
         if state.holds(entry.facts.death)

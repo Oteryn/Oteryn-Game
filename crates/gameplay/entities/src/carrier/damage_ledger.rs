@@ -1,3 +1,4 @@
+use super::activity_boss_spawn::PeriodicDamageAttribution;
 use super::*;
 
 /// `COMBAT01-DAMAGE-RECEIPTS-PER-CREATURE-GENERATION` (`docs/contracts/RESOURCE_LIMITS_REGISTRY.json`;
@@ -46,6 +47,8 @@ pub struct DamageReceipts {
     /// The owner clock (ms) of the turn that committed the lethal receipt, when that turn
     /// supplied one. Set once by the lethal commit; a replay never changes it.
     lethal_at_ms: Option<u64>,
+    /// Player attribution of the actual lethal condition pulse, separate from command replay.
+    pub(super) lethal_periodic_player: Option<PeriodicDamageAttribution>,
     /// EQMOD2: source-owned streams have their own clock, never a player command number.
     pub(super) reflection_marks: std::collections::BTreeMap<[u8; 32], u64>,
 }

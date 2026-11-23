@@ -54,6 +54,59 @@ enum CallbackCase {
     Original,
     DurableField,
     UncreditedDeath,
+    PoisonDeath,
+    FarPad,
+    LostAcknowledgement,
+    FireFields,
+}
+
+#[test]
+fn herald_fifth_pad_requires_use_reach() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "herald_fifth_pad_requires_use_reach",
+        || scenario(false, false, CallbackCase::FarPad),
+    )
+}
+
+#[test]
+fn herald_use_reconciles_lost_commit_acknowledgement() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "herald_use_reconciles_lost_commit_acknowledgement",
+        || scenario(false, false, CallbackCase::LostAcknowledgement),
+    )
+}
+
+#[test]
+fn herald_ai_telegraphs_and_refreshes_25_durable_fire_fields() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "herald_ai_telegraphs_and_refreshes_25_durable_fire_fields",
+        || scenario(false, false, CallbackCase::FireFields),
+    )
+}
+
+#[test]
+fn herald_player_poison_settles_the_lethal_receipt() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run(
+        "herald_player_poison_settles_the_lethal_receipt",
+        || scenario(false, false, CallbackCase::PoisonDeath),
+    )
+}
+
+#[test]
+fn herald_shared_party_settles_nondamaging_members() -> TestResult {
+    super::srvenc_source_deaths_fixtures::scenario("herald_shared_party", "herald_of_fire")
 }
 
 #[test]
@@ -111,7 +164,9 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
                 "the donor's fifth landing requires the sealed forced entry");
             let cells = bundle.movement_cells(source_room.movement_cells()).map_err(debug)?;
             let start = if wrong_pad {
-                NativeEntryStart { x: 32433, y: 32653, floor: 15 }
+                NativeEntryStart { x: 32434, y: 32653, floor: 15 }
+            } else if matches!(case, CallbackCase::FarPad) {
+                NativeEntryStart { x: 32435, y: 32658, floor: 15 }
             } else {
                 NativeEntryStart { x: 32435, y: 32654, floor: 15 }
             };
@@ -144,6 +199,10 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             owner.active_generation = Some(active);
+            if matches!(case, CallbackCase::PoisonDeath) {
+                let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
+                owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
+            }
             owner.movement_cells = (&cells).into();
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
@@ -179,7 +238,7 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
             let target = WorldObjectTarget { placement, expected_revision: 0 };
             let command = UseCommand { game_session_id: admitted.game_session_id, command_id: 1, item_fence: Some(fence) };
             if wrong_pad {
-                assert_eq!(owner.use_world_object(deps.actor, command, target).await.disposition,
+                assert_eq!(lever_use(&owner, deps.actor, command, target).await?.disposition,
                     UseDisposition::Rejected);
                 let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_handoff_groups")
                     .fetch_one(&h.pool).await?;
@@ -188,11 +247,29 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
                 return Ok(());
             }
             let command = UseCommand { command_id: 2, ..command };
-            let outcome = owner.use_world_object(deps.actor, command, target.clone()).await;
+            if matches!(case, CallbackCase::LostAcknowledgement) {
+                crate::gameplay_transport::native_activity::srx3_faults::stop_after_herald_commit_once();
+            }
+            let outcome = lever_use(&owner, deps.actor, command, target.clone()).await?;
+            if matches!(case, CallbackCase::FarPad) {
+                assert_eq!(outcome.disposition, UseDisposition::TooFar);
+                let groups: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_handoff_groups")
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(groups, 0);
+                return Ok(());
+            }
             assert_eq!(outcome.disposition, UseDisposition::Committed);
             let switch = owner.activity_runtimes.pending_switch(admitted).map_err(|_| "scope switch")?
                 .ok_or("committed Instance handoff")?;
             assert_eq!(switch.destination.item_fence.ok_or("Instance fence")?.runtime_scope, instance);
+            if matches!(case, CallbackCase::LostAcknowledgement) {
+                assert_eq!(lever_use(&owner, deps.actor, command, target.clone()).await?.disposition,
+                    UseDisposition::Committed);
+                let groups: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_handoff_groups WHERE activity_key=$1 AND state=2")
+                    .bind(BOSS).fetch_one(&h.pool).await?;
+                assert_eq!(groups, 1);
+                return Ok(());
+            }
             if !replay {
                 owner.activity_runtimes.finish_switch(admitted, switch.destination)
                     .map_err(|_| "finish source scope switch")?;
@@ -204,7 +281,14 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
                         assert_durable_field_immunity(&destination, switch.destination).await?;
                         return Ok(());
                     }
-                    CallbackCase::UncreditedDeath => assert_uncredited_exit(&destination, switch.destination).await?,
+                    CallbackCase::UncreditedDeath => assert_periodic_exit(&h, &destination, switch.destination, false).await?,
+                    CallbackCase::PoisonDeath => assert_periodic_exit(&h, &destination, switch.destination, true).await?,
+                    CallbackCase::LostAcknowledgement => return Err("lost acknowledgement case delivered its switch".into()),
+                    CallbackCase::FireFields => {
+                        assert_fire_field_attack(&destination, switch.destination).await?;
+                        return Ok(());
+                    }
+                    CallbackCase::FarPad => return Err("far pad allocated an Instance".into()),
                 }
                 let deadlines: (i64, Option<i64>) = sqlx::query_as(
                     "SELECT deadline, exit_deadline FROM game_boss_room_activities WHERE boss_key=$1",
@@ -212,7 +296,7 @@ fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
                 assert_eq!(deadlines.1, Some(deadlines.0));
             }
             if replay {
-                assert_eq!(owner.use_world_object(deps.actor, command, target).await.disposition, UseDisposition::Committed);
+                assert_eq!(lever_use(&owner, deps.actor, command, target).await?.disposition, UseDisposition::Committed);
             }
             let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_activity_handoff_groups WHERE activity_key=$1 AND state=2")
                 .bind(BOSS).fetch_one(&h.pool).await?;
@@ -629,11 +713,13 @@ impl crate::durability::item_loop_move::ItemLoopContent for HeraldFieldFixture {
     }
 }
 
-async fn assert_uncredited_exit(
+async fn assert_periodic_exit(
+    h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
+    player_owned: bool,
 ) -> TestResult {
-    use crate::foundation::condition::{ConditionDefinition, TickFacts};
+    use crate::foundation::condition::{ConditionDefinition, ConditionLineage, TickFacts};
     use crate::map::view::MapFacts;
     use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
     use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry;
@@ -653,6 +739,31 @@ async fn assert_uncredited_exit(
             .count()
     };
     assert_eq!(count_portals(), 0);
+    const MISSION: &str =
+        "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/mission";
+    let character = admitted
+        .item_fence
+        .ok_or("Herald recipient fence")?
+        .character_id;
+    let xp_before: i64 = if player_owned {
+        super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+            h,
+            owner,
+            &admitted,
+            &[(MISSION.into(), 1)],
+            0xa7,
+        )
+        .await?;
+        owner.admit_quest_session(&admitted).await;
+        owner
+            .refresh_quest_session(admitted.game_session_id, false)
+            .await;
+        // The prerequisite seeder writes its own XP receipt to advance CharacterRevision.
+        sqlx::query_scalar("SELECT count(*) FROM game_character_xp_receipts WHERE character_id=encode($1,'hex')::uuid")
+            .bind(character.as_bytes().as_slice()).fetch_one(&h.pool).await?
+    } else {
+        0
+    };
     let boss = owner
         .runtime
         .lock()
@@ -666,15 +777,54 @@ async fn assert_uncredited_exit(
         commit_fixture_hit(owner, admitted, boss, 94, 125).await?,
         (900, 775)
     );
+    let element = if player_owned {
+        DotElement::Poison
+    } else {
+        DotElement::Energy
+    };
+    let source = if player_owned {
+        Some(admitted.runtime_actor.ok_or("poison caster")?)
+    } else {
+        None
+    };
     let now = owner.owner_now();
     {
         let mut runtime = owner.runtime.lock().await;
+        let mut spell_states = owner.states.spell_states.lock().await;
+        let lineage = if let Some(actor) = source {
+            let fence = admitted.item_fence.ok_or("poison caster fence")?;
+            assert!(
+                spell_states
+                    .initialize(
+                        &runtime,
+                        actor,
+                        admitted.game_session_id,
+                        crate::gameplay_transport::actor_spell::tests::FACTS,
+                        (0, 0),
+                        now,
+                    )
+                    .is_some()
+            );
+            let digest = runtime.content_pin().server_artifact_digest();
+            Some(ConditionLineage {
+                source_character: *fence.character_id.as_bytes(),
+                source_session: *admitted.game_session_id.as_bytes(),
+                source_lease_generation: fence.character_lease_generation,
+                source_actor_placement: actor.placement_identity(),
+                source_scope_generation: actor.scope_generation().get(),
+                source_content_digest: digest,
+                source_catalog_digest: digest,
+                source_creation_command: 95,
+            })
+        } else {
+            None
+        };
         let field = CreatureFieldEntry {
             definition: ConditionDefinition::new(
                 "fixture.herald.environment",
                 1,
                 ConditionValues::DamageOverTime {
-                    element: DotElement::Energy,
+                    element,
                     total_min: 2000,
                     total_max: 2000,
                     per_tick: 2000,
@@ -683,32 +833,136 @@ async fn assert_uncredited_exit(
                 },
             )
             .ok_or("uncredited field condition")?,
-            source: None,
-            lineage: None,
+            source,
+            lineage,
             occurrence: DecisionOccurrenceId::from_bytes([13; 16]),
         };
         runtime
             .commit_creature_field_entry(boss, now.get(), Some(&field))
-            .map_err(debug)?;
-        let stage = runtime
-            .stage_creature_periodic_turn(
+            .map_err(|error| format!("field entry: {error:?}"))?;
+        let hit = spell_states
+            .tick_source_creature_conditions(
+                &mut runtime,
                 boss,
-                now.get(),
                 TickFacts {
                     in_protection_zone: false,
-                    standing_on_field: Some(DotElement::Energy),
+                    standing_on_field: Some(element),
                 },
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
             )
-            .map_err(debug)?;
-        let hit = runtime
-            .commit_creature_periodic_turn(stage)
-            .map_err(debug)?;
+            .map_err(|error| format!("poison turn: {error:?}"))?;
         assert_eq!(hit.health_after, 0);
-        assert!(hit.impacts.iter().all(|impact| impact.source.is_none()));
+        assert!(
+            hit.impacts
+                .iter()
+                .any(|impact| impact.source == source && impact.damage > 0)
+        );
     }
     owner.drain_monster_melee().await;
+    if player_owned {
+        assert!(
+            owner
+                .states
+                .attack
+                .lock()
+                .await
+                .kills()
+                .has_session(admitted.game_session_id),
+            "a player-owned poison tick must enqueue the sealed death"
+        );
+        assert_eq!(
+            owner.drain_kill_rewards(admitted.game_session_id).await,
+            DrainOutcome::Drained
+        );
+        let rewards: (i64, i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_character_xp_receipts WHERE character_id=encode($2,'hex')::uuid AND experience_awarded>0),
+                    (SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION'),
+                    (SELECT value FROM game_character_quest_tracks WHERE track_key=$1 AND character_id=encode($2,'hex')::uuid)",
+        ).bind(MISSION).bind(character.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(rewards, (xp_before + 1, 1, 3));
+    }
     assert_eq!(count_portals(), 1);
     owner.drain_monster_melee().await;
     assert_eq!(count_portals(), 1);
     Ok(())
+}
+
+async fn assert_fire_field_attack(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    let map = owner.bundle_map().ok_or("Herald attack map")?;
+    let scope = admitted.item_fence.ok_or("Herald fence")?.runtime_scope;
+    let grid = (32492..=32500)
+        .step_by(2)
+        .flat_map(|x| {
+            (32652..=32660)
+                .step_by(2)
+                .map(move |y| TilePos { x, y, floor: -15 })
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    let telegraphs = || {
+        map.facts
+            .movement_effects_since(0)
+            .into_iter()
+            .filter(|(_, _, effect)| *effect == 53557)
+            .map(|(_, tile, _)| tile)
+            .collect::<Vec<_>>()
+    };
+    let start = owner.owner_now().get();
+    let at = |offset| SemanticTimeMicros::from_micros(start + offset);
+    owner.drain_monster_melee_at(at(0)).await;
+    owner.drain_monster_melee_at(at(7_999_999)).await;
+    assert!(telegraphs().is_empty());
+    owner.drain_monster_melee_at(at(8_000_000)).await;
+    let cues = telegraphs();
+    assert_eq!(cues.len(), 25);
+    assert_eq!(
+        cues.into_iter().collect::<std::collections::BTreeSet<_>>(),
+        grid
+    );
+    owner.drain_monster_melee_at(at(9_499_999)).await;
+    assert!(
+        owner
+            .root
+            .read_item_loop_ground_for_scope(scope)
+            .await?
+            .is_empty()
+    );
+    owner.drain_monster_melee_at(at(9_500_000)).await;
+    let cells = owner.root.read_item_loop_ground_for_scope(scope).await?;
+    assert_eq!(cells.len(), 25);
+    assert!(
+        cells
+            .iter()
+            .all(|row| row.item.definition.production_key == "oteryn:item.tibia.i2118")
+    );
+    owner.drain_monster_melee_at(at(16_000_000)).await;
+    assert_eq!(telegraphs().len(), 50);
+    owner.drain_monster_melee_at(at(17_500_000)).await;
+    let refreshed = owner.root.read_item_loop_ground_for_scope(scope).await?;
+    assert_eq!(refreshed.len(), 25);
+    assert!(refreshed.iter().all(|row| {
+        cells
+            .iter()
+            .all(|old| old.item.item_instance_id != row.item.item_instance_id)
+    }));
+    Ok(())
+}
+
+async fn lever_use(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    command: UseCommand,
+    target: WorldObjectTarget,
+) -> TestResult<crate::gameplay_transport::connection::UseOutcome> {
+    if let Some(outcome) = owner
+        .use_event_world_object(actor, command, target.clone())
+        .await
+        .map_err(|_| "unresolved Herald USE")?
+    {
+        return Ok(outcome);
+    }
+    Ok(owner.use_world_object(actor, command, target).await)
 }

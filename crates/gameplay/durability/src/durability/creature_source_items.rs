@@ -8,6 +8,7 @@ mod cloak_blood;
 pub use cloak_blood::CloakBloodCallback;
 mod cloak_blood_step;
 pub use cloak_blood_step::{CloakBloodPlayerStep, CloakBloodStepReceipt, cloak_blood_percentage};
+mod herald_fields;
 mod primal_pod;
 mod scoped_global;
 mod source_step;
@@ -37,6 +38,7 @@ use crate::durability::spell_item_transaction::{
     read_creature_scope_tile_in_transaction, reference, source_map_protection_tags, uuid, uuid_v7,
 };
 use crate::durability::spell_items_abi::*;
+pub use herald_fields::HeraldFieldRefresh;
 pub use primal_pod::{
     PrimalPodCallback, PrimalPodExpiry, PrimalPodPlayerStep, PrimalPodStepReceipt,
     drain_primal_pod_expiry_in_transaction, execute_primal_pod_callback_in_transaction,
@@ -69,6 +71,7 @@ enum CreatureEventRule {
     RottenFootprintCreate,
     RottenFootprintTransform,
     RottenFootprintRemove,
+    HeraldFieldRefresh,
     GazMinionCreate,
     GazMinionExpire,
     CorruptedSoulCreate,
@@ -78,6 +81,9 @@ enum CreatureEventRule {
 impl CreatureEventRule {
     fn permits_source(self, parent: &str, scope_kind: i16) -> bool {
         match self {
+            Self::HeraldFieldRefresh => {
+                scope_kind == 2 && parent == "oteryn:creature.herald_of_fire"
+            }
             Self::GazMinionCreate | Self::GazMinionExpire => {
                 matches!(scope_kind, 1 | 2) && parent == "oteryn:creature.minion_of_gaz_haragoth"
             }
@@ -105,6 +111,7 @@ impl CreatureEventRule {
             Self::RottenFootprintCreate => "rotten-blood.footprint.create",
             Self::RottenFootprintTransform => "rotten-blood.footprint.transform",
             Self::RottenFootprintRemove => "rotten-blood.footprint.remove",
+            Self::HeraldFieldRefresh => "targuna.herald.fire-fields",
             Self::GazMinionCreate => "w01.gaz-minion.create",
             Self::GazMinionExpire => "w01.gaz-minion.expire",
             Self::CorruptedSoulCreate => "w01.corrupted-soul.create",
@@ -122,8 +129,24 @@ impl CreatureEventRule {
         )
         .then_some(50001)
     }
-    fn permits_item(self, key: &str) -> bool {
+    fn permits_items(self, items: &[TypedDefinitionRef]) -> bool {
+        if items
+            .iter()
+            .any(|item| item.family != "Item" || item.revision_ref != "definition-r1")
+        {
+            return false;
+        }
+        if self == Self::HeraldFieldRefresh {
+            return items.iter().map(|item| item.production_key.as_str()).eq(
+                crate::content::bosses::activity_template::herald::HeraldFireFieldAttack::FIRE_ITEMS,
+            );
+        }
+        let [item] = items else {
+            return false;
+        };
+        let key = item.production_key.as_str();
         match self {
+            Self::HeraldFieldRefresh => false,
             Self::RottenPortalCreate | Self::RottenPortalExpire | Self::RottenPortalStep => {
                 key == "oteryn:item.tibia.i37000"
             }

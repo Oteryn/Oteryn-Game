@@ -180,6 +180,7 @@ impl HeartAction {
                             position,
                             dealt_damage: false,
                             top_damage_character: None,
+                            shared_party: None,
                         }),
                     },
                 },

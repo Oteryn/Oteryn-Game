@@ -1506,6 +1506,7 @@ fn source_death_evidence(
             top_damage_character: rule
                 .top_damage_only
                 .then_some(*fence.character_id.as_bytes()),
+            shared_party: None,
         }),
     })
 }

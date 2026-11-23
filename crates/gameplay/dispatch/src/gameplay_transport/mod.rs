@@ -92,6 +92,7 @@ mod guild_bank;
 mod guild_chat;
 mod guild_emblem;
 mod guild_war;
+mod herald_fire_fields;
 mod highscores;
 mod hive_shared_kills;
 mod house_base_decorations;

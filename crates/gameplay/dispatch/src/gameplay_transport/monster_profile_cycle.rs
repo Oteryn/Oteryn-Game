@@ -743,6 +743,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 owner
                     .tick_creature_fields(&mut map, runtime, states, native, now, native_health_names)
                     .await?;
+                owner.queue_herald_periodic_kill(runtime, states, attack)
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 pending.finish_fields();
                 }
                 if !map.validate_transaction(runtime).await {

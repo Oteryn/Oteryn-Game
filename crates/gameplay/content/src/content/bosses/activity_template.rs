@@ -31,6 +31,7 @@ const HERALD_PORTAL: u16 = 25051;
 
 pub const CRYSTAL_REVISION: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
 pub use crate::content::project::native_spell_world::PinnedActivitySourceRoom;
+pub mod herald;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -831,6 +832,10 @@ impl ContentActivationController {
             room.bundle_activity_view(bounds, start)
         }
         .ok_or(R::SourceMapUnavailable)?;
+        if herald {
+            herald::HeraldFireFieldAttack::qualify(&view, native)
+                .ok_or(R::SourceHookUnavailable)?;
+        }
         let suffix = creature
             .strip_prefix("oteryn:creature.")
             .ok_or(R::InvalidSourceCapture)?;

@@ -859,6 +859,7 @@ pub(super) fn freeze_encounter_credit(
                                 position: [at.x, at.y, -i32::from(at.floor)],
                                 dealt_damage: true,
                                 top_damage_character: None,
+                                shared_party: None,
                             },
                         },
                     },

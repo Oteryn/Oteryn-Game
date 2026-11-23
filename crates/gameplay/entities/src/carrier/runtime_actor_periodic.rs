@@ -4,6 +4,7 @@
 type CurrentPlayerPeriodicSource<'a> =
     dyn FnMut(&ChannelRuntimeV1, ExactActorRef, u64) -> Result<Option<u32>, CarrierError> + 'a;
 
+use super::activity_boss_spawn::PeriodicDamageAttribution;
 use super::runtime_actor_companion::{CompanionSnapshot, CompanionState};
 use super::*;
 #[path = "runtime_actor_periodic/health_events.rs"]
@@ -268,6 +269,7 @@ impl ChannelRuntimeV1 {
         let mut health_after = before.health;
         let mut health_events = PeriodicHealthEvents::new(self, actor, stamp, observations)?;
         let mut current_type = before.clone();
+        let mut lethal_periodic_player = None;
         for (tick_index, tick) in ticks.iter().enumerate() {
             match tick.kind {
                 TickKind::Damage {
@@ -449,7 +451,7 @@ impl ChannelRuntimeV1 {
                             ),
                         );
                     }
-                    self.record_periodic_contributor(
+                    let player = self.record_periodic_contributor(
                         &mut contributors_after,
                         tick,
                         applied as u64,
@@ -474,6 +476,7 @@ impl ChannelRuntimeV1 {
                         oteryn_gameplay_domain::domain::carrier_values::CarrierError::DamageOverflow,
                     )?;
                     if health_after == 0 {
+                        lethal_periodic_player = player;
                         after.conditions.clear_on_death();
                         break;
                     }
@@ -518,7 +521,7 @@ impl ChannelRuntimeV1 {
                             ),
                         );
                     }
-                    self.record_periodic_contributor(
+                    let player = self.record_periodic_contributor(
                         &mut contributors_after,
                         tick,
                         damage.min(health_after).max(0) as u64,
@@ -541,6 +544,7 @@ impl ChannelRuntimeV1 {
                         oteryn_gameplay_domain::domain::carrier_values::CarrierError::DamageOverflow,
                     )?;
                     if health_after == 0 {
+                        lethal_periodic_player = player;
                         after.conditions.clear_on_death();
                         break;
                     }
@@ -682,9 +686,10 @@ impl ChannelRuntimeV1 {
                 Some(now_us / 1000),
                 true,
             )?;
-            let Some(Slot::CreatureOccupied { committed, .. }) = successor else {
+            let Some(Slot::CreatureOccupied { mut committed, .. }) = successor else {
                 return Err(CarrierError::PlanConflict);
             };
+            committed.lethal_periodic_player = lethal_periodic_player;
             Some(committed)
         } else {
             None
@@ -734,26 +739,27 @@ impl ChannelRuntimeV1 {
         damage: u64,
         ordinal: u64,
         now_us: u64,
-    ) -> Result<(), CarrierError> {
+    ) -> Result<Option<PeriodicDamageAttribution>, CarrierError> {
         if damage == 0 {
-            return Ok(());
+            return Ok(None);
         }
+        let last_damage_at_ms = Some(now_us / 1000);
         let identity = if let Some(lineage) = &tick.provenance.lineage {
+            let actor = tick.provenance.source.ok_or(CarrierError::PlanConflict)?;
             if lineage.source_content_digest != self.content_pin().server_artifact_digest()
-                || tick.provenance.source.is_none_or(|source| {
-                    lineage.source_actor_placement != source.placement_identity()
-                        || lineage.source_scope_generation != source.scope_generation().get()
-                })
+                || lineage.source_actor_placement != actor.placement_identity()
+                || lineage.source_scope_generation != actor.scope_generation().get()
             {
                 return Err(CarrierError::PlanConflict);
             }
-            Some((
-                CharacterId::decode(&lineage.source_character)
+            Some(PeriodicDamageAttribution {
+                character: CharacterId::decode(&lineage.source_character)
                     .map_err(|_| CarrierError::PlanConflict)?,
-                lineage.source_lease_generation,
-                GameSessionId::decode(&lineage.source_session)
+                lease_generation: lineage.source_lease_generation,
+                session: GameSessionId::decode(&lineage.source_session)
                     .map_err(|_| CarrierError::PlanConflict)?,
-            ))
+                actor,
+            })
         } else if let Some(source) = tick.provenance.source {
             let master = self
                 .companion_snapshot_including_dead(source)
@@ -773,22 +779,33 @@ impl ChannelRuntimeV1 {
                 }
             });
             player.and_then(|(actor, session)| {
-                self.bound_attacker_lease(actor, session)
-                    .ok()
-                    .map(|lease| (lease.character_id(), lease.generation(), session))
+                self.bound_attacker_lease(actor, session).ok().map(|lease| {
+                    PeriodicDamageAttribution {
+                        character: lease.character_id(),
+                        lease_generation: lease.generation(),
+                        session,
+                        actor,
+                    }
+                })
             })
         } else {
             None
         };
-        if let Some((character, lease, session)) = identity {
+        if let Some(PeriodicDamageAttribution {
+            character,
+            lease_generation: lease,
+            session,
+            ..
+        }) = identity
+        {
             let mark = match contributors.high_water(character) {
                 Some(mark) if mark.0 > lease || (mark.0 == lease && mark.1 != session) => None,
                 Some(mark) if mark.0 == lease && mark.1 == session => Some(mark),
                 _ => Some((lease, session, 0, 0)),
             };
-            contributors.record(character, damage, ordinal, mark, Some(now_us / 1000));
+            contributors.record(character, damage, ordinal, mark, last_damage_at_ms);
         }
-        Ok(())
+        Ok(identity)
     }
 
     /// One real slot mutation installs consumed store state and physical HP.

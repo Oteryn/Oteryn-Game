@@ -1,7 +1,7 @@
 //! Captured native source eligibility is evidence, never current mutation authority.
 //! Crystal 201189f HeartBossDeath:26-138; Court Warlock:323-329;
 //! MagmaBubbleDeath:12-23; GoblinLeaderDeath:3-8. Current fences remain independently checked.
-//! Herald additionally binds the qualified most-damage character captured at death.
+//! Herald binds the most-damage character and the source party observed at death.
 use super::*;
 use crate::foundation::{GameSessionId, RuntimeScopeRefV1};
 
@@ -16,6 +16,8 @@ pub struct SourceDeathContext {
     pub dealt_damage: bool,
     /// Present most-damage identity frozen by the native lethal owner, if required.
     pub top_damage_character: Option<[u8; 16]>,
+    /// Shared roster from the most-damage character, only carried for a peer.
+    pub shared_party: Option<std::sync::Arc<crate::foundation::PartySnapshot>>,
 }
 
 impl SourceDeathContext {
@@ -47,6 +49,14 @@ impl SourceDeathContext {
             digest.update(b"source-top-damage-v1");
             digest.update(character);
         }
+        if let Some(party) = &self.shared_party {
+            digest.update(b"source-shared-party-v1");
+            digest.update(party.party_id.unwrap_or_default());
+            digest.update(party.revision.unwrap_or_default().to_be_bytes());
+            for member in &party.members {
+                digest.update(member.character);
+            }
+        }
         binding[1..].copy_from_slice(&digest.finalize());
     }
     pub(super) async fn admit(
@@ -59,13 +69,23 @@ impl SourceDeathContext {
         else {
             return Ok(false);
         };
+        let shared = self.shared_party.as_ref().is_some_and(|party| {
+            death.creature == "oteryn:creature.herald_of_fire"
+                && rule.top_damage_only
+                && self.top_damage_character == Some(party.character)
+                && party.world == *self.scope.world_id().as_bytes()
+                && party.party_id.is_some()
+                && party.shared_xp_enabled
+                && party.is_well_formed()
+                && party.members.iter().any(|member| member.character == self.character)
+        });
         if self.scope != fence.runtime_scope
             || self.scope_generation != fence.scope_ownership_generation.get()
             || self.character != *fence.character_id.as_bytes()
             || self.session != fence.game_session_id
             || self.lease_generation != fence.character_lease_generation
-            || !rule.recipient(self.position, self.dealt_damage)
-            || (rule.top_damage_only && self.top_damage_character != Some(self.character))
+            || !rule.recipient(self.position, self.dealt_damage || shared)
+            || (rule.top_damage_only && self.top_damage_character != Some(self.character) && !shared)
         {
             return Ok(false);
         }
@@ -116,6 +136,7 @@ mod tests {
             position: [33116, 32408, -7],
             dealt_damage: true,
             top_damage_character: None,
+            shared_party: None,
         };
         let mut legacy = [0xa5; 33];
         source.bind(&mut legacy);

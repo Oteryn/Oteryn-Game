@@ -5,6 +5,22 @@ use oteryn_gameplay_content::content::{
     ActiveGeneration, bosses::activity_template::QualifiedActivityRoomTemplate,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PeriodicDamageAttribution {
+    pub character: CharacterId,
+    pub lease_generation: u64,
+    pub session: GameSessionId,
+    pub actor: ExactActorRef,
+}
+
+/// Exact scoped settlement input of a player-owned lethal condition pulse.
+pub struct HeraldPeriodicKill {
+    pub target: ExactActorRef,
+    pub death: CreatureDeathOccurrenceKey,
+    pub principal: PeriodicDamageAttribution,
+    pub death_at_ms: u64,
+}
+
 impl ChannelRuntimeV1 {
     fn activity_herald_slot(&self) -> Option<usize> {
         self.carrier.occupied.iter().find_map(|&index| {
@@ -19,6 +35,74 @@ impl ChannelRuntimeV1 {
         self.activity_herald_slot().is_some_and(|index| {
             matches!(&self.carrier.slots[index], Slot::CreatureOccupied { health, .. } if *health > 0)
         })
+    }
+
+    pub fn herald_periodic_kill(&self) -> Result<Option<HeraldPeriodicKill>, CarrierError> {
+        let Some(index) = self.activity_herald_slot() else {
+            return Ok(None);
+        };
+        let Slot::CreatureOccupied {
+            generation,
+            health: 0,
+            committed,
+            spell_combat,
+            ..
+        } = &self.carrier.slots[index]
+        else {
+            return Ok(None);
+        };
+        if spell_combat.herald_periodic_kill_queued {
+            return Ok(None);
+        }
+        let Some(principal) = committed.lethal_periodic_player else {
+            return Ok(None);
+        };
+        self.owner_fence()?;
+        let target = ExactActorRef(ActorRef::from_scoped_owner_parts(
+            self.binding.runtime_scope,
+            self.binding.scope_generation,
+            ActorLocalId(
+                u32::try_from(index + 1).map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
+            ),
+            ActorLocalGeneration(*generation),
+        ));
+        let receipt = self
+            .carrier
+            .committed_lethal_receipt_inner(&self.continuity, target.0)?;
+        let death_at_ms = receipt
+            .projection
+            .death_at_ms
+            .ok_or(CarrierError::CommittedLethalUnavailable)?;
+        Ok(Some(HeraldPeriodicKill {
+            target,
+            death: receipt.projection.occurrence().death_key()?,
+            principal,
+            death_at_ms,
+        }))
+    }
+
+    pub fn acknowledge_herald_periodic_kill(
+        &mut self,
+        target: ExactActorRef,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        let index = self.carrier.validate_ref(&self.continuity, target.0)?;
+        let Slot::CreatureOccupied {
+            health: 0,
+            committed,
+            spell_combat,
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if spell_combat.herald_fire_field_map.is_none()
+            || committed.lethal_periodic_player.is_none()
+        {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        }
+        spell_combat.herald_periodic_kill_queued = true;
+        Ok(())
     }
 
     /// Retain the lethal receipt and its original transition time across a retry.
@@ -41,8 +125,13 @@ impl ChannelRuntimeV1 {
         else {
             return Ok(None);
         };
-        // Earlier player damage does not make a later environment hit a player command.
+        // The periodic queue owns this death while a current principal exists.
+        if self.herald_periodic_kill()?.is_some() {
+            return Ok(None);
+        }
+        // Earlier player damage does not make a later environment tick a player hit.
         if spell_combat.herald_uncredited_defeat_settled
+            || spell_combat.herald_periodic_kill_queued
             || committed
                 .lethal()
                 .is_none_or(|hit| hit.origin.is_some() || hit.reflection.is_some())

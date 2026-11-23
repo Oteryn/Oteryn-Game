@@ -1549,6 +1549,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> Result<Option<UseOutcome>, ()> {
+        if let Some(outcome) = self
+            .use_herald_source_lever(actor, command, &target)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
         self.use_map_harvest_object(actor, command, &target).await
     }
 

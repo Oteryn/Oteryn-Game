@@ -396,13 +396,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some());
-        // Source activity replays precede the ordinary USE owner-fence check:
-        // the original Channel actor has already been retired by the handoff.
-        if !is_source_world
-            && let Some(outcome) = self.use_herald_source_lever(actor, command, &target).await
-        {
-            return outcome;
-        }
         if let Some(outcome) = self.use_cake_world_object(actor, command, &target).await {
             return outcome;
         }

@@ -221,13 +221,8 @@ impl<'a> ScopedGroundCauseRef<'a> {
                             && c.ability == c.creature
                             && c.event_rule.is_some_and(|rule| {
                                 rule.permits_source(&c.creature.production_key, c.scope_kind())
-                            })
-                            && c.source_items.len() == 1
-                            && c.source_items[0].family == "Item"
-                            && c.event_rule.is_some_and(|rule| {
-                                rule.permits_item(&c.source_items[0].production_key)
-                            })
-                            && c.source_items[0].revision_ref == "definition-r1"))
+                                    && rule.permits_items(&c.source_items)
+                            })))
                     && !c.creature.production_key.is_empty()
                     && !c.creature.revision_ref.is_empty()
             }

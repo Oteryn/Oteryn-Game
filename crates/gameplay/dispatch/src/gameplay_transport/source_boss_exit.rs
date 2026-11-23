@@ -131,6 +131,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    /// Consume the sealed condition death through the same queue as direct damage.
+    pub(super) fn queue_herald_periodic_kill(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &super::actor_spell::ChannelSpellStates,
+        attack: &mut super::attack::ChannelAttackStates,
+    ) -> Result<bool, ()> {
+        if !matches!(
+            runtime.binding().runtime_scope(),
+            RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return Ok(false);
+        }
+        let Some(kill) = runtime.herald_periodic_kill().map_err(|_| ())? else {
+            return Ok(false);
+        };
+        let rewards = self.reward_table();
+        let activity = attack.shared_experience_cells();
+        let queue = attack.kills();
+        let at = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+            kill.death_at_ms.saturating_mul(1000),
+        );
+        super::kill_reward::record_creature_kill(
+            runtime,
+            super::kill_reward::KillSink {
+                prey: Some(states),
+                queue,
+                rewards,
+                activity: &activity,
+                charms: Some(self.imported_charms),
+            },
+            kill.target,
+            crate::combat::CapturedRewardPrincipal {
+                character: kill.principal.character,
+                lease_generation: kill.principal.lease_generation,
+                session: kill.principal.session,
+                actor: kill.principal.actor,
+            },
+            kill.death_at_ms,
+            Some(at),
+        );
+        if !queue.holds_death(kill.death) {
+            return Err(());
+        }
+        runtime
+            .acknowledge_herald_periodic_kill(kill.target)
+            .map_err(|_| ())?;
+        Ok(true)
+    }
+
     /// Only a bound Herald's actual zero-HP receipt can take the uncredited exit path.
     pub(super) async fn drain_uncredited_herald_defeat(&self) -> bool {
         if !self.bundle_map().is_some_and(|map| {
@@ -140,6 +190,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         }) {
             return false;
+        }
+        {
+            let mut runtime = self.runtime.lock().await;
+            if runtime
+                .herald_periodic_kill()
+                .is_ok_and(|kill| kill.is_some())
+            {
+                let states = self.states.spell_states.lock().await;
+                let mut attack = self.states.attack.lock().await;
+                if self
+                    .queue_herald_periodic_kill(&mut runtime, &states, &mut attack)
+                    .is_err()
+                {
+                    super::operator_event("herald_periodic_kill_deferred");
+                }
+                return true;
+            }
         }
         let captured = self.runtime.lock().await.prepare_uncredited_herald_defeat(
             self.owner_now().get() / 1_000,

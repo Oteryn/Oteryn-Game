@@ -222,7 +222,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             }
         }
         #[cfg(test)]
-        if attempt.soulpit.is_some() && srx3_faults::take_after_soulpit_commit() {
+        if (attempt.soulpit.is_some() && srx3_faults::take_after_soulpit_commit())
+            || (attempt.request.activity_key == super::boss_activity::HERALD_BOSS
+                && srx3_faults::take_after_herald_commit())
+        {
             return Err(());
         }
         if attempt
@@ -404,6 +407,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .soul_war_callbacks
                 .committed_entry(&mut runtime, now_us, elapsed_ms)?;
         }
+        if attempt.request.activity_key == super::boss_activity::HERALD_BOSS {
+            // Scope handoff clears old party projections. Seed the new scope
+            // before the first player can deliver a lethal hit there.
+            let permit = if source_first {
+                &_second_lane
+            } else {
+                &_first_lane
+            };
+            Box::pin(destination_view.seed_herald_party_views(permit, &connections)).await?;
+        }
         let result = NativeActivityOutcome::Committed(NativeActivityCommit {
             handoff_id: attempt.request.handoff_id,
             deadline_unix_ms: attempt
@@ -415,6 +428,34 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         });
         attempt.outcome = Some(result.clone());
         Ok(result)
+    }
+
+    async fn seed_herald_party_views(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        connections: &[(AdmittedSession, AdmittedSession)],
+    ) -> Result<(), ()> {
+        let mut runtime = self.runtime.lock().await;
+        let views = self
+            .root
+            .read_current_world_party_views(permit, self.character, self.holder, &runtime)
+            .await
+            .map_err(|_| ())?;
+        for (_, participant) in connections {
+            let character = participant.item_fence.ok_or(())?.character_id;
+            let view = views
+                .iter()
+                .find(|view| &view.character == character.as_bytes())
+                .ok_or(())?;
+            runtime
+                .project_world_party(
+                    participant.runtime_actor.ok_or(())?,
+                    participant.game_session_id,
+                    view.clone(),
+                )
+                .map_err(|_| ())?;
+        }
+        Ok(())
     }
 }
 
@@ -522,6 +563,16 @@ pub(in crate::gameplay_transport) mod srx3_faults {
     pub(in crate::gameplay_transport) fn stop_after_soulpit_commit_once() {
         AFTER_SOULPIT_COMMIT.set(true);
     }
+    thread_local! { static AFTER_HERALD_COMMIT: Cell<bool> = const { Cell::new(false) }; }
+
+    pub(in crate::gameplay_transport) fn stop_after_herald_commit_once() {
+        AFTER_HERALD_COMMIT.set(true);
+    }
+
+    pub(super) fn take_after_herald_commit() -> bool {
+        AFTER_HERALD_COMMIT.replace(false)
+    }
+
     pub(super) fn take_after_soulpit_commit() -> bool {
         AFTER_SOULPIT_COMMIT.replace(false)
     }

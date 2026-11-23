@@ -324,6 +324,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 top_damage_character: rule
                     .top_damage_only
                     .then_some(*fence.character_id.as_bytes()),
+                shared_party: None,
             }),
         };
         let outcome = slot
@@ -353,7 +354,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     // Both peers are independently admitted durable Characters in this Channel.
     // Member one damages the boss; member two only stands nearby.
     let mut overlord_peers = Vec::new();
-    let peer_source = if rule.creature.ends_with("_overlord") {
+    let herald_shared = mode == "herald_shared_party";
+    let peer_source = if rule.creature.ends_with("_overlord") || herald_shared {
         Some(super::house_transfer_fixtures::RecoverySource::start(h).await?)
     } else {
         None
@@ -364,6 +366,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         };
         let peer_count = if mode == "overlordcr_seventeen" {
             17u8
+        } else if herald_shared {
+            1
         } else {
             2
         };
@@ -434,6 +438,11 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     "the eligible damager has no loaded quest copy"
                 );
             } else {
+                if herald_shared {
+                    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                        h, &owner, &peer, &seeds, 0xb8,
+                    ).await?;
+                }
                 owner.admit_quest_session(&peer).await;
                 assert!(
                     owner
@@ -449,6 +458,15 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             }
             overlord_peers.push((peer_actor, peer_session, *fence.character_id.as_bytes()));
         }
+    }
+    if herald_shared {
+        let (_, _, peer) = overlord_peers[0];
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq,shared_xp_enabled) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3,true)")
+            .bind(id(0xb9).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,1,encode($4,'hex')::uuid),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,1,encode($4,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(peer.as_slice()).bind(id(0xb9).as_slice()).bind(id(43).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
     }
     if mode == "overlordcr_old_pin" {
         let previous = source_deaths::overlord_predecessor(&catalogue)?;
@@ -498,7 +516,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     let queue = owner.states.attack.lock().await.kills().clone();
     // This second current native actor really deals damage. It remains an invalid
     // Herald recipient even with the same admitted mission snapshot as the winner.
-    let lesser_contributor = if rule.top_damage_only {
+    let lesser_contributor = if rule.top_damage_only && !herald_shared {
         let mut runtime = owner.runtime.lock().await;
         let session = crate::foundation::GameSessionId::decode(&id(77)).map_err(debug)?;
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
@@ -962,6 +980,14 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         );
     }
     for (index, (_, _, character)) in overlord_peers.iter().enumerate() {
+        if herald_shared {
+            for effect in &rule.effects {
+                let value: Option<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+                    .bind(character.as_slice()).bind(&effect.track).fetch_optional(&h.pool).await?;
+                assert_eq!(value, effect.set, "a nondamaging member receives Burning Heart credit");
+            }
+            continue;
+        }
         let value: Option<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
             .bind(character.as_slice()).bind(&rule.effects[0].track).fetch_optional(&h.pool).await?;
         assert_eq!(

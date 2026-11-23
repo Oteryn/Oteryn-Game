@@ -54,6 +54,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .and_then(|map| map.facts.next_movement_decay_time()),
                     )
                     .chain(self.states.quest_callbacks.next_encounter_due_us())
+                    .chain(states.herald_field_schedule.next_due())
                     .chain(
                         self.rooms()
                             .gate_monster_ai()

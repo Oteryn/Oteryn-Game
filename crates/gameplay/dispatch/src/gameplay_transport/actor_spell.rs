@@ -117,6 +117,7 @@ pub struct ChannelSpellStates {
     #[cfg(test)]
     pub(super) drunk_seed_fixture: Option<[u8; 32]>,
     pub(super) encounter_phases: super::encounter_phases::Registry,
+    pub(super) herald_field_schedule: super::herald_fire_fields::HeraldFieldSchedule,
     pub(super) native_self_heals: crate::foundation::CreatureSelfHealLedger,
     pub(super) native_self_heal_content: Option<[u8; 32]>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
@@ -332,6 +333,7 @@ impl Default for ChannelSpellStates {
             #[cfg(test)]
             drunk_seed_fixture: None,
             encounter_phases: Default::default(),
+            herald_field_schedule: Default::default(),
             native_self_heals: Default::default(),
             native_self_heal_content: None,
             enchanting_pending: Vec::new(),

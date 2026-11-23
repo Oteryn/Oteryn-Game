@@ -155,6 +155,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        let monster_room = self.rooms().gate_monster_ai();
+        if let Some(room) = monster_room {
+            Box::pin(self.drain_herald_fire_field_attack(&permit, room, now.get())).await;
+        }
         #[cfg(test)]
         trace.set("ai_step_due");
         match self
@@ -284,7 +288,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // World and its bundle view (bundle cells and map revision) on a bundle World.
         #[cfg(test)]
         trace.set("ai_room");
-        let Some(room) = self.rooms().gate_monster_ai() else {
+        let Some(room) = monster_room else {
             return;
         };
         // Qualification binds these immutable cells to the compiled artifact.

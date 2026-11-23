@@ -11,16 +11,39 @@ use crate::durability::character_progression::CharacterProgressionError;
 use crate::foundation::{CharacterId, CommandStatus, MovementLocalPosition, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
-const HERALD_BOSS: &str = "oteryn:boss.herald_of_fire";
+pub(super) const HERALD_BOSS: &str = "oteryn:boss.herald_of_fire";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum BossActivityIngress {
     Command,
     DifficultyStart,
-    HeraldSourceLever,
+    HeraldSourceLever(crate::content::LogicalCell),
 }
 
 pub(super) type BossActivityResult = Option<(CommandStatus, Vec<u8>)>;
+
+enum BossActivityCompletion {
+    Command(CommandStatus, Vec<u8>),
+    TooFar,
+}
+
+impl BossActivityCompletion {
+    fn command(self) -> BossActivityResult {
+        match self {
+            Self::Command(status, reply) => Some((status, reply)),
+            Self::TooFar => None,
+        }
+    }
+
+    fn use_disposition(self) -> oteryn_protocol_oteryn::world_object::UseDisposition {
+        use oteryn_protocol_oteryn::world_object::UseDisposition;
+        match self {
+            Self::Command(CommandStatus::Accepted, _) => UseDisposition::Committed,
+            Self::Command(_, _) => UseDisposition::Rejected,
+            Self::TooFar => UseDisposition::TooFar,
+        }
+    }
+}
 
 impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     pub(super) async fn boss_activity_wire(
@@ -32,6 +55,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     ) -> BossActivityResult {
         self.boss_activity_action(admitted, id, kind, payload, BossActivityIngress::Command)
             .await
+            .and_then(BossActivityCompletion::command)
     }
 
     pub(super) async fn boss_activity_start(
@@ -48,22 +72,70 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             BossActivityIngress::DifficultyStart,
         )
         .await
+        .and_then(BossActivityCompletion::command)
     }
 
     pub(super) async fn boss_activity_source_lever(
         &self,
         admitted: AdmittedSession,
         id: u64,
-    ) -> BossActivityResult {
-        let payload = wire::encode_boss_key(HERALD_BOSS).ok()?;
-        self.boss_activity_action(
-            admitted,
-            id,
-            wire::COMMAND_TYPE_BOSS_LEVER,
-            &payload,
-            BossActivityIngress::HeraldSourceLever,
-        )
-        .await
+        lever: crate::content::LogicalCell,
+    ) -> Result<oteryn_protocol_oteryn::world_object::UseDisposition, ()> {
+        use oteryn_protocol_oteryn::world_object::UseDisposition;
+        // A replay's source actor can already have moved into the destination.
+        // Resolve retained identities before consulting fresh physical reach.
+        match self.retry_native_activity(admitted, id, HERALD_BOSS).await {
+            Ok(Some(retained)) => {
+                return self
+                    .boss_activity_result(retained)
+                    .map(BossActivityCompletion::use_disposition)
+                    .ok_or(());
+            }
+            Err(()) => {}
+            Ok(None) => {
+                let actor = admitted.runtime_actor.ok_or(())?;
+                let reachable = {
+                    let runtime = self.runtime.lock().await;
+                    let at = runtime
+                        .read_actor_position(actor)
+                        .map_err(|_| ())?
+                        .position();
+                    herald_lever_in_reach(at, lever)
+                };
+                if !reachable {
+                    return Ok(UseDisposition::TooFar);
+                }
+                let payload = wire::encode_boss_key(HERALD_BOSS).map_err(|_| ())?;
+                if let Some(result) = self
+                    .boss_activity_action(
+                        admitted,
+                        id,
+                        wire::COMMAND_TYPE_BOSS_LEVER,
+                        &payload,
+                        BossActivityIngress::HeraldSourceLever(lever),
+                    )
+                    .await
+                {
+                    return Ok(result.use_disposition());
+                }
+            }
+        }
+        for retry in 0..super::RECONCILE_ATTEMPTS {
+            if retry != 0 {
+                tokio::time::sleep(super::RECONCILE_BACKOFF).await;
+            }
+            match self.retry_native_activity(admitted, id, HERALD_BOSS).await {
+                Ok(Some(retained)) => {
+                    return self
+                        .boss_activity_result(retained)
+                        .map(BossActivityCompletion::use_disposition)
+                        .ok_or(());
+                }
+                Ok(None) => return Err(()),
+                Err(()) => {}
+            }
+        }
+        Err(())
     }
 
     async fn boss_activity_action(
@@ -73,8 +145,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         kind: u32,
         payload: &[u8],
         ingress: BossActivityIngress,
-    ) -> BossActivityResult {
-        let malformed = || Some((CommandStatus::Rejected, Vec::new()));
+    ) -> Option<BossActivityCompletion> {
+        let malformed = || {
+            Some(BossActivityCompletion::Command(
+                CommandStatus::Rejected,
+                Vec::new(),
+            ))
+        };
         if id == 0
             || !admitted
                 .continuity
@@ -121,7 +198,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
             && intent.boss_key == HERALD_BOSS
-            && ingress != BossActivityIngress::HeraldSourceLever
+            && !matches!(ingress, BossActivityIngress::HeraldSourceLever(_))
         {
             return refusal(ActivityRefusal::Position);
         }
@@ -261,7 +338,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .boss_difficulty_command(self.character, self.holder, fence, id, &request)
                 .await
                 .ok()??;
-            return Some((CommandStatus::Accepted, reply));
+            return Some(BossActivityCompletion::Command(
+                CommandStatus::Accepted,
+                reply,
+            ));
         }
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
             && !super::endgame_room_policy::matches_source_cooldown(&definition)
@@ -297,9 +377,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) {
             return refusal(ActivityRefusal::AuthorityRejected);
         }
-        if intent.boss_key == HERALD_BOSS {
+        if let BossActivityIngress::HeraldSourceLever(lever) = ingress {
             let runtime = self.runtime.lock().await;
             let position = runtime.read_actor_position(actor).ok()?.position();
+            if !herald_lever_in_reach(position, lever) {
+                return Some(BossActivityCompletion::TooFar);
+            }
             if !definition
                 .lever_positions
                 .iter()
@@ -379,6 +462,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             let runtime = self.runtime.lock().await;
             let census = runtime.positioned_actor_census().ok()?;
+            if let BossActivityIngress::HeraldSourceLever(lever) = ingress
+                && !herald_lever_in_reach(
+                    runtime.read_actor_position(actor).ok()?.position(),
+                    lever,
+                )
+            {
+                return Some(BossActivityCompletion::TooFar);
+            }
             let partition = if definition.boss_key == "oteryn:boss.bakragore" {
                 let cell = runtime.read_actor_position(actor).ok()?.position();
                 let ordinal = definition
@@ -511,7 +602,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         )
     }
 
-    fn boss_activity_result(&self, result: NativeActivityOutcome) -> BossActivityResult {
+    fn boss_activity_result(
+        &self,
+        result: NativeActivityOutcome,
+    ) -> Option<BossActivityCompletion> {
         match result {
             NativeActivityOutcome::Refused(reason) => refusal(reason),
             NativeActivityOutcome::Committed(commit) => {
@@ -524,7 +618,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         .transpose()
                         .ok()?,
                 };
-                Some((
+                Some(BossActivityCompletion::Command(
                     CommandStatus::Accepted,
                     wire::encode_boss_activity_reply(&reply).ok()?,
                 ))
@@ -533,7 +627,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     }
 }
 
-fn refusal(reason: ActivityRefusal) -> BossActivityResult {
+fn herald_lever_in_reach(at: MovementLocalPosition, lever: crate::content::LogicalCell) -> bool {
+    oteryn_gameplay_items::reach::within_reach(
+        (at.x, at.y, i32::from(at.floor)),
+        (lever.x, lever.y, lever.z),
+    )
+}
+
+fn refusal(reason: ActivityRefusal) -> Option<BossActivityCompletion> {
     use wire::BossActivityRefusal as Refusal;
     let reason = match reason {
         ActivityRefusal::InvalidInput => Refusal::InvalidInput,
@@ -550,7 +651,7 @@ fn refusal(reason: ActivityRefusal) -> BossActivityResult {
         ActivityRefusal::Level => Refusal::Level,
         ActivityRefusal::Cooldown => Refusal::Cooldown,
     };
-    Some((
+    Some(BossActivityCompletion::Command(
         CommandStatus::Rejected,
         wire::encode_boss_activity_reply(&wire::BossActivityReply::Refused(reason)).ok()?,
     ))
