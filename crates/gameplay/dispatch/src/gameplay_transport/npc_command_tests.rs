@@ -1311,7 +1311,11 @@ fn albinius_and_telas_do_not_show_locked_source_offers() {
     let model = catalogue
         .service_model_for_project()
         .expect("service model");
-    let book = Arc::new(NpcTalkBook::from_model(&model));
+    // The node admits both shops through their native quest callers.
+    let book = Arc::new(NpcTalkBook::from_model_with_native_quests(
+        &model,
+        &["oteryn:npc.albinius", "oteryn:npc.telas"],
+    ));
     let mut locked_quotes = Vec::new();
     for (key, item, price, direction) in [
         (
