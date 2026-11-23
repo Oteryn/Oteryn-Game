@@ -142,22 +142,25 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
 }
 
 pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatalogue) {
-    // Exact saves from main 3e099164. The new tracks add defaults without
-    // changing any existing track's initial value.
+    // Exact saves from published main 3e099164 and the reviewed hunt and Wrath
+    // catalogues. All predecessor tracks retain their original defaults.
     const PINS: &[PredecessorPin] = &[
         (
             "oteryn:quest.killing_in_the_name_of_quest",
-            hash(b"a7f389a365008c76a903abdf77166d015d73d5824067df9b08a83d89d00d06c2"),
-            &[hash(
-                b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5",
-            )],
+            hash(b"0fd0c8c8cc7691bd22cb31db5f67fbdff23d2a452ce2388e08e019739b789f27"),
+            &[
+                hash(b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5"),
+                hash(b"a7f389a365008c76a903abdf77166d015d73d5824067df9b08a83d89d00d06c2"),
+                hash(b"c52fbe6ca8b4f44b34216ac7f1b1220cf101d4af00d8991fa45cabe4847a3294"),
+            ],
         ),
         (
             "oteryn:quest.wrath_of_the_emperor_quest",
-            hash(b"58e9e5d6281350894a50b1903b1bce8e3bcc0c8f67d20407f7ef73ae8313a7cf"),
-            &[hash(
-                b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86",
-            )],
+            hash(b"542b939eb16b9ce3692470efa448e7a90e5dfc3e409061960aa894cb90fd3ba6"),
+            &[
+                hash(b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86"),
+                hash(b"58e9e5d6281350894a50b1903b1bce8e3bcc0c8f67d20407f7ef73ae8313a7cf"),
+            ],
         ),
     ];
     retain(catalogue, PINS);
@@ -237,8 +240,20 @@ mod tests {
                 hash(b"eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5"),
             ),
             (
+                "oteryn:quest.killing_in_the_name_of_quest",
+                hash(b"a7f389a365008c76a903abdf77166d015d73d5824067df9b08a83d89d00d06c2"),
+            ),
+            (
+                "oteryn:quest.killing_in_the_name_of_quest",
+                hash(b"c52fbe6ca8b4f44b34216ac7f1b1220cf101d4af00d8991fa45cabe4847a3294"),
+            ),
+            (
                 "oteryn:quest.wrath_of_the_emperor_quest",
                 hash(b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86"),
+            ),
+            (
+                "oteryn:quest.wrath_of_the_emperor_quest",
+                hash(b"58e9e5d6281350894a50b1903b1bce8e3bcc0c8f67d20407f7ef73ae8313a7cf"),
             ),
         ] {
             assert_ne!(catalogue.definition_hash(quest), Some(predecessor));

@@ -299,6 +299,8 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "is_false")]
     pub fresh_corpse: bool,
     pub keywords: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub exclude_keywords: Vec<String>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub msg_contains: bool,
     #[serde(default, skip_serializing_if = "is_false")]
@@ -465,13 +467,14 @@ impl RewardCallback {
     }
 
     pub fn matches_keyword(&self, text: &str) -> bool {
-        self.keywords.iter().any(|word| {
+        let matches = |word: &String| {
             if self.msg_contains {
                 super::npc_rules::msg_contains(text, word)
             } else {
                 word == text
             }
-        })
+        };
+        !self.exclude_keywords.iter().any(matches) && self.keywords.iter().any(matches)
     }
 
     fn valid_carried_inputs(&self) -> bool {
@@ -1169,11 +1172,19 @@ fn validate_document_with_capacity(
             || c.cosmetic_targets()
                 .any(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
             || (c.keywords.is_empty() && c.world_claim.is_none())
-            || c.keywords.len() > 8
-            || c.keywords.iter().collect::<BTreeSet<_>>().len() != c.keywords.len()
-            || c.keywords.iter().any(|s| {
-                s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()
+            || [&c.keywords, &c.exclude_keywords].into_iter().any(|words| {
+                words.len() > 8
+                    || words.iter().collect::<BTreeSet<_>>().len() != words.len()
+                    || words.iter().any(|s| {
+                        s.is_empty()
+                            || s.len() > 64
+                            || !s.is_ascii()
+                            || s != &s.to_ascii_lowercase()
+                    })
             })
+            || c.exclude_keywords
+                .iter()
+                .any(|word| c.keywords.contains(word))
             || c.experience
                 .is_some_and(|amount| !(1..=100_000_000).contains(&amount))
             || (c.repeatable

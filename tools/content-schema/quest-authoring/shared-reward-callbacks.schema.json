@@ -375,6 +375,9 @@
             "maxLength": 64
           }
         },
+        "exclude_keywords": {
+          "$ref": "#/$defs/callback/properties/keywords"
+        },
         "topic": {
           "type": "integer",
           "minimum": 0,
