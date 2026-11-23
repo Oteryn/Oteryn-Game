@@ -224,7 +224,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             if map
                 .facts
-                .quest_callback_reset_pending(key, self.owner_now().get())
+                .quest_callback_cooldown_pending(key, self.owner_now().get())
             {
                 return UseDisposition::NothingToUse;
             }
@@ -1576,7 +1576,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // durable success. Commit latency must not shorten its visible lifetime.
             if let Some(crate::map::facts::QuestCallbackProjection::TimedPassages {
                 due,
-                source_reset,
+                source_timer,
                 ..
             }) = &mut projection
             {
@@ -1588,7 +1588,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Exhausted;
                 };
                 *due = deadline;
-                if let Some((source_due, _)) = source_reset {
+                if let Some((source_due, _)) = source_timer {
                     let Some(delay) = callback.effects.reset_after_ms else {
                         return UseDisposition::Rejected;
                     };

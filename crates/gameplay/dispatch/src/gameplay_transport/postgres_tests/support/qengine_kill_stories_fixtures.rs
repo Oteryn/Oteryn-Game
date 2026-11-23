@@ -546,40 +546,53 @@ async fn spike(
             assert_eq!(erased.rows_affected(), 1);
         }
     }
-    // Reconstruct the persisted state of a character who bought both addons before
-    // the achievement was recorded. A repeat purchase must remain free.
-    let mut fixture = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *fixture)
-        .await?;
-    for delete in [
-        "DELETE FROM game_account_achievements WHERE achievement_key=$1",
-        "DELETE FROM game_account_achievement_grant_requests WHERE achievement_key=$1",
-        "DELETE FROM game_character_achievement_progress WHERE achievement_key=$1",
-    ] {
-        let erased = sqlx::query(delete)
-            .bind("oteryn:achievement/cave_completionist")
-            .execute(&mut *fixture)
-            .await?;
-        assert_eq!(erased.rows_affected(), 1);
-    }
-    // The only character can cancel scheduled deletion after this migration runs.
-    let pending = sqlx::query("UPDATE game_character_roots SET lifecycle=3")
-        .execute(&mut *fixture)
-        .await?;
-    assert_eq!(pending.rows_affected(), 1);
-    fixture.commit().await?;
     let migration = include_str!(
         "../../../../../../../apps/game-server/migrations/3033_cave_completionist_backfill.sql"
     );
-    for _ in 0..2 {
-        sqlx::raw_sql(migration).execute(&h.pool).await?;
+    for lifecycle in [2_i16, 3, 4] {
+        // Reconstruct a pre-achievement purchase with one retained character.
+        let mut fixture = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *fixture)
+            .await?;
+        for delete in [
+            "DELETE FROM game_account_achievements WHERE achievement_key=$1",
+            "DELETE FROM game_account_achievement_grant_requests WHERE achievement_key=$1",
+            "DELETE FROM game_character_achievement_progress WHERE achievement_key=$1",
+        ] {
+            let erased = sqlx::query(delete)
+                .bind("oteryn:achievement/cave_completionist")
+                .execute(&mut *fixture)
+                .await?;
+            assert_eq!(erased.rows_affected(), 1);
+        }
+        let retained = sqlx::query("UPDATE game_character_roots SET lifecycle=$1")
+            .bind(lifecycle)
+            .execute(&mut *fixture)
+            .await?;
+        assert_eq!(retained.rows_affected(), 1);
+        fixture.commit().await?;
+        for _ in 0..2 {
+            let mut upgrade = h.pool.begin().await?;
+            sqlx::raw_sql(migration).execute(&mut *upgrade).await?;
+            upgrade.commit().await?;
+        }
+        let (facts, progress): (i64, Option<i64>) = sqlx::query_as(
+            "SELECT count(*), max(p.progress) FROM game_account_achievements a
+             JOIN game_account_achievement_grant_requests r
+               USING (source_kind, source_event_id, achievement_key, account_id)
+             LEFT JOIN game_character_achievement_progress p USING (character_id, achievement_key)
+             WHERE a.achievement_key='oteryn:achievement/cave_completionist'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((facts, progress), (1, (lifecycle != 2).then_some(2)), "lifecycle {lifecycle}");
     }
     let mut fixture = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *fixture)
         .await?;
-    let restored = sqlx::query("UPDATE game_character_roots SET lifecycle=1 WHERE lifecycle=3")
+    let restored = sqlx::query("UPDATE game_character_roots SET lifecycle=1 WHERE lifecycle=4")
         .execute(&mut *fixture)
         .await?;
     assert_eq!(restored.rows_affected(), 1);

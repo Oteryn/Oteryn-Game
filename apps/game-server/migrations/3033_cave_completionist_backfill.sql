@@ -1,7 +1,7 @@
 -- The pre-achievement Cave Explorer purchases already recorded both account
--- appearance grants. Award their capped progress and account fact once, without
+-- appearance grants. Award the account fact and unfrozen character progress without
 -- replaying any quest transition, charging a fee, or consuming Spike fame.
--- The migration owner may also grant against a retained, deletion-pending root.
+-- The migration owner may use any retained character root of the account.
 -- Runtime grants still require an active character.
 CREATE OR REPLACE FUNCTION game_account_achievement_request_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
@@ -11,7 +11,7 @@ BEGIN
              WHERE r.character_id = NEW.character_id
                AND r.account_id = NEW.account_id
                AND (r.lifecycle = 1 OR (
-                   r.lifecycle = 3
+                   r.lifecycle IN (2, 3, 4)
                    AND NEW.source_kind = 'oteryn:cave-explorer-backfill'
                    AND NEW.source_event_id = uuid_send(NEW.account_id)
                    AND NEW.achievement_key = 'oteryn:achievement/cave_completionist'
@@ -35,6 +35,13 @@ BEGIN
                    'SET search_path = %I, pg_temp', current_schema());
 END $$;
 
+-- The account request references a retained character for provenance. This
+-- migration holds the grant-request table lock through commit while it writes
+-- historical requests against Bazaar-locked roots. Leave their Character-owned
+-- progress frozen, since the listed Character can still transfer accounts.
+ALTER TABLE game_account_achievement_grant_requests
+    DISABLE TRIGGER game_bazaar_frozen_character;
+
 WITH eligible AS (
     SELECT second.account_id, holder.character_id
     FROM game_account_appearance_unlock_receipts AS second
@@ -48,9 +55,10 @@ WITH eligible AS (
     JOIN LATERAL (
         SELECT root.character_id
         FROM game_character_roots AS root
-        WHERE root.account_id = second.account_id AND root.lifecycle IN (1, 3)
-        ORDER BY root.lifecycle, (root.character_id = second.granting_character_id) DESC, root.character_id
+        WHERE root.account_id = second.account_id AND root.lifecycle IN (1, 2, 3, 4)
+        ORDER BY (root.lifecycle = 2), root.lifecycle, (root.character_id = second.granting_character_id) DESC, root.character_id
         LIMIT 1
+        FOR SHARE
     ) AS holder ON true
     WHERE second.unlock_key = 'oteryn:outfit.cave_explorer/quest-grant/2'
       AND first.source_kind = 'quest' AND second.source_kind = 'quest'
@@ -78,7 +86,14 @@ WITH eligible AS (
     ON CONFLICT (account_id, achievement_key) DO NOTHING
 )
 INSERT INTO game_character_achievement_progress AS progress (character_id, achievement_key, progress)
-SELECT character_id, achievement_key, 2 FROM requests
+SELECT requests.character_id, requests.achievement_key, 2
+FROM requests
+JOIN game_character_roots AS root USING (character_id)
+WHERE root.lifecycle <> 2
 ON CONFLICT (character_id, achievement_key) DO UPDATE
 SET progress = EXCLUDED.progress
 WHERE progress.progress < EXCLUDED.progress;
+
+SET CONSTRAINTS game_account_achievement_request_consumed IMMEDIATE;
+ALTER TABLE game_account_achievement_grant_requests
+    ENABLE TRIGGER game_bazaar_frozen_character;
