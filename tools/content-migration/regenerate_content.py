@@ -125,6 +125,8 @@ CHECKS = (
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/native_scene_callbacks.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/qengine_access.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/qm15_nomads_cabinet.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/quest_access_bindings.py", "--check"],
     ["python3", "tools/content-migration/refresh_season_creature_inventory.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply", "--check"],
     ["python3", "tools/content-migration/refresh_equipment_profile_pin.py", "--check"],
@@ -826,6 +828,7 @@ def main() -> int:
     if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
         run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
     run(["python3", "tools/content-schema/quest-authoring/last_creep_native.py"])
+    run(["python3", "tools/content-schema/quest-authoring/qm15_nomads_cabinet.py"])
     run(["python3", "tools/content-schema/npc-authoring/convert_placements.py"])
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
     run(["python3", "tools/content-schema/imbuement-authoring/imbuement_authoring.py", "build"])
@@ -839,6 +842,7 @@ def main() -> int:
     from buddel_travel import install_buddel
     install_buddel(ROOT, WORLD)
     canonicalize_world()
+    run(["python3", "tools/content-schema/world-authoring/quest_access_bindings.py"])
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()
@@ -897,6 +901,7 @@ def main() -> int:
     run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
     refresh_world_metadata()
+    run(["python3", "tools/content-schema/world-authoring/convert_islands.py"])
     # Variant evidence pins the final Claim, Item and Achievement inventories.
     run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
     for script in (

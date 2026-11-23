@@ -9,7 +9,24 @@ fn muhad_assignment_requires_aritos_referral_and_grants_hideout_access() -> Resu
     let loaded =
         load_embedded_quest_state("nomads-assignment").map_err(|error| format!("{error:?}"))?;
     let catalogue = loaded.catalogue();
-    let callback = reward_callbacks::offered_for(catalogue)?
+    let callbacks = reward_callbacks::offered_for(catalogue)?;
+    let referral = callbacks
+        .iter()
+        .find(|row| row.key == "oteryn:quest-reward/nomads-land-arito-referral")
+        .ok_or("Arito's referral writer is missing")?;
+    assert_eq!(referral.npc, "oteryn:npc.arito");
+    let referral_transition = catalogue
+        .transition(&referral.key)
+        .ok_or("referral transition")?;
+    let mut referral_state = BTreeMap::new();
+    for write in catalogue
+        .evaluate(referral_transition, &referral_state, 0)
+        .map_err(|error| format!("{error:?}"))?
+    {
+        referral_state.insert(write.track, write.after);
+    }
+    assert_eq!(referral_state.get(TASK), Some(&1));
+    let callback = callbacks
         .into_iter()
         .find(|row| row.key == "oteryn:quest-reward/nomads-land-assignment")
         .ok_or("Muhad assignment is missing")?;
@@ -24,9 +41,8 @@ fn muhad_assignment_requires_aritos_referral_and_grants_hideout_access() -> Resu
         let tracks = BTreeMap::from([(TASK.to_owned(), task), (DOOR.to_owned(), 0)]);
         assert!(catalogue.evaluate(transition, &tracks, 0).is_err());
     }
-    let tracks = BTreeMap::from([(TASK.to_owned(), 1), (DOOR.to_owned(), 0)]);
     let writes = catalogue
-        .evaluate(transition, &tracks, 0)
+        .evaluate(transition, &referral_state, 0)
         .map_err(|error| format!("{error:?}"))?;
     assert_eq!(
         writes

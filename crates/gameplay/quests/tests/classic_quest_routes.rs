@@ -262,3 +262,33 @@ fn classic_quest_routes_keep_exact_base_save_predecessors() -> Result<(), String
     }
     Ok(())
 }
+
+#[test]
+fn outfit_hand_ins_load_source_premium_and_addon_only_policies() -> Result<(), String> {
+    let loaded =
+        load_embedded_quest_state("outfit-hand-ins").map_err(|error| format!("{error:?}"))?;
+    let mut seen = 0;
+    let mut mismatches = Vec::new();
+    for callback in reward_callbacks::offered_for(loaded.catalogue())? {
+        let wayfarer = callback.key.starts_with("oteryn:quest-reward/l1-wayfarer-");
+        let warmaster = callback
+            .key
+            .starts_with("oteryn:quest-reward/l1-warmaster-");
+        let elane = callback.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves";
+        if !(wayfarer || warmaster || elane) {
+            continue;
+        }
+        seen += 1;
+        let policy = serde_json::to_value(&callback).map_err(|error| error.to_string())?;
+        if ((wayfarer || elane) && !callback.requires_premium) || policy["addon_only"] != true {
+            mismatches.push((
+                callback.key,
+                callback.requires_premium,
+                policy["addon_only"].clone(),
+            ));
+        }
+    }
+    assert_eq!(seen, 9);
+    assert!(mismatches.is_empty(), "{mismatches:?}");
+    Ok(())
+}

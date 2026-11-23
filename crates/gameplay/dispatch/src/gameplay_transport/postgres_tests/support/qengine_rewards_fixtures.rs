@@ -1214,7 +1214,9 @@ pub(super) async fn exercise(
         "qengine-rewards-l1-yalaharian-base-yalahari" => "l1-yalaharian-base-yalahari",
         "qengine-rewards-l1-yalaharian-villain" => "l1-yalaharian-villain",
         "qengine-rewards-l1-warmaster" => "l1-warmaster-crest",
-        "qengine-rewards-l1-wayfarer" => "l1-wayfarer-cape",
+        "qengine-rewards-l1-wayfarer"
+        | "qengine-rewards-l1-wayfarer-free"
+        | "qengine-rewards-l1-wayfarer-addon-only" => "l1-wayfarer-cape",
         "qengine-rewards-l1-yalaharian" => "l1-yalaharian-sage",
         "qengine-rewards-pirate" => "pirate-sabre",
         "qengine-rewards-knight" => "knight-sword",
@@ -1306,6 +1308,33 @@ pub(super) async fn exercise(
     assert!(admitted.continuity.selected_capabilities.contains(3));
     assert!(admitted.continuity.selected_capabilities.contains(6));
     assert!(admitted.continuity.selected_capabilities.contains(25));
+    let only = name.ends_with("-addon-only");
+    let free = name.ends_with("-free");
+    if (key.starts_with("l1-warmaster-") || key.starts_with("l1-wayfarer-"))
+        && !only && !free
+    {
+        let base = callback.outfit.as_ref().ok_or("outfit")?.grant_key(0);
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        let character = fence.character_id.as_bytes().as_slice();
+        let receipt = &[0x85_u8; 16];
+        sqlx::query("INSERT INTO game_account_appearance_unlock_receipts(grant_occurrence_id,account_id,unlock_key,content_revision,granting_character_id,source_kind,source_event_id)
+                     SELECT encode($1,'hex')::uuid,account_id,$2,$3,character_id,'quest',$4
+                     FROM game_character_roots WHERE character_id=encode($5,'hex')::uuid")
+            .bind(receipt.as_slice())
+            .bind(&base)
+            .bind(oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE)
+            .bind(b"qengine-l1-owned-base".as_slice())
+            .bind(character)
+            .execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id)
+                     SELECT account_id,unlock_key,grant_occurrence_id FROM game_account_appearance_unlock_receipts
+                     WHERE grant_occurrence_id=encode($1,'hex')::uuid")
+            .bind(receipt.as_slice()).execute(&h.pool).await?;
+    }
     let first = admitted.continuity.next_command_id;
     assert_eq!(
         talk(owner, admitted, npc, first, "hi").await?,
@@ -1449,9 +1478,25 @@ pub(super) async fn exercise(
     }
     let original = counts(h).await?;
     let (disposition, catalogues, committed_command) =
-        wire_grant(owner, admitted, npc, &callback).await?;
+        wire_reward(owner, admitted, npc, &callback, !free && !only).await?;
     command = committed_command;
+    if free {
+        assert_eq!(disposition, NpcIntentDisposition::Rejected);
+        assert_eq!(counts(h).await?, original);
+        return Ok(());
+    }
     assert_eq!(disposition, NpcIntentDisposition::Ok);
+    if only {
+        let outfit = callback.outfit.as_ref().ok_or("outfit")?;
+        let unlocks: Vec<String> = sqlx::query_scalar(
+            "SELECT unlock_key FROM game_account_appearance_unlocks WHERE unlock_key = ANY($1)",
+        )
+        .bind([outfit.grant_key(0), outfit.grant_key(outfit.addons)].as_slice())
+        .fetch_all(&h.pool).await?;
+        assert_eq!(unlocks, vec![outfit.grant_key(outfit.addons)]);
+        assert_eq!(counts(h).await?.3, original.3 + 1);
+        return Ok(());
+    }
     if let Some(outfit) = &callback.outfit {
         assert!(
             catalogues.iter().any(|catalogue| catalogue

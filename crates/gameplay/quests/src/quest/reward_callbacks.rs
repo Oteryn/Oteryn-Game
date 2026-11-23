@@ -107,7 +107,7 @@ mod reward_contents_text_tests;
 #[serde(deny_unknown_fields)]
 pub struct OutfitReward {
     pub outfit: String,
-    /// Base entitlement is always included. Bits 1 and 2 earn the respective addons.
+    /// Bits 1 and 2 earn the respective addons.
     pub addons: u8,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sex: Option<CreationSex>,
@@ -311,6 +311,9 @@ pub struct RewardCallback {
     pub creation_sex: Option<CreationSex>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub requires_premium: bool,
+    /// This hand-in earns only the listed addon bits.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub addon_only: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -1134,6 +1137,9 @@ fn validate_document_with_capacity(
                 .is_some_and(|reward| !valid_item_reward(reward))
             || (!c.outfits.is_empty() && c.outfit.is_some())
             || c.outfits.len() > 4
+            || (c.addon_only
+                && (c.cosmetic_targets().next().is_none()
+                    || c.cosmetic_targets().any(|reward| reward.addons == 0)))
             || c.cosmetic_targets()
                 .map(|r| (&r.outfit, r.addons, r.sex))
                 .collect::<BTreeSet<_>>()
@@ -1316,6 +1322,12 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
             &callback.weighted_rewards,
         ))
         .map_err(|error| error.to_string())?
+    };
+    let current = if callback.addon_only {
+        serde_json::to_vec(&("oteryn:quest-reward-addon-only-v1", current))
+            .map_err(|error| error.to_string())?
+    } else {
+        current
     };
     if callback.per_occurrence_mint {
         serde_json::to_vec(&("oteryn:quest-reward-occurrence-mint-v1", current))

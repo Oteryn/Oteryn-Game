@@ -460,6 +460,10 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
       ],
+      "addon_only": true,
+      "requires_outfits": [
+        "oteryn:outfit.warmaster"
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_2",
@@ -510,6 +514,10 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
         "https://tibia.fandom.com/index.php?curid=42269&oldid=795619"
+      ],
+      "addon_only": true,
+      "requires_outfits": [
+        "oteryn:outfit.warmaster"
       ],
       "requires": [
         {
@@ -567,6 +575,10 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
       ],
+      "addon_only": true,
+      "requires_outfits": [
+        "oteryn:outfit.warmaster"
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
@@ -618,6 +630,10 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
         "https://tibia.fandom.com/index.php?curid=42269&oldid=795619"
       ],
+      "addon_only": true,
+      "requires_outfits": [
+        "oteryn:outfit.warmaster"
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
@@ -667,6 +683,8 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f"
       ],
+      "addon_only": true,
+      "requires_premium": true,
       "requires_completed_quests": [
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],
@@ -714,6 +732,8 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
         "https://tibia.fandom.com/index.php?curid=46398&oldid=844411"
       ],
+      "addon_only": true,
+      "requires_premium": true,
       "requires_completed_quests": [
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],
@@ -766,6 +786,8 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f"
       ],
+      "addon_only": true,
+      "requires_premium": true,
       "requires_completed_quests": [
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],
@@ -813,6 +835,8 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cranky_lizard_crone.lua:sha256:8ac41cc1e41785f8b3bf0d2d4b965673e73428511b5290fc327a2b2ea1ddaa3f",
         "https://tibia.fandom.com/index.php?curid=46398&oldid=844411"
       ],
+      "addon_only": true,
+      "requires_premium": true,
       "requires_completed_quests": [
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],

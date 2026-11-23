@@ -2,6 +2,27 @@
   "schema": 1,
   "offers": [
     {
+      "npc": "oteryn:npc.arito",
+      "keywords": [
+        "nomads"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "What?? My name on a deathlist which you retrieved from a nomad?? Show me!! ...",
+        "Oh my god! They found me! You must help me! Please !!!! Are you willing to do that?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.muhad",
       "keywords": [
         "arito"

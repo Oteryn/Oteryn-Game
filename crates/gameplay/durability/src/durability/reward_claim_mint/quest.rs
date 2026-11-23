@@ -229,7 +229,11 @@ pub(crate) async fn apply(
     }
     if callback
         .cosmetic_targets()
-        .any(|reward| !outfit_compatible(admission.native, reward))
+        .any(|reward| {
+            !super::super::character_appearance::quest_grants::outfit_targets_compatible(
+                admission.native, reward, !callback.addon_only,
+            )
+        })
     {
         return Ok(false);
     }
@@ -454,12 +458,13 @@ pub(crate) async fn apply(
         ))
         .map_err(|_| DurabilityError::InvalidStoredState)?;
         grant_keys.extend(
-            super::super::character_appearance::grant_content_outfit(
+            super::super::character_appearance::quest_grants::grant_content_outfit_targets(
                 tx,
                 fence.character_id,
                 &occurrence,
                 reward,
                 admission.native,
+                !callback.addon_only,
             )
             .await?,
         );

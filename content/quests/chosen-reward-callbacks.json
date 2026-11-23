@@ -1568,6 +1568,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elane.lua:197-208"
       ],
       "requires_premium": true,
+      "addon_only": true,
       "outfits": [
         {
           "outfit": "oteryn:outfit.hunter",

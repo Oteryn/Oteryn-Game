@@ -1637,6 +1637,8 @@ fn scenario_case(
                 name,
                 "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
             )
+            || (name.starts_with("qengine-rewards-l1-wayfarer")
+                && !name.ends_with("-free"))
             || name.contains("l6-beggar-")
             || name == "npcfix-m38-mistrock"
             || name == "qengine-rewards-m01a-sven"

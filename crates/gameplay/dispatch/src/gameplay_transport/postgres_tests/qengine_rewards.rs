@@ -39,6 +39,8 @@ fn qengine_l1_warmaster_crest() -> TestResult {
 }
 #[test]
 fn qengine_l1_wayfarer_cape() -> TestResult {
+    scenario("qengine-rewards-l1-wayfarer-free")?;
+    scenario("qengine-rewards-l1-wayfarer-addon-only")?;
     scenario("qengine-rewards-l1-wayfarer")
 }
 #[test]

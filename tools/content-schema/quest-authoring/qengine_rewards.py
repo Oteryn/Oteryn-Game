@@ -399,6 +399,7 @@ def build():
             [storage(frontier+'questline',27,27,preserve=True),
              storage(frontier+'warmaster_addon_'+str(bit),-1,1,0)],
             take=[(item,1)],outfit=('warmaster',bit),topic=60+bit-1)
+        callbacks[-1].update(addon_only=True, requires_outfits=['oteryn:outfit.warmaster'])
         offers.append({'npc':'oteryn:npc.cael','keywords':[word], 'topic':0,
             'next_topic':60+bit-1,'storage':callbacks[-1]['storage'],
             'reply':['Can I have that '+('serpent' if bit==1 else 'tribal')+' crest?']})
@@ -408,7 +409,10 @@ def build():
         track='oteryn:quest-progress/wayfarer_outfit'+('' if bit==1 else '_1')
         add('l1-wayfarer-'+name,'wayfarer_outfits_quest','cranky_lizard_crone',['yes'],
             [storage(track,-1,1,0)],take=[(item,1)],outfit=('wayfarer',bit),topic=bit)
-        callbacks[-1]['requires_completed_quests'] = ['oteryn:quest.the_spirit_will_get_you_quest']
+        callbacks[-1].update(
+            addon_only=True, requires_premium=True,
+            requires_completed_quests=['oteryn:quest.the_spirit_will_get_you_quest'],
+        )
         offers.append({'npc':'oteryn:npc.cranky_lizard_crone','keywords':words,
             'topic':0,'next_topic':bit,'storage':callbacks[-1]['storage'],
             'requires':[{'track':'oteryn:quest-progress/l6/spirit/stage','minimum':2,'maximum':2}],
