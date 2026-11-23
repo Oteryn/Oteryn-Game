@@ -240,10 +240,53 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
         });
         transitions.push(objective.transition());
     }
+    // Compute the deployed definition before adding the source questline effect.
+    // Existing saves retain their pin and all of their original track defaults.
+    let quest = "oteryn:quest.grave_danger_quest";
+    let previous = QuestStateCatalogue::new(
+        &catalogue.content_revision,
+        tracks
+            .iter()
+            .filter(|track| track.quest == quest)
+            .cloned()
+            .collect(),
+        transitions
+            .iter()
+            .filter(|transition| transition.quest == quest)
+            .cloned()
+            .collect(),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let hash = previous
+        .definition_hash(quest)
+        .ok_or("Grave Danger predecessor")?;
+    let zelos = transitions
+        .iter_mut()
+        .find(|transition| transition.key == super::grave_danger::ZELOS_DEATH)
+        .ok_or("King Zelos objective")?;
+    // Crystal 201189f grave_danger_access.lua: the completed knights and Zelos
+    // advance the questline to 4. The existing passages guard proves the knights.
+    zelos.effects.push(QuestEffect {
+        track: super::grave_danger::QUESTLINE.into(),
+        from: QuestComparison::Any,
+        effect: QuestEffectKind::RaiseTo(4),
+    });
+
     let mut extended = QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))?;
     extended.npc_legacy = catalogue.npc_legacy;
     extended.predecessors = catalogue.predecessors;
+    extended
+        .predecessors
+        .entry(quest.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: previous
+                .declared_tracks()
+                .map(|track| (track.key.clone(), track.initial))
+                .collect(),
+        });
     extended.authored_bindings = catalogue.authored_bindings;
     extended.native_recipe_evidence = catalogue.native_recipe_evidence;
     Ok(extended)
