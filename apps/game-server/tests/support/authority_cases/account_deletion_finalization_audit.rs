@@ -8,6 +8,15 @@ const SOURCE: &str = "oteryn:character-authority:primary";
 
 #[test]
 fn account_deletion_finalizes_character_without_physical_erasure_policy() -> TestResult {
+    postgres_case(false)
+}
+
+#[test]
+fn restored_closure_replays_receipt_snapshot_and_watermark() -> TestResult {
+    postgres_case(true)
+}
+
+fn postgres_case(restore: bool) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -20,7 +29,7 @@ fn account_deletion_finalizes_character_without_physical_erasure_policy() -> Tes
                 .map_err(|e| e.to_string())?
                 .block_on(async move {
                     let db = Database::create(admin, "closure_retirement_audit").await?;
-                    let result = exercise(&db).await;
+                    let result = exercise(&db, restore).await;
                     db.cleanup().await?;
                     result
                 })
@@ -31,7 +40,7 @@ fn account_deletion_finalizes_character_without_physical_erasure_policy() -> Tes
         .map_err(Into::into)
 }
 
-async fn exercise(db: &Database) -> TestResult {
+async fn exercise(db: &Database, restore: bool) -> TestResult {
     let root = DurabilityRoot::connect_test_runtime(&db.url)?;
     assert!(root.maintain_ready_once().await?);
     let pool = sqlx::PgPool::connect(&db.url).await?;
@@ -174,5 +183,51 @@ async fn exercise(db: &Database) -> TestResult {
         count(&pool, "SELECT count(*) FROM game_character_roots").await?,
         1
     );
+    if restore {
+        use native_admission_source::descriptor::Operation;
+        use native_admission_source::account_characters::EpochFenceFile;
+        let original: (Vec<u8>, Vec<u8>) = sqlx::query_as(
+            "SELECT p.body,j.receipt FROM game_account_closure_publications p JOIN game_account_closure_jobs j ON j.operation_id=p.receipt_operation_id",
+        )
+        .fetch_one(&pool)
+        .await?;
+        sqlx::query("UPDATE game_account_closure_jobs SET receipt_acknowledged=true WHERE receipt IS NOT NULL")
+            .execute(&pool).await?;
+        sqlx::query("UPDATE game_account_closure_publications SET acknowledged=true")
+            .execute(&pool).await?;
+        drop(authority);
+        drop(seal);
+        let transition = recovery.begin_recovery(1, id(12), 200).map_err(|e| format!("{e:?}"))?;
+        root.reconcile_character_recovery(&transition).await.map_err(|e| format!("{e:?}"))?;
+        drop(transition);
+        let seal = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+        let authority = root.open_character_authority(&seal).await.map_err(|e| format!("{e:?}"))?;
+        let epoch_path = retained.join("closure-epoch");
+        std::fs::write(&epoch_path, b"1\n")?;
+        let mut epoch = EpochFenceFile::new(epoch_path);
+        let mut next = async || production_server::node::serve::next_closure_publication_for_node(
+            &root, &authority, &node, SOURCE, &mut epoch,
+        ).await;
+        assert!(next().await.is_none(), "operator must qualify the new generation");
+        sqlx::query("SELECT game_account_closure_resync(2)").execute(&pool).await?;
+        assert!(next().await.is_none(), "resync must requeue a page before delivery");
+        let receipt = next().await.ok_or("restored receipt missing")?;
+        assert_eq!(receipt.operation, Operation::PublishAccountClosureCommandReceiptV2);
+        assert_eq!(receipt.body.as_bytes(), original.1);
+        root.acknowledge_account_closure(&authority, &node, None, Some(&receipt)).await?;
+        let snapshot = next().await.ok_or("restored snapshot missing")?;
+        assert_eq!(snapshot.operation, Operation::PublishAccountClosureV1);
+        let mut expected: serde_json::Value = serde_json::from_slice(&original.0)?;
+        expected["projection_epoch"] = "2".into();
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&snapshot.body)?, expected);
+        root.acknowledge_account_closure(&authority, &node, None, Some(&snapshot)).await?;
+        // Simulate the independent projection publishers draining their queues.
+        sqlx::raw_sql("DELETE FROM game_character_account_projection_outbox;
+            DELETE FROM game_public_character_profile_outbox;
+            DELETE FROM game_public_highscore_outbox;").execute(&pool).await?;
+        let watermark = next().await.ok_or("restored watermark blocked")?;
+        assert_eq!(watermark.operation, Operation::PublishAccountClosureWatermarkV1);
+        eprintln!("PLATFORM_PG_EXECUTED: restored closure receipt, snapshot and watermark");
+    }
     Ok(())
 }

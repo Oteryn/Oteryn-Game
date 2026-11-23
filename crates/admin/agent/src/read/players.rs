@@ -258,10 +258,13 @@ pub(super) async fn check_sanction_visibility(
     conn: &mut PgConnection,
     worlds: &[Uuid],
     sanctions: &[Sanction],
+    target: &Target,
 ) -> Result<(), E> {
+    // A retained account-wide row omits the Character from the signed selector.
+    let selected = target.character_id.as_deref();
     let characters = sanctions
         .iter()
-        .map(|row| optional_uuid(row.character_id.as_deref()))
+        .map(|row| optional_uuid(row.character_id.as_deref().or(selected)))
         .collect::<Result<Vec<_>, _>>()?;
     let accounts = sanctions
         .iter()

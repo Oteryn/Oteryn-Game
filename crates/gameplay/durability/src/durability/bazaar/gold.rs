@@ -212,15 +212,41 @@ async fn release(tx: &mut Tx<'_>, r: &Request, v: &Value) -> Result<Effect, Dura
         // Only a committed Character bind persists DISPOSITION_PENDING across
         // transactions. Item delivery either commits AWAITING_PAYOUT together
         // with its receipt, or rolls its temporary fence back with the effect.
-        let proofs=sqlx::query("SELECT result_code,recovery_generation::text,intent FROM game_bazaar_decisions WHERE operation_id=$1::uuid AND issuer='OTERYN_PLATFORM_CHARACTER_AUTHORITY' AND command='TransferCharacterOwnership' LIMIT 1").bind(operation).fetch_all(&mut **tx).await?;
-        if proofs.len() != 1 {
+        // A terminal decision permanently consumes the bound transfer
+        // operation. Re-prove the live listing's exact funding binding before
+        // accepting that decision across recovery.
+        let proof: Option<String> = sqlx::query_scalar(
+            "SELECT d.result_code FROM game_bazaar_decisions d
+             WHERE d.issuer=$1 AND d.operation_id=$2::uuid AND d.command='TransferCharacterOwnership'
+               AND (d.recovery_generation=$3::numeric OR (
+                 d.recovery_generation<$3::numeric AND EXISTS (
+                   SELECT 1 FROM game_bazaar_gold_holds h
+                   JOIN game_bazaar_locks l ON l.listing_id=h.listing_id
+                   JOIN game_bazaar_decisions b ON b.issuer=$4 AND b.operation_id=l.last_operation_id
+                   WHERE h.hold_id=$5::uuid
+                     AND l.seller_account_id=h.seller_account_id AND l.world_id=h.world_id
+                     AND l.transfer_sale_id=h.sale_id AND l.transfer_buyer=h.buyer_account_id
+                     AND l.transfer_operation_id=d.operation_id AND l.transfer_purpose='BAZAAR_SETTLEMENT'
+                     AND convert_from(l.transfer_funding,'UTF8')::jsonb @> jsonb_build_object(
+                         'currency','GOLD','reservation_id',h.hold_id::text,
+                         'hold_revision',h.revision::text,'gross_amount',h.gross_amount::text)
+                     AND b.command='BindBazaarCharacterTransfer' AND b.result_code='CHAR_CMD_OK'
+                     AND d.recovery_generation>=b.recovery_generation
+                   FOR SHARE OF l
+                 )
+               ))",
+        )
+        .bind(CHARACTER_ISSUER)
+        .bind(operation)
+        .bind(r.generation.to_string())
+        .bind(wire::ISSUER)
+        .bind(s(v, "hold_id")?)
+        .fetch_optional(&mut **tx)
+        .await?;
+        let Some(result_code) = proof else {
             return Ok(Effect::Pending);
-        }
-        let proof = &proofs[0];
-        if proof.try_get::<String, _>("recovery_generation")? != r.generation.to_string() {
-            return Ok(Effect::Pending);
-        }
-        if proof.try_get::<String, _>("result_code")? == OK {
+        };
+        if result_code == OK {
             return Ok(Effect::Rejected(CONFLICT));
         }
     }
@@ -402,16 +428,27 @@ async fn payout(tx: &mut Tx<'_>, r: &Request, v: &Value) -> Result<Effect, Durab
     {
         return Ok(Effect::Rejected(CONFLICT));
     }
-    let proofs=sqlx::query("SELECT issuer,command,intent,receipt,receipt_digest,recovery_generation::text,result_code FROM game_bazaar_decisions WHERE operation_id=$1::uuid AND receipt_digest=decode($2,'hex') AND result_code='CHAR_CMD_OK' AND command IN('DeliverBazaarItem','TransferCharacterOwnership') LIMIT 2").bind(s(v,"delivery_operation_id")?).bind(s(v,"delivery_receipt_digest")?).fetch_all(&mut **tx).await?;
-    if proofs.len() != 1 {
+    // The locked hold binds the digest to a single funded delivery. The
+    // domain custody below must still corroborate it in the recovered store.
+    let proofs = sqlx::query(
+        "SELECT command,intent,receipt FROM game_bazaar_decisions
+         WHERE operation_id=$1::uuid AND receipt_digest=decode($2,'hex')
+           AND result_code='CHAR_CMD_OK' AND world_id=$3::uuid AND recovery_generation<=$4::numeric
+           AND ((issuer=$5 AND command='DeliverBazaarItem')
+             OR (issuer=$6 AND command='TransferCharacterOwnership'))
+         LIMIT 2",
+    )
+    .bind(s(v, "delivery_operation_id")?)
+    .bind(s(v, "delivery_receipt_digest")?)
+    .bind(world)
+    .bind(r.generation.to_string())
+    .bind(wire::ISSUER)
+    .bind(CHARACTER_ISSUER)
+    .fetch_all(&mut **tx)
+    .await?;
+    let [proof] = proofs.as_slice() else {
         return Ok(Effect::Pending);
-    }
-    let proof = &proofs[0];
-    if proof.try_get::<String, _>("recovery_generation")? != r.generation.to_string()
-        || hex(&proof.try_get::<Vec<u8>, _>("receipt_digest")?) != s(v, "delivery_receipt_digest")?
-    {
-        return Ok(Effect::Pending);
-    }
+    };
     let delivered: Value = serde_json::from_slice(&proof.try_get::<Vec<u8>, _>("intent")?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let receipt: Value = serde_json::from_slice(&proof.try_get::<Vec<u8>, _>("receipt")?)
@@ -430,11 +467,35 @@ async fn payout(tx: &mut Tx<'_>, r: &Request, v: &Value) -> Result<Effect, Durab
         {
             return Ok(Effect::Rejected(PAYOUT));
         }
-        let seller_character:String=sqlx::query_scalar("SELECT seller_character_id::text FROM game_bazaar_escrows WHERE escrow_id=$1::uuid AND listing_id=$2::uuid AND seller_account_id=$3::uuid AND world_id=$4::uuid AND state='DELIVERED'").bind(s(&delivered,"escrow_id")?).bind(s(v,"listing_id")?).bind(seller).bind(world).fetch_one(&mut **tx).await?;
-        (
-            s(&delivered, "buyer_character_id")?.to_owned(),
-            seller_character,
+        let buyer_character = s(&delivered, "buyer_character_id")?;
+        let seller_character: Option<String> = sqlx::query_scalar(
+            "SELECT e.seller_character_id::text FROM game_bazaar_escrows e
+             JOIN game_bazaar_item_transitions t ON t.escrow_id=e.escrow_id
+              AND t.item_instance_id=e.item_instance_id AND t.operation_id=e.last_operation_id
+              AND t.source_character_id=e.seller_character_id
+              AND t.destination_character_id=e.destination_character_id
+             WHERE e.escrow_id=$1::uuid AND e.listing_id=$2::uuid
+               AND e.seller_account_id=$3::uuid AND e.world_id=$4::uuid AND e.state='DELIVERED'
+               AND e.sale_id=$5::uuid AND e.destination_account_id=$6::uuid
+               AND e.destination_character_id=$7::uuid AND e.last_operation_id=$8::uuid
+               AND t.issuer=$9 AND t.kind='DELIVER'
+             FOR SHARE OF e",
         )
+        .bind(s(&delivered, "escrow_id")?)
+        .bind(s(v, "listing_id")?)
+        .bind(seller)
+        .bind(world)
+        .bind(s(v, "sale_id")?)
+        .bind(buyer)
+        .bind(buyer_character)
+        .bind(s(v, "delivery_operation_id")?)
+        .bind(wire::ISSUER)
+        .fetch_optional(&mut **tx)
+        .await?;
+        let Some(seller_character) = seller_character else {
+            return Ok(Effect::Pending);
+        };
+        (buyer_character.to_owned(), seller_character)
     } else if command == "TransferCharacterOwnership" && delivered["purpose"] == "BAZAAR_SETTLEMENT"
     {
         if s(&receipt, "to_account_id")? != buyer

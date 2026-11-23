@@ -568,6 +568,21 @@ enum Check {
     Accepted([String; 4]),
 }
 
+/// The caller must hold the account's Character portfolio lock.
+pub(super) async fn account_portfolio_at_capacity(
+    tx: &mut Tx<'_>,
+    account: &[u8; 16],
+) -> Result<bool, DurabilityError> {
+    Ok(sqlx::query(
+        "SELECT 1 FROM game_character_roots WHERE account_id=encode($1,'hex')::uuid AND lifecycle<>4 OFFSET $2 LIMIT 1",
+    )
+    .bind(account.as_slice())
+    .bind(MAX_ACCOUNT_CHARACTERS - 1)
+    .fetch_optional(&mut **tx)
+    .await?
+    .is_some())
+}
+
 /// The §5.3 and §6 checks of a decoded create, in order, holding the portfolio lock.
 async fn check_create(
     tx: &mut Tx<'_>,
@@ -613,13 +628,7 @@ async fn check_create(
             .bind(intent.target_world_id.as_slice()).fetch_optional(&mut **tx).await?.is_some();
         return Ok(if known { Check::Transient } else { Check::Rejected(WORLD_NOT_ACCEPTED) });
     }
-    let listed: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_character_roots WHERE account_id = encode($1, 'hex')::uuid AND lifecycle<>4",
-    )
-    .bind(intent.account_id.as_slice())
-    .fetch_one(&mut **tx)
-    .await?;
-    if listed >= MAX_ACCOUNT_CHARACTERS {
+    if account_portfolio_at_capacity(tx, &intent.account_id).await? {
         return Ok(Check::Rejected(ACCOUNT_CHARACTER_LIMIT));
     }
     let name_key = name.comparison_key();

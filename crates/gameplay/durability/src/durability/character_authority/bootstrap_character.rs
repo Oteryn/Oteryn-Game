@@ -104,6 +104,9 @@ impl DurabilityRoot {
             if !current_account_security_allows(&mut tx, &account, now).await? {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
+            if super::super::character_command::account_portfolio_at_capacity(&mut tx, &account).await? {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            }
             // Global name namespace: serialize on the comparison key, then a
             // concurrent same-name bootstrap sees the committed reservation.
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-name:' || $1, 0))")

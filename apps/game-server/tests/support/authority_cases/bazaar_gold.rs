@@ -14,6 +14,32 @@ const SOURCE: &str = "oteryn:character-authority:primary";
 
 #[test]
 fn bazaar_gold_postgres_native_funds_absolute_holds_replay_release_and_bank_fence() -> TestResult {
+    postgres_case(None)
+}
+
+#[test]
+fn bazaar_gold_postgres_settles_restored_item_delivery() -> TestResult {
+    postgres_case(Some(RecoveryPoint::ItemDelivery))
+}
+
+#[test]
+fn bazaar_gold_postgres_releases_restored_terminal_refusal() -> TestResult {
+    postgres_case(Some(RecoveryPoint::CharacterRefusal))
+}
+
+#[test]
+fn bazaar_gold_postgres_settles_restored_character_delivery() -> TestResult {
+    postgres_case(Some(RecoveryPoint::CharacterDelivery))
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum RecoveryPoint {
+    ItemDelivery,
+    CharacterRefusal,
+    CharacterDelivery,
+}
+
+fn postgres_case(restore: Option<RecoveryPoint>) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -26,8 +52,14 @@ fn bazaar_gold_postgres_native_funds_absolute_holds_replay_release_and_bank_fenc
                     .build()?
                     .block_on(async move {
                         let started = std::time::Instant::now();
-                        let harness = native::Harness::create(admin, "bazaar_gold_native").await?;
-                        let result = run_gold(&harness).await;
+                        let name = match restore {
+                            None => "bazaar_gold_native",
+                            Some(RecoveryPoint::ItemDelivery) => "bazaar_gold_item_restore",
+                            Some(RecoveryPoint::CharacterRefusal) => "bazaar_gold_refusal_restore",
+                            Some(RecoveryPoint::CharacterDelivery) => "bazaar_gold_char_restore",
+                        };
+                        let harness = native::Harness::create(admin, name).await?;
+                        let result = run_gold(&harness, restore).await;
                         harness.cleanup().await?;
                         eprintln!(
                             "GPROD_BAZAAR_PG_EXECUTED native_gold_hold_release elapsed_ms={}",
@@ -116,7 +148,7 @@ fn receipt(decision: &Decision, code: &str) -> TestResult<serde_json::Value> {
     Ok(serde_json::from_slice(receipt)?)
 }
 
-async fn run_gold(h: &native::Harness) -> TestResult {
+async fn run_gold(h: &native::Harness, restore: Option<RecoveryPoint>) -> TestResult {
     let sealed = h.recovery.seal_current().map_err(native::debug)?;
     let authority = h
         .root
@@ -328,16 +360,14 @@ async fn run_gold(h: &native::Harness) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(decisions, 6);
-    gold_delivery_sale(h, &authority, &sealed).await?;
     drop(authority);
     drop(sealed);
-    Ok(())
+    gold_delivery_sale(h, restore).await
 }
 
 async fn gold_delivery_sale(
     h: &native::Harness,
-    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
-    sealed: &character_recovery_fence::SealedCharacterRecoveryFence<'_>,
+    restore: Option<RecoveryPoint>,
 ) -> TestResult {
     use durability::bank::BankTransferRequest;
     use durability::item_transfer::{ItemDefinitionFacts, ItemTransferOutcome};
@@ -356,6 +386,8 @@ async fn gold_delivery_sale(
     ));
     std::fs::write(&artifact_path, &bytes)?;
     let result=async {
+        let sealed = h.recovery.seal_current().map_err(native::debug)?;
+        let authority = &h.root.open_character_authority(&sealed).await.map_err(native::debug)?;
         committed_bank(h.root.bank_deposit(authority,&h.node,native::fence()?,BankDepositRequest{identity:identity(170)?,amount:1_000_000,coins:coins(),change_item_instance_ids:[native::id(173),native::id(174)]}).await.map_err(native::debug)?)?;
         allow(&h.root,&h.node,60).await?;
         let now=now_secs()?;
@@ -409,7 +441,7 @@ async fn gold_delivery_sale(
         receipt(&delivered,"CHAR_CMD_OK")?;
         let Decision::Publish{receipt:delivery_receipt,..}=&delivered else{return Err("gold delivery receipt".into());};
         let delivery_hash=hash(delivery_receipt);
-        reject_funding_restore(h,sealed,hold_id,"ITEM").await?;
+        reject_funding_restore(h,&sealed,hold_id,"ITEM").await?;
         let denied=decide("ReleaseBazaarGold",206,&sale_wire("ReleaseBazaarGold",206,&format!(r#""buyer_account_id":"{}","hold_id":"{hold_id}","expected_hold_revision":"1","release_reason":"CANCELLED","amount":"20000""#,u(60)))).await;
         receipt(&denied,"CHAR_CMD_BAZAAR_HOLD_CONFLICT")?;
         let payout_raw=sale_wire("PayoutBazaarGold",211,&format!(r#""buyer_account_id":"{}","hold_id":"{hold_id}","expected_hold_revision":"1","sale_id":"{}","gross_amount":"10000","fee_bps":250,"fee_amount":"250","seller_amount":"9750","delivery_operation_id":"{}","delivery_receipt_digest":"{delivery_hash}""#,u(60),u(205),u(204)));
@@ -419,6 +451,16 @@ async fn gold_delivery_sale(
         receipt(&decide("PayoutBazaarGold",210,&wrong_digest).await,"CHAR_CMD_BAZAAR_HOLD_CONFLICT")?;
         let held_after_refusal:(i64,String,String)=sqlx::query_as("SELECT amount,revision::text,state FROM game_bazaar_gold_holds WHERE hold_id=$1::uuid").bind(hold_id).fetch_one(&h.pool).await?;
         assert_eq!(held_after_refusal,(20000,"1".into(),"AWAITING_PAYOUT".into()));
+        let item_restore = restore == Some(RecoveryPoint::ItemDelivery);
+        drop(sealed);
+        if item_restore {
+            advance_recovery(h, 1).await?;
+        }
+        let sealed = h.recovery.seal_current().map_err(native::debug)?;
+        let authority = &h.root.open_character_authority(&sealed).await.map_err(native::debug)?;
+        let decide=async|command:&str,operation:u8,raw:&str| {
+            node_decide(h, authority, command, operation, raw).await
+        };
         let paid=decide("PayoutBazaarGold",211,&payout_raw).await;
         assert_eq!(receipt(&paid,"CHAR_CMD_OK")?["result_data"]["remaining_held"],"10000");
         assert_eq!(decide("PayoutBazaarGold",211,&payout_raw).await,paid);
@@ -432,7 +474,7 @@ async fn gold_delivery_sale(
         assert_eq!(partial_facts["result_data"]["remaining_held"],"6000");
         let retained_paid:(String,i64,String)=sqlx::query_as("SELECT state,amount,revision::text FROM game_bazaar_gold_holds WHERE hold_id=$1::uuid").bind(hold_id).fetch_one(&h.pool).await?;
         assert_eq!(retained_paid,("PAID".into(),6000,"3".into()));
-        assert!(h.root.open_character_authority(sealed).await.is_ok());
+        assert!(h.root.open_character_authority(&sealed).await.is_ok());
         let excess=decide("ReleaseBazaarGold",213,&sale_wire("ReleaseBazaarGold",213,&format!(r#""buyer_account_id":"{}","hold_id":"{hold_id}","expected_hold_revision":"3","release_reason":"EXCESS","amount":"6000""#,u(60)))).await;
         assert_eq!(receipt(&excess,"CHAR_CMD_OK")?["result_data"]["hold_state"],"RELEASED");
         eprintln!("GPROD_BAZAAR_PARTIAL_PAID_EXCESS_EXECUTED wire=ACTIVE internal=PAID remaining=6000 final=RELEASED");
@@ -441,7 +483,7 @@ async fn gold_delivery_sale(
         allow(&h.root,&h.node,60).await?;
         let other=DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(other.maintain_ready_once().await?);
-        let other_authority=other.open_character_authority(sealed).await.map_err(native::debug)?;
+        let other_authority=other.open_character_authority(&sealed).await.map_err(native::debug)?;
         let competing=|operation:u8,offer:u8|sale_wire("HoldBazaarGold",operation,&format!(r#""buyer_account_id":"{}","buyer_character_id":"{buyer_character}","offer_id":"{}","hold_purpose":"OFFER","amount":"8000","expected_hold_revision":"0""#,u(60),u(offer))).replace(&format!("\"listing_id\":\"{}\"",u(200)),&format!("\"listing_id\":\"{}\"",u(215)));
         let one=competing(218,216);let two=competing(219,217);
         let (one,two)=native::join_two(h.root.decide_bazaar_command(authority,&h.node,SOURCE,"HoldBazaarGold",&u(218),one.as_bytes()),other.decide_bazaar_command(&other_authority,&h.node,SOURCE,"HoldBazaarGold",&u(219),two.as_bytes())).await;
@@ -459,7 +501,12 @@ async fn gold_delivery_sale(
         receipt(&decide("ReleaseBazaarGold",220,&release).await,"CHAR_CMD_OK")?;
         drop(other_authority);drop(other);
         eprintln!("GPROD_BAZAAR_GOLD_CONCURRENCY_EXECUTED reservations=2 committed=1 refused=1");
-        gold_character_sale(h,authority,sealed,&artifact_path,&bytes).await?;
+        drop(sealed);
+        if item_restore {
+            eprintln!("PLATFORM_PG_EXECUTED: restored item delivery payout and exact replay");
+        } else {
+            gold_character_sale(h,restore,&artifact_path,&bytes).await?;
+        }
         Ok(())
     }.await;
     std::fs::remove_file(artifact_path)?;
@@ -471,8 +518,7 @@ async fn gold_delivery_sale(
 // before payout: delivery proof must survive the mutable last-operation change.
 async fn gold_character_sale(
     h: &native::Harness,
-    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
-    sealed: &character_recovery_fence::SealedCharacterRecoveryFence<'_>,
+    restore: Option<RecoveryPoint>,
     artifact_path: &std::path::Path,
     artifact_bytes: &[u8],
 ) -> TestResult {
@@ -490,6 +536,8 @@ async fn gold_character_sale(
     std::fs::write(&key_path, [29; 32])?;
     std::fs::set_permissions(&key_path, std::fs::Permissions::from_mode(0o600))?;
     let result = async {
+        let sealed = h.recovery.seal_current().map_err(native::debug)?;
+        let authority = &h.root.open_character_authority(&sealed).await.map_err(native::debug)?;
         let mut policy=durability::bazaar::Policy::default();
         policy.cooldown_seconds=Some(0);
         policy.escrow_account_id=Some(u(70));
@@ -535,16 +583,30 @@ async fn gold_character_sale(
         let refused=transfer(248,&refused_transfer).await;
         receipt(&refused,"CHAR_CMD_OWNER_MISMATCH")?;
         let partial=v2("ReleaseBazaarGold",249,&format!(r#""buyer_account_id":"{}","hold_id":"{failed_hold}","expected_hold_revision":"1","release_reason":"TERMINAL_REFUSAL","amount":"6000""#,u(40)));
+        drop(sealed);
+        if restore == Some(RecoveryPoint::CharacterRefusal) {
+            advance_recovery(h, 1).await?;
+        }
+        let sealed = h.recovery.seal_current().map_err(native::debug)?;
+        let authority = &h.root.open_character_authority(&sealed).await.map_err(native::debug)?;
+        let decide=async|command:&str,operation:u8,raw:&str| node_decide(h,authority,command,operation,raw).await;
+        let transfer=async|operation:u8,raw:&str|h.root.decide_character_command(authority,&h.node,SOURCE,"TransferCharacterOwnership",&u(operation),Input::Intent(raw.as_bytes())).await;
         let released=receipt(&decide("ReleaseBazaarGold",249,&partial).await,"CHAR_CMD_OK")?;
         assert_eq!(released["result_data"]["remaining_held"],"4000");
         let reset:(String,i64,i64,bool)=sqlx::query_as("SELECT state,amount,incoming_net,sale_id IS NULL AND gross_amount IS NULL AND delivery_operation_id IS NULL AND delivery_receipt_digest IS NULL FROM game_bazaar_gold_holds WHERE hold_id=$1::uuid").bind(&failed_hold).fetch_one(&h.pool).await?;
         assert_eq!(reset,("ACTIVE".into(),4000,3900,true));
-        assert!(h.root.open_character_authority(sealed).await.is_ok());
+        assert!(h.root.open_character_authority(&sealed).await.is_ok());
         assert_eq!(transfer(248,&refused_transfer).await,refused);
         receipt(&decide("HoldBazaarGold",250,&failed_hold_wire(250,5000,2)).await,"CHAR_CMD_OK")?;
         let close=v2("ReleaseBazaarGold",251,&format!(r#""buyer_account_id":"{}","hold_id":"{failed_hold}","expected_hold_revision":"3","release_reason":"EXCESS","amount":"5000""#,u(40)));
         receipt(&decide("ReleaseBazaarGold",251,&close).await,"CHAR_CMD_OK")?;
         eprintln!("GPROD_BAZAAR_TERMINAL_REFUSAL_PARTIAL_RELEASE_EXECUTED remaining=4000 reusable_maximum=5000");
+        if restore == Some(RecoveryPoint::CharacterRefusal) {
+            drop(sealed);
+            advance_recovery(h, 2).await?;
+            eprintln!("PLATFORM_PG_EXECUTED: restored terminal refusal release survives later recovery");
+            return Ok(());
+        }
         let held=decide("HoldBazaarGold",234,&v2("HoldBazaarGold",234,&format!(r#""buyer_account_id":"{}","buyer_character_id":"{}","offer_id":"{}","hold_purpose":"OFFER","amount":"10000","expected_hold_revision":"0""#,u(40),u(native::CHARACTER),u(241)))).await;
         let hold=receipt(&held,"CHAR_CMD_OK")?["result_data"]["hold_id"].as_str().ok_or("Character Gold hold")?.to_owned();
         let settlement=v1(236,70,40,"BAZAAR_SETTLEMENT");
@@ -553,7 +615,7 @@ async fn gold_character_sale(
         let delivered=transfer(236,&settlement).await;
         receipt(&delivered,"CHAR_CMD_OK")?;
         let Decision::Publish{receipt:delivery_receipt,..}=&delivered else{return Err("Character sale delivery omitted receipt".into());};
-        reject_funding_restore(h,sealed,&hold,"CHARACTER").await?;
+        reject_funding_restore(h,&sealed,&hold,"CHARACTER").await?;
         let unlock=v2("UnlockBazaarCharacter",237,&format!(r#""character_id":"{character}","lock_id":"{lock}","expected_lock_revision":"6""#));
         receipt(&decide("UnlockBazaarCharacter",237,&unlock).await,"CHAR_CMD_OK")?;
         let retained:(String,i64,i64,String)=sqlx::query_as("SELECT state,amount,incoming_net,revision::text FROM game_bazaar_gold_holds WHERE hold_id=$1::uuid").bind(&hold).fetch_one(&h.pool).await?;
@@ -561,6 +623,13 @@ async fn gold_character_sale(
         let premature_release=v2("ReleaseBazaarGold",239,&format!(r#""buyer_account_id":"{}","hold_id":"{hold}","expected_hold_revision":"1","release_reason":"EXCESS","amount":"10000""#,u(40)));
         receipt(&decide("ReleaseBazaarGold",239,&premature_release).await,"CHAR_CMD_BAZAAR_HOLD_CONFLICT")?;
         let payout=v2("PayoutBazaarGold",238,&format!(r#""buyer_account_id":"{}","hold_id":"{hold}","expected_hold_revision":"1","sale_id":"{}","gross_amount":"10000","fee_bps":250,"fee_amount":"250","seller_amount":"9750","delivery_operation_id":"{}","delivery_receipt_digest":"{}""#,u(40),u(240),u(236),hash(delivery_receipt)));
+        drop(sealed);
+        if restore == Some(RecoveryPoint::CharacterDelivery) {
+            advance_recovery(h, 1).await?;
+        }
+        let sealed = h.recovery.seal_current().map_err(native::debug)?;
+        let authority = &h.root.open_character_authority(&sealed).await.map_err(native::debug)?;
+        let decide=async|command:&str,operation:u8,raw:&str| node_decide(h,authority,command,operation,raw).await;
         let paid=decide("PayoutBazaarGold",238,&payout).await;
         assert_eq!(receipt(&paid,"CHAR_CMD_OK")?["result_data"]["remaining_held"],"0");
         assert_eq!(decide("PayoutBazaarGold",238,&payout).await,paid);
@@ -568,7 +637,10 @@ async fn gold_character_sale(
         assert_eq!(seller_balance,19750);
         let owner:String=sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=$1::uuid AND lifecycle=1").bind(&character).fetch_one(&h.pool).await?;
         assert_eq!(owner,u(40));
-        assert!(h.root.open_character_authority(sealed).await.is_ok());
+        assert!(h.root.open_character_authority(&sealed).await.is_ok());
+        if restore == Some(RecoveryPoint::CharacterDelivery) {
+            eprintln!("PLATFORM_PG_EXECUTED: restored character delivery payout and exact replay");
+        }
         Ok(())
     }.await;
     std::fs::remove_file(key_path)?;
@@ -578,6 +650,25 @@ async fn gold_character_sale(
         if result.is_ok() { "PASS" } else { "FAIL" }
     );
     result
+}
+
+async fn advance_recovery(h: &native::Harness, predecessor: u64) -> TestResult {
+    let transition = h.recovery.begin_recovery(predecessor, native::id(13 + predecessor as u8), 200 + predecessor)
+        .map_err(native::debug)?;
+    h.root.reconcile_character_recovery(&transition).await.map_err(native::debug)?;
+    Ok(())
+}
+
+async fn node_decide(
+    h: &native::Harness,
+    authority: &durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    command: &str,
+    operation: u8,
+    raw: &str,
+) -> Decision {
+    production_server::node::serve::dispatch_bazaar_intent(
+        &h.root, authority, &h.node, SOURCE, command, &u(operation), raw.as_bytes(),
+    ).await
 }
 
 /// Simulate a partial restore in this test's isolated administrative database.

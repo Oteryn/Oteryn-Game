@@ -1,7 +1,7 @@
 //! Restore admission checks bind retained domain state to its own immutable
 //! decisions. Imported qualification receipts alone do not create domain state.
 //! Historical delivery proofs remain valid after normal Inbox/item movement;
-//! these checks never authorize a new disposition across recovery generations.
+//! settlement still needs the current custody and exact hold under lock.
 use super::{DurabilityError, Tx};
 
 pub(in crate::durability) async fn verify(tx: &mut Tx<'_>) -> Result<(), DurabilityError> {
@@ -178,7 +178,8 @@ SELECT EXISTS(SELECT 1 FROM evidence o WHERE NOT EXISTS(
         THEN convert_from(released.intent,'UTF8')::jsonb ELSE '{}'::jsonb END AS intent,
         convert_from(released.receipt,'UTF8')::jsonb->'result_data' AS facts) r
       WHERE released.issuer='OTERYN_PLATFORM_BAZAAR_AUTHORITY' AND released.command='ReleaseBazaarGold'
-       AND released.result_code='CHAR_CMD_OK' AND released.recovery_generation=o.delivery_generation
+       AND released.result_code='CHAR_CMD_OK' AND released.recovery_generation>=o.delivery_generation
+       AND EXISTS(SELECT 1 FROM game_character_recovery_admissions a WHERE a.recovery_generation=released.recovery_generation)
        AND r.intent->>'hold_id'=h.hold_id::text AND r.intent->>'release_reason'='TERMINAL_REFUSAL'
        AND r.intent->>'expected_hold_revision'=o.funding->>'hold_revision'
        AND r.facts->>'hold_id'=h.hold_id::text

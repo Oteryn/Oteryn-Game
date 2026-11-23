@@ -128,8 +128,11 @@ impl DurabilityRoot {
     let body=String::from_utf8(receipt).map_err(|_|DurabilityError::InvalidStoredState)?;
     commit_semantic_transaction(tx,deadline).await?;return Ok(Some(Publication{operation:Operation::PublishAccountClosureCommandReceiptV2,body}));
    }
-   let next=sqlx::query("SELECT p.body FROM game_account_closure_publications p JOIN game_account_closure_jobs j ON j.operation_id=p.receipt_operation_id WHERE NOT p.acknowledged AND NOT p.quarantined AND j.receipt_acknowledged AND j.recovery_generation=$1::numeric ORDER BY p.created_at,p.account_id LIMIT 1")
-    .bind(recovery.recovery_generation.to_string()).fetch_optional(&mut *tx).await?;
+   // Enqueue binds a committed closure to its exact receipt. The qualified
+   // epoch certifies that publication after resync; the job's generation still
+   // describes the original decision and stays immutable.
+   let next=sqlx::query("SELECT p.body FROM game_account_closure_publications p JOIN game_account_closure_jobs j ON j.operation_id=p.receipt_operation_id AND j.account_id=p.account_id WHERE NOT p.acknowledged AND NOT p.quarantined AND j.receipt_acknowledged AND j.result_code='CHAR_CMD_OK' AND p.projection_epoch=$1 AND j.recovery_generation<=$2::numeric ORDER BY p.created_at,p.account_id LIMIT 1")
+    .bind(clock.try_get::<i64,_>("projection_epoch")?).bind(recovery.recovery_generation.to_string()).fetch_optional(&mut *tx).await?;
    if let Some(row)=next{
     let raw:Vec<u8>=row.try_get("body")?;let body=String::from_utf8(raw).map_err(|_|DurabilityError::InvalidStoredState)?;
     commit_semantic_transaction(tx,deadline).await?;return Ok(Some(Publication{operation:Operation::PublishAccountClosureV1,body}));

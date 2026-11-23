@@ -58,7 +58,8 @@ pub(crate) async fn check_retained_sanctions(
         let worlds = scoped_worlds(Operation::SanctionList, &request.target, config, policy)?;
         let worlds = world_ids(&worlds);
         let mut tx = begin(pool.ok_or(E::AdmTargetUnavailable)?, deadline).await?;
-        players::check_sanction_visibility(&mut tx, &worlds, &result.sanctions).await?;
+        players::check_sanction_visibility(&mut tx, &worlds, &result.sanctions, &request.target)
+            .await?;
         tx.commit().await.map_err(db_error)?;
     }
     Ok(())

@@ -1639,22 +1639,14 @@ impl Decider for CommandDecider<'_, '_, '_> {
     async fn next_closure_publication(
         &mut self,
     ) -> Option<crate::native_admission_source::account_closure::Publication> {
-        // Pending jobs and outboxes survive disabling. Never erase or release them.
-        use crate::native_admission_source::account_characters::EpochFence;
-        let publication = self
-            .root
-            .next_account_closure_publication(self.authority, self.proof, &self.source_authority)
-            .await
-            .ok()
-            .flatten()?;
-        if publication.operation!=crate::native_admission_source::descriptor::Operation::PublishAccountClosureCommandReceiptV2 {
-            let body:serde_json::Value=serde_json::from_str(&publication.body).ok()?;
-            let epoch=body["projection_epoch"].as_str().and_then(crate::native_admission_source::character_commands::counter)?;
-            let floor=self.closure_epoch_fence.read().ok()?;
-            if epoch<floor {event("event=account_closure state=pending reason=epoch_resync");return None;}
-            if epoch>floor {self.closure_epoch_fence.persist(epoch).ok()?;}
-        }
-        Some(publication)
+        next_closure_publication_for_node(
+            self.root,
+            self.authority,
+            self.proof,
+            &self.source_authority,
+            &mut self.closure_epoch_fence,
+        )
+        .await
     }
     async fn acknowledge_closure_publication(
         &mut self,
@@ -1875,9 +1867,43 @@ async fn account_closure_offline_loop(
     }
 }
 
+/// Read the next closure publication and fence its epoch at the node.
+pub async fn next_closure_publication_for_node(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    source: &str,
+    epoch_fence: &mut EpochFenceFile,
+) -> Option<crate::native_admission_source::account_closure::Publication> {
+    use crate::native_admission_source::account_characters::EpochFence;
+    use crate::native_admission_source::descriptor::Operation;
+
+    // Pending jobs and outboxes survive disabling.
+    let publication = root
+        .next_account_closure_publication(authority, proof, source)
+        .await
+        .ok()
+        .flatten()?;
+    if publication.operation != Operation::PublishAccountClosureCommandReceiptV2 {
+        let body: serde_json::Value = serde_json::from_str(&publication.body).ok()?;
+        let epoch = body["projection_epoch"]
+            .as_str()
+            .and_then(crate::native_admission_source::character_commands::counter)?;
+        let floor = epoch_fence.read().ok()?;
+        if epoch < floor {
+            event("event=account_closure state=pending reason=epoch_resync");
+            return None;
+        }
+        if epoch > floor {
+            epoch_fence.persist(epoch).ok()?;
+        }
+    }
+    Some(publication)
+}
+
 /// Production dispatch boundary after fresh-evidence refresh. Keeping it
 /// explicit also lets qualification drive the actual durable caller.
-pub(crate) async fn dispatch_bazaar_intent(
+pub async fn dispatch_bazaar_intent(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     proof: &NodeIncarnationProof,
@@ -2763,8 +2789,8 @@ fn readiness_publication_retryable(error: &AssignmentError) -> bool {
     }
 }
 
-/// The closed control-socket result (D2).
-async fn bootstrap_one(
+/// Process an operator bootstrap and return the closed control-socket result (D2).
+pub async fn bootstrap_one(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     proof: &NodeIncarnationProof,

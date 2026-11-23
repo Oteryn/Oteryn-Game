@@ -376,6 +376,50 @@ fn postgres_sanctions_include_account_bans() -> Result<(), WireError> {
 }
 
 #[test]
+fn postgres_sanction_replay_rechecks_signed_character_for_account_rows() -> Result<(), WireError> {
+    regression(async |pool, mut agent| {
+        pool.execute(sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "BEGIN;
+             SET LOCAL session_replication_role=replica;
+             INSERT INTO game_character_roots(
+                character_id,account_id,world_id,lifecycle,character_revision,profile_revision,
+                ruleset_revision,content_revision,starter_template_revision,name)
+             VALUES ('{SESSION}','{ACCOUNT}','{WORLD}',1,1,'p','r','c','s','Other Reader');
+             INSERT INTO game_account_sanction_projections(
+                sanction_stream_id,decision_revision,account_id,kind,reason_code,reason_text,starts_at_ms,revoked)
+             VALUES ('{BAG}',1,'{ACCOUNT}',4,1,'test',1,false);
+             DELETE FROM game_account_sanction_projections WHERE sanction_stream_id='{ITEM}';
+             COMMIT;"
+        )))).await?;
+        let mut selected = read_request(
+            Operation::SanctionList,
+            json!({"world_id":WORLD,"character_id":CHARACTER}),
+            json!({"limit":10}),
+        )?;
+        let initial = result(&mut agent, &selected).await?;
+        assert_eq!(initial["sanctions"].as_array().map(Vec::len), Some(1));
+        assert_eq!(initial["sanctions"][0]["sanction_id"], BAG);
+        assert!(initial["sanctions"][0]["character_id"].is_null());
+        // Move only the selected character outside the policy's world scope.
+        pool.execute(sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "BEGIN;
+             SET LOCAL session_replication_role=replica;
+             UPDATE game_character_roots SET world_id='{OTHER_WORLD}' WHERE character_id='{CHARACTER}';
+             COMMIT;"
+        )))).await?;
+        let fresh = read_request(Operation::SanctionList, json!({"character_id":CHARACTER}), json!({"limit":10}))?;
+        assert_eq!(result(&mut agent, &fresh).await?["sanctions"], json!([]));
+        let account = read_request(Operation::SanctionList, json!({"account_ref":ACCOUNT}), json!({"limit":10}))?;
+        assert_eq!(result(&mut agent, &account).await?["sanctions"][0]["sanction_id"], BAG);
+        selected.nonce = URL_SAFE_NO_PAD.encode([13; 16]);
+        resign(&mut selected)?;
+        assert_error(&mut agent, &selected, ErrorCode::AdmTargetNotFound).await?;
+        eprintln!("ADMIN_READ_PG_EXECUTED: signed character scope on account sanction replay");
+        Ok(())
+    })
+}
+
+#[test]
 fn postgres_inventory_pages_stash_without_instance_ids() -> Result<(), WireError> {
     regression(async |pool, mut agent| {
         pool.execute(sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
