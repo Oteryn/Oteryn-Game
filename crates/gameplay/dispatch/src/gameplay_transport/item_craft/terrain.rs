@@ -207,7 +207,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::TooFar)));
             }
             // Crystal rolls after action reach admission and before the tool effect.
-            if super::rope::secret_agent_rope(&definition.production_key)
+            let agent_tool = super::rope::secret_agent_rope(&definition.production_key);
+            if agent_tool
                 && oteryn_gameplay_items::secret_agent::jams(
                     *command.game_session_id.as_bytes(),
                     command.command_id,
@@ -251,6 +252,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let tile = view::compose_tile(&at.map.overlay, &facts, pos)
                 .map_err(|_| ())?
                 .ok_or(())?;
+            // Crystal checks for a rope spot on the resolved tile before using the selected item.
+            if agent_tool && crate::map::floor::is_bundle_rope_spot(&tile) {
+                return Ok(None);
+            }
             let before = tile
                 .entries
                 .iter()
@@ -263,13 +268,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || before.sub_type != 0
             {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
-            }
-            // No earlier terrain-tool action matches the selected rope surface.
-            // Leave the exact placement and upstairs landing to the rope owner.
-            if crate::map::floor::rope_spot_appearance(u32::from(before.appearance_id))
-                && super::rope::secret_agent_rope(&definition.production_key)
-            {
-                return Ok(None);
             }
             let MapDefinition::Item(reference) = before.definition else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));

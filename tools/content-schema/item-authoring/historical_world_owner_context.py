@@ -3,6 +3,7 @@
 import hashlib
 import importlib.util
 import json
+import sys
 from functools import lru_cache
 from pathlib import Path
 
@@ -24,6 +25,7 @@ SOULPIT_NOTE = (
 )
 SUGAR_GROUND = "terrain-08614-08692.json"
 FEROXA_STATIC = "terrain-08748-08748.json"
+CRYSTAL_SPAWN_GROUND = "content/world/terrain/terrain-08751-08765.json"
 
 
 @lru_cache(maxsize=1)
@@ -93,6 +95,19 @@ def original_marker(root):
     marker = json.loads(raw)
     if (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode() != raw:
         raise ValueError("source digest drift: terrain marker serialization")
+    crystal_ground = root / CRYSTAL_SPAWN_GROUND
+    if crystal_ground.exists():
+        sys.path.insert(
+            0, str(Path(__file__).resolve().parents[1] / "world-object-authoring")
+        )
+        from crystal_delta_ground import MARKER_NOTE, outputs
+
+        if (
+            marker["notes"].count(MARKER_NOTE) != 1
+            or crystal_ground.read_bytes() != outputs(root)[CRYSTAL_SPAWN_GROUND]
+        ):
+            raise ValueError("source digest drift: Crystal spawn ground witness")
+        marker["notes"] = marker["notes"].replace(MARKER_NOTE, "")
     for note in (
         " Additionally M49 Earth altar ground7748 retains its canonical Item identity.",
         " Additionally one source-qualified Rafzan elevator ground; total 8694 Terrain records.",

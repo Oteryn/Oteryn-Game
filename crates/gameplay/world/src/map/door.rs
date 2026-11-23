@@ -980,7 +980,12 @@ mod authored_open_tests {
                 .map(|definition| definition.reference.get() - 1)
                 .ok_or_else(|| format!("Item identity {key}"))
         };
-        let load = |appearance, action| -> Result<(BundleFacts, u32), Box<dyn std::error::Error>> {
+        let at = TilePos {
+            x: 6,
+            y: 0,
+            floor: -7,
+        };
+        let load = |appearance, action| {
             let key = format!("oteryn:item.tibia.i{appearance}");
             let id = palette_id(&key)?;
             let (bytes, _) = crate::map::boot::tests::bundle_with_item_ids(
@@ -1002,12 +1007,7 @@ mod authored_open_tests {
                 facts.push(&data.manifest, sector, &mut blocked);
             }
             facts.finish();
-            Ok((facts, id))
-        };
-        let at = TilePos {
-            x: 6,
-            y: 0,
-            floor: -7,
+            Ok::<_, Box<dyn std::error::Error>>((facts, id, blocked.contains(&at)))
         };
         let placement = crate::map::view::placement_key(at, 1).ok_or("placement")?;
         // These open appearances are registered to the level-door action.
@@ -1017,7 +1017,7 @@ mod authored_open_tests {
             (30039, 30051),
             (30040, 30052),
         ] {
-            let (facts, id) = load(open, None)?;
+            let (facts, id, statically_blocked) = load(open, None)?;
             assert_eq!(
                 facts.doors().toggle(placement, 0, false, 100, true),
                 None,
@@ -1030,8 +1030,11 @@ mod authored_open_tests {
                     .appearance_id,
                 open
             );
-            assert!(!facts.doors().blocks(at));
-            let (facts, id) = load(closed, None)?;
+            assert!(
+                statically_blocked || facts.doors().blocks(at),
+                "open level door {open} without action"
+            );
+            let (facts, id, _) = load(closed, None)?;
             assert_eq!(
                 facts.doors().toggle(placement, 0, false, 100, true),
                 None,
@@ -1097,7 +1100,7 @@ mod authored_open_tests {
             (49734, 49736, false),
             (49733, 49736, true),
         ] {
-            let (facts, id) = load(closed, locked.then_some(4321))?;
+            let (facts, id, _) = load(closed, locked.then_some(4321))?;
             assert!(facts.doors().contains(placement), "closed {closed}");
             assert_eq!(facts.doors().blocks(at), closed != 18025, "closed {closed}");
             let projectile = !matches!(closed, 18025 | 39934..=39937 | 49684..=49686);
@@ -1178,7 +1181,7 @@ mod authored_open_tests {
             (49688, 49684),
             (49689, 49686),
         ] {
-            let (facts, id) = load(open, None)?;
+            let (facts, id, _) = load(open, None)?;
             assert!(!facts.doors().blocks(at), "open {open}");
             assert_eq!(
                 facts.doors().toggle(placement, 0, false, 100, true),

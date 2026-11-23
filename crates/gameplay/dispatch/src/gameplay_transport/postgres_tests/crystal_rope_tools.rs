@@ -23,21 +23,31 @@ fn crystal_agent_tools_and_elvenhair_rope_ascend_through_live_dispatch() -> Test
 }
 
 #[test]
+fn secret_agent_ropes_from_a_covered_spot_by_object() -> TestResult {
+    agent_rope_case(super::vertical_move_fixtures::RopeUse::CoveredObject)
+}
+
+#[test]
+fn secret_agent_ropes_from_a_covered_spot_by_handle() -> TestResult {
+    agent_rope_case(super::vertical_move_fixtures::RopeUse::CoveredHandle)
+}
+
+#[test]
 fn secret_agent_jams_require_object_reach() -> TestResult {
-    agent_jams(super::vertical_move_fixtures::RopeUse::DistantObject)
+    agent_rope_case(super::vertical_move_fixtures::RopeUse::DistantObject)
 }
 
 #[test]
 fn secret_agent_jams_require_map_handle_reach() -> TestResult {
-    agent_jams(super::vertical_move_fixtures::RopeUse::DistantHandle)
+    agent_rope_case(super::vertical_move_fixtures::RopeUse::DistantHandle)
 }
 
 #[test]
 fn secret_agent_jams_award_bad_timing_and_send_feedback() -> TestResult {
-    agent_jams(super::vertical_move_fixtures::RopeUse::Jam)
+    agent_rope_case(super::vertical_move_fixtures::RopeUse::Jam)
 }
 
-fn agent_jams(action: super::vertical_move_fixtures::RopeUse) -> TestResult {
+fn agent_rope_case(action: super::vertical_move_fixtures::RopeUse) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }

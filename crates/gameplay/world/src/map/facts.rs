@@ -508,12 +508,14 @@ impl BundleFacts {
                     );
                 }
                 let door = palette.map_or(PaletteDoor::No, |entry| entry.door);
-                let (level, quest) = palette.map_or((None, None), |entry| {
+                let (level, quest, open_level) = palette.map_or((None, None, false), |entry| {
                     let appearance = u32::from(entry.facts.appearance_id);
                     let closed = super::door_registry::closed_of(appearance).unwrap_or(appearance);
+                    let level = super::door_registry::level_door_of(closed);
                     (
-                        super::door_registry::level_door_of(closed),
+                        level,
                         super::door_registry::quest_door_of(closed),
+                        level == Some(appearance),
                     )
                 });
                 let action = item.attrs.action.filter(|action| *action > 0);
@@ -560,6 +562,8 @@ impl BundleFacts {
                 };
                 let closed_solid = self.blocks(item.palette);
                 blocks |= closed_solid && door == PaletteDoor::No;
+                // The source STEP_IN action refuses open level doors with no action ID.
+                blocks |= !dropped && open_level && action.is_none();
                 let Some(key) = key else {
                     // A door beyond the ordinal reach cannot be named, so it blocks as a wall.
                     blocks |= closed_solid;

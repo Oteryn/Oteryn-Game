@@ -2,7 +2,7 @@
 use super::*;
 
 pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
-    world_with_rope_spot(world, channel, 386, false)
+    world_with_rope_spot(world, channel, 386, false, false)
 }
 
 pub fn world_with_rope_spot(
@@ -10,6 +10,7 @@ pub fn world_with_rope_spot(
     channel: ChannelId,
     appearance: u32,
     distant_target: bool,
+    covered_spot: bool,
 ) -> BundleWorld {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{Extent, Sector};
@@ -34,6 +35,13 @@ pub fn world_with_rope_spot(
             .collect(),
     };
     let mut lower = sector(-8, &[(10, 10, 4)]);
+    if covered_spot {
+        lower.tiles[0].items.push(Item {
+            palette: 5,
+            depth: 0,
+            attrs: Attrs::default(),
+        });
+    }
     if distant_target {
         let mut distant = sector(-8, &[(12, 10, 0)]);
         distant.tiles[0].items.push(Item {

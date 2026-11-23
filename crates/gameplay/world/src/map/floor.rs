@@ -55,8 +55,8 @@ pub use quest_callback::{
 };
 pub use quest_callback_scene::{PreparedSceneRelocations, prepare_scene_relocations};
 pub use rope::{
-    LadderTarget, is_rope_spot_item, prepare_bundle_ladder, prepare_bundle_rope,
-    rope_spot_appearance,
+    LadderTarget, is_bundle_rope_spot, is_rope_spot_item, prepare_bundle_ladder,
+    prepare_bundle_rope,
 };
 pub use scripted_teleport::prepare_scripted_quest_teleport_facing;
 use std::collections::{BTreeMap, BTreeSet};

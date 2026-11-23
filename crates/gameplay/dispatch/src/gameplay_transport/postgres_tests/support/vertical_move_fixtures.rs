@@ -40,12 +40,22 @@ pub(super) async fn scenario(admin: String, case: u8, use_bundle: bool) -> TestR
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum RopeUse {
     Climb,
+    CoveredObject,
+    CoveredHandle,
     Jam,
     DistantObject,
     DistantHandle,
 }
 
 impl RopeUse {
+    fn climbs(self) -> bool {
+        matches!(self, Self::Climb | Self::CoveredObject | Self::CoveredHandle)
+    }
+
+    fn covered(self) -> bool {
+        matches!(self, Self::CoveredObject | Self::CoveredHandle)
+    }
+
     fn is_distant(self) -> bool {
         matches!(self, Self::DistantObject | Self::DistantHandle)
     }
@@ -90,7 +100,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
         let channel = crate::foundation::ChannelId::decode(&id(43)).expect("fixture channel");
         match tool {
             Some((_, appearance, action)) => {
-                vertical_movement::world_with_rope_spot(world, channel, appearance, action.is_distant())
+                vertical_movement::world_with_rope_spot(world, channel, appearance, action.is_distant(), action.covered())
             }
             None => vertical_movement::world(world, channel),
         }
@@ -287,10 +297,11 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
             .definition_ref("Item", tool, "definition-r1")
             .ok_or("tool reference")?;
         let digest = bundle.base().digest();
-        let spot = oteryn_world_bundle::bundle::placement_key(-8, if distant { 12 } else { 10 }, 10, 0)
+        let target_x = if distant { 12 } else { 10 };
+        let spot = oteryn_world_bundle::bundle::placement_key(-8, target_x, 10, u8::from(action.covered()))
             .ok_or("rope spot placement")?;
         let mut view = SessionItemView::resume(Default::default()).with_map_view();
-        let map_target = if action == RopeUse::DistantHandle {
+        let map_target = if matches!(action, RopeUse::DistantHandle | RopeUse::CoveredHandle) {
             use crate::gameplay_transport::world_map::{MapUpdate, SessionMapView};
             use oteryn_protocol_oteryn::world_map::{MapOrigin, decode_world_map_snapshot};
 
@@ -306,12 +317,12 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
             };
             let map = decode_world_map_snapshot(&snapshot.payload).map_err(debug)?;
             let handle = map.tiles.iter()
-                .find(|tile| tile.position.x == 12 && tile.position.y == 10 && tile.position.floor == 8)
-                .and_then(|tile| tile.items.iter().find_map(|item| match item.origin {
+                .find(|tile| tile.position.x == i32::from(target_x) && tile.position.y == 10 && tile.position.floor == 8)
+                .and_then(|tile| tile.items.iter().filter(|item| item.appearance_id == 3031).find_map(|item| match item.origin {
                     MapOrigin::Handle(handle) => Some(handle),
                     _ => None,
                 }))
-                .ok_or("visible distant map item handle")?;
+                .ok_or("visible covering item handle")?;
             MapUseTarget::Item(handle)
         } else {
             let mut placement = digest.to_vec();
@@ -352,7 +363,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
                 .find(|&command_id| {
                     oteryn_gameplay_items::secret_agent::jams(
                         *session.as_bytes(), command_id, item,
-                    ) == (action != RopeUse::Climb)
+                    ) == !action.climbs()
                 })
                 .ok_or("Secret Agent test roll")?;
             previous_command = command_id;
@@ -380,7 +391,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
                 "{tool}"
             );
         }
-        let expected = if action == RopeUse::Climb { at(10, 11, 7) } else { at(10, 10, 8) };
+        let expected = if action.climbs() { at(10, 11, 7) } else { at(10, 10, 8) };
         assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
                    expected, "{tool}");
         let schedules: Vec<(String, i64)> = sqlx::query_as(
