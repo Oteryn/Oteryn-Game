@@ -1242,9 +1242,12 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     let Some(open_key) = door::open_key(key, closed, open) else {
         return PaletteDoor::Sealed;
     };
-    // The closed state must itself block movement and projectiles.
+    // Crystal 201189f8 CustomDoorTable includes the barred gates 2177 and 2179.
+    // Their profiles block movement when closed and let projectiles through in both poses.
     match item(key) {
-        Some(closed_def) if closed_def.solid != Some(false) && closed_def.blocks_projectile => {}
+        Some(closed_def)
+            if (closed_def.solid != Some(false) && closed_def.blocks_projectile)
+                || (matches!(closed, 2177 | 2179) && closed_def.solid == Some(true)) => {}
         _ => return PaletteDoor::Sealed,
     }
     let Some(definition) = item(&open_key) else {

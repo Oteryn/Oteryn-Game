@@ -156,6 +156,56 @@ fn operational(spell: &SpellDefinition) -> OperationalCastFacts {
     }
 }
 
+#[test]
+fn intense_healing_cast_refuses_other_targets_before_drawing() {
+    let book = book();
+    let spell = find(&book, "candidate:spell/rune/intense_healing_rune");
+    let caster = super::part_d_tests::caster(Vocation::Druid);
+    let mut facts = operational(spell);
+    let mut draw_count = 0;
+    let mut cast = |facts: &OperationalCastFacts| {
+        resolve_cast_with_operational_facts(
+            spell,
+            &caster,
+            &Cooldowns::default(),
+            SemanticTimeMicros::from_micros(NOW),
+            facts,
+            &mut |minimum, _| {
+                draw_count += 1;
+                minimum
+            },
+        )
+    };
+    facts.target = Some(CastTarget {
+        caster: 1,
+        creature: 2,
+        actor: "actor:2".to_owned(),
+        master: Some(1),
+    });
+    let summon = cast(&facts);
+    assert!(
+        matches!(summon, Err(CastRejection::TargetNotAllowed)),
+        "{summon:?}"
+    );
+    facts.target.as_mut().expect("target").master = None;
+    assert!(matches!(cast(&facts), Err(CastRejection::TargetNotAllowed)));
+    assert_eq!(draw_count, 0);
+
+    let mut self_facts = operational(spell);
+    self_facts.target_position = Some(self_facts.caster_position);
+    assert!(
+        resolve_cast_with_operational_facts(
+            spell,
+            &caster,
+            &Cooldowns::default(),
+            SemanticTimeMicros::from_micros(NOW),
+            &self_facts,
+            &mut super::part_d_tests::lowest,
+        )
+        .is_ok()
+    );
+}
+
 fn magnitude_attributes(row: &Row, binding: MagnitudeOwnerBinding) -> MagnitudeOwnedAttributes {
     let mut item_augments = Vec::new();
     if row.has("item_base_healing_permyriad") {

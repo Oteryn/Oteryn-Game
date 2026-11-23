@@ -9,8 +9,8 @@
 //! 3. Walk to a reachable non-PZ two-tile corridor and send the same USE at its
 //!    adjacent tile. Require `Committed`, a pushed map delta containing field
 //!    item 21465, and the exact one-rune inventory debit.
-//! 4. Send STEP onto that field. Require `Moved`, the position delta, and a
-//!    pushed vitals delta whose health is lower (the field-contact tick).
+//! 4. Send STEP onto that safe field. Require movement and no health debit.
+//!    A damaging-field contact remains a separate required observation.
 //! 5. Wait on native liveness for the server-owned decay and require a pushed
 //!    map delta removing item 21465; step off and back on, requiring movement
 //!    but no further field-contact health loss.
@@ -18,20 +18,20 @@
 //!    the retained position, and the remaining rune count. This re-checks the
 //!    durable payment/custody state; the expired field must not reappear.
 
+use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
-use std::collections::BTreeSet;
 
 const RUNE_ID: u32 = 3188;
 const FIELD_ID: u32 = 21465;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
-        Err(_) => Err("step=journey observed=timeout-240s need=server-complete-field-lifecycle".into()),
+        Err(_) => Err("step=journey observed=timeout-420s need=server-complete-field-lifecycle".into()),
     };
     if let Err(error) = &result {
         evidence(&format!("C07_GAP {error}"));
@@ -54,11 +54,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc7).await?;
+    let mut client = connect_world(clients, 0xc7)
+        .await
+        .map_err(|error| admission_error("initial-admission", error))?;
     let reference = provisioning::item_reference(&provisioning::item_index()?, RUNE_ID)?;
     let field = provisioning::item_reference(&provisioning::item_index()?, FIELD_ID)?;
     let purchase_sequence = acquire(&mut client, world, &metadata.npcs, reference).await?;
     check("acquire", purchase_sequence);
+
+    use oteryn_protocol_oteryn::actor_spell_catalog as spell_wire;
+    let catalogue = client.session_mut().gated_snapshot(spell_wire::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
+        .ok_or("step=rune-eligibility observed=no-served-spell-catalog")?;
+    let entry = spell_wire::decode_catalog(&catalogue.payload)
+        .map_err(|error| format!("step=rune-eligibility observed=invalid-catalog:{error:?}"))?
+        .into_iter().find(|entry| entry.rune_item == Some(RUNE_ID))
+        .ok_or("step=rune-eligibility observed=fire-field-absent need=served-fire-field-rune")?;
+    if !entry.available {
+        return Err(format!("step=rune-eligibility item={RUNE_ID} observed=unavailable required-level={} need=player-earned-fire-field-level-and-magic-level", entry.level).into());
+    }
 
     let pz_path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world.base().tile(at.x, at.y, at.floor).is_some_and(|t| t.protection_zone())
@@ -89,7 +102,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let (direction, target_tile) = adjacent(world, from).ok_or("step=field-cast observed=no-adjacent-target need=walkable-target")?;
     let target = actor_position(target_tile);
-    let health_before = client.actor_vitals().ok_or("step=field-step observed=no-vitals need=vitals-frame")?.health;
+    let map = client.session_mut().world_map_snapshot().ok_or("step=field-site observed=no-live-map")?;
+    if map.tiles.iter().find(|tile| tile.position == target).is_none_or(|tile| tile.more || tile.items.len() != 1) {
+        return Err("step=field-site observed=nonempty-target-stack need=bare-ground-before-placement".into());
+    }
     client.take_events();
     let (disposition, cast_sequence) = use_rune(&mut client, reference, target).await?;
     if disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
@@ -99,12 +115,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     inventory_count(&mut client, reference, before_count - 1).await?;
     check("attack-rune", placed);
 
+    use oteryn_protocol_oteryn::condition_status as condition;
+    let conditions = client.session_mut().gated_command(
+        condition::CAPABILITY_CONDITION_STATUS_V1, condition::COMMAND_TYPE_CONDITION_STATUS_QUERY, &[],
+    ).await?;
+    if conditions.status != CommandStatus::Accepted
+        || condition::ConditionStatus::decode(&conditions.payload).is_none_or(|status| !status.conditions.is_empty())
+        || !field_site_isolated(&client, target)
+    {
+        return Err("step=field-step observed=unisolated-site need=no-other-actors-or-active-conditions".into());
+    }
+    let health_before = client.actor_vitals().ok_or("step=field-step observed=no-vitals need=vitals-frame")?.health;
+    client.take_events();
     let step = client.step_retrying(direction).await?;
     if step.disposition != StepDisposition::Moved || tile(client.world_spatial().actor_position)? != target_tile {
         return Err(format!("step=field-step observed={step:?} need=Moved-position-delta").into());
     }
-    let damaged = wait_health_below(&mut client, health_before).await?;
-    check("field-contact-damage", damaged);
+    observe_safe_contact(&mut client, health_before, target, step.result_server_sequence).await?;
+    let after = client.session_mut().gated_command(
+        condition::CAPABILITY_CONDITION_STATUS_V1, condition::COMMAND_TYPE_CONDITION_STATUS_QUERY, &[],
+    ).await?;
+    if after.status != CommandStatus::Accepted
+        || condition::ConditionStatus::decode(&after.payload).is_none_or(|status| !status.conditions.is_empty())
+        || client.actor_vitals().is_none_or(|vitals| !safe_field_health(health_before, vitals.health))
+    {
+        return Err("step=safe-field-contact observed=condition-or-vital-debit need=harmless-21465".into());
+    }
+    check("safe-field-contact-no-damage", client.last_server_sequence());
     let expired = field_frame(&mut client, target, field, false, placed, Duration::from_secs(75)).await?;
     check("field-expiry", expired);
 
@@ -122,26 +159,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let retained_position = client.world_spatial().actor_position;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xc8).await?;
+    let mut fresh = connect_world(clients, 0xc8)
+        .await
+        .map_err(|error| admission_error("fresh-admission", error))?;
     if fresh.join_snapshot().game_session_id == old_session
         || fresh.world_spatial().actor_position != retained_position
         || quantity(&fresh, reference)? != before_count - 1
     {
         return Err("step=fresh-admission observed=session-position-or-rune-mismatch need=durable-payment-custody".into());
     }
-    let snapshot = fresh
-        .session_mut()
-        .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
+    let map = fresh.session_mut().world_map_snapshot()
         .ok_or("step=fresh-admission observed=no-map-snapshot need=world-map-view")?;
-    let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
-        .map_err(|error| format!("C07 fresh map: {error:?}"))?;
-    if map.tiles.iter().find(|tile| tile.position == target).is_some_and(|tile| {
-        tile.items.iter().any(|item| item.definition == MapDefinition::Item(field))
-    }) {
+    let former_field = map.tiles.iter().find(|tile| tile.position == target)
+        .ok_or("step=fresh-admission observed=expired-field-tile-not-visible need=observed-retired-site")?;
+    if former_field.items.iter().any(|item| item.definition == MapDefinition::Item(field)) {
         return Err("step=fresh-admission observed=expired-field-present need=decay-remain-retired".into());
     }
     check("fresh-admission", fresh.last_server_sequence());
-    logout(&mut fresh).await
+    logout(&mut fresh).await?;
+    Err("step=field-contact-damage observed=harmless-21465-on-baseline-world need=separate-damaging-field-and-PvP-eligible-target".into())
 }
 
 fn adjacent(world: &BundleWorld, at: TilePos) -> Option<(StepDirection, TilePos)> {
@@ -157,19 +193,35 @@ fn handle(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestRes
     client.inventory().and_then(|v| v.entries.iter().find(|e| e.item_definition_ref == reference)).map(|e| e.handle).ok_or_else(|| "step=rune-use observed=no-carried-handle need=purchased-rune-inventory-frame".into())
 }
 
+fn rune_budget(unit_price: u64) -> TestResult<u64> {
+    unit_price.checked_mul(2).ok_or_else(|| "step=acquire observed=price-overflow".into())
+}
+
 async fn acquire(client: &mut DevClientSession, world: &BundleWorld, npcs: &oteryn_world_bundle::npc::Table, reference: std::num::NonZeroU32) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop;
     use oteryn_protocol_oteryn::npc_service as wire;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(root.join("content/services/trade/trade-00000-00324.json"))?)?;
     let key = format!("oteryn:item.tibia.i{RUNE_ID}");
-    let sellers: BTreeSet<String> = trades["records"].as_array().ok_or("C07 trade records absent")?.iter().filter_map(|r| {
-        r["declaration"]["offers"].as_array()?.iter().any(|o| o["direction"] == "SellToPlayer" && o["item"]["key"] == key)
-            .then(|| r["declaration"]["identity"]["key"].as_str()?.strip_prefix("oteryn:service.trade.").map(|n| format!("oteryn:npc.{n}")))?
+    let sellers: std::collections::BTreeMap<String, u64> = trades["records"].as_array().ok_or("C07 trade records absent")?.iter().filter_map(|r| {
+        let offer = r["declaration"]["offers"].as_array()?.iter().find(|o| o["direction"] == "SellToPlayer" && o["item"]["key"] == key)?;
+        let name = r["declaration"]["identity"]["key"].as_str()?.strip_prefix("oteryn:service.trade.")?;
+        Some((format!("oteryn:npc.{name}"), offer["unit_price"].as_u64()?))
     }).collect();
     let here = tile(client.world_spatial().actor_position)?;
-    let (npc, path) = npcs.npcs.iter().filter(|n| sellers.contains(&n.key)).filter_map(|n| route(world, here, |at| n.placements.iter().any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)).map(|p| (n,p))).min_by_key(|(_,p)| p.len())
+    let route_to_vendor = |here, npc: &oteryn_world_bundle::npc::Npc| {
+        route(world, here, |at| npc.placements.iter().any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3))
+    };
+    let (npc, price, _) = npcs.npcs.iter().filter_map(|npc| {
+        let price = *sellers.get(&npc.key)?;
+        Some((npc, price, route_to_vendor(here, npc)?.len()))
+    }).min_by_key(|&(_, price, length)| (price, length))
         .ok_or("step=acquire observed=no-reachable-rune-seller need=compiled-vendor-route")?;
+    let budget = rune_budget(price)?;
+    full_e2ef7::earn_gold(client, world, budget).await
+        .map_err(|error| format!("step=acquire-funds item={RUNE_ID} price={budget} observed={error} need=rat-loot-gold"))?;
+    let path = route_to_vendor(tile(client.world_spatial().actor_position)?, npc)
+        .ok_or("step=acquire observed=no-route-from-hunting-ground need=compiled-vendor-route")?;
     walk(client, world, &path).await?;
     let actor = client.world_entities().and_then(|es| es.iter().find(|e| e.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|p| e.position.x == i32::from(p.x) && e.position.y == i32::from(p.y) && e.position.floor == -i16::from(p.floor)))).map(|e| e.entity).ok_or("step=acquire observed=vendor-not-visible need=npc-entity-delta")?;
     for text in ["hi", "trade"] {
@@ -200,9 +252,54 @@ async fn inventory_count(client: &mut DevClientSession, reference: std::num::Non
     loop { for event in client.take_events() { if let SessionEvent::Inventory(delta) = event && quantity(client, reference)? == expected { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=inventory-delta observed={} need={expected}", quantity(client, reference)?).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
 }
 async fn later_frame(client: &mut DevClientSession) -> TestResult { client.service_liveness(Duration::from_millis(100)).await.map_err(Into::into) }
-async fn wait_health_below(client: &mut DevClientSession, before: u32) -> TestResult<u64> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop { for event in client.take_events() { if let SessionEvent::ActorVitals(delta) = event && delta.value.health < before { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=field-step observed=health:{} need=health-below:{before}", client.actor_vitals().map_or(0, |v| v.health)).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
+fn field_actor_interferes(
+    entry: &oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity,
+    own_identity: &[u8; 16],
+    at: ActorPosition,
+) -> bool {
+    entry.entity.identity != *own_identity
+        && matches!(entry.kind, oteryn_dev_client::EntityKind::Creature | oteryn_dev_client::EntityKind::Player)
+        && entry.position.floor == at.floor
+        && entry.position.x.abs_diff(at.x).max(entry.position.y.abs_diff(at.y)) <= 8
+}
+
+fn field_site_isolated(client: &DevClientSession, at: ActorPosition) -> bool {
+    client.world_entities().is_some_and(|entities| {
+        entities.iter().all(|entry| !field_actor_interferes(entry, entities.own_identity(), at))
+    })
+}
+
+async fn observe_safe_contact(client: &mut DevClientSession, mut health: u32, at: ActorPosition, step_sequence: u64) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+    loop {
+        let isolated = field_site_isolated(client, at) && client.world_spatial().actor_position == at;
+        if !isolated {
+            return Err("step=field-step observed=other-actor-or-movement need=isolated-field-contact".into());
+        }
+        let own_identity = *client.world_entities().ok_or("step=field-step observed=no-spatial-entities")?.own_identity();
+        let events = client.take_events();
+        if events.iter().any(|event| match event {
+            SessionEvent::WorldSpatialEntities(delta) => delta.value.enter.iter().chain(&delta.value.update)
+                .any(|entry| field_actor_interferes(entry, &own_identity, at)),
+            _ => false,
+        }) {
+            return Err("step=field-step observed=other-actor-entered-observation need=isolated-field-contact".into());
+        }
+        for event in events {
+            if let SessionEvent::ActorVitals(delta) = event
+                && delta.server_sequence > step_sequence
+            {
+                if !safe_field_health(health, delta.value.health) {
+                    return Err("step=safe-field-contact observed=health-debit need=harmless-21465".into());
+                }
+                health = delta.value.health;
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Ok(());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
 }
 async fn field_frame(client: &mut DevClientSession, at: ActorPosition, reference: std::num::NonZeroU32, present: bool, after: u64, wait: Duration) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + wait;
@@ -215,9 +312,25 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     loop { let reply = client.session_mut().logout().await?; if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Ok(()); } else if tokio::time::Instant::now() >= deadline { return Err(format!("step=logout observed={:?} need=Accepted", reply.result).into()); } client.service_liveness(Duration::from_millis(250)).await?; }
 }
 
+fn safe_field_health(before: u32, after: u32) -> bool { after >= before }
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn second_review_c07_rejects_false_evidence() {
+        assert!(safe_field_health(100, 100));
+        assert!(!safe_field_health(100, 95));
+    }
+
+    #[test]
+    fn budget_pays_for_both_runes_and_refuses_overflow() -> TestResult {
+        assert_eq!(rune_budget(28)?, 56);
+        assert!(rune_budget(u64::MAX).is_err());
+        Ok(())
+    }
+
     #[test]
     fn field_ids_resolve_from_the_production_item_index() -> TestResult { let index = provisioning::item_index()?; let rune = provisioning::item_reference(&index, RUNE_ID)?; let field = provisioning::item_reference(&index, FIELD_ID)?; assert_ne!(rune, field); Ok(()) }
 }

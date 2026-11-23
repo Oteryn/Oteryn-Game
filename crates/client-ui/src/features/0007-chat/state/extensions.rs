@@ -78,6 +78,9 @@ impl Console {
             recipients,
             &mut self.sequence_seen,
         );
+        if !self.filters.auto_private_tabs {
+            return;
+        }
         for name in senders {
             let open = self.channels.iter().any(
                 |tab| matches!(tab, ChannelTab::Conversation(open) if open.eq_ignore_ascii_case(&name)),

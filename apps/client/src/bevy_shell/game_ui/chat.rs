@@ -228,6 +228,7 @@ pub(super) fn install(app: &mut App) {
             PostUpdate,
             submission::finish.after(bevy::text::EditableTextSystems),
         );
+    widgets::copy_link::install(app);
     install_history(app);
     channels::install(app);
 }

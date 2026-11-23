@@ -25,6 +25,8 @@ const REQUIRED: &[&str] = &[
     "potion-exhaust-refusal",
     "fresh-admission",
     "missing-variant-refusal",
+    "cask-keg-refill",
+    "special-food",
 ];
 
 struct Row {
@@ -76,19 +78,30 @@ fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestR
 }
 
 async fn wait_quantity(client: &mut DevClientSession, reference: std::num::NonZeroU32, expected: u64) -> TestResult<u64> {
+    wait_quantities(client, &[(reference, expected)]).await
+}
+
+async fn wait_quantities(client: &mut DevClientSession, expected: &[(std::num::NonZeroU32, u64)]) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         for event in client.take_events() {
-            if let SessionEvent::Inventory(delta) = event && quantity(client, reference)? == expected { return Ok(delta.server_sequence); }
+            if let SessionEvent::Inventory(delta) = event
+                && quantities_match(expected, |id| delta.value.entries.iter()
+                    .filter(|item| item.item_definition_ref == id)
+                    .map(|item| u64::from(item.count.get()))
+                    .sum())
+            {
+                return Ok(delta.server_sequence);
+            }
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("inventory delta timeout definition={reference} expected={expected} observed={}", quantity(client, reference)?).into());
+            return Err(format!("inventory delta timeout expected={expected:?} observed={:?}", quantities(client)?).into());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
     }
 }
 
-async fn acquire(client: &mut DevClientSession, world: &BundleWorld, id: u32, amount: u32) -> TestResult<u64> {
+pub(super) async fn acquire(client: &mut DevClientSession, world: &BundleWorld, id: u32, amount: u32) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
     let index = provisioning::item_index()?;
@@ -180,12 +193,81 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(&reply.payload).map_err(|error| format!("variant reply decode status={:?}: {error:?}", reply.status))?;
     if disposition != UseDisposition::NothingToUse || quantities(&client)? != before_missing { return Err(format!("missing variant USE status={:?} reply={disposition:?}", reply.status).into()); }
     row.pass("missing-variant-refusal", format!("status={:?} reply={disposition:?} no-delta", reply.status));
-    logout(&mut client).await
+    let refill = refill_keg(&mut client, world, flask, potion).await;
+    let released = logout(&mut client).await;
+    refill?;
+    row.pass("cask-keg-refill", "accepted-flask-debit-and-potion-credit");
+    released?;
+    Err("missing=ordinary-special-food-acquisition-and-effect-observation owner=crates/gameplay/durability/src/durability/item_use.rs".into())
 }
 
+async fn refill_keg(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    flask: std::num::NonZeroU32,
+    potion: std::num::NonZeroU32,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent, UseTarget, decode_use_result, encode_item_use_intent};
+
+    let keg_id = 25903;
+    acquire(client, world, keg_id, 1).await.map_err(|error| {
+        verdict::context(format!(
+            "missing=ordinary-health-potion-keg-{keg_id}-acquisition observed={error} owner=crates/gameplay/dispatch/src/gameplay_transport/item_craft/dispenser.rs:6"
+        ), error)
+    })?;
+    let keg = provisioning::item_reference(&provisioning::item_index()?, keg_id)?;
+    let inventory = client.inventory().ok_or("keg-use inventory missing")?;
+    let handle = |definition| inventory.entries.iter()
+        .find(|item| item.item_definition_ref == definition).map(|item| item.handle);
+    let intent = UseIntent {
+        target: UseTarget::Item(handle(flask).ok_or("keg-use flask handle missing")?),
+        use_with: None,
+        use_with_position: None,
+        use_with_map_item: Some(MapUseTarget::Item(handle(keg).ok_or("keg-use purchased keg handle missing")?)),
+    };
+    let flask_before = quantity(client, flask)?;
+    let potion_before = quantity(client, potion)?;
+    let payload = encode_item_use_intent(&intent).map_err(|error| format!("keg-use encode: {error:?}"))?;
+    client.take_events();
+    let reply = client.session_mut().world_context_use(&payload).await?;
+    let disposition = decode_use_result(&reply.payload).map_err(|error| format!("keg-use decode: {error:?}"))?;
+    if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
+        return Err(format!("keg-use status={:?} disposition={disposition:?}", reply.status).into());
+    }
+    wait_quantities(client, &[(flask, flask_before - 1), (potion, potion_before + 1)]).await?;
+    Ok(())
+}
+
+
+fn quantities_match(expected: &[(std::num::NonZeroU32, u64)], count: impl Fn(std::num::NonZeroU32) -> u64) -> bool {
+    expected.iter().all(|&(id, units)| count(id) == units)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn review_second_refill_requires_both_legs_in_one_observation() -> TestResult {
+        let flask = std::num::NonZeroU32::new(285).ok_or("flask id")?;
+        let potion = std::num::NonZeroU32::new(266).ok_or("potion id")?;
+        let expected = [(flask, 1), (potion, 3)];
+        assert!(!quantities_match(&expected, |id| if id == flask { 1 } else { 2 }));
+        assert!(quantities_match(&expected, |id| if id == flask { 1 } else { 3 }));
+        Ok(())
+    }
+
+    #[test]
+    fn ordinary_consumables_do_not_complete_cask_and_special_food_coverage() {
+        let passed = BTreeSet::from([
+            "npc-purchase",
+            "food-consume",
+            "potion-consume-flask",
+            "potion-exhaust-refusal",
+            "fresh-admission",
+            "missing-variant-refusal",
+        ]);
+        assert_eq!(next_step(&passed), "cask-keg-refill");
+    }
+
     #[test]
     fn next_step_is_first_unobserved_action() {
         let mut passed = BTreeSet::new();

@@ -9,8 +9,8 @@
 //!    scythe 3653->3651, sickle 5463->5462, crowbar 4848->3134, pick 7200->7236).
 //! 3. Send a stale-revision repeat against a transformed placement; assert the
 //!    refusal reply and no second transformation delta.
-//! 4. Log out, obtain a fresh admission for the same character, walk back to the
-//!    durable pick hole and assert the map snapshot still carries appearance 7236.
+//! 4. Obtain a fresh admission immediately after each transformation and check its map
+//!    snapshot against the expected appearance before travelling to the next target.
 //!
 //! All commands below travel through the native dev client.  Missing money,
 //! vendor content, reachable authored terrain, or a server frame is reported
@@ -20,6 +20,7 @@ use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::npc_service as npc;
 use oteryn_protocol_oteryn::world_map::{MapOrigin, MapTile};
 use oteryn_protocol_oteryn::world_object::*;
+#[cfg(test)]
 use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, Debug)]
@@ -63,6 +64,10 @@ fn clean(value: &str) -> String {
     value.replace([' ', '\n', '\r'], "-")
 }
 
+fn matches_terrain_action(appearance: u16, action: Option<u16>) -> bool {
+    appearance != 4848 || action == Some(40041)
+}
+
 fn objects(bytes: &[u8]) -> TestResult<Vec<Object>> {
     let mut result = Vec::new();
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
@@ -71,6 +76,11 @@ fn objects(bytes: &[u8]) -> TestResult<Vec<Object>> {
                 if let Some(appearance) =
                     crate::map::palette_appearance(&manifest.palette[item.palette as usize].key)
                 {
+                    // The Crystal crowbar recipe is for the Ape City cask,
+                    // identified by action 40041 rather than appearance alone.
+                    if !matches_terrain_action(appearance, item.attrs.action) {
+                        continue;
+                    }
                     result.push(Object {
                         at: TilePos {
                             x: tile.x,
@@ -384,6 +394,37 @@ async fn use_tool(
     Ok(())
 }
 
+async fn verify_after_relog(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    name: &str,
+    object: Object,
+    after: u16,
+) -> TestResult {
+    let session = client.join_snapshot().game_session_id;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err(format!("step=relog-{name} observed=logout-refused").into());
+    }
+    *client = connect_world(clients, 0xd9).await?;
+    if client.join_snapshot().game_session_id == session {
+        return Err(format!("step=relog-{name} observed=reused-session").into());
+    }
+    approach(client, world, &[object], object.appearance).await?;
+    let snapshot = client.session_mut().world_map_snapshot()
+        .ok_or("step=relog observed=missing-map-snapshot")?;
+    if !snapshot.tiles.iter().any(|tile| tile_has(tile, object, after)) {
+        return Err(format!(
+            "step=relog-{name} observed=transformed-placement-missing position={:?} expected={after}",
+            object.at
+        ).into());
+    }
+    evidence(&format!("M08_CHECK relog-{name} PASS appearance={after}"));
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -396,18 +437,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let objects = objects(&bytes)?;
     let mut client = connect_world(clients, 0xd8).await?;
-    let mut completed = BTreeSet::new();
     let mut pick = None;
     for (name, id, before, after) in CASES {
         let item = buy(&mut client, world, &metadata.npcs, id).await?;
         let object = approach(&mut client, world, &objects, before).await?;
         use_tool(&mut client, world, item, object, after).await?;
-        completed.insert(name);
         if name == "pick" {
-            pick = Some(object);
+            pick = Some((object, after));
+        } else {
+            // Several terrain bindings decay in minutes. Read the fresh
+            // snapshot before routing to the next tool or terrain target.
+            verify_after_relog(&mut client, clients, world, name, object, after).await?;
         }
     }
-    let pick = pick.ok_or("step=pick observed=not-attempted")?;
+    let (pick, pick_after) = pick.ok_or("step=pick observed=not-attempted")?;
     let pick_item = inventory_item(
         &client,
         provisioning::item_reference(&provisioning::item_index()?, 3456)?,
@@ -453,34 +496,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "M08_CHECK stale-refusal PASS reply={refusal:?} object_delta=false appearance=7236"
     ));
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused need=accepted".into());
-    }
-    drop(client);
-    let mut fresh = connect_world(clients, 0xd9).await?;
-    let _ = approach(&mut fresh, world, &[pick], 7200).await?;
-    let snapshot = fresh
-        .session_mut()
-        .world_map_snapshot()
-        .ok_or("step=relog observed=missing-map-snapshot")?;
-    if !snapshot.tiles.iter().any(|tile| tile_has(tile, pick, 7236)) {
-        return Err(
-            "step=relog-persistence observed=appearance-7236-missing need=durable-terrain-reload"
-                .into(),
-        );
-    }
-    if completed.len() != CASES.len() {
-        return Err("step=complete observed=missing-tool-case".into());
-    }
-    evidence("M08_CHECK relog-persistence PASS appearance=7236");
+    verify_after_relog(&mut client, clients, world, "pick", pick, pick_after).await?;
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn crowbar_route_uses_the_ape_city_action_id() {
+        assert!(!matches_terrain_action(4848, None));
+        assert!(!matches_terrain_action(4848, Some(40042)));
+        assert!(matches_terrain_action(4848, Some(40041)));
+        assert!(matches_terrain_action(593, None));
+    }
+
     #[test]
     fn scenario_has_every_required_tool_once() {
         assert_eq!(

@@ -71,6 +71,7 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use chain::{ChainCreature, ChainHit, ChainStart, ChainWorld, pick_chain, step_value};
 pub use formula::{FormulaError, FormulaInputs};
 use harmony::HarmonyMultiplier;
+use oteryn_gameplay_spell_rules::dispatch_plans::rune_use::target_rule;
 use party::{PartyBuffSpecExt, PartyFailure, PartyWorld};
 use target::{AllowedTargets, AllowedTargetsExt, CastTarget, CastTargetExt, CheckedTarget};
 
@@ -191,11 +192,12 @@ fn check_operational_rules(
     } else if header.carrier == "rune" && !carried_item {
         return Err(CastRejection::OperationalFactsRequired);
     }
+    let allowed_targets = target_rule(spell);
     if let Some(target) = &facts.target {
-        if !spell.allowed_targets.allows(target) {
+        if !allowed_targets.allows(target) {
             return Err(CastRejection::TargetNotAllowed);
         }
-    } else if spell.needs_target || spell.allowed_targets != AllowedTargets::Any {
+    } else if spell.needs_target || allowed_targets != AllowedTargets::Any {
         return Err(CastRejection::TargetFactsRequired);
     }
     Ok(())
@@ -367,7 +369,7 @@ pub fn resolve_cast(
     if spell.chains(has_target) {
         return Err(CastRejection::ChainWorldRequired);
     }
-    if has_target && spell.allowed_targets != AllowedTargets::Any {
+    if has_target && target_rule(spell) != AllowedTargets::Any {
         return Err(CastRejection::TargetFactsRequired);
     }
     resolve(spell, caster, cooldowns, now, has_target, Facts::None, draw)
@@ -574,9 +576,8 @@ fn resolve_with_wheel(
         return Err(CastRejection::TargetRequired);
     }
     // The script checks of D.3 and D.4 run after the engine checks (Canary `onCastSpell`).
-    if spell.allowed_targets != AllowedTargets::Any
-        && let Facts::Target(target) = facts
-        && !spell.allowed_targets.allows(target)
+    if let Facts::Target(target) = facts
+        && !target_rule(spell).allows(target)
     {
         return Err(CastRejection::TargetNotAllowed);
     }
