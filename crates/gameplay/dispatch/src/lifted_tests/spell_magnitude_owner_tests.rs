@@ -499,15 +499,25 @@ fn crystal_equipment_spell_wheel_uses_health_after_damage_healing() {
 
 #[test]
 fn crystal_equipment_spell_commit_reflects_each_intrinsic_component() {
-    split_spell_reflection(true);
+    spell_reflection(true, true, false);
 }
 
 #[test]
 fn crystal_equipment_split_spell_reflects_before_wheel_damage() {
-    split_spell_reflection(false);
+    spell_reflection(false, true, false);
 }
 
-fn split_spell_reflection(capped: bool) {
+#[test]
+fn crystal_equipment_single_element_spell_reflects_before_wheel_damage() {
+    spell_reflection(false, false, false);
+}
+
+#[test]
+fn crystal_equipment_elite_spell_halves_each_component() {
+    spell_reflection(false, true, true);
+}
+
+fn spell_reflection(capped: bool, split: bool, elite: bool) {
     use crate::foundation::{CommandId, CommandRef};
     use crate::gameplay_transport::actor_spell::{
         ChannelSpellStates, commit_owner_batch, stage_player_batch_with_magnitude,
@@ -571,29 +581,55 @@ fn split_spell_reflection(capped: bool) {
     }
     combat.hits[0].side_percent = None;
     combat.block_armor = false;
+    if elite {
+        f.attributes.wheel_flat_damage = Some(11);
+        plan = (130..200)
+            .find_map(|raw| {
+                let mut probe = plan.clone();
+                let NativeCombatPlan::Combat(combat) = &mut probe else {
+                    return None;
+                };
+                combat.hits[0].magnitude = raw;
+                let hit = combat.hits[0].clone();
+                let mut magnitude = qualify(&f, &probe).expect("source magnitude owner");
+                magnitude.bind_intrinsic_weapon(weapon);
+                magnitude
+                    .finish_with_damage_healing(&probe, &hit, &f.bindings[1], &mut |_, high| high)
+                    .expect("qualified damage");
+                let [physical, fire] = magnitude.damage_components().next()?.final_parts;
+                (physical % 2 == 1 && fire % 2 == 1).then_some(probe)
+            })
+            .expect("source draw with two odd components");
+    }
+    let NativeCombatPlan::Combat(combat) = &plan else {
+        unreachable!();
+    };
     let hit = combat.hits[0].clone();
     let expected = if capped {
         2 * facts.max_health.div_ceil(100)
     } else {
         f.attributes.wheel_flat_damage = Some(0);
         let mut baseline = qualify(&f, &plan).expect("real source magnitude owner");
-        baseline.bind_intrinsic_weapon(weapon);
+        if split {
+            baseline.bind_intrinsic_weapon(weapon);
+        }
         let (total, _) = baseline
             .finish_with_damage_healing(&plan, &hit, &f.bindings[1], &mut |_, high| high)
             .expect("post-block split");
         let [primary, _] = baseline
-            .intrinsic_damage_components()
+            .damage_components()
             .next()
-            .expect("physical and fire")
-            .final_parts;
-        assert!(primary >= 5 && total - primary >= 5);
+            .map_or([total, 0], |damage| damage.final_parts);
+        assert!(primary >= 5 && (!split || total - primary >= 5));
         let expected = u32::try_from(primary / 5 + (total - primary) / 5).expect("reflection");
         f.attributes.wheel_flat_damage = Some(11);
         expected
     };
     let mut magnitude = qualify(&f, &plan).expect("real source magnitude owner");
-    magnitude.bind_intrinsic_weapon(weapon);
-    let lowered = lower_native(
+    if split {
+        magnitude.bind_intrinsic_weapon(weapon);
+    }
+    let mut lowered = lower_native(
         &f.runtime,
         OwnerCombatBatch {
             caster: f.caster,
@@ -640,6 +676,46 @@ fn split_spell_reflection(capped: bool) {
         f.session,
         f.state.clone()
     ));
+    if elite {
+        use crate::durability::task_board::BountyTalismanSnapshot;
+        use crate::gameplay_transport::actor_spell::PlayerBatchPreflight;
+        use oteryn_gameplay_quests::quest::task_board::full::{BountyStatus, BountyTask, TaskBoardData};
+        use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+        let mut board = TaskBoardData::default();
+        board.bounty.state = BountyStatus::Active;
+        board.bounty.active = Some(BountyTask {
+            elite: true,
+            dust: 0,
+            race: current.state.policy.definition_key.clone(),
+            required: 25,
+            current: 0,
+            experience: 1850,
+            points: 25,
+            grade: 0,
+            difficulty: 0,
+            slot: 0,
+        });
+        let snapshot = BountyTalismanSnapshot::from_board(&board, &Default::default(), true);
+        let [physical, fire] = magnitude
+            .damage_components()
+            .next()
+            .expect("split spell")
+            .final_parts;
+        PlayerBatchPreflight::apply_test_bounty(
+            &f.runtime,
+            (&states, &mut magnitude),
+            &mut lowered.batch,
+            &snapshot,
+            &GameplayDecisionRoot::from_bytes([42; 32]),
+            DecisionOccurrenceId::from_bytes([42; 16]),
+        )
+        .expect("qualified bounty");
+        assert!(matches!(
+            lowered.batch.effects[0].change,
+            OwnerCombatChange::Damage { magnitude, .. } if magnitude == physical / 2 + fire / 2
+        ), "elite halves physical {physical} and fire {fire} independently");
+    }
     let before = f.state.vitals();
     let preflight = stage_player_batch_with_magnitude(
         &f.runtime,

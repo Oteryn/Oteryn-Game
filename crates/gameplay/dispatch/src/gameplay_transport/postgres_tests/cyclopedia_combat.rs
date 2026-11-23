@@ -856,8 +856,12 @@ fn expected_creature_damage(
             }
             Case::AlphaPrey => {
                 let landed = settle(critical(raw)?)?;
-                let boost = |damage| crate::gameplay_transport::prey::damage(damage, 25);
+                // Crystal combat.cpp:912-915 truncates the 25% contribution.
+                let boost = |damage| damage + damage / 4;
                 let boosted = boost(landed);
+                if landed % 4 == 0 {
+                    continue;
+                }
                 (boosted + boosted / 10, boost(landed + landed / 10))
             }
             _ => {

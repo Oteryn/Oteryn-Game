@@ -81,6 +81,21 @@ class NumericTests(unittest.TestCase):
             percent["parameter"]["value"]["value"], {"numerator": 8, "denominator": 1}
         )
 
+    def test_packet_headers_match_world_project_replay(self):
+        path = c.ROOT / "content/world/definitions/reference.json"
+        records = {
+            row["identity"]["key"]: row
+            for row in json.loads(path.read_bytes())["records"]
+            if row["kind"] == "Item"
+        }
+        packet = json.loads(c.OUTPUT.read_bytes())
+        for row in packet["promotions"]:
+            with self.subTest(item=row["source_item_id"]):
+                expected = records[row["target"]["key"]]
+                self.assertEqual(
+                    row["headers"], {key: expected[key] for key in c.HEADERS}
+                )
+
     def test_whole_presence_bounds_duplicates_and_no_reflection_element(self):
         for raw in [
             "42 Damage Reflection, 13 Damage Reflection",
@@ -191,7 +206,11 @@ class NumericTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "four scoped structural headers drift"):
             c.qualify(*args)
-        self.assertTrue(c.qualify(*args, profile)["headers"]["materializable"])
+        self.assertTrue(args[1]["materializable"])
+        self.assertEqual(
+            c.qualify(*args, profile)["headers"],
+            args[0]["current_published_scope_receipt"]["native_headers"],
+        )
         for mutate in (
             lambda d: d.update(stack_class="StackCapable"),
             lambda d: d.update(client_projection="ServerOnly"),

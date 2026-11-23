@@ -44,6 +44,29 @@ impl PlayerBatchPreflight {
     pub(crate) fn grant_test_pvp_target(&mut self, target: ExactActorRef, session: GameSessionId) {
         self.pvp_locks.push((target, session, false));
     }
+
+    pub(crate) fn apply_test_bounty(
+        runtime: &ChannelRuntimeV1,
+        owners: (
+            &ChannelSpellStates,
+            &mut crate::spell::magnitude_owner::PreparedMagnitudeOwner,
+        ),
+        batch: &mut OwnerCombatBatch,
+        snapshot: &crate::durability::task_board::BountyTalismanSnapshot,
+        root: &oteryn_simulation_determinism::GameplayDecisionRoot,
+        occurrence: oteryn_simulation_determinism::DecisionOccurrenceId,
+    ) -> Option<()> {
+        crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
+            runtime,
+            batch,
+            snapshot,
+            root,
+            occurrence,
+            &mut [],
+            (owners.0, Some(owners.1)),
+        )?;
+        Some(())
+    }
 }
 
 impl crate::foundation::runtime_actor_spell_types::player_proof_seal::Sealed
@@ -411,18 +434,16 @@ pub fn stage_player_batch_with_magnitude(
     }
     let mut splits = Vec::new();
     if let Some(magnitude) = magnitude {
-        let mut components = magnitude.intrinsic_damage_components().collect::<Vec<_>>();
+        let mut components = magnitude.damage_components().collect::<Vec<_>>();
         for effect in &batch.effects {
             let total = match effect.change {
                 OwnerCombatChange::Damage { magnitude, .. } => magnitude,
                 OwnerCombatChange::DamageWithHealing { damage, .. } => damage,
                 _ => continue,
             };
-            let creature = runtime.contains_live_creature(effect.target);
             if let Some(index) = components.iter().position(|parts| {
                 parts.target == effect.target
-                    && (creature
-                        || parts.final_parts[0].checked_add(parts.final_parts[1]) == Some(total))
+                    && parts.final_parts[0].checked_add(parts.final_parts[1]) == Some(total)
             }) {
                 splits.push((effect.sub_ordinal, components.remove(index)));
             }
@@ -474,7 +495,7 @@ impl PlayerBatchPreflight {
         &mut self,
         runtime: &ChannelRuntimeV1,
         states: &ChannelSpellStates,
-        splits: &[(u16, crate::spell::magnitude_owner::IntrinsicDamage)],
+        splits: &[(u16, crate::spell::magnitude_owner::DamageComponents)],
     ) -> Result<(), SpellCastDisposition> {
         use oteryn_protocol_oteryn::damage_element::DamageElement as Element;
         let element_key = |element| match element {
@@ -506,8 +527,11 @@ impl PlayerBatchPreflight {
                 splits.iter().find(|split| split.0 == effect.sub_ordinal)
             {
                 [
-                    (split.post_block[0], self.analyser_element),
-                    (split.post_block[1], split.secondary_element),
+                    (split.post_block()[0], self.analyser_element),
+                    (
+                        split.post_block()[1],
+                        split.secondary_element.unwrap_or(Element::Untyped),
+                    ),
                 ]
             } else {
                 [
@@ -566,8 +590,13 @@ impl PlayerBatchPreflight {
                     .checked_mul(u64::from(percent))
                     .ok_or(SpellCastDisposition::Rejected)?
                     / 100;
+                let amount =
+                    u32::try_from(amount.min(cap)).map_err(|_| SpellCastDisposition::Rejected)?;
+                if amount == 0 {
+                    continue;
+                }
                 reflected.push((
-                    u32::try_from(amount.min(cap)).map_err(|_| SpellCastDisposition::Rejected)?,
+                    amount,
                     crate::player_lethal::PlayerHitKind::from_element(Some(element)),
                     false,
                     // Crystal game.cpp7398 reverses target/attacker for native
@@ -717,7 +746,7 @@ fn stage_player_batch_inner(
     caster_successor: Option<PlayerSpellState>,
     analyser_element: Option<DamageElement>,
     attack: Option<&crate::spell::cast::PreparedWheelAttackHit>,
-    splits: &[(u16, crate::spell::magnitude_owner::IntrinsicDamage)],
+    splits: &[(u16, crate::spell::magnitude_owner::DamageComponents)],
 ) -> Result<PlayerBatchPreflight, SpellCastDisposition> {
     let preprocessed = analyser_element.is_some();
     let analyser_element = analyser_element.unwrap_or(DamageElement::Physical);
@@ -793,12 +822,14 @@ fn stage_player_batch_inner(
             .find(|(ordinal, _)| *ordinal == effect.sub_ordinal)
             .map(|(_, split)| split);
         if runtime.contains_live_creature(effect.target) {
-            if let Some(split) = split {
+            if let Some((split, element)) =
+                split.and_then(|split| split.secondary_element.map(|element| (split, element)))
+            {
                 analyser_parts.push((
                     effect.sub_ordinal,
                     split.final_parts[0],
                     analyser_element,
-                    split.secondary_element,
+                    element,
                 ));
             }
             continue;
@@ -863,7 +894,9 @@ fn stage_player_batch_inner(
                         super::super::analyser::element(second),
                     ));
                     (next, damage)
-                } else if let Some(split) = split {
+                } else if let Some((split, element)) =
+                    split.and_then(|split| split.secondary_element.map(|element| (split, element)))
+                {
                     let [primary, secondary] = split.final_parts.map(|part| {
                         u32::try_from(part).map_err(|_| SpellCastDisposition::Rejected)
                     });
@@ -878,7 +911,7 @@ fn stage_player_batch_inner(
                         effect.sub_ordinal,
                         i64::from(primary),
                         analyser_element,
-                        split.secondary_element,
+                        element,
                     ));
                     (next, damage)
                 } else if preprocessed {

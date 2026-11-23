@@ -2507,16 +2507,7 @@ fn finish_melee_components(
 }
 
 fn boost_attack_components(parts: [i64; 2], prey: u8, talisman: u16) -> [i64; 2] {
-    let boosted =
-        parts.map(|part| bounty_talisman::damage(super::super::prey::damage(part, prey), talisman));
-    if talisman == 0 {
-        // Preserve the existing whole-hit Prey rounding when no Talisman is active.
-        let total = super::super::prey::damage(parts[0].saturating_add(parts[1]), prey);
-        let primary = boosted[0].min(total);
-        [primary, total.saturating_sub(primary)]
-    } else {
-        boosted
-    }
+    parts.map(|part| crate::spell::magnitude_owner::boost_creature_damage(part, prey, talisman))
 }
 
 fn elite_attack_components(parts: [i64; 2], elite: bool) -> [i64; 2] {
@@ -2607,11 +2598,19 @@ mod tests {
     fn t174_converted_melee_analyser_uses_final_scaled_components() {
         let boosted = super::boost_attack_components([50, 50], 20, 2500);
         assert_eq!(boosted, [75, 75]);
-        assert_eq!(super::boost_attack_components([50, 50], 25, 0), [63, 62]);
+        assert_eq!(super::boost_attack_components([50, 50], 25, 0), [62, 62]);
         assert_eq!(super::reported_primary(boosted, 150), 75);
         // Lethal clipping uses all of the available primary before spending secondary.
         assert_eq!(super::reported_primary(boosted, 120), 75);
         assert_eq!(super::reported_primary(boosted, 0), 0);
+    }
+
+    #[test]
+    fn crystal_equipment_zero_talisman_contribution_preserves_prey_rounding() {
+        assert_eq!(
+            super::boost_attack_components([50, 50], 25, 1),
+            super::boost_attack_components([50, 50], 25, 0),
+        );
     }
 
     #[test]

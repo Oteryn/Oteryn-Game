@@ -309,13 +309,16 @@ impl RangedDamage {
                 element,
                 ..
             } => {
-                let total = i64::from(attack.checked_add(elemental_attack)?);
-                let physical = if total == 0 {
-                    damage
-                } else {
-                    damage.checked_mul(i64::from(attack))? / total
-                };
-                Some((physical, damage - physical, element))
+                if elemental_attack == 0 {
+                    return Some((damage, 0, element));
+                }
+                // Crystal 201189f8 weapons.cpp:343-356 truncates both shares.
+                let total = i64::from(attack) + i64::from(elemental_attack);
+                Some((
+                    damage.checked_mul(i64::from(attack))? / total,
+                    damage.checked_mul(i64::from(elemental_attack))? / total,
+                    element,
+                ))
             }
         }
     }
@@ -1007,6 +1010,19 @@ pub(super) fn analyser_element(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn crystal_equipment_ranged_proficiency_split_truncates_each_part() {
+        let arrow = RangedDamage::Distance {
+            attack: 41, // 40 weapon attack plus one proficiency point
+            elemental_attack: 40,
+            element: Element::Fire,
+            chance: 0,
+            cap: 100,
+            launcher_bonus: 0,
+        };
+        assert_eq!(arrow.split(107), Some((54, 52, Element::Fire)));
+    }
+
     #[test]
     fn t174_converted_arrow_analyser_keeps_resolved_fire_element() -> Result<(), &'static str> {
         let offence = oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {

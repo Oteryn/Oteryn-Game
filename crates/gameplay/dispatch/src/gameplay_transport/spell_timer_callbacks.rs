@@ -894,7 +894,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 minimum
                             }
                         };
-                        let (mut effect, magnitude) = super::prepare_ordinary_due_from_owners(
+                        let (mut effect, mut magnitude) = super::prepare_ordinary_due_from_owners(
                             &mut tx,
                             authority,
                             runtime,
@@ -927,10 +927,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let candidates = super::native_combat_cast::due_candidates(
                             &mut tx, authority, runtime, room, objects, &batch,
                         ).await.map_err(|_| DurabilityError::Unavailable)?;
-                        states.apply_prey_spell_damage(runtime, &mut batch);
                         let talisman = crate::durability::task_board::read_talisman_in_item_transaction(&mut tx, **fence).await?;
                         let bounty_leech = crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
-                            runtime, &mut batch, &talisman, &stream, decision, &mut leech,
+                            runtime, &mut batch, &talisman, &stream, decision, &mut leech, (states, Some(&mut magnitude)),
                         ).ok_or(DurabilityError::Unavailable)?;
                         let presentation = states
                             .presentations

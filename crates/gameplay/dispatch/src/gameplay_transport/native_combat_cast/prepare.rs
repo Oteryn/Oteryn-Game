@@ -1402,7 +1402,6 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         &lowered.batch,
     )
     .await?;
-    states.apply_prey_spell_damage(runtime, &mut lowered.batch);
     let bounty_leech =
         crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
             runtime,
@@ -1413,6 +1412,7 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
             ),
             decision,
             &mut leech,
+            (states, Some(&mut magnitude)),
         )
         .ok_or(SpellCastDisposition::Rejected)?;
     let cues = delayed_strikes::strike_cues(room, runtime, Some(strike), &spatial.bindings)?;
