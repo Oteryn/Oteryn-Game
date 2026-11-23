@@ -122,13 +122,23 @@ pub(super) struct Step {
     next_topic: Option<Topic>,
     transition: Option<String>,
     reply: Vec<String>,
-    failure_reply: Vec<String>,
+    failure: Option<Box<Failure>>,
     refused: bool,
 }
 
+struct Failure {
+    reply: Vec<String>,
+    topic: Option<Topic>,
+}
+
 impl Step {
-    pub(super) fn with_failure_reply(mut self, lines: Vec<String>) -> Self {
-        self.failure_reply = lines;
+    pub(super) fn with_failure(mut self, lines: Vec<String>, topic: Option<Topic>) -> Self {
+        if !lines.is_empty() || topic.is_some() {
+            self.failure = Some(Box::new(Failure {
+                reply: lines,
+                topic,
+            }));
+        }
         self
     }
     pub(super) fn with_refusal(mut self, refused: bool) -> Self {
@@ -145,6 +155,7 @@ struct Pending {
     intent: NpcTalkIntent,
     context: Context,
     next_topic: Option<Topic>,
+    failure_topic: Option<Topic>,
     reply: Vec<String>,
 }
 
@@ -186,7 +197,7 @@ pub(super) fn prepare(
         next_topic: choice.next_topic,
         transition: choice.transition,
         reply: choice.reply,
-        failure_reply: Vec::new(),
+        failure: None,
         refused: false,
     })
 }
@@ -257,11 +268,14 @@ fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId
     if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
         && let Some(state) = sessions.get_mut(&session)
         && let Some(pending) = state.quest_dialogue.pending.take()
-        && committed
+        && (committed || pending.failure_topic.is_some())
     {
-        state
-            .quest_dialogue
-            .apply_topic(pending.context, pending.next_topic);
+        let topic = if committed {
+            pending.next_topic
+        } else {
+            pending.failure_topic
+        };
+        state.quest_dialogue.apply_topic(pending.context, topic);
     }
 }
 
@@ -441,6 +455,10 @@ pub(super) async fn apply(
             intent: intent.clone(),
             context: step.context.clone(),
             next_topic: step.next_topic,
+            failure_topic: step
+                .failure
+                .as_ref()
+                .and_then(|failure| failure.topic.clone()),
             reply: step.reply.clone(),
         });
     }
@@ -551,15 +569,15 @@ pub(super) async fn apply(
         )) => unknown(),
         _ => {
             finish(admission, command.game_session_id, false);
-            if step.failure_reply.is_empty() {
+            let Some(failure) = step.failure.filter(|failure| !failure.reply.is_empty()) else {
                 return rejected();
-            }
+            };
             let rendered = reply(
                 &admission.states.chat,
                 command.game_session_id,
                 &step.context,
                 &intent,
-                step.failure_reply,
+                failure.reply,
             );
             let runtime = admission.runtime.lock().await;
             let mut outcome = publish_committed_reply(

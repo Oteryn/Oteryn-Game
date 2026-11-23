@@ -478,12 +478,7 @@ pub fn is_ground_action(key: &str) -> bool {
     }
     crate::event_items::is_event_reward(key)
         || house_transform_for_key(key).is_some()
-        || rule_for_key(key).is_some_and(|rule| {
-            !matches!(
-                rule.kind,
-                NoveltyKind::EquippedEffect | NoveltyKind::CarriedTransform
-            )
-        })
+        || rule_for_key(key).is_some_and(|rule| rule.kind != NoveltyKind::EquippedEffect)
 }
 
 pub fn select_ground(
@@ -492,16 +487,16 @@ pub fn select_ground(
     ground: GroundEffect,
     mut draw: impl FnMut(u8, u64) -> Option<u64>,
 ) -> Option<NoveltySelection> {
-    if matches!(
-        rule.kind,
-        NoveltyKind::EquippedEffect | NoveltyKind::CarriedTransform
-    ) {
+    if rule.kind == NoveltyKind::EquippedEffect {
         return None;
     }
     let mut selected = select(rule, item_id, &mut draw)?;
     if matches!(
         rule.kind,
-        NoveltyKind::Dice | NoveltyKind::Firework | NoveltyKind::Transform
+        NoveltyKind::Dice
+            | NoveltyKind::Firework
+            | NoveltyKind::Transform
+            | NoveltyKind::CarriedTransform
     ) {
         selected.effects.ground = Some(ground);
     }

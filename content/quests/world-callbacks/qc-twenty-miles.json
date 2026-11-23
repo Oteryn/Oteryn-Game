@@ -2698,7 +2698,7 @@
         {
           "track": "oteryn:quest-progress/qc/twenty_miles/stage",
           "minimum": 19,
-          "maximum": 19,
+          "maximum": 21,
           "set": 19,
           "preserve": true
         },

@@ -1,14 +1,14 @@
 //! Ordinary USE -> the shared consume/transform receipt -> existing condition and chat owners.
 use super::ComposedFreshAdmission;
 use super::connection::{UseCommand, UseOutcome};
-use super::item_ref_admission::NativeItemWeights;
+use super::item_ref_admission::{NativeItemWeights, pinned_index};
 use super::item_view::ItemKey;
 use crate::durability::consume_transform::{ConsumeTransformRequest, ConsumeTransformResult};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::gameplay_transport::actor_spell::NoveltyEffectRequest;
 use oteryn_gameplay_items::novelty_items::{self, NoveltyEffects, NoveltyKind};
-use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 #[path = "novelty_ground_use.rs"]
 mod ground;
 #[path = "novelty_item_pending.rs"]
@@ -43,7 +43,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         visible_target: bool,
     ) -> Result<Option<UseOutcome>, ()> {
-        if intent.use_with.is_none()
+        if matches!(intent.target, UseTarget::Item(_))
+            && intent.use_with.is_none()
             && intent.use_with_map_item.is_none()
             && intent.use_with_position.is_none()
             && let Some(outcome) = self
@@ -52,9 +53,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome));
         }
-        if let Some(outcome) = self
-            .use_map_harvest_handle(actor, command, &intent, source)
-            .await?
+        if matches!(intent.target, UseTarget::Item(_))
+            && let Some(outcome) = self
+                .use_map_harvest_handle(actor, command, &intent, source)
+                .await?
         {
             return Ok(Some(outcome));
         }
@@ -66,6 +68,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let Some(fence) = command.item_fence else {
             return Ok(None);
+        };
+        let by_definition = if let UseTarget::ItemByDefinition(reference) = intent.target {
+            let runtime = self.runtime.lock().await;
+            let Some(definition) = pinned_index(&runtime, self.active_generation)
+                .and_then(|index| super::item_look::typed_definition(index, reference))
+                .filter(|definition| {
+                    novelty_items::rule_for_key(&definition.production_key)
+                        .is_some_and(|rule| rule.kind == NoveltyKind::CarriedTransform)
+                })
+            else {
+                return Ok(None);
+            };
+            Some(definition)
+        } else {
+            None
         };
         let command_ref = CommandRef::new(
             command.game_session_id,
@@ -91,7 +108,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => None,
             })
             .unwrap_or([0; 16]);
-        let request = ConsumeTransformRequest {
+        let mut request = ConsumeTransformRequest {
             command: command_ref,
             source: id,
             target: None,
@@ -132,9 +149,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Ok(None);
         }
-        if let Some(outcome) = self
-            .use_ground_event_item(actor, command, &intent, &request, &permit)
-            .await?
+        if by_definition.is_none()
+            && let Some(outcome) = self
+                .use_ground_event_item(actor, command, &intent, &request, &permit)
+                .await?
         {
             return Ok(Some(outcome));
         }
@@ -149,10 +167,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item))
             .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
             .chain(inventory.equipment.iter())
-            .find(|item| item.item_instance_id == id);
+            .find(|item| match &by_definition {
+                Some(definition) => item.definition == *definition,
+                None => item.item_instance_id == id,
+            });
         let Some(item) = carried else {
             return Ok(None);
         };
+        let id = item.item_instance_id;
+        request.source = id;
         // Crystal 201189f8 data/scripts/actions/tools/watch.lua:3-8 and
         // data/libs/functions/functions.lua:42-50. Watches read the same World
         // clock as the connection's CLOCK-1 projection; they never consume an item.

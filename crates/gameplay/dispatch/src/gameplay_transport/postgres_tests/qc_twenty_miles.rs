@@ -40,6 +40,16 @@ fn qc_twenty_miles_wandering_guardians_keep_dialogue() -> TestResult {
     run(quest::GUARDIAN)
 }
 
+#[test]
+fn qc_twenty_miles_first_shell_pickup_after_borrowed_report() -> TestResult {
+    run(quest::BORROWED_REPORT)
+}
+
+#[test]
+fn qc_twenty_miles_first_shell_pickup_after_borrowed_songs() -> TestResult {
+    run(quest::BORROWED_SONGS)
+}
+
 fn run(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

@@ -22,6 +22,8 @@ pub(super) const GOLD: &str = "qc-twenty-miles-merged-gold";
 pub(super) const SPLIT_GOLD: &str = "qc-twenty-miles-split-gold";
 pub(super) const EARLIER_SPLIT_GOLD: &str = "qc-twenty-miles-earlier-split-gold";
 pub(super) const RESUME: &str = "qc-twenty-miles-resume";
+pub(super) const BORROWED_REPORT: &str = "qc-twenty-miles-borrowed-report";
+pub(super) const BORROWED_SONGS: &str = "qc-twenty-miles-borrowed-songs";
 pub(super) const START: Position = Position {
     x: 33550,
     y: 31865,
@@ -30,6 +32,7 @@ pub(super) const START: Position = Position {
 const QUEST: &str = "oteryn:quest.twenty_miles_beneath_the_sea_quest";
 const STAGE: &str = "oteryn:quest-progress/qc/twenty_miles/stage";
 const LEGACY_HASH: &str = "955724dfc1c9b0392d23eaa22a2b771f739e367e9b7a07f2a7d75e524bfe3f3c";
+const PRE_REVIEW_HASH: &str = "e02b51e20a74c18d4f7bb4705331d1545f0180f0709b669bcdc474e26560cb3c";
 const NPCS: [(&str, Position); 5] = [
     (
         "oteryn:npc.mr_brandon",
@@ -66,7 +69,7 @@ const NPCS: [(&str, Position); 5] = [
 ];
 
 pub(super) fn matches(name: &str) -> bool {
-    matches!(name, CHAIN | RESUME | GUARDIAN | TRADE | GOLD | SPLIT_GOLD | EARLIER_SPLIT_GOLD)
+    matches!(name, CHAIN | RESUME | GUARDIAN | TRADE | GOLD | SPLIT_GOLD | EARLIER_SPLIT_GOLD | BORROWED_REPORT | BORROWED_SONGS)
 }
 
 fn source(callback: &Callback) -> Option<Position> {
@@ -626,6 +629,23 @@ pub(super) async fn exercise(
             assert_eq!(result == NpcIntentDisposition::Ok, $expected, "{key}");
         }};
     }
+    if matches!(name, BORROWED_REPORT | BORROWED_SONGS) {
+        let (pin, reported_stage) = if name == BORROWED_REPORT {
+            (LEGACY_HASH, 20)
+        } else {
+            (PRE_REVIEW_HASH, 21)
+        };
+        super::qc_pinned_world::seed_saved_progress(
+            h, owner, admitted, QUEST, pin, STAGE, reported_stage,
+        ).await?;
+        say!(1, "recover-sea-ear-after-report", ["lost sea ear"], false);
+        enter(owner, admitted, "maelstrom-to-shells", true).await?;
+        use_object(owner, admitted, "sea-ear-shell", None, Committed).await?;
+        stage(h, reported_stage).await?;
+        assert_eq!(track(h, "oteryn:quest-progress/qc/twenty_miles/ear_found").await?, 1);
+        only_live_item(h, world_callbacks::phase::SEA_EAR_ITEM).await?;
+        return Ok(());
+    }
     if name == RESUME {
         super::qc_pinned_world::seed_saved_progress(
             h,
@@ -774,7 +794,7 @@ pub(super) async fn exercise(
         assert_eq!(track(h, &energy).await?, 0);
     }
     say!(1, "guardian-skulls-laid", ["mission", "yes"], true);
-    if matches!(name, GOLD | SPLIT_GOLD | EARLIER_SPLIT_GOLD) {
+    if matches!(name, GOLD | SPLIT_GOLD | EARLIER_SPLIT_GOLD | BORROWED_REPORT | BORROWED_SONGS) {
         let gold = "oteryn:item.tibia.i21746";
         let issued = only_live_item(h, gold).await?;
         move_recovery_item(owner, admitted, issued, 22_010, true, None).await?;

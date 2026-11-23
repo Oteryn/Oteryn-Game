@@ -44,6 +44,8 @@ pub(super) struct Offer {
     minimum_level: Option<u32>,
     #[serde(default)]
     failure_reply: Vec<String>,
+    #[serde(default)]
+    failure_topic: Option<u16>,
 }
 
 #[cfg(test)]
@@ -140,6 +142,7 @@ pub(super) fn prepare(
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();
+    let mut failure_topic = None;
     let mut refused = false;
     let step = quest_dialogue::prepare(
         admission,
@@ -246,7 +249,10 @@ pub(super) fn prepare(
                 .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
             {
                 if !meets_level(offer.minimum_level) {
-                    return refusal(&offer.failure_reply);
+                    return refusal(&offer.failure_reply).map(|mut choice| {
+                        choice.next_topic = offer.failure_topic.map(Topic::from);
+                        choice
+                    });
                 }
                 if let Some(key) = &offer.transition {
                     // Keep the original callback, value plan and saved-definition pin.
@@ -257,6 +263,7 @@ pub(super) fn prepare(
                             && callback.world_claim.is_none()
                     })?;
                     failure_reply = offer.failure_reply.clone();
+                    failure_topic = offer.failure_topic.map(Topic::from);
                 }
                 return Some(Choice {
                     transition: offer.transition.clone(),
@@ -293,7 +300,10 @@ pub(super) fn prepare(
                 && blocked.next().is_none()
                 && let Some(choice) = refusal(&offer.failure_reply)
             {
-                return Some(choice);
+                return Some(Choice {
+                    next_topic: offer.failure_topic.map(Topic::from),
+                    ..choice
+                });
             }
             // A unique exchange owns its exact keyword even before eligibility.
             // Let the locked writer return the stage refusal, rather than falling
@@ -325,7 +335,10 @@ pub(super) fn prepare(
             })
         },
     );
-    step.map(|step| step.with_failure_reply(failure_reply).with_refusal(refused))
+    step.map(|step| {
+        step.with_failure(failure_reply, failure_topic)
+            .with_refusal(refused)
+    })
 }
 
 #[cfg(test)]

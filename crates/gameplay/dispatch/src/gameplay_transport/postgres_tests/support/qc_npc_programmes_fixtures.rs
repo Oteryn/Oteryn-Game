@@ -36,6 +36,11 @@ const STEEL: u32 = 5889;
 const PLATINUM: u32 = 3035;
 const FRAGMENTS: [u32; 4] = [7528, 7529, 7530, 7531];
 const REWARD: &str = "oteryn:quest-reward/qc-obsidian-draconian-steel";
+const DONOR_EXCHANGES: [(&str, u32, u32); 3] = [
+    ("uth'kean", 3381, 5887),
+    ("za'ralator", 3356, 5888),
+    ("uth'prta", 3281, 5892),
+];
 
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -72,6 +77,12 @@ pub(super) async fn exercise(
             mint(owner, admitted, SHIELD, 1, 7004).await?;
         }
         "keyword" | "repeat" => mint(owner, admitted, SHIELD, 1, 7101).await?,
+        "donor-exchanges" => {
+            mint(owner, admitted, SHIELD, 1, 7101).await?;
+            for (_, input, _) in DONOR_EXCHANGES {
+                mint(owner, admitted, input, 1, u64::from(input)).await?;
+            }
+        }
         "other-services" => {
             mint(owner, admitted, SHIELD, 1, 7100).await?;
             mint(owner, admitted, 3381, 1, 7101).await?;
@@ -161,6 +172,32 @@ async fn exercise_conversation(
         }
         "other-services" => {
             replaces_with_other_services(h, wire).await?;
+        }
+        "donor-exchanges" => {
+            let source: serde_json::Value = serde_json::from_str(include_str!(
+                "../../../../../../../content/quests/npc-offers/qc-programmes.json"
+            ))?;
+            let offers = source["offers"].as_array().ok_or("Cyclops offers")?;
+            for (word, input, output) in DONOR_EXCHANGES {
+                let quote = offers.iter().find(|row| row["keywords"][0] == word)
+                    .and_then(|row| row["reply"][0].as_str()).ok_or(word)?;
+                wire.line("uth'lokr", STEEL_QUOTE).await?;
+                wire.line(word, quote).await?;
+                let (result, _) = wire.talk("yes", true).await?.ok_or("exchange reply")?;
+                assert_eq!(result, NpcIntentDisposition::Ok, "{word}");
+                assert_eq!(quantity(h, input).await?, 0, "{word}");
+                assert_eq!(quantity(h, output).await?, 1, "{word}");
+                assert_eq!(quantity(h, SHIELD).await?, 1, "{word} replaced the steel quote");
+                assert_eq!(quantity(h, STEEL).await?, 0);
+            }
+            // PARTIAL: these services supersede the quote but have no admitted exchange.
+            for word in ["soul orb", "melt", "gear whell"] {
+                wire.line("uth'lokr", STEEL_QUOTE).await?;
+                assert!(wire.talk(word, false).await?.is_some());
+                wire.disposition("yes", NpcIntentDisposition::Rejected).await?;
+                assert_eq!(quantity(h, SHIELD).await?, 1, "{word}");
+                assert_eq!(quantity(h, STEEL).await?, 0);
+            }
         }
         "keyword" => {
             assert!(wire.talk("xuth'lokr, uth'lokr", false).await?.is_some());
@@ -274,6 +311,7 @@ async fn unlock(
     h: &Harness,
     cyclops: EntityRef,
 ) -> TestResult {
+    let session = *admitted;
     with_wire(owner, admitted, cyclops, async |wire| {
         wire.greet().await?;
         wire.line("uth'lokr", FAVOR_QUOTE).await?;
@@ -288,14 +326,15 @@ async fn unlock(
             Some((NpcIntentDisposition::Rejected, vec![SKIRT_PROMPT.into()]))
         );
         assert_eq!(snapshot(h).await?, before);
-        Ok(())
-    })
-    .await?;
-    for nonce in 7000..7003 {
-        mint(owner, admitted, 3560, 1, nonce).await?;
-    }
-    with_wire(owner, admitted, cyclops, async |wire| {
-        wire.greet().await?;
+        for nonce in 7000..7003 {
+            mint(owner, &session, 3560, 1, nonce).await?;
+        }
+        assert_eq!(
+            wire.talk("yes", false).await?,
+            Some((NpcIntentDisposition::Rejected, vec![])),
+            "a refused hand-in must require a new skirt prompt",
+        );
+        assert_eq!(quantity(h, 3560).await?, 3);
         wire.line("uth'lokr", SKIRT_PROMPT).await?;
         assert_eq!(
             quantity(h, 3560).await?,

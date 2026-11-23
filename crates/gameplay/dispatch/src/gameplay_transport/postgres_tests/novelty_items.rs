@@ -27,6 +27,10 @@ enum Case {
     VoodooFarTarget,
     Present,
     GroundDice,
+    GroundLanternOff,
+    GroundLanternOn,
+    DefinitionLanternOff,
+    DefinitionLanternOn,
     GroundRocket,
     GroundTrumpet,
     NestedCostume,
@@ -42,6 +46,8 @@ impl Case {
     fn key(self) -> &'static str {
         match self {
             Self::Costume | Self::NestedCostume | Self::GroundCostume => "oteryn:item.tibia.i653",
+            Self::GroundLanternOff | Self::DefinitionLanternOff => "oteryn:item.tibia.i23738",
+            Self::GroundLanternOn | Self::DefinitionLanternOn => "oteryn:item.tibia.i23734",
             Self::Dice | Self::DiceStreak | Self::GroundDice => "oteryn:item.tibia.i5792",
             Self::Trumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
             Self::Rocket | Self::GroundRocket | Self::PendingLifecycle => "oteryn:item.tibia.i6576",
@@ -59,6 +65,8 @@ impl Case {
         matches!(
             self,
             Self::GroundDice
+                | Self::GroundLanternOff
+                | Self::GroundLanternOn
                 | Self::GroundRocket
                 | Self::GroundTrumpet
                 | Self::GroundCostume
@@ -144,6 +152,19 @@ fn novelty_explosive_present_commits_consumption_and_donor_cues_once() -> TestRe
 #[test]
 fn novelty_ground_dice_uses_map_handle_and_exact_source_position() -> TestResult {
     run_case(Case::GroundDice)
+}
+#[test]
+fn novelty_ground_lantern_turns_on() -> TestResult {
+    run_case(Case::GroundLanternOff)
+}
+#[test]
+fn novelty_ground_lantern_turns_off() -> TestResult {
+    run_case(Case::GroundLanternOn)
+}
+#[test]
+fn novelty_definition_lantern_toggles() -> TestResult {
+    run_case(Case::DefinitionLanternOff)?;
+    run_case(Case::DefinitionLanternOn)
 }
 #[test]
 fn novelty_ground_rocket_consumes_without_health_loss() -> TestResult {

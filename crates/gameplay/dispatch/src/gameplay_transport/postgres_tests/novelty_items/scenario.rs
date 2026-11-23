@@ -3,6 +3,7 @@ use super::*;
 pub(super) fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         let key = case.key();
+        let by_definition = matches!(case, Case::DefinitionLanternOff | Case::DefinitionLanternOn);
         let origin = case.origin();
         let ground_origin = MovementLocalPosition { x: origin.x - i32::from(case.feroxa()), ..origin };
         let harness =
@@ -273,6 +274,15 @@ pub(super) fn scenario(case: Case) -> TestResult {
                     "achievement_progress":[],
                 }),
             }
+        } else if matches!(case, Case::GroundLanternOff | Case::GroundLanternOn) {
+            let mut plan = novelty_items::plan(
+                native, &used, *fence.game_session_id.as_bytes(), command_id, source,
+            ).ok_or("lantern source admitted")?;
+            plan.recipe = plan.recipe.replacen("oteryn:novelty-item.", "oteryn:novelty-ground.", 1);
+            plan.effects["ground"] = serde_json::json!({
+                "x": ground_origin.x, "y": ground_origin.y, "floor": ground_origin.floor,
+            });
+            plan
         } else if case.ground() {
             novelty_items::plan_ground(
                 native,
@@ -359,7 +369,11 @@ pub(super) fn scenario(case: Case) -> TestResult {
         assert!(admitted.continuity.selected_capabilities.contains(350));
         assert!(!admitted.continuity.selected_capabilities.contains(23));
         let intent = UseIntent {
-            target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?),
+            target: if by_definition {
+                UseTarget::ItemByDefinition(reference(key).ok_or("definition reference")?)
+            } else {
+                UseTarget::Item(std::num::NonZeroU64::MIN)
+            },
             use_with: target,
             use_with_map_item: None,
             use_with_position: None,
@@ -379,7 +393,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 admitted,
                 command_id,
                 &payload,
-                reference(key),
+                if by_definition { None } else { reference(key) },
             )
             .await?;
         let current: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).fetch_one(&harness.pool).await?;

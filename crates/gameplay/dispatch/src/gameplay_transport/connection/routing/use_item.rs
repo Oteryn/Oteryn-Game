@@ -189,9 +189,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             .continuity
             .selected_capabilities
             .contains(CAPABILITY_ITEM_USE_V1)
-        && let UseTarget::Item(handle) = intent.target
+        && (matches!(intent.target, UseTarget::Item(_))
+            || (matches!(intent.target, UseTarget::ItemByDefinition(_))
+                && intent.use_with.is_none()
+                && intent.use_with_map_item.is_none()))
     {
-        let source = item_view.as_ref().and_then(|view| view.resolve(handle));
+        let source = match intent.target {
+            UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
+            _ => None,
+        };
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_event_item(
