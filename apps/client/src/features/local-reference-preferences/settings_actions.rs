@@ -185,6 +185,9 @@ impl SettingsState {
     }
 
     pub(super) fn accept_replaced(&mut self, preferences: ReferencePreferences) {
+        self.chat_mode_seen = None;
+        self.restore_closed_rooms = true;
+        self.change_screenshot_triggers(preferences.screenshots.triggers());
         self.preferences = preferences;
         self.battle_edit = crate::play::feature_0017_attack::view::next_edit();
         self.skills_edit = self.battle_edit;
@@ -238,8 +241,9 @@ impl SettingsState {
             custom_choices_refreshed: None,
             pending_chat_mode: None,
             chat_mode_seen: None,
-            restoring_rooms: [false; 8],
-            unconfirmed_rooms: [false; 8],
+            room_retry: [None; 8],
+            unconfirmed_rooms: [None; 8],
+            restore_closed_rooms: false,
             restore_guild_channel: false,
             chat_context: None,
             help_report_pending: false,
@@ -271,6 +275,9 @@ impl SettingsState {
             preferences: {
                 let mut preferences = preferences;
                 preferences.reconcile_controls(None);
+                if let Some(engine) = session_options.startup_engine {
+                    preferences.graphics.engine = engine;
+                }
                 preferences.miscellaneous = session_options;
                 preferences
             },
@@ -426,7 +433,7 @@ impl SettingsState {
         facts: crate::screenshots::CombatCaptureFacts,
         previous: crate::screenshots::CombatCaptureFacts,
     ) -> [bool; 2] {
-        let reset = facts.record_resets != previous.record_resets;
+        let reset = facts.record_resets > previous.record_resets;
         let observed = [facts.damage_record, facts.healing_record];
         let prior = if reset {
             [0; 2]
@@ -472,6 +479,9 @@ impl SettingsState {
             return;
         }
         preferences.reconcile_controls(Some(&self.preferences));
+        if self.preferences.graphics.engine != preferences.graphics.engine {
+            preferences.miscellaneous.startup_engine = Some(preferences.graphics.engine);
+        }
         let result = self.persist_preferences(&preferences);
         // A disk error must not disable local controls for this process.
         if self.preferences.bar_actions != preferences.bar_actions {
@@ -506,6 +516,7 @@ impl SettingsState {
             self.pending_chat_mode = None;
             self.chat_context = None;
         }
+        self.change_screenshot_triggers(preferences.screenshots.triggers());
         self.preferences = preferences;
         self.feedback = match result {
             #[cfg(bevy_shell)]

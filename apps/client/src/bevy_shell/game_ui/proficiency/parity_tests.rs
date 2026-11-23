@@ -75,7 +75,7 @@ fn equipped_weapon_hud_opens_live_track_and_flags_an_unspent_perk() -> Result {
         &outbox,
         Some(CharacterInventory {
             equipment: vec![EquippedItem {
-                slot: EquipmentSlot::LeftHand,
+                slot: EquipmentSlot::RightHand,
                 item: ItemEntry {
                     appearance_id: 0,
                     handle: 5.try_into()?,
@@ -227,9 +227,12 @@ fn weapon_filters_use_inspected_requirements_and_keep_catalogue_identity() -> Re
             .collect()
     };
     press(&mut app, "Usable by my vocation")?;
-    assert!(
-        rows(&mut app).is_empty(),
-        "unrestricted melee catalogue entries use the Knight class fallback"
+    let mut visible = rows(&mut app);
+    visible.sort_unstable();
+    assert_eq!(
+        visible,
+        [0, 1],
+        "both weapons have no profession restriction"
     );
     press(&mut app, "All vocations")?;
     press(&mut app, "Usable at my level")?;
@@ -246,9 +249,14 @@ fn weapon_filters_use_inspected_requirements_and_keep_catalogue_identity() -> Re
 #[test]
 fn review_summary_row_requires_inspecting_the_weapon() -> Result {
     use oteryn_client_ui::inspection::{InspectedItem, Reply, Request, catalogue, encode_reply};
-    let (app, _commands, _outbox) = app()?;
+    let (mut app, _commands, _outbox) = app()?;
     let owner = app.world().non_send::<HostOwner>();
-    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let link = owner
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_item_details_link();
     link.bevy_item_details_selected(true);
     let page = catalogue::PageQuery::new(0, "", "").map_err(|_| "query")?;
     assert!(link.inspect(Request::CataloguePage(page)));
@@ -274,14 +282,15 @@ fn review_summary_row_requires_inspecting_the_weapon() -> Result {
         })
         .map_err(|_| "reply")?,
     });
-    let mut filter = filters::Filters::default();
-    filter.change(filters::Change::Class);
-    filter.update(link, &link.weapon_proficiency_panel());
+    click(&mut app, |kind| {
+        matches!(kind, Kind::Filter(filters::Change::Class))
+    })?;
+    app.update();
     assert_eq!(
         link.inspection_panel().last_request,
         Some(Request::Catalogue(258))
     );
-    assert!(filter.rows.is_empty());
+    assert!(app.world().resource::<State>().filters.rows.is_empty());
     link.bevy_item_details_response(&GatedCommandResult {
         command_id: 2,
         server_sequence: 2,
@@ -301,7 +310,25 @@ fn review_summary_row_requires_inspecting_the_weapon() -> Result {
         })
         .map_err(|_| "reply")?,
     });
-    filter.update(link, &link.weapon_proficiency_panel());
-    assert_eq!(filter.rows, [0]);
+    app.update();
+    assert_eq!(app.world().resource::<State>().filters.rows, [0]);
+    // Refusing the next row leaves the first confirmed row intact. Retry the
+    // same row without another user action after the shared request settles.
+    let refusal = GatedCommandResult {
+        command_id: 3,
+        server_sequence: 3,
+        status: CommandStatus::Rejected,
+        payload: vec![],
+    };
+    link.bevy_item_details_response(&refusal);
+    app.update();
+    assert!(!link.inspection_panel().pending);
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_secs(11),
+    ));
+    app.update();
+    let inspected = link.inspection_panel();
+    assert!(inspected.pending);
+    assert_eq!(inspected.last_request, Some(Request::Catalogue(259)));
     Ok(())
 }

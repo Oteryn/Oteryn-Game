@@ -400,21 +400,10 @@ fn project(
             }
         }
         play.link.open_chat();
-        // Tibia Global opens Local Chat, Server Log and Loot; Local Chat stays selected.
-        let panel = play.link.chat_panel();
-        let mut opened = false;
-        for tab in [
-            oteryn_client_ui::chat::ChannelTab::ServerLog,
-            oteryn_client_ui::chat::ChannelTab::Loot,
-        ] {
-            if !panel.console.channels.contains(&tab) {
-                play.link.chat_open_entry(&ChannelEntry::Local(tab));
-                opened = true;
-            }
-        }
-        if opened {
-            play.link.chat_console_tab(ConsoleTab::All);
-        }
+        channels::open_saved_local_tabs(
+            &play.link,
+            owner.settings.preferences.console.local_channels,
+        );
     }
     let panel = play.link.chat_panel();
     let mut changed = false;

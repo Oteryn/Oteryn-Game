@@ -8,6 +8,7 @@ fn click_caption(app: &mut App, name: &str) -> Result<(), Box<dyn std::error::Er
         .ok_or_else(|| format!("missing outfit button {name}"))?;
     app.world_mut().trigger(Activate { entity });
     app.update();
+    finish_draw(app)?;
     Ok(())
 }
 
@@ -239,6 +240,10 @@ fn mount_visibility_keeps_the_selected_mount() -> Result<(), Box<dyn std::error:
     assert_ne!(pixels(&app), Some(mounted.clone()));
     click_caption(&mut app, "Show mount")?;
     assert_eq!(pixels(&app), Some(mounted));
+    click_caption(&mut app, "Hide character")?;
+    let mount_only = pixels(&app).ok_or("mount artwork")?;
+    click_caption(&mut app, "Hide mount")?;
+    assert_ne!(pixels(&app), Some(mount_only));
     assert_eq!(
         app.world()
             .non_send::<HostOwner>()
@@ -326,5 +331,81 @@ fn accepting_a_preset_after_clearing_its_mount_keeps_the_actor_on_foot()
         receiver.try_recv().is_err(),
         "clearing the mount cancels the riding request"
     );
+    Ok(())
+}
+
+#[test]
+fn deleting_a_preset_preserves_riding_until_the_appearance_is_confirmed()
+-> Result<(), Box<dyn std::error::Error>> {
+    for accepted in [false, true] {
+        use oteryn_session::{
+            ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+            actor_motion::ActorMotion,
+        };
+        let (mut app, _) = editor_app()?;
+        let (link, mut receiver, outbox) = crate::play::play_channel();
+        let mut draft = panel();
+        draft.open = true;
+        draft.fields[2] = "horse".into();
+        outbox.bevy_outfit_test_panel(draft.clone());
+        outbox.bevy_mount_test_actor(WorldSpatialEntity {
+            motion: Some(ActorMotion::default()),
+            display_name: None,
+            kind: EntityKind::Player,
+            entity: EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            position: ActorPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        });
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner.play.as_mut().ok_or("play")?.link = link;
+            owner.settings.preferences.outfit_presets.insert(
+                "Mounted".into(),
+                (std::array::from_fn(|i| draft.fields[i].clone()), Some(true)),
+            );
+        }
+        app.update();
+        click_caption(&mut app, "Mounted")?;
+        click_caption(&mut app, "Delete preset")?;
+        click_caption(&mut app, "OK")?;
+        let crate::combat_input::PlayCommand::Feature(command) = receiver.try_recv()? else {
+            return Err("appearance request".into());
+        };
+        assert_eq!(command.capability, 25);
+        assert!(
+            receiver.try_recv().is_err(),
+            "riding changed before appearance acknowledgement"
+        );
+        let result = if accepted {
+            oteryn_client_runtime::appearance::ChangeResult::Committed(2)
+        } else {
+            oteryn_client_runtime::appearance::ChangeResult::Rejected
+        };
+        outbox.bevy_properties_result(
+            &command,
+            &oteryn_session::GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: oteryn_session::CommandStatus::Accepted,
+                payload: result.encode().map_err(|error| format!("{error:?}"))?,
+            },
+        );
+        app.update();
+        assert_eq!(
+            matches!(receiver.try_recv(), Ok(crate::combat_input::PlayCommand::Feature(request)) if request.capability == 502),
+            accepted
+        );
+    }
     Ok(())
 }

@@ -160,6 +160,14 @@ fn project(
     {
         state.page = Page::History;
     }
+    if snapshot.store.page == store::StorePage::Catalogue
+        && state
+            .seen
+            .as_ref()
+            .is_some_and(|seen| seen.store.page == store::StorePage::History)
+    {
+        state.page = Page::Products;
+    }
     let generation = owner.generation();
     let same_session = state.key.is_some_and(|key| key.generation == generation);
     if same_session && state.seen.as_ref() == Some(&snapshot) && !state.dirty {
@@ -190,6 +198,14 @@ fn project(
         if state.seen.as_ref() != Some(&snapshot) {
             state.confirmation = None;
         }
+    }
+    if state
+        .seen
+        .as_ref()
+        .is_some_and(|seen| seen.store.product_navigation != snapshot.store.product_navigation)
+    {
+        state.page = Page::Products;
+        state.fields[3] = snapshot.store.browser.search.clone();
     }
     if focus.get().is_some_and(|id| fields.contains(id)) {
         focus.clear();

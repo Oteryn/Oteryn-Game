@@ -87,9 +87,9 @@ fn scenario(tag: &str, provision_before_relog: bool) -> TestResult {
         owner.admit_loop_training(&mut admitted).await;
         assert_eq!(admitted.first_entry, FirstEntryOutcome::Positioned);
         owner
-            .prepare_admission_prey(admitted)
+            .prepare_admission_prey(admitted, None)
             .await
-            .map_err(|()| "Prey admission refused")?;
+            .map_err(|error| format!("Prey admission refused: {error:?}"))?;
         let before = h
             .root
             .read_character_progression(&authority, character)

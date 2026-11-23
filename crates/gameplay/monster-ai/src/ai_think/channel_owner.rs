@@ -289,6 +289,9 @@ impl CreatureAiTable {
             let Some(Ok(report)) = report else {
                 continue;
             };
+            if report.idle && !report.over_budget {
+                runtime.clear_source_player_damage(actor);
+            }
             reports.push((actor, report));
         }
         reports

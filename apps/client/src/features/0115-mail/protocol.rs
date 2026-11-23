@@ -48,9 +48,8 @@ impl Outbox {
         let mut shared = lock(&self.0);
         shared.item_forge.preview.selected = session.feature_selected(152);
         shared.imbue.details_selected = session.feature_selected(447);
-        shared.imbue.success_selected = session.feature_selected(
-            oteryn_session::imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1,
-        );
+        shared.imbue.success_selected = session
+            .feature_selected(oteryn_session::imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1);
         shared
             .properties
             .house
@@ -194,6 +193,17 @@ impl Outbox {
                     ));
                     return;
                 }
+                #[cfg(bevy_shell)]
+                if accepted(result)
+                    && let Ok(intent) = oteryn_client_runtime::timed_item::decode_timed_item_intent(
+                        &command.payload,
+                    )
+                    && let Ok(reply) =
+                        oteryn_client_runtime::timed_item::decode_timed_item_result(&result.payload)
+                    && reply.disposition == oteryn_client_runtime::timed_item::TimedDisposition::Ok
+                {
+                    properties.expiry_reply = Some((intent.target, Some(reply)));
+                }
                 super::super::feature_0039_timed_item::protocol::apply(
                     &mut properties.timed_item,
                     command,
@@ -211,11 +221,18 @@ impl Outbox {
             54 => {
                 #[cfg(bevy_shell)]
                 let was_confirmed = shared.properties.training.offline_confirmed;
-                super::super::feature_0054_training::protocol::apply(&mut shared.properties.training, command, result);
+                super::super::feature_0054_training::protocol::apply(
+                    &mut shared.properties.training,
+                    command,
+                    result,
+                );
                 #[cfg(bevy_shell)]
                 if shared.properties.training.offline_confirmed && !was_confirmed {
                     let feedback = shared.properties.training.feedback.clone();
-                    shared.window_notice(crate::play::feature_local_text_messages::view::NoticeKind::OfflineTraining, feedback);
+                    shared.window_notice(
+                        crate::play::feature_local_text_messages::view::NoticeKind::OfflineTraining,
+                        feedback,
+                    );
                 }
             }
             55 => super::super::feature_0055_guild_bank::protocol::apply(

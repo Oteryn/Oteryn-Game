@@ -94,6 +94,15 @@ fn inspect_multi_item_list() -> TestResult {
 
 #[test]
 fn inspect_player_window() -> TestResult {
+    inspect_player_outfit(true)
+}
+
+#[test]
+fn inspection_without_appearance_catalogue_draws_the_visible_outfit() -> TestResult {
+    inspect_player_outfit(false)
+}
+
+fn inspect_player_outfit(with_palette: bool) -> TestResult {
     let (mut app, link, mut commands, outbox) = app(true)?;
     inspect(
         &link,
@@ -140,7 +149,7 @@ fn inspect_player_window() -> TestResult {
         Some(super::super::outfit::preview::Assets::load(&root)?);
     use oteryn_client_runtime::appearance::{Catalogue, Context};
     outbox.bevy_outfit_test_panel(oteryn_client_ui::appearance::Panel {
-        catalogue: Some(Catalogue {
+        catalogue: with_palette.then_some(Catalogue {
             context: Context {
                 content_generation: [1; 32],
                 cosmetics_digest: [2; 32],
