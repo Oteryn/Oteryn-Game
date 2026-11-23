@@ -82,13 +82,45 @@ pub(super) async fn connect_bots<'p, 'a>(
     roles: &[(&'p SeamClients<'a>, usize, Option<&str>)],
 ) -> (Vec<Bot<'p, 'a>>, TestResult) {
     let mut bots = Vec::new();
-    let result = connect_into(roles, &mut bots).await;
+    let result = connect_into(roles, &mut bots, None).await;
     (bots, result)
+}
+
+pub(super) async fn connect_bots_bounded<'p, 'a>(
+    roles: &[(&'p SeamClients<'a>, usize, Option<&str>)],
+    budget: Duration,
+) -> (Vec<Bot<'p, 'a>>, TestResult) {
+    let mut bots = Vec::new();
+    let deadline = tokio::time::Instant::now() + budget;
+    let result = connect_into(roles, &mut bots, Some(deadline)).await;
+    (bots, result)
+}
+
+async fn admission_step<T>(
+    bot: &mut Bot<'_, '_>,
+    deadline: Option<tokio::time::Instant>,
+    stage: &str,
+    step: impl AsyncFnOnce(&mut Bot<'_, '_>) -> TestResult<T>,
+) -> TestResult<T> {
+    let Some(deadline) = deadline else {
+        return step(bot).await;
+    };
+    if tokio::time::Instant::now() < deadline
+        && let Ok(result) = tokio::time::timeout_at(deadline, step(bot)).await
+    {
+        return result;
+    }
+    let context = bot.context(stage);
+    // An interrupted exchange cannot be reused. Previously admitted peers
+    // finish their liveness read and stay available for clean logout.
+    bot.session = None;
+    Err(format!("{context} error=MP admission/provision deadline").into())
 }
 
 async fn connect_into<'p, 'a>(
     roles: &[(&'p SeamClients<'a>, usize, Option<&str>)],
     bots: &mut Vec<Bot<'p, 'a>>,
+    deadline: Option<tokio::time::Instant>,
 ) -> TestResult {
     for (ordinal, &(pair, index, profile)) in roles.iter().enumerate() {
         if bots.iter().any(|bot| {
@@ -111,7 +143,9 @@ async fn connect_into<'p, 'a>(
         with_liveness(
             admitted,
             "admissions-pump",
-            connect_bot(bot, 0xa0 + u8::try_from(ordinal)?, "connect-initial"),
+            admission_step(bot, deadline, "connect-initial", async |bot| {
+                connect_bot(bot, 0xa0 + u8::try_from(ordinal)?, "connect-initial").await
+            }),
         )
         .await??;
         let session = bot.client()?.join_snapshot().game_session_id;
@@ -128,7 +162,7 @@ async fn connect_into<'p, 'a>(
         }
         // Provisioning (two relogs and a root subprocess) and the name read run long; the
         // admitted bots keep servicing liveness meanwhile.
-        let result = with_liveness(admitted, "admissions-pump", async {
+        let setup = admission_step(bot, deadline, "admission-setup", async |bot| {
             if let Some(profile) = profile {
                 provision_as(bot, profile).await?;
             }
@@ -143,12 +177,14 @@ async fn connect_into<'p, 'a>(
             }.await;
             bot.name = bot.contextualize("read-character-name", result)?;
             TestResult::Ok(())
-        })
-        .await?;
-        result?;
+        });
+        with_liveness(admitted, "admissions-pump", setup).await??;
         pump_at(bots, "admissions-pump")
             .await
             .map_err(|error| format!("while_admitting_bot={ordinal} {error}"))?;
+        if deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) {
+            return Err("MP admission/provision deadline after peer liveness check".into());
+        }
     }
     Ok(())
 }

@@ -43,17 +43,16 @@ pub(super) async fn run(
     } else {
         &profile
     };
-    let (mut bots, setup) = tokio::time::timeout(
-        Duration::from_secs(180),
-        bots::connect_bots(&[
+    let (mut bots, setup) = bots::connect_bots_bounded(
+        &[
             (core, 0, Some("knight")),
             (packets, 0, Some("druid")),
             (packets, 1, Some("paladin")),
             (core, 1, None),
-        ]),
+        ],
+        Duration::from_secs(180),
     )
-    .await
-    .unwrap_or_else(|_| (Vec::new(), Err("MP01 admission/provision deadline".into())));
+    .await;
     // Keep the exact source error in the step rather than translating it into an incomplete row.
     let ready = check("admissions", setup, &mut failures);
     let profiled = ready
@@ -675,20 +674,14 @@ async fn pvp_world_rows(
         )?;
         TestResult::Ok(world.movement_cells(room.movement_cells())?)
     })();
-    let (mut bots, setup) = tokio::time::timeout(
-        Duration::from_secs(180),
-        bots::connect_bots(&[
+    let (mut bots, setup) = bots::connect_bots_bounded(
+        &[
             (&pair, 0, Some(PVP_VOCATIONS[0])),
             (&pair, 1, Some(PVP_VOCATIONS[1])),
-        ]),
+        ],
+        Duration::from_secs(180),
     )
-    .await
-    .unwrap_or_else(|_| {
-        (
-            Vec::new(),
-            Err("MP01 PvP admission/provision deadline".into()),
-        )
-    });
+    .await;
     if check("pvp-admissions", setup, failures) {
         check(
             "pvp-profiles",
