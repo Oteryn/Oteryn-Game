@@ -18,7 +18,16 @@ fn parchment_removal_starts_four_demons_once_and_schedules_the_seal_reset() -> T
         return Ok(());
     };
     drop(admin);
-    run_scene(Scene::Parchment)
+    run_scene(Scene::Parchment { lost_publication: false })
+}
+
+#[test]
+fn parchment_wave_recovers_from_map_snapshot_after_committed_pickup_loses_publication() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_scene(Scene::Parchment { lost_publication: true })
 }
 
 #[test]
@@ -27,7 +36,7 @@ fn scarab_coin_basin_atomically_consumes_the_drop_and_routes_the_flame_player() 
         return Ok(());
     };
     drop(admin);
-    run_scene(Scene::CoalBasin { occupant: true })
+    run_scene(Scene::CoalBasin { occupant: true, landing_blocked: false })
 }
 
 #[test]
@@ -36,20 +45,29 @@ fn scarab_coin_basin_consumes_the_drop_without_a_flame_player() -> TestResult {
         return Ok(());
     };
     drop(admin);
-    run_scene(Scene::CoalBasin { occupant: false })
+    run_scene(Scene::CoalBasin { occupant: false, landing_blocked: false })
+}
+
+#[test]
+fn scarab_coin_basin_blocked_landing_keeps_the_coins_and_quest_state() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_scene(Scene::CoalBasin { occupant: true, landing_blocked: true })
 }
 
 #[derive(Clone, Copy)]
 enum Scene {
-    Parchment,
-    CoalBasin { occupant: bool },
+    Parchment { lost_publication: bool },
+    CoalBasin { occupant: bool, landing_blocked: bool },
 }
 
 fn run_scene(scene: Scene) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         // The seal goes into the backpack, so pickup preflight needs the actual
         // durable level to derive carry capacity. A Ground-only move does not.
-        let initialized = matches!(scene, Scene::Parchment);
+        let initialized = matches!(scene, Scene::Parchment { .. });
         let h = Harness::create_with_admission_seed(admin, "map_item_trigger", initialized, false)
             .await?;
         prepare_current_session(&h).await?;
@@ -68,7 +86,7 @@ fn run_scene(scene: Scene) -> TestResult {
         let generation = controller.active().ok_or("content generation")?;
         let native = generation.native_gameplay().ok_or("native content")?;
         let (origin, world) = match scene {
-            Scene::Parchment => {
+            Scene::Parchment { .. } => {
                 let origin = MovementLocalPosition {
                     x: 33062,
                     y: 31625,
@@ -93,7 +111,7 @@ fn run_scene(scene: Scene) -> TestResult {
                 )?;
                 (origin, world)
             }
-            Scene::CoalBasin { occupant } => {
+            Scene::CoalBasin { occupant, .. } => {
                 let origin = MovementLocalPosition {
                     x: 33097,
                     y: if occupant { 32816 } else { 32815 },
@@ -252,8 +270,9 @@ fn run_scene(scene: Scene) -> TestResult {
             .map_err(debug)?;
         deps.initialize(&owner).await;
         match scene {
-            Scene::Parchment => exercise_parchment(&owner, &h, &deps, admitted, &world).await?,
-            Scene::CoalBasin { occupant } => {
+            Scene::Parchment { lost_publication } =>
+                exercise_parchment(&owner, &h, &deps, admitted, &world, lost_publication).await?,
+            Scene::CoalBasin { occupant, landing_blocked } => {
                 owner.quest_catalogue = Some(std::sync::Arc::new(
                     oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                         .map_err(debug)?
@@ -262,7 +281,7 @@ fn run_scene(scene: Scene) -> TestResult {
                 ));
                 owner.admit_progression_session(&mut admitted).await;
                 owner.admit_quest_session(&admitted).await;
-                exercise_basin(&owner, &h, &deps, admitted, occupant).await?;
+                exercise_basin(&owner, &h, &deps, admitted, occupant, landing_blocked).await?;
             }
         }
         drop(owner);
@@ -278,6 +297,7 @@ async fn exercise_parchment(
     deps: &Dependencies,
     admitted: super::AdmittedSession,
     world: &crate::map::boot::BundleWorld,
+    lost_publication: bool,
 ) -> TestResult {
     let placement = crate::map::view::placement_key(
         TilePos {
@@ -307,10 +327,21 @@ async fn exercise_parchment(
         .facts()
         .base_text(placement)
         .ok_or("seal inscription")?;
-    assert_eq!(
-        owner.move_loop_item(deps.actor, command, request).await,
-        LoopMoveResult::Committed
-    );
+    if lost_publication {
+        owner.states.loop_ground.interrupt_parchment_publication
+            .store(true, std::sync::atomic::Ordering::Release);
+        assert_eq!(owner.move_loop_item(deps.actor, command, request).await, LoopMoveResult::Unknown);
+        assert!(owner.runtime.lock().await.current_live_creature_census().map_err(debug)?.is_empty());
+        let index = owner.active_generation.and_then(|generation| generation.native_gameplay())
+            .and_then(|native| native.item_index()).ok_or("native item index")?;
+        owner.states.loop_ground.invalidate();
+        let _permit = owner.spell_lane_permit().await.ok_or("scope lane")?;
+        crate::gameplay_transport::loop_move::loop_ground(owner, world.base(), Some(index))
+            .await.ok_or("successor map snapshot")?;
+        assert_eq!(owner.runtime.lock().await.current_live_creature_census().map_err(debug)?.len(), 4);
+    } else {
+        assert_eq!(owner.move_loop_item(deps.actor, command, request).await, LoopMoveResult::Committed);
+    }
     assert_eq!(
         owner.committed_loop_move(deps.actor, command).await,
         Some(LoopMoveReplay::Moved)
@@ -409,6 +440,7 @@ async fn exercise_basin(
     deps: &Dependencies,
     admitted: super::AdmittedSession,
     occupant: bool,
+    landing_blocked: bool,
 ) -> TestResult {
     use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
     let position = Position {
@@ -448,6 +480,32 @@ async fn exercise_basin(
         count: Some(2),
         slot: None,
     };
+    if landing_blocked {
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let session = crate::foundation::GameSessionId::decode(&id(87)).map_err(debug)?;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let blocker = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime.initialize_pinned_test_position(
+                blocker,
+                MovementLocalPosition { x: 33093, y: 32824, floor: 13 },
+            ).map_err(debug)?;
+        }
+        let result = owner.move_loop_item(deps.actor, command, request).await;
+        let (quantity, offerings, progress): (i64, i64, i64) = sqlx::query_as(
+            "SELECT quantity,
+             (SELECT count(*) FROM game_dreamer_ring_offerings WHERE basin_uid=9033),
+             (SELECT count(*) FROM game_character_quest_tracks
+              WHERE track_key='oteryn:quest-progress/quest/u7_4/the_ancient_tombs/default_start' AND value>0)
+             FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(item.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((quantity, offerings, progress), (3, 0, 0), "{result:?}");
+        assert!(matches!(result, LoopMoveResult::Refused(_)), "{result:?}");
+        return Ok(());
+    }
     assert_eq!(
         owner.move_loop_item(deps.actor, command, request).await,
         LoopMoveResult::Committed

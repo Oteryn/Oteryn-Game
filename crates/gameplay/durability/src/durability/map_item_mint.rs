@@ -71,7 +71,7 @@ use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::domain::CharacterId;
-use crate::foundation::{ChannelId, CommandRef, WorldId};
+use crate::foundation::{ChannelId, CommandRef, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
@@ -799,33 +799,45 @@ impl DurabilityRoot {
             .map(|(keys, _)| keys)
     }
 
-    /// Read the current Channel's committed removal for this item-move command.
-    pub async fn read_parchment_removal(
+    /// Read the live wave intent for the currently assigned Channel owner.
+    pub async fn read_parchment_wave(
         &self,
-        fence: CurrentCharacterItemFence,
-        command: CommandRef,
+        node: &NodeIncarnationProof,
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
         map_digest: [u8; 32],
+        content_digest: [u8; 32],
         epoch: u64,
     ) -> Result<Option<[u8; 16]>> {
-        let (world, channel) = scope_of(&fence).map_err(|_| MapItemMintError::AuthorityRejected)?;
+        let RuntimeScopeRefV1::Channel { world_id, channel_id } = scope else {
+            return Err(MapItemMintError::AuthorityRejected);
+        };
+        let node = node.clone();
         let removed = self.try_issue_semantic_pass()?.run(move |holder, deadline| {
             Box::pin(async move {
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                lock_admission_relations(&mut tx).await?;
+                if !super::character_progression::assert_runtime_scope_fence(
+                    &mut tx, scope, generation, &node,
+                ).await? {
+                    return Err(DurabilityError::Unavailable);
+                }
                 let removed: Option<String> = sqlx::query_scalar(
-                    "SELECT p.move_transaction_id::text FROM game_parchment_removals p \
-                     JOIN game_item_loop_move_receipts r ON r.transaction_id=p.move_transaction_id \
+                    "SELECT p.move_transaction_id::text FROM game_parchment_wave_intents w \
+                     JOIN game_parchment_removals p USING(move_transaction_id) \
                      JOIN game_map_item_mint_receipts m ON m.transaction_id=p.mint_transaction_id \
-                     WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric \
-                     AND r.character_id=encode($3,'hex')::uuid AND r.world_id=encode($4,'hex')::uuid \
-                     AND r.channel_id=encode($5,'hex')::uuid AND r.scope_generation=$6::text::numeric \
-                     AND m.base_bundle_digest=$7 AND m.reset_epoch=$8::text::numeric \
-                     AND p.reset_at>statement_timestamp()",
-                ).bind(command.game_session_id().as_bytes().as_slice())
-                  .bind(command.command_id().get().to_string())
-                  .bind(fence.character_id.as_bytes().as_slice())
-                  .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
-                  .bind(fence.scope_ownership_generation.get().to_string())
-                  .bind(map_digest.as_slice()).bind(epoch.to_string())
+                     JOIN game_runtime_scope_assignments a \
+                       ON a.scope_key=decode('01','hex')||uuid_send(m.world_id)||uuid_send(m.channel_id) \
+                     WHERE m.world_id=encode($1,'hex')::uuid AND m.channel_id=encode($2,'hex')::uuid \
+                     AND a.ownership_generation=$3::text::numeric AND a.state=1 \
+                     AND m.base_bundle_digest=$4 AND m.reset_epoch=$5::text::numeric \
+                     AND game_world_reset_map_epoch_current(m.world_id,m.reset_epoch) \
+                     AND m.content_revision='sha256:'||encode($6,'hex') \
+                     AND p.reset_at>statement_timestamp() \
+                     ORDER BY m.committed_at DESC,m.transaction_id DESC LIMIT 1",
+                ).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
+                  .bind(generation.get().to_string())
+                  .bind(map_digest.as_slice()).bind(epoch.to_string()).bind(content_digest.as_slice())
                   .fetch_optional(&mut *tx).await?;
                 commit_semantic_transaction(tx, deadline).await?;
                 Ok(removed)

@@ -19,7 +19,7 @@
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
 mod dreamer_ring;
-pub use dreamer_ring::{CoalBasinRecipient, CoalBasinTarget, DreamerRingTarget};
+pub use dreamer_ring::{CoalBasinArrival, CoalBasinRecipient, CoalBasinTarget, DreamerRingTarget};
 mod altar_arrival;
 pub use altar_arrival::{AltarFieldRead, AltarArrivalReceipt, AltarArrivalTarget, PendingAltarBoss, PendingAltarRealization};
 

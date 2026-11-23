@@ -17,7 +17,29 @@ const SPAWNS: [(u16, u16); 4] = [
 pub(super) async fn publish(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     fence: CurrentCharacterItemFence,
-    command: CommandRef,
+) -> bool {
+    #[cfg(test)]
+    if admission
+        .states
+        .loop_ground
+        .interrupt_parchment_publication
+        .swap(false, std::sync::atomic::Ordering::AcqRel)
+    {
+        return false;
+    }
+    let current = admission.runtime.lock().await.encounter_owner_scope();
+    if current != (fence.runtime_scope, fence.scope_ownership_generation) {
+        return false;
+    }
+    reconcile(admission, current).await
+}
+
+pub(super) async fn reconcile(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: (
+        crate::foundation::RuntimeScopeRefV1,
+        crate::foundation::ScopeOwnershipGeneration,
+    ),
 ) -> bool {
     let Some(map) = admission.bundle_map() else {
         return true;
@@ -29,12 +51,21 @@ pub(super) async fn publish(
     {
         return true;
     }
+    let digest = {
+        let runtime = admission.runtime.lock().await;
+        if runtime.owner_fence().is_err() || runtime.encounter_owner_scope() != owner {
+            return false;
+        }
+        runtime.content_pin().server_artifact_digest()
+    };
     let Ok(removal) = admission
         .root
-        .read_parchment_removal(
-            fence,
-            command,
+        .read_parchment_wave(
+            admission.holder,
+            owner.0,
+            owner.1,
             map.overlay.base().digest(),
+            digest,
             admission.reset_epoch,
         )
         .await
@@ -45,10 +76,7 @@ pub(super) async fn publish(
         return true;
     };
     let mut runtime = admission.runtime.lock().await;
-    if runtime.owner_fence().is_err()
-        || runtime.encounter_owner_scope()
-            != (fence.runtime_scope, fence.scope_ownership_generation)
-    {
+    if runtime.owner_fence().is_err() || runtime.encounter_owner_scope() != owner {
         return false;
     }
     let Ok(mut cache) = admission.states.loop_ground.state.lock() else {

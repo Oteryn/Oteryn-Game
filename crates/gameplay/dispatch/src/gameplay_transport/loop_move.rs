@@ -515,6 +515,8 @@ struct CacheState {
 #[derive(Debug, Default)]
 pub struct LoopGroundCache {
     state: Mutex<CacheState>,
+    #[cfg(test)]
+    pub(super) interrupt_parchment_publication: std::sync::atomic::AtomicBool,
 }
 
 /// Cancellation after a COMMIT must also discard any pre-commit map projection.
@@ -663,6 +665,18 @@ pub async fn loop_ground(
     }) {
         return Some(cached);
     }
+    if matches!(scope, crate::foundation::RuntimeScopeRefV1::Channel { .. })
+        && !parchment::reconcile(
+            admission,
+            (
+                scope,
+                crate::foundation::ScopeOwnershipGeneration::new(field_pin.2).ok()?,
+            ),
+        )
+        .await
+    {
+        return None;
+    }
     let index = index?;
     let items = projection_read(
         || admission.root.read_item_loop_ground_for_scope(scope),
@@ -788,7 +802,7 @@ pub(super) async fn committed_loop_move(
         && admission.bundle_map().is_some()
     {
         let _permit = admission.spell_lane_permit().await?;
-        if !parchment::publish(admission, fence, command).await
+        if !parchment::publish(admission, fence).await
             || !coal_basin::publish(admission, fence, command, false).await
         {
             return None;
@@ -1061,19 +1075,16 @@ pub(super) async fn move_loop_item_with_house_capacity(
         ring_target.as_ref(),
     ) {
         (true, Some(target), _) => {
-            admission
-                .root
-                .commit_item_loop_coal_basin(
-                    &permit,
-                    admission.character,
-                    admission.holder,
-                    fence,
-                    command_ref,
-                    &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
-                    loop_request.clone(),
-                    target.clone(),
-                )
-                .await
+            coal_basin::commit_drop(
+                admission,
+                &permit,
+                fence,
+                command_ref,
+                &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+                loop_request.clone(),
+                target.clone(),
+            )
+            .await
         }
         (true, None, Some(prepared)) => {
             admission
@@ -1237,7 +1248,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
     {
         return LoopMoveResult::Unknown;
     }
-    if parchment_removed && !parchment::publish(admission, fence, command_ref).await {
+    if parchment_removed && !parchment::publish(admission, fence).await {
         return LoopMoveResult::Unknown;
     }
     drop(permit);
@@ -1415,19 +1426,16 @@ pub(super) async fn relocate_source_item(
     };
     let offering = match basin.as_ref() {
         Some(target) => {
-            admission
-                .root
-                .commit_item_loop_coal_basin(
-                    permit,
-                    admission.character,
-                    admission.holder,
-                    fence,
-                    command,
-                    &weights,
-                    request.clone(),
-                    target.clone(),
-                )
-                .await
+            coal_basin::commit_drop(
+                admission,
+                permit,
+                fence,
+                command,
+                &weights,
+                request.clone(),
+                target.clone(),
+            )
+            .await
         }
         None => Ok(None),
     };
@@ -1465,7 +1473,7 @@ pub(super) async fn relocate_source_item(
     }
     if (from.x, from.y, from.floor) == (33063, 31624, -15)
         && matches!(result, Ok(Ok(_)))
-        && !parchment::publish(admission, fence, command).await
+        && !parchment::publish(admission, fence).await
     {
         return LoopMoveResult::Unknown;
     }

@@ -1,6 +1,7 @@
 //! Source-bound AddItem offerings join the existing fenced drop transaction.
 use super::*;
 use crate::durability::terrain_tool::TerrainScope;
+pub use crate::durability::quest_state::coal_basin::CoalBasinArrival;
 
 #[derive(Debug, Clone)]
 pub struct DreamerRingTarget {
@@ -18,14 +19,17 @@ pub struct CoalBasinTarget {
     pub expected_revision: i64,
     pub uid: u16,
     pub recipient: Option<CoalBasinRecipient>,
+    pub arrival: Option<CoalBasinArrival>,
 }
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CoalBasinRecipient {
     pub session: [u8; 16],
     pub actor: [u8; 16],
     pub actor_generation: u64,
     pub movement_revision: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub landing_revision: Option<u64>,
 }
 
 enum OfferingTarget {
@@ -119,6 +123,21 @@ impl DurabilityRoot {
                     }
                 };
                 if definition.production_key!=key {return Ok(None);}
+                if let OfferingTarget::CoalBasin(target) = &target {
+                    match (&target.recipient, &target.arrival) {
+                        (None, None) => {}
+                        (Some(recipient), Some(arrival))
+                            if recipient.session == *arrival.fence.game_session_id.as_bytes()
+                                && arrival.fence.runtime_scope == fence.runtime_scope
+                                && arrival.fence.scope_ownership_generation == fence.scope_ownership_generation
+                                && arrival.position.record.world_id == world
+                                && arrival.position.record.server_artifact_digest == content.loop_content_digest()
+                                && recipient.movement_revision.checked_add(1) == recipient.landing_revision
+                                && COAL_BASINS.iter().any(|basin| basin.unique == target.uid &&
+                                    basin.landing == (arrival.position.record.cell.x,arrival.position.record.cell.y,arrival.position.record.cell.floor)) => {}
+                        _ => return refuse(LoopMoveRefusal::Blocked),
+                    }
+                }
                 let LoopDestination::Ground(ground)=&request.destination else {return refuse(LoopMoveRefusal::Rejected);};
                 if definition.family!="Item" || definition.revision_ref!="definition-r1"
                     || scope.content_generation!=content.loop_content_digest() || scope.map_revision!=ground.map_revision
@@ -136,6 +155,17 @@ impl DurabilityRoot {
                 let before_ground:serde_json::Value=row.try_get("before_ground")?;
                 let (transaction,event,occurred):(String,String,i64)=sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
                     .fetch_one(&mut **tx).await?;
+                // The original move has already passed its unchanged guards.
+                // The offering's participants must settle together at COMMIT.
+                sqlx::query("SET CONSTRAINTS ALL DEFERRED").execute(&mut **tx).await?;
+                if let OfferingTarget::CoalBasin(target) = &target
+                    && let Some(arrival) = &target.arrival
+                    && !crate::durability::quest_state::coal_basin::settle(
+                        &mut tx, &node, arrival, target.uid, uuid_text(&transaction)?,
+                    ).await?
+                {
+                    return refuse(LoopMoveRefusal::Rejected);
+                }
                 let tuple=tx.tuple();
                 let mut proof=json!({
                     "source_unique":basin.unwrap_or(2244),"before":before,"ground":before_ground,"outputs":[],
@@ -151,9 +181,6 @@ impl DurabilityRoot {
                     proof["basin_recipient"] = json!(recipient);
                 }
                 let envelope=crate::durability::item_craft::audit::encode_map_harvest(fence,command,proof,&transaction,&event,occurred,tuple.tuple())?;
-                // The original move has already passed its unchanged guards. The offering's
-                // final debit, custody removal and audit are checked together at commit.
-                sqlx::query("SET CONSTRAINTS ALL DEFERRED").execute(&mut **tx).await?;
                 sqlx::query("INSERT INTO game_dreamer_ring_offerings(transaction_id,event_id,move_transaction_id,game_session_id,command_id,character_id,world_id,channel_id,item_instance_id,before_item,before_ground,intent,placement,reset_epoch,object_revision,trees_before,map_revision,content_digest,occurred_at,envelope_sha256,basin_uid,basin_recipient) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9::uuid,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,sha256($20),$21,$22)")
                     .bind(&transaction).bind(&event).bind(receipt.transaction_id.as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
                     .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&item).bind(&before).bind(&before_ground)

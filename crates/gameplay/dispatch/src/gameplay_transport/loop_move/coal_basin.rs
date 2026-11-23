@@ -83,6 +83,7 @@ pub(super) fn target(
                 actor: actor.placement_identity(),
                 actor_generation: actor.actor_local_generation(),
                 movement_revision: position.revision(),
+                landing_revision: None,
             })
         });
     Some(CoalBasinTarget {
@@ -95,7 +96,127 @@ pub(super) fn target(
         expected_revision: facts.object_revision(key).try_into().ok()?,
         uid: basin.unique,
         recipient,
+        arrival: None,
     })
+}
+
+/// Keep the exact recipient and landing inside the exclusive movement owner
+/// turn until coin debit, progression and the recoverable placement settle.
+pub(super) async fn commit_drop<C: crate::durability::item_loop_move::ItemLoopContent>(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    content: &C,
+    request: LoopMoveRequest,
+    mut target: CoalBasinTarget,
+) -> Result<
+    Option<Result<(LoopMoveReceipt, bool), LoopMoveRefusal>>,
+    crate::durability::DurabilityError,
+> {
+    use crate::durability::{DurabilityError, item_loop_move::CoalBasinArrival};
+    let commit = |target: CoalBasinTarget| {
+        admission.root.commit_item_loop_coal_basin(
+            permit,
+            admission.character,
+            admission.holder,
+            fence,
+            command,
+            content,
+            request.clone(),
+            target,
+        )
+    };
+    let Some(recipient) = target.recipient.clone() else {
+        return commit(target).await;
+    };
+    let Some(basin) = COAL_BASINS.iter().find(|basin| basin.unique == target.uid) else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    let map = admission
+        .bundle_map()
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let session = GameSessionId::decode(&recipient.session)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let eligibility = admission.current_quest_fence_durable(session).await?;
+    let Some((recipient_fence, catalogue)) = eligibility.zip(admission.quest_catalogue.as_ref())
+    else {
+        return commit(target).await;
+    };
+    let mut runtime = admission.runtime.lock().await;
+    let Some(actor) = recipient_actor(&runtime, basin, &recipient, session) else {
+        return commit(target).await;
+    };
+    let expected = runtime
+        .read_actor_position(actor)
+        .map_err(|_| DurabilityError::Unavailable)?;
+    let states = admission.states.spell_states.lock().await;
+    if states.is_dead(actor) || !states.spell_idle(&runtime, actor, session) {
+        return commit(target).await;
+    }
+    let now = admission.owner_now();
+    let blocked = super::super::pvp_live::pz_blocked(&states, actor, session, now);
+    let doors = crate::map::floor::BundleDoors(&map.facts);
+    let landing = movement(basin.landing);
+    let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        &runtime,
+        admission.movement_cells(),
+        actor,
+        session,
+        expected,
+        landing,
+        blocked,
+        &doors,
+    ) else {
+        return commit(target).await;
+    };
+    let mut position = admission.placed_record(&runtime, landing);
+    if let Some(player) = states.get(&runtime, actor, session) {
+        position.record.vitals = player.saved_vitals().and_then(|(health, mana)| {
+            crate::durability::character_last_position::LastVitals::new(health, mana)
+        });
+        position.record.rest = Some(player.bed_rest_snapshot(now.get()));
+    }
+    drop(states);
+    let Ok(staged) = runtime.stage_source_step(proof) else {
+        return commit(target).await;
+    };
+    let recipient = CoalBasinRecipient {
+        landing_revision: Some(staged.snapshot().revision()),
+        ..recipient
+    };
+    target.recipient = Some(recipient.clone());
+    target.arrival = Some(CoalBasinArrival {
+        fence: recipient_fence.item_fence(),
+        position,
+        catalogue: Arc::clone(catalogue),
+    });
+    let result = match commit(target.clone()).await {
+        Err(_) => commit(target.clone()).await,
+        known => known,
+    };
+    let known = match &result {
+        Ok(Some(Ok((_, true)))) => true,
+        Ok(Some(Ok((receipt, _)))) if receipt.replayed => admission
+            .root
+            .read_coal_basin_offering(admission.character, fence, command, target.scope)
+            .await?
+            .is_some_and(|(uid, _, selected)| uid == basin.unique && selected == Some(recipient)),
+        _ => false,
+    };
+    if known {
+        staged.publish();
+        admission.schedule_quest_refresh(session);
+        let (Ok(x), Ok(y), Ok(floor)) = (
+            u16::try_from(landing.x),
+            u16::try_from(landing.y),
+            i8::try_from(-landing.floor),
+        ) else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        map.facts.emit_movement_effect(TilePos { x, y, floor }, 11);
+    }
+    result
 }
 
 fn recipient_actor(
@@ -251,6 +372,11 @@ pub(super) async fn publish(
     let Some(recipient) = recipient else {
         return true;
     };
+    if recipient.landing_revision.is_some() {
+        // The landing and quest revisions are already in the debit receipt's
+        // transaction. Neither command replay nor a later occupant repeats them.
+        return true;
+    }
     let Ok(session) = GameSessionId::decode(&recipient.session) else {
         return false;
     };

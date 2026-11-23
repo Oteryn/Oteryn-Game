@@ -423,19 +423,16 @@ pub(super) async fn move_map_item(
     let mut offered = false;
     let offering = match basin_target.as_ref() {
         Some(target) => {
-            admission
-                .root
-                .commit_item_loop_coal_basin(
-                    permit,
-                    admission.character,
-                    admission.holder,
-                    fence,
-                    command_ref,
-                    &weights,
-                    pickup.clone(),
-                    target.clone(),
-                )
-                .await
+            coal_basin::commit_drop(
+                admission,
+                permit,
+                fence,
+                command_ref,
+                &weights,
+                pickup.clone(),
+                target.clone(),
+            )
+            .await
         }
         None => Ok(None),
     };
@@ -493,7 +490,7 @@ pub(super) async fn move_map_item(
     }
     if seal_text.is_some()
         && matches!(result, Ok(Ok(_)))
-        && !parchment::publish(admission, fence, candidate.request().command).await
+        && !parchment::publish(admission, fence).await
     {
         return LoopMoveResult::Unknown;
     }

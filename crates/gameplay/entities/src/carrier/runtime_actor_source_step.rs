@@ -16,7 +16,55 @@ pub trait SourceStepCommitProof: source_step_seal::Sealed {
         MovementFacing,
     );
 }
+
+/// A successful translation held inside an exclusive owner turn. Dropping it
+/// before settlement restores the prior carrier, including moved summons.
+#[must_use]
+pub struct StagedSourceStep<'a> {
+    runtime: &'a mut ChannelRuntimeV1,
+    before: Option<ChannelActorCarrier>,
+    snapshot: MovementPositionSnapshot,
+}
+
+impl StagedSourceStep<'_> {
+    pub fn publish(mut self) -> MovementPositionSnapshot {
+        self.before = None;
+        self.snapshot
+    }
+
+    pub fn snapshot(&self) -> MovementPositionSnapshot {
+        self.snapshot
+    }
+}
+
+impl Drop for StagedSourceStep<'_> {
+    fn drop(&mut self) {
+        if let Some(before) = self.before.take() {
+            self.runtime.carrier = before;
+        }
+    }
+}
+
 impl ChannelRuntimeV1 {
+    pub fn stage_source_step<P: SourceStepCommitProof>(
+        &mut self,
+        proof: P,
+    ) -> Result<StagedSourceStep<'_>, CarrierError> {
+        proof.validate_current(self)?;
+        let before = self.carrier.clone();
+        match self.commit_source_step(proof) {
+            Ok(snapshot) => Ok(StagedSourceStep {
+                runtime: self,
+                before: Some(before),
+                snapshot,
+            }),
+            Err(error) => {
+                self.carrier = before;
+                Err(error)
+            }
+        }
+    }
+
     /// Publish one sealed move together with a final projection CAS. Refusal
     /// restores the full native carrier before the exclusive owner turn ends.
     pub fn commit_source_step_and_project<P: SourceStepCommitProof>(
@@ -24,19 +72,11 @@ impl ChannelRuntimeV1 {
         proof: P,
         project: impl FnOnce() -> bool,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
-        proof.validate_current(self)?;
-        let before = self.carrier.clone();
-        let result = (|| {
-            let snapshot = self.commit_source_step(proof)?;
-            if !project() {
-                return Err(CarrierError::PlanConflict);
-            }
-            Ok(snapshot)
-        })();
-        if result.is_err() {
-            self.carrier = before;
+        let staged = self.stage_source_step(proof)?;
+        if !project() {
+            return Err(CarrierError::PlanConflict);
         }
-        result
+        Ok(staged.publish())
     }
 
     pub fn commit_source_step<P: SourceStepCommitProof>(
