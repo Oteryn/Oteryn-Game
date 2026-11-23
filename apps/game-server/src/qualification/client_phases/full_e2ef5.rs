@@ -1218,100 +1218,105 @@ pub(super) async fn acquire_rune(
     use oteryn_protocol_oteryn::npc_service as wire;
     let index = provisioning::item_index()?;
     let reference = provisioning::item_reference(&index, id)?;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
-    let item_key = format!("oteryn:item.tibia.i{id}");
-    let sellers: BTreeSet<_> = trades["records"]
-        .as_array()
-        .ok_or("trade records absent")?
-        .iter()
-        .filter_map(|record| {
-            let declaration = &record["declaration"];
-            declaration["offers"]
-                .as_array()?
-                .iter()
-                .any(|offer| {
-                    offer["direction"] == "SellToPlayer" && offer["item"]["key"] == item_key
-                })
-                .then(|| declaration["identity"]["key"].as_str())
-                .flatten()
-                .and_then(|key| key.strip_prefix("oteryn:service.trade."))
-                .map(|name| format!("oteryn:npc.{name}"))
-        })
-        .collect();
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let selected = metadata
-        .npcs
-        .npcs
-        .iter()
-        .filter(|npc| sellers.contains(&npc.key))
-        .filter_map(|npc| {
-            route(world, here, |at| {
-                npc.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-            })
-            .map(|path| (npc, path))
-        })
-        .min_by_key(|(_, path)| path.len());
-    let Some((npc, _)) = selected else {
-        let balances = runtime::balances(client.session_mut()).await?;
-        return Err(format!("rune {id} acquisition blocked: no player-walk route within the admitted town window to a compiled-world seller; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
-    };
+    // The bundle records placements. Only a live shop window can establish what they sell.
+    let mut candidates = std::collections::BTreeMap::<_, Vec<_>>::new();
+    for npc in &metadata.npcs.npcs {
+        for placement in &npc.placements {
+            for x in placement.x.saturating_sub(3)..=placement.x.saturating_add(3) {
+                for y in placement.y.saturating_sub(3)..=placement.y.saturating_add(3) {
+                    candidates
+                        .entry(TilePos {
+                            x,
+                            y,
+                            floor: placement.floor,
+                        })
+                        .or_default()
+                        .push((&npc.key, placement));
+                }
+            }
+        }
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(125);
+    let mut tried = BTreeSet::new();
     loop {
-        let vendor_route = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            npc.placements.iter().any(|placement| {
-                placement.floor == at.floor
-                    && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
-            })
-        }).ok_or_else(|| format!("rune {id}: return walking route to {} unavailable", npc.key))?;
-        walk(client, world, &vendor_route).await?;
-        let actor = client
+        if tokio::time::Instant::now() >= deadline {
+            return Err(
+                format!("rune {id}: live seller search or funding budget exhausted").into(),
+            );
+        }
+        let here = tile(client.world_spatial().actor_position)?;
+        let eligible =
+            |placement: &oteryn_world_bundle::npc::Placement| !tried.contains(&placement.order());
+        let path = route(world, here, |at| {
+            candidates
+                .get(&at)
+                .is_some_and(|entries| entries.iter().any(|(_, p)| eligible(p)))
+        })
+        .ok_or_else(|| {
+            format!(
+                "rune {id}: no reachable live seller in served bundle; probed placements={tried:?}"
+            )
+        })?;
+        walk(client, world, &path).await?;
+        let at = tile(client.world_spatial().actor_position)?;
+        let (npc_key, placement) = candidates
+            .get(&at)
+            .and_then(|entries| entries.iter().find(|(_, p)| eligible(p)))
+            .ok_or("rune vendor walk ended outside the planned talk range")?;
+        let Some(actor) = client
             .world_entities()
             .and_then(|entities| {
                 entities.iter().find(|entity| {
                     entity.kind == oteryn_dev_client::EntityKind::Npc
-                        && npc.placements.iter().any(|p| {
-                            entity.position.x == i32::from(p.x)
-                                && entity.position.y == i32::from(p.y)
-                                && entity.position.floor == basis.floor(p.floor)
-                        })
+                        && entity.position.x == i32::from(placement.x)
+                        && entity.position.y == i32::from(placement.y)
+                        && entity.position.floor == basis.floor(placement.floor)
                 })
             })
             .map(|entry| entry.entity)
-            .ok_or("rune vendor not visible at compiled placement")?;
-        for text in ["hi", "trade"] {
-            let reply = runtime::talk(
-                client.session_mut(),
-                &wire::NpcTalkIntent {
-                    npc_actor: actor,
-                    text: text.into(),
-                },
-            )
-            .await?;
-            if reply != wire::NpcIntentDisposition::Ok {
-                return Err(format!("rune {id} vendor {} {text} refused: {reply:?}", npc.key).into());
-            }
+        else {
+            tried.insert(placement.order());
+            continue;
+        };
+        let talk = |text: &str| wire::NpcTalkIntent {
+            npc_actor: actor,
+            text: text.into(),
+        };
+        if rune_vendor_talk(client, &talk("hi"), deadline).await? != wire::NpcIntentDisposition::Ok
+        {
+            tried.insert(placement.order());
+            continue;
         }
-        let delta = client
-            .session_mut()
-            .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
-            .await?;
-        let window = wire::decode_npc_trade_window(&delta.payload)
-            .map_err(|error| format!("rune shop decode: {error:?}"))?;
-        let (offer_index, offer) = window
-            .offers
-            .iter()
-            .enumerate()
-            .find(|(_, offer)| {
-                offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
-            })
-            .ok_or_else(|| format!("rune {id} not offered by live vendor {}", npc.key))?;
+        client.take_events();
+        let disposition = rune_vendor_talk(client, &talk("trade"), deadline).await?;
+        // The NPC delta follows its command result. A subsequent command drains it without
+        // blocking on a window that a non-shop NPC never sends.
+        level(client).await?;
+        let window = client
+            .take_events()
+            .into_iter()
+            .rev()
+            .find_map(|event| match event {
+                SessionEvent::NpcTradeWindow(delta) => Some(delta.value),
+                _ => None,
+            });
+        let quote = window
+            .filter(|_| disposition == wire::NpcIntentDisposition::Ok)
+            .and_then(|window| {
+                let (_, revision) = window.open.filter(|(owner, _)| *owner == actor)?;
+                let (index, offer) = window.offers.into_iter().enumerate().find(|(_, offer)| {
+                    offer.side == wire::NpcTradeSide::Buy
+                        && offer.item_definition_ref == reference.get()
+                })?;
+                Some((revision, index, offer))
+            });
+        let Some((revision, offer_index, offer)) = quote else {
+            rune_vendor_talk(client, &talk("bye"), deadline).await?;
+            tried.insert(placement.order());
+            continue;
+        };
         let before = rune_quantity(client, reference)?;
         let balances = runtime::balances(client.session_mut()).await?;
         client.take_events();
@@ -1319,7 +1324,7 @@ pub(super) async fn acquire_rune(
             client.session_mut(),
             &wire::NpcTradeIntent {
                 npc_actor: actor,
-                catalogue_revision: window.open.ok_or("rune shop closed")?.1,
+                catalogue_revision: revision,
                 offer_index: u32::try_from(offer_index)?,
                 side: offer.side,
                 quantity: 2,
@@ -1330,8 +1335,10 @@ pub(super) async fn acquire_rune(
         if reply != wire::NpcIntentDisposition::Ok {
             let price = u64::from(offer.unit_price) * 2;
             if reply == wire::NpcIntentDisposition::Rejected
-                && balances.is_some_and(|gold| gold.carried_gold.saturating_add(gold.bank_gold) < price)
+                && balances
+                    .is_some_and(|gold| gold.carried_gold.saturating_add(gold.bank_gold) < price)
             {
+                rune_vendor_talk(client, &talk("bye"), deadline).await?;
                 verdict::Harness::global().bounded_wait(deadline, "rune-purchase-funds");
                 let hunt = async {
                     let (corpse, _) = player_corpse(client, world, &[]).await?;
@@ -1340,20 +1347,44 @@ pub(super) async fn acquire_rune(
                 match tokio::time::timeout_at(deadline, hunt).await {
                     Ok(Ok(())) => continue,
                     Ok(Err(error)) => {
-                        return Err(format!("rune {id} funds: real hunt/loot failed: {error}; vendor={} price={price} observed_balances={balances:?}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:385", npc.key).into());
+                        return Err(format!("rune {id} funds: real hunt/loot failed: {error}; vendor={} price={price} observed_balances={balances:?}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:385", npc_key).into());
                     }
                     Err(_) => {
-                        return Err(format!("rune {id} funds: hunt budget exhausted; vendor={} price={price} observed_balances={balances:?}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:385", npc.key).into());
+                        return Err(format!("rune {id} funds: hunt budget exhausted; vendor={} price={price} observed_balances={balances:?}; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:385", npc_key).into());
                     }
                 }
             }
-            return Err(format!("rune {id} player purchase refused by {}: {reply:?}; quantity=2 unit_price={} observed_balances={balances:?} carried_quantity={before}; no earned funds or rune were granted by this journey; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", npc.key, offer.unit_price).into());
+            return Err(format!("rune {id} player purchase refused by {}: {reply:?}; quantity=2 unit_price={} observed_balances={balances:?} carried_quantity={before}; no earned funds or rune were granted by this journey; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", npc_key, offer.unit_price).into());
         }
         let expected = before
             .checked_add(u64::from(offer.count) * 2)
             .ok_or("rune quantity overflow")?;
         let sequence = inventory_quantity(client, reference, expected).await?;
+        rune_vendor_talk(client, &talk("bye"), deadline).await?;
         return Ok((reference, sequence));
+    }
+}
+
+async fn rune_vendor_talk(
+    client: &mut DevClientSession,
+    intent: &oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
+    deadline: tokio::time::Instant,
+) -> TestResult<oteryn_protocol_oteryn::npc_service::NpcIntentDisposition> {
+    use oteryn_dev_client::client_runtime::npc_shop;
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+
+    loop {
+        let reply = npc_shop::talk(client.session_mut(), intent).await?;
+        if reply != NpcIntentDisposition::RateLimited {
+            return Ok(reply);
+        }
+        let retry = tokio::time::Instant::now() + Duration::from_secs(1);
+        if retry >= deadline {
+            return Err("rune vendor talk rate limit exhausted acquisition budget".into());
+        }
+        client
+            .service_liveness(retry.saturating_duration_since(tokio::time::Instant::now()))
+            .await?;
     }
 }
 
