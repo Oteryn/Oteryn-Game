@@ -528,6 +528,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(result) => return result,
         };
         let projection_target = match &projection {
+            // An unpublished durable scene still holds the lever at its original revision.
+            Some(crate::map::facts::QuestCallbackProjection::Scene { .. })
+                if callback.lever.is_some() =>
+            {
+                Some(key)
+            }
             // Keep the source and shared entrance reserved until the exact
             // USE receipt can settle, including when its acknowledgment is lost.
             Some(crate::map::facts::QuestCallbackProjection::MerchantTrap {

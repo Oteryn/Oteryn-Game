@@ -116,9 +116,6 @@ pub(super) async fn exercise_dread_lord(
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     callback: &Callback,
 ) -> TestResult {
-    use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
-    use std::sync::Arc;
-
     let [offering] = callback.offerings.as_slice() else { return Err("diamond offering".into()) };
     let [rank, _claim] = callback.storage.as_slice() else { return Err("rank and claim guards".into()) };
     let [resting_lever, _active_lever] = callback.lever.ok_or("source lever")?;
@@ -150,26 +147,43 @@ pub(super) async fn exercise_dread_lord(
     assert_eq!(counts(harness).await?, before);
     assert_eq!(ground_outputs(owner)?, 0);
 
-    // A returning Dread Lord supplies the rank prerequisite. USE, offering
-    // consumption, claim and ground placement go through their real owners.
-    let transition = "oteryn:quest-transition/fixture/dread-lord-rank";
-    let catalogue = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?.clone()
-        .with_fixture_transition(QuestTransition {
-            key: transition.into(),
-            quest: callback.quest.clone(),
-            effects: vec![QuestEffect {
-                track: rank.track.clone(),
-                from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(rank.minimum),
-            }],
-            completes: false,
-            experience: None,
-            world_change: None,
-        }).map_err(debug)?;
-    owner.quest_catalogue = Some(Arc::new(catalogue));
-    super::qengine_outfit_stories_fixtures::commit_fixture(owner, admitted, transition, 90002).await?;
+    // Both returning players have the authored prerequisite in their saved progress.
+    let prerequisite = [(rank.track.clone(), rank.minimum)];
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        harness, owner, admitted, &prerequisite, 152,
+    )
+    .await
+    .map_err(|error| format!("first Dread Lord saved rank: {error}"))?;
     owner.refresh_quest_session(admitted.game_session_id, false).await;
-    assert_eq!(pull(owner, admitted, resting_lever).await?, UseDisposition::Committed);
+
+    let mut peer = dread_lord_peer(owner, admitted, harness)
+        .await
+        .map_err(|error| format!("second Dread Lord admission: {error}"))?;
+    owner.admit_progression_session(&mut peer).await;
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        harness, owner, &peer, &prerequisite, 153,
+    )
+    .await
+    .map_err(|error| format!("second Dread Lord saved rank: {error}"))?;
+    owner.refresh_quest_session(peer.game_session_id, false).await;
+
+    owner
+        .states
+        .quest_callbacks
+        .interrupt_after_commit
+        .store(true, std::sync::atomic::Ordering::Release);
+    assert!(pull(owner, admitted, resting_lever).await.is_err());
+    assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+    assert_eq!(counts(harness).await?.1, before.1 + 1);
+    assert_eq!(ground_outputs(owner)?, 0);
+
+    // Supply a new diamond so the second Dread Lord would otherwise be eligible.
+    super::quest_world_callbacks_fixtures::offering(owner, fence, offering, 90004).await?;
+    let competing_pull = pull(owner, &mut peer, resting_lever).await?;
+    let resumed = owner.reconcile_quest_callbacks(admitted.game_session_id).await;
+    // Without ITEM_USE_V1 the wire encodes exhaustion as a generic refusal.
+    assert_eq!((competing_pull, resumed), (UseDisposition::Rejected, true));
+    assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
 
     let map = owner.bundle_map().ok_or("map")?;
     let due = map.facts.next_movement_decay_time().ok_or("lever deadline")?;
@@ -186,4 +200,64 @@ pub(super) async fn exercise_dread_lord(
     assert_eq!(after_mints, before_mints);
     eprintln!("POSTGRES_CASE_COMPLETED dread-lord-lever");
     Ok(())
+}
+
+async fn dread_lord_peer(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    harness: &Harness,
+) -> TestResult<AdmittedSession> {
+    use super::fixture::id;
+    use crate::gameplay_transport::connection::{ControllerBinding, SessionContinuity};
+    use crate::world_party_runtime_postgres_cases::{
+        FreshPlayerOwners, committed_fresh_player_from_source_owned,
+    };
+
+    let _source = super::house_transfer_fixtures::RecoverySource::start(harness).await?;
+    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+        .fetch_one(&harness.pool).await?;
+    let (current, _) = committed_fresh_player_from_source_owned(
+        &FreshPlayerOwners {
+            root: harness.root.clone(),
+            node: harness.node.clone(),
+            recovery: &harness.recovery,
+        },
+        60,
+        63,
+        171,
+        now,
+        Some("platform-test"),
+    )
+    .await?;
+    let fence = crate::gameplay_transport::item_fence_of(current).ok_or("peer fence")?;
+    let session = fence.game_session_id;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .bind_attacker_lease(actor, session, current.current_character_lease())
+            .map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                actor,
+                super::quest_world_callbacks_fixtures::local(DREAD_LORD_START),
+            )
+            .map_err(debug)?;
+        actor
+    };
+    Ok(AdmittedSession {
+        game_session_id: session,
+        runtime_actor: Some(actor),
+        controller: Some(ControllerBinding {
+            transport: current.current_transport().ok_or("peer transport")?,
+            account_id: id(63),
+        }),
+        continuity: SessionContinuity {
+            selected_capabilities: admitted.continuity.selected_capabilities,
+            ..SessionContinuity::FRESH
+        },
+        item_fence: Some(fence),
+        ..*admitted
+    })
 }
