@@ -28,6 +28,10 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
         }
     }
 
+    pub fn prepared(&self) -> &T {
+        &self.output.1
+    }
+
     pub fn publish(
         self,
     ) -> (

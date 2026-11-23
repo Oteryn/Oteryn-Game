@@ -116,8 +116,8 @@ pub(super) async fn exercise(
             2,
             encode_use_intent(&target).map_err(debug)?,
         );
-        let result = if command == 2 && variant == "lost_ack" {
-            crate::durability::item_loop_move::SourceSceneItemMove::with_lost_ack_and_unavailable_read(use_lever).await?
+        let result = if command == 2 && variant == "unknown_commit" {
+            crate::durability::item_loop_move::with_lost_source_scene_commit_ack(use_lever).await?
         } else {
             use_lever.await?
         };

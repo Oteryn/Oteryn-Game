@@ -570,16 +570,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
-        // Crystal's climbing-vine USE refuses a locked player in either direction,
-        // even if the authored landing does not carry a protection-zone flag.
-        if blocked
-            && matches!(
-                callback.key.as_str(),
-                "oteryn:quest-callback/thieves-guild-sarina-vine-climb"
-                    | "oteryn:quest-callback/thieves-guild-sarina-vine-descend"
-            )
-        {
-            return UseDisposition::PzBlocked;
+        if blocked && callback.effects.requires_no_pz_lock {
+            return UseDisposition::NotPossible;
         }
         let mut destination = callback.teleport;
         if let Some(remote) = &callback.remote_teleport {

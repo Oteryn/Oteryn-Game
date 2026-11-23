@@ -353,6 +353,9 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     // Member one damages the boss; member two only stands nearby.
     let nomad = rule.creature == "oteryn:creature.nomad";
     let left_party = mode == "nomad_excludes_former_member_with_stale_top_damage_roster";
+    let kicked_by_leader = mode == "nomad_excludes_member_kicked_by_leader";
+    let shared_xp_disabled = mode == "nomad_respects_leader_disabling_shared_xp";
+    let leader_changed_party = kicked_by_leader || shared_xp_disabled;
     let mut death_peers = Vec::new();
     let peer_source = if nomad || rule.creature.ends_with("_overlord") {
         Some(super::house_transfer_fixtures::RecoverySource::start(h).await?)
@@ -365,6 +368,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         };
         let peer_count = if mode == "overlordcr_seventeen" {
             17u8
+        } else if leader_changed_party {
+            3
         } else {
             2
         };
@@ -577,8 +582,14 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 let (peer, peer_session, idle_member) = death_peers[1];
                 // Freeze the party observation at the lethal turn. The first
                 // peer deals damage, but only the second belongs to this party.
+                let leader = if leader_changed_party {
+                    death_peers[2].2
+                } else {
+                    character
+                };
                 let members = [character, idle_member]
                     .into_iter()
+                    .chain(leader_changed_party.then_some(leader))
                     .zip(1..)
                     .map(|(character, invitation_order)| PartyMemberSnapshot {
                         character,
@@ -593,7 +604,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     character,
                     party_id: Some(id(81)),
                     revision: Some(1),
-                    leader: Some(character),
+                    leader: Some(leader),
                     shared_xp_enabled: true,
                     members,
                     observed_database_micros: 1,
@@ -608,6 +619,20 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                     peer_party.shared_xp_enabled = false;
                     peer_party.members.clear();
                     peer_party.observed_database_micros = 2;
+                }
+                if leader_changed_party {
+                    // The leader's committed command updates only the leader's actor projection.
+                    let (leader_actor, leader_session, _) = death_peers[2];
+                    let mut updated = party.clone();
+                    updated.character = leader;
+                    updated.revision = Some(2);
+                    updated.observed_database_micros = 2;
+                    if kicked_by_leader {
+                        updated.members.retain(|member| member.character != idle_member);
+                    } else {
+                        updated.shared_xp_enabled = false;
+                    }
+                    runtime.project_world_party(leader_actor, leader_session, updated).map_err(debug)?;
                 }
                 runtime.project_world_party(actor, session, party).map_err(debug)?;
                 runtime.project_world_party(peer, peer_session, peer_party).map_err(debug)?;
@@ -1018,7 +1043,11 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             let before = seeds.first().ok_or("Nomad mission predecessor")?.1;
             assert_eq!(
                 value,
-                if index == 0 || left_party {
+                if index == 0
+                    || left_party
+                    || shared_xp_disabled
+                    || (kicked_by_leader && index == 1)
+                {
                     Some(before)
                 } else {
                     rule.effects[0].set
@@ -1093,7 +1122,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             1
         } else {
             i64::try_from(kills)?
-                + if death_peers.is_empty() {
+                + if death_peers.is_empty() || left_party || shared_xp_disabled {
                     0
                 } else if mode == "overlordcr_seventeen" {
                     16

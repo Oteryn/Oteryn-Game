@@ -33,10 +33,17 @@ pub(super) async fn exercise(
     weakened: &Callback,
     variant: &str,
 ) -> TestResult {
-    let ordinary_restart = variant == "ordinary_restart";
+    let ordinary_restart = matches!(
+        variant,
+        "ordinary_restart" | "ordinary_published_restart" | "ordinary_rolled_back_delete"
+    );
+    let published_restart = matches!(
+        variant,
+        "ordinary_published_restart" | "weakened_published_restart"
+    );
+    let rolled_back_delete = matches!(variant, "rolled_back_delete" | "ordinary_rolled_back_delete");
     let lost_ack = variant == "lost_delivery_ack";
-    let restart_published = variant == "published_restart";
-    let delivered_case = variant == "delivered" || restart_published;
+    let delivered_case = variant == "delivered" || rolled_back_delete;
     let native = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
@@ -86,7 +93,7 @@ pub(super) async fn exercise(
             u64::try_from(weakened.offerings.len())?
         );
         tx.commit().await?;
-    } else if !delivered_case && !lost_ack {
+    } else if !delivered_case && !lost_ack && !published_restart {
         owner
             .states
             .quest_callbacks
@@ -120,6 +127,18 @@ pub(super) async fn exercise(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
+    if rolled_back_delete {
+        sqlx::raw_sql(
+            "CREATE FUNCTION reject_coffin_delivery_delete() RETURNS trigger LANGUAGE plpgsql AS $$
+             BEGIN RAISE EXCEPTION 'coffin delivery rolled back'; END $$;
+             CREATE CONSTRAINT TRIGGER reject_coffin_delivery_delete
+             AFTER DELETE ON game_pending_vampire_coffin_payments
+             DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+             EXECUTE FUNCTION reject_coffin_delivery_delete()",
+        )
+        .execute(&h.pool)
+        .await?;
+    }
     if lost_ack {
         owner.states.quest_callbacks.lose_coffin_delivery_ack.store(
             true, std::sync::atomic::Ordering::Release,
@@ -156,25 +175,48 @@ pub(super) async fn exercise(
             .creature,
     );
     drop(runtime);
+    if delivered_case || published_restart {
+        assert_eq!(
+            owner.root.read_pending_vampire_coffin(owner.character, fence.character_id)
+                .await.map_err(debug)?,
+            Some(if ordinary_restart {
+                oteryn_gameplay_quests::quest::world_callbacks::VampireCoffinKind::Ordinary
+            } else {
+                oteryn_gameplay_quests::quest::world_callbacks::VampireCoffinKind::Weakened
+            }),
+            "publishing a live Count must leave its payment recoverable",
+        );
+    }
+    let mut count = creatures[0].actor;
+    if published_restart || rolled_back_delete {
+        return_to_coffin(owner, admitted).await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .remove_encounter_actor(creatures[0].actor)
+            .map_err(debug)?;
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        assert_eq!(
+            use_coffin(owner, admitted, weakened, 63).await?,
+            UseDisposition::Committed,
+            "a published Count remains recoverable until its death settles",
+        );
+        let runtime = owner.runtime.lock().await;
+        let creatures = runtime.visible_entities().creatures;
+        assert_eq!(creatures.len(), 1);
+        assert_ne!(creatures[0].actor, count);
+        count = creatures[0].actor;
+        assert_eq!(
+            runtime.companion_snapshot(count).map_err(debug)?.state.policy.definition_key,
+            expected.effects.encounter.as_ref().ok_or("encounter")?.monsters[0].creature,
+        );
+    }
     if delivered_case {
-        assert!(owner.root.read_pending_vampire_coffin(owner.character, fence.character_id)
-            .await.map_err(debug)?.is_some(),
-            "publishing a live Count must leave its payment recoverable");
-        let count = if restart_published {
-            // Lose the published Count while keeping the committed Character state.
-            owner.runtime.lock().await.remove_encounter_actor(creatures[0].actor).map_err(debug)?;
-            return_to_coffin(owner, admitted, weakened).await?;
-            owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
-            assert_eq!(use_coffin(owner, admitted, weakened, 63).await?, UseDisposition::Committed);
-            let replacement = owner.runtime.lock().await.visible_entities().creatures;
-            assert_eq!(replacement.len(), 1);
-            assert_ne!(replacement[0].actor, creatures[0].actor);
-            replacement[0].actor
-        } else {
-            creatures[0].actor
-        };
         defeat_count(owner, admitted, count).await?;
-        return_to_coffin(owner, admitted, weakened).await?;
         let catalogue = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?;
         let hand_in = oteryn_gameplay_quests::quest::reward_callbacks::offered_for(catalogue)?
             .into_iter()
@@ -319,7 +361,7 @@ async fn defeat_count(
         .bound_attacker_lease(actor, session)
         .map_err(debug)?;
     let snapshot = runtime.companion_snapshot(count).map_err(debug)?;
-    runtime
+    let hit = runtime
         .borrow_exact_actor_commit_at(now)
         .commit_damage_for_bound_attacker(
             count,
@@ -334,6 +376,8 @@ async fn defeat_count(
             },
         )
         .map_err(debug)?;
+    assert!(hit.applied);
+    assert_eq!(hit.health_after, 0);
     record_creature_kill(
         &mut runtime,
         KillSink {
@@ -353,23 +397,25 @@ async fn defeat_count(
         now,
         Some(observed),
     );
+    assert!(
+        queue.has_session(session),
+        "the Count's lethal hit must enter durable settlement",
+    );
     drop(runtime);
     assert_eq!(
         Box::pin(owner.drain_kill_rewards(session)).await,
         DrainOutcome::Drained
     );
 
-    Ok(())
+    return_to_coffin(owner, admitted).await
 }
 
 async fn return_to_coffin(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
-    callback: &Callback,
 ) -> TestResult {
-    let actor = admitted.runtime_actor.ok_or("coffin actor")?;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
     let session = admitted.game_session_id;
-    let staging = callback.effects.encounter.as_ref().and_then(|encounter| encounter.players.first()).ok_or("coffin staging")?.from;
     let mut runtime = owner.runtime.lock().await;
     let expected = runtime.read_actor_position(actor).map_err(debug)?;
     let map = owner.bundle_map().ok_or("coffin map")?;
@@ -380,7 +426,7 @@ async fn return_to_coffin(
         actor,
         session,
         expected,
-        fixture::local(staging),
+        fixture::local(staging(RESTART)?),
         false,
         &doors,
     )

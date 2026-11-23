@@ -329,10 +329,8 @@ pub(super) fn world_cells(
         callback.native_rule,
         Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { seal: 122 })
     );
-    if callback.key.ends_with(super::serpentine_tower_fixtures::NAME)
-        || callback.key.starts_with("oteryn:quest-callback/thieves-guild-sarina-vine-")
-    {
-        // These landings require source-qualified terrain and zone facts.
+    if callback.key.ends_with(super::serpentine_tower_fixtures::NAME) {
+        // Scene evacuation requires source-aware tile facts at its landings.
         data.manifest.palette[0].key = "oteryn:terrain.tibia.i423".into();
     } else if callback.key == oteryn_gameplay_quests::quest::targuna_ram::KEY {
         data.manifest.palette[0].key = "oteryn:terrain.tibia.i4515".into();

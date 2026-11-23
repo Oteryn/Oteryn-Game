@@ -19,7 +19,6 @@ struct EncounterCreditPublication {
 
 pub(super) struct StagedSourceBoss<'owner> {
     native: StagedQuestEncounter<'owner, PreparedPhase>,
-    coffin_death: Option<[u8; 16]>,
     players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
     capture: Option<EncounterCreditPublication>,
     visit: Option<EncounterVisit>,
@@ -245,9 +244,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(staged) = staged else {
             return disposition;
         };
-        let Some(death) = staged.coffin_death else {
+        let [count] = staged.native.prepared().actors.as_slice() else {
             return UseDisposition::Rejected;
         };
+        let count = *count;
         let mut published = false;
         let delivery = self
             .root
@@ -259,7 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 command,
                 content,
                 kind,
-                death,
+                count,
                 || {
                     self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
                     published = true;
@@ -614,20 +614,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let capture_required = prepared.is_some();
-        let mut coffin_death = None;
         let bind = |runtime: &mut ChannelRuntimeV1, actors: &[ExactActorRef]| {
-            if VampireCoffinKind::for_callback(&callback.key).is_some()
-                && let [count] = actors
-            {
-                coffin_death = Some(
-                    crate::durability::boss_encounter::reward_chest::scoped_death_id(
-                        count.runtime_scope(),
-                        count.scope_generation().get(),
-                        count.actor_local_id(),
-                        count.actor_local_generation(),
-                    ),
-                );
-            }
             let roster = if capture_required {
                 Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
                         party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
@@ -668,7 +655,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             *staged = Some(StagedSourceBoss {
                 native,
-                coffin_death,
                 players,
                 capture,
                 visit: visits.as_ref().map(|_| EncounterVisit {

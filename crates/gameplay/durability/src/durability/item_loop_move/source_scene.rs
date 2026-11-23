@@ -16,27 +16,24 @@ pub struct SourceSceneItemMove {
 
 #[cfg(feature = "test-support")]
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum SourceSceneFault {
-    LoseAcknowledgment,
-    ReceiptUnavailable,
-    Resolved,
+enum SceneCommitFault {
+    LoseCommitAck,
+    RefuseReceiptRead,
+    Completed,
 }
 
 #[cfg(feature = "test-support")]
 tokio::task_local! {
-    static SOURCE_SCENE_FAULT: std::cell::Cell<SourceSceneFault>;
+    static LOST_SCENE_COMMIT_ACK: std::cell::Cell<SceneCommitFault>;
 }
 
 #[cfg(feature = "test-support")]
-impl SourceSceneItemMove {
-    /// Drop one real COMMIT acknowledgment and make the first recovery read unavailable.
-    pub async fn with_lost_ack_and_unavailable_read<T>(
-        operation: impl std::future::Future<Output = T>,
-    ) -> T {
-        SOURCE_SCENE_FAULT
-            .scope(std::cell::Cell::new(SourceSceneFault::LoseAcknowledgment), operation)
-            .await
-    }
+pub async fn with_lost_source_scene_commit_ack<T>(
+    operation: impl std::future::Future<Output = T>,
+) -> T {
+    LOST_SCENE_COMMIT_ACK
+        .scope(std::cell::Cell::new(SceneCommitFault::LoseCommitAck), operation)
+        .await
 }
 
 impl DurabilityRoot {
@@ -76,11 +73,11 @@ impl DurabilityRoot {
             return Ok(Err(LoopMoveRefusal::Rejected));
         };
         let (last_command, last_request) = (last.command, last.request.clone());
-        let mut context = (permit, content, false);
+        let mut commit_started = false;
+        let mut context = (permit, content, &mut commit_started);
         let result = self.try_issue_semantic_pass()?
             .run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
                 let (permit, content, commit_started) = context;
-                let (permit, content) = (*permit, *content);
                 let mut tx = super::super::db::begin_type2_transaction(holder, deadline).await?;
                 let attempt: LoopResult<()> = async {
                     for SourceSceneItemMove { command, mut request, mint } in moves {
@@ -105,7 +102,7 @@ impl DurabilityRoot {
                             replay.map_err(LoopError::Refused)?;
                         } else {
                             apply_loop_move_with_source_policy(
-                                &mut tx, permit, &record, &node, &fence, command, content,
+                                &mut tx, permit, &record, &node, &fence, command, *content,
                                 &request, &intent, None, None, None, None, true,
                             ).await?;
                         }
@@ -114,40 +111,41 @@ impl DurabilityRoot {
                 }.await;
                 match attempt {
                     Ok(()) => {
-                        *commit_started = true;
+                        **commit_started = true;
                         tx.commit(deadline).await?;
+                        #[cfg(feature = "test-support")]
+                        if LOST_SCENE_COMMIT_ACK.try_with(|state|
+                            state.replace(SceneCommitFault::RefuseReceiptRead) == SceneCommitFault::LoseCommitAck
+                        ) == Ok(true) {
+                            return Err(DurabilityError::CommitOutcomeUnknown);
+                        }
                         Ok(Ok(()))
                     }
                     Err(error) => loop_error(error).map(Err),
                 }
             })).await;
-        #[cfg(feature = "test-support")]
-        let result = if matches!(result, Ok(Ok(())))
-            && SOURCE_SCENE_FAULT.try_with(|fault| {
-                fault.replace(SourceSceneFault::ReceiptUnavailable) == SourceSceneFault::LoseAcknowledgment
-            }).unwrap_or(false)
-        {
-            Err(DurabilityError::CommitOutcomeUnknown)
-        } else {
-            result
-        };
         let Err(error) = result else {
             return result;
         };
-        let unresolved = context.2
+        let unresolved = commit_started
             && !matches!(error, DurabilityError::CommitRejected | DurabilityError::CommitTransactionTimeout);
+        // The final exact receipt proves the outcome of the entire atomic batch.
+        // When COMMIT was sent, keep the caller's staged scene alive until the
+        // command lock proves that receipt present or absent.
         loop {
-            match self.reconcile_source_scene_move(
-                recovery, fence.character_id, last_command, last_request.clone(),
-            ).await {
+            match self
+                .reconcile_source_scene_move(
+                    recovery, fence.character_id, last_command, last_request.clone(),
+                )
+                .await
+            {
                 Ok(Some(Ok(_))) => return Ok(Ok(())),
                 Ok(_) => return Err(error),
-                Err(_) if unresolved => {
-                    // The staged scene must stay reserved. A failed read proves
-                    // neither commit nor rollback. Retry only the receipt lookup.
+                Err(_) if !unresolved => return Err(error),
+                Err(_) => {
                     tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+                    let _ = self.await_ready().await;
                 }
-                Err(_) => return Err(error),
             }
         }
     }
@@ -160,11 +158,12 @@ impl DurabilityRoot {
         request: LoopMoveRequest,
     ) -> Result<Option<Result<LoopMoveReceipt, LoopMoveRefusal>>, DurabilityError> {
         #[cfg(feature = "test-support")]
-        if SOURCE_SCENE_FAULT.try_with(|fault| {
-            fault.replace(SourceSceneFault::Resolved) == SourceSceneFault::ReceiptUnavailable
-        }).unwrap_or(false) {
+        if LOST_SCENE_COMMIT_ACK.try_with(|state| {
+            state.replace(SceneCommitFault::Completed) == SceneCommitFault::RefuseReceiptRead
+        }) == Ok(true) {
             return Err(DurabilityError::RootUnavailable);
         }
-        self.reconcile_item_loop_move(recovery, character, command, request).await
+        self.reconcile_item_loop_move(recovery, character, command, request)
+            .await
     }
 }

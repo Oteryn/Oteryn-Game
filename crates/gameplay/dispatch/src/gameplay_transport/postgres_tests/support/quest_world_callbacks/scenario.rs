@@ -88,6 +88,7 @@ fn scenario_case(
     let cursed_crystal_stairs = name.starts_with("crystal-stairs-");
     let eroth_mirror = name == "qengine-rewards-eroth-start";
     let native_crop = eroth_mirror
+        || sarina_vine
         || cursed_crystal_stairs
         || tibia_tales_hallowed
         || pinned_qc_world
@@ -129,6 +130,13 @@ fn scenario_case(
         || native_upper;
     let start = if vampire_coffin {
         super::super::inquisition_coffin_recovery_fixtures::staging(name)?
+    } else if sarina_vine {
+        let reverse = if name.ends_with("-climb") {
+            "thieves-guild-sarina-vine-descend"
+        } else {
+            "thieves-guild-sarina-vine-climb"
+        };
+        callback(reverse)?.teleport.ok_or("Sarina vine starting tile")?
     } else if tibia_tales_hallowed {
         super::super::tibia_tales_fixtures::HALLOWED_START
     } else if name == "qengine-rewards-smith-story" {
@@ -737,9 +745,6 @@ fn scenario_case(
         )?
     } else if name == "authored-tinder-box" {
         super::super::quest_callbacks_fixtures::source_world((32085, 31025, -1), 0, 4285, 0)?
-    } else if sarina_vine {
-        let selector = callback.selector.native.as_ref().ok_or("vine selector")?;
-        super::world_cells(&callback, trigger, selector.appearance, selector.ordinal, &[], &[], None, &[])?
     } else if name == super::super::serpentine_tower_fixtures::NAME {
         super::super::serpentine_tower_fixtures::world(&callback)?
     } else if name == "mintwallin-cyclops-scene" {
@@ -1543,8 +1548,12 @@ fn scenario_case(
                 },
                 generation.native_gameplay().ok_or("Elvenbane policies")?,
             )?
-        } else if cursed_crystal_stairs {
-            let landing = stateless_destination.ok_or("Cursed Crystal stair landing")?;
+        } else if cursed_crystal_stairs || sarina_vine {
+            let landing = if sarina_vine {
+                callback.teleport.ok_or("Sarina vine landing")?
+            } else {
+                stateless_destination.ok_or("Cursed Crystal stair landing")?
+            };
             let minimum = crate::map::overlay::TilePos {
                 x: start.x.min(landing.x),
                 y: start.y.min(landing.y),
@@ -3023,46 +3032,69 @@ fn scenario_case(
             )
             .await?;
         } else if sarina_vine {
-            use crate::map::view::MapFacts;
-            let actor = admitted.runtime_actor.ok_or("vine actor")?;
-            let session = admitted.game_session_id;
-            let selector = callback.selector.native.as_ref().ok_or("vine selector")?;
-            let key = crate::map::view::placement_key(
-                crate::map::overlay::TilePos { x: trigger.x, y: trigger.y, floor: trigger.floor },
+            use crate::map::view::{MapFacts, placement_key};
+            use oteryn_protocol_oteryn::world_object::{decode_use_result, encode_use_intent};
+
+            let selector = callback.selector.native.as_ref().ok_or("Sarina vine selector")?;
+            let landing = local(callback.teleport.ok_or("Sarina vine landing")?);
+            let cells = owner.movement_cells();
+            let destination = crate::content::LogicalCell {
+                x: landing.x,
+                y: landing.y,
+                z: i32::from(landing.floor),
+            };
+            let tile = cells
+                .spell_tiles()
+                .lookup(cells.scope(), destination)
+                .map_err(debug)?;
+            assert!(!tile.flags().protection_zone, "Sarina vine landing has ordinary zone facts");
+            let key = placement_key(
+                crate::map::overlay::TilePos {
+                    x: trigger.x, y: trigger.y, floor: trigger.floor,
+                },
                 selector.ordinal,
-            ).ok_or("vine placement")?;
+            )
+            .ok_or("Sarina vine placement")?;
             let mut placement = world.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
-            let target = WorldObjectTarget {
-                placement,
-                expected_revision: world.facts().object_revision(key),
-            };
-            let map = owner.bundle_map().ok_or("vine map")?;
-            let before = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
-            crate::gameplay_transport::pvp_live::lock_mut(
-                &mut *owner.states.spell_states.lock().await, actor, session,
-            ).on_aggression(owner.owner_now());
-            let command = crate::gameplay_transport::connection::UseCommand {
-                game_session_id: session,
-                command_id: 61,
-                item_fence: None,
-            };
-            let disposition = owner.use_quest_callback(actor, command, map, &target)
-                .await.ok_or("vine dispatch")?.disposition;
-            assert_eq!(disposition, UseDisposition::PzBlocked);
-            assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?, before);
-
-            owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(61))
-                .ok_or("expire vine lock")?;
-            let disposition = owner.use_quest_callback(
-                actor, crate::gameplay_transport::connection::UseCommand { command_id: 62, ..command },
-                owner.bundle_map().ok_or("vine map")?, &target,
-            ).await.ok_or("unlocked vine dispatch")?.disposition;
-            assert_eq!(disposition, UseDisposition::Committed);
-            assert_eq!(
-                owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
-                local(callback.teleport.ok_or("vine landing")?),
-            );
+            let session = admitted.game_session_id;
+            {
+                let mut states = owner.states.spell_states.lock().await;
+                let now = owner.owner_now();
+                let lock = crate::gameplay_transport::pvp_live::lock_mut(
+                    &mut states, deps.actor, session,
+                );
+                lock.on_aggression(now);
+                assert!(lock.blocks_pz_entry(now));
+            }
+            for (command, destination) in [(1, local(start)), (2, landing)] {
+                if command == 2 {
+                    owner.clock_origin = owner.clock_origin
+                        .checked_sub(std::time::Duration::from_secs(120))
+                        .ok_or("expire PZ lock")?;
+                }
+                let target = WorldObjectTarget {
+                    placement: placement.clone(),
+                    expected_revision: world.facts().object_revision(key),
+                };
+                let reply = wire(
+                    &owner, &mut admitted, command, 2, encode_use_intent(&target).map_err(debug)?,
+                )
+                .await?;
+                let disposition = decode_use_result(&reply).map_err(debug)?;
+                if command == 1 {
+                    assert!(
+                        matches!(disposition, UseDisposition::Rejected | UseDisposition::NotPossible),
+                        "PZ-locked vine use returned {disposition:?}",
+                    );
+                } else {
+                    assert_eq!(disposition, UseDisposition::Committed, "unlocked vine use");
+                }
+                assert_eq!(
+                    owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+                    destination,
+                );
+            }
         } else if vampire_coffin {
             Box::pin(super::super::inquisition_coffin_recovery_fixtures::exercise(
                 &mut owner,
