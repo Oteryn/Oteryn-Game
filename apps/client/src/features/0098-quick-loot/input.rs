@@ -129,7 +129,16 @@ impl PlayLink {
                     Some("3") | None => QuickLootRecipient::MainContainer,
                     _ => return false,
                 };
-                let id = if recipient == QuickLootRecipient::MainContainer {
+                let fallback = match fields.get(3).map(String::as_str) {
+                    Some("1") => true,
+                    Some("0") => false,
+                    _ => return false,
+                };
+                let handles = lock(&self.mailbox).discovery.loot.handles_selected;
+                if handles && recipient == QuickLootRecipient::Container {
+                    return self.quick_loot_assign_selected(category, fallback);
+                }
+                let id = if handles || recipient == QuickLootRecipient::MainContainer {
                     None
                 } else {
                     let Some(value) = fields.get(5) else {
@@ -149,11 +158,6 @@ impl PlayLink {
                     }
                     Some(id)
                 };
-                let fallback = match fields.get(3).map(String::as_str) {
-                    Some("1") => true,
-                    Some("0") => false,
-                    _ => return false,
-                };
                 Action::Destination {
                     category,
                     recipient,
@@ -164,5 +168,27 @@ impl PlayLink {
             _ => return false,
         };
         self.quick_loot_action(request)
+    }
+
+    pub(super) fn quick_loot_assign_selected(
+        &self,
+        category: Option<oteryn_client_ui::quick_loot::QuickLootCategory>,
+        fallback: bool,
+    ) -> bool {
+        use oteryn_client_ui::quick_loot::{Action, QuickLootRecipient, encode_target_handle, request};
+        let command = {
+            let mut mailbox = lock(&self.mailbox);
+            if !mailbox.discovery.loot.handles_selected {
+                return false;
+            }
+            let Some(item) = mailbox.inventory.selected_item().or_else(|| mailbox.containers.selected_item()) else {
+                return false;
+            };
+            request(&mut mailbox.discovery.loot, Action::Destination {
+                category, recipient: QuickLootRecipient::Container,
+                id: Some(encode_target_handle(item.handle)), fallback,
+            })
+        };
+        command.is_some_and(|command| self.discovery_send(command))
     }
 }

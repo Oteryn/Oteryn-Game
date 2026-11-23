@@ -181,6 +181,18 @@ pub(super) fn render(
                 panel,
             );
         }
+        if panel.handles_selected {
+            button(
+                commands,
+                skins,
+                row,
+                key,
+                Kind::AssignSelected(category),
+                "Use selected container",
+                170.,
+                panel,
+            );
+        }
         if matches!(category, None | Some(Category::Gold)) {
             button(
                 commands,

@@ -55,8 +55,12 @@ pub(super) async fn check_durable_ground(
         ..request(QuickLootAction::Click)
     };
     let command_id = admitted.continuity.next_command_id;
+    let payload = encode_quick_loot_request(&click).map_err(debug)?;
+    let wire = crate::gameplay_transport::session_ingress::QuickLootWire::new(
+        COMMAND_TYPE_QUICK_LOOT_V2, &payload,
+    ).ok_or("quick-loot binding")?;
     let wrong_view = owner
-        .quick_loot(admitted, command_id, click, Some(&view))
+        .quick_loot(admitted, command_id + 1, click, wire, Some(&view))
         .await
         .ok_or("quick-loot dispatch refused to reply")?;
     assert_eq!(wrong_view.0, CommandStatus::Rejected);
@@ -65,11 +69,40 @@ pub(super) async fn check_durable_ground(
         .map_view(&[key], |table| Ok(table.handle(&key)))
         .map_err(debug)?;
     assert_eq!(map_handle, Some(handle));
+    use crate::gameplay_transport::session_ingress::{CommandAction, SessionCommandStream};
+    let mut ingress = SessionCommandStream::open(Some(&owner.states.command_ingress), &admitted)
+        .ok_or("quick loot command stream")?;
+    assert!(matches!(
+        ingress.begin(command_id, admitted.continuity.connection_generation,
+            admitted.continuity.server_sequence, false).map_err(debug)?,
+        CommandAction::Execute
+    ));
     let reply = owner
-        .quick_loot(admitted, command_id + 1, click, Some(&view))
+        .quick_loot(admitted, command_id, click, wire, Some(&view))
         .await
         .ok_or("quick-loot dispatch refused to reply")?;
     assert_eq!(reply.0, CommandStatus::Accepted);
+    let replay = owner
+        .quick_loot(admitted, command_id, click, wire, None)
+        .await
+        .ok_or("hidden-target replay")?;
+    assert_eq!(replay, reply);
+    // Lose the outbound acknowledgement after the real item transaction.
+    drop(ingress);
+    let mut resumed = admitted;
+    assert!(owner.recover_pending_quick_loot(&resumed).await);
+    owner.states.command_ingress.recover_trade_continuity(&mut resumed)
+        .ok_or("quick loot reconnect continuity")?;
+    assert_eq!(resumed.continuity.next_command_id, command_id + 1);
+    let mut ingress = SessionCommandStream::open(Some(&owner.states.command_ingress), &resumed)
+        .ok_or("recovered command stream")?;
+    let CommandAction::Replay(frame) = ingress.begin(command_id, resumed.continuity.connection_generation,
+        resumed.continuity.server_sequence, false).map_err(debug)?
+    else { return Err("committed quick loot response was not retained".into()); };
+    let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame).map_err(debug)?;
+    let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
+    assert_eq!(result.status, CommandStatus::DuplicateReplay);
+    assert_eq!(decode_quick_loot_result(result.payload).map_err(debug)?, reply.1);
     assert_eq!(
         reply.1.items,
         items

@@ -47,6 +47,30 @@ struct PendingDelivery {
     selected: SelectedCapabilities,
     proven_native: Option<ProvenNativeReply>,
     buffered_step: bool,
+    quick_loot: Option<QuickLootWire>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct QuickLootWire {
+    pub(super) command_type: u32,
+    length: usize,
+    bytes: [u8; oteryn_protocol_oteryn::quick_loot::MAX_QUICK_LOOT_REQUEST_BYTES],
+}
+
+impl QuickLootWire {
+    pub(super) fn new(command_type: u32, payload: &[u8]) -> Option<Self> {
+        let mut wire = Self {
+            command_type,
+            length: payload.len(),
+            bytes: [0; oteryn_protocol_oteryn::quick_loot::MAX_QUICK_LOOT_REQUEST_BYTES],
+        };
+        wire.bytes.get_mut(..wire.length)?.copy_from_slice(payload);
+        Some(wire)
+    }
+
+    pub(super) fn payload(&self) -> &[u8] {
+        &self.bytes[..self.length]
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -93,6 +117,58 @@ impl Drop for ActivityStreamReservation {
 }
 
 impl SessionCommands {
+    pub(super) fn retain_quick_loot(
+        &self,
+        command: crate::foundation::CommandRef,
+        wire: QuickLootWire,
+    ) -> Option<()> {
+        let entries = self.0.lock().ok()?;
+        let Some(entry) = entries.get(&command.game_session_id()) else {
+            return Some(());
+        };
+        let mut state = entry.lock().ok()?;
+        if let Some(pending) = state.pending_delivery.as_mut() {
+            if pending.command != command.command_id().get()
+                || pending.quick_loot.is_some_and(|original| original != wire)
+            {
+                return None;
+            }
+            pending.quick_loot = Some(wire);
+        }
+        Some(())
+    }
+
+    pub(super) fn pending_quick_loot(
+        &self,
+        session: GameSessionId,
+    ) -> Option<(crate::foundation::CommandRef, QuickLootWire)> {
+        let entries = self.0.lock().ok()?;
+        let state = entries.get(&session)?.lock().ok()?;
+        let pending = state.pending_delivery?;
+        if state.active || state.ingress.outstanding() != 1 {
+            return None;
+        }
+        Some((
+            crate::foundation::CommandRef::new(session, CommandId::new(pending.command).ok()?),
+            pending.quick_loot?,
+        ))
+    }
+
+    pub(super) fn complete_quick_loot(
+        &self,
+        command: crate::foundation::CommandRef,
+        original: QuickLootWire,
+        rejected: bool,
+        payload: &[u8],
+    ) -> Option<()> {
+        let entries = self.0.lock().ok()?;
+        let mut state = entries.get(&command.game_session_id())?.lock().ok()?;
+        if state.active || state.pending_delivery?.quick_loot != Some(original) {
+            return None;
+        }
+        state.complete_reconciled(command.command_id(), rejected, payload)
+    }
+
     pub(super) fn reserve_activity_recovery(
         &self,
         admitted: &AdmittedSession,
@@ -507,6 +583,7 @@ impl SessionCommandStream {
                     selected: self.selected,
                     proven_native: None,
                     buffered_step: false,
+                    quick_loot: None,
                 });
                 state.reconciled_sequence = None;
                 Ok(CommandAction::Execute)

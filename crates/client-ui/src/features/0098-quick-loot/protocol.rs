@@ -82,10 +82,14 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
     };
     panel.pending = Some(action);
     panel.feedback = tr!("Waiting for the server").into();
-    Some(ServerMechanicCommand {
-        capability: 98,
-        command_type: 114,
-        payload,
+    Some(if panel.handles_selected {
+        crate::quick_loot_v2::request(payload)
+    } else {
+        ServerMechanicCommand {
+            capability: CAPABILITY_QUICK_LOOT_V1,
+            command_type: COMMAND_TYPE_QUICK_LOOT,
+            payload,
+        }
     })
 }
 /// Apply a server answer. Returns whether it confirmed a loot run (loot all or one corpse),

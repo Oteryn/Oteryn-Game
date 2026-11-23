@@ -17,6 +17,12 @@ pub(super) struct MoveContext {
     pub(super) ordinal: i16,
 }
 
+pub struct QuickLootInput {
+    pub request: QuickLootRequest,
+    pub command_type: u32,
+    pub payload: Vec<u8>,
+}
+
 pub fn is_loot_coin(definition: &TypedDefinitionRef) -> bool {
     definition.family == "Item"
         && matches!(
@@ -127,6 +133,24 @@ async fn recipient<C: ItemLoopContent>(
 }
 
 impl DurabilityRoot {
+    /// Verify the original wire binding without resolving targets from a live view.
+    pub async fn read_quick_loot_result(
+        &self,
+        character: CharacterId,
+        command: CommandRef,
+        command_type: u32,
+        payload: &[u8],
+    ) -> Result<Option<Result<QuickLootResult, LoopMoveRefusal>>, DurabilityError> {
+        let payload = payload.to_vec();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
+            lock_loop_command(&mut tx, command).await?;
+            let result = read_result(&mut tx, character, command, command_type, &payload).await?;
+            super::super::db::commit_semantic_transaction(tx, deadline).await?;
+            Ok(result)
+        })).await
+    }
+
     /// Command 114: replay, settings and all accepted transfers share one fenced item transaction.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_quick_loot<C: ItemLoopContent>(
@@ -139,7 +163,7 @@ impl DurabilityRoot {
         content: &C,
         cell: [u8; 10],
         premium: bool,
-        request: QuickLootRequest,
+        input: QuickLootInput,
     ) -> std::result::Result<std::result::Result<QuickLootResult, LoopMoveRefusal>, DurabilityError>
     {
         permit.check_scope(fence.runtime_scope)?;
@@ -147,7 +171,15 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let QuickLootInput { request, command_type, payload } = input;
         let encoded = wire::encode_quick_loot_request(&request)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if !matches!(command_type, wire::COMMAND_TYPE_QUICK_LOOT | wire::COMMAND_TYPE_QUICK_LOOT_V2)
+            || wire::decode_quick_loot_request(&payload).is_err()
+        {
+            return Ok(Err(LoopMoveRefusal::Rejected));
+        }
+        let stored_command_type = i32::try_from(command_type)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
         let mut context = (permit, content);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
@@ -155,12 +187,9 @@ impl DurabilityRoot {
             let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
             lock_loop_command(&mut tx, command).await?;
-            if let Some(row) = sqlx::query("SELECT character_id::text,request,result FROM game_quick_loot_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
-                .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await? {
-                if uuid_text(row.try_get("character_id")?)? != *fence.character_id.as_bytes() || row.try_get::<Vec<u8>,_>("request")? != encoded { tx.rollback().await?; return Ok(Err(LoopMoveRefusal::Rejected)); }
-                let result = wire::decode_quick_loot_result(&row.try_get::<Vec<u8>,_>("result")?).map_err(|_| DurabilityError::InvalidStoredState)?;
+            if let Some(result) = read_result(&mut tx, fence.character_id, command, command_type, &payload).await? {
                 super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                return Ok(Ok(result));
+                return Ok(result);
             }
             let attempt: LoopResult<QuickLootResult> = async {
                 assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await?;
@@ -255,8 +284,8 @@ impl DurabilityRoot {
             match attempt {
                 Ok(result) => {
                     let bytes=wire::encode_quick_loot_result(&result).map_err(|_| DurabilityError::InvalidStoredState)?;
-                    sqlx::query("INSERT INTO game_quick_loot_receipts(game_session_id,command_id,character_id,request,result) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5)")
-                        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(encoded).bind(bytes).execute(&mut *tx).await?;
+                    sqlx::query("INSERT INTO game_quick_loot_receipts(game_session_id,command_id,character_id,request,result,wire_command_type,wire_request) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,$5,$6,$7)")
+                        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(encoded).bind(bytes).bind(stored_command_type).bind(payload).execute(&mut *tx).await?;
                     super::super::db::commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(result))
                 }
@@ -264,6 +293,39 @@ impl DurabilityRoot {
             }
         })).await
     }
+}
+
+async fn read_result(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+    command: CommandRef,
+    command_type: u32,
+    payload: &[u8],
+) -> Result<Option<Result<QuickLootResult, LoopMoveRefusal>>, DurabilityError> {
+    let row = sqlx::query(
+        "SELECT character_id::text,request,result,wire_command_type,wire_request
+         FROM game_quick_loot_receipts
+         WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric",
+    )
+    .bind(command.game_session_id().as_bytes().as_slice())
+    .bind(command.command_id().get().to_string())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(row) = row else { return Ok(None); };
+    let identity_matches = match row.try_get::<Option<i32>, _>("wire_command_type")? {
+        Some(version) => u32::try_from(version).ok() == Some(command_type)
+            && row.try_get::<Vec<u8>, _>("wire_request")? == payload,
+        None => command_type == wire::COMMAND_TYPE_QUICK_LOOT
+            && wire::decode_quick_loot_request(payload)
+                .and_then(|request| wire::encode_quick_loot_request(&request))
+                .is_ok_and(|canonical| row.try_get::<Vec<u8>, _>("request").is_ok_and(|prior| prior == canonical)),
+    };
+    if !identity_matches || uuid_text(row.try_get("character_id")?)? != *character.as_bytes() {
+        return Ok(Some(Err(LoopMoveRefusal::Rejected)));
+    }
+    let result = wire::decode_quick_loot_result(&row.try_get::<Vec<u8>, _>("result")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(Some(Ok(result)))
 }
 
 #[allow(clippy::too_many_arguments)]

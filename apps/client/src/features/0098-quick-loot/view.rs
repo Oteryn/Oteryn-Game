@@ -33,6 +33,7 @@ fn loot_panel(mailbox: &crate::play::mailbox::Mailbox) -> oteryn_client_ui::quic
 pub enum QuickLootControl {
     Request(oteryn_client_ui::quick_loot::Action),
     OpenDestination(Option<oteryn_client_ui::quick_loot::QuickLootCategory>),
+    AssignSelected(Option<oteryn_client_ui::quick_loot::QuickLootCategory>),
     Catalogue,
     Store,
     Close,
@@ -61,6 +62,10 @@ impl PlayLink {
                     return false;
                 }
                 return self.quick_loot_open_main(&mut mailbox);
+            }
+            QuickLootControl::AssignSelected(category) => {
+                drop(mailbox);
+                return self.quick_loot_assign_selected(category, true);
             }
             QuickLootControl::Close => {
                 panel.open = false;

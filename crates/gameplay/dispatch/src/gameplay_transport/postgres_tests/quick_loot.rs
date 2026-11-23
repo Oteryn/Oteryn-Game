@@ -259,7 +259,7 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
         admitted.item_fence = Some(fence);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98])
+            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98, 618])
                 .ok_or("capabilities")?;
         assert!(admitted.continuity.selected_capabilities.contains(98));
         if matches!(fence_case, Some(session_fence::FenceCase::DurableGround)) {
@@ -438,7 +438,6 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
                 );
             }
         }
-        let loot_request = if pouch { all } else { click };
         if pouch {
             owner.premium_coordinator = Some(&premium);
             owner.admit_premium(id(40), admitted.game_session_id);
@@ -475,7 +474,7 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
             fixture_overload_pouch(&harness.pool, false).await?;
         }
         let loot_id = admitted.continuity.next_command_id + 1;
-        let replies = if pouch {
+        let (shown, replies) = if pouch {
             exchange(&owner, &mut admitted, corpse_identity, |_| {
                 Ok(vec![
                     QuickLootRequest {
@@ -487,7 +486,6 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
                 ])
             })
             .await?
-            .1
         } else {
             exchange(&owner, &mut admitted, corpse_identity, |shown| {
                 Ok(vec![
@@ -502,7 +500,6 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
                 ])
             })
             .await?
-            .1
         };
         assert_eq!(replies.len(), 2);
         assert_eq!(
@@ -537,7 +534,12 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
             "batch conserves and merges both stacks"
         );
         assert_eq!(
-            durable_quick_loot(&owner, admitted, loot_id, loot_request).await?,
+            durable_quick_loot(
+                &owner, admitted, loot_id,
+                if pouch { all } else {
+                    QuickLootRequest { corpse: Some(shown.corpse.ok_or("shown corpse")?), ..click }
+                },
+            ).await?,
             replies[1],
             "lost acknowledgement replays exact outcome"
         );
@@ -558,12 +560,16 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
                 ..fence
             },
         );
-        let (_, stale) = exchange(&owner, &mut stale_admitted, corpse_identity, |_| {
-            Ok(vec![all])
-        })
-        .await?;
-        assert_eq!(stale[0].0, CommandStatus::Rejected);
-        admitted.continuity = stale_admitted.continuity;
+        // Submit the stale fence to Quick Loot itself. Opening a fabricated
+        // resumed transport would instead stop in the Bank continuity guard.
+        let payload = encode_quick_loot_request(&all).map_err(debug)?;
+        let wire = crate::gameplay_transport::session_ingress::QuickLootWire::new(
+            COMMAND_TYPE_QUICK_LOOT_V2,
+            &payload,
+        ).ok_or("stale quick loot binding")?;
+        assert_eq!(owner.quick_loot(
+            stale_admitted, admitted.continuity.next_command_id, all, wire, None,
+        ).await, Some((CommandStatus::Rejected, QuickLootResult { items: Vec::new() })));
         let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quick_loot_receipts")
             .fetch_one(&harness.pool)
             .await?;
@@ -622,39 +628,19 @@ async fn durable_quick_loot(
     request: QuickLootRequest,
 ) -> TestResult<(CommandStatus, QuickLootResult)> {
     use crate::foundation::{CommandId, CommandRef};
-    use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
-
     let fence = admitted.item_fence.ok_or("item fence")?;
-    let permit = owner.spell_lane_permit().await.ok_or("item lane")?;
-    let native = owner
-        .active_generation
-        .and_then(|generation| generation.native_gameplay())
-        .ok_or("native content")?;
-    let premium = owner
-        .session_premium_gate(admitted.game_session_id)
-        .await
-        .require()
-        .is_ok();
-    let cell = crate::durability::map_item_mint_audit::map_item_spatial_position(7, 0, 7)
-        .try_into()
-        .map_err(|_| "loot cell")?;
     let outcome = owner
         .root
-        .commit_quick_loot(
-            &permit,
-            owner.character,
-            owner.holder,
-            fence,
+        .read_quick_loot_result(
+            fence.character_id,
             CommandRef::new(
                 admitted.game_session_id,
                 CommandId::new(command_id).map_err(debug)?,
             ),
-            &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
-            cell,
-            premium,
-            request,
+            COMMAND_TYPE_QUICK_LOOT_V2,
+            &encode_quick_loot_request(&request).map_err(debug)?,
         )
-        .await?;
+        .await?.ok_or("expected quick loot receipt")?;
     Ok(match outcome {
         Ok(result) => (CommandStatus::Accepted, result),
         Err(_) => (

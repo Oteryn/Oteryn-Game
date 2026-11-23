@@ -8,6 +8,8 @@ use crate::item_view::ItemHandle;
 
 pub const CAPABILITY_QUICK_LOOT_V1: u32 = 98;
 pub const COMMAND_TYPE_QUICK_LOOT: u32 = 114;
+pub const CAPABILITY_QUICK_LOOT_V2: u32 = 618;
+pub const COMMAND_TYPE_QUICK_LOOT_V2: u32 = 6253;
 pub const MAX_QUICK_LOOT_REQUEST_BYTES: usize = 64;
 pub const MAX_QUICK_LOOT_RESULT_BYTES: usize = 32_768;
 pub const MAX_QUICK_LOOT_RESULTS: usize = 1_280;
@@ -49,11 +51,11 @@ pub enum QuickLootFilterMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct QuickLootRequest {
     pub action: QuickLootAction,
-    /// Click uses a spatial item handle encoded by [`encode_target_handle`].
+    /// Click uses an instance UUID in V1 and a spatial item handle in V2.
     pub corpse: Option<[u8; 16]>,
     pub category: Option<QuickLootCategory>,
     pub recipient: Option<QuickLootRecipient>,
-    /// Explicit assignment uses a visible inventory handle encoded by [`encode_target_handle`].
+    /// Explicit assignment uses an instance UUID in V1 and an inventory handle in V2.
     /// An omitted handle with GoldPouch selects the Character's own Store Inbox pouch.
     pub recipient_id: Option<[u8; 16]>,
     pub fallback_to_main: bool,

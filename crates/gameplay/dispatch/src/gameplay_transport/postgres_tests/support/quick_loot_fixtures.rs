@@ -103,7 +103,11 @@ pub(super) async fn exchange(
                 current.continuity.connection_generation,
                 &protocol::ClientCommandValue {
                     command_id,
-                    command_type: COMMAND_TYPE_QUICK_LOOT,
+                    command_type: if current.continuity.selected_capabilities.contains(CAPABILITY_QUICK_LOOT_V2) {
+                        COMMAND_TYPE_QUICK_LOOT_V2
+                    } else {
+                        COMMAND_TYPE_QUICK_LOOT
+                    },
                     payload: &payload,
                 },
             )

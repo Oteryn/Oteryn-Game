@@ -10,6 +10,7 @@ pub struct Discovery {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
     pub selected: bool,
+    pub handles_selected: bool,
     pub open: bool,
     pub pending: Option<Action>,
     pub feedback: String,

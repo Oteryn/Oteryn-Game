@@ -1,0 +1,20 @@
+{
+  "id": 618,
+  "name": "QUICK_LOOT_V2",
+  "constant": "quick_loot::CAPABILITY_QUICK_LOOT_V2",
+  "requires": [
+    4,
+    98
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    6253
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

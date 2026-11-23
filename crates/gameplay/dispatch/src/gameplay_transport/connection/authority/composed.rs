@@ -1528,12 +1528,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         record_entry_decision("playable", 1, started.elapsed(), "hireling_ingress");
         let started = tokio::time::Instant::now();
-        let recovered = self
-            .states
-            .command_ingress
-            .recover_trade_continuity(admitted)
-            .is_some()
-            || admitted.continuity.next_command_id == 1;
+        let recovered = self.recover_pending_quick_loot(admitted).await
+            && (self
+                .states
+                .command_ingress
+                .recover_trade_continuity(admitted)
+                .is_some()
+                || admitted.continuity.next_command_id == 1);
         record_entry_decision(
             if recovered { "playable" } else { "unplayable" },
             1,

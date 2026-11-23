@@ -27,8 +27,8 @@ impl crate::play::Stepper for Selected {
         Ok(None)
     }
 
-    fn server_mechanic_selected(&self, _: u32) -> bool {
-        true
+    fn server_mechanic_selected(&self, capability: u32) -> bool {
+        capability != oteryn_client_ui::quick_loot::CAPABILITY_QUICK_LOOT_V2
     }
 }
 #[test]
@@ -48,6 +48,79 @@ fn cp02_0098_quick_loot_scenario() {
     assert!(
         matches!(rx.try_recv(), Ok(crate::combat_input::PlayCommand::ServerMechanic(command)) if command.capability == 98 && command.command_type == 114)
     );
+}
+
+#[test]
+fn selected_quick_loot_v2_container_sends_the_visible_inventory_handle()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::quick_loot::*;
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.discovery_initialize(&Selected);
+    let handle = std::num::NonZeroU64::new(313).ok_or("container handle")?;
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.discovery.loot.handles_selected = true;
+        mailbox.inventory.apply(Some(oteryn_session::CharacterInventory {
+            main_backpack: None,
+            entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 2854,
+                handle,
+                item_definition_ref: std::num::NonZeroU32::MIN,
+                count: std::num::NonZeroU32::MIN,
+                sub_type: 0,
+            }],
+            equipment: Vec::new(),
+        }));
+    }
+    let fields = ["", "1", "1", "1", "1", "01010101010101010101010101010101"].map(str::to_owned);
+    assert!(!link.quick_loot_control(6, &fields, 0));
+    assert!(link.inventory_select(handle));
+    assert!(link.quick_loot_control(6, &fields, 0));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("wrong command".into());
+    };
+    assert_eq!(command.capability, CAPABILITY_QUICK_LOOT_V2);
+    assert_eq!(command.command_type, COMMAND_TYPE_QUICK_LOOT_V2);
+    let request = decode_quick_loot_request(&command.payload).map_err(|error| format!("{error:?}"))?;
+    assert_eq!(request.recipient, Some(QuickLootRecipient::Container));
+    assert_eq!(request.recipient_id, Some(encode_target_handle(handle)));
+    Ok(())
+}
+
+#[test]
+fn selected_quick_loot_v2_click_sends_the_visible_corpse_handle()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::quick_loot::*;
+    use oteryn_session::{ActorPosition, EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    outbox.discovery_initialize(&Selected);
+    crate::play::mailbox::lock(&link.mailbox).discovery.loot.handles_selected = true;
+    let handle = std::num::NonZeroU64::new(545).ok_or("corpse handle")?;
+    let tile = oteryn_renderer::TileCoord::new(100, 100);
+    let mut view = crate::play::PlayView::new(tile, 7, &[])?.with_entities(vec![
+        WorldSpatialEntity {
+            motion: None,
+            display_name: None,
+            kind: EntityKind::Corpse,
+            entity: EntityRef { identity: [1; 16], generation: 1 },
+            position: ActorPosition { x: tile.x, y: tile.y, floor: 7 },
+            detail: EntityDetail::Object {
+                item_definition_ref: 42, quantity: 1, item_handle: Some(handle),
+            },
+        },
+    ])?;
+    let mut preferences = view.preferences().clone();
+    preferences.gameplay.loot_click = 1;
+    view.set_preferences(preferences)?;
+    assert!(view.loot_click(&link, tile, true, None));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("wrong command".into());
+    };
+    assert_eq!(command.capability, CAPABILITY_QUICK_LOOT_V2);
+    let request = decode_quick_loot_request(&command.payload).map_err(|error| format!("{error:?}"))?;
+    assert_eq!(request.corpse, Some(encode_target_handle(handle)));
+    Ok(())
 }
 
 #[test]

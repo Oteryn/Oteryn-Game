@@ -1,5 +1,5 @@
 name=quick_loot
-commands=114
+commands=114,6253
 transport=quick_loot
 composed=quick_loot
 authority=quick_loot

@@ -1,6 +1,7 @@
 use crate::combat_input::PlayCommand;
 use crate::play::{Outbox, PlayLink, mailbox::lock};
 use oteryn_client_runtime::server_mechanic::{ServerMechanicCommand, ServerMechanicResponse};
+use oteryn_client_ui::quick_loot::{CAPABILITY_QUICK_LOOT_V1, CAPABILITY_QUICK_LOOT_V2};
 impl PlayLink {
     pub(in crate::play) fn discovery_send(&self, command: ServerMechanicCommand) -> bool {
         let capability = command.capability;
@@ -19,7 +20,7 @@ impl PlayLink {
         }
         let state = &mut mailbox.discovery;
         match capability {
-            98 => {
+            CAPABILITY_QUICK_LOOT_V1 | CAPABILITY_QUICK_LOOT_V2 => {
                 state.loot.pending = None;
                 state.loot.feedback = tr!("Session ended").into();
             }
@@ -50,7 +51,8 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         let state = &mut mailbox.discovery;
         *state = Default::default();
-        state.loot.selected = session.server_mechanic_selected(98);
+        state.loot.selected = session.server_mechanic_selected(CAPABILITY_QUICK_LOOT_V1);
+        state.loot.handles_selected = session.server_mechanic_selected(CAPABILITY_QUICK_LOOT_V2);
         state.inspection.invalidate_catalogue();
         state.inspection.selected = session.server_mechanic_selected(132);
         state.leader.selected = session.server_mechanic_selected(200);
@@ -65,7 +67,7 @@ impl Outbox {
     ) {
         let mut mailbox = lock(&self.0);
         match capability {
-            98 => {
+            CAPABILITY_QUICK_LOOT_V1 | CAPABILITY_QUICK_LOOT_V2 => {
                 if oteryn_client_ui::quick_loot::apply_result(&mut mailbox.discovery.loot, response)
                     && mailbox.local_preferences.game_window.loot_messages
                     && let Some(result) = &mailbox.discovery.loot.result

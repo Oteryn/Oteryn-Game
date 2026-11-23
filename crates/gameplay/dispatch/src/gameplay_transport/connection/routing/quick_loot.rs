@@ -16,8 +16,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         Ok(value) => value,
         Err(_) => return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new())),
     };
+    let wire = crate::gameplay_transport::session_ingress::QuickLootWire::new(
+        command.command_type, command.payload,
+    )?;
     let (status, result) = authority
-        .quick_loot(*admitted, command.command_id, request, item_view)
+        .quick_loot(*admitted, command.command_id, request, wire, item_view)
         .await?;
     Some(Dispatch::Reply(
         status,
