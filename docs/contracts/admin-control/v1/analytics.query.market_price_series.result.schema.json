@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MarketPriceSeriesResult",
+  "type": "object",
+  "properties": {
+    "completeness": {
+      "$ref": "#/$defs/Completeness"
+    },
+    "context": {
+      "$ref": "#/$defs/EconomyContext"
+    },
+    "filters": {
+      "$ref": "#/$defs/MarketPriceSeriesParams"
+    },
+    "metric_revision": {
+      "type": "string"
+    },
+    "query_id": {
+      "$ref": "#/$defs/MarketPriceSeriesId"
+    },
+    "rows": {
+      "$ref": "#/$defs/AnalyticsRows"
+    },
+    "watermark": {
+      "$ref": "#/$defs/Watermark"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "query_id",
+    "filters",
+    "metric_revision",
+    "watermark",
+    "completeness",
+    "context",
+    "rows"
+  ],
+  "$defs": {
+    "AnalyticsRows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MarketPriceRow"
+      },
+      "maxItems": 10000
+    },
+    "Completeness": {
+      "type": "string",
+      "enum": [
+        "PROVEN_COMPLETE_FOR_DECLARED_DURABLE_SCOPE",
+        "NO_KNOWN_GAP_BEST_EFFORT",
+        "PARTIAL",
+        "UNKNOWN"
+      ]
+    },
+    "Decimal": {
+      "description": "Exact nonnegative amount or count, including values outside JSON's safe integer range.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "EconomyContext": {
+      "type": "object",
+      "properties": {
+        "active_characters": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_revision": {
+          "type": "string"
+        },
+        "ruleset_revision": {
+          "type": "string"
+        },
+        "world_age_days": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "world_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "world_id",
+        "world_age_days",
+        "ruleset_revision",
+        "content_revision"
+      ]
+    },
+    "Grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day"
+      ]
+    },
+    "MarketPriceRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "max_unit_price_gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "median_unit_price_gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "min_unit_price_gold": {
+          "$ref": "#/$defs/Decimal"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "item_type_id",
+        "min_unit_price_gold",
+        "median_unit_price_gold",
+        "max_unit_price_gold"
+      ]
+    },
+    "MarketPriceSeriesFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "item_type_id"
+      ]
+    },
+    "MarketPriceSeriesId": {
+      "type": "string",
+      "enum": [
+        "market_price_series"
+      ]
+    },
+    "MarketPriceSeriesParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/MarketPriceSeriesFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketPriceSeriesId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "Watermark": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DrainResult",
+  "type": "object",
+  "properties": {
+    "admission_closed": {
+      "type": "boolean"
+    },
+    "gameplay_sealed": {
+      "type": "boolean"
+    },
+    "sessions_remaining": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "admission_closed",
+    "gameplay_sealed",
+    "sessions_remaining"
+  ]
+}
