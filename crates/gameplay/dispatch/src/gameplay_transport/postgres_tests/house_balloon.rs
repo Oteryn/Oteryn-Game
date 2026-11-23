@@ -142,3 +142,18 @@ fn w18_house_bed_kit_replaces_both_tiles_and_replays() -> TestResult {
 fn w18_house_container_capacity_v2_retains_legacy_bound_and_preserves_graph() -> TestResult {
     run_case(Case::ContainerCapacity)
 }
+
+#[test]
+fn house_lantern_uses_all_three_sources() -> TestResult {
+    let modes = [(false, false), (false, true), (true, false)];
+    for source in [23734, 23738] {
+        for (placed, definition) in modes {
+            run_case(Case::Lantern {
+                placed,
+                definition,
+                source,
+            })?;
+        }
+    }
+    Ok(())
+}

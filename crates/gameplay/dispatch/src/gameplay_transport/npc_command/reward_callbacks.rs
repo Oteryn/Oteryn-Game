@@ -117,17 +117,28 @@ pub(super) fn prepare(
         intent.npc_actor,
     );
     let text = intent.text.trim().to_ascii_lowercase();
+    let text = if context.2 == offer_topic::CYCLOPS {
+        offer_topic::amulet_keyword(&text)
+    } else {
+        text.as_str()
+    };
     if phase == Phase::Rewards {
-        offer_topic::retire_cyclops_offer(admission, command.game_session_id, &context, &text)?;
+        offer_topic::retire_cyclops_offer(
+            admission,
+            command.game_session_id,
+            &context,
+            &offers,
+            text,
+        )?;
     }
     if text == "no"
         || (phase == Phase::Offers
-            && !matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
+            && !matches!(text, "yes" | "hi" | "hello" | "bye" | "farewell")
             && placement
             && offers
                 .offers
                 .iter()
-                .any(|offer| offer.npc == context.2 && offer.matches_keyword(&text)))
+                .any(|offer| offer.npc == context.2 && offer.matches_keyword(text)))
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         sessions
@@ -147,11 +158,10 @@ pub(super) fn prepare(
         runtime,
         |context, topic, _, tracks| {
             let text = callback_keyword(&admission.states.chat, &context.2, &intent.text);
-            // A refused hand-in consumes its confirmation. An offer may supply
-            // the donor's retry topic, as the Cyclops does for the skirt delivery.
+            // The Cyclops keeps each metal quote on refusal. Apply a failure
+            // topic where the source changes it, including skirt delivery.
             failure_topic = match (context.2.as_str(), topic.number, text.as_str()) {
-                ("oteryn:npc.a_sweaty_cyclops", 5..=8 | 12, "yes")
-                | ("oteryn:npc.yeo", 1, "yes") => Some(0),
+                (offer_topic::CYCLOPS, 12, "yes") | ("oteryn:npc.yeo", 1, "yes") => Some(0),
                 _ => None,
             };
             let meets_level = |minimum: Option<u32>| {
@@ -469,8 +479,11 @@ fn callback_keyword(chat: &ChatRuntime, npc: &str, text: &str) -> String {
             .into();
     }
     let trimmed = text.trim();
-    if npc == "oteryn:npc.a_sweaty_cyclops" && trimmed.eq_ignore_ascii_case("yes") {
-        return text.to_ascii_lowercase();
+    if npc == offer_topic::CYCLOPS {
+        if trimmed.eq_ignore_ascii_case("yes") {
+            return text.to_ascii_lowercase();
+        }
+        return offer_topic::amulet_keyword(&trimmed.to_ascii_lowercase()).into();
     }
     trimmed.to_ascii_lowercase()
 }

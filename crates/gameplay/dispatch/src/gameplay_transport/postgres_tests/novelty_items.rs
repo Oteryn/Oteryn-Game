@@ -26,6 +26,8 @@ enum Case {
     VoodooWithoutTarget,
     VoodooFarTarget,
     Present,
+    DefinitionWatch(u32),
+    CarriedLanternClue { has_key: bool },
     GroundDice,
     GroundLanternOff,
     GroundLanternOn,
@@ -48,6 +50,9 @@ impl Case {
             Self::Costume | Self::NestedCostume | Self::GroundCostume => "oteryn:item.tibia.i653",
             Self::GroundLanternOff | Self::DefinitionLanternOff => "oteryn:item.tibia.i23738",
             Self::GroundLanternOn | Self::DefinitionLanternOn => "oteryn:item.tibia.i23734",
+            Self::DefinitionWatch(2906) => "oteryn:item.tibia.i2906",
+            Self::DefinitionWatch(_) => "oteryn:item.tibia.i6091",
+            Self::CarriedLanternClue { .. } => "oteryn:item.tibia.i23734",
             Self::Dice | Self::DiceStreak | Self::GroundDice => "oteryn:item.tibia.i5792",
             Self::Trumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
             Self::Rocket | Self::GroundRocket | Self::PendingLifecycle => "oteryn:item.tibia.i6576",
@@ -79,6 +84,11 @@ impl Case {
     fn feroxa(self) -> bool { matches!(self, Self::FeroxaTrap | Self::FeroxaTrapOutside) }
     fn origin(self) -> MovementLocalPosition {
         match self {
+            Self::CarriedLanternClue { .. } => MovementLocalPosition {
+                x: 32891,
+                y: 31619,
+                floor: 10,
+            },
             Self::FeroxaTrap => MovementLocalPosition { x: 33419, y: 31540, floor: 11 },
             Self::FeroxaTrapOutside => MovementLocalPosition { x: 33420, y: 31540, floor: 11 },
             _ => MovementLocalPosition { x: 6, y: 0, floor: 7 },
@@ -147,6 +157,18 @@ fn novelty_voodoo_without_player_refuses_without_receipt() -> TestResult {
 #[test]
 fn novelty_explosive_present_commits_consumption_and_donor_cues_once() -> TestResult {
     run_case(Case::Present)
+}
+
+#[test]
+fn novelty_definition_watch_uses_world_clock() -> TestResult {
+    run_case(Case::DefinitionWatch(2906))?;
+    run_case(Case::DefinitionWatch(6091))
+}
+
+#[test]
+fn novelty_carried_lantern_clue_uses_current_key_custody() -> TestResult {
+    run_case(Case::CarriedLanternClue { has_key: false })?;
+    run_case(Case::CarriedLanternClue { has_key: true })
 }
 
 #[test]

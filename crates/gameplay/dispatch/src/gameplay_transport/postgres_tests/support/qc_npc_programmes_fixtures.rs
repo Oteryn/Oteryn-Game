@@ -53,23 +53,25 @@ pub(super) async fn exercise(
     if case == "unlock" {
         return unlock(owner, admitted, h, cyclops).await;
     }
-    for nonce in 7000..7003 {
-        mint(owner, admitted, 3560, 1, nonce).await?;
-    }
-    with_wire(owner, admitted, cyclops, async |wire| {
-        wire.greet().await?;
-        wire.line(
-            "forging friendship",
-            "Bring three bast skirts for my partner.",
-        )
+    if case != "locked-soul-orb" {
+        for nonce in 7000..7003 {
+            mint(owner, admitted, 3560, 1, nonce).await?;
+        }
+        with_wire(owner, admitted, cyclops, async |wire| {
+            wire.greet().await?;
+            wire.line(
+                "forging friendship",
+                "Bring three bast skirts for my partner.",
+            )
+            .await?;
+            wire.line("deliver skirts", "Now I can forge royal steel for you.")
+                .await
+        })
         .await?;
-        wire.line("deliver skirts", "Now I can forge royal steel for you.")
-            .await
-    })
-    .await?;
+    }
     // Seed custody while no connection is reading the Character authority.
     match case {
-        "replaces-amulet" | "amulet-replaces-steel" => {
+        "replaces-amulet" | "amulet-replaces-steel" | "locked-soul-orb" => {
             for item in FRAGMENTS {
                 mint(owner, admitted, item, 1, u64::from(item)).await?;
             }
@@ -159,9 +161,14 @@ async fn exercise_conversation(
             }
             assert_eq!(quantity(h, PLATINUM).await?, 50);
         }
-        "amulet-replaces-steel" => {
-            wire.line("uth'lokr", STEEL_QUOTE).await?;
-            wire.line("amulet", AMULET_QUOTE).await?;
+        "amulet-replaces-steel" | "locked-soul-orb" => {
+            if case == "amulet-replaces-steel" {
+                wire.line("uth'lokr", STEEL_QUOTE).await?;
+                wire.line("please make an amulet", AMULET_QUOTE).await?;
+            } else {
+                wire.line("amulet", AMULET_QUOTE).await?;
+                assert!(wire.talk("soul orb", false).await?.is_some());
+            }
             wire.line("yes", "Well, well. I do that! Big Ben makes li'l amulet unbroken with big hammer in big hands! No worry! Come back after sun hits the horizon 24 times and ask me for amulet.").await?;
             assert_eq!(quantity(h, SHIELD).await?, 1);
             assert_eq!(quantity(h, STEEL).await?, 0);
@@ -169,6 +176,19 @@ async fn exercise_conversation(
                 assert_eq!(quantity(h, item).await?, 0, "amulet fragment {item}");
             }
             assert_eq!(quantity(h, PLATINUM).await?, 0);
+            if case == "locked-soul-orb" {
+                wire.line("uth'lokr", FAVOR_QUOTE).await?;
+                assert!(wire.talk("soul orb", false).await?.is_some());
+                wire.line("yes", FAVOR_CONFIRM).await?;
+                assert!(wire.talk("soul orb", false).await?.is_some());
+                wire.line("yes", FAVOR_START).await?;
+                wire.line("uth'lokr", SKIRT_PROMPT).await?;
+                assert!(wire.talk("soul orb", false).await?.is_some());
+                assert_eq!(
+                    wire.talk("yes", true).await?,
+                    Some((NpcIntentDisposition::Rejected, vec![SKIRT_PROMPT.into()]))
+                );
+            }
         }
         "other-services" => {
             replaces_with_other_services(h, wire).await?;
@@ -236,6 +256,37 @@ async fn exercise_conversation(
             wire.disposition("yes", NpcIntentDisposition::Rejected)
                 .await?;
             assert_eq!(snapshot(h).await?, before);
+        }
+        "ingredient-retry" => {
+            let source: serde_json::Value = serde_json::from_str(include_str!(
+                "../../../../../../../content/quests/npc-offers/qc-programmes.json"
+            ))?;
+            let offers = source["offers"].as_array().ok_or("Cyclops offers")?;
+            for (word, _, output) in [("uth'lokr", SHIELD, STEEL)]
+                .into_iter()
+                .chain(DONOR_EXCHANGES)
+            {
+                let quote = offers
+                    .iter()
+                    .find(|row| row["keywords"][0] == word && row["storage"][0]["minimum"] == 1)
+                    .ok_or(word)?;
+                wire.line(word, quote["reply"][0].as_str().ok_or("metal quote")?)
+                    .await?;
+                wire.disposition("yes", NpcIntentDisposition::Rejected)
+                    .await?;
+                assert_eq!(quantity(h, output).await?, 0, "{word}");
+                let topic = quote["next_topic"].as_u64().ok_or("metal quote topic")?;
+                assert_eq!(
+                    u64::from(
+                        owner
+                            .states
+                            .npc_conversations
+                            .fixture_quest_topic(admitted.game_session_id)?
+                    ),
+                    topic,
+                    "missing ingredients preserve the live {word} quote"
+                );
+            }
         }
         "mint-refusal" => {
             // Sequence increments survive rollback, proving the refusal reached consumption.

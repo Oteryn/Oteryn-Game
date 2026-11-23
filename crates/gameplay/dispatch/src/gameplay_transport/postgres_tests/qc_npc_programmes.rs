@@ -50,3 +50,13 @@ fn questpc7_friends_resumes_saved_definition() -> TestResult {
 fn qc_cyclops_donor_exchanges_replace_steel_quote() -> TestResult {
     run("questpc7-friends-draconian-donor-exchanges")
 }
+
+#[test]
+fn qc_cyclops_locked_soul_orb_leaves_amulet_quote() -> TestResult {
+    run("questpc7-friends-draconian-locked-soul-orb")
+}
+
+#[test]
+fn qc_cyclops_missing_ingredient_keeps_all_four_metal_quotes() -> TestResult {
+    run("questpc7-friends-draconian-ingredient-retry")
+}

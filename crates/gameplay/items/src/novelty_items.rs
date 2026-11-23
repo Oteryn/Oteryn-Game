@@ -224,18 +224,36 @@ pub fn rule_for_key(key: &str) -> Option<&'static NoveltyRule> {
         .or_else(|| rules()?.iter().find(|rule| rule.item_ids.contains(&id)))
 }
 
+pub const GHOSTSILVER_LANTERN_UNLIT: u32 = 23734;
+
+pub fn is_ghostsilver_lantern(key: &str) -> bool {
+    matches!(key, "oteryn:item.tibia.i23734" | "oteryn:item.tibia.i23738")
+}
+
 fn ghostsilver_lantern_rule(id: u32) -> Option<&'static NoveltyRule> {
-    // Crystal 201189f8, data-global/scripts/quests/forgotten_knowledge/actions_lantern.lua:1-4.
+    // Crystal 201189f8, data-global/scripts/quests/forgotten_knowledge/actions_lantern.lua:1-28.
     static RULES: OnceLock<[NoveltyRule; 2]> = OnceLock::new();
     RULES
         .get_or_init(|| {
-            [(23734, 23738), (23738, 23734)].map(|(source, output)| NoveltyRule {
+            [
+                (GHOSTSILVER_LANTERN_UNLIT, 23738),
+                (23738, GHOSTSILVER_LANTERN_UNLIT),
+            ]
+            .map(|(source, output)| NoveltyRule {
                 item_ids: vec![source],
                 donor: "data-global/scripts/quests/forgotten_knowledge/actions_lantern.lua:1-4"
                     .into(),
                 kind: NoveltyKind::CarriedTransform,
-                cues: Vec::new(),
-                effect_ids: Vec::new(),
+                cues: if source == GHOSTSILVER_LANTERN_UNLIT {
+                    vec!["appearance:effect/energyarea".into()]
+                } else {
+                    Vec::new()
+                },
+                effect_ids: if source == GHOSTSILVER_LANTERN_UNLIT {
+                    vec![38]
+                } else {
+                    Vec::new()
+                },
                 cue_origin: None,
                 dice_speech_range: None,
                 ground_cues: Vec::new(),

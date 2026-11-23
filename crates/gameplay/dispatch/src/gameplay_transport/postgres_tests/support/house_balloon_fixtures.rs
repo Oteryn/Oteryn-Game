@@ -166,6 +166,11 @@ const INVENTORY_OFFERS: &[OfferedCapability] = &[
 pub(super) enum Case {
     Placed,
     Carried,
+    Lantern {
+        placed: bool,
+        definition: bool,
+        source: u32,
+    },
     ResidentTick,
     ResidentExpiryTick,
     ResidentLetter,
