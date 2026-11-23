@@ -20,7 +20,7 @@ fn s10_travel_postgres_source_keywords_and_free_arrival() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false, None).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "S10 travel PostgreSQL thread panicked")??;
     eprintln!(
@@ -37,14 +37,52 @@ fn regional_travel_postgres_tarak_phrases_and_gulliver_fares() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, None).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "regional travel PostgreSQL thread panicked")??;
     eprintln!("POSTGRES_CASE_COMPLETED regional_travel tarak_and_gulliver");
     Ok(())
 }
 
-fn scenario(regional: bool) -> TestResult {
+#[derive(Clone, Copy, Debug)]
+enum ConfirmationCase {
+    ExactDeadline,
+    DelayedLookup,
+    CancelPaid,
+    CancelFree,
+}
+
+#[test]
+fn regional_travel_postgres_confirmation_regressions() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let failures = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            [
+                ConfirmationCase::ExactDeadline,
+                ConfirmationCase::DelayedLookup,
+                ConfirmationCase::CancelPaid,
+                ConfirmationCase::CancelFree,
+            ]
+            .into_iter()
+            .filter_map(|case| match scenario(true, Some(case)) {
+                Ok(()) => {
+                    eprintln!("POSTGRES_CASE_COMPLETED regional_travel {case:?}");
+                    None
+                }
+                Err(error) => Some(format!("{case:?}: {error}")),
+            })
+            .collect::<Vec<_>>()
+        })?
+        .join()
+        .map_err(|_| "regional travel confirmation PostgreSQL thread panicked")?;
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+    Ok(())
+}
+
+fn scenario(regional: bool, confirmation: Option<ConfirmationCase>) -> TestResult {
     run(async move |admin| {
         reset();
         let h =
@@ -182,11 +220,16 @@ fn scenario(regional: bool) -> TestResult {
                     generation: actor.actor_local_generation(),
                 })
                 .collect::<Vec<_>>();
-            regional_quotes(&mut owner, &deps, &h.pool, &book, &actors).await?;
+            let result = if let Some(case) = confirmation {
+                confirmation_case(&owner, &deps, &h.pool, &book, &actors, case).await
+            } else {
+                regional_quotes(&mut owner, &deps, &h.pool, &book, &actors).await
+            };
             drop(owner);
             drop(authority);
             drop(seal);
-            return h.cleanup().await;
+            let cleanup = h.cleanup().await;
+            return result.and(cleanup);
         }
         let routes = [
             (0, "help"),
@@ -248,6 +291,142 @@ fn scenario(regional: bool) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn confirmation_case(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    pool: &sqlx::PgPool,
+    book: &NpcTalkBook,
+    actors: &[EntityRef],
+    case: ConfirmationCase,
+) -> TestResult {
+    use super::npc_paid_travel_fixtures::{line, talk};
+    use oteryn_protocol_oteryn::npc_service::TRAVEL_CONFIRMATION_TIMEOUT_SECONDS;
+    use std::{sync::atomic::Ordering, time::Duration};
+
+    let (npc, key) = if matches!(case, ConfirmationCase::CancelPaid) {
+        (actors[2], "oteryn:npc.tarak_inner")
+    } else {
+        (actors[3], "oteryn:npc.tarak_sunken")
+    };
+    let route = book
+        .get(key)
+        .and_then(|entry| {
+            entry
+                .travel_routes
+                .iter()
+                .find(|route| route.route.key == "passage")
+        })
+        .ok_or("passage route")?;
+    let before = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(deps.actor)
+        .map_err(debug)?
+        .position();
+    let clock = &owner.states.test_owner_time;
+    // Seed admission already used the real clock. Start above that value.
+    let opened = owner.owner_now().get() + 1_000_000;
+    let deadline = opened + u64::from(TRAVEL_CONFIRMATION_TIMEOUT_SECONDS) * 1_000_000;
+    clock.store(opened + 1, Ordering::Relaxed);
+    talk(owner, deps, npc, 5, "hi").await?;
+    let quote = talk(owner, deps, npc, 6, "passage").await?;
+    assert_eq!(
+        quote
+            .conversation
+            .and_then(|conversation| conversation.open),
+        Some((npc, NpcConversationState::Confirming)),
+    );
+
+    let outcome = match case {
+        ConfirmationCase::ExactDeadline => {
+            clock.store(deadline + 1, Ordering::Relaxed);
+            talk(owner, deps, npc, 7, "yes").await?
+        }
+        ConfirmationCase::DelayedLookup => {
+            clock.store(deadline - 100_000 + 1, Ordering::Relaxed);
+            let mut blocker = pool.begin().await?;
+            sqlx::query("LOCK TABLE game_character_marriage_receipts IN ACCESS EXCLUSIVE MODE")
+                .execute(&mut *blocker)
+                .await?;
+            let release = async {
+                let waiting = tokio::time::timeout(Duration::from_secs(2), async {
+                    loop {
+                        let waiting: bool = sqlx::query_scalar(
+                            "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE NOT granted \
+                             AND relation='game_character_marriage_receipts'::regclass)",
+                        )
+                        .fetch_one(pool)
+                        .await?;
+                        if waiting {
+                            return Ok::<(), sqlx::Error>(());
+                        }
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await;
+                clock.store(deadline + 100_000 + 1, Ordering::Relaxed);
+                blocker.rollback().await?;
+                waiting??;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            };
+            let (outcome, released) = tokio::join!(talk(owner, deps, npc, 7, "yes"), release);
+            released?;
+            outcome?
+        }
+        ConfirmationCase::CancelPaid | ConfirmationCase::CancelFree => {
+            talk(owner, deps, npc, 7, "cancel, I never said yes").await?
+        }
+    };
+
+    let after = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(deps.actor)
+        .map_err(debug)?
+        .position();
+    let receipts: Vec<i64> = sqlx::query_scalar(
+        "SELECT fare_gold_units FROM game_newhaven_travel_receipts WHERE route=$1",
+    )
+    .bind(format!("{}/{}", route.service, route.route.key))
+    .fetch_all(pool)
+    .await?;
+    let burns: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_fee_burns")
+        .fetch_one(pool)
+        .await?;
+    if matches!(
+        case,
+        ConfirmationCase::CancelPaid | ConfirmationCase::CancelFree
+    ) {
+        if before != after
+            || outcome.inventory_changed
+            || !receipts.is_empty()
+            || burns != 0
+            || outcome
+                .conversation
+                .and_then(|conversation| conversation.open)
+                != Some((npc, NpcConversationState::Open))
+        {
+            return Err(format!(
+                "cancellation changed position {before:?} to {after:?}, fare receipts {receipts:?}, fee burns {burns}",
+            ).into());
+        }
+    } else {
+        let destination = &route.route.destination;
+        if (after.x, after.y, after.floor) != (destination.x, destination.y, destination.floor)
+            || receipts != [i64::try_from(route.route.price)?]
+        {
+            return Err(format!(
+                "confirmation reply {:?}, position {after:?}, fare receipts {receipts:?}",
+                line(&outcome)
+            )
+            .into());
+        }
+    }
+    Ok(())
 }
 
 async fn regional_quotes(
@@ -504,7 +683,8 @@ async fn regional_quotes(
                         assert!(owner.has_pending_paid_confirmation(
                             confirm_command,
                             &confirm,
-                            &context
+                            &context,
+                            owner.owner_now(),
                         ));
                         if exit == "focus loss" {
                             owner.npc_session_open(session).await;
@@ -516,8 +696,12 @@ async fn regional_quotes(
                             .npc_follow(deps.actor, session, Some(npc))
                             .await
                             .and_then(|update| update.conversation);
-                        if owner.has_pending_paid_confirmation(confirm_command, &confirm, &context)
-                        {
+                        if owner.has_pending_paid_confirmation(
+                            confirm_command,
+                            &confirm,
+                            &context,
+                            owner.owner_now(),
+                        ) {
                             failures.push(format!("{exit}: follow kept the quote"));
                         }
                         if exit == "out of range" {

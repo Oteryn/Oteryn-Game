@@ -5,6 +5,7 @@ use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFa
 use crate::durability::npc_travel::{PaidTravelRequest, TravelRefusal};
 use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::npc_service::{NpcConversation, NpcConversationState};
+use oteryn_simulation_determinism::SemanticTimeMicros;
 
 #[path = "paid_travel/quest_confirmation.rs"]
 mod quest_confirmation;
@@ -158,6 +159,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: &NpcTalkIntent,
         mut ordinary: npc_command::NpcTalkOutcome,
+        received_at: SemanticTimeMicros,
     ) -> npc_command::NpcTalkOutcome {
         let session = command.game_session_id;
         let text = intent.text.trim().to_ascii_lowercase();
@@ -206,7 +208,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(fence) = command.item_fence else {
             return ordinary;
         };
-        let now = self.owner_now().get();
+        if previous.as_ref().is_some_and(|prompt| {
+            prompt.route.crystal_callback
+                && prompt.npc == intent.npc_actor
+                && prompt.context == context
+        }) && (contains_whole_keyword(&text, "no") || contains_whole_keyword(&text, "cancel"))
+        {
+            return ordinary;
+        }
         let callback_confirmation = previous
             .as_ref()
             .is_some_and(|prompt| prompt.route.crystal_callback)
@@ -223,7 +232,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(prompt) = previous else {
                 return ordinary;
             };
-            if !prompt.matches_confirmation(intent.npc_actor, &context, fence, now) {
+            if !prompt.matches_confirmation(intent.npc_actor, &context, fence, received_at.get()) {
                 return refusal(intent, TravelRefusal::StaleQuote);
             }
             prompt

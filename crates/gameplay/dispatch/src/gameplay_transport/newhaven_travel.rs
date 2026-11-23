@@ -110,9 +110,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
             };
         }
-        let ordinary = npc_command::npc_bank_talk(self, actor, command, intent.clone()).await;
+        let received_at = self.owner_now();
+        let ordinary =
+            npc_command::npc_bank_talk(self, actor, command, intent.clone(), received_at).await;
         let ordinary = self
-            .paid_travel_talk(actor, command, &intent, ordinary)
+            .paid_travel_talk(actor, command, &intent, ordinary, received_at)
             .await;
         if ordinary.disposition != NpcIntentDisposition::Ok
             || ordinary.inventory_changed

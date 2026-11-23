@@ -153,6 +153,7 @@ fn scenario(tag: &'static str, phrase: &'static str, greet_first: bool) -> TestR
                         &owner, deps.actor,
                         UseCommand { game_session_id: session, command_id, item_fence: admitted.item_fence },
                         NpcTalkIntent { npc_actor: npc, text: text.into() },
+                        owner.owner_now(),
                     )
                 };
                 if greet_first {
