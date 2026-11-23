@@ -27,33 +27,18 @@ fn e2e_row_selected(index: usize) -> bool {
 // A failed row can leave its socket open or its session in loss/grace; the
 // next row must not inherit that state.
 async fn release_row_characters(clients: &SeamClients<'_>) -> TestResult {
-    let harness = verdict::Harness::global();
     let mut failure = None;
-    let mut connection = None;
-    let mut deadline = tokio::time::Instant::now();
     for index in 0..clients.accounts.len() {
-        let need = character_release_need(clients, index);
-        let result = async {
-            harness.fixture_gate(need, index)?;
-            deadline = fixture_release_deadline();
-            row_timing::wait(wait_fixture_released_on(clients, index, deadline, &mut connection))
-                .await
-                .map_err(|error| harness.fixture_failed(need, index, error.as_ref()))
-        }
-        .await;
-        if let Err(error) = result {
-            // The next fixture gets its own deadline and a fresh transport after an error.
-            drop(connection.take());
+        if let Err(error) = wait_character_released(clients, index).await {
             evidence(&format!("e2e_row_release account={index} error={error}"));
             if failure.is_none() {
                 failure = Some(error);
             }
         }
     }
-    let closed = row_timing::wait(close_release_connection(connection, deadline)).await;
     match failure {
         Some(error) => Err(error),
-        None => closed,
+        None => Ok(()),
     }
 }
 

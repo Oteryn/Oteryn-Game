@@ -320,18 +320,16 @@ async fn open_backpack(client: &mut oteryn_dev_client::DevClientSession) -> Test
 pub(super) async fn run(
     client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
-    generation: &QualificationWorld,
-    metadata: &oteryn_world_bundle::bundle::Visited,
+    world: &BundleWorld,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    let world = &generation.bundle;
     let start = tile(client.world_spatial().actor_position)?;
     run_phase(
         start,
-        observe_starter(client, clients, world),
+        observe_starter(client, clients),
         async |client, primal, covet, seconds| {
-            let client = e2ei_a::run(client, clients, generation, &metadata.spawns).await;
-            let client = full_e2ef3_e2ei_b::run(client, clients, world).await;
-            let client = e2ei_c::run(client, clients, world, metadata).await;
+            let client = e2ei_a::run(client, clients).await;
+            let client = full_e2ef3_e2ei_b::run(client, clients).await;
+            let client = e2ei_c::run(client, clients).await;
             full_e2ef3_e2ei_d::run(client, clients, primal, covet, seconds).await
         },
         |client| tile(client.world_spatial().actor_position),
@@ -344,7 +342,6 @@ pub(super) async fn run(
 async fn observe_starter(
     mut client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
-    world: &BundleWorld,
 ) -> TestResult<(oteryn_dev_client::DevClientSession, bool, bool)> {
     let started = std::time::Instant::now();
     let primal = reward_bag(&mut client, "PRIMAL_BAG").await?;
@@ -352,7 +349,7 @@ async fn observe_starter(
     let saved_quantities = quantities(&client)?;
     open_backpack(&mut client).await?;
     let before = backpack_inspection(&mut client).await?;
-    e2ei_a::relogin_starter(&mut client, clients, world).await?;
+    e2ei_a::relogin_starter(&mut client, clients).await?;
     open_backpack(&mut client).await?;
     if backpack_inspection(&mut client).await? != before || quantities(&client)? != saved_quantities
     {

@@ -125,7 +125,7 @@ pub(super) async fn approach_vendor(
             )
             .into());
         }
-        row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+        client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
 }
@@ -144,7 +144,7 @@ async fn settle(
             )
             .into());
         }
-        row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+        client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
     Ok(())
@@ -261,7 +261,7 @@ impl Hunt<'_> {
             if Instant::now() >= deadline {
                 return Err(format!("spawn depleted or no attackable {sources:?} reached at {here:?} by hunt deadline").into());
             }
-            row_timing::wait(client.service_liveness(Duration::from_millis(100))).await?;
+            client.service_liveness(Duration::from_millis(100)).await?;
             client.take_events();
         };
         let prior_modes = client
@@ -352,7 +352,7 @@ impl Hunt<'_> {
                 };
                 return Err(format!("attack deadline;missing={missing};sources={sources:?};target={:?};position={position:?};corpses={corpses:?};stop={stop:?};restore={restore:?}", target.entity).into());
             }
-            row_timing::wait(client.service_liveness(Duration::from_millis(100))).await?;
+            client.service_liveness(Duration::from_millis(100)).await?;
         }
     }
 
@@ -505,7 +505,7 @@ async fn decay(
             )
             .into());
         }
-        row_timing::wait(live.service_liveness(Duration::from_millis(100))).await?;
+        live.service_liveness(Duration::from_millis(100)).await?;
     };
     *step = "retired-loot-unavailable";
     let stale_use = live.use_item(corpse.handle).await?;
@@ -1136,10 +1136,7 @@ fn setup_failure(started: Instant, error: &(dyn std::error::Error + 'static)) {
 pub(super) async fn run(
     starter: TestResult<DevClientSession>,
     clients: &SeamClients<'_>,
-    world: &BundleWorld,
-    metadata: &oteryn_world_bundle::bundle::Visited,
 ) -> TestResult<DevClientSession> {
-    let row_timing = row_timing::enter(I06);
     let started = Instant::now();
     let live = match starter {
         Ok(client) => client,
@@ -1151,6 +1148,25 @@ pub(super) async fn run(
                 return Err(error);
             }
         },
+    };
+    let loaded = (|| {
+        let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+        let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+        let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+        let world = load_world(
+            bytes,
+            &pin,
+            WorldId::decode(&clients.world)?,
+            ChannelId::decode(&clients.channel)?,
+        )?;
+        Ok::<_, Box<dyn std::error::Error>>((metadata, world))
+    })();
+    let (metadata, world) = match loaded {
+        Ok(value) => value,
+        Err(error) => {
+            setup_failure(started, error.as_ref());
+            return Ok(live);
+        }
     };
     let town = TOWN;
     let hunt = Hunt {
@@ -1176,8 +1192,6 @@ pub(super) async fn run(
         }
     }
 
-    drop(row_timing);
-    let row_timing = row_timing::enter(I07);
     let started = Instant::now();
     let mut step = "loot-all";
     let policy = loot_policy(&mut client, clients, &hunt, &mut step, town).await;
@@ -1217,7 +1231,6 @@ pub(super) async fn run(
     };
     result(I07, started, "", Some(("manual-click", &observed, &cause)));
 
-    drop(row_timing);
     let mut client = client.ok_or("E2EF3 connection closed during fresh admission")?;
     travel(&mut client, world, |at| at == TOWN)
         .await

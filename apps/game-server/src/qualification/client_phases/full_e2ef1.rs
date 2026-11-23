@@ -9,7 +9,7 @@ pub(super) async fn with_peer_liveness<T>(
     work: impl std::future::Future<Output = TestResult<T>>,
 ) -> TestResult<T> {
     super::mp::observations::while_servicing_liveness(work, async || {
-        row_timing::wait(client.service_liveness(Duration::from_millis(25))).await?;
+        client.service_liveness(Duration::from_millis(25)).await?;
         Ok(())
     })
     .await?
@@ -109,7 +109,6 @@ mod e2ef1 {
         done: BTreeSet<&'static str>,
         current: Option<&'static str>,
         aborted: Option<verdict::Cause>,
-        abort_evidence: Option<String>,
     }
     impl Drop for Verdicts {
         fn drop(&mut self) {
@@ -124,13 +123,8 @@ mod e2ef1 {
             for (row, _) in ROWS {
                 if !self.done.contains(row) {
                     let suffix = if row == current { &cause } else { &blocked }.suffix(&root);
-                    let observed = if row == current {
-                        self.abort_evidence.as_deref().unwrap_or_default()
-                    } else {
-                        ""
-                    };
                     evidence(&format!(
-                        "e2e_all scenario={row}.full status=FAIL seconds=0 evidence=journey-aborted:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{observed}{suffix}"
+                        "e2e_all scenario={row}.full status=FAIL seconds=0 evidence=journey-aborted:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{suffix}"
                     ));
                 }
             }
@@ -247,7 +241,7 @@ mod e2ef1 {
         Ok(objects)
     }
     async fn pump(client: &mut DevClientSession) -> TestResult {
-        row_timing::wait(client.service_liveness(Duration::from_millis(25))).await?;
+        client.service_liveness(Duration::from_millis(25)).await?;
         client.take_events();
         Ok(())
     }
@@ -680,7 +674,7 @@ mod e2ef1 {
             if tokio::time::Instant::now() >= deadline {
                 return Err("dropped item did not publish a live native map handle".into());
             }
-            row_timing::wait(client.service_liveness(Duration::from_millis(25))).await?;
+            client.service_liveness(Duration::from_millis(25)).await?;
         };
         let from = tile(ground)?;
         let path =
@@ -792,7 +786,7 @@ mod e2ef1 {
                 if result.disposition != SpellCastDisposition::CoolingDown || result.actor_vitals_delta.is_some() || client.actor_vitals() != Some(&before) { return Err(format!("floor action did not refuse without resource spend: {result:?}").into()); }
                 let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
                 loop {
-                    row_timing::wait(client.service_liveness(Duration::from_millis(100))).await?;
+                    client.service_liveness(Duration::from_millis(100)).await?;
                     client.take_events();
                     let result = client.cast_spell(index, SpellTarget::None, false).await?;
                     if result.disposition == SpellCastDisposition::Cast {
@@ -852,23 +846,6 @@ mod e2ef1 {
         }
         Ok(result.payload[1])
     }
-    async fn measure_m04<T>(
-        enabled: bool,
-        phase: &str,
-        work: impl std::future::Future<Output = TestResult<T>>,
-    ) -> TestResult<T> {
-        let started = std::time::Instant::now();
-        let result = work.await;
-        if enabled {
-            evidence(&format!(
-                "E2EF1_TIMING row=M04 phase={phase} elapsed_ms={} ok={}",
-                started.elapsed().as_millis(),
-                result.is_ok()
-            ));
-        }
-        result
-    }
-
     async fn m04(
         client: &mut DevClientSession,
         peer: &mut DevClientSession,
@@ -876,21 +853,11 @@ mod e2ef1 {
         bytes: &[u8],
         checks: &mut Checks,
     ) -> TestResult {
-        let player = measure_m04(
-            true,
-            "push-player",
-            player_push(client, peer, world, checks),
-        )
-        .await;
+        let player = player_push(client, peer, world, checks).await;
         if let Err(error) = &player {
             evidence(&format!("E2EF1_GAP row=M04 case=push-player error={error}"));
         }
-        let creature = measure_m04(
-            true,
-            "push-creature",
-            creature_push(client, world, bytes, checks),
-        )
-        .await;
+        let creature = creature_push(client, world, bytes, checks).await;
         if let Err(error) = &creature {
             evidence(&format!(
                 "E2EF1_GAP row=M04 case=push-creature error={error}"
@@ -899,13 +866,13 @@ mod e2ef1 {
         // Leave the rat spawn before the row's logout waits out the in-fight lock:
         // left there, the live rats kill this core Character, which then respawns
         // at the home temple beyond the core's town route budget.
-        let left = measure_m04(true, "return-from-rat-spawn", async {
+        let left: TestResult = async {
             let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
                 at == TOWN
             })
             .ok_or("push-creature return route")?;
             walk(client, world, &back).await
-        })
+        }
         .await;
         player.and(creature).and(left)
     }
@@ -965,12 +932,7 @@ mod e2ef1 {
         })
         .await?;
         let saved = peer.world_spatial().actor_position;
-        let (result, logout, attempts, busy_timed_out) = measure_m04(
-            true,
-            "pushed-peer-logout",
-            super::logout_retrying_busy(peer),
-        )
-        .await?;
+        let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(peer).await?;
         if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             return Err(format!("pushed peer logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
         }
@@ -987,12 +949,7 @@ mod e2ef1 {
     ) -> TestResult {
         let basis = spatial_basis::current(client)?;
         let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
-        measure_m04(
-            true,
-            "rat-spawn-travel",
-            travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat"),
-        )
-        .await?;
+        travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
         let here = tile(client.world_spatial().actor_position)?;
         let creature = client
             .world_entities()
@@ -1339,50 +1296,15 @@ mod e2ef1 {
     ) -> TestResult {
         loop {
             let logout = client.session_mut().logout().await?;
-            if !logout_pending(logout.result, format_args!("{logout:?}"))? {
+            if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
                 return Ok(());
             }
             if tokio::time::Instant::now() >= deadline {
                 return Err(format!("movement logout lock did not settle: {logout:?}").into());
             }
-            row_timing::wait(pump(client)).await?;
+            pump(client).await?;
         }
     }
-
-    fn logout_pending(
-        result: Option<oteryn_protocol_oteryn::logout::LogoutResult>,
-        evidence: impl std::fmt::Display,
-    ) -> TestResult<bool> {
-        use oteryn_protocol_oteryn::logout::LogoutResult;
-        match result {
-            Some(LogoutResult::Accepted) => Ok(false),
-            Some(LogoutResult::Busy | LogoutResult::InFight { .. }) => Ok(true),
-            None => Err(format!("movement logout refused: {evidence}").into()),
-        }
-    }
-
-    #[test]
-    fn movement_logout_retries_only_typed_transient_results() -> TestResult {
-        use oteryn_protocol_oteryn::logout::LogoutResult;
-        let error = logout_pending(None, "Rejected")
-            .err()
-            .ok_or("definitive refusal retried")?;
-        assert!(error.to_string().contains("Rejected"));
-        assert!(matches!(
-            verdict::classify(error.as_ref()),
-            verdict::Cause::Assertion
-        ));
-        assert!(logout_pending(Some(LogoutResult::Busy), "Busy")?);
-        assert!(logout_pending(
-            Some(LogoutResult::InFight {
-                retry_after_ms: 100
-            }),
-            "InFight"
-        )?);
-        assert!(!logout_pending(Some(LogoutResult::Accepted), "Accepted")?);
-        Ok(())
-    }
-
     /// M05 cleanup after its door checks (#3373): the doors leave the actor outside the
     /// town protection zone, where a live creature kept refreshing the 60 s PvE lock past
     /// the logout deadline. Log every visible creature as the lock-holder evidence, then
@@ -1479,18 +1401,7 @@ mod e2ef1 {
         let mut verdicts = Verdicts::default();
         let result = rows(client, clients, world, &mut verdicts).await;
         if let Err(error) = &result {
-            if let Some(row) = verdicts.current {
-                evidence(&format!(
-                    "E2EF1_GAP row={row} phase=lifecycle error={error}"
-                ));
-            }
-            let cause = verdict::classify(error.as_ref());
-            if matches!(cause, verdict::Cause::Assertion) {
-                let detail = error.to_string();
-                let detail = detail.split_whitespace().collect::<Vec<_>>().join("-");
-                verdicts.abort_evidence = Some(format!(";observed={detail}"));
-            }
-            verdicts.aborted = Some(cause);
+            verdicts.aborted = Some(verdict::classify(error.as_ref()));
         }
         result
     }
@@ -1506,7 +1417,6 @@ mod e2ef1 {
         let mut failed = false;
         let mut revisions = BTreeMap::new();
         for (ordinal, (row, required)) in ROWS.iter().enumerate() {
-            let row_timing = row_timing::enter(row);
             let started = std::time::Instant::now();
             verdicts.current = Some(row);
             let mut checks = Checks {
@@ -1535,16 +1445,11 @@ mod e2ef1 {
                 );
                 continue;
             }
-            let is_m04 = *row == "M04";
             let mut peer = if matches!(*row, "M01" | "M04") {
                 Some(
                     with_peer_liveness(
                         &mut client,
-                        measure_m04(
-                            is_m04,
-                            "peer-admission",
-                            connect_character(clients, 0xa0 + u8::try_from(ordinal)?, 0),
-                        ),
+                        connect_character(clients, 0xa0 + u8::try_from(ordinal)?, 0),
                     )
                     .await?,
                 )
@@ -1589,33 +1494,24 @@ mod e2ef1 {
                     let saved = peer.world_spatial().actor_position;
                     let previous = peer.join_snapshot().game_session_id;
                     if *row != "M04" || !checks.passed.contains("push-player") {
-                        measure_m04(is_m04, "peer-logout", logout(&mut peer)).await?;
+                        logout(&mut peer).await?;
                     }
                     drop(peer);
-                    let mut peer = measure_m04(
-                        is_m04,
-                        "peer-readmission",
-                        connect_character(clients, 0xc0 + u8::try_from(ordinal)?, 0),
-                    )
-                    .await?;
+                    let mut peer =
+                        connect_character(clients, 0xc0 + u8::try_from(ordinal)?, 0).await?;
                     let durable = peer.world_spatial().actor_position == saved
                         && peer.join_snapshot().game_session_id != previous;
                     let back =
                         route(world, tile(saved)?, |at| at == TOWN).ok_or("peer return route")?;
-                    measure_m04(is_m04, "peer-return-walk", walk(&mut peer, world, &back)).await?;
-                    measure_m04(is_m04, "peer-final-logout", logout(&mut peer)).await?;
+                    walk(&mut peer, world, &back).await?;
+                    logout(&mut peer).await?;
                     Ok(durable)
                 })
                 .await?;
             }
-            measure_m04(is_m04, "primary-logout", logout(&mut client)).await?;
+            logout(&mut client).await?;
             drop(client);
-            client = measure_m04(
-                is_m04,
-                "primary-readmission",
-                connect_world(clients, 0xb0 + u8::try_from(ordinal)?),
-            )
-            .await?;
+            client = connect_world(clients, 0xb0 + u8::try_from(ordinal)?).await?;
             let durable = client.world_spatial().actor_position == saved
                 && client.join_snapshot().game_session_id != old_session
                 && inventory_signature(&client)? == inventory
@@ -1624,7 +1520,6 @@ mod e2ef1 {
                 checks.pass("relogin", saved);
             }
             failed |= !record_row(verdicts, row, required, started, &checks, &result, durable);
-            drop(row_timing);
             let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
                 at == origin
             })

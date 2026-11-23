@@ -10,64 +10,41 @@ async fn wait_character_released(clients: &SeamClients<'_>, index: usize) -> Tes
     let harness = verdict::Harness::global();
     let need = character_release_need(clients, index);
     harness.fixture_gate(need, index)?;
-    row_timing::wait(wait_fixture_released(clients, index))
+    wait_fixture_released(clients, index)
         .await
         .map_err(|error| harness.fixture_failed(need, index, error.as_ref()))
 }
 
 async fn wait_fixture_released(clients: &SeamClients<'_>, index: usize) -> TestResult {
-    let mut connection = None;
-    let deadline = fixture_release_deadline();
-    wait_fixture_released_on(clients, index, deadline, &mut connection).await?;
-    close_release_connection(connection, deadline).await
-}
-
-fn fixture_release_deadline() -> tokio::time::Instant {
     // Existing loss qualification allows 60s for detection and 100s for release.
-    tokio::time::Instant::now() + Duration::from_secs(160)
-}
-
-async fn wait_fixture_released_on(
-    clients: &SeamClients<'_>,
-    index: usize,
-    deadline: tokio::time::Instant,
-    connection: &mut Option<sqlx::PgConnection>,
-) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(160);
     verdict::Harness::global().bounded_wait(deadline, "fixture-release");
-    if connection.is_none() {
-        *connection = Some(
-            tokio::time::timeout_at(deadline, sqlx::PgConnection::connect(clients.url))
-                .await
-                .map_err(|_| "character release database connect deadline")??,
-        );
-    }
-    let connection = connection.as_mut().ok_or("character release database connection")?;
+    let mut connection =
+        tokio::time::timeout_at(deadline, sqlx::PgConnection::connect(clients.url))
+            .await
+            .map_err(|_| "character release database connect deadline")??;
     let released = wait_release(deadline, async || {
         Ok(!sqlx::query_scalar::<_, bool>(
-            "SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions              WHERE world_id=encode($1,'hex')::uuid AND session_state<>3              AND (account_id=$2::text::uuid OR character_id=encode($3,'hex')::uuid))",
+            "SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions \
+             WHERE world_id=encode($1,'hex')::uuid AND session_state<>3 \
+             AND (account_id=$2::text::uuid OR character_id=encode($3,'hex')::uuid))",
         )
         .bind(clients.world.as_slice())
         .bind(&clients.accounts[index])
         .bind(clients.characters[index].as_slice())
-        .fetch_one(&mut *connection)
+        .fetch_one(&mut connection)
         .await?)
     })
     .await;
-    if released.is_err() && tokio::time::Instant::now() >= deadline {
-        report_unreleased_character(clients, index, connection).await;
+    if let Err(error) = released {
+        if tokio::time::Instant::now() >= deadline {
+            report_unreleased_character(clients, index, &mut connection).await;
+        }
+        return Err(error);
     }
-    released
-}
-
-async fn close_release_connection(
-    connection: Option<sqlx::PgConnection>,
-    deadline: tokio::time::Instant,
-) -> TestResult {
-    if let Some(connection) = connection {
-        tokio::time::timeout_at(deadline, connection.close())
-            .await
-            .map_err(|_| "character release database close deadline")??;
-    }
+    tokio::time::timeout_at(deadline, connection.close())
+        .await
+        .map_err(|_| "character release database close deadline")??;
     Ok(())
 }
 

@@ -15,8 +15,6 @@ mod general_stats;
 mod creature_sweep;
 #[path = "mp/mount.rs"]
 mod mp;
-#[path = "row_timing.rs"]
-mod row_timing;
 pub(in crate::qualification) use mp::legacy_d150;
 
 include!("character_core.rs");
@@ -843,7 +841,7 @@ async fn walk_with_landings(
             ) else {
                 break;
             };
-            row_timing::wait(tokio::time::sleep(delay)).await;
+            tokio::time::sleep(delay).await;
             outcome = client.step_retrying(direction).await?;
         }
         let from = tile(before)?;
@@ -1026,14 +1024,6 @@ async fn extra_world_fixtures(
 }
 
 pub(super) async fn journeys(
-    clients: &SeamClients<'_>,
-    packet_clients: &SeamClients<'_>,
-    path: &Path,
-) -> TestResult {
-    row_timing::run(run_journeys(clients, packet_clients, path)).await
-}
-
-async fn run_journeys(
     clients: &SeamClients<'_>,
     packet_clients: &SeamClients<'_>,
     path: &Path,
@@ -3448,38 +3438,35 @@ pub(super) async fn connect_character(
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    row_timing::setup(async {
-        wait_character_released(clients, index).await?;
-        let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
-        let (nonce, attempt) = fresh_grant_material(tag)?;
-        let grant = Grant {
-            signing: clients.signing,
-            key_id: clients.key_id,
-            account_id: &clients.accounts[index],
-            character_id: clients.characters[index],
-            world_id: clients.world,
-            channel_id: clients.channel,
-            security_generation: generation,
-            scope_generation: clients.scope_generation,
-            nonce,
-            attempt,
-        };
-        let token = sign_grant(&grant, now_seconds()?);
-        let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
-            address: clients.address,
-            server_name: "localhost",
-            root_certificate: clients.certificate,
-            schema_revision: 1,
-            character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
-            admission_material: token.as_bytes(),
-            client_build_id: "oteryn-dev-client/world-qualification",
-            deadline: Duration::from_secs(20),
-        })
-        .await?;
-        verdict::Harness::global().progress("admission");
-        Ok(client)
+    wait_character_released(clients, index).await?;
+    let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
+    let (nonce, attempt) = fresh_grant_material(tag)?;
+    let grant = Grant {
+        signing: clients.signing,
+        key_id: clients.key_id,
+        account_id: &clients.accounts[index],
+        character_id: clients.characters[index],
+        world_id: clients.world,
+        channel_id: clients.channel,
+        security_generation: generation,
+        scope_generation: clients.scope_generation,
+        nonce,
+        attempt,
+    };
+    let token = sign_grant(&grant, now_seconds()?);
+    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+        address: clients.address,
+        server_name: "localhost",
+        root_certificate: clients.certificate,
+        schema_revision: 1,
+        character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
+        admission_material: token.as_bytes(),
+        client_build_id: "oteryn-dev-client/world-qualification",
+        deadline: Duration::from_secs(20),
     })
-    .await
+    .await?;
+    verdict::Harness::global().progress("admission");
+    Ok(client)
 }
 
 async fn travel_to_spawn(

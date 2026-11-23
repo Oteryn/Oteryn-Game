@@ -415,7 +415,7 @@ async fn resting_spend(client: &mut DevClientSession, soul: bool) -> TestResult 
             )
             .into());
         }
-        row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+        client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
 }
@@ -461,7 +461,7 @@ async fn resting_deficits(
         if tokio::time::Instant::now() >= deadline {
             return Err("P10 HP deficit prerequisite blocked: no nonlethal native rat damage with at least eight missing HP".into());
         }
-        row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+        client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
     if client.actor_vitals().is_none_or(|v| v.health == 0) {
@@ -564,7 +564,7 @@ async fn resting_bonuses(
         let mut next_stamina_read = started;
         let mut stamina = stamina_before;
         let stamina_after = loop {
-            row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+            client.service_liveness(Duration::from_millis(50)).await?;
             for event in client.take_events() {
                 if let SessionEvent::ActorVitals(delta) = event {
                     let v = delta.value;
@@ -639,7 +639,7 @@ async fn resting_bonuses(
         let mut observed_stamina = outside_stamina;
         let until = tokio::time::Instant::now() + Duration::from_secs(370);
         while tokio::time::Instant::now() < until {
-            row_timing::wait(client.service_liveness(Duration::from_millis(100))).await?;
+            client.service_liveness(Duration::from_millis(100)).await?;
             for event in client.take_events() {
                 if let SessionEvent::ActorVitals(delta) = event {
                     let v = delta.value;
@@ -681,7 +681,7 @@ async fn resting_bonuses(
         let interval = if promoted { 15 } else { 120 };
         let deadline = tokio::time::Instant::now() + Duration::from_secs(interval + 10);
         loop {
-            row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+            client.service_liveness(Duration::from_millis(50)).await?;
             client.take_events();
             let soul = client.actor_vitals().ok_or("P10 reentry soul frame missing")?.soul;
             if soul != outside_soul {
@@ -768,7 +768,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
                 if tokio::time::Instant::now() < deadline => {}
             _ => return Err(format!("E2EF6 logout did not settle: {logout:?}").into()),
         }
-        row_timing::wait(client.service_liveness(Duration::from_millis(100))).await?;
+        client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
     }
 }
@@ -903,7 +903,7 @@ async fn temple_respawn(
             .health;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(40);
         loop {
-            row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+            client.service_liveness(Duration::from_millis(50)).await?;
             let damage = client
                 .take_events()
                 .into_iter()
@@ -1123,7 +1123,7 @@ async fn oressa_talk(
         if disposition == wire::NpcIntentDisposition::RateLimited
             && tokio::time::Instant::now() < deadline
         {
-            row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+            client.service_liveness(Duration::from_millis(50)).await?;
             client.take_events();
             continue;
         }
@@ -1205,7 +1205,7 @@ async fn earn_level_eight(
         let kill_deadline = (tokio::time::Instant::now() + Duration::from_secs(60)).min(deadline);
         let mut damaged = false;
         loop {
-            row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+            client.service_liveness(Duration::from_millis(50)).await?;
             for event in client.take_events() {
                 if let SessionEvent::WorldSpatialEntities(delta) = event {
                     damaged |= delta.value.update.iter().any(|entry| entry.entity == target.entity && matches!(entry.detail,
@@ -1222,7 +1222,7 @@ async fn earn_level_eight(
                     if after.0 > before.0 || tokio::time::Instant::now() >= settled {
                         break after;
                     }
-                    row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+                    client.service_liveness(Duration::from_millis(50)).await?;
                     client.take_events();
                 };
                 // A single lethal hit can remove the target without an intermediate
@@ -1464,7 +1464,7 @@ async fn wait_inventory(
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("{blocker}; observed={:?}", client.inventory()).into());
         }
-        row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+        client.service_liveness(Duration::from_millis(50)).await?;
     }
 }
 
@@ -1590,7 +1590,7 @@ async fn service_talk(
         if disposition == wire::NpcIntentDisposition::RateLimited
             && tokio::time::Instant::now() < deadline
         {
-            row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+            client.service_liveness(Duration::from_millis(50)).await?;
             continue;
         }
         if reply.status != CommandStatus::Accepted || disposition != wire::NpcIntentDisposition::Ok
@@ -1684,7 +1684,7 @@ async fn observed_death(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     let mut damaged = false;
     loop {
-        row_timing::wait(client.service_liveness(Duration::from_millis(50))).await?;
+        client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
             if let SessionEvent::ActorVitals(delta) = event {
                 damaged |= delta.value.health < hp;
@@ -2347,7 +2347,7 @@ async fn pvp_meet(
         .own_identity();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        row_timing::wait(attacker.service_liveness(Duration::from_millis(50))).await?;
+        attacker.service_liveness(Duration::from_millis(50)).await?;
         if let Some(entity) = attacker
             .world_entities()
             .and_then(|view| view.iter().find(|entry| entry.entity.identity == identity))
@@ -2448,8 +2448,8 @@ async fn observed_pvp_death(
         let attack = attacker.session_mut().attack_target(Some(&target)).await?;
         last_attack.clear();
         last_attack.push_str(&format!("{attack:?}"));
-        row_timing::wait(victim.service_liveness(Duration::from_millis(50))).await?;
-        row_timing::wait(attacker.service_liveness(Duration::from_millis(50))).await?;
+        victim.service_liveness(Duration::from_millis(50)).await?;
+        attacker.service_liveness(Duration::from_millis(50)).await?;
         if victim.world_entities().is_some_and(|view| {
             view.others()
                 .any(|entry| entry.kind == oteryn_dev_client::EntityKind::Creature)
@@ -2558,7 +2558,7 @@ async fn adventurer_journey(
                     match tokio::time::timeout(Duration::from_millis(100), earning.as_mut()).await {
                         Ok(result) => { result?; break; }
                         Err(_) => {
-                            if let Err(error) = row_timing::wait(victim.service_liveness(Duration::from_millis(1))).await {
+                            if let Err(error) = victim.service_liveness(Duration::from_millis(1)).await {
                                 earning_cancelled = true;
                                 return Err(error.into());
                             }

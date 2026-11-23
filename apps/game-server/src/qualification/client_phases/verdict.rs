@@ -307,7 +307,6 @@ impl Watch {
         deadline: impl Into<String>,
         journey: impl Future<Output = TestResult<T>>,
     ) -> TestResult<T> {
-        let _row_timing = row_timing::enter(self.row);
         self.run(Some(budget), deadline, journey).await
     }
 
