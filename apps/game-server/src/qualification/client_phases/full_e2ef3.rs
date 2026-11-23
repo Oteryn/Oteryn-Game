@@ -4,7 +4,7 @@
 //! In particular, a successful read-only inspection is not I16 qualification.
 use super::*;
 use oteryn_protocol_oteryn::{container_tree as tree, inspection as inspect};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, future::Future};
 
 #[path = "full_e2ef3_e2ei-a.rs"]
 mod e2ei_a;
@@ -89,9 +89,59 @@ fn result(row: &Row, seconds: f64, reason: &str, cause: &verdict::Cause) {
     ));
     // Separate detail from the strict report record; never treat these words as checks.
     evidence(&format!(
-        "E2EF3_GAP row={} unexecuted={} reason={reason}",
-        row.id, row.missing
+        "E2EF3_GAP row={} unexecuted={} reason={}",
+        row.id,
+        row.missing,
+        reason.replace(['\r', '\n'], " ")
     ));
+}
+
+// The served route evidence identifies this occupied western landing.
+pub(super) fn route_available(at: TilePos) -> bool {
+    at != (TilePos {
+        x: 32449,
+        y: 32148,
+        floor: -7,
+    })
+}
+
+pub(super) fn occupied_tiles(
+    client: &oteryn_dev_client::DevClientSession,
+) -> std::collections::BTreeSet<TilePos> {
+    client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.others())
+        .filter(|entity| {
+            matches!(
+                entity.kind,
+                oteryn_dev_client::EntityKind::Creature
+                    | oteryn_dev_client::EntityKind::Npc
+                    | oteryn_dev_client::EntityKind::Player
+            )
+        })
+        .filter_map(|entity| tile(entity.position).ok())
+        .collect()
+}
+
+pub(super) fn ordinary_spawn_points(
+    table: &oteryn_world_bundle::spawn::Table,
+) -> impl Iterator<Item = (TilePos, &str)> {
+    use oteryn_world_bundle::spawn::Period;
+
+    table.sources.iter().flat_map(move |source| {
+        source.points.iter().filter_map(move |point| {
+            let creature = table.creatures.get(point.creature as usize)?;
+            (creature.period == Period::All && point.boss_policy.is_none()).then_some((
+                TilePos {
+                    x: point.x,
+                    y: point.y,
+                    floor: source.floor,
+                },
+                creature.key.as_str(),
+            ))
+        })
+    })
 }
 
 fn quantities(client: &oteryn_dev_client::DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
@@ -127,7 +177,7 @@ async fn reward_bag(
         .copied();
     let Some(item) = item else {
         evidence(&format!(
-            "E2EF3_OBSERVATION reward-bag={constant} definition={} carried-quantity=0 acquisition-route=unimplemented",
+            "E2EF3_OBSERVATION reward-bag={constant} definition={} carried-quantity=0 acquisition-route=absent-from-starter-custody",
             reference.get()
         ));
         return Ok(false);
@@ -268,70 +318,89 @@ async fn open_backpack(client: &mut oteryn_dev_client::DevClientSession) -> Test
 }
 
 pub(super) async fn run(
-    mut client: oteryn_dev_client::DevClientSession,
+    client: oteryn_dev_client::DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    let core_start = tile(client.world_spatial().actor_position)?;
-    let started = std::time::Instant::now();
-    let mut primal = false;
-    let mut covet = false;
-    let observations = async {
-        primal = reward_bag(&mut client, "PRIMAL_BAG").await?;
-        covet = reward_bag(&mut client, "BAG_YOU_COVET").await?;
-        let saved_quantities = quantities(&client)?;
-        open_backpack(&mut client).await?;
-        let before = backpack_inspection(&mut client).await?;
-        e2ei_a::relogin_starter(&mut client, clients).await?;
-        open_backpack(&mut client).await?;
-        if backpack_inspection(&mut client).await? != before
-            || quantities(&client)? != saved_quantities
-        {
-            return Err("E2EF3 starter inspection changed across fresh admission".into());
-        }
-        for scenario in ["I01.root-view-relogin", "I16.starter-weight-relogin"] {
-            evidence(&format!(
-                "E2EF3_OBSERVATION scenario={scenario} status=PASS seconds={:.3}",
-                started.elapsed().as_secs_f64()
-            ));
-        }
-        Ok::<_, Box<dyn std::error::Error>>(())
-    }
-    .await;
-    let starter_seconds = started.elapsed().as_secs_f64();
-    report_starter(observations, starter_seconds)?;
+    let start = tile(client.world_spatial().actor_position)?;
+    run_phase(
+        start,
+        observe_starter(client, clients),
+        async |client, primal, covet, seconds| {
+            let client = e2ei_a::run(client, clients).await;
+            let client = full_e2ef3_e2ei_b::run(client, clients).await;
+            let client = e2ei_c::run(client, clients).await;
+            full_e2ef3_e2ei_d::run(client, clients, primal, covet, seconds).await
+        },
+        |client| tile(client.world_spatial().actor_position),
+        |from, start| route_avoiding(world, from, |at| at == start, route_available),
+        async |client, path| walk(client, world, path).await,
+    )
+    .await
+}
 
-    let client = e2ei_a::run(client, clients).await;
-    let client = full_e2ef3_e2ei_b::run(client, clients).await;
-    let client = e2ei_c::run(client, clients).await;
-    let mut client =
-        full_e2ef3_e2ei_d::run(client, clients, primal, covet, starter_seconds).await?;
-    let from = tile(client.world_spatial().actor_position)?;
-    let path = core_return_path(from, core_start, |from, start| {
-        route(world, from, |at| at == start)
-    })?;
-    walk(&mut client, world, &path).await?;
+async fn observe_starter(
+    mut client: oteryn_dev_client::DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult<(oteryn_dev_client::DevClientSession, bool, bool)> {
+    let started = std::time::Instant::now();
+    let primal = reward_bag(&mut client, "PRIMAL_BAG").await?;
+    let covet = reward_bag(&mut client, "BAG_YOU_COVET").await?;
+    let saved_quantities = quantities(&client)?;
+    open_backpack(&mut client).await?;
+    let before = backpack_inspection(&mut client).await?;
+    e2ei_a::relogin_starter(&mut client, clients).await?;
+    open_backpack(&mut client).await?;
+    if backpack_inspection(&mut client).await? != before || quantities(&client)? != saved_quantities
+    {
+        return Err("E2EF3 starter inspection changed across fresh admission".into());
+    }
+    for scenario in ["I01.root-view-relogin", "I16.starter-weight-relogin"] {
+        evidence(&format!(
+            "E2EF3_OBSERVATION scenario={scenario} status=PASS seconds={:.3}",
+            started.elapsed().as_secs_f64()
+        ));
+    }
+    Ok((client, primal, covet))
+}
+
+/// The phase owns both the observation barrier and the return to the core route.
+async fn run_phase<C>(
+    start: TilePos,
+    observations: impl Future<Output = TestResult<(C, bool, bool)>>,
+    rows: impl AsyncFnOnce(C, bool, bool, f64) -> TestResult<C>,
+    position: impl FnOnce(&C) -> TestResult<TilePos>,
+    find: impl FnOnce(TilePos, TilePos) -> Option<Vec<StepDirection>>,
+    return_steps: impl AsyncFnOnce(&mut C, &[StepDirection]) -> TestResult,
+) -> TestResult<C> {
+    let started = std::time::Instant::now();
+    let observations = observations.await;
+    let seconds = started.elapsed().as_secs_f64();
+    report_starter(
+        observations.as_ref().map(|_| ()).map_err(Box::as_ref),
+        seconds,
+    );
+    let (client, primal, covet) = observations?;
+    let mut client = rows(client, primal, covet, seconds).await?;
+    let path = core_return_path(position(&client)?, start, find)?;
+    return_steps(&mut client, &path).await?;
     Ok(client)
 }
 
-fn report_starter(observations: TestResult<()>, seconds: f64) -> TestResult<()> {
-    let cause = match &observations {
-        Ok(_) => verdict::Cause::Assertion,
-        Err(error) => verdict::classify(error.as_ref()),
+fn report_starter(observations: Result<(), &(dyn std::error::Error + 'static)>, seconds: f64) {
+    let (cause, reason) = match observations {
+        Ok(()) => (
+            verdict::Cause::Assertion,
+            "row has no mounted journey".to_owned(),
+        ),
+        Err(error) => (
+            verdict::classify(error),
+            format!("starter observation failed: {error}"),
+        ),
     };
     for row in starter_rows(observations.is_err()) {
-        result(
-            row,
-            seconds,
-            if observations.is_ok() {
-                "ordinary-starter-observed;full-actions-unimplemented;no-provisioning-used"
-            } else {
-                "starter-observation-failed;full-actions-unimplemented"
-            },
-            &cause,
-        );
+        result(row, seconds, &reason, &cause);
     }
-    observations
 }
 
 fn core_return_path(
@@ -346,26 +415,100 @@ fn core_return_path(
         .ok_or_else(|| format!("E2EF3 has no return route from {from:?} to {start:?}").into())
 }
 
-#[test]
-fn qualification_e2ef3_starter_error_fails_phase() {
-    let result = report_starter(Err("starter inspection changed".into()), 0.0);
+#[tokio::test]
+async fn qualification_e2ef3_starter_error_fails_phase() {
+    let rows_called = std::cell::Cell::new(false);
+    let result = run_phase(
+        TOWN,
+        async { Err::<(TilePos, bool, bool), _>("starter inspection changed".into()) },
+        async |client, _, _, _| {
+            rows_called.set(true);
+            Ok(client)
+        },
+        |at| Ok(*at),
+        |_, _| Some(Vec::new()),
+        async |_, _| Ok(()),
+    )
+    .await;
     assert!(result.is_err_and(|error| error.to_string() == "starter inspection changed"));
+    assert!(!rows_called.get());
 }
 
-#[test]
-fn qualification_e2ef3_displaced_client_requires_return_route() {
-    let start = TOWN;
+#[tokio::test]
+async fn qualification_e2ef3_displaced_client_requires_return_route() {
     let displaced = TilePos {
-        x: start.x + 1,
-        ..start
+        x: TOWN.x + 1,
+        ..TOWN
     };
-    let path = core_return_path(displaced, start, |from, to| {
-        assert_eq!((from, to), (displaced, start));
-        Some(vec![StepDirection::West])
-    });
-    assert!(path.is_ok_and(|steps| steps == [StepDirection::West]));
-    assert!(core_return_path(displaced, start, |_, _| None).is_err());
-    assert!(core_return_path(start, start, |_, _| None).is_ok_and(|steps| steps.is_empty()));
+    let steps_called = std::cell::Cell::new(false);
+    let result = run_phase(
+        TOWN,
+        async { Ok((TOWN, true, false)) },
+        async |_, primal, covet, _| {
+            assert!(primal && !covet);
+            Ok(displaced)
+        },
+        |at| Ok(*at),
+        |from, to| {
+            assert_eq!((from, to), (displaced, TOWN));
+            None
+        },
+        async |_, _| {
+            steps_called.set(true);
+            Ok(())
+        },
+    )
+    .await;
+    assert!(result.is_err_and(|error| error.to_string().contains("has no return route")));
+    assert!(!steps_called.get());
+}
+
+#[tokio::test]
+async fn qualification_e2ef3_returns_displaced_client_before_handoff() -> TestResult {
+    let displaced = TilePos {
+        x: TOWN.x + 1,
+        ..TOWN
+    };
+    let result = run_phase(
+        TOWN,
+        async { Ok((TOWN, false, true)) },
+        async |_, primal, covet, _| {
+            assert!(!primal && covet);
+            Ok(displaced)
+        },
+        |at| Ok(*at),
+        |from, to| {
+            assert_eq!((from, to), (displaced, TOWN));
+            Some(vec![StepDirection::West])
+        },
+        async |at, steps| {
+            assert_eq!(steps, [StepDirection::West]);
+            *at = TOWN;
+            Ok(())
+        },
+    )
+    .await?;
+    assert_eq!(result, TOWN);
+
+    let planner_called = std::cell::Cell::new(false);
+    let at_start = run_phase(
+        TOWN,
+        async { Ok((TOWN, false, false)) },
+        async |at, _, _, _| Ok(at),
+        |at| Ok(*at),
+        |_, _| {
+            planner_called.set(true);
+            None
+        },
+        async |_, steps| {
+            assert!(steps.is_empty());
+            Ok(())
+        },
+    )
+    .await?;
+    assert_eq!(at_start, TOWN);
+    assert!(!planner_called.get());
+    Ok(())
 }
 
 const MODULE_ROWS: &[&[&str]] = &[
