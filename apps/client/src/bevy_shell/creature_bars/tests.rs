@@ -77,6 +77,8 @@ fn otc_textmsg_bevy_health_bars_follow_visible_actors_and_settings()
         Some(oteryn_session::ActorVitals {
             health: 25,
             max_health: 100,
+            mana: 25,
+            max_mana: 50,
             ..Default::default()
         }),
     );
@@ -111,6 +113,14 @@ fn otc_textmsg_bevy_health_bars_follow_visible_actors_and_settings()
             expected
         );
     }
+    assert!(
+        app.world_mut()
+            .query::<&Sprite>()
+            .iter(app.world())
+            .any(|sprite| sprite.color == Color::srgb_u8(0, 0, 255)
+                && sprite.custom_size.is_some_and(|size| size.x > 0.)),
+        "own mana draws a blue fill"
+    );
     app.world_mut()
         .non_send_mut::<HostOwner>()
         .settings

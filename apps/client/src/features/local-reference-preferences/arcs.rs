@@ -9,6 +9,9 @@ pub struct ArcPreferences {
     pub size: u16,
     pub width: Option<u16>,
     pub height: Option<u16>,
+    pub experience: bool,
+    pub skill: bool,
+    pub tracked_skill: u8,
     pub opacity: u8,
 }
 impl Default for ArcPreferences {
@@ -20,6 +23,9 @@ impl Default for ArcPreferences {
             size: 60,
             width: None,
             height: None,
+            experience: false,
+            skill: false,
+            tracked_skill: 0,
             opacity: 85,
         }
     }
@@ -41,7 +47,7 @@ pub struct ArcLayout {
 }
 impl ArcPreferences {
     pub fn valid(self) -> bool {
-        self.distance <= 120 && (20..=120).contains(&self.size) && [self.width, self.height].into_iter().flatten().all(|v| (20..=120).contains(&v)) && self.opacity <= 100
+        self.tracked_skill < 8 && self.distance <= 120 && (20..=120).contains(&self.size) && [self.width, self.height].into_iter().flatten().all(|v| (20..=120).contains(&v)) && self.opacity <= 100
     }
     pub fn layout(
         self,

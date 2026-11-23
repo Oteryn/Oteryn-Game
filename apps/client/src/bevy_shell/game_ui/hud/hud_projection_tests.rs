@@ -476,3 +476,53 @@ fn compact_bar_fits_vitals_and_experience_on_one_row() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn status_bar_placement_and_style_follow_saved_options() -> TestResult {
+    let (mut app, _, _) = app()?;
+    app.add_systems(Update, super::super::projection::project_regions);
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    let map = app.world().resource::<super::super::GameRegions>().world;
+    let map_row = app.world_mut().spawn(Node::default()).add_child(map).id();
+    let parent = app
+        .world_mut()
+        .spawn(Node::default())
+        .add_children(&[bar, map_row])
+        .id();
+    {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let prefs = &mut host.settings.preferences;
+        let mut value = serde_json::to_value(&*prefs)?;
+        value["status_bar_bottom"] = true.into();
+        value["status_bar_style"] = "Parallel".into();
+        *prefs = serde_json::from_value(value)?;
+    }
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<Children>(parent)
+            .ok_or("parent")?
+            .iter()
+            .collect::<Vec<_>>(),
+        [map_row, bar]
+    );
+    let vitals = named(&mut app, "Status bar vitals")?;
+    assert_eq!(
+        app.world()
+            .get::<Node>(vitals)
+            .ok_or("vitals")?
+            .flex_direction,
+        FlexDirection::Column
+    );
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .status_bar_visible = false;
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(bar).ok_or("bar")?.display,
+        Display::None
+    );
+    Ok(())
+}

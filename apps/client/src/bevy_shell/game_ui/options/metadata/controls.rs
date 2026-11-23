@@ -1,7 +1,7 @@
 use super::*;
 use crate::play::{MousePreset, MovementKeys, RotationModifier};
 
-pub(super) const ROWS: [Row; 4] = [
+pub(super) const ROWS: [Row; 8] = [
     Row {
         id: "controls.mouse",
         label: "Mouse Preset",
@@ -71,6 +71,39 @@ pub(super) const ROWS: [Row; 4] = [
                 p.controls.keyboard_delay_ms = v;
                 p.keyboard_delay_ms = v;
             },
+        },
+    },
+    check!(
+        "controls.default_delay",
+        "Use default keyboard delay",
+        controls.default_delay
+    ),
+    check!(
+        "controls.move_whole_stack",
+        "Move stacks directly",
+        controls.move_whole_stack
+    ),
+    Row {
+        id: "controls.scheme",
+        label: "Mouse control scheme",
+        editor: Editor::Choice {
+            values: &["Regular controls", "Classic controls", "Left smart-click"],
+            read: |p| p.controls.scheme as usize,
+            write: |p, i| {
+                p.controls.scheme = match i {
+                    1 => crate::play::MouseScheme::Classic,
+                    2 => crate::play::MouseScheme::LeftSmart,
+                    _ => crate::play::MouseScheme::Regular,
+                }
+            },
+        },
+    },
+    Row {
+        id: "controls.turn_towards_move",
+        label: "Always face the direction of movement",
+        editor: Editor::Check {
+            read: |p| !p.controls.preserve_facing,
+            write: |p, v| p.controls.preserve_facing = !v,
         },
     },
 ];

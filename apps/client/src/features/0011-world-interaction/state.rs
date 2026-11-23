@@ -8,7 +8,7 @@ impl PlayView {
     pub(crate) fn has_pointer_target(&self, tile: TileCoord) -> bool {
         self.world_context_target(tile).is_some() || self.scene.item_target_at(tile).is_some()
     }
-    pub(in crate::play) fn world_context_target(&self, tile: TileCoord) -> Option<Target> {
+    pub(crate) fn world_context_target(&self, tile: TileCoord) -> Option<Target> {
         self.world_context_target_for(tile, false)
     }
     pub(in crate::play) fn world_context_target_for(

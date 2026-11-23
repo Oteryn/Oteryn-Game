@@ -77,7 +77,12 @@ pub(super) fn click(
     if slot.current_item(&owner).is_none() {
         return;
     }
-    if event.button == PointerButton::Secondary {
+    let direct = matches!(
+        (owner.settings.preferences.controls.scheme, event.button),
+        (crate::play::MouseScheme::Classic, PointerButton::Secondary)
+            | (crate::play::MouseScheme::LeftSmart, PointerButton::Primary)
+    );
+    if !direct && event.button == PointerButton::Secondary {
         select_slot(*slot, &owner, &mut ui);
         let mut position = event.pointer.position;
         // The same capability flags decide which rows the menu shows (view::project).
@@ -106,18 +111,41 @@ pub(super) fn click(
             );
         }
         ui.menu = Some((*slot, position));
-    } else if event.button == PointerButton::Primary && event.count >= 2 {
-        let backpack = owner
-            .play
-            .as_ref()
-            .and_then(|play| play.link.inventory_panel().inventory)
-            .and_then(|inventory| inventory.main_backpack);
-        let control = if slot.item.is_some() && slot.item == backpack {
+    } else if direct || event.button == PointerButton::Primary && event.count >= 2 {
+        use oteryn_client_ui::world_interaction::menu::Action;
+        let (Some(item), Some(play)) = (slot.current_item(&owner), owner.play.as_ref()) else {
+            return;
+        };
+        let main = play
+            .link
+            .inventory_panel()
+            .inventory
+            .and_then(|inv| inv.main_backpack)
+            .is_some_and(|pack| pack.handle == item.handle);
+        let known_container = direct
+            && play.link.container_panel().views.is_some_and(|set| {
+                set.views
+                    .iter()
+                    .any(|view| view.container_handle == item.handle)
+            });
+        let action = direct
+            .then(|| play.view.scene().smart_item_action(item.appearance_id))
+            .flatten();
+        let control = if main || known_container || action == Some(Action::Open) {
             Control::Open(*slot)
         } else {
             Control::Context(
                 *slot,
-                oteryn_client_ui::world_interaction::menu::Action::Use,
+                match action {
+                    Some(Action::Look)
+                        if owner.settings.preferences.controls.scheme
+                            == crate::play::MouseScheme::LeftSmart =>
+                    {
+                        Action::Look
+                    }
+                    Some(Action::UseWith) => Action::UseWith,
+                    _ => Action::Use,
+                },
             )
         };
         choose(control, &owner, &mut ui);
@@ -149,6 +177,7 @@ pub(super) fn drag_drop(
     slots: Query<&Slot>,
     owner: NonSend<HostOwner>,
     mut ui: ResMut<InventoryUi>,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
     mut capture: super::world_drag::DropCapture,
 ) {
     if !guard.allows(event.entity) {
@@ -164,7 +193,13 @@ pub(super) fn drag_drop(
             return;
         }
         if let Ok(source) = slots.get(event.dropped) {
-            drop_slot(*source, *target, &owner, &mut ui);
+            let ctrl = keys
+                .as_ref()
+                .is_some_and(|k| k.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]));
+            let shift = keys
+                .as_ref()
+                .is_some_and(|k| k.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]));
+            drop_slot(*source, *target, &owner, &mut ui, ctrl, shift);
             capture.completed();
         }
     }
@@ -313,7 +348,14 @@ fn begin_slot(slot: Slot, owner: &HostOwner, ui: &mut InventoryUi) {
         ui.menu = None;
     }
 }
-fn drop_slot(source: Slot, target: Slot, owner: &HostOwner, ui: &mut InventoryUi) {
+fn drop_slot(
+    source: Slot,
+    target: Slot,
+    owner: &HostOwner,
+    ui: &mut InventoryUi,
+    ctrl: bool,
+    shift: bool,
+) {
     if ui.dragged != Some(source) {
         return;
     }
@@ -332,7 +374,11 @@ fn drop_slot(source: Slot, target: Slot, owner: &HostOwner, ui: &mut InventoryUi
         && destination.is_some()
         && play.link.item_drag_begin(item)
     {
-        play.link.item_drag_drop(destination);
+        play.link.drop_stack(
+            destination,
+            owner.settings.preferences.controls.move_whole_stack ^ ctrl,
+            shift,
+        );
     } else {
         play.link.item_drag_abort();
     }

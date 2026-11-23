@@ -3,7 +3,7 @@ mod banner_queue;
 mod build;
 mod guide;
 #[path = "houses.rs"]
-mod houses;
+pub(super) mod houses;
 mod notices;
 mod submission;
 use super::modal::ModalGuard;
