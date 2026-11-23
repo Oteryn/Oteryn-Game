@@ -4,6 +4,7 @@ use crate::content::npc_catalogue::travel::TravelRoute;
 use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
 use crate::durability::npc_travel::{PaidTravelRequest, TravelRefusal};
 use crate::map::view::MapFacts;
+use oteryn_protocol_oteryn::npc_service::NpcConversationState;
 
 #[path = "paid_travel/quest_confirmation.rs"]
 mod quest_confirmation;
@@ -198,20 +199,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 "Do you seek a passage to {} for {fare} gold?",
                 route.keyword
             );
-            if let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() {
-                prompts.insert(
-                    session,
-                    Prompt {
-                        npc: intent.npc_actor,
-                        context,
-                        fence,
-                        opened: now,
-                        route,
-                        fare,
-                    },
-                );
-            }
-            return npc_command::NpcConversations::bank_reply(intent, line);
+            let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() else {
+                return ordinary;
+            };
+            prompts.insert(
+                session,
+                Prompt {
+                    npc: intent.npc_actor,
+                    context,
+                    fence,
+                    opened: now,
+                    route,
+                    fare,
+                },
+            );
+            return npc_command::NpcConversations::reply_with_state(
+                intent,
+                line,
+                NpcConversationState::Confirming,
+            );
         };
         let Some(request) = self
             .paid_travel_request(actor, command, intent, &prompt)
