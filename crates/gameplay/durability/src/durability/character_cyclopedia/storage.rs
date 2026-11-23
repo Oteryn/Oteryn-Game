@@ -77,6 +77,8 @@ async fn load_all(
             }
             let mut progress = CanonicalProgress::decode(&text)?;
             progress.convert(request);
+            // Canonical POIs belong to the stored bundle and subarea. The current
+            // candidate pool depends on the player's view and is only for new draws.
             if row.try_get::<Vec<u8>, _>("bundle_digest")? != request.bundle {
                 // Crystal geometry revision invalidation keeps completed states.
                 for state in progress
@@ -86,17 +88,6 @@ async fn load_all(
                 {
                     state.exploration = None;
                 }
-            }
-            if let Some(state) = request
-                .subarea
-                .and_then(|id| progress.subareas.get_mut(&id))
-                && !state.discovered
-                && state
-                    .exploration
-                    .as_ref()
-                    .is_some_and(|e| e.points.iter().any(|point| !request.pool.contains(point)))
-            {
-                state.exploration = None;
             }
             if progress.subareas.len() > 512 {
                 return Err(DurabilityError::InvalidStoredState);
