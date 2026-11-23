@@ -23,6 +23,30 @@ fn crystal_agent_tools_and_elvenhair_rope_ascend_through_live_dispatch() -> Test
 }
 
 #[test]
+fn crystal_rope_tools_resolve_a_durable_ground_item_to_its_tile() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(128 << 20)
+        .spawn(|| {
+            super::fixture::run(async |admin| {
+                for (id, spot) in [(3003, 386), (646, 386), (9594, 386), (9596, 21967), (9598, 386)] {
+                    let key = format!("oteryn:item.tibia.i{id}");
+                    super::vertical_move_fixtures::agent_rope(
+                        admin.clone(), &key, spot, super::vertical_move_fixtures::RopeUse::GroundHandle,
+                    ).await?;
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Crystal Ground item rope dispatch panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn secret_agent_ropes_from_a_covered_spot_by_object() -> TestResult {
     agent_rope_case(super::vertical_move_fixtures::RopeUse::CoveredObject)
 }

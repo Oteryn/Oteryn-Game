@@ -297,6 +297,17 @@ impl DoorBook {
         self.find(key).is_some()
     }
 
+    /// The prerequisite of a closed door whose source USE also enters the doorway.
+    pub fn opening_requirement(&self, key: u64) -> Option<DoorEntryRequirement> {
+        let (door, state) = self.state(key, None)?;
+        if state & 3 != 0 {
+            return None;
+        }
+        door.required_level
+            .map(DoorEntryRequirement::Level)
+            .or_else(|| door.required_storage.map(DoorEntryRequirement::Storage))
+    }
+
     /// The object revision of placement `key`: 0 for every entry that is no door.
     pub fn revision(&self, key: u64) -> u64 {
         self.revision_in(key, None)
@@ -1044,8 +1055,15 @@ mod authored_open_tests {
                 open
             );
             assert!(
-                statically_blocked || facts.doors().blocks(at),
-                "open level door {open} without action"
+                !statically_blocked && !facts.doors().blocks(at),
+                "open level door {open} must keep its physical collision"
+            );
+            assert!(
+                facts.blocks_player_entry(at, |requirement| {
+                    assert_eq!(requirement, DoorEntryRequirement::MissingAction);
+                    false
+                }),
+                "open level door {open} without action must refuse player entry"
             );
             let (facts, id, _) = load(closed, None)?;
             assert_eq!(

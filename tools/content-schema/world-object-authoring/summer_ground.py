@@ -62,9 +62,17 @@ def official_ground_records(ground_speeds, root=ROOT):
     records = []
     for identifier, speed in sorted(ground_speeds.items()):
         appearance = appearances[identifier]
-        if identifier not in members_by_id or "bank" not in appearance.flags or appearance.speed != speed:
-            raise ValueError(f"Ground {identifier} differs from the accepted appearance")
-        records.append(ground_record(identifier, appearance, artifact, digest, membership, members))
+        if (
+            identifier not in members_by_id
+            or "bank" not in appearance.flags
+            or appearance.speed != speed
+        ):
+            raise ValueError(
+                f"Ground {identifier} differs from the accepted appearance"
+            )
+        records.append(
+            ground_record(identifier, appearance, artifact, digest, membership, members)
+        )
     return records
 
 

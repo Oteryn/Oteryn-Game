@@ -758,6 +758,18 @@ fn qualify_origin_control(
     Ok(())
 }
 
+/// Whether a player's live prerequisites rule out an open door at the candidate cell.
+pub fn player_door_entry_blocked(
+    cells: &NativeEntryMovementCells,
+    cell: LogicalCell,
+    access: &dyn CellBlocker,
+) -> bool {
+    matches!(cells.index(), NativeMovementCollisionIndex::Bundle(index)
+    if pos(cell.x, cell.y, cell.z).is_some_and(|tile| index.map().facts.blocks_player_entry(
+        tile, |requirement| access.admits_door_entry(requirement),
+    )))
+}
+
 fn destination(
     doomforge_open: bool,
     cells: &NativeEntryMovementCells,
@@ -771,19 +783,15 @@ fn destination(
     // A closed door blocks the entered tile and every tile a floor change resolves onto
     // before any teleport on it applies (WORLD-INTERACTION-0 §6.6); `landable` guards the
     // teleport destination.
-    let player_entry_blocked = |(x, y, z)| {
-        matches!(cells.index(), NativeMovementCollisionIndex::Bundle(index)
-        if pos(x, y, z).is_some_and(|tile| index.map().facts.blocks_player_entry(
-            tile, |requirement| closed.admits_door_entry(requirement),
-        )))
-    };
     let ground = ground_of(cells);
     let ground = |cell: Cell| {
-        if closed.blocks(LogicalCell {
+        let at = LogicalCell {
             x: cell.0,
             y: cell.1,
             z: cell.2,
-        }) || player_entry_blocked(cell)
+        };
+        if closed.blocks(at)
+            || player_door_entry_blocked(cells, at, closed)
             || (!doomforge_open && is_doomforge_portal(cells, cell))
         {
             Ground::Blocked

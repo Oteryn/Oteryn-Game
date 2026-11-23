@@ -218,7 +218,7 @@ const DOOR_PAIRS: &[(u32, u32)] = &[
 
 // Crystal 201189f8 data/libs/tables/doors.lua:8-82. Keep the explicit triples: several families
 // have nonconsecutive ids, and some locked ids also appear in the legacy plain registry.
-const KEY_DOORS: &[(u32, u32, u32)] = &[
+pub(super) const KEY_DOORS: &[(u32, u32, u32)] = &[
     (1628, 1629, 1630),
     (1631, 1632, 1633),
     (1650, 1651, 1652),
@@ -494,12 +494,12 @@ pub(super) fn closed_collision(id: u32) -> (bool, bool) {
 pub(super) fn closed_of(open_id: u32) -> Option<u32> {
     level_door_pair(open_id, true)
         .or_else(|| quest_door_pair(open_id, true))
-        .or_else(|| plain_closed_of(open_id))
         .or_else(|| {
             KEY_DOORS
                 .iter()
                 .find_map(|&(_, closed, open)| (open == open_id).then_some(closed))
         })
+        .or_else(|| plain_closed_of(open_id))
 }
 
 #[cfg(test)]

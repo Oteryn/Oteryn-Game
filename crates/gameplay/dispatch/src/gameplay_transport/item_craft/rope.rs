@@ -153,6 +153,32 @@ fn carried_rope<'a>(
         })
 }
 
+/// Resolve a tool's selected entry to its tile, retaining the placement only for base transforms.
+pub(super) fn terrain_target(
+    map: &crate::gameplay_transport::world_map::MapViewSource<'_, impl view::MapFacts>,
+    intent: &MapUseTarget,
+    key: Option<ItemKey>,
+) -> Result<(crate::map::overlay::TilePos, Option<u64>), UseDisposition> {
+    use crate::gameplay_transport::world_map::{
+        MapHandleTarget, resolve_map_handle, resolve_map_target,
+    };
+    match intent {
+        MapUseTarget::Object(object) => resolve_map_target(map, object, |_| None::<()>)
+            .map(|target| (target.pos, Some(target.placement_key)))
+            .map_err(|_| UseDisposition::StaleState),
+        MapUseTarget::Item(_) => {
+            match resolve_map_handle(map, key.ok_or(UseDisposition::StaleState)?)? {
+                MapHandleTarget::Base {
+                    pos, placement_key, ..
+                } => Ok((pos, Some(placement_key))),
+                MapHandleTarget::Added { pos, .. } | MapHandleTarget::Ground { pos, .. } => {
+                    Ok((pos, None))
+                }
+            }
+        }
+    }
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "the existing owner turn's resolved facts"
@@ -184,19 +210,9 @@ fn rope_in_channel(
         reset_epoch,
     };
     let spot = match &intent.use_with_map_item {
-        Some(MapUseTarget::Object(object)) => {
-            match crate::gameplay_transport::world_map::resolve_map_target(&map, object, |_| {
-                None::<()>
-            }) {
-                Ok(target) => target.pos,
-                Err(_) => return UseDisposition::StaleState,
-            }
-        }
-        Some(MapUseTarget::Item(_)) => match target.and_then(|key| {
-            crate::gameplay_transport::world_map::resolve_map_handle(&map, key).ok()
-        }) {
-            Some(crate::gameplay_transport::world_map::MapHandleTarget::Base { pos, .. }) => pos,
-            _ => return UseDisposition::StaleState,
+        Some(target_intent) => match terrain_target(&map, target_intent, target) {
+            Ok((spot, _)) => spot,
+            Err(disposition) => return disposition,
         },
         None => return UseDisposition::NothingToUse,
     };

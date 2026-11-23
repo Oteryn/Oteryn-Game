@@ -42,6 +42,7 @@ pub(super) enum RopeUse {
     Climb,
     CoveredObject,
     CoveredHandle,
+    GroundHandle,
     Jam,
     DistantObject,
     DistantHandle,
@@ -49,7 +50,7 @@ pub(super) enum RopeUse {
 
 impl RopeUse {
     fn climbs(self) -> bool {
-        matches!(self, Self::Climb | Self::CoveredObject | Self::CoveredHandle)
+        matches!(self, Self::Climb | Self::CoveredObject | Self::CoveredHandle | Self::GroundHandle)
     }
 
     fn covered(self) -> bool {
@@ -291,7 +292,27 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
 
         let distant = action.is_distant();
         let repetitions = if action == RopeUse::Jam { 10 } else { 1 };
-        super::item_look_fixtures::seed_main_backpack(&h, &vec![(tool, 1); repetitions]).await?;
+        let mut entries = vec![(tool, 1); repetitions];
+        if action == RopeUse::GroundHandle {
+            entries.push(("oteryn:item.tibia.i3031", 1));
+        }
+        super::item_look_fixtures::seed_main_backpack(&h, &entries).await?;
+        if action == RopeUse::GroundHandle {
+            use crate::gameplay_transport::item_move::{LoopMove, LoopMoveResult, LoopTarget};
+            let fence = current_fence(&owner, session).await?.item_fence();
+            let backpack = h.root.read_character_backpack(&authority, fence.character_id)
+                .await?.ok_or("rope backpack")?;
+            let coin = backpack.entries.iter().find(|entry| entry.item.definition.production_key.ends_with(".i3031"))
+                .ok_or("ground target coin")?.item.item_instance_id;
+            assert_eq!(owner.move_loop_item(
+                actor,
+                UseCommand { game_session_id: session, command_id: 1, item_fence: Some(fence) },
+                LoopMove { item: ItemKey::Instance(coin), count: None,
+                    target: LoopTarget::Ground(oteryn_protocol_oteryn::item_view::WorldTilePosition {
+                        x: 10, y: 10, floor: -8,
+                    }), slot: None },
+            ).await, LoopMoveResult::Committed);
+        }
         let index = native.item_index().ok_or("item index")?;
         let definition = index
             .definition_ref("Item", tool, "definition-r1")
@@ -301,7 +322,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
         let spot = oteryn_world_bundle::bundle::placement_key(-8, target_x, 10, u8::from(action.covered()))
             .ok_or("rope spot placement")?;
         let mut view = SessionItemView::resume(Default::default()).with_map_view();
-        let map_target = if matches!(action, RopeUse::DistantHandle | RopeUse::CoveredHandle) {
+        let map_target = if matches!(action, RopeUse::DistantHandle | RopeUse::CoveredHandle | RopeUse::GroundHandle) {
             use crate::gameplay_transport::world_map::{MapUpdate, SessionMapView};
             use oteryn_protocol_oteryn::world_map::{MapOrigin, decode_world_map_snapshot};
 
@@ -323,6 +344,9 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
                     _ => None,
                 }))
                 .ok_or("visible covering item handle")?;
+            if action == RopeUse::GroundHandle {
+                assert!(matches!(view.resolve(handle), Some(ItemKey::Instance(_))));
+            }
             MapUseTarget::Item(handle)
         } else {
             let mut placement = digest.to_vec();
@@ -347,7 +371,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
         };
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
             .current_session_at(session).await?.0;
-        let mut previous_command = 0;
+        let mut previous_command = u64::from(action == RopeUse::GroundHandle);
         for offset in 0..repetitions {
             let item = id(71 + u8::try_from(offset)?);
             let source = if let Some(inventory) = &jam_inventory {

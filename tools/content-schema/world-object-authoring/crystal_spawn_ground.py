@@ -1,6 +1,7 @@
 """Admit the official, fixed grounds used by the pinned Crystal spawn delta."""
 
 import argparse
+
 from crystal_delta_ground import ROOT, outputs
 
 

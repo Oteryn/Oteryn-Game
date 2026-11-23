@@ -2855,6 +2855,56 @@ pub mod tests {
     }
 
     #[test]
+    fn crystal_authored_open_key_doors_load_the_donor_family() -> Result<(), Box<dyn Error>> {
+        use crate::map::door::DoorUse;
+        use crate::map::view::MapFacts;
+        let mut mismatches = Vec::new();
+        for &(locked, closed, open) in crate::map::door_registry::KEY_DOORS {
+            let open_key = format!("oteryn:item.tibia.i{open}");
+            let (bytes, load) = bundle_with_items(&open_key, "item:coin");
+            let world = boot(
+                &bytes,
+                &pins(load, 2),
+                WorldId::decode(&id(1))?,
+                ChannelId::decode(&id(2))?,
+                |key| {
+                    let Some(id) = key
+                        .strip_prefix("oteryn:item.tibia.i")
+                        .and_then(|id| id.parse::<u32>().ok())
+                    else {
+                        return items(key);
+                    };
+                    let (solid, projectile) = crate::map::door_registry::closed_collision(id);
+                    Some(ItemDefinition {
+                        reference: std::num::NonZeroU32::new(if id == open { 1 } else { id })?,
+                        solid: Some(id != open && solid),
+                        blocks_projectile: id != open && projectile,
+                        pickupable: false,
+                        door: true,
+                    })
+                },
+            )?;
+            let facts = world.facts();
+            let key = door_key();
+            let closed_pose = facts.doors().toggle(key, 0, false, 0, false);
+            let shown = facts
+                .base_entry(DOOR_AT, 1, 0)
+                .map(|entry| u32::from(entry.appearance_id));
+            if !matches!(closed_pose, Some(DoorUse::Toggled { open: false, .. }))
+                || shown != Some(closed)
+                || crate::map::door_registry::closed_of(open) != Some(closed)
+            {
+                mismatches.push((locked, closed, open, closed_pose, shown));
+            }
+        }
+        assert!(
+            mismatches.is_empty(),
+            "authored open key door mismatches: {mismatches:?}"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn crystal_open_predicate_doors_require_each_player_to_qualify() -> Result<(), Box<dyn Error>> {
         use crate::map::floor::{BundleDoors, prepare_bundle_step};
         use crate::map::view::placement_key;
