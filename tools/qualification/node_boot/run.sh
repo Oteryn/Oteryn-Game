@@ -10,6 +10,10 @@
 # SEAM stage against its own bound port.
 set -Eeuo pipefail
 umask 077
+export NODE_BOOT_SKIP_BASIC=1
+export NODE_BOOT_SKIP_NEWHAVEN=1
+export NODE_BOOT_E2E_ONLY=creature_sweep
+export OTERYN_E2E_CREATURE_BATCH=0:28
 
 readonly PLATFORM_SHA=6d04b52a16145723eedb0c56640ad052dbd26e94
 readonly TOPOLOGY_REVISION=wp5-node-boot-v1
