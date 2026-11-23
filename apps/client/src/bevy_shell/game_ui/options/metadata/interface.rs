@@ -89,7 +89,7 @@ pub(super) const MAIN: [Row; 13] = [
         cursor_crosshair
     ),
 ];
-pub(super) const HUD: [Row; 45] = [
+pub(super) const HUD: [Row; 44] = [
     check!(
         "hud.conditions_bar_all",
         "Show Conditions in Status Bar",
@@ -117,11 +117,6 @@ pub(super) const HUD: [Row; 45] = [
         "hud.harmony_left",
         "Place Harmony Indicator on the Left",
         harmony_left
-    ),
-    check!(
-        "hud.status_bar",
-        "Show Customisable Status Bar",
-        status_bar_visible
     ),
     check!(
         "hud.status_bar_axe",

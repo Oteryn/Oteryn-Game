@@ -191,9 +191,6 @@ pub struct ReferencePreferences {
     pub conditions_hud_enabled: bool,
     #[serde(default = "enabled")]
     pub status_bar_visible: bool,
-
-    #[serde(default = "enabled")]
-    pub status_bar_visible: bool,
     #[serde(default = "enabled")]
     pub top_menu_visible: bool,
     #[serde(default)]
@@ -389,8 +386,6 @@ impl Default for ReferencePreferences {
             status_panel_visible: true,
             conditions_bar_enabled: true,
             conditions_hud_enabled: true,
-            status_bar_visible: true,
-
             status_bar_visible: true,
             top_menu_visible: true,
             status_bar_bottom: false,
