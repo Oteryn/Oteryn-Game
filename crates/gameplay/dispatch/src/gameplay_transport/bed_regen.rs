@@ -16,6 +16,7 @@ mod tests {
         ChannelSpellStates,
         tests::{FACTS, runtime_with_player},
     };
+    use oteryn_gameplay_domain::domain::condition::FOOD_REGENERATION_MAX_DURATION_MS;
     use oteryn_simulation_determinism::SemanticTimeMicros;
 
     // Crystal 201189f: data/libs/systems/daily_reward.lua:1-6 unlocks HP/MP at
@@ -106,6 +107,34 @@ mod tests {
     }
 
     #[test]
+    fn bed_regen_restores_maximum_first_meal_duration() {
+        let (runtime, actor, session) = runtime_with_player(91);
+        let mut states = ChannelSpellStates::default();
+        let now = SemanticTimeMicros::from_micros(0);
+        let rest = [5, FOOD_REGENERATION_MAX_DURATION_MS, 0, 0];
+        assert!(
+            states
+                .initialize_admitted(
+                    &runtime,
+                    actor,
+                    session,
+                    FACTS,
+                    (0, 0),
+                    now,
+                    None,
+                    Some(rest)
+                )
+                .is_some()
+        );
+        assert_eq!(
+            states
+                .get(&runtime, actor, session)
+                .map(|s| s.bed_rest_snapshot(0)),
+            Some(rest)
+        );
+    }
+
+    #[test]
     fn bed_regen_corrupt_restore_cannot_leave_a_retry_admissible() {
         let (runtime, actor, session) = runtime_with_player(91);
         let mut states = ChannelSpellStates::default();
@@ -120,7 +149,7 @@ mod tests {
                     (0, 0),
                     now,
                     None,
-                    Some([5, 1_200_001, 0, 0])
+                    Some([5, FOOD_REGENERATION_MAX_DURATION_MS + 1, 0, 0])
                 )
                 .is_none()
         );
