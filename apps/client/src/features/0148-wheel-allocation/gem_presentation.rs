@@ -8,7 +8,10 @@ use crate::{
 };
 use oteryn_client_runtime::raw_feature::{FeatureCommand, GatedCommandResult};
 use tokio::sync::mpsc::UnboundedSender;
-#[allow(dead_code, reason = "Windows Gem controls dispatch these borrowed callbacks")]
+#[allow(
+    dead_code,
+    reason = "Windows Gem controls dispatch these borrowed callbacks"
+)]
 pub(in crate::play) fn query(m: &mut Mailbox, s: &UnboundedSender<PlayCommand>) {
     if let Some(c) = oteryn_client_ui::wheel_allocation::gem_presentation_query(&mut m.wheel)
         && s.send(PlayCommand::Feature(c)).is_err()
@@ -17,7 +20,10 @@ pub(in crate::play) fn query(m: &mut Mailbox, s: &UnboundedSender<PlayCommand>) 
         m.wheel.gems.feedback = Some("The session has ended".into());
     }
 }
-#[allow(dead_code, reason = "Windows Gem controls dispatch these borrowed callbacks")]
+#[allow(
+    dead_code,
+    reason = "Windows Gem controls dispatch these borrowed callbacks"
+)]
 pub(in crate::play) fn confirm(m: &mut Mailbox, s: &UnboundedSender<PlayCommand>) {
     if let Some(c) = oteryn_client_ui::wheel_allocation::gems::confirm(&mut m.wheel)
         && s.send(PlayCommand::Wheel(c)).is_err()
@@ -26,11 +32,15 @@ pub(in crate::play) fn confirm(m: &mut Mailbox, s: &UnboundedSender<PlayCommand>
         m.wheel.gems.feedback=Some("The session ended before confirming the outcome; check current state before retrying the same occurrence".into());
     }
 }
-#[allow(dead_code, reason = "Windows Gem controls dispatch these borrowed callbacks")]
+#[allow(
+    dead_code,
+    reason = "Windows Gem controls dispatch these borrowed callbacks"
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Action {
     Gem { revision: u64, id: [u8; 16] },
     Modifier { nonce: u64, kind: u8, id: u16 },
+    ClearSelection,
     Quality(u8),
     Vessel(u8),
     Stage(oteryn_client_ui::wheel_allocation::Intent),
@@ -43,7 +53,10 @@ pub(crate) enum Action {
     Lock,
     Refresh,
 }
-#[allow(dead_code, reason = "Windows Gem controls dispatch these borrowed callbacks")]
+#[allow(
+    dead_code,
+    reason = "Windows Gem controls dispatch these borrowed callbacks"
+)]
 pub(in crate::play) fn activate(m: &mut Mailbox, s: &UnboundedSender<PlayCommand>, a: Action) {
     use oteryn_client_ui::wheel_allocation::{Intent, gems};
     if !m.wheel.selected || m.wheel_shutdown {
@@ -87,6 +100,7 @@ pub(in crate::play) fn activate(m: &mut Mailbox, s: &UnboundedSender<PlayCommand
                 m.wheel.modifier = Some((kind, id));
             }
         }
+        Action::ClearSelection => m.wheel.select_gem(None),
         Action::Quality(q) if q < 3 => m.wheel.quality = q,
         Action::Vessel(d) if d < m.wheel.vessel_slot_count() => m.wheel.vessel_slot = d,
         Action::Stage(i) => super::enqueue(m, s, i),

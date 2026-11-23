@@ -63,13 +63,13 @@ pub(super) async fn run(
             I08,
             primal,
             "obtain-primal-bag",
-            "Primal Bag 39546: no carried bag observed, Hazard 12 Primal Ordeal reward held and no Plunder Patriarch spawn in the compiled town regions",
+            "Primal Bag 39546: no carried bag observed, Hazard 12 Primal Ordeal reward held and no Plunder Patriarch spawn in the compiled town regions (reward_bag_use.rs:16)",
         ),
         (
             I13,
             covet,
             "obtain-bag-you-covet",
-            "Bag You Covet 43895: no carried bag observed, Rotten Blood bosses Bakragore, Chagorz, Ichgahal, Murcion and Vemiath have no spawn in the compiled town regions and Crimson Offering requires a Bakragore kill",
+            "Bag You Covet 43895: no carried bag observed, Rotten Blood bosses Bakragore, Chagorz, Ichgahal, Murcion and Vemiath have no spawn in the compiled town regions and Crimson Offering requires a Bakragore kill (reward_bag_use.rs:16)",
         ),
     ] {
         match used {
@@ -93,18 +93,8 @@ pub(super) async fn run(
             }
         },
     };
-    let setup = (|| -> TestResult<_> {
-        let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-        let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-        let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-        let world = load_world_generation(
-            bytes,
-            &pin,
-            WorldId::decode(&clients.world)?,
-            ChannelId::decode(&clients.channel)?,
-        )?;
-        Ok((metadata, world, provisioning::item_index()?))
-    })();
+    let setup = load_hunt_world(clients)
+        .and_then(|(metadata, world)| Ok((metadata, world, provisioning::item_index()?)));
     match setup {
         Ok((metadata, world, index)) => {
             let result = refine(&mut client, clients, &mut mining, world, &metadata, &index).await;
@@ -121,6 +111,41 @@ pub(super) async fn run(
     Ok(client)
 }
 
+pub(super) fn load_hunt_world(
+    clients: &SeamClients<'_>,
+) -> TestResult<(
+    oteryn_world_bundle::bundle::Visited,
+    &'static QualificationWorld,
+)> {
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world_generation(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    Ok((metadata, world))
+}
+
+pub(super) async fn hunt_for_carried_gold(
+    client: &mut DevClientSession,
+    world: &QualificationWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    gold: NonZeroU32,
+    minimum: u64,
+) -> TestResult {
+    hunt_for(client, world, spawns, 3031, |client| {
+        quantities(client).is_ok_and(|stock| carried_coin_count(&stock, gold) >= minimum)
+    })
+    .await
+}
+
+pub(super) fn carried_coin_count(stock: &BTreeMap<u32, u64>, coin: NonZeroU32) -> u64 {
+    stock.get(&coin.get()).copied().unwrap_or(0)
+}
+
 fn carried(client: &DevClientSession, reference: NonZeroU32) -> Option<items::ItemHandle> {
     client
         .inventory()?
@@ -132,42 +157,59 @@ fn carried(client: &DevClientSession, reference: NonZeroU32) -> Option<items::It
 
 async fn rejoin(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult<()> {
     let before = client.join_snapshot().game_session_id;
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(
-            format!("logout={logout} attempts={attempts} busy_timed_out={busy_timed_out}").into(),
-        );
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
+    verdict::Harness::global().bounded_wait(deadline, "relog-after-combat");
+    loop {
+        use oteryn_protocol_oteryn::logout::LogoutResult;
+        let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(client).await?;
+        match result {
+            Some(LogoutResult::Accepted) => break,
+            Some(LogoutResult::InFight { .. }) if tokio::time::Instant::now() < deadline => {
+                client.service_liveness(Duration::from_millis(250)).await?;
+                client.take_events();
+            }
+            _ => {
+                return Err(format!(
+                    "logout={logout} attempts={attempts} busy_timed_out={busy_timed_out}"
+                )
+                .into());
+            }
+        }
     }
+    let position = client.world_spatial().actor_position;
     *client = connect_world(clients, 0x79).await?;
+    if client.world_spatial().actor_position != position {
+        return Err(format!(
+            "fresh admission moved character from {position:?} to {:?}",
+            client.world_spatial().actor_position
+        )
+        .into());
+    }
     if client.join_snapshot().game_session_id == before {
         return Err(format!("reused game session {before:?}").into());
     }
     Ok(())
 }
 
-async fn buy_pick(
+pub(super) async fn buy_from_lubo(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    pick: NonZeroU32,
+    item: NonZeroU32,
     coin: NonZeroU32,
+    quantity: u32,
+    unit_price: u64,
 ) -> TestResult<()> {
-    // Crystal's Lubo sells the pick for 50 gp. This capture has his placed shop at floor 7.
+    // Crystal's Lubo sells the pick (50 gp) and five-slot presents (6 gp).
     let shop = TilePos {
         x: 32489,
         y: 32119,
         floor: -7,
     };
     walk_near(client, world, shop, 2).await?;
-    let target = client
-        .world_entities()
-        .and_then(|entries| {
-            entries.iter().find(|entry| {
-                entry.kind == oteryn_dev_client::EntityKind::Npc
-                    && tile(entry.position).ok() == Some(shop)
-            })
-        })
-        .ok_or("Lubo not visible at 32489,32119,7")?
-        .entity;
+    let target = e2ei_c::approach_vendor(client, world, "Lubo", |at| {
+        e2ei_c::near_vendor_placement(at, shop)
+    })
+    .await?;
     for text in ["hi", "trade"] {
         let response = npc_shop::talk(
             client.session_mut(),
@@ -193,11 +235,22 @@ async fn buy_pick(
         .enumerate()
         .find(|(_, offer)| {
             offer.side == npc::NpcTradeSide::Buy
-                && offer.item_definition_ref == pick.get()
-                && offer.unit_price == 50
+                && offer.item_definition_ref == item.get()
+                && u64::from(offer.unit_price) == unit_price
         })
-        .ok_or("Lubo live window lacks 50 gp pick offer")?;
-    let before = quantities(client)?.get(&coin.get()).copied().unwrap_or(0);
+        .ok_or_else(|| format!("Lubo live window lacks definition={item} at price={unit_price}"))?;
+    let mut expected = quantities(client)?;
+    *expected.entry(item.get()).or_default() += u64::from(quantity) * u64::from(offer.count);
+    let cost = u64::from(quantity) * unit_price;
+    let before = carried_coin_count(&expected, coin);
+    let after = before
+        .checked_sub(cost)
+        .ok_or_else(|| format!("Lubo requires {cost} carried gold; observed {before}"))?;
+    if after == 0 {
+        expected.remove(&coin.get());
+    } else {
+        expected.insert(coin.get(), after);
+    }
     let response = npc_shop::buy(
         client.session_mut(),
         &npc::NpcTradeIntent {
@@ -205,25 +258,20 @@ async fn buy_pick(
             catalogue_revision: window.open.ok_or("Lubo trade window closed")?.1,
             offer_index: u32::try_from(offer_index)?,
             side: offer.side,
-            quantity: 1,
+            quantity,
             expected_unit_price: offer.unit_price,
         },
     )
     .await?;
     if response != npc::NpcIntentDisposition::Ok {
         return Err(
-            format!("Lubo pick buy: reply={response:?} carried_gold={before} price=50").into(),
+            format!("Lubo buy definition={item}: reply={response:?} carried_gold={before} price={unit_price}").into(),
         );
     }
-    let stock = wait(client, Duration::from_secs(5), |client| {
-        let stock = quantities(client).ok()?;
-        stock.contains_key(&pick.get()).then_some(stock)
+    wait(client, Duration::from_secs(5), |client| {
+        (quantities(client).ok()? == expected).then_some(())
     })
     .await?;
-    let after = stock.get(&coin.get()).copied().unwrap_or(0);
-    if stock.get(&pick.get()) != Some(&1) || before.checked_sub(after) != Some(50) {
-        return Err(format!("Lubo buy expected one pick and 50 gp debit; gold before={before} inventory after={stock:?}").into());
-    }
     Ok(())
 }
 
@@ -241,7 +289,7 @@ async fn walk_near(
             at.floor == target.floor
                 && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= range
         },
-        |at| at != WOLF_BLOCKED_LANDING,
+        |at| route_available(at) && at != WOLF_BLOCKED_LANDING,
     )
     .ok_or_else(|| format!("no ordinary route from {here:?} to {target:?}"))?;
     walk(client, world, &path).await
@@ -300,64 +348,54 @@ async fn hunt_for(
         })
         .map(|creature| creature.key.as_str())
         .collect();
-    let goals: BTreeSet<_> = spawns
-        .sources
-        .iter()
-        .flat_map(|source| {
-            source.points.iter().filter_map(|point| {
-                let creature = &spawns.creatures.get(point.creature as usize)?.key;
-                sources
-                    .contains(creature.as_str())
-                    .then_some((source.floor, point))
-            })
-        })
-        .flat_map(|(floor, point)| {
-            (-1..=1).flat_map(move |dy| {
-                (-1..=1).filter_map(move |dx| {
-                    if dx == 0 && dy == 0 {
-                        return None;
-                    }
-                    Some(TilePos {
-                        x: point.x.checked_add_signed(dx)?,
-                        y: point.y.checked_add_signed(dy)?,
-                        floor,
-                    })
-                })
-            })
-        })
-        .filter(|at| {
-            world
-                .bundle
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|cell| !cell.protection_zone())
-        })
-        .collect();
-    if goals.is_empty() {
+    if sources.is_empty() {
         return Err(format!(
-            "{key}: no compiled walk target for admitted corpse loot sources {sources:?}"
+            "{key}: no compiled creature has this item in its admitted loot table"
         )
         .into());
     }
+    let reference = provisioning::item_reference(&provisioning::item_index()?, item)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
+    verdict::Harness::global().bounded_wait(deadline, "item-loot-budget");
+    let hunt = e2ei_c::Hunt {
+        world: &world.bundle,
+        spawns,
+    };
     let mut attempts = 0;
-    while !ready(client) && tokio::time::Instant::now() < deadline {
-        let here = tile(client.world_spatial().actor_position)?;
-        let path = find_route(here, |at| goals.contains(&at), |at, step| {
-            destination(&world.bundle, at, step).filter(|next| *next != WOLF_BLOCKED_LANDING)
-        }).map_err(|visited| format!("{key}: no ordinary step route from {here:?} to corpse loot sources {sources:?}; visited {visited} cells"))?;
-        walk(client, &world.bundle, &path).await?;
-        client_hunt::hunt(client).await?;
+    while tokio::time::Instant::now() < deadline {
+        let corpse = hunt
+            .hunt_sources(client, deadline, &sources)
+            .await
+            .map_err(|error| {
+                format!("{key}: acquisition after {attempts} kills from {sources:?}: {error}")
+            })?;
         attempts += 1;
+        for entry in corpse
+            .entries
+            .iter()
+            .filter(|entry| entry.item_definition_ref == reference)
+        {
+            let mut expected = quantities(client)?;
+            *expected.entry(reference.get()).or_default() += u64::from(entry.count.get());
+            let reply = client
+                .move_item(&items::ItemMoveIntent {
+                    source: entry.handle,
+                    destination: items::ItemMoveDestination::MainBackpack,
+                })
+                .await?;
+            if reply.outcome != items::ItemMoveOutcome::Moved {
+                return Err(format!("{key}: corpse loot refused: {reply:?}").into());
+            }
+            wait(client, Duration::from_secs(5), |client| {
+                (quantities(client).ok()? == expected).then_some(())
+            })
+            .await?;
+            if ready(client) {
+                return Ok(());
+            }
+        }
     }
-    if ready(client) {
-        return Ok(());
-    }
-    Err(format!(
-        "{key}: acquisition missing after {attempts} hunts; inventory={:?}",
-        client.inventory()
-    )
-    .into())
+    Err(format!("{key}: acquisition budget exhausted after {attempts} kills from {sources:?}; inventory={:?}", client.inventory()).into())
 }
 
 async fn refine(
@@ -372,12 +410,8 @@ async fn refine(
     let stone = provisioning::item_reference(index, 10310)?;
     let gold = provisioning::item_reference(index, 3031)?;
     if carried(client, pick).is_none() {
-        hunt_for(client, world, &metadata.spawns, 3031, |client| {
-            quantities(client)
-                .is_ok_and(|stock| stock.get(&gold.get()).is_some_and(|coins| *coins >= 50))
-        })
-        .await?;
-        buy_pick(client, &world.bundle, pick, gold).await?;
+        hunt_for_carried_gold(client, world, &metadata.spawns, gold, 50).await?;
+        buy_from_lubo(client, &world.bundle, pick, gold, 1, 50).await?;
     }
     if carried(client, stone).is_none() {
         hunt_for(client, world, &metadata.spawns, 10310, |client| {
@@ -442,7 +476,7 @@ async fn refine(
         return Err(format!("refinement before={saved:?} after={observed:?}").into());
     }
     check.action = "retained-draw";
-    Err("exact replay of the acknowledged USE command ID is unavailable through the dev client; pool output, stone consumption and reloaded inventory matched".into())
+    Err("retained refining draw needs the original session command ID (mining/mod.rs:112, :132); world_context_use allocates a new ID (session_exchange.rs:188); stone consumption, pool output, and reloaded inventory matched".into())
 }
 
 fn equipped(client: &DevClientSession, active: NonZeroU32) -> Option<items::ItemHandle> {
@@ -611,13 +645,19 @@ async fn energy_ring(
     .await?;
     check.action = "relogin-timer";
     rejoin(client, clients).await?;
-    retired(client).ok_or_else(|| {
-        format!(
+    if retired(client).is_none() {
+        return Err(format!(
             "expired ring reappeared on fresh admission; inventory={:?}",
             client.inventory()
         )
-        .into()
-    })
+        .into());
+    }
+    verify_ring_expiry_timing(&mut check.action, remaining)
+}
+
+fn verify_ring_expiry_timing(action: &mut &'static str, remaining_ms: u64) -> TestResult {
+    *action = "verify-server-ring-expiry-timing";
+    Err(format!("SERVER-GAP missing server timestamps for Energy Ring resumed activation and retirement; restored budget={remaining_ms}ms; owner clock at timed_item_clock.rs:375; timer reply at timed_item.rs:42").into())
 }
 
 async fn observe_shield(
@@ -686,4 +726,24 @@ async fn observe_shield(
         client.actor_vitals()
     )
     .into())
+}
+
+#[test]
+fn ring_expiry_requires_server_timestamps() {
+    let mut action = "relogin-timer";
+    let result = verify_ring_expiry_timing(&mut action, 600);
+    assert_eq!(action, "verify-server-ring-expiry-timing");
+    assert!(result.is_err_and(|error| {
+        let error = error.to_string();
+        error.contains("missing server timestamps") && error.contains("restored budget=600ms")
+    }));
+}
+
+#[test]
+fn lubo_funding_counts_only_carried_gold_coins() -> TestResult {
+    let gold = NonZeroU32::new(3031).ok_or("gold definition")?;
+    assert_eq!(carried_coin_count(&BTreeMap::new(), gold), 0);
+    assert_eq!(carried_coin_count(&BTreeMap::from([(3035, 38)]), gold), 0);
+    assert_eq!(carried_coin_count(&BTreeMap::from([(3031, 38)]), gold), 38);
+    Ok(())
 }

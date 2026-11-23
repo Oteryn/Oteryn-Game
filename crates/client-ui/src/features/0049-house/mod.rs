@@ -5,10 +5,10 @@ mod protocol;
 pub mod sale;
 mod state;
 mod view;
-pub use map::{MapHouse, map_houses};
+pub use map::{MapHouse, filtered_map_houses, map_houses};
 pub use protocol::{read_acl, request};
 pub use state::Panel;
-pub use view::{ownership_text, panel_text};
+pub use view::{HouseOrder, browser_text, matches_filters, ownership_text, panel_text};
 
 #[path = "view/ownership_date.rs"]
 mod ownership_date;

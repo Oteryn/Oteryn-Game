@@ -62,8 +62,12 @@ impl Attempt {
         let (status, evidence_value) = match result {
             Ok(()) => ("PASS", "position-casts-refusal-fresh-admission".into()),
             Err(error) => {
+                let error = error.to_string().replace(['\n', '\r'], " ");
+                evidence(&format!(
+                    "C18B_GAP step={} observed={} need={error}",
+                    self.step, self.observed
+                ));
                 let error: String = error
-                    .to_string()
                     .chars()
                     .map(|character| {
                         if character.is_ascii_alphanumeric() || "_-.,:=[]/".contains(character) {
@@ -155,6 +159,46 @@ fn cast_payment(
     })
 }
 
+fn crosshair_plan(
+    book: &crate::spell::SpellBook,
+    vocation: crate::spell::Vocation,
+) -> TestResult<Vec<&'static str>> {
+    let mut plan = Vec::new();
+    for words in SPELLS {
+        let spell = book.spoken(words)
+            .ok_or_else(|| format!("served-catalogue-missing-{words}"))?.spell;
+        if spell.vocations.contains(&vocation) {
+            plan.push(words);
+        }
+    }
+    Ok(plan)
+}
+
+fn require_crosshair_casts(successful: usize, refusals: &[String]) -> TestResult {
+    if !refusals.is_empty() {
+        return Err(format!(
+            "POSITION cast coverage {successful}/{}; missing={}; source:crates/gameplay/dispatch/src/gameplay_transport/ordinary_combat/prepare.rs:282",
+            SPELLS.len(),
+            refusals.join(", ")
+        ).into());
+    }
+    Ok(())
+}
+
+fn outside_protection_zone(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| !tile.protection_zone())
+}
+
+fn crosshair_tile(world: &BundleWorld, from: TilePos) -> Option<TilePos> {
+    [StepDirection::East, StepDirection::North, StepDirection::West, StepDirection::South]
+        .into_iter()
+        .filter_map(|direction| destination(world, from, direction))
+        .find(|at| at.floor == from.floor && outside_protection_zone(world, *at))
+}
+
 async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -168,26 +212,51 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
     let mut client = connect_character(clients, 0xc8, 1).await?;
     attempt.observed(client.join_snapshot().game_session_id);
 
+    attempt.at("crosshair-vocation-plan");
+    let vocation = full_e2ef5::current_vocation(&mut client).await?;
+    let plan = crosshair_plan(&book, vocation)?;
+    let mut gaps = Vec::new();
+    // Both reference character intents use the same NODE_BOOT_PROFILE
+    // (tools/qualification/node_boot/run.sh:1258).
+    for words in SPELLS.into_iter().filter(|words| !plan.contains(words)) {
+        let spell = book.spoken(words).ok_or("crosshair spell absent")?.spell;
+        gaps.push(format!("{words} requires a separate admitted vocation {:?}; served={vocation:?}", spell.vocations));
+    }
+    let mut eligible = Vec::new();
+    for words in plan {
+        let spell = book.spoken(words).ok_or("crosshair spell absent")?.spell;
+        match full_e2ef5::prepare_spell_access(&mut client, spell).await {
+            Ok(_) => eligible.push(words),
+            Err(error) if verdict::classify(error.as_ref()) == verdict::Cause::Assertion => {
+                gaps.push(format!("{words}: {error}"));
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    if eligible.is_empty() {
+        attempt.observed(&gaps);
+        full_e2ef5::player_logout(&mut client).await?;
+        return require_crosshair_casts(0, &gaps);
+    }
+
     attempt.at("walk-out-of-pz");
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
+        outside_protection_zone(world, at) && crosshair_tile(world, at).is_some()
     })
-    .ok_or("needs-reachable-non-pz-tile")?;
+    .ok_or("needs-reachable-non-pz-tile-with-adjacent-position-target")?;
     walk(&mut client, world, &path).await?;
-    attempt.observed(client.world_spatial().actor_position);
-
     let here = client.world_spatial().actor_position;
+    attempt.observed(here);
+    let target_tile = crosshair_tile(world, tile(here)?)
+        .ok_or("adjacent-position-target-absent-at-acknowledged-caster-position")?;
     let target = SpellTarget::Position(SpellTargetPosition {
-        x: here.x.saturating_add(1),
-        y: here.y,
+        x: i32::from(target_tile.x),
+        y: i32::from(target_tile.y),
         floor: here.floor,
     });
     let mut successful = None;
-    let mut refusals = Vec::new();
-    for words in SPELLS {
+    let mut successful_count = 0;
+    for words in eligible {
         attempt.at("crosshair-position-casts");
         let spell = book
             .spoken(words)
@@ -220,18 +289,22 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
                 return Err(format!("needs-exact-vitals-delta-for-{words}").into());
             }
             successful.get_or_insert((spell, spell_index(&book, words)?));
+            successful_count += 1;
+            evidence(&format!(
+                "C18B_CHECK C18b POSITION PASS words={words:?} vocation={vocation:?} server_sequence={}",
+                outcome.result_server_sequence
+            ));
         } else {
             if outcome.actor_vitals_delta.is_some() {
                 return Err(format!("refused-{words}-changed-vitals").into());
             }
-            refusals.push(format!("{words}:{:?}", outcome.disposition));
+            gaps.push(format!("{words}:{:?}", outcome.disposition));
         }
     }
+    attempt.observed(&gaps);
     let Some((spell, index)) = successful else {
-        attempt.observed(refusals);
-        return Err(
-            "server-must-provide-legitimate-player-progression-to-one-crosshair-spell".into(),
-        );
+        full_e2ef5::player_logout(&mut client).await?;
+        return require_crosshair_casts(0, &gaps);
     };
 
     attempt.at("out-of-range-refusal");
@@ -283,12 +356,36 @@ async fn journey(attempt: &mut Attempt, clients: &SeamClients<'_>) -> TestResult
     {
         return Err("needs-new-session-with-retained-position-and-vitals".into());
     }
-    Ok(())
+    attempt.at("crosshair-position-casts");
+    attempt.observed(&gaps);
+    require_crosshair_casts(successful_count, &gaps)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn crosshair_plan_only_attempts_spells_for_the_admitted_vocation() -> TestResult {
+        use crate::spell::Vocation;
+        let book = spell_book()?;
+        assert_eq!(crosshair_plan(&book, Vocation::Sorcerer)?, ["exevo mort ora"]);
+        assert_eq!(
+            crosshair_plan(&book, Vocation::Paladin)?,
+            ["exevo tempo mas san", "exori dir san", "exori dir moe"]
+        );
+        assert_eq!(crosshair_plan(&book, Vocation::Monk)?, ["exori mas amp pug"]);
+        assert!(crosshair_plan(&book, Vocation::Knight)?.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn partial_crosshair_casts_leave_a_named_gap() {
+        let refused = "exori mas amp pug:LevelTooLow".to_owned();
+        let result = require_crosshair_casts(SPELLS.len() - 1, std::slice::from_ref(&refused));
+        assert!(result.is_err_and(|error| error.to_string().contains(&refused)));
+        assert!(require_crosshair_casts(SPELLS.len(), &[]).is_ok());
+    }
 
     #[test]
     fn required_crosshair_spells_are_indexed() -> TestResult {

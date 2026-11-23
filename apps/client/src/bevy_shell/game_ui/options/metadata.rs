@@ -109,9 +109,28 @@ pub(super) enum Value {
     Choice(usize),
 }
 impl Row {
+    pub fn enabled(self, p: &Preferences) -> bool {
+        match self.id {
+            "battle_sound.own_attacks"
+            | "battle_sound.own_healing"
+            | "battle_sound.own_support" => p.audio.own_spells,
+            "battle_sound.other_attacks"
+            | "battle_sound.other_healing"
+            | "battle_sound.other_support" => p.audio.other_spells,
+            "ui_sound.global"
+            | "ui_sound.guild"
+            | "ui_sound.npc"
+            | "ui_sound.party_messages"
+            | "ui_sound.private"
+            | "ui_sound.private_without_tab"
+            | "ui_sound.raid"
+            | "ui_sound.system" => p.audio.ui_sounds[3],
+            _ => true,
+        }
+    }
     pub fn value(self, p: &Preferences) -> Value {
         match self.editor {
-            Editor::Check { read, .. } => Value::Check(read(p)),
+            Editor::Check { read, .. } => Value::Check(self.enabled(p) && read(p)),
             Editor::Number { read, .. } => Value::Number(read(p)),
             Editor::Choice { read, .. } => Value::Choice(read(p)),
         }
@@ -156,6 +175,7 @@ macro_rules! number {
 mod controls;
 mod diagnostics;
 mod graphics;
+mod hud;
 mod interface;
 mod miscellaneous;
 mod sound;
@@ -166,7 +186,7 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         // Hotkey sets and key bindings are list editors (`profiles.rs`, `keys.rs`).
         Page::GeneralHotkeys => &[],
         Page::Interface => &interface::MAIN,
-        Page::Hud => &interface::HUD,
+        Page::Hud => &hud::HUD,
         Page::Console => &interface::CONSOLE,
         Page::GameWindow => &interface::GAME_WINDOW,
         Page::ActionBars => &interface::ACTION_BARS,
@@ -179,6 +199,11 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         Page::Gameplay => &miscellaneous::GAMEPLAY,
         Page::Diagnostics => &diagnostics::ROWS,
         Page::Screenshots => &[
+            check!(
+                "screenshots.reward_chest",
+                "Capture reward-chest treasure",
+                screenshots.reward_chest
+            ),
             check!(
                 "screenshots.achievement",
                 "Capture on achievement",

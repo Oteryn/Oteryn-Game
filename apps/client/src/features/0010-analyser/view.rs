@@ -8,6 +8,10 @@ impl PlayLink {
     pub(crate) fn analyser_text_for(&self, tool: oteryn_client_ui::analyser::Tool) -> String {
         panel_text(&lock(&self.mailbox), tool)
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn loot_prices(&self) -> std::collections::BTreeMap<u32,u64> {
+        crate::play::mailbox::lock(&self.mailbox).analyser.loot_prices.clone()
+    }
     pub fn analyser_panel(&self) -> oteryn_client_ui::analyser::Panel {
         lock(&self.mailbox).analyser.clone()
     }

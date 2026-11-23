@@ -10,6 +10,7 @@ pub struct CyclopediaTrackerPanel {
     pub boss_hide_completed: bool,
     pub boss_search: String,
     pub bestiary_snapshot: Option<TrackerSnapshot>,
+    pub reversed: [bool; 2],
     pub sort: TrackerSort,
     pub hide_completed: bool,
     pub search: String,
@@ -39,4 +40,5 @@ pub enum TrackerSort {
     Name,
     Kills,
     Remaining,
+    Completion,
 }

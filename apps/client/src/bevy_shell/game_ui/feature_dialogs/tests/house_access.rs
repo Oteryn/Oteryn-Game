@@ -157,7 +157,9 @@ fn house_window_action_with_map(
     } else {
         None
     };
-    if map_during_read {
+    if caption == "Catalogue filters" {
+        link.bevy_house_browser_fixture();
+    } else if map_during_read {
         link.bevy_house_map_fixture();
     } else {
         link.bevy_house_list_fixture();
@@ -249,7 +251,7 @@ fn house_window_action_with_map(
         .release(KeyCode::AltLeft);
     press_h(&mut app);
     for expected in [
-        if map_during_read {
+        if map_during_read || caption == "Catalogue filters" {
             "Edit House List — Home"
         } else {
             "Edit House List — oteryn:house.test"
@@ -271,6 +273,135 @@ fn house_window_action_with_map(
             .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
             .ok_or("house button")
     };
+    if caption == "Catalogue filters" {
+        let projection = |app: &mut App| {
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .find(|t| t.0.contains("End of catalogue"))
+                .map(|t| t.0.clone())
+                .ok_or("catalogue")
+        };
+        for (caption, present, absent) in [
+            ("Guildhalls", "Harbour Home", "Cellar Flat"),
+            ("Houses and flats", "Cellar Flat", "Harbour Home"),
+            ("Rented", "Cellar Flat", "Harbour Home"),
+            ("Auctioned", "Home —", "Cellar Flat"),
+        ] {
+            let entity = button(&mut app, caption)?;
+            app.world_mut()
+                .trigger(bevy::ui_widgets::Activate { entity });
+            app.update();
+            app.update();
+            if caption == "Guildhalls" {
+                use oteryn_session::property_services::house as wire;
+                let PlayCommand::Feature(cmd) = receiver
+                    .try_recv()
+                    .map_err(|_| "filtered browse did not continue to the next town page")?
+                else {
+                    return Err("house page".into());
+                };
+                let row = wire::HouseSummary {
+                    house: "oteryn:house.ztest".into(),
+                    kind: wire::HouseKind::Guildhall,
+                    state: 3,
+                    rent: 10,
+                    revision: 1,
+                    acl_revision: 1,
+                    owned: false,
+                    move_out_ms: None,
+                    price: 0,
+                    ends_ms: None,
+                    own_maximum: None,
+                    details: Some(wire::HouseDetails {
+                        name: "Abbey Hall".into(),
+                        size: 100,
+                        beds: 2,
+                        entrance: (110, 100, 7),
+                    }),
+                };
+                let data =
+                    wire::encode_house_page(&[row], None, true).map_err(|e| format!("{e:?}"))?;
+                app.world()
+                    .non_send::<HostOwner>()
+                    .play
+                    .as_ref()
+                    .ok_or("play")?
+                    .link
+                    .bevy_house_ownership_result(
+                        &cmd,
+                        &oteryn_client_runtime::raw_feature::GatedCommandResult {
+                            command_id: 1,
+                            server_sequence: 1,
+                            status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+                            payload: data,
+                        },
+                    );
+                app.update();
+                assert!(projection(&mut app)?.contains("Abbey Hall"));
+                for (field, mut text) in app
+                    .world_mut()
+                    .query::<(&super::super::houses::Field, &mut EditableText)>()
+                    .iter_mut(app.world_mut())
+                {
+                    match field.0 {
+                        2 => text.editor_mut().set_text("1"),
+                        3 => text.editor_mut().set_text("100"),
+                        6 => text.editor_mut().set_text("CONFIRM"),
+                        _ => continue,
+                    };
+                }
+                let bid = button(&mut app, "Bid")?;
+                app.world_mut()
+                    .trigger(bevy::ui_widgets::Activate { entity: bid });
+                app.update();
+                app.update();
+                assert!(
+                    receiver.try_recv().is_err(),
+                    "a hidden house row received a bid"
+                );
+            }
+            let text = projection(&mut app)?;
+            assert!(
+                text.contains(present) && !text.contains(absent),
+                "{caption}: {text}"
+            );
+        }
+        for (caption, first, last) in [
+            ("All statuses", "", ""),
+            ("Sort by name", "Cellar Flat", "Home —"),
+            ("Sort by area", "Home —", "Cellar Flat"),
+        ] {
+            let entity = button(&mut app, caption)?;
+            app.world_mut()
+                .trigger(bevy::ui_widgets::Activate { entity });
+            app.update();
+            app.update();
+            if !first.is_empty() {
+                let text = projection(&mut app)?;
+                assert!(text.find(first).ok_or("first")? < text.find(last).ok_or("last")?);
+            }
+        }
+        let entity = button(&mut app, "Query")?;
+        app.world_mut()
+            .trigger(bevy::ui_widgets::Activate { entity });
+        app.update();
+        app.update();
+        let model = app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .house_panel()
+            .model;
+        assert!(
+            model.collecting && model.pending.is_some(),
+            "refresh preserves town-wide sorting"
+        );
+        return Ok(());
+    }
     let save = button(
         &mut app,
         if caption == "Handoff" {
@@ -748,4 +879,9 @@ fn entrance_map_keeps_the_edit_row_bound_while_a_bid_is_pending() -> TestResult 
     );
     assert_eq!(selected.model.index, 0);
     Ok(())
+}
+
+#[test]
+fn house_type_status_name_and_area_controls_preserve_original_row_numbers() -> TestResult {
+    house_window_action("Catalogue filters", 2, "")
 }

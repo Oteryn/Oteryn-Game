@@ -10,12 +10,12 @@
 //!    Harmony delta back to zero. Send it once more at zero as the refusal/zero-charge path and
 //!    require the server reply and unchanged Harmony/mana (the current owner deliberately accepts
 //!    this recorded Global-unverified path, so either disposition is recorded rather than faked).
-//! 5. Send the native Battle Instinct status query and require a canonical server snapshot; send a
-//!    malformed query and require rejection. A starter who has no player-earned Wheel allocation
-//!    must report inactive rather than receive a test-only perk.
+//! 5. Query Battle Instinct and check malformed refusal. The pinned perk is Knight-only, so
+//!    this Monk journey reports the missing separate Knight allocation and activation.
 //! 6. Logout, freshly admit the same character, and re-check the durable Monk vocation by casting
 //!    the Monk-only builder again; require its reply, mana delta, Harmony delta, and Serene state.
 
+use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use std::collections::BTreeSet;
@@ -59,10 +59,14 @@ impl Row {
         evidence(&format!("C11_CHECK {action} FAIL {error}"));
         self.failures.push(error);
     }
-    fn finish(self) {
+    fn finish(mut self, terminal: Option<String>) {
+        if let Some(detail) = terminal {
+            evidence(&format!("C11_GAP {detail}"));
+            self.failures.push(detail);
+        }
         for action in ACTIONS {
             if !self.passed.contains(action) {
-                evidence(&format!("C11_GAP step={action} unproven"));
+                evidence(&gap(action, &self.failures));
             }
         }
         let pass = self.failures.is_empty() && ACTIONS.iter().all(|a| self.passed.contains(a));
@@ -81,12 +85,17 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await {
-        Ok(Ok(())) => {}
-        Ok(Err(error)) => row.fail("fresh-admission-monk", error),
-        Err(_) => row.fail("fresh-admission-monk", "journey-timeout"),
-    }
-    row.finish();
+    let terminal = match verdict::indexed_timeout(
+        Duration::from_secs(300), verdict::observe(journey(&mut row, clients)),
+    ).await {
+        Ok(Ok(())) => None,
+        Ok(Err(error)) => {
+            let detail = error.to_string();
+            Some(if detail.starts_with("step=") { detail } else { format!("step=journey observed={detail}") })
+        }
+        Err(_) => Some("step=journey observed=timeout".into()),
+    };
+    row.finish(terminal);
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -98,12 +107,24 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xcb).await?;
-    if let Err(error) = choose_monk(&mut client, world, &bytes).await {
-        verdict::record_error(error.as_ref());
-        row.fail("player-monk-choice", error);
-    } else {
-        row.pass("player-monk-choice", "Oressa-confirmed");
+    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let mut client = connect_world(clients, 0xcb)
+        .await
+        .map_err(|error| admission_error("initial-admission", error))?;
+    let (vocation, level) = admitted_vocation(&mut client).await?;
+    match monk_path(vocation, level) {
+        Some(false) => {
+            choose_monk(&mut client, world, &bytes).await
+                .map_err(|error| verdict::context(format!("step=player-monk-choice observed={error}"), error))?;
+            row.pass("player-monk-choice", "Oressa-confirmed");
+        }
+        Some(true) => row.fail("player-monk-choice", "already-Monk; need=first-vocation-transition; continuing Monk gameplay"),
+        None => {
+            row.fail("player-monk-choice", format!("vocation-id={vocation} level={level}; need=unassigned-level-8-character-for-Oressa-or-admitted-Monk-for-Harmony"));
+            battle_queries(row, &mut client).await;
+            logout(&mut client, world).await?;
+            return Ok(());
+        }
     }
 
     if client.actor_vitals().is_some_and(|v| v.serene) {
@@ -115,7 +136,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let book = spell_book()?;
     let mut builders_ok = true;
     for expected in 1..=5 {
-        if let Err(error) = cast(&mut client, &book, "exori infir pug", Some(expected)).await {
+        let attempt = async {
+            select_melee_target(&mut client, world, &metadata.spawns).await?;
+            cast(&mut client, &book, "exori infir pug", Some(expected)).await
+        }.await;
+        if let Err(error) = attempt {
             verdict::record_error(error.as_ref());
             row.fail("builders-to-five", format!("builder={expected} {error}"));
             builders_ok = false;
@@ -125,42 +150,46 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if builders_ok {
         row.pass("builders-to-five", client.actor_vitals());
     }
-    match cast(&mut client, &book, "exori infir nia", Some(0)).await {
+    let spender = async {
+        select_melee_target(&mut client, world, &metadata.spawns).await?;
+        require_spender_harmony(&client, 5)?;
+        cast(&mut client, &book, "exori infir nia", Some(0)).await
+    }.await;
+    match spender {
         Ok(reply) => row.pass("spender-to-zero", reply),
         Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("spender-to-zero", error) },
     }
     wait_spell(&mut client, &book, "exori infir nia").await?;
-    let before = client.actor_vitals().copied().ok_or("C11 vitals absent")?;
-    let zero = send_cast(&mut client, &book, "exori infir nia").await;
-    match zero {
-        Ok(outcome)
-            if client
-                .actor_vitals()
-                .is_some_and(|after| after.harmony == 0 && after.mana == before.mana) =>
-        {
-            row.pass(
-                "zero-spender-path",
-                format!(
-                    "reply={outcome:?} before={before:?} after={:?}",
-                    client.actor_vitals()
-                ),
-            )
+    // The native rules permit a zero-Harmony spender at normal mana cost.
+    // Require an actual successful cast with no Harmony change.
+    let zero_spender = async {
+        select_melee_target(&mut client, world, &metadata.spawns).await?;
+        require_spender_harmony(&client, 0)?;
+        cast(&mut client, &book, "exori infir nia", Some(0)).await
+    }.await;
+    match zero_spender {
+        Ok(outcome) => row.pass("zero-spender-path", outcome),
+        Err(error) => {
+            verdict::record_error(error.as_ref());
+            row.fail("zero-spender-path", error);
         }
-        Ok(outcome) => row.fail(
-            "zero-spender-path",
-            format!(
-                "reply={outcome:?} before={before:?} after={:?}",
-                client.actor_vitals()
-            ),
-        ),
-        Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("zero-spender-path", error) },
     }
 
     battle_queries(row, &mut client).await;
-    logout(&mut client).await?;
+    let prior = client.join_snapshot().game_session_id;
+    logout(&mut client, world).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xcc).await?;
-    match cast(&mut fresh, &book, "exori infir pug", Some(1)).await {
+    let mut fresh = connect_world(clients, 0xcc)
+        .await
+        .map_err(|error| admission_error("fresh-admission-monk", error))?;
+    if fresh.join_snapshot().game_session_id == prior {
+        return Err("fresh Monk admission reused the prior game session".into());
+    }
+    let fresh_builder = async {
+        select_melee_target(&mut fresh, world, &metadata.spawns).await?;
+        cast(&mut fresh, &book, "exori infir pug", Some(1)).await
+    }.await;
+    match fresh_builder {
         Ok(reply) if fresh.actor_vitals().is_some_and(|v| v.serene) => {
             row.pass("fresh-admission-monk", reply)
         }
@@ -170,7 +199,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ),
         Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("fresh-admission-monk", error) },
     }
-    logout(&mut fresh).await
+    logout(&mut fresh, world).await
 }
 
 fn spell_book() -> TestResult<crate::spell::SpellBook> {
@@ -194,6 +223,25 @@ fn spell_index(book: &crate::spell::SpellBook, words: &str) -> TestResult<std::n
         .find(|i| book.indexed(*i).is_some_and(|s| &s.key == key))
         .ok_or_else(|| "C11 spell index absent".into())
 }
+async fn select_melee_target(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+    travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
+    let here = client.world_spatial().actor_position;
+    let target = client.world_entities().and_then(|entities| entities.iter().find(|entry| {
+        entry.kind == oteryn_dev_client::EntityKind::Creature && entry.position.floor == here.floor
+            && entry.position.x.abs_diff(here.x).max(entry.position.y.abs_diff(here.y)) <= 1
+    })).map(|entry| entry.entity).ok_or("no adjacent living creature for targeted Monk spell")?;
+    let attack = client.session_mut().attack_target(Some(&target)).await?;
+    if attack.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("targeted Monk spell could not select attack target: {attack:?}").into());
+    }
+    Ok(())
+}
+
 async fn send_cast(
     client: &mut DevClientSession,
     book: &crate::spell::SpellBook,
@@ -202,7 +250,7 @@ async fn send_cast(
     Ok(client
         .cast_spell(
             spell_index(book, words)?,
-            oteryn_protocol_oteryn::actor_spell::SpellTarget::None,
+            oteryn_protocol_oteryn::actor_spell::SpellTarget::AttackTarget,
             false,
         )
         .await?)
@@ -218,6 +266,7 @@ async fn cast(
         .copied()
         .ok_or("C11 pre-cast vitals absent")?;
     let outcome = send_cast(client, book, words).await?;
+    client.session_mut().attack_target(None).await?;
     let spell = book.spoken(words).ok_or("C11 spell absent")?.spell;
     let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
         return Err("C11 non-fixed mana".into());
@@ -232,7 +281,7 @@ async fn cast(
         .as_ref()
         .map(|d| d.value)
         .ok_or("accepted C11 cast missing vitals delta")?;
-    if after.mana != before.mana.saturating_sub(cost) || harmony.is_some_and(|h| after.harmony != h)
+    if Some(after.mana) != before.mana.checked_sub(cost) || harmony.is_some_and(|h| after.harmony != h)
     {
         return Err(format!(
             "command={words} reply={outcome:?} expected_mana={} expected_harmony={harmony:?}",
@@ -268,8 +317,7 @@ async fn battle_queries(row: &mut Row, client: &mut DevClientSession) {
     use oteryn_protocol_oteryn::battle_instinct_status as wire;
     match client.session_mut().gated_command(wire::CAPABILITY_BATTLE_INSTINCT_STATUS_V1, wire::COMMAND_TYPE_BATTLE_INSTINCT_STATUS_QUERY, &[]).await {
         Ok(reply) if reply.status == CommandStatus::Accepted => match wire::BattleInstinctStatus::decode(&reply.payload) {
-            Some(status) if status.active => row.pass("battle-instinct-snapshot", status),
-            Some(status) => row.fail("battle-instinct-snapshot", format!("decoded={status:?}; server must expose a legitimate player Wheel acquisition path before active Battle Instinct can be qualified")),
+            Some(status) => row.fail("battle-instinct-snapshot", battle_instinct_gap(status.active)),
             None => row.fail("battle-instinct-snapshot", format!("reply={reply:?} malformed status payload")),
         },
         Ok(reply) => row.fail("battle-instinct-snapshot", format!("reply={reply:?}")), Err(error) => { verdict::record_error(verdict::IndexedError::as_error(&error)); row.fail("battle-instinct-snapshot", error) },
@@ -304,7 +352,7 @@ async fn choose_monk(
         .npcs
         .iter()
         .find(|n| n.key == "oteryn:npc.oressa")
-        .ok_or("Oressa absent")?;
+        .ok_or("Oressa absent from served NPC table; need=reachable-oteryn:npc.oressa-placement")?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         npc.placements
             .iter()
@@ -312,6 +360,7 @@ async fn choose_monk(
     })
     .ok_or("no player walk route to Oressa")?;
     walk(client, world, &path).await?;
+    let basis = spatial_basis::current(client)?;
     let actor = client
         .world_entities()
         .and_then(|entities| {
@@ -320,7 +369,7 @@ async fn choose_monk(
                     && npc.placements.iter().any(|p| {
                         e.position.x == i32::from(p.x)
                             && e.position.y == i32::from(p.y)
-                            && e.position.floor == -i16::from(p.floor)
+                            && e.position.floor == basis.floor(p.floor)
                     })
             })
         })
@@ -352,16 +401,107 @@ async fn choose_monk(
                     .iter()
                     .any(|line| line == "Your vocation is now monk."))
         {
-            return Err(format!("player command={text} disposition={disposition:?} replies={lines:?}; need Oressa Monk offer for provisioned character").into());
+            return Err(format!("player command={text} disposition={disposition:?} replies={lines:?}; need=unassigned-level-8-character-and-confirmed-Oressa-Monk-offer").into());
         }
     }
     Ok(())
 }
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("C11 logout refused".into());
+async fn logout(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
+    }).ok_or("step=fresh-admission-monk observed=no-reachable-protection-zone need=safe-combat-logout")?;
+    walk(client, world, &safe).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    loop {
+        let reply = logout_retrying_busy(client).await?.0;
+        match reply {
+            Some(LogoutResult::Accepted) => return Ok(()),
+            Some(LogoutResult::InFight { .. }) if tokio::time::Instant::now() < deadline => {
+                client.service_liveness(Duration::from_millis(250)).await?;
+                client.take_events();
+            }
+            _ => return Err(format!("C11 logout refused: {reply:?}").into()),
+        }
+    }
+}
+
+fn gap(action: &str, failures: &[String]) -> String {
+    let prefix = format!("step={action} observed=");
+    failures.iter().find(|failure| failure.starts_with(&prefix))
+        .map_or_else(|| format!("C11_GAP step={action} unproven"), |failure| format!("C11_GAP {failure}"))
+}
+
+async fn admitted_vocation(client: &mut DevClientSession) -> TestResult<(u8, u32)> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    let reply = client.session_mut().gated_command(wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+        wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[1, 0, 0, 1]).await?;
+    if reply.status != CommandStatus::Accepted || reply.payload.first() != Some(&1) {
+        return Err(format!("step=player-monk-choice observed={reply:?} need=admitted-vocation-and-level").into());
+    }
+    let vocation = general_stats::validate(&reply.payload, general_stats::selected(client))?
+        .ok_or("step=player-monk-choice observed=vocation-extension-missing")?;
+    Ok((vocation, u32::from_le_bytes(reply.payload[9..13].try_into()?)))
+}
+
+fn monk_path(vocation: u8, level: u32) -> Option<bool> {
+    use oteryn_protocol_oteryn::cyclopedia_character::vocation_id;
+    if Some(vocation) == vocation_id("monk") || Some(vocation) == vocation_id("exalted_monk") {
+        Some(true)
+    } else if Some(vocation) == vocation_id("none") && level >= 8 {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+// The pinned Wheel catalog places this conviction on the Knight graph only.
+// Neither a starter snapshot nor a Monk execution can prove player acquisition.
+fn battle_instinct_gap(active: bool) -> String {
+    format!("active={active}; need=separate-eligible-Knight-and-inactive-to-active-committed-Wheel-allocation")
+}
+
+fn require_spender_harmony(client: &DevClientSession, expected: u32) -> TestResult {
+    let actual = client.actor_vitals().ok_or("spender pre-cast vitals missing")?.harmony;
+    if !spender_precondition(actual, expected) {
+        return Err(format!("spender pre-cast harmony={actual} need={expected}").into());
     }
     Ok(())
+}
+
+fn spender_precondition(actual: u32, expected: u32) -> bool { actual == expected }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn second_review_c11_rejects_false_evidence() {
+        assert!(spender_precondition(5, 5));
+        assert!(!spender_precondition(0, 5));
+        assert!(!spender_precondition(4, 5));
+        assert!(spender_precondition(0, 0));
+    }
+
+    #[test]
+    fn independent_review_c11_rejects_unproven_evidence() {
+        assert_eq!(monk_path(4, 8), None);
+        assert_eq!(monk_path(1, 7), None);
+        assert_eq!(monk_path(1, 8), Some(false));
+        assert_eq!(monk_path(10, 1), Some(true));
+        for active in [false, true] {
+            assert!(battle_instinct_gap(active).contains("need=separate-eligible-Knight-and-inactive-to-active-committed-Wheel-allocation"));
+        }
+    }
+
+
+    #[test]
+    fn gap_reports_the_observed_blocker_for_its_action() {
+        let failures = ["step=player-monk-choice observed=Oressa absent".to_owned()];
+        assert_eq!(
+            gap("player-monk-choice", &failures),
+            "C11_GAP step=player-monk-choice observed=Oressa absent"
+        );
+        assert_eq!(gap("solo-serene", &failures), "C11_GAP step=solo-serene unproven");
+    }
 }

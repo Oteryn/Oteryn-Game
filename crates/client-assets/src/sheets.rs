@@ -125,7 +125,7 @@ impl SpriteSheets {
         let bytes = self
             .store
             .read_verified(&descriptor.file, MAX_COMPRESSED_SHEET_BYTES)?;
-        let rgba = decode_sheet(&descriptor.file, &bytes)?;
+        let rgba = decode_bitmap(&descriptor.file, &bytes, SHEET_PX)?;
         self.decodes = self.decodes.saturating_add(1);
         let sheet = ResidentSheet {
             file: descriptor.file.clone(),
@@ -149,7 +149,11 @@ impl SpriteSheets {
 
 /// Strips the 32-byte CIP header, decodes the LZMA1 payload (size field unknown) and reads the
 /// BMP as 384x384 RGBA with magenta as transparent. Ported from the World VFX experiment.
-fn decode_sheet(file: &str, encoded: &[u8]) -> Result<Vec<u8>, AssetError> {
+pub(crate) fn decode_bitmap(
+    file: &str,
+    encoded: &[u8],
+    edge: usize,
+) -> Result<Vec<u8>, AssetError> {
     let malformed = |reason: String| AssetError::Malformed {
         file: file.to_owned(),
         reason,
@@ -162,14 +166,14 @@ fn decode_sheet(file: &str, encoded: &[u8]) -> Result<Vec<u8>, AssetError> {
     let mut input = BufReader::new(Cursor::new(lzma_alone));
     let mut output = BoundedWriter {
         bytes: Vec::new(),
-        limit: MAX_DECOMPRESSED_SHEET_BYTES,
+        limit: MAX_DECOMPRESSED_SHEET_BYTES + (edge * edge - SHEET_PX * SHEET_PX) * 4,
     };
     lzma_rs::lzma_decompress(&mut input, &mut output)
         .map_err(|error| malformed(format!("LZMA1 payload: {error}")))?;
-    bmp_to_rgba(&output.bytes).map_err(malformed)
+    bmp_to_rgba(&output.bytes, edge).map_err(malformed)
 }
 
-fn bmp_to_rgba(data: &[u8]) -> Result<Vec<u8>, String> {
+fn bmp_to_rgba(data: &[u8], edge: usize) -> Result<Vec<u8>, String> {
     if data.len() < 54 || &data[0..2] != b"BM" {
         return Err("decoded sheet is not a Windows BMP".into());
     }
@@ -184,9 +188,9 @@ fn bmp_to_rgba(data: &[u8]) -> Result<Vec<u8>, String> {
     let signed_height = u32_at(22)? as i32;
     let bpp = u16::from_le_bytes([data[28], data[29]]);
     let compression = u32_at(30)?;
-    if width != SHEET_PX as i32 || signed_height.unsigned_abs() as usize != SHEET_PX {
+    if width != edge as i32 || signed_height.unsigned_abs() as usize != edge {
         return Err(format!(
-            "sheet must be {SHEET_PX}x{SHEET_PX}, got {width}x{signed_height}"
+            "sheet must be {edge}x{edge}, got {width}x{signed_height}"
         ));
     }
     if bpp != 32 || (compression != 0 && compression != 3) {
@@ -200,18 +204,18 @@ fn bmp_to_rgba(data: &[u8]) -> Result<Vec<u8>, String> {
             return Err(format!("unsupported BMP channel masks {masks:?}"));
         }
     }
-    let row_bytes = SHEET_PX * 4;
+    let row_bytes = edge * 4;
     let end = pixel_offset
-        .checked_add(row_bytes * SHEET_PX)
+        .checked_add(row_bytes * edge)
         .ok_or_else(|| "BMP byte range overflow".to_owned())?;
     if end > data.len() {
         return Err("BMP pixel data is truncated".into());
     }
     let top_down = signed_height < 0;
-    let mut rgba = vec![0_u8; SHEET_PX * row_bytes];
-    for y in 0..SHEET_PX {
-        let source_y = if top_down { y } else { SHEET_PX - 1 - y };
-        for x in 0..SHEET_PX {
+    let mut rgba = vec![0_u8; edge * row_bytes];
+    for y in 0..edge {
+        let source_y = if top_down { y } else { edge - 1 - y };
+        for x in 0..edge {
             let source = pixel_offset + source_y * row_bytes + x * 4;
             let (b, g, r, a) = (
                 data[source],
@@ -219,7 +223,7 @@ fn bmp_to_rgba(data: &[u8]) -> Result<Vec<u8>, String> {
                 data[source + 2],
                 data[source + 3],
             );
-            let pixel = if r == 0xFF && g == 0 && b == 0xFF {
+            let pixel = if edge == SHEET_PX && r == 0xFF && g == 0 && b == 0xFF {
                 [0, 0, 0, 0]
             } else {
                 [r, g, b, a]

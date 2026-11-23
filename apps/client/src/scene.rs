@@ -31,6 +31,8 @@ const _: () = assert!(
 
 #[derive(Clone, Debug)]
 struct ActorDraw {
+    #[cfg(bevy_shell)]
+    entity: oteryn_session::EntityRef,
     floor: i16,
     tile: TileCoord,
     draws: Vec<Draw>,
