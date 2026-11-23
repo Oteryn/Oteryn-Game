@@ -397,6 +397,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .fishing_catch(actor, command, native, &request.intent, bait.is_some())
                     .await?
                 {
+                    if mode == WaterFishing::MechanicalSewer {
+                        let roll = bounded_gathering_roll(
+                            native.source_digest(),
+                            command.game_session_id,
+                            command.command_id,
+                            &request.intent,
+                            100,
+                        )?;
+                        if fishing::mechanical_sewer_attempt(
+                            target_id, in_sewers, has_nail, false, roll,
+                        ) == fishing::MechanicalSewerAttempt::Shocked
+                        {
+                            let runtime = self.runtime.lock().await;
+                            let mut states = self.states.spell_states.lock().await;
+                            if runtime.binding().runtime_scope() != fence.runtime_scope
+                                || runtime.binding().scope_generation()
+                                    != fence.scope_ownership_generation
+                                || !runtime
+                                    .bound_attacker_lease(actor, command.game_session_id)
+                                    .is_ok_and(|lease| {
+                                        lease.character_id().as_bytes()
+                                            == fence.character_id.as_bytes()
+                                            && lease.generation()
+                                                == fence.character_lease_generation
+                                    })
+                            {
+                                return disposition(UseDisposition::Rejected);
+                            }
+                            states.apply_mechanical_fishing_shock(
+                                &runtime,
+                                actor,
+                                command.game_session_id,
+                                self.owner_now().get(),
+                            )?;
+                        }
+                    }
                     return disposition(UseDisposition::NothingToUse);
                 }
                 if let Some(bait) = bait {
@@ -606,7 +642,7 @@ pub(in crate::gameplay_transport) fn gathering_roll(
     bounded_gathering_roll(digest, session, command_id, intent, 100_000)
 }
 
-fn bounded_gathering_roll(
+pub(in crate::gameplay_transport) fn bounded_gathering_roll(
     digest: [u8; 32],
     session: crate::foundation::GameSessionId,
     command_id: u64,

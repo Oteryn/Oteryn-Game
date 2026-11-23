@@ -30,6 +30,10 @@ pub(super) struct GatheringCase {
 }
 
 pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
+    gathering_scenario_with_shock(case, false)
+}
+
+pub(super) fn gathering_scenario_with_shock(case: GatheringCase, shock: bool) -> TestResult {
     let GatheringCase {
         tool,
         target_id,
@@ -280,6 +284,15 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
         .await?
         .0;
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("fence")?;
+        if shock {
+            owner.runtime.lock().await.bind_attacker_lease(
+                deps.actor, deps.admitted.game_session_id,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    fence.character_lease_generation,
+                ).map_err(debug)?,
+            ).map_err(debug)?;
+        }
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
@@ -447,6 +460,12 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
                     )
                     .unwrap_or(0)
                 };
+                if shock {
+                    let shock_roll = crate::gameplay_transport::item_craft::bounded_gathering_roll(
+                        native.source_digest(), session, 1, &actual, 100,
+                    );
+                    return catch_roll > 50_000 && shock_roll.is_some_and(|roll| (1..=10).contains(&roll));
+                }
                 if let Some(select_roll) = select_roll {
                     return select_roll(catch_roll, roll);
                 }
@@ -472,8 +491,27 @@ pub(super) fn gathering_scenario(case: GatheringCase) -> TestResult {
             );
         }
         let command_id = 1;
+        let previous_health = if shock {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            Some(states.get(&runtime, deps.actor, session).ok_or("before fishing Player state")?.vitals().health)
+        } else { None };
         let (next, result, actual) =
             exchange(&owner, admitted, command_id, &payload, reference(rod)).await?;
+        if let Some(health) = previous_health {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let player = states.get(&runtime, deps.actor, session).ok_or("after fishing Player state")?;
+            assert_eq!(player.vitals().health, health - 35);
+            let now = owner.owner_now().get();
+            use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
+            assert!(matches!(
+                player.owned_conditions().displayed_temporary_appearance_at(now),
+                Some(TemporaryDisplayedAppearance::Outfit(selection))
+                    if selection.outfit_key == "oteryn:outfit.source.canary.look33"
+            ));
+            assert!(player.owned_conditions().displayed_temporary_appearance_at(now + 4_000_000).is_none());
+        }
         let actual_intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
             &[4, 6, 11, 15, 18],
             &actual,

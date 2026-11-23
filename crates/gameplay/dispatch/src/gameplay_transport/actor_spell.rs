@@ -1460,6 +1460,80 @@ impl ChannelSpellStates {
         )
     }
 
+    /// Crystal mechanical_fishing.lua:109-112,227-235. Direct health loss and
+    /// the temporary outfit publish through the same Player state comparison.
+    pub(super) fn apply_mechanical_fishing_shock(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: u64,
+    ) -> Option<CreatureHit> {
+        use oteryn_gameplay_domain::domain::{
+            appearance::{AppearanceSelection, Colours},
+            condition::ConditionValues,
+        };
+        use oteryn_gameplay_foundation::foundation::condition::{
+            ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+        };
+        use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+        const SOURCE: &str = "environment.mechanical_fishing_shock";
+        let outfit = ConditionDefinition::new(
+            SOURCE,
+            1,
+            ConditionValues::Outfit {
+                look_type: 33,
+                duration_ms: 4_000,
+            },
+        )?
+        .with_appearance(AppearanceSelection {
+            outfit_key: "oteryn:outfit.source.canary.look33".into(),
+            colours: Colours::default(),
+            addons: 0,
+            mount_key: None,
+        })?;
+        let decision_root =
+            GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        let facts = ApplicationFacts {
+            now,
+            base_speed: 1,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &decision_root,
+            occurrence: DecisionOccurrenceId::from_bytes(actor.placement_identity()),
+        };
+        self.apply_player_damage_stage(
+            runtime,
+            actor,
+            session,
+            crate::player_lethal::PlayerHitKind::Undefined,
+            oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            None,
+            |state| {
+                let (mut after, damage) =
+                    crate::spell::actor_conditions::stage_soul_war_lua_health_loss(state, 35, now)
+                        .ok()?;
+                after
+                    .conditions
+                    .remove_type(oteryn_gameplay_domain::domain::condition::ConditionType::Outfit);
+                after
+                    .conditions
+                    .apply(
+                        &outfit,
+                        Some(SOURCE.into()),
+                        ConditionSourceKind::Field,
+                        &[],
+                        &facts,
+                    )
+                    .ok()?;
+                Some((after, damage))
+            },
+        )
+    }
+
     /// Crystal soul_war.lua:1074: fixed 8000 death damage from the retained
     /// room callback. This shares the existing shield/lethal/HP owner.
     pub(super) fn apply_soul_war_white_tile_damage(

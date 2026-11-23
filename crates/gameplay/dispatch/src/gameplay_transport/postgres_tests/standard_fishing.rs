@@ -287,6 +287,27 @@ fn m09_gathering_wire_ice_hole_catches_rare_fish() -> TestResult {
 fn m09_gathering_wire_mechanical_sewer_water_reaches_complete_classifier() -> TestResult {
     run_gathering(9306, 4597, Some(4609), Some(9307), true)
 }
+
+#[test]
+fn m09_gathering_wire_mechanical_sewer_miss_can_shock_without_consuming_a_nail() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("mechanical-sewer-shock", || {
+        super::fishing_wire::gathering_scenario_with_shock(GatheringCase {
+            tool: 9306,
+            target_id: 4597,
+            after: Some(4597),
+            yield_item: None,
+            committed: false,
+            in_sewers: true,
+            projected_desert: None,
+            select_roll: None,
+            consumes_bait: false,
+        }, true)
+    })
+}
 #[test]
 fn m09_gathering_wire_mechanical_water_outside_sewers_uses_a_worm() -> TestResult {
     run_gathering_at(9306, 4597, Some(4609), Some(3578), true, false)
