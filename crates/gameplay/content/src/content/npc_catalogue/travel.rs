@@ -287,10 +287,11 @@ mod tests {
     }
 
     #[test]
-    fn placed_junkar_routes_preserve_world_change_requirements()
+    fn partial_junkar_routes_are_held_and_preserve_world_change_requirements()
     -> Result<(), Box<dyn std::error::Error>> {
         let model = production_travel_model()?;
         let mut missing = Vec::new();
+        let mut released = Vec::new();
         for (npc, destinations) in [
             ("junkar_mines", ["kazordoon", "robsons_isle", "thais"]),
             ("junkar_robsons", ["kazordoon", "mines", "thais"]),
@@ -304,12 +305,19 @@ mod tests {
                 } else {
                     &["awash"]
                 };
-                if route.held || route.world_changes != expected {
+                if !route.held {
+                    released.push((npc, destination));
+                }
+                if route.world_changes != expected {
                     missing.push((npc, destination, route.world_changes));
                 }
             }
         }
         assert!(missing.is_empty(), "world change missing: {missing:?}");
+        assert!(
+            released.is_empty(),
+            "PARTIAL Junkar routes released without their world-change owners: {released:?}"
+        );
         Ok(())
     }
 
@@ -405,13 +413,13 @@ mod tests {
             crate::content::npc_catalogue_preproduction_limits(),
         )?;
         let model = catalogue.service_model_for_project()?;
-        for (npc, slug, keyword) in [
-            ("captain_bluebear", "ab_dendriel", "ab'dendriel"),
-            ("captain_fearless", "ab_dendriel", "ab'dendriel"),
-            ("captain_greyhound", "ab_dendriel", "ab'dendriel"),
-            ("captain_seahorse", "ab_dendriel", "ab'dendriel"),
-            ("junkar_mines", "robsons_isle", "robson's isle"),
-            ("junkar_thais", "robsons_isle", "robson's isle"),
+        for (npc, slug, keyword, held) in [
+            ("captain_bluebear", "ab_dendriel", "ab'dendriel", false),
+            ("captain_fearless", "ab_dendriel", "ab'dendriel", false),
+            ("captain_greyhound", "ab_dendriel", "ab'dendriel", false),
+            ("captain_seahorse", "ab_dendriel", "ab'dendriel", false),
+            ("junkar_mines", "robsons_isle", "robson's isle", true),
+            ("junkar_thais", "robsons_isle", "robson's isle", true),
         ] {
             let key = format!("oteryn:npc.{npc}");
             let entry = model
@@ -426,7 +434,7 @@ mod tests {
                 .find(|route| route.route.key == slug)
                 .ok_or("route")?;
             assert_eq!(route.keyword, keyword, "{npc}/{slug}");
-            assert!(!route.held);
+            assert_eq!(route.held, held, "{npc}/{slug}");
         }
         Ok(())
     }
