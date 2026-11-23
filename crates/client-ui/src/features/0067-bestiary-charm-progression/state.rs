@@ -20,6 +20,7 @@ pub struct Panel {
     pub fields: [String; 2],
     pub feedback: String,
     pub summary: String,
+    pub reply_revision: u64,
     pub reply: Option<oteryn_client_runtime::charm_progression::CharmProgressionReply>,
 }
 impl Panel {

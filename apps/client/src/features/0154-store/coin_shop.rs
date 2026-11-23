@@ -244,7 +244,8 @@ fn session_end_wins_before_store_browser_delivery() -> Result<(), Box<dyn std::e
 
 #[cfg(all(test, target_os = "linux"))]
 #[test]
-fn session_end_waits_for_the_configured_browser_helper() -> Result<(), Box<dyn std::error::Error>> {
+fn session_end_reaps_the_configured_browser_helper_asynchronously()
+-> Result<(), Box<dyn std::error::Error>> {
     use crate::account_services::test_server::{CHARACTER, MockPlatform, test_thread};
     use std::{
         os::unix::fs::PermissionsExt,
@@ -252,13 +253,12 @@ fn session_end_waits_for_the_configured_browser_helper() -> Result<(), Box<dyn s
     };
 
     const ROOT: &str = "OTERYN_STORE_HELPER_TEST_ROOT";
-    const LONG_HELPER: &str = "Starting long-running Store helper";
     let Some(root) = std::env::var_os(ROOT) else {
         let dir = tempfile::tempdir()?;
         let script = dir.path().join("xdg-open");
         std::fs::write(
             &script,
-            "#!/bin/sh\necho $$ > \"$OTERYN_STORE_HELPER_TEST_ROOT/ready\"\nif test -f \"$OTERYN_STORE_HELPER_TEST_ROOT/long\"; then exec sleep 60; fi\nsleep 0.5\ntouch \"$OTERYN_STORE_HELPER_TEST_ROOT/done\"\n",
+            "#!/bin/sh\ncd \"$OTERYN_STORE_HELPER_TEST_ROOT\" || exit 1\necho $$ > pid && mv pid ready\nexec sleep 5\n",
         )?;
         std::fs::set_permissions(script, std::fs::Permissions::from_mode(0o755))?;
         let name = std::thread::current().name().ok_or("test name")?.to_owned();
@@ -272,12 +272,6 @@ fn session_end_waits_for_the_configured_browser_helper() -> Result<(), Box<dyn s
             "{}",
             String::from_utf8_lossy(&output.stderr)
         );
-        assert!(dir.path().join("done").exists());
-        assert!(
-            String::from_utf8_lossy(&output.stderr)
-                .split_once(LONG_HELPER)
-                .is_some_and(|(_, long)| long.contains("URL may already have been delivered"))
-        );
         return Ok(());
     };
     test_thread(|| {
@@ -289,39 +283,35 @@ fn session_end_waits_for_the_configured_browser_helper() -> Result<(), Box<dyn s
             _ => None,
         })?
         .ok_or("checkout config")?;
-        let (link, _commands, outbox) = crate::play::play_channel();
-        link.configure_coin_shop(Some(config.clone()), CHARACTER);
-        assert!(link.open_coin_checkout());
-        let deadline = Instant::now() + Duration::from_secs(5);
-        while !root.join("ready").exists() && Instant::now() < deadline {
-            std::thread::sleep(Duration::from_millis(5));
+        for acknowledged in [false, true] {
+            let (link, _commands, outbox) = crate::play::play_channel();
+            link.configure_coin_shop(Some(config.clone()), CHARACTER);
+            assert!(link.open_coin_checkout());
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while !root.join("ready").exists() && Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            assert!(root.join("ready").exists());
+            if acknowledged {
+                std::thread::sleep(Duration::from_millis(3200));
+            }
+            let pid = std::fs::read_to_string(root.join("ready"))?;
+            let process = std::path::Path::new("/proc").join(pid.trim());
+            assert!(process.exists());
+            let start = Instant::now();
+            outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
+            assert!(
+                start.elapsed() < Duration::from_millis(100),
+                "session end took {:?}",
+                start.elapsed()
+            );
+            let deadline = Instant::now() + Duration::from_secs(1);
+            while process.exists() && Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            assert!(!process.exists());
+            std::fs::remove_file(root.join("ready"))?;
         }
-        assert!(root.join("ready").exists());
-        outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
-        assert!(
-            root.join("done").exists(),
-            "session end passed a live helper"
-        );
-        eprintln!("{LONG_HELPER}");
-        std::fs::write(root.join("long"), b"long-running delivery")?;
-        std::fs::remove_file(root.join("ready"))?;
-        let (link, _commands, outbox) = crate::play::play_channel();
-        link.configure_coin_shop(Some(config), CHARACTER);
-        assert!(link.open_coin_checkout());
-        let deadline = Instant::now() + Duration::from_secs(5);
-        while !root.join("ready").exists() && Instant::now() < deadline {
-            std::thread::sleep(Duration::from_millis(5));
-        }
-        assert!(root.join("ready").exists());
-        std::thread::sleep(Duration::from_millis(3200));
-        let pid = std::fs::read_to_string(root.join("ready"))?;
-        let process = std::path::Path::new("/proc").join(pid.trim());
-        assert!(process.exists());
-        outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
-        assert!(
-            !process.exists(),
-            "session end left the acknowledged opener alive"
-        );
         Ok(())
     })
 }

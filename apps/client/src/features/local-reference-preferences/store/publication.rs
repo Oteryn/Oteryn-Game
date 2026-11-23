@@ -47,56 +47,61 @@ impl PreferenceStore {
         preferences: ReferencePreferences,
         previous: &ReferencePreferences,
     ) -> io::Result<()> {
+        let source = Replacement::Set(Box::new(preferences));
         #[cfg(bevy_shell)]
         if self.saving() {
-            return self.replace_in_background(previous, BackupOrder::BackupFirst, move |_| {
-                Ok(preferences)
-            });
+            return self.replace_in_background(previous, source);
         }
-        self.replace_from(previous, BackupOrder::BackupFirst, move |_| Ok(preferences))
+        self.replace_from(previous, source)
     }
 
     pub(in super::super) fn replace_from(
         &mut self,
         previous: &ReferencePreferences,
-        order: BackupOrder,
-        load: impl FnOnce(&Path) -> io::Result<ReferencePreferences>,
+        source: Replacement,
     ) -> io::Result<()> {
-        self.preferences = Self::publish_replacement(&self.path, previous, order, load)?;
+        self.preferences = Self::publish_replacement(&self.path, previous, source)?;
         Ok(())
     }
 
     pub(super) fn publish_replacement(
         path: &Path,
         previous: &ReferencePreferences,
-        order: BackupOrder,
-        load: impl FnOnce(&Path) -> io::Result<ReferencePreferences>,
+        source: Replacement,
     ) -> io::Result<ReferencePreferences> {
         let _lock = crate::atomic_file::lock(path)?;
         let retained = Self::finish_pending_backup(path)?;
         let ready = path.with_added_extension("ready-backup");
         let slot = path.with_extension("backup.json");
         let snapshots = Self::ordered_snapshots(path)?;
-        let (replacement, bytes) = if order == BackupOrder::ActiveFirst {
-            let mut selected = None;
-            for (_, candidate) in &snapshots {
-                if let Ok(bytes) = Self::transfer_bytes(candidate)
-                    && let Ok(preferences) = Self::decode_transfer(&bytes)
-                {
-                    let replacement = if candidate == &slot {
-                        load(path)?
-                    } else {
-                        preferences
-                    };
-                    selected = Some((replacement, bytes));
-                    break;
+        let restoring = matches!(source, Replacement::Restore);
+        let (replacement, bytes) = match source {
+            Replacement::Restore => {
+                let mut selected = None;
+                for (_, candidate) in &snapshots {
+                    if let Ok(bytes) = Self::transfer_bytes(candidate)
+                        && let Ok(preferences) = Self::decode_transfer(&bytes)
+                    {
+                        #[cfg(test)]
+                        if let Some(change) = AFTER_SELECTION.take() {
+                            change(candidate)?;
+                        }
+                        // Settings and the active file use the same validated snapshot.
+                        selected = Some((preferences, bytes));
+                        break;
+                    }
                 }
+                selected.ok_or_else(|| io::Error::other("No valid preference backup"))?
             }
-            selected.ok_or_else(|| io::Error::other("No valid preference backup"))?
-        } else {
-            let replacement = load(path)?;
-            let bytes = Self::serialized(&replacement)?;
-            (replacement, bytes)
+            Replacement::Import(path) => {
+                let replacement = Self::read_transfer(&path)?;
+                let bytes = Self::serialized(&replacement)?;
+                (replacement, bytes)
+            }
+            Replacement::Set(replacement) => {
+                let bytes = Self::serialized(&replacement)?;
+                (*replacement, bytes)
+            }
         };
         Self::serialized(previous)?;
         let backup = match Self::transfer_bytes(path).and_then(|bytes| {
@@ -125,31 +130,24 @@ impl PreferenceStore {
                 .transpose()?
                 .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
                 .max(std::time::SystemTime::now());
-            match order {
-                BackupOrder::BackupFirst => {
-                    let destination = if retained {
-                        path.with_added_extension("recovery")
-                    } else {
-                        slot
-                    };
-                    crate::atomic_file::publish_durable_at(
-                        &destination,
-                        &backup,
-                        Some(generation),
-                    )?;
+            if !restoring {
+                let destination = if retained {
+                    path.with_added_extension("recovery")
+                } else {
+                    slot
+                };
+                crate::atomic_file::publish_durable_at(&destination, &backup, Some(generation))?;
+            } else {
+                let staging = path.with_added_extension("pending-backup");
+                crate::atomic_file::publish_durable_at(&staging, &backup, Some(generation))?;
+                crate::atomic_file::publish_durable(path, &bytes)?;
+                crate::atomic_file::durable_rename(&staging, &ready)?;
+                #[cfg(test)]
+                check_backup_write()?;
+                if !retained {
+                    crate::atomic_file::durable_rename(&ready, &slot)?;
                 }
-                BackupOrder::ActiveFirst => {
-                    let staging = path.with_added_extension("pending-backup");
-                    crate::atomic_file::publish_durable_at(&staging, &backup, Some(generation))?;
-                    crate::atomic_file::publish_durable(path, &bytes)?;
-                    crate::atomic_file::durable_rename(&staging, &ready)?;
-                    #[cfg(test)]
-                    check_backup_write()?;
-                    if !retained {
-                        crate::atomic_file::durable_rename(&ready, &slot)?;
-                    }
-                    return Ok(replacement);
-                }
+                return Ok(replacement);
             }
         }
         crate::atomic_file::publish_durable(path, &bytes)?;
@@ -224,6 +222,43 @@ fn sync_parent(_path: &Path) -> io::Result<()> {
 }
 
 #[cfg(test)]
+type SnapshotChange = fn(&Path) -> io::Result<()>;
+
+#[cfg(test)]
+thread_local! {
+    static AFTER_SELECTION: std::cell::Cell<Option<SnapshotChange>> = const { std::cell::Cell::new(None) };
+}
+
+#[cfg(test)]
+#[test]
+fn restore_displays_the_snapshot_it_publishes() -> io::Result<()> {
+    let root = tempfile::tempdir()?;
+    let path = root.path().join("preferences.json");
+    let slot = path.with_extension("backup.json");
+    let selected = ReferencePreferences {
+        ui_scale: 125,
+        ..Default::default()
+    };
+    PreferenceStore::export_to(&selected, &slot)?;
+    let bytes = std::fs::read(&slot)?;
+    let mut state = super::super::SettingsState::new(Some(path.clone()));
+    AFTER_SELECTION.set(Some(|candidate| {
+        std::fs::write(
+            candidate,
+            PreferenceStore::serialized(&ReferencePreferences {
+                ui_scale: 140,
+                ..Default::default()
+            })?,
+        )
+    }));
+    state.restore_backup()?;
+    assert!(AFTER_SELECTION.take().is_none());
+    assert_eq!(std::fs::read(&path)?, bytes);
+    assert_eq!(state.preferences.ui_scale, selected.ui_scale);
+    Ok(())
+}
+
+#[cfg(test)]
 #[test]
 fn review_3376_restore_keeps_backup_content_when_backup_write_fails() -> io::Result<()> {
     let root = tempfile::tempdir()?;
@@ -239,13 +274,11 @@ fn review_3376_restore_keeps_backup_content_when_backup_write_fails() -> io::Res
     };
     PreferenceStore::export_to(&active, &path)?;
     PreferenceStore::export_to(&saved, &backup)?;
-    let result =
-        PreferenceStore::publish_replacement(&path, &active, BackupOrder::ActiveFirst, |_| {
-            let replacement = PreferenceStore::read_transfer(&backup)?;
-            std::fs::remove_file(&backup)?;
-            std::fs::create_dir(&backup)?;
-            Ok(replacement)
-        });
+    AFTER_SELECTION.set(Some(|backup| {
+        std::fs::remove_file(backup)?;
+        std::fs::create_dir(backup)
+    }));
+    let result = PreferenceStore::publish_replacement(&path, &active, Replacement::Restore);
     assert!(result.is_err());
     assert_eq!(PreferenceStore::read_transfer(&path)?.ui_scale, 140);
     Ok(())

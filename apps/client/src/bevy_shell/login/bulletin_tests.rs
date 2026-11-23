@@ -234,3 +234,80 @@ fn login_support_link_needs_connection_settings_before_opening_a_browser() -> Te
     );
     Ok(())
 }
+
+#[test]
+fn login_news_projects_today_and_tomorrow_without_moving_the_calendar_cursor() -> TestResult {
+    let mut app = app()?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .login
+        .bulletin
+        .receive(DOCUMENT)?;
+    app.update();
+    let news = body(&mut app)?;
+    assert!(news.contains("Today") && news.contains("Tomorrow"));
+    activate_action(&mut app, Action::Next)?;
+    activate_action(&mut app, Action::News)?;
+    assert_eq!(body(&mut app)?, news);
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let state = &mut owner.login.bulletin;
+        state.news_day = Some(0);
+        state.body = "previous UTC day".into();
+    }
+    app.update();
+    assert_eq!(body(&mut app)?, news);
+    Ok(())
+}
+
+#[test]
+fn login_shows_a_gameplay_hint_with_its_matching_control_icon() -> TestResult {
+    use crate::bevy_shell::game_ui::art::ArtSlot;
+    let mut app = app()?;
+    let hint = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(id, name)| (name.as_str() == "login.featured_hint").then_some(id))
+        .ok_or("featured login hint")?;
+    let children = app.world().get::<Children>(hint).ok_or("hint contents")?;
+    let text = children
+        .iter()
+        .find_map(|id| app.world().get::<Text>(id))
+        .ok_or("hint description")?;
+    let slot = children
+        .iter()
+        .find_map(|id| app.world().get::<ArtSlot>(id))
+        .ok_or("hint illustration")?;
+    assert!(
+        matches!((slot.key.as_str(), text.0.as_str()), ("control-battle", t) if t.contains("Battle"))
+            || matches!((slot.key.as_str(), text.0.as_str()), ("control-spellbook", t) if t.contains("Spellbook"))
+    );
+    let parent = app
+        .world()
+        .get::<ChildOf>(hint)
+        .ok_or("login parent")?
+        .parent();
+    assert!(app.world().get::<LoginDialog>(parent).is_some());
+    Ok(())
+}
+
+#[test]
+fn review_login_menu_handle_hides_and_restores_the_account_actions() -> TestResult {
+    let mut app = app()?;
+    let find = |app: &mut App, key: &str| -> Result<Entity, Box<dyn std::error::Error>> {
+        app.world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find_map(|(id, name)| (name.as_str() == key).then_some(id))
+            .ok_or_else(|| key.to_owned().into())
+    };
+    let bar = find(&mut app, "login.top_bar")?;
+    let toggle = find(&mut app, "login.toggle_top_bar")?;
+    for expected in [Display::None, Display::Flex] {
+        app.world_mut().trigger(Activate { entity: toggle });
+        app.update();
+        assert_eq!(app.world().get::<Node>(bar).ok_or("bar")?.display, expected);
+    }
+    Ok(())
+}

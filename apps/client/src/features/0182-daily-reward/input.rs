@@ -7,6 +7,28 @@ use oteryn_client_ui::daily_reward::{Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn open_reward_store_offers(&self, search: &str) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.store.selected {
+            mailbox.daily_reward.feedback = Some(tr!("Store unavailable in this session"));
+            return false;
+        }
+        if mailbox.store.pending || mailbox.store.confirmed_purchase.is_some() {
+            mailbox.daily_reward.feedback = Some(tr!("Waiting for the server"));
+            return false;
+        }
+        let Some(command) = oteryn_client_ui::store::browse(&mut mailbox.store, "featured", search, 0, 0) else {
+            return false;
+        };
+        mailbox.store.open = true;
+        if self.commands.send(PlayCommand::ServerMechanic(command)).is_err() {
+            mailbox.store.pending = false;
+            mailbox.store.feedback = Some("The session has ended".into());
+        }
+        true
+    }
+
     pub fn daily_reward_close(&self) {
         lock(&self.mailbox).daily_reward.open = false;
     }
