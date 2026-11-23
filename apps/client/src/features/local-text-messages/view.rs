@@ -43,11 +43,53 @@ impl crate::play::mailbox::Mailbox {
 }
 #[cfg(bevy_shell)]
 impl crate::play::PlayLink {
+    #[cfg(test)]
     pub(crate) fn take_window_notices(&self) -> std::collections::VecDeque<WindowNotice> {
         std::mem::take(&mut crate::play::mailbox::lock(&self.mailbox).window_notices)
     }
-    pub(crate) fn chat_scope(&self) -> u64 {
-        crate::play::mailbox::lock(&self.mailbox).chat.scope
+    pub(crate) fn take_screen_notices(
+        &self,
+        cursor: &mut Option<(u64, u64)>,
+    ) -> (bool, std::collections::VecDeque<WindowNotice>) {
+        let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let mut notices = std::mem::take(&mut mailbox.window_notices);
+        let panel = &mailbox.chat;
+        let previous = cursor.replace((panel.scope, panel.received));
+        let reset = previous.is_none_or(|(scope, _)| scope != panel.scope);
+        let received = previous.map_or(0, |(_, n)| n);
+        let count = usize::try_from(panel.received.wrapping_sub(received)).unwrap_or(usize::MAX);
+        if count == 0 || !notices.iter().any(|notice| notice.kind == NoticeKind::Private) {
+            return (reset, notices);
+        }
+        let start = panel.lines.len().saturating_sub(count);
+        let latest = panel.lines[start..]
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, line)| {
+                if let oteryn_session::ChatLine::Private { speaker_name, text } = line
+                    && panel
+                        .recipients
+                        .get(start + index)
+                        .is_none_or(Option::is_none)
+                    && !speaker_name.eq_ignore_ascii_case(&mailbox.party.own_character_name)
+                    && panel.console.communication.visible(line)
+                {
+                    Some(format!("{speaker_name}: {text}"))
+                } else {
+                    None
+                }
+            });
+        // Published history carries recipient metadata for the sender’s own echoes.
+        notices.retain_mut(|notice| {
+            if notice.kind != NoticeKind::Private { return true; }
+            if let Some(text) = &latest {
+                notice.text.clone_from(text);
+                return true;
+            }
+            false
+        });
+        (reset, notices)
     }
     pub(crate) fn look_message(&self) -> Option<LookMessage> {
         crate::play::mailbox::lock(&self.mailbox)

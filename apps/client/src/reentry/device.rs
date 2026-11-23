@@ -133,7 +133,7 @@ impl Reentry {
         })
     }
 
-    #[cfg(bevy_shell)]
+    #[cfg(any(test, bevy_shell))]
     pub(crate) fn start_web_link(
         &self,
         link: crate::web_links::WebLink,
@@ -436,15 +436,14 @@ fn tearing_down_reentry_returns_while_runtime_browser_callback_is_pending()
                     .lock()
                     .is_ok_and(|rx| rx.recv_timeout(Duration::from_secs(5)).is_ok())
         });
-        let entry = Reentry::new(ClientBootstrap::new()?.with_native_login(config));
-        let browser = entry
-            .browser_delivery
-            .opener(entry.client.native_login.as_ref().ok_or("config")?);
-        let (send, result) = mpsc::channel();
-        entry
-            .client
-            .runtime
-            .spawn(async move { send.send(browser("pending")) })?;
+        let mut entry = Reentry::new(ClientBootstrap::new()?.with_native_login(config));
+        assert!(entry.request());
+        started.recv_timeout(Duration::from_secs(5))?;
+        // Also observe a browser result directly while admission owns the runtime
+        // callback, to prove the epoch suppresses delivery after teardown.
+        let (_, result) = entry
+            .start_web_link(crate::web_links::WebLink::CookiePolicy)
+            .ok_or("link")?;
         started.recv_timeout(Duration::from_secs(5))?;
         let start = Instant::now();
         if explicit_shutdown {
@@ -457,6 +456,7 @@ fn tearing_down_reentry_returns_while_runtime_browser_callback_is_pending()
             "teardown took {:?}",
             start.elapsed()
         );
+        release.send(())?;
         release.send(())?;
         assert!(!result.recv_timeout(Duration::from_secs(5))?);
     }

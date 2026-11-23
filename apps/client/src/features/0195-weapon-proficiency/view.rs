@@ -4,16 +4,19 @@ impl PlayLink {
     #[cfg(bevy_shell)]
     pub(crate) fn equipped_weapon_progress(&self, observed: &mut Option<u32>) -> Option<u32> {
         let mut mailbox = lock(&self.mailbox);
-        let weapon = mailbox
-            .inventory
-            .inventory
-            .as_ref()
-            .and_then(|inventory| {
-                inventory.equipment.iter().find(|entry| {
-                    entry.slot == oteryn_session::item_movement::EquipmentSlot::RightHand
-                })
-            })
-            .map(|entry| entry.item.item_definition_ref.get());
+        use oteryn_session::item_movement::EquipmentSlot;
+        let weapon = mailbox.inventory.inventory.as_ref().and_then(|inventory| {
+            let equipped = |slot| inventory.equipment.iter()
+                .find(|entry| entry.slot == slot)
+                .map(|entry| entry.item.item_definition_ref.get());
+            let left = equipped(EquipmentSlot::LeftHand);
+            let right = equipped(EquipmentSlot::RightHand);
+            // A confirmed left-hand weapon can be paired with an off-hand item.
+            left.filter(|id| mailbox.weapon_proficiency.catalogue.as_ref()
+                .is_some_and(|page| page.entries.iter().any(|entry| entry.definition == *id)))
+                .or(right)
+                .or(left)
+        });
         if !mailbox.weapon_proficiency.selected || mailbox.inventory_shutdown {
             *observed = None;
             return None;

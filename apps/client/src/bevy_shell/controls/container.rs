@@ -62,12 +62,6 @@ impl HostOwner {
             ContainerTool::Sort => play.link.container_sort_input(&events),
         };
         // The Depot already has its own retained window (game_ui::depot) over `depot_panel().open`.
-        if opened && tool == ContainerTool::Sort {
-            let recursive = self.settings.preferences.gameplay.sort_recursive
-                && !play.link.container_manual_sort_active();
-            play.link
-                .container_sort_edit(3, u8::from(recursive).to_string());
-        }
         if opened && tool != ContainerTool::Depot {
             self.controls.container_tool = Some(ContainerToolRequest {
                 generation: self.generation(),

@@ -88,6 +88,8 @@ fn parity_a_container_sort_controls_dispatch_both_directions()
     ] {
         exercise_sort(descending, recursive, recursive, warn, stale)?;
     }
+    exercise_sort(true, true, false, true, false)?;
+    exercise_sort(false, false, true, true, false)?;
     Ok(())
 }
 

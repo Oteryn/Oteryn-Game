@@ -414,6 +414,15 @@ fn expert_mode_control_toggles_only_the_four_inventory_modes() -> TestResult {
 
 #[test]
 fn equipping_a_right_hand_weapon_refreshes_proficiency_from_status_bar() -> TestResult {
+    equipped_hand_refreshes_proficiency(oteryn_session::item_movement::EquipmentSlot::RightHand)
+}
+#[test]
+fn equipping_a_left_hand_weapon_refreshes_proficiency_from_status_bar() -> TestResult {
+    equipped_hand_refreshes_proficiency(oteryn_session::item_movement::EquipmentSlot::LeftHand)
+}
+fn equipped_hand_refreshes_proficiency(
+    slot: oteryn_session::item_movement::EquipmentSlot,
+) -> TestResult {
     let (mut app, mut commands, outbox) = app()?;
     outbox.bevy_proficiency_initialize();
     let item = oteryn_session::ItemEntry {
@@ -426,10 +435,7 @@ fn equipping_a_right_hand_weapon_refreshes_proficiency_from_status_bar() -> Test
     crate::play::PlayLink::bevy_items_fixture(
         &outbox,
         Some(oteryn_session::CharacterInventory {
-            equipment: vec![oteryn_session::item_movement::EquippedItem {
-                slot: oteryn_session::item_movement::EquipmentSlot::RightHand,
-                item,
-            }],
+            equipment: vec![oteryn_session::item_movement::EquippedItem { slot, item }],
             ..default()
         }),
         None,
@@ -491,7 +497,7 @@ fn equipping_a_right_hand_weapon_refreshes_proficiency_from_status_bar() -> Test
         &outbox,
         Some(oteryn_session::CharacterInventory {
             equipment: vec![oteryn_session::item_movement::EquippedItem {
-                slot: oteryn_session::item_movement::EquipmentSlot::RightHand,
+                slot,
                 item: replacement,
             }],
             ..default()

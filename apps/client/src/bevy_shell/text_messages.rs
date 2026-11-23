@@ -39,7 +39,7 @@ struct ScreenMessages {
     dismissals: u64,
     last_sequence: Option<u64>,
     namespace: u64,
-    chat_scope: Option<u64>,
+    chat_cursor: Option<(u64, u64)>,
     last_look: Option<u64>,
 }
 
@@ -153,8 +153,8 @@ fn project(
             };
         }
         state.observe(&play.view, now);
-        let scope = play.link.chat_scope();
-        if state.chat_scope.replace(scope) != Some(scope)
+        let (reset, notices) = play.link.take_screen_notices(&mut state.chat_cursor);
+        if reset
             && state.slots[Area::Private as usize]
                 .as_ref()
                 .is_some_and(|slot| {
@@ -164,13 +164,13 @@ fn project(
         {
             state.slots[Area::Private as usize] = None;
         }
-        for notice in play.link.take_window_notices() {
+        for notice in notices {
             if !notice.kind.visible(&owner.settings.preferences) {
                 continue;
             }
             let (area, colour) = match notice.kind {
                 crate::play::feature_local_text_messages::view::NoticeKind::Private => {
-                    (Area::Private, [96, 250, 250])
+                    (Area::Private, [95, 247, 247])
                 }
                 _ => (Area::Bottom, [255; 3]),
             };
@@ -201,7 +201,8 @@ fn project(
             Area::Loot => continue,
             Area::Top | Area::Bottom => banners,
             Area::Center => popups,
-            Area::Look | Area::Private => true,
+            Area::Look => true,
+            Area::Private => owner.settings.preferences.game_window.private_messages,
         };
         let message = state.visible(area.0, now).filter(|message| {
             enabled
