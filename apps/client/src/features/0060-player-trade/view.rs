@@ -9,6 +9,12 @@ pub use presentation::{
     trade_picker_available,
 };
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn trade_partner_name(&self, partner: oteryn_session::EntityRef) -> Option<String> {
+        lock(&self.mailbox).battle.rows.iter()
+            .find(|row| row.kind == oteryn_session::EntityKind::Player && row.entity == partner)?
+            .display_name?.as_str().ok().map(str::to_owned)
+    }
     #[must_use]
     pub fn player_trade_panel(&self) -> PlayerTradePanel {
         lock(&self.mailbox).player_trade.clone()

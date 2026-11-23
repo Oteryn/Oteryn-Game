@@ -81,3 +81,6 @@ impl Outbox {
 
 #[path = "protocol/details.rs"]
 pub(in crate::play) mod details;
+
+#[path = "protocol/hands.rs"]
+mod hands;

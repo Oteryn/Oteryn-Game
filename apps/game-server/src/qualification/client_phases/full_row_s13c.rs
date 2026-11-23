@@ -197,6 +197,17 @@ fn same_roster(a: &parties::PartyResult, b: &parties::PartyResult) -> bool {
     a.members.len() == 2 && b.members.len() == 2 && names(a) == names(b)
 }
 
+fn cast_requirement(disposition: casts::SpellCastDisposition) -> &'static str {
+    use casts::SpellCastDisposition as D;
+    match disposition {
+        D::LevelTooLow => "player-earned-party-spell-level",
+        D::NotEnoughMana => "party-spell-mana",
+        D::MagicLevelTooLow => "player-trained-party-spell-magic-level",
+        D::NotAvailable => "learned-party-spell-and-current-premium",
+        _ => "cast-and-mana-delta",
+    }
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -293,7 +304,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
     };
-    let index = spell_index(&spell_book()?, words)?;
+    let book = spell_book()?;
+    let index = spell_index(&book, words)?;
+    let spell = book.indexed(index).ok_or("indexed party spell absent")?;
     let before = caster
         .actor_vitals()
         .copied()
@@ -308,7 +321,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         || after.mana >= before.mana
     {
         return Err(format!(
-            "step=cast observed={cast:?} before={before:?} after={after:?} need=cast-and-mana-delta"
+            "step=cast spell={words:?} required_level={} mana={:?} premium={} learned_required={} observed={cast:?} before={before:?} after={after:?} need={}",
+            spell.level, spell.mana, spell.premium, spell.learning_required, cast_requirement(cast.disposition)
         )
         .into());
     }
@@ -372,6 +386,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn starter_spell_gate_identifies_which_prerequisite_failed() {
+        assert_eq!(
+            cast_requirement(casts::SpellCastDisposition::LevelTooLow),
+            "player-earned-party-spell-level"
+        );
+        assert_eq!(
+            cast_requirement(casts::SpellCastDisposition::NotEnoughMana),
+            "party-spell-mana"
+        );
+    }
+
     #[test]
     fn row_requires_every_unique_step() {
         let mut row = Row::new();

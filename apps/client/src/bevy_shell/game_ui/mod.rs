@@ -5,6 +5,7 @@ mod bestiary;
 mod bosstiary;
 mod bug_report;
 mod chat;
+mod clipboard_writer;
 mod coin_market;
 mod cyclopedia;
 mod cyclopedia_items;

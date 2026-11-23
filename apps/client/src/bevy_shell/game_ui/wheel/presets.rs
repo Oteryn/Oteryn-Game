@@ -50,6 +50,7 @@ pub(super) fn render(
         (2, "Delete selected"),
         (3, "Export code"),
         (4, "Export URL"),
+        (7, "Export Tibia code"),
         (5, "Import code / URL"),
     ] {
         let entity = widgets::action_button(

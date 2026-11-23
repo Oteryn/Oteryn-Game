@@ -100,7 +100,7 @@ pub(super) fn equipment_grid(
                 ItemMoveDestination::Equipment(slot) => Location::Equipment(slot),
                 _ => Location::Inventory,
             };
-            slot_node(
+            let cell = slot_node(
                 commands,
                 skins,
                 grid,
@@ -113,6 +113,9 @@ pub(super) fn equipment_grid(
                 snapshot.selection,
                 SILHOUETTES.get(index).copied(),
             );
+            commands
+                .entity(cell)
+                .insert(super::super::expiry::EquipmentCell);
         } else {
             let cell = commands
                 .spawn((
@@ -216,7 +219,7 @@ pub(super) fn slot_node(
     slot: Slot,
     selection: Option<Slot>,
     silhouette: Option<&'static str>,
-) {
+) -> Entity {
     let selected = selection.is_some_and(|selected| {
         selected.item.is_some()
             && selected.item.map(|item| item.handle) == slot.item.map(|item| item.handle)
@@ -270,6 +273,7 @@ pub(super) fn slot_node(
         commands.entity(art).insert(Pickable::IGNORE);
         commands.entity(entity).add_child(art);
     }
+    entity
 }
 
 pub(super) fn container(

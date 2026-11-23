@@ -32,7 +32,8 @@ async fn command(
 }
 
 fn decoded(bytes: &[u8], step: &str) -> TestResult<Reply> {
-    wire::decode_reply(bytes).map_err(|error| format!("P03 {step} malformed reply: {error:?}").into())
+    wire::decode_reply(bytes)
+        .map_err(|error| format!("P03 {step} malformed reply: {error:?}").into())
 }
 
 async fn accepted(
@@ -41,8 +42,15 @@ async fn accepted(
     step: &str,
 ) -> TestResult<Reply> {
     let response = command(client, request).await?;
-    if !matches!(response.status, CommandStatus::Accepted | CommandStatus::DuplicateReplay) {
-        return Err(format!("P03 step={step} observed-command-status={:?}", response.status).into());
+    if !matches!(
+        response.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
+        return Err(format!(
+            "P03 step={step} observed-command-status={:?}",
+            response.status
+        )
+        .into());
     }
     let receipt = decoded(&response.payload, step)?;
     if receipt.status != 0 {
@@ -114,22 +122,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    let from = tile(client.world_spatial().actor_position)?;
     let (index, creature) = draw
         .creatures
         .iter()
         .enumerate()
         .find(|(_, creature)| {
-            metadata.spawns.sources.iter().any(|source| {
-                source.points.iter().any(|point| {
-                    metadata
-                        .spawns
-                        .creatures
-                        .get(point.creature as usize)
-                        .is_some_and(|entry| entry.key == creature.as_str())
-                })
-            })
+            full_row_p05::has_reachable_spawn(world, from, &metadata.spawns, creature)
         })
-        .ok_or("P03 step=select observed=no-drawn-creature-with-compiled-spawn")?;
+        .ok_or_else(|| {
+            format!(
+                "P03 step=select need=drawn-race-with-reachable-authored-spawn draw={:?}",
+                draw.creatures
+            )
+        })?;
+    let baseline =
+        full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, creature).await?;
     let active = accepted(
         &mut client,
         wire::Request::Select {
@@ -151,11 +159,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("P03 step=select observed={selected:?}").into());
     }
 
-    let bonus_reroll = command(
-        &mut client,
-        wire::Request::BonusReroll { slot: number },
-    )
-    .await?;
+    let bonus_reroll = command(&mut client, wire::Request::BonusReroll { slot: number }).await?;
     let selected = if matches!(
         bonus_reroll.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
@@ -216,16 +220,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("P03 step=refusal observed=active-state-mutated".into());
     }
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.selected).await?;
-    client_hunt::hunt(&mut client).await?;
+    let measured =
+        full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, &selected.selected)
+            .await?;
     // Keep answering liveness while the interval runs out; a bare sleep lets
     // the server drop the session as unresponsive.
     let until = tokio::time::Instant::now() + Duration::from_secs(61);
     while tokio::time::Instant::now() < until {
         client.service_liveness(Duration::from_millis(500)).await?;
     }
-    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.selected).await?;
-    client_hunt::hunt(&mut client).await?;
+    full_row_p05::hunt_for_race(&mut client, world, &metadata.spawns, &selected.selected).await?;
     let checkpoint = query(&mut client, "effect-checkpoint").await?;
     let checkpoint = slot(&checkpoint, number)?.clone();
     if checkpoint.state != 2
@@ -238,11 +242,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("P03 step=effect-checkpoint observed={checkpoint:?}").into());
     }
 
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("P03 step=logout observed=refused".into());
-    }
+    full_row_p05::logout_after_combat(&mut client).await?;
     drop(client);
     let mut client = connect_world(clients, 0xa2).await?;
     if client.join_snapshot().game_session_id == initial_session {
@@ -256,27 +256,59 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    full_row_p05::logout_after_combat(&mut client).await?;
+    if checkpoint.bonus == 3
+        && baseline.race == measured.race
+        && baseline.raw_xp == measured.raw_xp
+        && baseline.gained_xp == baseline.raw_xp
+        && baseline.raw_xp > 0
+        && let Some(award) = baseline
+            .raw_xp
+            .checked_mul(100 + u64::from(checkpoint.percent))
+            .map(|n| n / 100)
+        && award > baseline.gained_xp
+        && measured.gained_xp == award
     {
-        return Err("P03 step=final-logout observed=refused".into());
+        evidence(&format!(
+            "P03_CHECK step=prey-xp-effect raw={} credited={} percent={}",
+            measured.raw_xp, award, checkpoint.percent
+        ));
+        return Ok(());
     }
-    Ok(())
+    Err(format!(
+        "step=combat-effect need=measured-bonus-{}-on-selected-race-{};checkpoint-proven;source=crates/gameplay/dispatch/src/gameplay_transport/attack/drain.rs:2401",
+        checkpoint.bonus, checkpoint.selected
+    ).into())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients)))
+            .await;
     let error = match result {
         Ok(Ok(())) => None,
         Ok(Err(error)) => Some(error.to_string()),
         Err(_) => Some("step=journey observed=timeout".to_owned()),
     };
     let status = if error.is_none() { "PASS" } else { "FAIL" };
+    match &error {
+        Some(error) => evidence(&format!(
+            "P03_GAP status=FAIL observed={}",
+            error.replace(char::is_whitespace, "_")
+        )),
+        None => evidence("P03_GAP status=PASS"),
+    }
     let evidence_value = error.map(|error| {
         error
             .chars()
-            .map(|ch| if ch.is_ascii_alphanumeric() || "-_:./".contains(ch) { ch } else { '-' })
+            .map(|ch| {
+                if ch.is_ascii_alphanumeric() || "-_:./".contains(ch) {
+                    ch
+                } else {
+                    '-'
+                }
+            })
             .collect::<String>()
     });
     evidence(&format!(
@@ -318,4 +350,24 @@ mod tests {
         left.hunting_seconds -= 60;
         assert!(!same_checkpoint(&left, &right));
     }
+}
+
+#[cfg(test)]
+#[test]
+fn row_03_publishes_a_gap_for_an_unproven_journey() {
+    assert!(
+        include_str!("full_row_p03.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(production, _)| production.contains("P03_GAP status="))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p03() {
+    assert!(
+        include_str!("full_row_p03.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("hunt_for_race"))
+    );
 }

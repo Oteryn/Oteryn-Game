@@ -513,3 +513,53 @@ fn action_bar_options_show_one_bar_at_a_time() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn console_display_checkboxes_edit_independent_options() -> TestResult {
+    let mut app = app(Page::Console, None)?;
+    for id in ["console.levels", "console.timestamps", "console.seconds"] {
+        let checkbox = app
+            .world_mut()
+            .spawn(Control::Check(id))
+            .observe(toggle)
+            .id();
+        app.world_mut().trigger(ValueChange {
+            source: checkbox,
+            value: true,
+            is_final: true,
+        });
+        let owner = app.world().non_send::<HostOwner>();
+        let row = metadata::find(Page::Console, id).ok_or(id)?;
+        assert_eq!(
+            row.value(owner.preferences_draft().ok_or("draft")?),
+            Value::Check(true)
+        );
+    }
+    let apply = app.world_mut().spawn(Control::Apply).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: apply });
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        Default::default(),
+        vec![oteryn_session::ChatLine::Private {
+            speaker_name: "Ada".into(),
+            text: "test".into(),
+        }],
+    );
+    app.world()
+        .non_send::<HostOwner>()
+        .settings
+        .sync_local_preferences(&link);
+    let display = link.chat_panel().console.display;
+    assert_eq!(display.timestamp(3661), "[01:01:01 UTC] ");
+    let crate::combat_input::PlayCommand::Feature(query) = commands.try_recv()? else {
+        return Err("level query".into());
+    };
+    assert_eq!(
+        oteryn_client_runtime::chat::console::decode_names(&query.payload),
+        Some(vec!["Ada".to_string()])
+    );
+    Ok(())
+}
+
+mod sound;

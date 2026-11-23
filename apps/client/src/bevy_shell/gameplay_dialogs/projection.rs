@@ -159,7 +159,7 @@ pub(super) fn project(
         source::dialog_caption(&mut commands, window, tr!("Logout"), skin.font.clone());
         let text = commands
             .spawn(source::text(
-                "Log out of the game?",
+                if matches!(request.content, Content::StalledLogout(_)) { "The connection is not responding. Disconnect now? Your character may remain online." } else { "Log out of the game?" },
                 source::font(skin.font.clone(), false),
             ))
             .id();
@@ -170,7 +170,11 @@ pub(super) fn project(
             window,
             request.id,
             tr!("Ok"),
-            Choice::Logout,
+            if matches!(request.content, Content::StalledLogout(_)) {
+                Choice::ForceLogout
+            } else {
+                Choice::Logout
+            },
         );
     }
     let cancel = button(
