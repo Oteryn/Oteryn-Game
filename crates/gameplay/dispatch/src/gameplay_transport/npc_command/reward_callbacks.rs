@@ -395,10 +395,10 @@ pub(super) fn unhandled_confirmation(
     ) else {
         return false;
     };
-    let text = if sinatuki_keyword(&admission.states.chat, &context.2, &intent.text) {
-        "nupi".to_owned()
-    } else {
+    let text = if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
         text
+    } else {
+        callback_keyword(&admission.states.chat, &context.2, &intent.text)
     };
     if admission.has_pending_paid_confirmation(command, intent, &context) {
         return false;
@@ -435,22 +435,33 @@ pub(super) fn unhandled_confirmation(
     })
 }
 
-fn sinatuki_keyword(chat: &ChatRuntime, npc: &str, text: &str) -> bool {
-    npc == crate::durability::npc_trade::sinatuki_exchange::NPC
-        && super::npc_item_exchanges::sinatuki_default_keyword(chat, text)
+/// Crystal MsgContains rejects a keyword if any occurrence follows a Lua %w byte.
+pub(super) fn crystal_keyword(text: &str, word: &str) -> bool {
+    let mut matches = text.match_indices(word);
+    let allowed = |(index, _): (usize, &str)| {
+        index == 0 || !text.as_bytes()[index - 1].is_ascii_alphanumeric()
+    };
+    matches.next().is_some_and(allowed) && matches.all(allowed)
 }
 
 fn callback_keyword(chat: &ChatRuntime, npc: &str, text: &str) -> String {
-    if sinatuki_keyword(chat, npc, text) {
-        return "nupi".into();
-    }
     use oteryn_gameplay_quests::quest::classic_talk;
+    if npc == crate::durability::npc_trade::sinatuki_exchange::NPC {
+        if super::npc_item_exchanges::sinatuki_default_keyword(chat, text) {
+            return "nupi".into();
+        }
+        return String::new();
+    }
     if npc == classic_talk::ROTTIN {
         return classic_talk::rottin_keyword(text)
             .unwrap_or_default()
             .into();
     }
-    text.trim().to_ascii_lowercase()
+    let trimmed = text.trim();
+    if npc == "oteryn:npc.a_sweaty_cyclops" && trimmed.eq_ignore_ascii_case("yes") {
+        return text.to_ascii_lowercase();
+    }
+    trimmed.to_ascii_lowercase()
 }
 
 fn rottin_dialogue(

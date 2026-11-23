@@ -20,6 +20,7 @@ pub(super) const GUARDIAN: &str = "qc-twenty-miles-wandering-guardian";
 pub(super) const TRADE: &str = "qc-twenty-miles-open-trade";
 pub(super) const GOLD: &str = "qc-twenty-miles-merged-gold";
 pub(super) const SPLIT_GOLD: &str = "qc-twenty-miles-split-gold";
+pub(super) const EARLIER_SPLIT_GOLD: &str = "qc-twenty-miles-earlier-split-gold";
 pub(super) const RESUME: &str = "qc-twenty-miles-resume";
 pub(super) const START: Position = Position {
     x: 33550,
@@ -65,7 +66,7 @@ const NPCS: [(&str, Position); 5] = [
 ];
 
 pub(super) fn matches(name: &str) -> bool {
-    matches!(name, CHAIN | RESUME | GUARDIAN | TRADE | GOLD | SPLIT_GOLD)
+    matches!(name, CHAIN | RESUME | GUARDIAN | TRADE | GOLD | SPLIT_GOLD | EARLIER_SPLIT_GOLD)
 }
 
 fn source(callback: &Callback) -> Option<Position> {
@@ -773,7 +774,7 @@ pub(super) async fn exercise(
         assert_eq!(track(h, &energy).await?, 0);
     }
     say!(1, "guardian-skulls-laid", ["mission", "yes"], true);
-    if matches!(name, GOLD | SPLIT_GOLD) {
+    if matches!(name, GOLD | SPLIT_GOLD | EARLIER_SPLIT_GOLD) {
         let gold = "oteryn:item.tibia.i21746";
         let issued = only_live_item(h, gold).await?;
         move_recovery_item(owner, admitted, issued, 22_010, true, None).await?;
@@ -781,7 +782,7 @@ pub(super) async fn exercise(
         sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
         let receiver = super::fixture::id(216);
         sqlx::raw_sql(sqlx::AssertSqlSafe(
-            crate::durability::item_fee_burn::test_support::item(216, gold, "definition-r1", 1),
+            crate::durability::item_fee_burn::test_support::item(216, gold, "definition-r1", if name == EARLIER_SPLIT_GOLD { 2 } else { 1 }),
         )).execute(&mut *tx).await?;
         sqlx::query(
             "INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id)
@@ -789,6 +790,18 @@ pub(super) async fn exercise(
              FROM game_item_container_entries GROUP BY character_id,parent_item_instance_id,world_id",
         ).bind(receiver.as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
+        if name == EARLIER_SPLIT_GOLD {
+            move_recovery_item(owner, admitted, receiver, 22_011, true, Some(1)).await?;
+            move_recovery_item(owner, admitted, issued, 22_012, false, None).await?;
+            move_recovery_item(owner, admitted, receiver, 22_013, true, None).await?;
+            expire_dropped_item(h, receiver).await?;
+            let unrelated = only_live_item(h, gold).await?;
+            assert_ne!(unrelated, issued);
+            assert_ne!(unrelated, receiver);
+            say!(1, "recover-cursed-gold", ["lost cursed gold"], true);
+            stage(h, 3).await?;
+            return Ok(());
+        }
         move_recovery_item(owner, admitted, issued, 22_011, false, None).await?;
         assert_eq!(only_live_item(h, gold).await?, receiver);
         if name == SPLIT_GOLD {

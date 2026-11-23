@@ -31,8 +31,9 @@ pub(super) async fn missing(
     // The root lock serializes this Character's reward writers. Lock the exact
     // issued instances too, including those in other players' or Ground custody.
     // Follow quantity transfers in Item Loop receipts, including fresh split
-    // instances and merges where the source remains live. UNION visits each
-    // instance once even if later moves transfer units back to an ancestor.
+    // instances and merges where the source remains live. Follow only transfers
+    // from revisions at or after the issuance entered that particular stack.
+    // An instance can be reached at multiple revisions; count its live quantity once.
     // Select live descendants in the CTE, then lock by identity so a concurrent
     // retirement of a selected descendant still refuses this attempt.
     let active: Vec<i64> = sqlx::query_scalar(
@@ -43,19 +44,21 @@ pub(super) async fn missing(
            UNION
            SELECT mint_transaction_id FROM game_quest_reward_sources
            WHERE character_id=encode($1,'hex')::uuid AND transition_key=ANY($3::text[])
-         ), lineage(item_instance_id) AS (
-           SELECT r.item_instance_id FROM issues JOIN game_reward_claim_mint_receipts r USING(transaction_id)
+         ), lineage(item_instance_id, arrival_revision) AS (
+           SELECT r.item_instance_id, 1::numeric
+           FROM issues JOIN game_reward_claim_mint_receipts r USING(transaction_id)
            WHERE r.character_id=encode($1,'hex')::uuid
            UNION
-           SELECT receiver.item_instance_id
+           SELECT receiver.item_instance_id, COALESCE(receiver.state_revision_before + 1, 1)
            FROM lineage JOIN game_item_loop_move_lines source USING(item_instance_id)
            JOIN game_item_loop_move_lines receiver
              ON receiver.transaction_id=source.transaction_id
              AND receiver.quantity_after > receiver.quantity_before
            WHERE source.definition_production_key=$4
+             AND source.state_revision_before >= lineage.arrival_revision
              AND source.quantity_after < source.quantity_before
          ), surviving AS MATERIALIZED (
-           SELECT item_instance_id FROM lineage JOIN game_item_instances USING(item_instance_id)
+           SELECT DISTINCT item_instance_id FROM lineage JOIN game_item_instances USING(item_instance_id)
            WHERE lifecycle=1
          )
          SELECT i.quantity FROM surviving JOIN game_item_instances i USING(item_instance_id)

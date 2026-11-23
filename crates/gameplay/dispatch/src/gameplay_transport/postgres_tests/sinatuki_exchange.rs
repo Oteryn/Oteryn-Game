@@ -37,6 +37,7 @@ const WRONG: &str = "oteryn:item.tibia.i3578";
 const HAND_IN: &str =
     "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>";
 const REWARD: &str = "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>";
+const GIGGLE: &str = "Kisavuta! <giggles>";
 const TRACKS: [(&str, i64); 2] = [
     (
         "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
@@ -48,34 +49,53 @@ const TRACKS: [(&str, i64); 2] = [
     ),
 ];
 
+#[derive(Clone, Copy)]
+enum Case {
+    Trout,
+    PerchResume,
+    EmbeddedKeyword,
+    KeywordPrefix,
+    MissingDonorPrerequisite,
+}
+
 #[test]
 fn sinatuki_exchange_postgres_dispatch() -> TestResult {
-    run_case("sinatuki_exchange_postgres_dispatch", false)
+    run_case("sinatuki_exchange", Case::Trout)
 }
 
 #[test]
 fn sinatuki_exchange_postgres_resume() -> TestResult {
-    run_case("sinatuki_exchange_postgres_resume", true)
+    run_case("sinatuki_resume", Case::PerchResume)
 }
 
-fn run_case(name: &'static str, resume: bool) -> TestResult {
+#[test]
+fn sinatuki_exchange_rejects_an_embedded_occurrence() -> TestResult {
+    run_case("sinatuki_embedded_occurrence", Case::EmbeddedKeyword)
+}
+
+#[test]
+fn sinatuki_exchange_accepts_a_keyword_prefix() -> TestResult {
+    run_case("sinatuki_keyword_prefix", Case::KeywordPrefix)
+}
+
+#[test]
+fn sinatuki_exchange_missing_donor_prerequisite_is_refused_partial() -> TestResult {
+    run_case("sinatuki_donor_partial", Case::MissingDonorPrerequisite)
+}
+
+fn run_case(name: &'static str, case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || scenario(resume))?;
+    super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || scenario(name, case))?;
     eprintln!("POSTGRES_CASE_COMPLETED {name} {:?}", started.elapsed());
     Ok(())
 }
 
-fn scenario(resume: bool) -> TestResult {
+fn scenario(name: &str, case: Case) -> TestResult {
     run(async move |admin| {
-        let label = if resume {
-            "sinatuki_resume"
-        } else {
-            "sinatuki_exchange"
-        };
-        let h = Harness::create_with_admission_seed(admin, label, true, false).await?;
+        let h = Harness::create_with_admission_seed(admin, name, true, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -109,9 +129,15 @@ fn scenario(resume: bool) -> TestResult {
                 .catalogue()
                 .clone(),
         ));
+        let tracks = if matches!(case, Case::MissingDonorPrerequisite) {
+            &TRACKS[..1]
+        } else {
+            &TRACKS
+        };
         seed(
             &h,
             owner.quest_catalogue.as_deref().ok_or("quest catalogue")?,
+            tracks,
         )
         .await?;
         deps.initialize(&owner).await;
@@ -158,20 +184,43 @@ fn scenario(resume: bool) -> TestResult {
             &mut admitted,
             npc,
             "chuqua",
-            &["Chuqua jamjam!! Tiyopa Sinatuki?"],
+            Some(&["Chuqua jamjam!! Tiyopa Sinatuki?"]),
         )
         .await?;
+        let keyword_case: Option<(&str, Option<&[&str]>)> = match case {
+            Case::EmbeddedKeyword => Some(("nupi anupi", Some(&[]))),
+            Case::KeywordPrefix => Some(("nupix", Some(&[REWARD]))),
+            Case::MissingDonorPrerequisite => Some(("nupi", None)),
+            Case::Trout | Case::PerchResume => None,
+        };
+        if let Some((text, reply)) = keyword_case {
+            add_item(&h, 201, TROUT, 100, 1).await?;
+            talk(&mut owner, &mut admitted, npc, text, reply).await?;
+            let traded = matches!(case, Case::KeywordPrefix);
+            assert_inventory(&h, if traded { [0, 0, 5] } else { [100, 0, 0] }).await?;
+            assert_eq!(
+                quest_state(&h).await?,
+                if traded {
+                    (Some(2), true, 1)
+                } else {
+                    (None, false, 0)
+                }
+            );
+            drop(seal);
+            return h.cleanup().await;
+        }
+        let resume = matches!(case, Case::PerchResume);
         let fish = if resume { PERCH } else { TROUT };
 
         if !resume {
             add_item(&h, 201, WRONG, 100, 1).await?;
-            talk(&mut owner, &mut admitted, npc, "nupi", &[]).await?;
+            talk(&mut owner, &mut admitted, npc, "nupi", Some(&[GIGGLE])).await?;
             assert_eq!(carried(&h, WRONG).await?, 100, "wrong item is kept");
             assert_inventory(&h, [0, 0, 0]).await?;
             assert_eq!(quest_state(&h).await?, (None, false, 0));
         }
         add_item(&h, 202, fish, 98, 2).await?;
-        talk(&mut owner, &mut admitted, npc, "nupi", &[]).await?;
+        talk(&mut owner, &mut admitted, npc, "nupi", Some(&[GIGGLE])).await?;
         assert_eq!(carried(&h, fish).await?, 98, "short hand-in is kept");
         assert_eq!(quest_state(&h).await?, (None, false, 0));
 
@@ -181,7 +230,11 @@ fn scenario(resume: bool) -> TestResult {
             &mut admitted,
             npc,
             if resume { "nupi please" } else { "nupi" },
-            &[if resume { REWARD } else { HAND_IN }],
+            Some(if resume {
+                &[GIGGLE, REWARD]
+            } else {
+                &[HAND_IN]
+            }),
         )
         .await?;
         assert_inventory(&h, [0, 0, 5]).await?;
@@ -193,7 +246,7 @@ fn scenario(resume: bool) -> TestResult {
                 &mut admitted,
                 npc,
                 "bye",
-                &["Good bye, Fixture Hero."],
+                Some(&["Good bye, Fixture Hero."]),
             )
             .await?;
             // Re-admit the cold QuestState while retaining the session's wire command history.
@@ -209,12 +262,13 @@ fn scenario(resume: bool) -> TestResult {
             owner.admit_quest_session(&admitted).await;
         }
 
+        let reward: &[&str] = if resume { &[GIGGLE, REWARD] } else { &[REWARD] };
         add_item(&h, 204, fish, 100, 4).await?;
-        talk(&mut owner, &mut admitted, npc, "nupi", &[REWARD]).await?;
+        talk(&mut owner, &mut admitted, npc, "nupi", Some(reward)).await?;
         assert_eq!(carried(&h, fish).await?, 0);
         assert_eq!(carried(&h, SHARD).await?, 10);
         add_item(&h, 205, fish, 100, 5).await?;
-        talk(&mut owner, &mut admitted, npc, "nupi", &[REWARD]).await?;
+        talk(&mut owner, &mut admitted, npc, "nupi", Some(reward)).await?;
         assert_eq!(carried(&h, fish).await?, 0);
         assert_eq!(carried(&h, SHARD).await?, 15);
         assert_eq!(quest_state(&h).await?, (Some(2), true, 1));
@@ -310,7 +364,7 @@ async fn talk(
     admitted: &mut AdmittedSession,
     npc: EntityRef,
     text: &str,
-    expected_reply: &[&str],
+    expected_reply: Option<&[&str]>,
 ) -> TestResult {
     owner.clock_origin = owner
         .clock_origin
@@ -365,7 +419,7 @@ async fn talk(
                 MessageType::CommandResult => {
                     let command = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
                         .map_err(debug)?;
-                    let disposition = if command.command_id == last && expected_reply.is_empty() {
+                    let disposition = if command.command_id == last && expected_reply.is_none() {
                         NpcIntentDisposition::Rejected
                     } else {
                         NpcIntentDisposition::Ok
@@ -389,7 +443,7 @@ async fn talk(
             return Err("missing Sinatuki greeting".into());
         };
         assert_eq!(greeting, "Greetings, Fixture Hero.");
-        assert_eq!(reply, expected_reply, "{text}");
+        assert_eq!(reply, expected_reply.unwrap_or_default(), "{text}");
         Ok(())
     };
     let (end, result) = tokio::time::timeout(
@@ -404,12 +458,12 @@ async fn talk(
     result
 }
 
-async fn seed(h: &Harness, catalogue: &QuestStateCatalogue) -> TestResult {
+async fn seed(h: &Harness, catalogue: &QuestStateCatalogue, tracks: &[(&str, i64)]) -> TestResult {
     let mut fixture = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *fixture)
         .await?;
-    for (track, value) in TRACKS {
+    for &(track, value) in tracks {
         let quest = &catalogue.track(track).ok_or("prerequisite track")?.quest;
         let hash = catalogue
             .definition_hash(quest)

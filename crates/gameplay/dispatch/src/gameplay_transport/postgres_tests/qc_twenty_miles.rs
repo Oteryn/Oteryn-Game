@@ -26,6 +26,11 @@ fn qc_twenty_miles_split_gold_recovery() -> TestResult {
 }
 
 #[test]
+fn qc_twenty_miles_ignores_splits_before_gold_arrives() -> TestResult {
+    run(quest::EARLIER_SPLIT_GOLD)
+}
+
+#[test]
 fn qc_twenty_miles_world_use_refuses_open_trade() -> TestResult {
     run(quest::TRADE)
 }

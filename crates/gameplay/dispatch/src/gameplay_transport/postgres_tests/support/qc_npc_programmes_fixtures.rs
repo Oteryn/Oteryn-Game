@@ -168,6 +168,7 @@ async fn exercise_conversation(
                 .await?;
             wire.line("please forge UTH'LOKR", STEEL_QUOTE).await?;
             assert!(wire.talk("yes please", false).await?.is_some());
+            assert!(wire.talk(" yes ", false).await?.is_some());
             assert_eq!(quantity(h, SHIELD).await?, 1);
             assert_eq!(quantity(h, STEEL).await?, 0);
             wire.line("YES", "Cling clang!").await?;

@@ -61,9 +61,7 @@ fn recipe(npc: &str) -> Option<&'static Recipe> {
 }
 
 pub(super) fn sinatuki_default_keyword(chat: &ChatRuntime, text: &str) -> bool {
-    oteryn_gameplay_npc::greeting::words(text)
-        .iter()
-        .any(|word| word == "nupi")
+    super::reward_callbacks::crystal_keyword(&text.to_ascii_lowercase(), "nupi")
         && chat
             .npc_talk()
             .and_then(|book| book.get(sinatuki_exchange::NPC))

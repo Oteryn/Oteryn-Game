@@ -131,6 +131,30 @@
         "I can make draconian steel from a Dragon Shield. Do you want to trade?"
       ],
       "crystal_keyword": true
+    },
+    {
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        }
+      ],
+      "reply": [
+        "Kisavuta! <giggles>"
+      ]
     }
   ]
 }
