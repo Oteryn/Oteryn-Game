@@ -162,14 +162,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(monk) = self.load_monk_state(character_id).await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay());
+        let training_formula = native.and_then(|native| native.training_formula());
         phase.set("build");
-        let build = match self
-            .root
-            .read_character_build_state(self.character, character_id)
-            .await
+        let loyalty_build = if let Some(native) = native
+            && training_formula.is_some()
+            && let Some(fence) = item_fence_of(current)
+            && let Ok(command_id) = crate::foundation::CommandId::new(1)
         {
-            Ok(build) => build,
-            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
+            // The read uses CommandRef for its session identity and reserves no command.
+            self.root
+                .read_loyalty_build_state(
+                    self.character,
+                    self.holder,
+                    &fence,
+                    crate::foundation::CommandRef::new(game_session_id, command_id),
+                    native.source_digest(),
+                )
+                .await
+                .ok()
+        } else {
+            None
+        };
+        let (build, loyalty_points) = match loyalty_build {
+            Some(snapshot) => snapshot,
+            // Loyalty is best effort. Admission still requires the committed trained build.
+            None => match self
+                .root
+                .read_character_build_state(self.character, character_id)
+                .await
+            {
+                Ok(build) => (build, 0),
+                Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
+            },
         };
         phase.set("stamina");
         let stamina = match self
@@ -189,10 +216,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(stance) => stance,
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
-        if let Some(native) = self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-        {
+        if let Some(native) = native {
             let Some(fence) = item_fence_of(current) else {
                 return (FirstEntryOutcome::RefusedStaleAuthority, None, None);
             };
@@ -488,18 +512,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return (FirstEntryOutcome::RefusedByChannel, None, None);
         }
-        if let Some(formula) = self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-            .and_then(|native| native.training_formula())
-        {
+        if let Some(formula) = training_formula {
             let mut states = self.states.spell_states.lock().await;
-            if states
-                .get_mut(&runtime, actor, game_session_id)
-                .is_none_or(|state| state.enable_owned_training(&build, formula).is_err())
-            {
+            let Some(state) = states.get_mut(&runtime, actor, game_session_id) else {
+                return (FirstEntryOutcome::RefusedByChannel, None, None);
+            };
+            if state.enable_owned_training(&build, formula).is_err() {
                 return (FirstEntryOutcome::RefusedByChannel, None, None);
             }
+            state.set_combat_loyalty(loyalty_points, formula);
         }
         self.states.spell_states.lock().await.load_stamina_at(
             &runtime,
