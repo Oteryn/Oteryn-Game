@@ -9,6 +9,7 @@ use bevy::{
 use oteryn_client_runtime::depot::ItemEntry;
 use oteryn_client_ui_bevy as source;
 mod capture;
+mod map_picker;
 mod object_picker;
 use capture::capture;
 use object_picker::project as objects;
@@ -42,6 +43,12 @@ fn action(
             send,
         });
     }
+    if let Some(action) = mode
+        .checked_sub(6)
+        .and_then(|index| crate::play::SpecialAction::ALL.get(index))
+    {
+        return Some(CustomAction::Special { action: *action });
+    }
     Some(CustomAction::Object {
         definition: definition.parse().ok()?,
         sub_type: subtype.parse().ok()?,
@@ -49,6 +56,7 @@ fn action(
             1 => ObjectTarget::SelfActor,
             2 => ObjectTarget::CurrentTarget,
             3 => ObjectTarget::Cursor,
+            5 => ObjectTarget::CursorPosition,
             _ => ObjectTarget::Use,
         },
     })
@@ -83,6 +91,7 @@ struct Editor {
     feedback: String,
     capturing: bool,
     picking: bool,
+    map_pick: bool,
 }
 #[derive(Component)]
 struct Field(usize);
@@ -98,16 +107,22 @@ enum Control {
     New,
     Capture,
     Pick,
+    PickMap,
     Object(ItemEntry),
     Mode,
     Auto,
     Save,
     Remove,
+    ClearObject,
+    Reset,
 }
 
 pub(super) fn install(app: &mut App) {
     app.add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (capture, project, objects).chain());
+        .add_systems(
+            Update,
+            (capture, project, objects, map_picker::project).chain(),
+        );
 }
 pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
     let root = commands
@@ -120,6 +135,7 @@ pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
                 feedback: String::new(),
                 capturing: false,
                 picking: false,
+                map_pick: false,
             },
             Node {
                 flex_direction: FlexDirection::Column,
@@ -201,10 +217,13 @@ pub(super) fn build(commands: &mut Commands, parent: Entity, skins: &Skins) {
         ("New", Control::New),
         ("Capture key", Control::Capture),
         ("Choose carried object", Control::Pick),
+        ("Choose on map", Control::PickMap),
         ("Action", Control::Mode),
         ("Send automatically", Control::Auto),
         ("Add / Save", Control::Save),
         ("Remove", Control::Remove),
+        ("Clear object", Control::ClearObject),
+        ("Reset hotkeys", Control::Reset),
     ] {
         button(commands, bar, skins, text, control);
     }
@@ -216,7 +235,13 @@ fn label(commands: &mut Commands, parent: Entity, skins: &Skins, text: &str) -> 
     commands.entity(parent).add_child(id);
     id
 }
-fn button(commands: &mut Commands, parent: Entity, skins: &Skins, text: &str, control: Control) {
+fn button(
+    commands: &mut Commands,
+    parent: Entity,
+    skins: &Skins,
+    text: &str,
+    control: Control,
+) -> Entity {
     let id = commands
         .spawn((
             Button,
@@ -233,6 +258,7 @@ fn button(commands: &mut Commands, parent: Entity, skins: &Skins, text: &str, co
         .id();
     label(commands, id, skins, text);
     commands.entity(parent).add_child(id);
+    id
 }
 fn activate(
     event: On<Activate>,
@@ -284,12 +310,20 @@ fn activate(
             editor.picking = false;
             editor.feedback.clear();
             editor.selected = Some(key.clone());
-            values[0] = key.clone();
+            values = [key.clone(), String::new(), String::new(), "0".into()];
+            editor.mode = 0;
+            editor.send = false;
             match a {
                 CustomAction::Text { text, send } => {
                     editor.mode = 0;
                     editor.send = *send;
                     values[1] = text.clone();
+                }
+                CustomAction::Special { action } => {
+                    editor.mode = 6 + crate::play::SpecialAction::ALL
+                        .iter()
+                        .position(|value| value == action)
+                        .unwrap_or(0);
                 }
                 CustomAction::Object {
                     definition,
@@ -300,6 +334,7 @@ fn activate(
                         ObjectTarget::SelfActor => 1,
                         ObjectTarget::CurrentTarget => 2,
                         ObjectTarget::Cursor => 3,
+                        ObjectTarget::CursorPosition => 5,
                         _ => 4,
                     };
                     values[2] = definition.to_string();
@@ -322,12 +357,16 @@ fn activate(
             }
             .into();
         }
+        Control::PickMap => {
+            editor.map_pick = owner.play.is_some();
+            editor.picking = false;
+            editor.capturing = false;
+            focus.clear();
+        }
         Control::Pick => {
             editor.picking = !editor.picking;
             editor.capturing = false;
-            editor.feedback =
-                "Choose a carried object (definition : subtype × count). Artwork unavailable."
-                    .into();
+            editor.feedback = "Choose a carried object.".into();
         }
         Control::Object(item) => {
             if !editor.picking {
@@ -342,7 +381,7 @@ fn activate(
                 return;
             }
             editor.picking = false;
-            if editor.mode == 0 {
+            if !(1..=5).contains(&editor.mode) {
                 editor.mode = 4;
             }
             values[2] = item.item_definition_ref.to_string();
@@ -356,8 +395,39 @@ fn activate(
             editor.selected = None;
             values = [String::new(), String::new(), String::new(), "0".into()];
         }
-        Control::Mode => editor.mode = (editor.mode + 1) % 5,
+        Control::Mode => editor.mode = (editor.mode + 1) % 10,
         Control::Auto => editor.send = !editor.send,
+        Control::ClearObject => {
+            if let Some(key) = &editor.selected {
+                owner.edit_preferences(|prefs| {
+                    if let Some(action @ CustomAction::Object { .. }) =
+                        prefs.custom_hotkeys.get_mut(key)
+                    {
+                        *action = CustomAction::Unassigned;
+                    }
+                });
+            }
+            editor.mode = 0;
+            editor.send = false;
+            editor.picking = false;
+            values[1].clear();
+            values[2].clear();
+            values[3] = "0".into();
+        }
+        Control::Reset => {
+            owner.edit_preferences(|prefs| {
+                prefs.custom_hotkeys.clear();
+                for (chord, action) in crate::play::default_custom_hotkeys() {
+                    let _ = prefs.assign_custom_hotkey(&chord, action);
+                }
+            });
+            editor.selected = None;
+            editor.mode = 0;
+            editor.picking = false;
+            editor.send = false;
+            editor.feedback = "Hotkeys reset; Apply to persist".into();
+            values = [String::new(), String::new(), String::new(), "0".into()];
+        }
         Control::Remove => {
             if let Some(key) = editor.selected.take() {
                 owner.edit_preferences(|p| {
@@ -405,6 +475,7 @@ fn project(
         for mut editor in &mut editors {
             editor.capturing = false;
             editor.picking = false;
+            editor.map_pick = false;
         }
         held.clear();
         return;
@@ -414,6 +485,7 @@ fn project(
         return;
     };
     if editor.generation != owner.generation() {
+        editor.map_pick = false;
         editor.capturing = false;
         editor.picking = false;
     }
@@ -431,7 +503,12 @@ fn project(
                 "Use on self",
                 "Use on target",
                 "Use with crosshair",
-                "Use object"
+                "Use object",
+                "Use at pointer",
+                "Toggle WASD/chat mode",
+                "Attack next battle target",
+                "Attack previous battle target",
+                "Toggle chase mode"
             ][editor.mode],
             editor.send,
             editor.feedback

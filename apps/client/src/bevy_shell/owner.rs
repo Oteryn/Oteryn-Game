@@ -2,6 +2,7 @@
 mod device_sign_out;
 mod local_saves;
 mod options_draft;
+mod web_link;
 
 use crate::{
     ClientBootstrap,
@@ -62,6 +63,11 @@ pub(super) struct HostOwner {
     pub settings: SettingsState,
     preferences_path: Option<PathBuf>,
     draft: Option<Draft>,
+    web_link: Option<(
+        oteryn_foundation::CancellationToken,
+        std::sync::mpsc::Receiver<bool>,
+    )>,
+    forget_intent: Option<device_sign_out::PendingIntent>,
     device_sign_out: Option<tokio::sync::watch::Receiver<Option<bool>>>,
     scope: Scope,
     pub phase: Phase,
@@ -107,6 +113,8 @@ impl HostOwner {
             settings: SettingsState::new(path.clone()),
             preferences_path: path,
             draft: None,
+            web_link: None,
+            forget_intent: None,
             device_sign_out: None,
             scope: Scope {
                 character: None,
@@ -188,6 +196,7 @@ impl HostOwner {
     }
     pub fn modal_active(&self) -> bool {
         self.draft.is_some()
+            || self.forget_intent.is_some()
             || self.login.visible
             || self.login.bulletin.visible
             || self.selection.pending().is_some()
@@ -212,15 +221,14 @@ impl HostOwner {
         &mut self,
         lookup: impl FnOnce() -> Option<std::ffi::OsString>,
     ) {
-        if self.phase != Phase::Offline || !self.login.visible {
+        if self.phase != Phase::Offline || !self.login.visible || self.forget_intent.is_some() {
             return;
         }
         if self.login.save_pending() {
             return;
         }
-        if let Some(config) = self.login.start_save() {
-            self.start_saved_login(config, lookup());
-        } else if self.login.save_pending() {
+        self.login.start_save();
+        if self.login.save_pending() {
             self.login.set_pending_assets(lookup());
         }
     }
@@ -260,27 +268,19 @@ impl HostOwner {
                 )));
         }
     }
-    /// Opens a Platform page (support tickets, cookie policy) from the login window with the
-    /// Platform the connection settings name.
-    pub fn open_web_link(&mut self, link: crate::web_links::WebLink) {
-        if self.phase == Phase::Offline
-            && let Ok(config) = self.login.form.settings.config()
-            && let Some(entry) = &mut self.entry
-        {
-            entry.configure(config);
-        }
-        if !self
-            .entry
-            .as_ref()
-            .is_some_and(|entry| entry.open_web_link(link))
-        {
-            self.login.form.feedback(
-                "Correct the connection settings to open Platform pages in the browser.".into(),
-            );
-        }
-    }
     pub fn poll(&mut self, viewport: [u32; 2]) {
+        self.poll_with_notices(viewport, &crate::atomic_file::MALFORMED_NOTICES);
+    }
+
+    fn poll_with_notices(
+        &mut self,
+        viewport: [u32; 2],
+        recovery: &crate::atomic_file::MalformedNotices,
+    ) {
         if self.phase == Phase::Closed {
+            if self.entry.is_some() && !self.forget_worker_running() {
+                self.finish_close();
+            }
             return;
         }
         if self.phase == Phase::Offline
@@ -288,20 +288,24 @@ impl HostOwner {
         {
             self.start_saved_login(config, assets);
         }
+        self.poll_web_link();
         self.poll_device_sign_out();
         self.poll_retired_minimaps();
         let completion = self.settings.poll_background_save();
         if completion.replaced {
             self.rebase_transferred_preferences();
         }
-        if let Some(error) = completion.error {
-            self.status.clone_from(&error);
+        if let Some(error) = &completion.error {
+            self.status.clone_from(error);
             if self.login.visible {
-                self.login.form.feedback(error);
+                self.login.form.feedback(error.clone());
             }
         }
-        let notices = crate::atomic_file::take_malformed_notices();
+        let mut notices = recovery.take();
         if !notices.is_empty() {
+            if let Some(error) = completion.error {
+                notices.insert(0, error);
+            }
             let message = notices.join("\n");
             self.settings.feedback.clone_from(&message);
             self.status.clone_from(&message);
@@ -328,7 +332,9 @@ impl HostOwner {
         self.login
             .form
             .refresh_gate_message(std::time::Instant::now());
-        if let Some(result) = self.entry.as_mut().and_then(Reentry::poll) {
+        if self.forget_intent.is_none()
+            && let Some(result) = self.entry.as_mut().and_then(Reentry::poll)
+        {
             let bulletin = self.entry.as_mut().and_then(Reentry::take_bulletin);
             self.finish_admission(result, bulletin);
             if self.phase == Phase::Closed {
@@ -455,6 +461,9 @@ impl HostOwner {
         );
     }
     pub fn close(&mut self) {
+        if let Some(entry) = &self.entry {
+            entry.close_browser_epoch();
+        }
         if self.phase == Phase::Closed {
             return;
         }
@@ -465,18 +474,28 @@ impl HostOwner {
         self.dialogs.clear();
         self.login.visible = false;
         self.login.bulletin.visible = false;
+        self.phase = Phase::Closed;
+        if !self.forget_worker_running() {
+            self.finish_close();
+        }
+    }
+
+    fn finish_close(&mut self) {
+        self.finish_forget_intent();
         self.flush_local_saves();
         // An explicit device revocation has already recorded its intent on disk.
         if let Some(mut entry) = self.entry.take() {
             entry.cancel_entry();
             entry.shutdown();
         }
-        self.phase = Phase::Closed;
     }
 }
 impl Drop for HostOwner {
     fn drop(&mut self) {
         self.close();
+        if self.forget_intent.is_some() {
+            self.finish_close();
+        }
     }
 }
 fn offline_message() -> &'static str {

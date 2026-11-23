@@ -182,3 +182,58 @@ fn risk_count(app: &mut App) -> usize {
         .iter(app.world())
         .count()
 }
+
+#[test]
+fn new_incoming_pvp_situation_requests_a_capture() -> Result {
+    use crate::play::{SettingsState, screenshot::CaptureAction};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.bevy_pvp_initialize();
+    let mut settings = SettingsState::new(None);
+    settings.preferences.screenshots.on_player_attacking = true;
+    let start = std::time::Instant::now();
+    for (index, incoming) in [false, true, true, true].into_iter().enumerate() {
+        let now = start + std::time::Duration::from_secs(3 * index as u64);
+        if index == 3 {
+            settings.preferences.screenshots.automatic_disabled = true;
+            settings.prepare_screenshots(now, Some(&link));
+            settings.preferences.screenshots.automatic_disabled = false;
+        }
+        settings.prepare_screenshots(now, Some(&link));
+        let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+            return Err("PvP query".into());
+        };
+        assert_eq!(command.payload, [8, 1]);
+        let status = PvpStatus {
+            points_milli: [0; 3],
+            red_limits_milli: [3000; 3],
+            black_limits_milli: [6000; 3],
+            skull: 0,
+            remaining_ms: 0,
+            situations: vec![
+                oteryn_client_runtime::party_skull::PvpSituation {
+                    incoming,
+                    remaining_ms: 9000,
+                };
+                1 + usize::from(index == 3)
+            ],
+        };
+        outbox.bevy_pvp_result(
+            &command,
+            &GatedCommandResult {
+                command_id: index as u64 + 1,
+                status: oteryn_session::CommandStatus::Accepted,
+                server_sequence: index as u64 + 1,
+                payload: status.encode().map_err(|e| format!("{e:?}"))?,
+            },
+        );
+        assert_eq!(
+            matches!(
+                settings.prepare_screenshots(now, Some(&link)),
+                CaptureAction::Save
+            ),
+            index == 1
+        );
+        settings.cancel_screenshot();
+    }
+    Ok(())
+}

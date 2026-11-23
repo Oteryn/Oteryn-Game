@@ -43,14 +43,15 @@ impl HostOwner {
 #[cfg(test)]
 #[test]
 fn review_3376_recovery_notice_reaches_the_player_once() -> Result<(), Box<dyn std::error::Error>> {
+    let queue = crate::atomic_file::MalformedNotices::default();
     let folder = tempfile::tempdir()?;
     let path = folder.path().join("profile.json");
     let backup = path.with_added_extension("malformed");
     let mut owner = HostOwner::new(None)?;
     let _lock = crate::atomic_file::lock(&path)?;
     std::fs::write(&path, b"{first")?;
-    crate::atomic_file::preserve_malformed(&path)?;
-    owner.poll([640, 480]);
+    crate::atomic_file::preserve_malformed_with(&path, |message| queue.push(message))?;
+    owner.poll_with_notices([640, 480], &queue);
     assert!(owner.login.visible);
     assert!(
         owner
@@ -61,8 +62,8 @@ fn review_3376_recovery_notice_reaches_the_player_once() -> Result<(), Box<dyn s
     );
     owner.login.form.dismiss_alert();
     std::fs::write(&path, b"{second")?;
-    crate::atomic_file::preserve_malformed(&path)?;
-    owner.poll([640, 480]);
+    crate::atomic_file::preserve_malformed_with(&path, |message| queue.push(message))?;
+    owner.poll_with_notices([640, 480], &queue);
     assert!(owner.login.form.alert().is_none());
     assert_eq!(std::fs::read(backup)?, b"{first");
     Ok(())

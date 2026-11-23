@@ -5,6 +5,59 @@ use std::{
 };
 
 pub(crate) fn replace(path: &Path, bytes: &[u8], sync: bool) -> io::Result<()> {
+    let temporary = staged_file(path, bytes, sync)?;
+    temporary.persist(path).map_err(|error| error.error)?;
+    Ok(())
+}
+
+pub(crate) fn publish_durable(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    publish_durable_at(path, bytes, None)
+}
+
+pub(crate) fn publish_durable_at(
+    path: &Path,
+    bytes: &[u8],
+    modified: Option<std::time::SystemTime>,
+) -> io::Result<()> {
+    let temporary = staged_file(path, bytes, true)?;
+    if let Some(modified) = modified {
+        temporary.as_file().set_modified(modified)?;
+        temporary.as_file().sync_all()?;
+    }
+    // keep clears FILE_ATTRIBUTE_TEMPORARY on Windows before promotion.
+    let (_file, source) = temporary.keep().map_err(|error| error.error)?;
+    if let Err(error) = durable_rename(&source, path) {
+        let _ = std::fs::remove_file(source);
+        return Err(error);
+    }
+    Ok(())
+}
+
+pub(crate) fn durable_rename(source: &Path, destination: &Path) -> io::Result<()> {
+    #[cfg(test)]
+    if let Some(path) = FAIL_DURABLE_RENAME.take() {
+        if path == destination {
+            return Err(io::ErrorKind::PermissionDenied.into());
+        }
+        FAIL_DURABLE_RENAME.set(Some(path));
+    }
+    #[cfg(windows)]
+    return crate::win_mutex::rename_write_through(source, destination);
+    #[cfg(not(windows))]
+    std::fs::rename(source, destination)?;
+    #[cfg(unix)]
+    File::open(
+        destination
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or(Path::new(".")),
+    )?
+    .sync_all()?;
+    #[cfg(not(windows))]
+    Ok(())
+}
+
+fn staged_file(path: &Path, bytes: &[u8], sync: bool) -> io::Result<tempfile::NamedTempFile> {
     let directory = path
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
@@ -15,14 +68,17 @@ pub(crate) fn replace(path: &Path, bytes: &[u8], sync: bool) -> io::Result<()> {
     if sync {
         temporary.as_file().sync_all()?;
     }
-    temporary.persist(path).map_err(|error| error.error)?;
-    Ok(())
+    Ok(temporary)
 }
 
 // Lock a separate inode, since publishing the data file replaces its inode.
 pub(crate) fn lock(path: &Path) -> io::Result<File> {
+    lock_for(path, std::time::Duration::from_secs(1))
+}
+
+pub(crate) fn lock_for(path: &Path, timeout: std::time::Duration) -> io::Result<File> {
     let file = open_lock(path)?;
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+    let deadline = std::time::Instant::now() + timeout;
     loop {
         match file.try_lock() {
             Ok(()) => return Ok(file),
@@ -64,6 +120,13 @@ fn open_lock(path: &Path) -> io::Result<File> {
 
 /// Preserve the first malformed document while holding its publication lock.
 pub(crate) fn preserve_malformed(path: &Path) -> io::Result<()> {
+    preserve_malformed_with(path, |_message| {
+        #[cfg(any(test, bevy_shell))]
+        MALFORMED_NOTICES.push(_message);
+    })
+}
+
+pub(crate) fn preserve_malformed_with(path: &Path, notify: impl FnOnce(&str)) -> io::Result<()> {
     let backup = path.with_added_extension("malformed");
     match std::fs::symlink_metadata(&backup) {
         Ok(_) => return Ok(()),
@@ -86,10 +149,7 @@ pub(crate) fn preserve_malformed(path: &Path) -> io::Result<()> {
                 .to_string_lossy();
             let message =
                 format!("Recovered damaged {name}. The original was saved as {name}.malformed.");
-            #[cfg(any(test, bevy_shell))]
-            if let Ok(mut notices) = MALFORMED_NOTICES.lock() {
-                notices.push(message.clone());
-            }
+            notify(&message);
             eprintln!("{message}");
             Ok(())
         }
@@ -99,33 +159,47 @@ pub(crate) fn preserve_malformed(path: &Path) -> io::Result<()> {
 }
 
 #[cfg(any(test, bevy_shell))]
-static MALFORMED_NOTICES: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+pub(crate) static MALFORMED_NOTICES: MalformedNotices =
+    MalformedNotices(std::sync::Mutex::new(Vec::new()));
 
 #[cfg(any(test, bevy_shell))]
-pub(crate) fn take_malformed_notices() -> Vec<String> {
-    MALFORMED_NOTICES
-        .lock()
-        .map(|mut notices| std::mem::take(&mut *notices))
-        .unwrap_or_default()
+#[derive(Default)]
+pub(crate) struct MalformedNotices(std::sync::Mutex<Vec<String>>);
+
+#[cfg(any(test, bevy_shell))]
+impl MalformedNotices {
+    pub(crate) fn push(&self, message: &str) {
+        if let Ok(mut notices) = self.0.lock() {
+            notices.push(message.to_owned());
+        }
+    }
+
+    pub(crate) fn take(&self) -> Vec<String> {
+        self.0
+            .lock()
+            .map(|mut notices| std::mem::take(&mut *notices))
+            .unwrap_or_default()
+    }
 }
 
 #[cfg(test)]
 #[test]
 fn review_3376_malformed_backup_and_notice_are_created_once() -> io::Result<()> {
+    let queue = MalformedNotices::default();
     let root = tempfile::tempdir()?;
     let path = root.path().join("profile.json");
     let backup = path.with_added_extension("malformed");
     let _lock = lock(&path)?;
     std::fs::write(&path, b"first damaged file")?;
-    preserve_malformed(&path)?;
+    preserve_malformed_with(&path, |message| queue.push(message))?;
     assert_eq!(std::fs::read(&backup)?, b"first damaged file");
-    let notices = take_malformed_notices();
+    let notices = queue.take();
     assert_eq!(notices.len(), 1);
     assert!(notices[0].contains("profile.json.malformed"));
     std::fs::write(&path, b"second damaged file")?;
-    preserve_malformed(&path)?;
+    preserve_malformed_with(&path, |message| queue.push(message))?;
     assert_eq!(std::fs::read(&backup)?, b"first damaged file");
-    assert!(take_malformed_notices().is_empty());
+    assert!(queue.take().is_empty());
     Ok(())
 }
 
@@ -144,4 +218,14 @@ fn review_3376_held_profile_lock_has_a_deadline() -> Result<(), Box<dyn std::err
     worker.join().map_err(|_| "lock thread panicked")?;
     assert!(matches!(observed, Ok(Some(io::ErrorKind::WouldBlock))));
     Ok(())
+}
+
+#[cfg(test)]
+pub(crate) fn fail_durable_rename_to(path: &Path) {
+    FAIL_DURABLE_RENAME.set(Some(path.to_owned()));
+}
+
+#[cfg(test)]
+thread_local! {
+    static FAIL_DURABLE_RENAME: std::cell::Cell<Option<std::path::PathBuf>> = const { std::cell::Cell::new(None) };
 }

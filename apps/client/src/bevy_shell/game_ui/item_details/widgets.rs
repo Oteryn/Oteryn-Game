@@ -72,7 +72,7 @@ pub(super) fn render(
     key: Key,
     model: &Panel,
     selection: bool,
-    selected_index: usize,
+    (selected_index, outfit): (usize, bool),
 ) {
     if let Some(content) = widgets.content.take() {
         commands.entity(content).despawn();
@@ -104,7 +104,18 @@ pub(super) fn render(
         ))
         .id();
     commands.entity(content).add_child(scroll);
-    if let Some(reply) = model.reply.as_ref().filter(|reply| reply.status == 1) {
+    let player =
+        model
+            .reply
+            .as_ref()
+            .filter(|reply| reply.status == 1)
+            .and(match model.last_request {
+                Some(Request::Player(entity)) => Some(entity),
+                _ => None,
+            });
+    if let Some(player) = player.filter(|_| outfit) {
+        portrait::spawn(commands, skin, scroll, player);
+    } else if let Some(reply) = model.reply.as_ref().filter(|reply| reply.status == 1) {
         if reply.items.len() > 1 || matches!(model.last_request, Some(Request::Player(_))) {
             for (index, item) in reply.items.iter().enumerate() {
                 let row = commands
@@ -237,6 +248,26 @@ pub(super) fn render(
         })
         .id();
     commands.entity(content).add_child(footer);
+    if player.is_some() {
+        let button = commands
+            .spawn((
+                Control {
+                    key,
+                    kind: Kind::ToggleOutfit,
+                },
+                source::button(skin.buttons.clone(), 95.),
+            ))
+            .observe(activate)
+            .id();
+        let caption = commands
+            .spawn(source::button_caption(
+                if outfit { "Equipment" } else { "Outfit" },
+                skin.font.clone(),
+            ))
+            .id();
+        commands.entity(button).add_child(caption);
+        commands.entity(footer).add_child(button);
+    }
     for (kind, label, enabled, width) in [
         (
             Kind::Inspect,

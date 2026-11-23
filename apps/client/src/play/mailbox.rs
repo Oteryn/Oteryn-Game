@@ -140,8 +140,6 @@ pub(super) struct ConnectionInputs {
     pub(super) channel_character: String,
     pub(super) channel_current: Option<[u8; 16]>,
     pub(super) channel_rows: Vec<oteryn_client_ui::channel_switch::ChannelRow>,
-    /// Shared across handoffs. Acquire before the mailbox when retiring Store requests.
-    pub(super) browser_delivery: Arc<Mutex<()>>,
     pub(super) coin_shop: Option<Arc<crate::coin_shop::launcher::Launcher>>,
     pub(super) probe_platform: Option<String>,
 }
@@ -150,9 +148,13 @@ pub(super) struct ConnectionInputs {
 pub(super) struct Mailbox {
     pub(super) connection: ConnectionInputs,
     #[cfg(bevy_shell)]
+    pub(super) screen_loot: super::feature_local_text_messages::view::LootMessage,
+    #[cfg(bevy_shell)]
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     #[cfg(bevy_shell)]
     pub(super) look_receipt: u64,
+    pub(super) boss_capture: super::screenshot::BossCapture,
+    pub(super) capture_observations: super::screenshot::CaptureObservations,
     pub(super) shared_frontend: bool,
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
     /// The admitted session's byte counters; `None` before admission.
@@ -263,7 +265,8 @@ pub(super) struct Mailbox {
     pub(super) animus: oteryn_client_ui::animus_mastery::AnimusPanel,
     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
     pub(super) wheel_shutdown: bool,
-    pub(super) wheel_preset_save_pending: bool,
+    pub(super) wheel_preset_writes:
+        Option<VecDeque<super::feature_0148_wheel_allocation::view::presets::PresetWrite>>,
     pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
     pub(super) mechanics_status: oteryn_client_ui::mechanics_status::MechanicsStatusPanel,
     pub(super) condition_status: oteryn_client_ui::condition_status::ConditionStatusPanel,
@@ -335,6 +338,7 @@ pub(super) struct Mailbox {
     pub(super) player_typing_shutdown: bool,
     // CL26s3
     pub(super) daily_reward: oteryn_client_ui::daily_reward::DailyRewardPanel,
+    pub(super) reward_reset: Option<(u64, std::time::Instant)>,
     pub(super) daily_reward_shutdown: bool,
     // CL26s4
     pub(super) boss_rewards: oteryn_client_ui::boss_rewards::BossRewardsPanel,

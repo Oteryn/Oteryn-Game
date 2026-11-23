@@ -1,11 +1,13 @@
 """The protected cache writer must finish and publish only a bounded archive."""
 
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
 import sys
+import tarfile
 import tempfile
 import textwrap
 import unittest
@@ -106,6 +108,92 @@ class ProtectedMainCache(unittest.TestCase):
                       "  cancel-in-progress: false\n", self.source)
         self.assertIn("  workflow_dispatch:\n", self.source)
         self.assertIn("    needs: lanes\n", self.linux)
+
+    def test_warmup_keeps_library_test_features_without_linking_discarded_integration_tests(self):
+        compile_step = next(step for step in self.steps if " test --locked " in step)
+        self.assertIn("--workspace --exclude oteryn-gameplay-dispatch", compile_step)
+        self.assertIn("--features oteryn-gameplay-quests/test-support", compile_step)
+        self.assertRegex(compile_step, r"--lib\s+--no-run(?:\s|$)")
+        self.assertNotRegex(compile_step, r"--(?:tests|all-targets)(?:\s|$)")
+
+    def test_linker_matches_the_archive_producer_without_adding_cargo_flags(self):
+        mold_steps = [step for step in self.steps if step.startswith("Install pinned mold linker\n")]
+        self.assertEqual(len(mold_steps), 1)
+        mold = mold_steps[0]
+        producer = WORKFLOW.with_name("merge-gate.yml").read_text(encoding="utf-8")
+        for variable in ("MOLD_VERSION", "MOLD_SHA256"):
+            value = re.search(rf"^          {variable}: (.+)$", mold, re.M).group(1)
+            self.assertIn(f"          {variable}: {value}\n", producer)
+        build_steps = [step for step in self.steps if step.startswith((
+            "Build workspace\n", "Produce public Game catalogue\n", "Strict Clippy\n",
+            "Compile workspace tests without executing them\n",
+            "Build synthetic harness and native game-server\n",
+        ))]
+        self.assertEqual(len(build_steps), 5)
+        for step in build_steps:
+            self.assertIn("          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}\n", step)
+            self.assertLess(self.steps.index(mold), self.steps.index(step))
+        self.assertNotRegex(self.linux, r"(?:RUSTFLAGS|CARGO_ENCODED_RUSTFLAGS|CARGO_TARGET_\w+_LINKER)\s*[:=]")
+
+    def test_real_linker_install_script_rejects_a_digest_mismatch_before_extraction(self):
+        mold_steps = [step for step in self.steps if step.startswith("Install pinned mold linker\n")]
+        self.assertEqual(len(mold_steps), 1)
+        mold = mold_steps[0]
+        version = re.search(r"^          MOLD_VERSION: (.+)$", mold, re.M).group(1)
+        script = textwrap.dedent(mold.split("        run: |\n", 1)[1])
+        for corrupt_digest in (False, True):
+            with self.subTest(corrupt_digest=corrupt_digest), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                payload = root / f"mold-{version}-x86_64-linux"
+                (payload / "bin").mkdir(parents=True)
+                (payload / "lib/mold").mkdir(parents=True)
+                (payload / "lib/mold/mold-wrapper.so").write_bytes(b"fixture")
+                binary = payload / "bin/mold"
+                binary.write_text("#!/bin/sh\nprintf '%s\\n' 'mold fixture'\n", encoding="utf-8")
+                binary.chmod(0o700)
+                archive = root / "fixture.tar.gz"
+                with tarfile.open(archive, "w:gz") as stream:
+                    stream.add(payload, arcname=payload.name)
+                binaries = root / "bin"
+                binaries.mkdir()
+                curl = binaries / "curl"
+                curl.write_text(textwrap.dedent('''\
+                    #!/bin/sh
+                    set -eu
+                    while [ "$#" -gt 0 ]; do
+                        if [ "$1" = "-o" ]; then
+                            cp "$FIXTURE_ARCHIVE" "$2"
+                            exit 0
+                        fi
+                        shift
+                    done
+                    exit 1
+                '''), encoding="utf-8")
+                curl.chmod(0o700)
+                destination = root / "runner"
+                destination.mkdir()
+                env_path = root / "github-env"
+                digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+                env = {
+                    "PATH": str(binaries) + os.pathsep + os.defpath,
+                    "RUNNER_TEMP": str(destination), "GITHUB_ENV": str(env_path),
+                    "MOLD_VERSION": version, "MOLD_SHA256": "0" * 64 if corrupt_digest else digest,
+                    "FIXTURE_ARCHIVE": str(archive),
+                }
+                result = subprocess.run(["bash", "-c", script], cwd=root, env=env,
+                                        capture_output=True, text=True, timeout=10, check=False)
+                installed = destination / payload.name
+                if corrupt_digest:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertFalse(installed.exists())
+                    self.assertFalse(env_path.exists())
+                else:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("mold fixture", result.stdout)
+                    self.assertEqual(env_path.read_text().splitlines(), [
+                        f"MOLD_PATH={installed}/bin/mold",
+                        f"MOLD_PRELOAD={installed}/lib/mold/mold-wrapper.so",
+                    ])
 
 
 if __name__ == "__main__":
