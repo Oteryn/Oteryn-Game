@@ -31,6 +31,19 @@ pub(super) async fn apply(
         .map(|input| input.item.parse::<Uuid>())
         .collect::<Result<Vec<_>, _>>()
         .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if callback.key == "oteryn:quest-reward/an-interest-in-botany/s4"
+        && let ([input], [item]) = (inputs, ids.as_slice())
+        && input.count == 1
+        && input.quantity == 1
+    {
+        super::super::item_text::remove_authored_reward_text_for_hand_in(
+            tx,
+            *item,
+            "oteryn:item.tibia.i11699",
+            "oteryn:reward-claim.quest.u8_6.an_interest_in_botany.botany_almanach",
+        )
+        .await?;
+    }
     // The same plain-item exclusions as the single-input path, read once for
     // the already locked set. A Royal Costume hand-in can contain 275 stacks.
     let special: bool = sqlx::query_scalar(

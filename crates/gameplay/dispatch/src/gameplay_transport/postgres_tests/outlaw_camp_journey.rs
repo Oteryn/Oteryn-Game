@@ -306,17 +306,20 @@ async fn journey(admin: String) -> TestResult {
         UseDisposition::Committed
     );
     assert_snapshot(&h, &owner, &admitted, &keys, (3, 1, true)).await?;
+    let channel_states = Arc::clone(&owner.states);
+    let clock_origin = owner.clock_origin;
     drop(owner);
 
     // Reconnect using the server's committed continuity. The client retries
     // the same terminal command after losing its reply.
     let mut reconnect = deps.owner(&h, &authority);
+    reconnect.states = channel_states;
+    reconnect.clock_origin = clock_origin;
     reconnect.active_generation = Some(generation);
     reconnect.quest_catalogue = Some(catalogue);
     reconnect.quest_log_content = Some(log);
     reconnect.movement_cells = (&cells).into();
     reconnect.admit_progression_session(&mut admitted).await;
-    deps.initialize(&reconnect).await;
     reconnect.admit_quest_session(&admitted).await;
     assert_eq!(
         use_object(&mut reconnect, &mut admitted, command, &chest).await?,

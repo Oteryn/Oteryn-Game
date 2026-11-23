@@ -231,14 +231,17 @@ fn journey(web_already_burned: bool) -> TestResult {
 
             // A new admission owner rebuilds the quest and NPC projections for the reconnect.
             // The wire helper has already closed the first transport and retained its continuity.
+            let channel_states = Arc::clone(&owner.states);
+            let clock_origin = owner.clock_origin;
             drop(owner);
             let mut reconnected = deps.owner(&h, &authority);
+            reconnected.states = channel_states;
+            reconnected.clock_origin = clock_origin;
             reconnected.active_generation = Some(generation);
             reconnected.premium_coordinator = Some(&premium);
             reconnected.movement_cells = (&cells).into();
             reconnected.quest_catalogue = Some(catalogue);
             reconnected.quest_log_content = Some(log_lines);
-            deps.initialize(&reconnected).await;
             admit(&mut reconnected, &mut admitted, talk_book).await?;
             wire_conversation(&reconnected, &mut admitted, async |conversation| {
                 assert_eq!(
@@ -477,13 +480,23 @@ async fn exercise(
 
     arrive(owner, admitted, START).await?;
     owner.clock_origin -= Duration::from_secs(2);
+    let almanach: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT r.item_instance_id FROM game_reward_claim_mint_receipts r
+         JOIN game_item_texts t USING (item_instance_id)
+         WHERE r.claim_production_key=$1 AND t.writer_character_id IS NULL AND t.text=r.root_text",
+    )
+    .bind(CHEST_CLAIM)
+    .fetch_one(&h.pool)
+    .await?;
     let confirmation = speech(npc, "yes")?;
+    let game_session = admitted.game_session_id;
     let (command, reward) = wire_conversation(owner, admitted, async |conversation| {
         for word in ["hi", "mission"] {
             let reply = conversation.talk(speech(npc, word)?).await?;
             assert_eq!(decode_npc_intent_result(&reply).map_err(debug)?, NpcIntentDisposition::Ok);
             checkpoint(h, Some(4), 1, 0, 0).await?;
         }
+        assert_eq!(owner.states.npc_conversations.fixture_quest_topic(game_session)?, 2);
         let command = conversation.next();
         assert_eq!(quest_xp(h).await?, (0, 0));
         Ok((command, conversation.talk(confirmation.clone()).await?))
@@ -493,6 +506,16 @@ async fn exercise(
         NpcIntentDisposition::Ok
     );
     checkpoint(h, Some(5), 0, 1, 1000).await?;
+    let inscription: (bool, bool) = sqlx::query_as(
+        "SELECT EXISTS(SELECT FROM game_item_texts WHERE item_instance_id=$1),
+                EXISTS(SELECT FROM game_reward_claim_mint_receipts
+                       WHERE item_instance_id=$1 AND claim_production_key=$2 AND root_text IS NOT NULL)",
+    )
+    .bind(almanach)
+    .bind(CHEST_CLAIM)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(inscription, (false, true), "the immutable source retains the retired book's inscription");
     assert_eq!(quest_xp(h).await?, (1, 3000), "Rabaz awards 3,000 XP");
     assert_eq!(
         wire(owner, admitted, command, 7, confirmation).await?,

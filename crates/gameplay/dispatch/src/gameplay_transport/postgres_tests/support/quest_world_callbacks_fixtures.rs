@@ -87,22 +87,22 @@ pub(super) async fn input_item(
     arrange_input_item(owner, fence, offering, n, custody).await
 }
 
-pub(super) async fn mint_input_on_ground(
+pub(super) async fn drop_input_stack(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     offering: &oteryn_gameplay_quests::quest::world_callbacks::Offering,
     n: u64,
 ) -> TestResult {
-    arrange_input_item(owner, fence, offering, n, InputCustody::Ground).await?;
+    arrange_input_item(owner, fence, offering, n, InputCustody::DropCount).await?;
     owner.states.loop_ground.invalidate();
     Ok(())
 }
 
 #[derive(PartialEq, Eq)]
 enum InputCustody {
-    Ground,
     Backpack,
     Drop,
+    DropCount,
 }
 
 async fn arrange_input_item(
@@ -166,7 +166,7 @@ async fn arrange_input_item(
                     "fixture:quest-callbacks".into(),
                     0,
                 ),
-                item: definition,
+                item: definition.clone(),
                 quantity: u32::from(offering.count),
                 ground: GroundPlacement {
                     spatial_position:
@@ -196,9 +196,6 @@ async fn arrange_input_item(
     else {
         return Err("mint".into());
     };
-    if custody == InputCustody::Ground {
-        return Ok(());
-    }
     let command = |offset| -> TestResult<_> {
         Ok(crate::foundation::CommandRef::new(
             fence.game_session_id,
@@ -252,6 +249,17 @@ async fn arrange_input_item(
     if custody == InputCustody::Backpack {
         return Ok(());
     }
+    let (source_item, count) = if custody == InputCustody::DropCount {
+        let carried = owner.root.read_character_backpack(owner.character, fence.character_id)
+            .await.map_err(debug)?.ok_or("fixture backpack")?;
+        let count = u32::from(offering.count);
+        let entry = carried.entries.into_iter().map(|entry| entry.item)
+            .find(|item| item.definition == definition && item.quantity >= count)
+            .ok_or("carried source stack for the fixture drop")?;
+        (entry.item_instance_id, Some(count))
+    } else {
+        (item.item_instance_id, None)
+    };
     let moved = owner
         .root
         .commit_item_loop_move(
@@ -262,8 +270,8 @@ async fn arrange_input_item(
             command(1)?,
             &NativeItemWeights(native),
             LoopMoveRequest {
-                item: item.item_instance_id,
-                count: None,
+                item: source_item,
+                count,
                 pickup_cell: None,
                 destination: LoopDestination::Ground(LoopGround {
                     spatial_position:

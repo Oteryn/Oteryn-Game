@@ -66,6 +66,34 @@ pub(super) async fn initialize_authored_reward_text(
     Ok(())
 }
 
+/// Retire an unchanged public reward inscription with its exact quest hand-in.
+/// The immutable MINT receipt retains the original text. The caller holds the
+/// item row and consumes the entire item in the same transaction.
+pub(super) async fn remove_authored_reward_text_for_hand_in(
+    tx: &mut Transaction<'_, Postgres>,
+    item: sqlx::types::Uuid,
+    definition: &str,
+    claim: &str,
+) -> std::result::Result<(), DurabilityError> {
+    sqlx::query(
+        "DELETE FROM game_item_texts t
+           USING game_item_instances i, game_item_text_revisions v, game_reward_claim_mint_receipts r
+           WHERE t.item_instance_id=$1 AND i.item_instance_id=t.item_instance_id
+             AND v.item_instance_id=t.item_instance_id AND r.item_instance_id=t.item_instance_id
+             AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family='Item'
+             AND i.definition_production_key=$2 AND r.transaction_id=i.minted_transaction_id
+             AND r.claim_family='RewardClaim' AND r.claim_production_key=$3
+             AND t.writer_character_id IS NULL AND t.text_revision=1 AND v.last_revision=1
+             AND t.text=r.root_text",
+    )
+    .bind(item)
+    .bind(definition)
+    .bind(claim)
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
 /// Result data only: no current World, session, reach or retirement authority.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(

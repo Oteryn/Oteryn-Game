@@ -666,16 +666,9 @@ async fn defeat_mine_leader(
         encode_attack_target_intent, encode_fight_modes_intent,
     };
     let player = a.runtime_actor.ok_or("player")?;
-    // A starter's fists top out at 9 damage. The source Shard has 20 armor
-    // and 20 defense, so prepare a fighter whose native swing can finish it.
-    super::questpc8_magic_sword_fixtures::raise_level(owner, a, 250, 201).await?;
-    let fence = owner
-        .current_quest_fence(a.game_session_id)
-        .await
-        .map_err(debug)?
-        .ok_or("mine fighter fence")?;
-    owner.states.level_refresh.mark([fence.character_id]);
-    Box::pin(owner.refresh_level_up_vitals(player, a.game_session_id)).await;
+    // The Shard's source armor and defense block a starter's fist swings.
+    // Load the stronger fixture's committed level through native admission.
+    super::questpc6_fibula_route_fixtures::level(owner, a, 250).await?;
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -701,6 +694,10 @@ async fn defeat_mine_leader(
         let actor = runtime
             .boss_spawns().first().and_then(|spawn| spawn.actor)
             .ok_or("scheduled mine leader was not realized")?;
+        let from = runtime.read_actor_position(player).map_err(debug)?.position();
+        let to = runtime.read_actor_position(actor).map_err(debug)?.position();
+        assert_eq!(from.floor, to.floor, "the scheduled boss is on the fighter's floor");
+        assert_eq!(from.x.abs_diff(to.x).max(from.y.abs_diff(to.y)), 1, "fist range");
         // The test starts at the lethal swing. Attacking, capturing the principal
         // and settling both combat and the quest receipt use their native owners.
         runtime.set_test_creature_health(actor, 1).map_err(debug)?;
@@ -736,6 +733,13 @@ async fn defeat_mine_leader(
         encode_attack_target_intent(Some(&target)).map_err(debug)?,
     )
     .await?;
+    assert_eq!(
+        owner.states.attack.lock().await
+            .party_attack_state(player, a.game_session_id)
+            .and_then(|attack| attack.target()),
+        Some(actor),
+        "the native attack keeps the scheduled boss targeted",
+    );
     assert!(
         owner
             .refresh_source_party_presence(player, a.game_session_id)

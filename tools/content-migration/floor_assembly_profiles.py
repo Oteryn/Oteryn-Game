@@ -14,9 +14,10 @@ ROOT = Path(__file__).resolve().parents[2]
 PATH = 'tools/content-schema/native-gameplay/floor-assembly-item-profiles.json'
 # Elemental Spheres source altars and charged decorations stay World projections.
 # Energy field 2126 already belongs to the existing field-condition provider.
-# Crystal items.xml:3951 and the admitted appearance flags identify the
-# Farmine passage marker as a stationary, walkable ramp.
+# Crystal items.xml and the admitted appearance flags identify the Farmine
+# ramp and Banuta's smashed head and broken jar as stationary projections.
 PROJECTION_IDS = {430, 431, 1772, 1791, 1947, 1948, 1953, 2772, 2773,
+                  4851, 4996,
                   7738, 7739, 7740, 7741, 7742, 7743, 7744, 7745, 7746, 7748, 9125, 9126}
 # Include each source decay successor, not only the four altar operands.
 ELEMENTAL_CORPSES = {8105, 8106, 8107, 8108, 8136, 8137, 8138, 8139, 8140, 8141}

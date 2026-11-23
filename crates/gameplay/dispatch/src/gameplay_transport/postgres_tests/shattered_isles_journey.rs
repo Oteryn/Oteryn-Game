@@ -784,7 +784,7 @@ impl Journey<'_, '_, '_, '_> {
             .map_err(debug)?
             .ok_or("wood fence")?
             .item_fence();
-        super::quest_world_callbacks_fixtures::mint_input_on_ground(
+        super::quest_world_callbacks_fixtures::drop_input_stack(
             self.owner,
             fence,
             &Offering {
@@ -800,7 +800,7 @@ impl Journey<'_, '_, '_, '_> {
         )
         .await?;
         let wood: sqlx::types::Uuid = sqlx::query_scalar(
-            "SELECT item_instance_id FROM game_item_instances WHERE definition_production_key=$1 AND quantity=2 AND lifecycle=1 LIMIT 1",
+            "SELECT i.item_instance_id FROM game_item_instances i JOIN game_item_ground_locations g USING (item_instance_id, world_id) WHERE i.definition_production_key=$1 AND i.quantity=2 AND i.lifecycle=1 AND game_item_loop_drop_ref(g.corpse_ref) LIMIT 1",
         ).bind(item(5901)).fetch_one(&self.h.pool).await?;
         let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
         view.snapshot(

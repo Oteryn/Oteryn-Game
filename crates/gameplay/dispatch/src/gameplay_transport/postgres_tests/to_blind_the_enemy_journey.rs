@@ -560,7 +560,6 @@ async fn journey(
     bag.insert(PLATINUM, 10);
     bag.insert(AMULET, 1);
     checkpoint(pool, character, 4, &bag).await?;
-    journal(owner, member, quest_index, true, "received Eroth's reward").await?;
 
     // Each wire helper starts a new duplex connection with retained continuity.
     let payload = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&NpcTalkIntent {
@@ -574,6 +573,7 @@ async fn journey(
         Spoken
     );
     checkpoint(pool, character, 4, &bag).await?;
+    journal(owner, member, quest_index, true, "received Eroth's reward").await?;
     assert_eq!(
         wire_conversation(owner, member, npc, report, false, vec!["hi", "mission"])
             .await?
