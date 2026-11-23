@@ -259,6 +259,26 @@ pub fn swing_mitigated(
     defence: Option<(u32, u32)>,
     armor: u32,
 ) -> Option<i64> {
+    swing_mitigated_with_block(
+        root, constants, attacker, lineage, ordinal, damage, defence, armor,
+    )
+    .map(|(remaining, _)| remaining)
+}
+
+/// Resolve a swing's defence and armor and retain the block that training observes
+/// before innate mitigation or elemental response.
+#[allow(clippy::too_many_arguments)]
+pub fn swing_mitigated_with_block(
+    root: &GameplayDecisionRoot,
+    constants: &AttackConstants,
+    attacker: [u8; 16],
+    lineage: ([u8; 16], u64),
+    ordinal: u16,
+    damage: i64,
+    defence: Option<(u32, u32)>,
+    armor: u32,
+) -> Option<(i64, oteryn_gameplay_progression::hit_training::HitBlock)> {
+    use oteryn_gameplay_progression::hit_training::HitBlock;
     let mut remaining = damage;
     if let Some((minimum, maximum)) = defence {
         let defence = swing_draw(
@@ -273,7 +293,7 @@ pub fn swing_mitigated(
         )?;
         remaining = remaining.saturating_sub(defence);
         if remaining <= 0 {
-            return Some(0);
+            return Some((0, HitBlock::Defence));
         }
     }
     let (minimum, maximum) = armor_reduction_bounds(constants, armor);
@@ -287,7 +307,15 @@ pub fn swing_mitigated(
         i64::from(minimum),
         i64::from(maximum),
     )?;
-    Some(remaining.saturating_sub(reduction).max(0))
+    let remaining = remaining.saturating_sub(reduction).max(0);
+    Some((
+        remaining,
+        if remaining == 0 {
+            HitBlock::Armor
+        } else {
+            HitBlock::Unblocked
+        },
+    ))
 }
 
 /// The damage key a melee swing deals (`COMBAT_PHYSICALDAMAGE`).

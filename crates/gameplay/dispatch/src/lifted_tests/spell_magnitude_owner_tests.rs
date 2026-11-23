@@ -499,6 +499,15 @@ fn crystal_equipment_spell_wheel_uses_health_after_damage_healing() {
 
 #[test]
 fn crystal_equipment_spell_commit_reflects_each_intrinsic_component() {
+    split_spell_reflection(true);
+}
+
+#[test]
+fn crystal_equipment_split_spell_reflects_before_wheel_damage() {
+    split_spell_reflection(false);
+}
+
+fn split_spell_reflection(capped: bool) {
     use crate::foundation::{CommandId, CommandRef};
     use crate::gameplay_transport::actor_spell::{
         ChannelSpellStates, commit_owner_batch, stage_player_batch_with_magnitude,
@@ -511,7 +520,15 @@ fn crystal_equipment_spell_commit_reflects_each_intrinsic_component() {
     use oteryn_gameplay_entities::carrier::soul_war::SoulWarCreatureChange;
 
     let mut f = fixture_with_source_kind(0, true, true, Some("oteryn:creature.goshnar_s_greed"));
-    f.state = PlayerSpellState::new(FACTS, 0, 0).expect("unbuffed caster");
+    let facts = if capped {
+        FACTS
+    } else {
+        crate::spell::cast::CharacterCastFacts {
+            max_health: 5_000,
+            ..FACTS
+        }
+    };
+    f.state = PlayerSpellState::new(facts, 0, 0).expect("unbuffed caster");
     f.attributes.binding.player_revision = f.state.revision();
     f.attributes.policy = MagnitudePolicy::BaselineTest;
     f.attributes.owner_revisions = Some((1, 1, Some(1)));
@@ -548,9 +565,32 @@ fn crystal_equipment_spell_commit_reflects_each_intrinsic_component() {
     };
     combat.element = Element::Physical;
     combat.hits.truncate(1);
-    combat.hits[0].magnitude = 3_000;
+    combat.hits[0].magnitude = if capped { 3_000 } else { 130 };
+    if !capped {
+        combat.hits[0].bonus_percent = 0;
+    }
     combat.hits[0].side_percent = None;
     combat.block_armor = false;
+    let hit = combat.hits[0].clone();
+    let expected = if capped {
+        2 * facts.max_health.div_ceil(100)
+    } else {
+        f.attributes.wheel_flat_damage = Some(0);
+        let mut baseline = qualify(&f, &plan).expect("real source magnitude owner");
+        baseline.bind_intrinsic_weapon(weapon);
+        let (total, _) = baseline
+            .finish_with_damage_healing(&plan, &hit, &f.bindings[1], &mut |_, high| high)
+            .expect("post-block split");
+        let [primary, _] = baseline
+            .intrinsic_damage_components()
+            .next()
+            .expect("physical and fire")
+            .final_parts;
+        assert!(primary >= 5 && total - primary >= 5);
+        let expected = u32::try_from(primary / 5 + (total - primary) / 5).expect("reflection");
+        f.attributes.wheel_flat_damage = Some(11);
+        expected
+    };
     let mut magnitude = qualify(&f, &plan).expect("real source magnitude owner");
     magnitude.bind_intrinsic_weapon(weapon);
     let lowered = lower_native(
@@ -577,7 +617,9 @@ fn crystal_equipment_spell_commit_reflects_each_intrinsic_component() {
         &f.bindings,
         0,
         &mut |plan, hit, binding| {
-            magnitude.finish_with_damage_healing(plan, hit, binding, &mut |low, _| low)
+            magnitude.finish_with_damage_healing(plan, hit, binding, &mut |low, high| {
+                if capped { low } else { high }
+            })
         },
     )
     .expect("lowered damage");
@@ -587,7 +629,7 @@ fn crystal_equipment_spell_commit_reflects_each_intrinsic_component() {
             &f.runtime,
             f.caster,
             f.session,
-            FACTS,
+            facts,
             (0, 0),
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
         )
@@ -620,8 +662,8 @@ fn crystal_equipment_spell_commit_reflects_each_intrinsic_component() {
         .vitals();
     assert_eq!(
         before.health - after.health,
-        2 * before.max_health.div_ceil(100),
-        "each intrinsic component reaches its independent reflection cap"
+        expected,
+        "reflection uses each post-block component and its independent cap"
     );
 }
 
@@ -2287,6 +2329,32 @@ fn delayed_snapshot_selection_keeps_current_gems_and_focus_exactly_once() {
 
 #[test]
 fn pvp_target_block_precedes_attacker_wheel_and_requires_exact_numerical_owner_proof() {
+    pvp_magnitude_fixture(None);
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum SplitSpellCase {
+    Reduction,
+    Shield,
+    Outgoing,
+}
+
+#[test]
+fn crystal_equipment_split_spell_pvp_reduces_each_component() {
+    pvp_magnitude_fixture(Some(SplitSpellCase::Reduction));
+}
+
+#[test]
+fn crystal_equipment_split_spell_reports_health_after_shield() {
+    pvp_magnitude_fixture(Some(SplitSpellCase::Shield));
+}
+
+#[test]
+fn crystal_equipment_split_spell_halves_pvp_before_outgoing_conditions() {
+    pvp_magnitude_fixture(Some(SplitSpellCase::Outgoing));
+}
+
+fn pvp_magnitude_fixture(case: Option<SplitSpellCase>) {
     use crate::foundation::{CommandId, CommandRef};
     use crate::gameplay_transport::actor_spell::{
         ChannelSpellStates, stage_player_batch, stage_player_batch_with_magnitude,
@@ -2358,6 +2426,76 @@ fn pvp_target_block_precedes_attacker_wheel_and_requires_exact_numerical_owner_p
         0,
     )
     .expect("real Avatar");
+    if let Some(case) = case {
+        use crate::foundation::{
+            ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
+        };
+        target_state.conditions.clear_on_death();
+        target_state.install_wheel_effects(
+            oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default(),
+        );
+        f.attributes.wheel_flat_damage = Some(0);
+        match case {
+            SplitSpellCase::Reduction => {
+                let mut effects =
+                    oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+                effects.revelation_stages.insert("combat_mastery".into(), 2);
+                target_state.install_wheel_effects(effects);
+                target_state.restore_saved_vitals(500, facts.max_mana);
+            }
+            SplitSpellCase::Shield => {
+                crate::spell::actor_conditions::apply_combat_change(
+                    &mut target_state,
+                    &OwnerCombatChange::ManaShield(batch::ManaShieldState {
+                        capacity: 30,
+                        expires_ms: 1000,
+                    }),
+                    0,
+                )
+                .expect("real mana shield");
+            }
+            SplitSpellCase::Outgoing => {
+                let definition = ConditionDefinition::new(
+                    "fixture:outgoing-retention",
+                    1,
+                    ConditionValues::Attributes {
+                        duration_ms: 1000,
+                        critical_chance_percent: 0,
+                        critical_extra_percentage_points: 0,
+                        damage_dealt_percent: 70,
+                        incoming_reduction_percent: 0,
+                    },
+                )
+                .expect("outgoing damage attributes");
+                let facts = ApplicationFacts {
+                    now: 100_000,
+                    base_speed: 220,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: true,
+                    decision_root: &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+                        [2; 32],
+                    ),
+                    occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(
+                        [3; 16],
+                    ),
+                };
+                f.state
+                    .conditions
+                    .apply_with_external_damage_buff(
+                        &definition,
+                        None,
+                        ConditionSourceKind::Creature,
+                        &[],
+                        &facts,
+                        0,
+                    )
+                    .expect("condition owner");
+                f.attributes.binding.player_revision = f.state.revision();
+            }
+        }
+    }
     let mut states = ChannelSpellStates::default();
     states
         .initialize(
@@ -2404,7 +2542,12 @@ fn pvp_target_block_precedes_attacker_wheel_and_requires_exact_numerical_owner_p
     combat.block_armor = false;
     combat.hits.truncate(1);
     combat.hits[0].target = 4;
-    combat.hits[0].magnitude = 200;
+    combat.hits[0].magnitude = match case {
+        Some(SplitSpellCase::Outgoing) => 126,
+        Some(SplitSpellCase::Reduction) => 88,
+        Some(SplitSpellCase::Shield) => 80,
+        None => 200,
+    };
     combat.hits[0].bonus_percent = 0;
     combat.hits[0].side_percent = None;
     let mut owner = PreparedMagnitudeOwner::qualify_pvp(
@@ -2420,6 +2563,14 @@ fn pvp_target_block_precedes_attacker_wheel_and_requires_exact_numerical_owner_p
         &[(target, false)],
     )
     .expect("real target numerical owner");
+    if case.is_some() {
+        use oteryn_gameplay_combat_rules::resolution::{MeleeSkill, SwingWeapon};
+        owner.bind_intrinsic_weapon(SwingWeapon::Melee {
+            attack: 1,
+            skill: MeleeSkill::Axe,
+            elemental: Some((1, crate::content::ProjectV2RangedElement::Fire)),
+        });
+    }
     let template = batch::OwnerCombatBatch {
         caster: f.caster,
         attacker: f.attributes.binding.character,
@@ -2453,6 +2604,67 @@ fn pvp_target_block_precedes_attacker_wheel_and_requires_exact_numerical_owner_p
     let OwnerCombatChange::Damage { magnitude, .. } = lowered.batch.effects[0].change else {
         panic!("damage")
     };
+    if let Some(case) = case {
+        if case == SplitSpellCase::Outgoing {
+            // 63 → PvP31 → outgoing21 → baseline20 for each component.
+            assert_eq!(magnitude, 40);
+            return;
+        }
+        let mut proof = stage_player_batch_with_magnitude(
+            &f.runtime,
+            &states,
+            &lowered.batch,
+            None,
+            Some(&owner),
+        )
+        .expect("qualified split HP stage");
+        let receipt =
+            crate::foundation::runtime_actor_spell_types::PlayerBatchProof::health_receipt(
+                &proof, target, 0,
+            )
+            .expect("split hit receipt");
+        if case == SplitSpellCase::Reduction {
+            assert_eq!(magnitude, 42, "each 44 → PvP22 → baseline21");
+            assert_eq!(receipt.health_after, 462);
+        } else {
+            assert_eq!(
+                receipt.health_after, 992,
+                "shield absorbed the primary and ten of the secondary"
+            );
+            proof.grant_test_pvp_target(target, session);
+            states.open_analyser_for_test(f.caster, f.session);
+            let staged = f
+                .runtime
+                .stage_spell_batch(&lowered.batch)
+                .expect("qualified split batch");
+            crate::gameplay_transport::actor_spell::commit_owner_batch(
+                &mut f.runtime,
+                &mut states,
+                staged,
+                Some(proof),
+            )
+            .expect("committed split spell");
+            use oteryn_protocol_oteryn::analyser::{
+                AnalyserFact, AnalyserImpact, decode_analyser_facts,
+            };
+            use oteryn_protocol_oteryn::damage_element::DamageElement;
+            let bytes = states
+                .analyser_update_for_test(f.caster, f.session)
+                .expect("analyser update");
+            let facts = decode_analyser_facts(&bytes).expect("impact facts");
+            assert!(facts.iter().any(|fact| matches!(fact,
+                AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Fire, value }) if value.get() == 8
+            )));
+            assert!(!facts.iter().any(|fact| matches!(
+                fact,
+                AnalyserFact::Impact(AnalyserImpact::Damage {
+                    element: DamageElement::Physical,
+                    ..
+                })
+            )));
+        }
+        return;
+    }
     assert_eq!(
         magnitude, 85,
         "200/2=100; baseline1.3%=98; gem1.01%=97; Avatar15%=82; attackerflat3=85"

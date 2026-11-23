@@ -36,6 +36,11 @@ IDS13 = frozenset(
 )
 IDS4 = frozenset((36672, 36673, 45639, 45640))
 IDS = IDS13 | IDS4
+NATIVE_PROFILES = "content/items/definitions/spell-native-profiles.json"
+RUST_PIN = (
+    ROOT
+    / "crates/gameplay/content-promotion/src/content/item_numeric_modifier_promotion.rs"
+)
 HEADERS = ("kind", "stack_class", "client_projection", "materializable")
 
 
@@ -196,7 +201,7 @@ def source_vector(entry, indexed, pages, cutoff, order):
     return values[0]["value"]
 
 
-def qualify(entry, definition, binding, obj, members, routed, vector):
+def qualify(entry, definition, binding, obj, members, routed, vector, profile=None):
     iid, target = entry["item_id"], entry["current_target"]
     official = entry["official_source"]
     if (
@@ -212,10 +217,34 @@ def qualify(entry, definition, binding, obj, members, routed, vector):
         or target["revision"] != "definition-r1"
     ):
         raise ValueError("numeric modifier exact/native/World identity drift")
-    if {k: definition[k] for k in HEADERS} != entry["current_published_scope_receipt"][
-        "native_headers"
-    ]:
-        raise ValueError("four scoped structural headers drift")
+    headers = {k: definition[k] for k in HEADERS}
+    historical = entry["current_published_scope_receipt"]["native_headers"]
+    if headers != historical:
+        # A current native admission can supersede the historical eligibility
+        # only when both full modifier vectors and the exact identity agree.
+        native_binding = (profile or {}).get("production_binding", {})
+        admission = (profile or {}).get("admission", {})
+        if (
+            native_binding.get("source_key") != "oteryn:source.crystalserver"
+            or native_binding.get("disposition") != "EXACT"
+            or native_binding.get("external_id") != str(iid)
+            or native_binding.get("target") != target
+            or admission.get("materializable") is not True
+            or admission.get("stack_class") != "NonStackable"
+            or historical["materializable"] is not False
+            or historical["stack_class"] != "Unknown"
+            or headers
+            != historical
+            | {
+                "materializable": admission["materializable"],
+                "stack_class": admission["stack_class"],
+            }
+            or frame.leaf(definition, "skill_modifiers.modifiers")
+            != {"state": "KNOWN", "value": vector}
+            or frame.leaf(profile, "skill_modifiers.modifiers")
+            != {"state": "KNOWN", "value": vector}
+        ):
+            raise ValueError("four scoped structural headers drift")
     flags = obj.get("flags", {})
     if (
         obj.get("name") != official["official_name"]
@@ -255,7 +284,7 @@ def qualify(entry, definition, binding, obj, members, routed, vector):
     return {
         "source_item_id": iid,
         "target": target,
-        "headers": {k: definition[k] for k in HEADERS},
+        "headers": headers,
         "expected_name": obj["name"],
         "modifiers": vector,
     }
@@ -327,6 +356,12 @@ def build(root=ROOT):
             if obj["id"] in objects:
                 raise ValueError("duplicate official numeric object")
             objects[obj["id"]] = obj | {"object_sha256": base.sha(raw)}
+    profiles_raw = (root / NATIVE_PROFILES).read_bytes()
+    profiles = {
+        row["production_definition"]["production_key"]: row
+        for row in json.loads(profiles_raw)["records"]
+        if row.get("production_definition")
+    }
     definitions, routed, maps = {}, set(), {}
     for path in json.loads((root / "content/items/index.json").read_bytes())["shards"]:
         shard = json.loads((root / path).read_bytes())
@@ -360,6 +395,7 @@ def build(root=ROOT):
                 members,
                 routed,
                 vector,
+                profiles.get(entry["item_key"]),
             )
         )
     if sum(len(r["modifiers"]) for r in rows) != 50:
@@ -374,6 +410,10 @@ def build(root=ROOT):
             "receipt_sha256": RECEIPT_SHA,
             "proofs": receipt["source_proofs"],
             "compiler_sha256": base.sha((root / COMPILER).read_bytes()),
+            "native_profiles": {
+                "path": NATIVE_PROFILES,
+                "sha256": base.sha(profiles_raw),
+            },
             "world_owner_inputs": maps,
         },
     }
@@ -387,12 +427,23 @@ def main():
         json.dumps(build(), sort_keys=True, ensure_ascii=False, separators=(",", ":"))
         + "\n"
     ).encode()
+    digest = base.sha(data)
+    pin = RUST_PIN.read_text()
+    next_pin, count = re.subn(
+        r'(ITEM_NUMERIC_MODIFIER_PACKET_SHA256: &str =\s*")[0-9a-f]{64}(")',
+        lambda match: match[1] + digest + match[2],
+        pin,
+    )
+    if count != 1:
+        raise ValueError("numeric17 Rust pin marker drift")
     if args.check:
-        if OUTPUT.read_bytes() != data:
+        if OUTPUT.read_bytes() != data or pin != next_pin:
             raise SystemExit("numeric17 packet drift")
     else:
         OUTPUT.write_bytes(data)
-    print("PASS numeric17/50", base.sha(data))
+        if pin != next_pin:
+            RUST_PIN.write_text(next_pin)
+    print("PASS numeric17/50", digest)
 
 
 if __name__ == "__main__":

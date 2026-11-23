@@ -34,7 +34,7 @@ class NumericTests(unittest.TestCase):
         }
         cls.order = c.shared.native_order()
 
-    def args(self, iid=36656):
+    def args(self, iid=36657):
         e = copy.deepcopy(self.entries[iid])
         official = e["official_source"]
         obj = {
@@ -180,6 +180,29 @@ class NumericTests(unittest.TestCase):
         }
         self.assertEqual(c.qualify(*args), expected)
         self.assertEqual(before, self.defs[args[0]["item_key"]])
+
+    def test_native_admission_requires_exact_headers_and_complete_vector(self):
+        args = self.args(36656)
+        profile = next(
+            row
+            for row in json.loads((c.ROOT / c.NATIVE_PROFILES).read_bytes())["records"]
+            if row.get("production_binding", {}).get("target")
+            == args[0]["current_target"]
+        )
+        with self.assertRaisesRegex(ValueError, "four scoped structural headers drift"):
+            c.qualify(*args)
+        self.assertTrue(c.qualify(*args, profile)["headers"]["materializable"])
+        for mutate in (
+            lambda d: d.update(stack_class="StackCapable"),
+            lambda d: d.update(client_projection="ServerOnly"),
+            lambda d: d["semantics"].update(skill_modifiers={"state": "UNKNOWN"}),
+        ):
+            changed = copy.deepcopy(args)
+            mutate(changed[1])
+            with self.assertRaisesRegex(
+                ValueError, "four scoped structural headers drift"
+            ):
+                c.qualify(*changed, profile)
 
 
 if __name__ == "__main__":

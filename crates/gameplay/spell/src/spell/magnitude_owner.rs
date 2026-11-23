@@ -292,7 +292,7 @@ pub struct PreparedMagnitudeOwner {
     // is minted only after finish_inner applied the real target's source block stage.
     player_block_shielding: Vec<(ExactActorRef, u32)>,
     finished_player_damage: Vec<(ExactActorRef, i64)>,
-    intrinsic_damage: Vec<(ExactActorRef, i64, Element)>,
+    intrinsic_damage: Vec<IntrinsicDamage>,
 }
 
 /// Values whose timing D.1.3 fixes at planting. Original owner observations stay
@@ -420,6 +420,19 @@ fn condition_attributes(
         .attributes_at(now_ms.checked_mul(1000).ok_or(Error::InvalidCondition)?))
 }
 
+/// A qualified intrinsic split, retained for final HP staging and block-time reflection.
+#[derive(Debug, Clone, Copy)]
+pub struct IntrinsicDamage {
+    /// The exact target of both components.
+    pub target: ExactActorRef,
+    /// The physical and secondary components after source and target block.
+    pub post_block: [i64; 2],
+    /// The physical and secondary components at the final HP owner.
+    pub final_parts: [i64; 2],
+    /// The secondary component's element.
+    pub secondary_element: oteryn_protocol_oteryn::damage_element::DamageElement,
+}
+
 impl PreparedMagnitudeOwner {
     /// Race identities come from the already-qualified creature owner snapshots.
     pub fn charm_targets(&self) -> impl Iterator<Item = (ExactActorRef, &str)> {
@@ -478,20 +491,9 @@ impl PreparedMagnitudeOwner {
         }
     }
 
-    pub fn intrinsic_damage_components(
-        &self,
-    ) -> impl Iterator<
-        Item = (
-            ExactActorRef,
-            i64,
-            oteryn_protocol_oteryn::damage_element::DamageElement,
-        ),
-    > + '_ {
-        self.intrinsic_damage
-            .iter()
-            .map(|&(actor, primary, secondary)| {
-                (actor, primary, analyser_damage_element(secondary))
-            })
+    /// Intrinsic splits in the same order as the emitted damage effects.
+    pub fn intrinsic_damage_components(&self) -> impl Iterator<Item = IntrinsicDamage> + '_ {
+        self.intrinsic_damage.iter().copied()
     }
 
     fn damage_dealt_percent(&self) -> Result<u32, Error> {
@@ -1244,8 +1246,9 @@ impl PreparedMagnitudeOwner {
         draw: &mut dyn FnMut(i64, i64) -> i64,
     ) -> Result<(i64, i64), Error> {
         let mut healing = 0;
+        let mut post_block = [0, 0];
         let (primary, secondary, secondary_element) =
-            self.finish_inner(plan, hit, binding, draw, &mut healing)?;
+            self.finish_inner(plan, hit, binding, draw, &mut healing, &mut post_block)?;
         let magnitude = primary
             .checked_add(secondary)
             .ok_or(Error::InvalidMagnitude)?;
@@ -1258,8 +1261,12 @@ impl PreparedMagnitudeOwner {
             self.intrinsic_damage
                 .try_reserve(1)
                 .map_err(|_| Error::InvalidBatch)?;
-            self.intrinsic_damage
-                .push((binding.actor, primary, element));
+            self.intrinsic_damage.push(IntrinsicDamage {
+                target: binding.actor,
+                post_block,
+                final_parts: [primary, secondary],
+                secondary_element: analyser_damage_element(element),
+            });
         }
         if magnitude > 0
             && matches!(plan, NativeCombatPlan::Combat(combat) if combat.element != Element::Healing)
@@ -1294,6 +1301,7 @@ impl PreparedMagnitudeOwner {
         binding: &LiveActorBinding,
         draw: &mut dyn FnMut(i64, i64) -> i64,
         damage_healing: &mut i64,
+        post_block: &mut [i64; 2],
     ) -> Result<(i64, i64, Option<Element>), Error> {
         if plan != &self.plan
             || hit.delay_ms != 0
@@ -1497,18 +1505,14 @@ impl PreparedMagnitudeOwner {
         let (primary, secondary, health, side_percent) = match &target.owner {
             TargetOwner::Player(target_state) => {
                 let block = |element, raw| {
-                    self.player_component(
-                        &target,
-                        target_state,
-                        element,
-                        percent(raw, damage_dealt)?,
-                    )
+                    self.player_component(&target, target_state, element, raw, damage_dealt)
                 };
                 let primary = block(element, value)?;
                 let secondary = secondary
                     .map(|(element, raw)| block(element, raw))
                     .transpose()?
                     .unwrap_or(0);
+                *post_block = [primary, secondary];
                 (primary, secondary, health, None)
             }
             TargetOwner::Creature(creature) => {
@@ -1532,26 +1536,30 @@ impl PreparedMagnitudeOwner {
                     )
                     .min(maximum);
                 let mut block = |element, raw, primary| {
-                    let mut value = self.creature_component(
+                    self.creature_component(
                         policy,
                         element,
                         percent(raw, damage_dealt)?,
                         primary && armor,
                         draw,
-                    )?;
-                    if primary && value > 0 {
-                        value = target
-                            .native_primary(value.checked_neg().ok_or(Error::InvalidMagnitude)?)?
-                            .checked_neg()
-                            .ok_or(Error::InvalidMagnitude)?;
-                    }
-                    cruelty_health_component(value, target.cruelty_drain)
+                    )
                 };
                 let primary = block(element, value, true)?;
                 let secondary = secondary
                     .map(|(element, raw)| block(element, raw, false))
                     .transpose()?
                     .unwrap_or(0);
+                *post_block = [primary, secondary];
+                let primary = if primary > 0 {
+                    target
+                        .native_primary(primary.checked_neg().ok_or(Error::InvalidMagnitude)?)?
+                        .checked_neg()
+                        .ok_or(Error::InvalidMagnitude)?
+                } else {
+                    primary
+                };
+                let primary = cruelty_health_component(primary, target.cruelty_drain)?;
+                let secondary = cruelty_health_component(secondary, target.cruelty_drain)?;
                 (primary, secondary, health, hit.side_percent)
             }
         };
@@ -1571,6 +1579,7 @@ impl PreparedMagnitudeOwner {
         target_state: &PlayerSpellState,
         element: Element,
         mut value: i64,
+        damage_dealt: u32,
     ) -> Result<i64, Error> {
         let black = self
             .pvp_targets
@@ -1584,6 +1593,8 @@ impl PreparedMagnitudeOwner {
             u32::try_from(value.max(0)).map_err(|_| Error::InvalidMagnitude)?,
             black,
         );
+        let pvp = u32::try_from(percent(i64::from(pvp), damage_dealt)?)
+            .map_err(|_| Error::InvalidMagnitude)?;
         let shielding = self
             .player_block_shielding
             .iter()

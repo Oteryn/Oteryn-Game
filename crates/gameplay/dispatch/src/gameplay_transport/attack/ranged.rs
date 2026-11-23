@@ -7,6 +7,7 @@ use crate::spell::formula::Formula;
 use oteryn_gameplay_combat_rules::attack::ranged::{
     player_distance_formula, shot_hit_chance, shot_hits, wand_formula,
 };
+use oteryn_gameplay_progression::hit_training::HitBlock;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct RangedLoadout {
@@ -819,24 +820,15 @@ pub(super) fn element_key(element: Element) -> &'static str {
     }
 }
 
-pub(super) fn resolved_damage(
-    damage: RangedDamage,
-    magnitude: i64,
-    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
-) -> Option<(i64, i64, Element)> {
-    let (primary, secondary, element) = damage.split(magnitude)?;
-    offence.convert_physical(primary, secondary, element)
+pub(super) struct CreatureShot {
+    pub(super) parts: [i64; 2],
+    pub(super) blocks: (Option<HitBlock>, HitBlock),
 }
 
-#[allow(
-    clippy::too_many_arguments,
-    reason = "keep independent weapon, target, decision, native health, Cruelty and Wheel inputs explicit"
-)]
 pub(super) fn creature_damage(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,
     (physical, elemental, element): (i64, i64, Element),
-    proficiency_damage: impl Fn(i64) -> i64,
     (root, constants, actor, lineage, ordinal): (
         &GameplayDecisionRoot,
         &AttackConstants,
@@ -844,22 +836,25 @@ pub(super) fn creature_damage(
         CommandRef,
         u16,
     ),
-    cruelty_drain: Option<u64>,
-    health_change: Option<&crate::foundation::NativeHealthChangeObservation>,
-    wheel: Option<(&crate::spell::cast::PlayerSpellState, u64, u64, u64, bool)>,
-) -> Option<([i64; 2], Element)> {
+    wheel: Option<(&crate::spell::cast::PlayerSpellState, u64)>,
+) -> Option<CreatureShot> {
     use oteryn_gameplay_combat_rules::resolution::{
-        creature_damage_response_with_reduction, swing_mitigated,
+        creature_damage_response_with_reduction, swing_mitigated_with_block,
     };
-    let bow = wheel.is_some_and(|(state, now, _, _, _)| {
+    let bow = wheel.is_some_and(|(state, now)| {
         state
             .wheel_effects_at(now)
             .is_some_and(|effects| effects.active_unique_perks.contains("ballistic_mastery"))
             && state.wheel_equipment().and_then(|hands| hands.ammunition())
                 == Some(crate::content::ReferenceAmmoType::Arrow)
     });
-    let physical = if physical > 0 {
-        let physical = swing_mitigated(
+    let is_immune = |element| policy.damage_immunities.iter().any(|key| key == element);
+    let (physical, primary_block) = if matches!(ranged.damage, RangedDamage::Magic { .. }) {
+        (0, HitBlock::Unblocked)
+    } else if is_immune("physical") {
+        (0, HitBlock::Immunity)
+    } else {
+        let (physical, block) = swing_mitigated_with_block(
             root,
             constants,
             actor.placement_identity(),
@@ -872,62 +867,44 @@ pub(super) fn creature_damage(
             None,
             policy.armor?,
         )?;
-        creature_damage_response_with_reduction(
-            policy,
-            physical,
-            "physical",
-            if bow { 2 } else { 0 },
-        )?
-    } else {
-        0
+        (
+            creature_damage_response_with_reduction(
+                policy,
+                physical,
+                "physical",
+                if bow { 2 } else { 0 },
+            )?,
+            block,
+        )
     };
-    let element_key = match element {
-        Element::Physical => "physical",
-        Element::Death => "death",
-        Element::Earth => "earth",
-        Element::Energy => "energy",
-        Element::Fire => "fire",
-        Element::Ice => "ice",
-    };
+    let key = element_key(element);
     let elemental = creature_damage_response_with_reduction(
         policy,
         elemental,
-        element_key,
-        if bow && element_key == "physical" {
-            2
-        } else {
-            0
-        },
+        key,
+        if bow && key == "physical" { 2 } else { 0 },
     )?;
-    let [physical, elemental] = native_health_primary_components(
-        ranged.damage,
-        [physical, elemental].map(proficiency_damage),
-        health_change,
-    )?;
-    let physical = super::cruelty_health_component(physical, cruelty_drain)?;
-    let elemental = super::cruelty_health_component(elemental, cruelty_drain)?;
-    if cruelty_drain.is_some() && physical == 0 && elemental == 0 {
-        return Some(([0, 0], element));
-    }
-    let (physical, elemental) = if let Some((state, now, health, maximum, adjacent)) = wheel {
-        if matches!(ranged.damage, RangedDamage::Magic { .. }) {
-            let (primary, _) = state
-                .finish_wheel_attack_components(elemental, 0, health, maximum, now, adjacent)?;
-            (0, primary)
-        } else {
-            state.finish_wheel_attack_components(
-                physical, elemental, health, maximum, now, adjacent,
-            )?
-        }
+    let training = if element == Element::Physical {
+        (None, primary_block)
     } else {
-        (physical, elemental)
+        (
+            Some(primary_block),
+            if is_immune(key) {
+                HitBlock::Immunity
+            } else {
+                HitBlock::Unblocked
+            },
+        )
     };
-    Some(([physical, elemental], element))
+    Some(CreatureShot {
+        parts: [physical, elemental],
+        blocks: training,
+    })
 }
 
 // Distance weapons keep their elemental contribution in the secondary slot;
 // wands/rods store their ONLY primary in the elemental slot instead.
-fn native_health_primary_components(
+pub(super) fn native_health_primary_components(
     damage: RangedDamage,
     [physical, elemental]: [i64; 2],
     observation: Option<&crate::foundation::NativeHealthChangeObservation>,
@@ -1044,8 +1021,10 @@ mod tests {
             cap: 100,
             launcher_bonus: 0,
         };
-        let (physical, elemental, element) =
-            resolved_damage(arrow, 100, &offence).ok_or("damage")?;
+        let (physical, elemental, element) = arrow.split(100).ok_or("arrow damage")?;
+        let (physical, elemental, element) = offence
+            .convert_physical(physical, elemental, element)
+            .ok_or("conversion")?;
         assert_eq!((physical, elemental), (50, 50));
         assert_eq!(
             analyser_element(element),

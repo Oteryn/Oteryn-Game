@@ -595,7 +595,7 @@ impl ProficiencyAttackEffects {
             return base_damage;
         }
         let mut numerator = self.damage_numerator;
-        if u128::from(target_health) * 100 >= u128::from(target_max_health) * 95 {
+        if u128::from(target_health) >= u128::from(target_max_health) * 95 / 100 {
             numerator = numerator.saturating_add(self.alpha_numerator);
         }
         if u128::from(target_health) * 100 <= u128::from(target_max_health) * 30 {

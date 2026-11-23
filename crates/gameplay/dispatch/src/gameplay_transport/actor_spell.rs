@@ -1181,6 +1181,20 @@ impl ChannelSpellStates {
         self.get(runtime, actor, game_session_id)
     }
 
+    #[cfg(test)]
+    pub(crate) fn open_analyser_for_test(&self, actor: ExactActorRef, session: GameSessionId) {
+        assert!(self.analyser.snapshot(actor, session, 1, None).is_some());
+    }
+
+    #[cfg(test)]
+    pub(crate) fn analyser_update_for_test(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<Vec<u8>> {
+        self.analyser.next(actor, session, 1)
+    }
+
     /// Test-only numerical fixture replacement through the existing current actor/session
     /// lookup. This cannot add an actor or bypass the production mutation visibility.
     #[cfg(test)]
