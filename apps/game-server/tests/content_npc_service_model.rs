@@ -64,3 +64,52 @@ fn pinned_catalogue_service_model_counts() {
     ]);
     assert_eq!(counts, expected);
 }
+
+#[test]
+fn gamon_offers_resolve_to_distinct_inventory_kits() -> Result<(), Box<dyn std::error::Error>> {
+    use native_gameplay::test_support::activated_with_loot_tables;
+    use oteryn_gameplay_domain::domain::item_definition::{ItemStackClass, TypedDefinitionRef};
+    use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
+    let world = oteryn_protocol_oteryn::WorldId::decode(&[
+        0x10, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 42,
+    ])?;
+    let (controller, _) = activated_with_loot_tables(world, None);
+    let native = controller
+        .active()
+        .and_then(ActiveGeneration::native_gameplay)
+        .ok_or("native item profiles")?;
+    let model = build().service_model_for_project()?;
+    let book = oteryn_gameplay_npc::npc_talk::NpcTalkBook::from_model(&model);
+    let gamon = book.get("oteryn:npc.gamon").ok_or("Gamon's shop")?;
+    let mut kits = Vec::new();
+    let index = native.item_index().ok_or("native item index")?;
+    for (_, offer) in
+        oteryn_gameplay_npc::npc_command::projected(gamon.offers(), index).filter(|(_, offer)| {
+            offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
+                && matches!(offer.unit_price, 30 | 50)
+                && matches!(
+                    offer.item.key.as_str(),
+                    "oteryn:item.tibia.i2797"
+                        | "oteryn:item.tibia.i2800"
+                        | "oteryn:item.tibia.i2998"
+                )
+        })
+    {
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: offer.item.key.clone(),
+            revision_ref: offer.item.revision.clone(),
+        };
+        let facts = generation_item_facts(native, &definition)?;
+        kits.push((offer.unit_price, offer.item.key.as_str(), facts.stack));
+    }
+    kits.sort_by_key(|kit| kit.0);
+    assert_eq!(
+        kits,
+        [
+            (30, "oteryn:item.tibia.i2800", ItemStackClass::NonStackable),
+            (50, "oteryn:item.tibia.i2797", ItemStackClass::NonStackable),
+        ]
+    );
+    Ok(())
+}

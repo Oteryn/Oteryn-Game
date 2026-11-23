@@ -201,6 +201,15 @@ fn literal_keyword(keyword: &crate::content::ProjectV2DialogueKeyword) -> bool {
         && keyword.links.is_empty()
 }
 
+/// A Crystal travel child and its effects on the current conversation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TravelDecline {
+    pub reply: Vec<String>,
+    pub ungreet: bool,
+    pub reset_topic: bool,
+    fallback: bool,
+}
+
 /// What one NPC says, from its generated catalogue replies.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcTalkEntry {
@@ -222,7 +231,7 @@ pub struct NpcTalkEntry {
     topic_reply: Option<String>,
     /// The admitted offers of every Service of the NPC, in source order (NPC-CMD-1b).
     offers: Vec<ProjectV2ServiceOffer>,
-    travel_declines: HashMap<String, (Vec<String>, bool)>,
+    travel_declines: HashMap<String, TravelDecline>,
     pub travel_routes: Vec<crate::content::npc_catalogue::travel::TravelRoute>,
     pub premium_services: Vec<crate::content::npc_catalogue::premium_services::PremiumNpcService>,
 }
@@ -232,11 +241,16 @@ impl NpcTalkEntry {
         self.bank
     }
 
-    /// The reply and focus disposition for declining a quoted travel route.
-    pub fn travel_decline(&self, route: &str) -> Option<(&[String], bool)> {
-        self.travel_declines
-            .get(route)
-            .map(|(reply, ungreet)| (reply.as_slice(), *ungreet))
+    /// A pending route's matching decline. Crystal keyword children match
+    /// substrings, and a fallback child gives the confirmation keyword priority.
+    pub fn travel_decline(&self, route: &str, lowercase: &str) -> Option<&TravelDecline> {
+        self.travel_declines.get(route).filter(|decline| {
+            if decline.fallback {
+                !lowercase.contains("yes")
+            } else {
+                lowercase.contains("no")
+            }
+        })
     }
 
     /// The admitted offers the trade window projects.
@@ -559,9 +573,14 @@ impl NpcTalkBook {
                                     .find(|child| child.triggers == ["no"])
                                     .or_else(|| keyword.children.iter().find(|child| child.fallback))
                             })?;
-                        (child.reply.as_slice(), child.ungreet)
+                        TravelDecline {
+                            reply: child.reply.clone(),
+                            ungreet: child.ungreet,
+                            reset_topic: false,
+                            fallback: child.fallback,
+                        }
                     };
-                    Some((key.clone(), (decline.0.to_vec(), decline.1)))
+                    Some((key.clone(), decline))
                 })
                 .collect();
             let bank = npc

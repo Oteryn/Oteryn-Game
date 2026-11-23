@@ -59,6 +59,20 @@ pub(super) struct CommitStep {
     supersedes_topic: bool,
 }
 
+/// The paid decline consumes the same source topic as the original dialogue.
+pub(in crate::gameplay_transport) fn reset_travel_topic(
+    conversations: &NpcConversations,
+    session: GameSessionId,
+    context: &Context,
+) {
+    if let Ok(mut sessions) = conversations.sessions.lock()
+        && let Some(state) = sessions.get_mut(&session)
+        && matches!(&state.catalogue, Some(Pending::Topic(topic)) if topic.context == *context)
+    {
+        state.catalogue = None;
+    }
+}
+
 pub(super) async fn inventory(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,

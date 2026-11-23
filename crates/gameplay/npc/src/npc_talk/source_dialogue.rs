@@ -39,18 +39,22 @@ pub(super) fn catalogue() -> &'static BTreeMap<String, Dialogue> {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct TravelDecline {
+struct SourceTravelDecline {
     routes: Vec<String>,
     reply: Vec<String>,
     #[serde(default)]
     ungreet: bool,
+    #[serde(default)]
+    fallback: bool,
+    #[serde(default)]
+    reset_topic: bool,
     #[serde(rename = "source")]
     _source: String,
 }
 
 /// Source replies for routes without a published decline keyword.
-pub(super) fn travel_decline(npc: &str, route: &str) -> Option<(&'static [String], bool)> {
-    static DECLINES: OnceLock<BTreeMap<String, TravelDecline>> = OnceLock::new();
+pub(super) fn travel_decline(npc: &str, route: &str) -> Option<super::TravelDecline> {
+    static DECLINES: OnceLock<BTreeMap<String, SourceTravelDecline>> = OnceLock::new();
     let source = DECLINES
         .get_or_init(|| serde_json::from_str(TRAVEL_DECLINES).unwrap_or_default())
         .get(npc)?;
@@ -58,5 +62,10 @@ pub(super) fn travel_decline(npc: &str, route: &str) -> Option<(&'static [String
         .routes
         .iter()
         .any(|key| key == route)
-        .then_some((source.reply.as_slice(), source.ungreet))
+        .then(|| super::TravelDecline {
+            reply: source.reply.clone(),
+            ungreet: source.ungreet,
+            fallback: source.fallback,
+            reset_topic: source.reset_topic,
+        })
 }

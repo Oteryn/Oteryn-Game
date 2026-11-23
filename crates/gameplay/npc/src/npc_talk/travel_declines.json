@@ -127,7 +127,8 @@
       "cormaya"
     ],
     "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eremo.lua:140:sha256:132039a8d790af142e964d624e1516648a6d6a318c159534db9c84805648401d",
-    "ungreet": true
+    "ungreet": true,
+    "fallback": true
   },
   "oteryn:npc.jack_fate": {
     "reply": [
@@ -153,7 +154,8 @@
       "thais",
       "venore"
     ],
-    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/karith.lua:332:sha256:8a9aa8b5e66848dcbd962799aa7b86cfe639d69cd7f896fbb499f9929effdffe"
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/karith.lua:332:sha256:8a9aa8b5e66848dcbd962799aa7b86cfe639d69cd7f896fbb499f9929effdffe",
+    "reset_topic": true
   },
   "oteryn:npc.sebastian": {
     "reply": [

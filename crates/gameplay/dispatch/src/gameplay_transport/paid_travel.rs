@@ -97,9 +97,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &NpcTalkIntent,
         context: &(u64, u64, String),
     ) -> bool {
-        if !intent.text.trim().eq_ignore_ascii_case("no") {
-            return false;
-        }
+        let text = intent.text.to_ascii_lowercase();
         let Some(fence) = command.item_fence else {
             return false;
         };
@@ -122,7 +120,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         context,
                         fence,
                         self.owner_now().get(),
-                    ) && entry.travel_decline(&prompt.route.route.key).is_some()
+                    ) && entry
+                        .travel_decline(&prompt.route.route.key, &text)
+                        .is_some()
                 })
             })
     }
@@ -170,15 +170,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(mut prompts) => prompts.remove(&session),
                 Err(_) => return ordinary,
             };
-            if text == "no" {
-                let Some(prompt) = previous.filter(|prompt| {
-                    prompt.matches_confirmation(intent.npc_actor, &context, fence, now)
-                }) else {
-                    return ordinary;
-                };
-                let Some((reply, ungreet)) = entry.travel_decline(&prompt.route.route.key) else {
-                    return ordinary;
-                };
+            if let Some(prompt) = previous.as_ref()
+                && prompt.matches_confirmation(intent.npc_actor, &context, fence, now)
+                && let Some(decline) = entry.travel_decline(&prompt.route.route.key, &text)
+            {
+                let ungreet = decline.ungreet;
                 if ungreet
                     && !self.states.chat.engaged(session).is_some_and(|npc| {
                         npc.placement_identity() == intent.npc_actor.identity
@@ -187,6 +183,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                 {
                     return ordinary;
+                }
+                if decline.reset_topic {
+                    npc_command::catalogue::reset_travel_topic(
+                        &self.states.npc_conversations,
+                        session,
+                        &context,
+                    );
                 }
                 let name = self.states.chat.speaker_name(session).unwrap_or_default();
                 let window = if ungreet {
@@ -197,7 +200,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return npc_command::NpcTalkOutcome {
                     conversation: Some(NpcConversation {
                         open: (!ungreet).then_some((intent.npc_actor, NpcConversationState::Open)),
-                        lines: reply
+                        lines: decline
+                            .reply
                             .iter()
                             .map(|line| {
                                 oteryn_gameplay_npc::quest_greetings::render_player_name(

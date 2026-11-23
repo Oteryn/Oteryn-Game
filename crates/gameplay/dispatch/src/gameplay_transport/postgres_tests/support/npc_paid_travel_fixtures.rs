@@ -37,13 +37,30 @@ pub(super) async fn talk(
     command_id: u64,
     text: &str,
 ) -> TestResult<crate::gameplay_transport::npc_command::NpcTalkOutcome> {
+    let result = dispatch_talk(owner, dependencies, npc, command_id, text).await?;
+    assert_eq!(
+        result.disposition,
+        NpcIntentDisposition::Ok,
+        "command {command_id} {text}: {}",
+        line(&result)
+    );
+    Ok(result)
+}
+
+async fn dispatch_talk(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    dependencies: &Dependencies,
+    npc: EntityRef,
+    command_id: u64,
+    text: &str,
+) -> TestResult<crate::gameplay_transport::npc_command::NpcTalkOutcome> {
     let fence = owner
         .current_quest_fence(dependencies.admitted.game_session_id)
         .await
         .map_err(|_| "current fence")?
         .ok_or("live session")?
         .item_fence();
-    let result = owner
+    Ok(owner
         .npc_talk(
             dependencies.actor,
             UseCommand {
@@ -56,14 +73,7 @@ pub(super) async fn talk(
                 text: text.into(),
             },
         )
-        .await;
-    assert_eq!(
-        result.disposition,
-        NpcIntentDisposition::Ok,
-        "command {command_id} {text}: {}",
-        line(&result)
-    );
-    Ok(result)
+        .await)
 }
 
 fn line(outcome: &crate::gameplay_transport::npc_command::NpcTalkOutcome) -> String {
@@ -878,6 +888,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
             }
             assert_eq!(mission().await?, 1);
         }
+        let mut decline_failures = Vec::new();
         let all_passages = S10T_PASSAGES.iter().chain(POSTMAN_TOUR.iter().filter(|_| !reward_fixture));
         for (index, (captain, destination, fare, tile)) in all_passages.enumerate() {
             if index == S10T_PASSAGES.len() {
@@ -950,6 +961,88 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                     .fetch_one(&h.pool)
                     .await?;
             let request = if *captain == "eremo" { "pemaret" } else { destination };
+            let decline_text = match *captain {
+                "brodrosch" | "kendra" => Some("No thanks"),
+                "eremo" => Some("maybe later"),
+                "karith" => Some("no"),
+                _ => None,
+            };
+            if !reward_fixture && let Some(text) = decline_text {
+                if *captain == "karith" {
+                    owner.refresh_quest_session(session, true).await;
+                }
+                let probe = 2_000 + u64::try_from(index)? * 4;
+                assert!(
+                    line(&talk(&owner, &dependencies, npc, probe, request).await?)
+                        .contains(&format!("{fare} gold"))
+                );
+                if *captain == "karith" {
+                    assert_eq!(
+                        owner
+                            .states
+                            .npc_conversations
+                            .catalogue_topic_for_test(session),
+                        Some(11)
+                    );
+                }
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                let actual = talk(&owner, &dependencies, npc, probe + 1, text).await?;
+                let closes = owner.states.chat.engaged(session).is_none();
+                let expected = if *captain == "kendra" {
+                    model.npcs().iter()
+                        .find(|(key, _)| key.key == captain_key)
+                        .and_then(|(_, npc)| npc.bank_dialogue.as_ref())
+                        .and_then(|dialogue| dialogue.keywords.iter()
+                            .filter(|keyword| keyword.key == route.route.key
+                                || matches!(keyword.triggers.as_slice(), [word] if route.matches_keyword(word)))
+                            .flat_map(|keyword| &keyword.children)
+                            .find(|child| child.triggers == ["no"]))
+                        .ok_or("Kendra's catalogue decline")?.reply.join(" ")
+                } else {
+                    source_decline(&captain_key)?
+                };
+                if line(&actual) != expected || closes != (*captain == "eremo") {
+                    decline_failures.push(format!(
+                        "{captain} {text:?}: expected {expected:?}, got {:?}, focus closed {closes}",
+                        line(&actual)
+                    ));
+                }
+                if *captain == "karith" {
+                    owner.clock_origin -= std::time::Duration::from_secs(1);
+                    let topic = owner
+                        .states
+                        .npc_conversations
+                        .catalogue_topic_for_test(session);
+                    let result = dispatch_talk(&owner, &dependencies, npc, probe + 2, "yes").await?;
+                    let actual = line(&result);
+                    let rules: oteryn_gameplay_quests::quest::npc_rules::NpcRuleDocument =
+                        serde_json::from_str(include_str!(concat!(
+                            env!("CARGO_MANIFEST_DIR"),
+                            "/../../../content/dialogues/quest-rules/quest-batch3-a-in_service_of_yalahar.json"
+                        )))?;
+                    let expected = rules
+                        .rules
+                        .iter()
+                        .find(|rule| rule.npc == captain_key && rule.key.ends_with("/branch-206-52-1-1"))
+                        .ok_or("Karith's default yes rule")?
+                        .reply
+                        .join(" ");
+                    if topic.is_some_and(|topic| topic != 0)
+                        || result.disposition != NpcIntentDisposition::Ok
+                        || actual != expected
+                    {
+                        decline_failures.push(format!(
+                            "Karith after decline: topic {topic:?}, expected {expected:?}, got {:?} {actual:?}",
+                            result.disposition
+                        ));
+                    }
+                }
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                if closes {
+                    talk(&owner, &dependencies, npc, probe + 3, "hi").await?;
+                }
+                assert_eq!(gold(&h).await?, before);
+            }
             assert!(
                 line(&talk(&owner, &dependencies, npc, command_id + 2, request).await?)
                     .contains(&format!("{fare} gold"))
@@ -1080,6 +1173,7 @@ pub(super) fn scenario(reward_fixture: bool) -> TestResult {
                 "POSTGRES_EXECUTED S10T {captain} {destination} fare={fare} arrival={tile:?} replay charged once"
             );
         }
+        assert!(decline_failures.is_empty(), "{}", decline_failures.join("\n"));
         if !reward_fixture {
             let kevin = at_start("kevin").await?;
             owner.clock_origin -= std::time::Duration::from_secs(1);
@@ -1373,4 +1467,14 @@ async fn gold(h: &Harness) -> TestResult<i64> {
     let carried:i64=sqlx::query_scalar("SELECT COALESCE(SUM(quantity * CASE definition_production_key WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 WHEN 'oteryn:item.tibia.i3043' THEN 10000 ELSE 0 END),0)::bigint FROM game_item_instances WHERE item_instance_id IN (SELECT item_instance_id FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid)")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     Ok(carried + bank(h).await?)
+}
+
+fn source_decline(npc: &str) -> TestResult<String> {
+    let declines: std::collections::BTreeMap<String, serde_json::Value> =
+        serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../npc/src/npc_talk/travel_declines.json"
+        )))?;
+    let lines: Vec<String> = serde_json::from_value(declines[npc]["reply"].clone())?;
+    Ok(lines.join(" "))
 }

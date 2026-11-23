@@ -243,7 +243,7 @@ class NativeWorldCompletion(unittest.TestCase):
                     [(offer["item"]["key"], offer["unit_price"]) for offer in offers]
                     for offers in linked_offers
                 ],
-                [[("oteryn:item.tibia.i2998", 30)], [("oteryn:item.tibia.i2998", 50)]],
+                [[("oteryn:item.tibia.i2800", 30)], [("oteryn:item.tibia.i2797", 50)]],
             )
             return self.native_output(command, **kwargs)
 
