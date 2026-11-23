@@ -58,6 +58,7 @@ impl Row {
         }
         if let Err(error) = &result {
             evidence(&format!("W03_OBSERVED status=FAIL detail={error}"));
+            evidence(&format!("W03_GAP {error}"));
         }
         evidence(&format!(
             "e2e_all scenario=W03.full status={} seconds={:.3} evidence=runtime-native-boss-reward-commands",
@@ -73,7 +74,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(&mut row, clients))).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout need=reachable-eligible-boss-and-reward-chest".into()),
@@ -97,12 +98,56 @@ async fn open(client: &mut DevClientSession) -> TestResult<boss_encounter::Rewar
         .ok_or_else(|| "step=open observed=missing-or-malformed-reward-chest-frame".into())
 }
 
+fn earned_group<'a>(
+    prior: &boss_encounter::RewardChest,
+    opened: &'a boss_encounter::RewardChest,
+) -> Option<&'a oteryn_protocol_oteryn::boss_encounter::BossRewardChestEntry> {
+    opened.entries.iter().find(|group| {
+        group.boss_key == super::full_row_w02::BOSS
+            && group.minted_at_unix_ms >= prior.now
+            && !prior.entries.iter().any(|old| old.death == group.death)
+    })
+}
+
+async fn approach_chest(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    const CHEST: &str = "oteryn:item.tibia.i19250";
+    const OWNER: &str = "crates/gameplay/dispatch/src/gameplay_transport/boss_rewards/physical.rs:10";
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let mut placements = Vec::new();
+    oteryn_world_bundle::bundle::visit(&bytes, |manifest, sector| {
+        for tile in sector.tiles {
+            if tile.items.iter().any(|item| {
+                item.depth == 0 && manifest.palette[item.palette as usize].key == CHEST
+            }) {
+                placements.push(TilePos { x: tile.x, y: tile.y, floor: sector.floor });
+            }
+        }
+        Ok(())
+    })?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        placements.iter().any(|chest| {
+            at.floor == chest.floor && at.x.abs_diff(chest.x).max(at.y.abs_diff(chest.y)) <= 1
+        })
+    }).ok_or_else(|| format!("step=walk-to-reward-chest observed=no-route from={from:?} authored={} need={CHEST} source={OWNER}", placements.len()))?;
+    walk(client, world, &path).await
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_character(clients, 0xf8, 1).await?;
+    let mut client = connect_character(clients, 0xf8, 0).await?;
+    let prior = open(&mut client).await?;
+    super::full_row_w02::defeat_faceless_bane(&mut client, clients).await?;
     let before = open(&mut client).await?;
     let mut collected = false;
-
-    if let Some(group) = before.entries.first() {
+    let group = earned_group(&prior, &before).ok_or_else(|| format!(
+        "step=open-after-player-boss-kill observed=no-new-Faceless-Bane-reward-group count={} need=personal-reward-for-this-defeat source=crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs",
+        before.entries.len()
+    ))?;
+    let death = group.death;
+    approach_chest(&mut client, clients).await?;
+    {
         row.pass("open-after-player-boss-kill", (&group.boss_key, group.death));
         if group.expires_at_unix_ms.saturating_sub(group.minted_at_unix_ms)
             != boss_encounter::BOSS_REWARD_EXPIRY_MS
@@ -176,7 +221,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let inventory_before = inventory_quantities(&client)?;
     let collect = boss_rewards::send(
         client.session_mut(),
-        &boss_rewards::BossRewardsCommand::CollectAll(CollectAllRequest { death: None }),
+        &boss_rewards::BossRewardsCommand::CollectAll(CollectAllRequest { death: Some(death) }),
     )
     .await?;
     let collect_reply = match collect.reply {
@@ -200,11 +245,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         && inventory_quantities(&client)? != inventory_before
     {
         row.pass("collect-all-inventory-delta", collect_reply);
-        let death = before
-            .entries
-            .first()
-            .ok_or("step=collect-all observed=Ok-without-an-open-reward-group")?
-            .death;
         let inventory_after = inventory_quantities(&client)?;
         let repeated = boss_rewards::send(
             client.session_mut(),
@@ -237,10 +277,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={logout:?}").into());
     }
-    let mut fresh = connect_character(clients, 0xf9, 1).await?;
+    let mut fresh = connect_character(clients, 0xf9, 0).await?;
     let after = open(&mut fresh).await?;
-    if collected && !after.entries.is_empty() {
-        return Err("step=fresh-admission observed=collected-reward-group-still-present".into());
+    if collected && !after.entries.iter().eq(before.entries.iter().filter(|group| group.death != death)) {
+        return Err("step=fresh-admission observed=collected-death-retained-or-uncollected-group-changed".into());
     }
     if !collected && !same_chest(&before, &after) {
         return Err("step=fresh-admission observed=reward-chest-snapshot-changed-without-accepted-collection".into());
@@ -252,14 +292,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
 
     if collected {
-        return Ok(());
-    }
-    if before.entries.is_empty() {
-        return Err(format!(
-            "step=open-after-player-boss-kill observed=accepted-empty-chest;collect-all={:?};unknown-browse={refused_status:?};need=reachable-eligible-boss-that-settles-personal-reward",
-            collect_reply.status
-        )
-        .into());
+        return Err("step=expiry-refusal observed=collection-and-repeat-empty need=separate-uncollected-player-earned-death-past-seven-day-expiry source=crates/gameplay/dispatch/src/gameplay_transport/boss_rewards.rs:49".into());
     }
     Err(format!(
         "step=collect-all-inventory-delta observed={collect_reply:?};need=ordinary-walkable-route-to-authored-reward-chest"
@@ -291,6 +324,29 @@ fn same_chest(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn boss_reward_must_be_new_and_belong_to_the_fought_boss() {
+        let reward = oteryn_protocol_oteryn::boss_encounter::BossRewardChestEntry {
+            death: v7(7, 1),
+            boss_key: "oteryn:boss.faceless_bane".into(),
+            minted_at_unix_ms: 9,
+            expires_at_unix_ms: 9 + boss_encounter::BOSS_REWARD_EXPIRY_MS,
+            item_count: 1,
+        };
+        let prior = boss_encounter::RewardChest { now: 10, entries: vec![reward.clone()] };
+        let mut other = reward.clone();
+        other.death = v7(7, 2);
+        other.boss_key = "oteryn:boss.the_primal_menace".into();
+        let mut opened = boss_encounter::RewardChest { now: 11, entries: vec![reward.clone(), other] };
+        assert_eq!(earned_group(&prior, &opened), None);
+        let mut new = reward;
+        new.death = v7(7, 3);
+        new.minted_at_unix_ms = 11;
+        new.expires_at_unix_ms = 11 + boss_encounter::BOSS_REWARD_EXPIRY_MS;
+        opened.entries.push(new.clone());
+        assert_eq!(earned_group(&prior, &opened), Some(&new));
+    }
 
     #[test]
     fn durable_comparison_ignores_only_server_observation_time() {

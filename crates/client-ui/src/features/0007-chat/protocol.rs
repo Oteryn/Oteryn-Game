@@ -314,7 +314,5 @@ pub fn console_request(panel: &mut super::ChatPanel) -> Option<Vec<u8>> {
         .cloned()
         .collect();
     panel.console.metadata.next_names = start + names.len();
-    let payload = oteryn_client_runtime::chat::console::encode_names(&names)?;
-    panel.console.metadata.pending = Some(names);
-    Some(payload)
+    panel.console.metadata.begin_query(names)
 }
