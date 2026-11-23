@@ -399,7 +399,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         let Some(frozen) = &entry.boss_reward else {
             if oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
-                || super::quest_kill_objectives::has_grave_boss_credit(entry)
+                || crate::gameplay_transport::quest_kill_objectives::has_grave_boss_credit(entry)
             {
                 let plan = crate::durability::boss_encounter::reward_chest::BossDeathAtomicPlan {
                     death: personal_death_id(entry.facts.death),
