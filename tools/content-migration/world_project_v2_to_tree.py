@@ -184,8 +184,8 @@ def refresh_bestiary_inventory(root: Path) -> None:
     elif pinned != 1:
         raise RuntimeError("BESTIARY_VALIDATOR_PIN_SEAM")
     validator_text, guarded = re.subn(
-        r"require\(counts\['Creature'\] == (?:[0-9_]+|LEGACY_CREATURE_COUNT), 'LEGACY_CREATURE_COUNT'\)",
-        "require(counts['Creature'] == LEGACY_CREATURE_COUNT, 'LEGACY_CREATURE_COUNT')",
+        r"""require\(counts\[(['"])Creature\1\] == (?:[0-9_]+|LEGACY_CREATURE_COUNT), (['"])LEGACY_CREATURE_COUNT\2\)""",
+        'require(counts["Creature"] == LEGACY_CREATURE_COUNT, "LEGACY_CREATURE_COUNT")',
         validator_text,
     )
     if guarded != 1:

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LogsParams",
+  "type": "object",
+  "properties": {
+    "channel_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "from": {
+      "type": "string"
+    },
+    "level": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LogLevel"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "limit": {
+      "$ref": "#/$defs/LogLimit"
+    },
+    "to": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "limit",
+    "from",
+    "to"
+  ],
+  "$defs": {
+    "LogLevel": {
+      "type": "string",
+      "enum": [
+        "error",
+        "warn",
+        "info",
+        "debug"
+      ]
+    },
+    "LogLimit": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 2000,
+      "minimum": 1
+    }
+  }
+}

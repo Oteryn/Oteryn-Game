@@ -970,12 +970,15 @@ def main():
     from forge_item_profiles import owners, project
     from import_cyclopedia_global import load_capture
     from item_detail_source_facts import apply_capture_stats
+    from ranged_item_profiles import apply_authoring
 
     capture = load_capture(ROOT)
     forge_owners = owners(ROOT)
-    for _, document, _ in srx3:
+    for name, document, _ in srx3:
         apply_capture_stats(document, capture)
         project(document, forge_owners)
+        if name == "M25-GALTHEN-YIELDS":
+            apply_authoring(ROOT, document)
     generated, count = regenerate(
         register(source),
         *documents,

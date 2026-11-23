@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import galthen_boss_loot as producer
 from item_detail_source_facts import WEIGHT_FACTS
+from ranged_item_profiles import RANGED_PROFILES
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -86,24 +87,32 @@ class GalthenBossLootTests(unittest.TestCase):
             robe["semantics"]["imbuement"]["value"]["slot_count"]["value"], 1
         )
         weights = json.loads((ROOT / WEIGHT_FACTS).read_bytes())
+        ranged = {
+            row["item"]["key"]: row["profile"]
+            for row in json.loads((ROOT / RANGED_PROFILES).read_bytes())["records"]
+        }
+        details = json.loads((ROOT / producer.GLOBAL_DETAILS).read_bytes())
+        self.assertEqual(details, producer.global_details(ROOT, packet["records"]))
         self.assertEqual(len(packet["records"]), 19)
         for row in packet["records"]:
             identifier = row["production_binding"]["external_id"]
             if identifier in weights:
                 physical = row["semantics"]["physical"]["value"]
-                self.assertEqual(physical["weight"], {"state": "KNOWN", "value": 0})
+                source_weight = 128_000 if identifier == "50255" else 0
+                self.assertEqual(
+                    physical["weight"], {"state": "KNOWN", "value": source_weight}
+                )
                 physical["weight"] = {"state": "KNOWN", "value": weights[identifier]}
-        details = json.loads((ROOT / producer.GLOBAL_DETAILS).read_bytes())
-        self.assertEqual(details, producer.global_details(ROOT, packet["records"]))
         for row in packet["records"]:
             detail = details.get(row["production_binding"]["external_id"], {})
             if "forge" in detail:
                 row["authoring"]["forge"] = detail["forge"]
             if "semantics" in detail:
                 row["semantics"] = detail["semantics"]
-            self.assertEqual(
-                actual.get(row["production_definition"]["production_key"]), row
-            )
+            key = row["production_definition"]["production_key"]
+            if key in ranged:
+                row["authoring"]["ranged"] = ranged[key]
+            self.assertEqual(actual.get(key), row)
 
     def test_known_policy_is_never_replaced(self):
         packet = json.loads((ROOT / producer.PATH).read_bytes())

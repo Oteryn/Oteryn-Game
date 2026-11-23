@@ -306,10 +306,9 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         for scenario in 0..7 {
         let not_entitled = scenario == 1;
-        let database = postgres::IsolatedPostgres::create("owning_fresh_loss").await?;
+        let database = postgres::IsolatedPostgres::create_migrated("owning_fresh_loss").await?;
         let result = async {
             let url = database.database_url()?;
-            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let pool = sqlx::PgPool::connect(&url).await?;
             let now = postgres_clock(&pool).await?;
             let mut owner = postgres::fresh::Source::new(now)?;
@@ -635,13 +634,9 @@ fn fresh_prepare_cannot_invent_control_loss_or_poison_an_unopened_epoch()
         .build()?
         .block_on(async {
             for use_v2 in [false, true] {
-                let database = postgres::IsolatedPostgres::create("fresh_first_loss").await?;
+                let database = postgres::IsolatedPostgres::create_migrated("fresh_first_loss").await?;
                 let result = async {
                     let url = database.database_url()?;
-                    MigrationExecutor::connect_migration(&url)
-                        .await?
-                        .apply_embedded_ledger()
-                        .await?;
                     let pool = sqlx::PgPool::connect(&url).await?;
                     let now = postgres_clock(&pool).await?;
                     let owner = postgres::fresh::Source::new(now)?;
@@ -792,10 +787,9 @@ fn fresh_failure_at_each_effect_rolls_back_claims_receipt_and_reservation()
             "game_durability_admission_guard_history",
             "game_durability_transport_ref_reservations",
         ] {
-            let database = postgres::IsolatedPostgres::create("fresh_effect_rollback").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("fresh_effect_rollback").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 let now = postgres_clock(&pool).await?;
                 let source = postgres::fresh::Source::new(now)?;
@@ -846,10 +840,9 @@ fn fresh_commit_persists_complete_operation_and_reconciles_original_decision()
         return Ok(());
     }
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-        let database = postgres::IsolatedPostgres::create("fresh_commit_original_l").await?;
+        let database = postgres::IsolatedPostgres::create_migrated("fresh_commit_original_l").await?;
         let result = async {
             let url = database.database_url()?;
-            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let pool = sqlx::PgPool::connect(&url).await?;
             let now = postgres_clock(&pool).await?;
             let source = postgres::fresh::Source::new(now)?;
@@ -911,13 +904,9 @@ fn guard_publication_is_atomic_replayable_and_retains_decision_history()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("guard_publication").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("guard_publication").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 let now = postgres_clock(&pool).await?;
                 let mut source = postgres::fresh::Source::new(now)?;
@@ -1156,13 +1145,9 @@ fn fresh_admission_forward_schema_supports_truthful_atomic_session()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("fresh_forward_schema").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("fresh_forward_schema").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 let receipt_exists: bool = sqlx::query_scalar(
                     "SELECT to_regclass('public.game_durability_fresh_admission_receipts') IS NOT NULL",
@@ -1231,10 +1216,9 @@ fn owning_loss_fences_v2_replacement_and_reconciliation() -> Result<(), Box<dyn 
         use authority_matrix::{LiveSource, Seed, prepared_record};
         use foundation::{ReconnectDurabilityFlowV2, ReconnectPrepareDispositionV2};
         for replacement in [false, true] {
-            let database = postgres::IsolatedPostgres::create("owning_loss_v2_fence").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("owning_loss_v2_fence").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
                 let seed = Seed { now: unix_now().map_err(foundation_error)?, ..Seed::fixed() };
                 let record = prepared_record(seed)?;
                 let source = LiveSource::read(seed);
@@ -1280,14 +1264,10 @@ fn shared_root_positive_v1_v2_authority_matrix_is_configured_postgres_proof()
         .build()?
         .block_on(async {
             let database =
-                postgres::IsolatedPostgres::create("independent_authority_matrix").await?;
+                postgres::IsolatedPostgres::create_migrated("independent_authority_matrix").await?;
             let result = async {
                 use authority_matrix::{LiveSource, Seed, checked, prepared_record};
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let seed = Seed {
                     now: unix_now().map_err(foundation_error)?,
                     ..Seed::fixed()
@@ -1346,13 +1326,9 @@ fn shared_root_caller_cancellation_preserves_detached_journal_custody()
             use authority_matrix::{Seed, prepared_record};
 
             let database =
-                postgres::IsolatedPostgres::create("shared_root_cancelled_caller").await?;
+                postgres::IsolatedPostgres::create_migrated("shared_root_cancelled_caller").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let seed = Seed {
                     now: unix_now().map_err(foundation_error)?,
                     ..Seed::fixed()
@@ -1447,13 +1423,9 @@ fn shared_root_positive_v2_terminal_replacement_is_configured_postgres_proof()
         .block_on(async {
             use authority_matrix::{LiveSource, Seed, checked, prepared_record, v2_budget};
 
-            let database = postgres::IsolatedPostgres::create("shared_root_v2_replacement").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("shared_root_v2_replacement").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let seed = Seed {
                     now: unix_now().map_err(foundation_error)?,
                     ..Seed::fixed()
@@ -1741,13 +1713,10 @@ fn wp3_shared_root_deadline_retires_and_rearms_on_configured_postgres()
         .block_on(async {
             use durability::{DB_PASS_DEADLINE, DurabilityRoot};
 
-            let database = postgres::IsolatedPostgres::create("wp3_shared_root_deadline").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("wp3_shared_root_deadline").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let root = DurabilityRoot::connect_test_runtime(&url)?;
                 assert!(root.maintain_ready_once().await?);
                 assert!(root.is_ready());
@@ -1790,13 +1759,10 @@ fn wp3_commit_outcome_unknown_retires_holder_and_preserves_success_path()
         .block_on(async {
             use durability::{DurabilityError, DurabilityRoot};
 
-            let database = postgres::IsolatedPostgres::create("wp3_commit_outcome_unknown").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("wp3_commit_outcome_unknown").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let root = DurabilityRoot::connect_test_runtime(&url)?;
                 assert!(root.maintain_ready_once().await?);
 
@@ -2294,11 +2260,10 @@ fn same_prepare_replay_returns_the_existing_durable_disposition()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("same_attempt_replay").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("same_attempt_replay").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let (_flow, request) = ReconnectDurabilityFlowV1::begin(
                     record(10, 1, 0x11, unix_now().map_err(foundation_error)?)
@@ -2343,11 +2308,10 @@ fn same_prepare_replay_survives_process_replacement() -> Result<(), Box<dyn std:
                 return Ok(());
             }
 
-            let database = postgres::IsolatedPostgres::create("cross_process_replay").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("cross_process_replay").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (_flow, request) = ReconnectDurabilityFlowV1::begin(
@@ -2390,11 +2354,10 @@ fn transport_ref_collision_is_durable_and_same_attempt_replays_terminal()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("transport_ref_collision").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("transport_ref_collision").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (_first_flow, first) = ReconnectDurabilityFlowV1::begin(
@@ -2434,13 +2397,10 @@ fn reconnect_account_incumbent_is_a_stale_denial_without_candidate_effects()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("account_incumbent_denial").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("account_incumbent_denial").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 let now = postgres_clock(&pool).await?;
@@ -2510,13 +2470,9 @@ fn existing_terminal_replay_precedes_cross_character_account_incumbent()
         .build()?
         .block_on(async {
             let database =
-                postgres::IsolatedPostgres::create("terminal_replay_before_incumbent").await?;
+                postgres::IsolatedPostgres::create_migrated("terminal_replay_before_incumbent").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 let now = postgres_clock(&pool).await?;
@@ -2628,11 +2584,9 @@ fn one_prepared_attempt_and_eight_attempt_epoch_limits_are_enforced_in_postgres(
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("attempt_capacity").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("attempt_capacity").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (_first_flow, first) = ReconnectDurabilityFlowV1::begin(
@@ -2682,11 +2636,10 @@ fn same_attempt_with_changed_record_conflicts_without_consuming_the_new_ref()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("idempotency_conflict").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("idempotency_conflict").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (_first_flow, first) = ReconnectDurabilityFlowV1::begin(
@@ -2729,11 +2682,9 @@ fn concurrent_same_attempt_reconciles_to_one_prepared_and_one_existing_prepared(
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("same_attempt_race").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("same_attempt_race").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let (_flow, request) = ReconnectDurabilityFlowV1::begin(
                     record(50, 1, 0x61, unix_now().map_err(foundation_error)?)
@@ -2789,11 +2740,9 @@ fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("commit_reconcile").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("commit_reconcile").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
@@ -2870,11 +2819,9 @@ fn expired_prepared_replay_requires_exact_incumbent_binding()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("expired_incumbent_binding").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("expired_incumbent_binding").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let pool = sqlx::PgPool::connect(&database_url).await?;
                 let record_now = postgres_clock(&pool).await?;
@@ -2957,11 +2904,9 @@ fn new_epoch_rejects_zero_fast_reconnect_generation_in_committed_winner()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("fast_proof_corrupt").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("fast_proof_corrupt").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
@@ -3057,11 +3002,10 @@ fn committed_prepare_replay_after_process_restart_routes_to_reconciliation()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("committed_prepare_replay").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("committed_prepare_replay").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut original_flow, original_prepare) = ReconnectDurabilityFlowV1::begin(
@@ -3141,13 +3085,12 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
         .enable_all()
         .build()?
         .block_on(async {
-            let database =
-                postgres::IsolatedPostgres::create("committed_replay_transport_reservation")
-                    .await?;
+            let database = postgres::IsolatedPostgres::create_migrated(
+                "committed_replay_transport_reservation",
+            )
+            .await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
@@ -3231,11 +3174,10 @@ fn fresh_commit_holds_the_transport_reservation_lock_through_commit()
         .build()?
         .block_on(async {
             let database =
-                postgres::IsolatedPostgres::create("fresh_commit_reservation_lock").await?;
+                postgres::IsolatedPostgres::create_migrated("fresh_commit_reservation_lock")
+                    .await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
@@ -3309,11 +3251,9 @@ fn fresh_commit_requires_the_exact_retained_transport_reservation()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("fresh_commit_transport_reservation").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("fresh_commit_transport_reservation").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
@@ -3426,11 +3366,9 @@ fn successful_commit_activates_unused_protection_exactly_once()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("protection_activate_once").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("protection_activate_once").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
@@ -3509,12 +3447,12 @@ fn protection_continuity_rejects_a_distinct_game_session_for_the_same_control_lo
         .enable_all()
         .build()?
         .block_on(async {
-            let database =
-                postgres::IsolatedPostgres::create("protection_continuity_session_binding").await?;
+            let database = postgres::IsolatedPostgres::create_migrated(
+                "protection_continuity_session_binding",
+            )
+            .await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
 
@@ -3578,12 +3516,12 @@ fn reconnect_sessions_reject_a_distinct_game_session_for_a_later_control_loss_ep
         .enable_all()
         .build()?
         .block_on(async {
-            let database =
-                postgres::IsolatedPostgres::create("reconnect_session_cross_epoch_binding").await?;
+            let database = postgres::IsolatedPostgres::create_migrated(
+                "reconnect_session_cross_epoch_binding",
+            )
+            .await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let first_now = unix_now().map_err(foundation_error)?;
 
@@ -3650,11 +3588,9 @@ fn fenced_entitlement_does_not_create_a_second_protection_window_on_later_epoch(
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("protection_no_loop_extension").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("protection_no_loop_extension").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let first_now = unix_now().map_err(foundation_error)?;
                 let (mut first_flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
@@ -3747,11 +3683,10 @@ fn expired_prepared_replay_retires_incumbent_and_allows_fresh_attempt()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("expired_prepared_replay").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("expired_prepared_replay").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let pool = sqlx::PgPool::connect(&database_url).await?;
                 let record_now = postgres_clock(&pool).await?;
@@ -3818,11 +3753,9 @@ fn new_epoch_requires_complete_committed_fnd02_fence() -> Result<(), Box<dyn std
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("new_epoch_complete_fnd02").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("new_epoch_complete_fnd02").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
@@ -4025,11 +3958,10 @@ fn new_epoch_rejects_committed_winner_without_compatibility_evidence()
         .build()?
         .block_on(async {
             let database =
-                postgres::IsolatedPostgres::create("new_epoch_compatibility_evidence").await?;
+                postgres::IsolatedPostgres::create_migrated("new_epoch_compatibility_evidence")
+                    .await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
@@ -4105,11 +4037,9 @@ fn new_epoch_requires_a_valid_committed_active_transport_binding()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("new_epoch_active_binding").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("new_epoch_active_binding").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
@@ -4201,11 +4131,9 @@ fn committed_session_accepts_a_later_non_reused_control_loss_epoch()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("cross_epoch_reconnect").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("cross_epoch_reconnect").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let first_now = unix_now().map_err(foundation_error)?;
                 let (mut first_flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
@@ -4451,11 +4379,9 @@ fn stale_commit_terminalizes_the_prepared_attempt_for_reconciliation()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("stale_commit").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("stale_commit").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
@@ -4535,11 +4461,9 @@ fn expired_prepared_reconciliation_terminalizes_incumbent_and_allows_later_attem
         .build()?
         .block_on(async {
             let database =
-                postgres::IsolatedPostgres::create("expired_prepared_reconciliation").await?;
+                postgres::IsolatedPostgres::create_migrated("expired_prepared_reconciliation").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let pool = sqlx::PgPool::connect(&database_url).await?;
                 let record_now = postgres_clock(&pool).await?;
@@ -4623,11 +4547,9 @@ fn committed_reconciliation_remains_historical_after_later_epoch_opens()
         .build()?
         .block_on(async {
             let database =
-                postgres::IsolatedPostgres::create("historical_committed_replay").await?;
+                postgres::IsolatedPostgres::create_migrated("historical_committed_replay").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let first_now = unix_now().map_err(foundation_error)?;
                 let (mut first_flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
@@ -4701,11 +4623,10 @@ fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection
             ];
             for (index, corruption) in corruptions.into_iter().enumerate() {
                 let database =
-                    postgres::IsolatedPostgres::create(&format!("hist_prep_{index}")).await?;
+                    postgres::IsolatedPostgres::create_migrated(&format!("hist_prep_{index}"))
+                        .await?;
                 let result = async {
                     let database_url = database.database_url()?;
-                    let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                    executor.apply_embedded_ledger().await?;
                     let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                     let record_now = unix_now().map_err(foundation_error)?;
                     let seed = 170 + index as u64;
@@ -4902,11 +4823,10 @@ fn committed_replay_fails_closed_when_session_state_is_inconsistent()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("corrupt_commit_state").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("corrupt_commit_state").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let record_now = unix_now().map_err(foundation_error)?;
                 let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
@@ -4967,11 +4887,9 @@ fn commit_row_lock_wait_cannot_outlive_authorization_deadline()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("commit_deadline_lock").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("commit_deadline_lock").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let lock_pool = sqlx::PgPool::connect(&database_url).await?;
                 let record_now = postgres_clock(&lock_pool).await?;
@@ -5072,11 +4990,9 @@ fn commit_nonce_relation_wait_cannot_outlive_authorization_deadline()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("commit_nonce_relation_deadline").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("commit_nonce_relation_deadline").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let lock_pool = sqlx::PgPool::connect(&database_url).await?;
                 let record_now = postgres_clock(&lock_pool).await?;
@@ -5179,11 +5095,9 @@ fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dy
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("prepare_deadline_lock").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("prepare_deadline_lock").await?;
             let result = async {
                 let database_url = database.database_url()?;
-                let executor = MigrationExecutor::connect_migration(&database_url).await?;
-                executor.apply_embedded_ledger().await?;
                 let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 let lock_pool = sqlx::PgPool::connect(&database_url).await?;
                 let record_now = postgres_clock(&lock_pool).await?;
@@ -5284,10 +5198,9 @@ fn session_use_ledger_capacity_replay_and_sealed_reload() -> Result<(), Box<dyn 
         use foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
         use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
         for count in [65535_i64, 65536] {
-            let database = postgres::IsolatedPostgres::create("session_use_capacity").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("session_use_capacity").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 let now = postgres_clock(&pool).await?;
                 let owner = postgres::fresh::Source::new(now)?;
@@ -5377,10 +5290,9 @@ fn terminal_release_claims_are_atomic_and_exactly_replayed_after_reload()
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         use foundation::admission_authority_publication::*;
         use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
-        let database = postgres::IsolatedPostgres::create("terminal_release_claims").await?;
+        let database = postgres::IsolatedPostgres::create_migrated("terminal_release_claims").await?;
         let result = async {
             let url = database.database_url()?;
-            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let pool = sqlx::PgPool::connect(&url).await?;
             let now = postgres_clock(&pool).await?;
             let owner = postgres::fresh::Source::new(now)?;
@@ -5442,10 +5354,9 @@ fn session_use_source_rejects_incomplete_corrupt_and_globally_reused_membership(
         use foundation::admission_authority_publication::*;
         use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
         for scenario in 0..3 {
-            let database = postgres::IsolatedPostgres::create("session_use_negative").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("session_use_negative").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 let now = postgres_clock(&pool).await?;
                 let owner = postgres::fresh::Source::new(now)?;
@@ -5524,10 +5435,9 @@ fn lawful_legacy_claim_replacement_persists_lineage_and_releases_successor()
         use foundation::*;
         use durability::fresh_admission::FreshAdmissionStore;
         use authority_matrix::checked;
-        let database = postgres::IsolatedPostgres::create("legacy_claim_replacement").await?;
+        let database = postgres::IsolatedPostgres::create_migrated("legacy_claim_replacement").await?;
         let result = async {
             let url = database.database_url()?;
-            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let pool = sqlx::PgPool::connect(&url).await?;
             let now = postgres_clock(&pool).await?;
             let owner = postgres::fresh::Source::new(now)?;
@@ -5668,10 +5578,9 @@ fn concurrent_fresh_replay_commits_exactly_one_membership() -> Result<(), Box<dy
         use foundation::admission_authority_publication::*;
         use foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
         use durability::fresh_admission::FreshAdmissionStore;
-        let database = postgres::IsolatedPostgres::create("concurrent_membership").await?;
+        let database = postgres::IsolatedPostgres::create_migrated("concurrent_membership").await?;
         let result = async {
             let url = database.database_url()?;
-            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let pool = sqlx::PgPool::connect(&url).await?;
             let owner=postgres::fresh::Source::new(postgres_clock(&pool).await?)?;
             let guards=durability::admission_authority_guards::AdmissionGuardStore::connect_runtime(&url,8192).await?;
@@ -5712,13 +5621,9 @@ fn content_activation_floor_is_monotonic_predecessor_bound_and_immutable()
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("content_activation_floor").await?;
+            let database = postgres::IsolatedPostgres::create_migrated("content_activation_floor").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let world = WorldId::decode(&authority_matrix::uuid(60))?;
                 let channel = ChannelId::decode(&authority_matrix::uuid(61))?;
                 let other_channel = ChannelId::decode(&authority_matrix::uuid(62))?;
@@ -5991,10 +5896,9 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once_scenario()
     }
     // Keep the scenario state on the heap while polling it on the scenario thread.
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(Box::pin(async {
-        let database = postgres::IsolatedPostgres::create("complete_reconnect").await?;
+        let database = postgres::IsolatedPostgres::create_migrated("complete_reconnect").await?;
         let result = async {
             let url = database.database_url()?;
-            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let pool = sqlx::PgPool::connect(&url).await?;
             let now = postgres_clock(&pool).await?;
             let owner = postgres::fresh::Source::new(now)?;
@@ -6402,10 +6306,9 @@ fn resumed_session_loss_opens_the_next_epoch_and_resumes_again()
         return Ok(());
     }
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-        let database = postgres::IsolatedPostgres::create("resumed_session_loss").await?;
+        let database = postgres::IsolatedPostgres::create_migrated("resumed_session_loss").await?;
         let result = async {
             let url = database.database_url()?;
-            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let pool = sqlx::PgPool::connect(&url).await?;
             let now = postgres_clock(&pool).await?;
             let owner = postgres::fresh::Source::new(now)?;

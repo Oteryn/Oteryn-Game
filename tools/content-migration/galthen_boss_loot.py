@@ -249,6 +249,7 @@ def admit(root, generated, destination, manifest_path, order, canonical):
         for row in document["records"]
     }
     weights = item_details.load_weight_facts(root, generated)
+    details = global_details(root, packet["records"])
     for row in packet["records"]:
         key = row["production_definition"]["production_key"]
         identifier = int(row["production_binding"]["external_id"])
@@ -267,17 +268,24 @@ def admit(root, generated, destination, manifest_path, order, canonical):
         generated[destination]
     ).hexdigest()
     generated[manifest_path] = canonical(manifest)
-    generated[GLOBAL_DETAILS] = canonical(global_details(root, packet["records"]))
+    generated[GLOBAL_DETAILS] = canonical(details)
 
 
 def global_details(root, source):
     from forge_item_profiles import owners, project
     from import_cyclopedia_global import load_capture
+    from ranged_item_profiles import apply_authoring
 
     records = copy.deepcopy(source)
     document = {"records": records}
+    weights = item_details.qualified_weights(root)
+    for row in records:
+        identifier = int(row["production_binding"]["external_id"])
+        if identifier in weights:
+            item_details.apply_weight(row, identifier, weights)
     item_details.apply_capture_stats(document, load_capture(root))
     project(document, owners(root))
+    apply_authoring(root, document)
     details = {}
     for donor, active in zip(source, records, strict=True):
         fields = {}
@@ -285,6 +293,8 @@ def global_details(root, source):
             fields["semantics"] = active["semantics"]
         if donor["authoring"].get("forge") != active["authoring"].get("forge"):
             fields["forge"] = active["authoring"]["forge"]
+        if donor["authoring"].get("ranged") != active["authoring"].get("ranged"):
+            fields["ranged"] = active["authoring"]["ranged"]
         if fields:
             details[donor["production_binding"]["external_id"]] = fields
     return details

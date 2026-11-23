@@ -9,7 +9,6 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use sqlx::{Connection as _, PgConnection};
 
 use super::*;
-use crate::durability::MigrationExecutor;
 use crate::foundation::GameSessionId;
 
 type TestResult = Result<(), Box<dyn Error>>;
@@ -164,11 +163,13 @@ impl IsolatedDatabase {
             ordinal
         );
         let mut admin = PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {database_name}"
-            ))))
-            .await?;
+        oteryn_test_support::postgres::create_migrated_database(
+            &mut admin,
+            &admin_url,
+            &database_name,
+            &oteryn_gameplay_durability::GAME_MIGRATOR,
+        )
+        .await?;
         Ok(Self {
             admin_url,
             database_name,
@@ -247,10 +248,6 @@ async fn relay_database(
 ) -> Result<(IsolatedDatabase, String), Box<dyn Error>> {
     let database = IsolatedDatabase::create(test_name).await?;
     let url = database.database_url()?;
-    MigrationExecutor::connect_migration(&url)
-        .await?
-        .apply_embedded_ledger()
-        .await?;
     let role = format!("{}_relay", database.database_name);
     let mut admin = PgConnection::connect(&database.admin_url).await?;
     for statement in [

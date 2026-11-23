@@ -1,12 +1,12 @@
 //! RANK-1: a real fresh-admission commit reaches the dispatched session highscores handler.
 
 use crate::authority_matrix::{TestResult, checked};
+use crate::durability::DurabilityRoot;
 use crate::durability::account_achievement::EarnedAchievement;
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::highscore_snapshot::reply::{HighscoresReply, answer_session_highscores};
 use crate::durability::highscore_snapshot::{AchievementPoints, SnapshotCatalogues};
-use crate::durability::{DurabilityRoot, MigrationExecutor};
 use crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
 use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
 use crate::{authority_matrix, postgres, postgres_clock, postgres_e2e_is_configured};
@@ -32,13 +32,10 @@ fn committed_fresh_session_reads_its_world_highscores_through_the_session_handle
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("highscores_session").await?;
+            let database =
+                postgres::IsolatedPostgres::create_migrated("highscores_session").await?;
             let result = async {
                 let url = database.database_url()?;
-                MigrationExecutor::connect_migration(&url)
-                    .await?
-                    .apply_embedded_ledger()
-                    .await?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 let now = postgres_clock(&pool).await?;
                 let owner = postgres::fresh::Source::new(now)?;

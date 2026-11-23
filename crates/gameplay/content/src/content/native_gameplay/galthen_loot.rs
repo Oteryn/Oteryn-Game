@@ -22,6 +22,7 @@ pub(super) fn qualified_global_records(
     struct GlobalDetails {
         semantics: Option<super::super::ReferenceItemSemantics>,
         forge: Option<super::super::ProjectV2ItemForgeProfile>,
+        ranged: Option<super::super::ProjectV2RangedWeapon>,
     }
 
     let mut details: BTreeMap<String, GlobalDetails> = serde_json::from_slice(include_bytes!(
@@ -40,6 +41,9 @@ pub(super) fn qualified_global_records(
         }
         if let Some(forge) = detail.forge {
             successor.authoring.forge = Some(forge);
+        }
+        if let Some(ranged) = detail.ranged {
+            successor.authoring.ranged = Some(ranged);
         }
         if &successor == row {
             return Err(invalid("M25 Global Item Details unchanged row"));
