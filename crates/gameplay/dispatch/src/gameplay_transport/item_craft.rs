@@ -493,11 +493,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 attempt,
             });
         }
-        if !self
-            .states
-            .player_trades
-            .physical(command.game_session_id, Some(source))
-        {
+        let trades = &self.states.player_trades;
+        let inventory_mutation_allowed = match request.ingredient {
+            Some(ingredient) => trades.physical_craft(command.game_session_id, source, ingredient),
+            None => trades.physical(command.game_session_id, Some(source)),
+        };
+        if !inventory_mutation_allowed {
             return disposition(UseDisposition::Rejected);
         }
         let result = self

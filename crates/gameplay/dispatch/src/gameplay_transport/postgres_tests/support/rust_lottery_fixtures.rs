@@ -231,15 +231,16 @@ async fn exchange_selected_source(
                 break;
             }
         }
-        if current_source.is_some()
-            && source.is_none()
+        let needs_source = current_source.is_some() && source.is_none();
+        let needs_target = current_target.is_some() && target.is_none();
+        if (needs_source || needs_target)
             && admitted.continuity.selected_capabilities.contains(14)
             && command_id > 1
         {
             use oteryn_protocol_oteryn::container_tree as containers;
             let open =
                 containers::encode_container_view_intent(&containers::ContainerViewIntent::Open {
-                    handle: container.ok_or("nested source container handle")?,
+                    handle: container.ok_or("nested operand container handle")?,
                     replace_view: None,
                 })
                 .map_err(debug)?;
@@ -254,7 +255,7 @@ async fn exchange_selected_source(
             client.write_u32(u32::try_from(frame.len())?).await?;
             client.write_all(&frame).await?;
             let mut opened = false;
-            while source.is_none() || !opened {
+            while (needs_source && source.is_none()) || (needs_target && target.is_none()) || !opened {
                 let raw = super::item_look_fixtures::read_frame(&mut client).await?;
                 let envelope = crate::foundation::decode_wire_envelope(&raw)?;
                 if envelope.message_type() == crate::foundation::MessageType::CommandResult {
@@ -271,12 +272,13 @@ async fn exchange_selected_source(
                     if delta.domain_id == containers::STATE_DOMAIN_CONTAINER_VIEWS {
                         let views =
                             containers::decode_container_views(delta.payload).map_err(debug)?;
-                        source = views
-                            .views
-                            .iter()
-                            .flat_map(|view| view.entries.iter())
-                            .find(|entry| Some(entry.item_definition_ref) == current_source)
-                            .map(|entry| entry.handle);
+                        let handle = |definition| {
+                            views.views.iter().flat_map(|view| view.entries.iter())
+                                .find(|entry| Some(entry.item_definition_ref) == definition)
+                                .map(|entry| entry.handle)
+                        };
+                        source = source.or_else(|| handle(current_source));
+                        target = target.or_else(|| handle(current_target));
                     }
                 }
             }

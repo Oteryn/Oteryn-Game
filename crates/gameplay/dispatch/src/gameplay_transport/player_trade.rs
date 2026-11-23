@@ -342,6 +342,34 @@ impl TradeBook {
     /// Called under the mutation's spell lane. An attempt on an offered leaf is refused
     /// and invalidates the dialog; other backpack mutations invalidate before issuance.
     pub(super) fn physical(&self, session: GameSessionId, item: Option<[u8; 16]>) -> bool {
+        self.physical_if_unoffered(session, |record| {
+            item.is_some_and(|item| record.items.contains(&Some(item)))
+        })
+    }
+
+    /// Check both craft operands before invalidating the trade, including frozen descendants.
+    pub(super) fn physical_craft(
+        &self,
+        session: GameSessionId,
+        source: [u8; 16],
+        ingredient: [u8; 16],
+    ) -> bool {
+        let operands = [Some(source), Some(ingredient)];
+        self.physical_if_unoffered(session, |record| {
+            record.items.iter().any(|item| operands.contains(item))
+                || record
+                    .offers
+                    .iter()
+                    .flatten()
+                    .flat_map(TradeLeaf::contents)
+                    .any(|leaf| match leaf.instance_at(0) {
+                        Ok(Some(item)) => operands.contains(&Some(item)),
+                        _ => true,
+                    })
+        })
+    }
+
+    fn physical_if_unoffered(&self, session: GameSessionId, is_offered: impl FnOnce(&Record) -> bool) -> bool {
         let Ok(mut book) = self.0.lock() else {
             return false;
         };
@@ -351,7 +379,7 @@ impl TradeBook {
         if record.request.is_some() {
             return false;
         }
-        let offered = item.is_some_and(|item| record.items.contains(&Some(item)));
+        let offered = is_offered(&record);
         book.close(&record, ResultCode::Stale).is_some() && !offered
     }
     /// Services that choose inventory inputs internally cannot spend an offered leaf.

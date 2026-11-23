@@ -22,7 +22,7 @@ fn item_craft_cooking_wire_atomic_replay_restart_and_refusals() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(CraftCase::Oven).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "craft e2e panic")??;
     Ok(())
@@ -36,16 +36,53 @@ fn i11_carried_food_dispatch_postgres() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(CraftCase::CarriedFood).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "carried food dispatch panic")??;
     eprintln!("I11_CARRIED_FOOD_POSTGRES_EXECUTED elapsed={:?}", started.elapsed());
     Ok(())
 }
 
-fn scenario(carried_food: bool) -> TestResult {
+#[derive(Clone, Copy)]
+enum CraftCase {
+    Oven,
+    CarriedFood,
+    NestedDough,
+    NestedTray,
+}
+
+#[test]
+fn i11_nested_dough_fills_carried_tray_postgres() -> TestResult {
+    nested_cookie_tray_case(CraftCase::NestedDough)
+}
+
+#[test]
+fn i11_carried_dough_fills_nested_tray_postgres() -> TestResult {
+    nested_cookie_tray_case(CraftCase::NestedTray)
+}
+
+fn nested_cookie_tray_case(case: CraftCase) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario(case).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "nested cookie tray dispatch panic")??;
+    eprintln!("I11_NESTED_COOKIE_TRAY_POSTGRES_EXECUTED elapsed={:?}", started.elapsed());
+    Ok(())
+}
+
+fn scenario(case: CraftCase) -> TestResult {
     run(async |admin| {
-        let name = if carried_food { "i11_carried_food" } else { "item_craft" };
+        let name = match case {
+            CraftCase::Oven => "item_craft",
+            CraftCase::CarriedFood => "i11_carried_food",
+            CraftCase::NestedDough => "i11_nested_dough",
+            CraftCase::NestedTray => "i11_nested_tray",
+        };
         let harness = Harness::create_with_admission_seed(admin, name, true, false).await?;
         super::reset();
         prepare_current_session(&harness).await?;
@@ -142,9 +179,9 @@ fn scenario(carried_food: bool) -> TestResult {
             )
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        deps.combat_room = Some(action_room);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&action_room));
         owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
@@ -161,9 +198,30 @@ fn scenario(carried_food: bool) -> TestResult {
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
-        admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
-                .ok_or("craft offer selectable")?;
+        let nested = matches!(case, CraftCase::NestedDough | CraftCase::NestedTray);
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            if nested {
+                &[4, 6, 11, 12, 14, 15, 18]
+            } else {
+                &[4, 6, 11, 15, 18]
+            },
+        )
+        .ok_or("craft offer selectable")?;
+        if nested {
+            nested_cookie_tray(
+                &harness,
+                &owner,
+                admitted,
+                reference,
+                matches!(case, CraftCase::NestedDough),
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let mut placement = map.base().digest().to_vec();
         let station_pos = crate::map::overlay::TilePos {
             x: 7,
@@ -179,14 +237,13 @@ fn scenario(carried_food: bool) -> TestResult {
             placement,
             expected_revision: 0,
         };
-        if carried_food {
+        if matches!(case, CraftCase::CarriedFood) {
             let exact_fill =
                 carried_food_cases(&harness, &owner, admitted, station, reference).await?;
             drop(owner);
             // Reuse the original admission with a new transport owner and no retained result.
             let mut restarted = deps.owner(&harness, &authority);
             restarted.active_generation = Some(active);
-            restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&action_room));
             restarted.movement_cells = (&cells).into();
             deps.initialize(&restarted).await;
             let (_, replayed, _) = exchange(&restarted, admitted, 1, &exact_fill, None).await?;
@@ -255,7 +312,6 @@ fn scenario(carried_food: bool) -> TestResult {
         drop(owner);
         let mut restarted = deps.owner(&harness, &authority);
         restarted.active_generation = Some(active);
-        restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&action_room));
         restarted.movement_cells = (&cells).into();
         deps.initialize(&restarted).await;
         let (_, replayed, _) = exchange(&restarted, admitted, 1, &payload, None).await?;
@@ -494,4 +550,74 @@ async fn carried_food_receipt_count(harness: &Harness) -> TestResult<i64> {
     )
     .fetch_one(&harness.pool)
     .await?)
+}
+
+async fn nested_cookie_tray(
+    harness: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    reference: impl Fn(&str) -> Option<NonZeroU32>,
+    nested_dough: bool,
+) -> TestResult {
+    let dough = "oteryn:item.tibia.i6276";
+    let tray = "oteryn:item.tibia.i3464";
+    let filled_tray = "oteryn:item.tibia.i8020";
+    let nested_item = if nested_dough { id(71) } else { id(72) };
+    super::item_look_fixtures::seed_main_backpack(
+        harness,
+        &[(dough, 2), (tray, 1), ("oteryn:item.tibia.i2854", 1)],
+    ).await?;
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(nested_item.as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,game_character_uuid_v7())")
+        .bind(nested_item.as_slice()).bind(id(42).as_slice()).bind(id(73).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(NonZeroU64::MIN),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Item(NonZeroU64::MIN)),
+        use_with_position: None,
+    }).map_err(debug)?;
+    // The wire fixture first opens the inner bag in command 1, then uses its published handle.
+    let (_, result, _) = exchange_carried(owner, admitted, 2, &payload, reference(dough), reference(tray)).await?;
+    assert_eq!(result, UseDisposition::Committed);
+    let quantities: (i64, i64) = sqlx::query_as("SELECT
+        (SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid),
+        (SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($2,'hex')::uuid)")
+        .bind(id(71).as_slice()).bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
+    assert_eq!(quantities, (1, 0));
+    let nested_entries: Vec<(String, String)> = sqlx::query_as(
+        "SELECT i.definition_production_key,e.placement_ordinal::text
+           FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id)
+          WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1",
+    )
+    .bind(id(73).as_slice())
+    .fetch_all(&harness.pool)
+    .await?;
+    let nested_key = if nested_dough { dough } else { filled_tray };
+    assert_eq!(nested_entries, [(nested_key.to_owned(), "1".to_owned())]);
+    assert_eq!(carried_quantity(harness, filled_tray).await?, i64::from(nested_dough));
+    assert_eq!(carried_food_receipt_count(harness).await?, 1);
+    let proof: (bool, bool) = sqlx::query_as(
+        "SELECT event_source_location IS NOT NULL,ingredient_nested_location IS NOT NULL
+           FROM game_item_craft_records WHERE recipe='oteryn:item-conversion.fill-cookie-tray'",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(proof, (nested_dough, !nested_dough));
+    Ok(())
+}
+
+#[test]
+fn i11_craft_refuses_an_offered_tray_postgres() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    super::player_trade_fixtures::run_cookie_tray_trade_scenario()?;
+    eprintln!("I11_OFFERED_TRAY_POSTGRES_EXECUTED elapsed={:?}", started.elapsed());
+    Ok(())
 }

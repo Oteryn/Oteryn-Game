@@ -38,6 +38,21 @@ pub(super) fn run_scenario_with_read_priority(
     contents: bool,
     check_capacity: bool,
 ) -> TestResult {
+    run_trade_scenario(inspection, offer_contention, read_priority, contents, check_capacity, false)
+}
+
+pub(super) fn run_cookie_tray_trade_scenario() -> TestResult {
+    run_trade_scenario(false, false, false, false, false, true)
+}
+
+fn run_trade_scenario(
+    inspection: bool,
+    offer_contention: bool,
+    read_priority: bool,
+    contents: bool,
+    check_capacity: bool,
+    cookie_tray: bool,
+) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -55,6 +70,7 @@ pub(super) fn run_scenario_with_read_priority(
                     read_priority,
                     contents,
                     check_capacity,
+                    cookie_tray,
                 )
                 .await
                 .map_err(|e| e.to_string());
@@ -78,7 +94,7 @@ async fn seed(h: &Harness, character: [u8; 16], bag: u8, leaf: u8, key: &str) ->
         (
             leaf,
             key,
-            if key == "oteryn:item.tibia.i2854" {
+            if matches!(key, "oteryn:item.tibia.i2854" | "oteryn:item.tibia.i3464") {
                 1
             } else {
                 3
@@ -103,6 +119,7 @@ async fn scenario(
     read_priority: bool,
     contents: bool,
     check_capacity: bool,
+    cookie_tray: bool,
 ) -> TestResult {
     eprintln!("TRADE-WIRE-1: PostgreSQL harness started; two native Fresh admissions");
     let now: i64 =
@@ -126,6 +143,8 @@ async fn scenario(
         91,
         if contents {
             "oteryn:item.tibia.i2854"
+        } else if cookie_tray {
+            "oteryn:item.tibia.i3464"
         } else {
             "oteryn:item.tibia.i3607"
         },
@@ -174,6 +193,18 @@ async fn scenario(
         sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,6,encode($3,'hex')::uuid,encode($3,'hex')::uuid)").bind(currents[1].commit().character_id().as_bytes().as_slice()).bind(id(WORLD).as_slice()).bind(id(115).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_imbuements(item_instance_id,slot,category,imbuement_key,imbuement_revision,tier,remaining_ms,applying_occurrence_id,applying_transaction_id) VALUES(encode($1,'hex')::uuid,0,0,'oteryn:imbuement.strike',$2,3,72000000,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
             .bind(id(115).as_slice()).bind(oteryn_gameplay_items::imbuement::IMBUEMENT_CATALOGUE_REVISION).bind(id(116).as_slice()).bind(id(117).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+    if cookie_tray {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i6276','definition-r1',1,1,game_character_uuid_v7())")
+            .bind(id(89).as_slice()).bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,game_character_uuid_v7())")
+            .bind(id(89).as_slice()).bind(id(WORLD).as_slice())
+            .bind(currents[0].commit().character_id().as_bytes().as_slice())
+            .bind(id(90).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -385,7 +416,7 @@ async fn scenario(
         },
     );
     let driving = async {
-        let mut a = Peer::open(client_a).await?;
+        let mut a = Peer::open(client_a, cookie_tray).await?;
         a.details = contents;
         let a_cap = if check_capacity {
             Some(
@@ -397,7 +428,7 @@ async fn scenario(
             None
         };
         start_b.send(()).map_err(|_| "start second session")?;
-        let mut b = Peer::open(client_b).await?;
+        let mut b = Peer::open(client_b, false).await?;
         b.details = contents;
         let capacity = if let Some(a_cap) = a_cap {
             let b_cap = tokio::time::timeout(std::time::Duration::from_secs(7), b.capacity())
@@ -412,6 +443,53 @@ async fn scenario(
             None
         };
 
+        if cookie_tray {
+            use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey};
+            use oteryn_protocol_oteryn::world_object::{
+                MapUseTarget, UseDisposition, UseIntent, UseTarget,
+            };
+            let index = active.native_gameplay().and_then(|native| native.item_index()).ok_or("item index")?;
+            let inventory = a.last_inventory.as_ref().ok_or("initial craft inventory")?;
+            let handle = |key| {
+                let definition = index.definition_ref("Item", key, "definition-r1")?;
+                inventory.entries.iter().find(|entry| entry.item_definition_ref == definition).map(|entry| entry.handle)
+            };
+            let dough = handle("oteryn:item.tibia.i6276").ok_or("cake dough handle")?;
+            let tray = handle("oteryn:item.tibia.i3464").ok_or("tray handle")?;
+            assert_eq!(a.trade(Intent::Offer { partner: targets[1], item: tray.get() }).await?, ResultCode::Offered.payload());
+
+            let intent = UseIntent {
+                target: UseTarget::Item(dough),
+                use_with: None,
+                use_with_map_item: Some(MapUseTarget::Item(tray)),
+                use_with_position: None,
+            };
+            let session = a_admitted.game_session_id;
+            let command = UseCommand {
+                game_session_id: session,
+                command_id: a.next,
+                item_fence: a_admitted.item_fence,
+            };
+            let actor = a_admitted.runtime_actor.ok_or("craft actor")?;
+            let source = Some(ItemKey::Instance(id(89)));
+            assert!(owner.states.player_trades.open(session));
+            assert_eq!(owner.player_trade_item_available(actor, command, source).await, Some(true));
+            // The trade uses both live connections. Call the composed USE owner with
+            // the resolved carried keys because this native-map fixture has no bundle map.
+            let outcome = owner
+                .use_craft(actor, command, intent, source, Some(ItemKey::Instance(id(91))))
+                .await
+                .ok_or("carried craft outcome")?;
+            assert_eq!(outcome.disposition, UseDisposition::Rejected);
+            assert!(!owner.states.player_trades.open(session));
+            let unchanged: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.quantity=1 AND i.lifecycle=1 AND i.item_instance_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+                .bind(id(89).as_slice()).bind(id(91).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(unchanged, 2);
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records").fetch_one(&h.pool).await?, 0);
+            a.close().await?;
+            b.close().await?;
+            return Ok(());
+        }
         let offer_a = Intent::Offer {
             partner: targets[1],
             item: 2,
@@ -1044,7 +1122,7 @@ async fn scenario(
     )
     .await?;
     result?;
-    if check_capacity {
+    if check_capacity || cookie_tray {
         return Ok(());
     }
     let markers: (i64, i64) = sqlx::query_as(
@@ -1332,7 +1410,7 @@ impl Drop for Peer {
 }
 
 impl Peer {
-    async fn open(stream: tokio::io::DuplexStream) -> TestResult<Self> {
+    async fn open(stream: tokio::io::DuplexStream, read_inventory: bool) -> TestResult<Self> {
         let (mut read, write) = tokio::io::split(stream);
         let writer = std::sync::Arc::new(Mutex::new(write));
         let ack_writer = std::sync::Arc::clone(&writer);
@@ -1377,9 +1455,17 @@ impl Peer {
         };
         loop {
             let frame = peer.read().await?;
-            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if read_inventory && envelope.message_type() == MessageType::SnapshotChunk {
+                let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())?;
+                for domain in domains {
+                    if domain.domain_id == item_view::STATE_DOMAIN_CHARACTER_INVENTORY {
+                        // The caller reads the baseline only for the craft case.
+                        peer.last_inventory = item_view::decode_character_inventory(domain.payload).ok();
+                    }
+                }
+            }
+            if envelope.message_type() == MessageType::SnapshotCommit {
                 break;
             }
         }
