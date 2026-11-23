@@ -4112,6 +4112,10 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         }
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             tutorial_corruptor,
+            atomic_source_loot: entry
+                .source_callback_loot
+                .as_ref()
+                .is_some_and(|loot| loot.selected_item().is_some()),
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
             loot_table,

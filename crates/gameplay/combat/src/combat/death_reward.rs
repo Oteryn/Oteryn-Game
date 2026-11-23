@@ -233,6 +233,8 @@ impl<const N: usize> RewardProgressionBinding<N> {
 pub struct CreatureDeathRewardInput<const N: usize> {
     /// Trusted one-shot Newhaven gear; consumed in the atomic corpse/loot transaction.
     pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+    /// A copied source-death handler selected loot that must commit with its corpse.
+    pub atomic_source_loot: bool,
     /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
     /// as the loot definitions are (Content binding of `i00005801` waits on
     /// the Content revision, D3-7).
@@ -443,8 +445,9 @@ fn ground_placement(
     }
 }
 
-/// Runs the loot descendant (D3 §4.1): plans and preflights the whole plan,
-/// mints the corpse first (an ordinary Ground MINT at the corpse's position,
+/// Runs the loot descendant (D3 §4.1): plans and preflights the whole plan.
+/// Source-selected loot, nested loot and tutorial rewards commit with the corpse.
+/// The ordinary path mints the corpse first (a Ground MINT at the corpse's position,
 /// carrying the owner's top-damage winner), then mints each loot entry, in
 /// table order, into `Container(parent = that corpse)` ordinal `i + 1`,
 /// stopping at the first MINT failure (a fence failure mid batch would reject
@@ -467,6 +470,7 @@ async fn settle_loot(
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     corpse_race: Option<BestiaryRace>,
     tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+    atomic_source_loot: bool,
 ) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
     let (corpse_item, loot_table_ref) = match (corpse_item, loot_table_ref) {
         (None, None) if loot_table.entries.is_empty() && tutorial_corruptor.is_none() => {
@@ -585,7 +589,10 @@ async fn settle_loot(
         .freeze_item_mint(session.authority, session.node, corpse_request)
         .await
         .map_err(CombatDeathRewardLootError::Corpse)?;
-    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
+    if atomic_source_loot
+        || tutorial_corruptor.is_some()
+        || plan.entries.iter().any(|entry| entry.parent.is_some())
+    {
         let mut children = Vec::with_capacity(plan.entries.len());
         for entry in &plan.entries {
             let parent = match entry.parent {
@@ -887,6 +894,7 @@ async fn settle_creature_death_rewards_inner<const N: usize>(
         &mut committed_loot,
         corpse_race,
         input.tutorial_corruptor.clone(),
+        input.atomic_source_loot,
     )
     .await;
 
