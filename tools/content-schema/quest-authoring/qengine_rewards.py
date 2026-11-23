@@ -3743,7 +3743,7 @@ def validate_callbacks(document):
                 and not callback.get("repeatable", False)
                 and all(
                     s.get("preserve", False) or s["minimum"] <= s["set"] <= s["maximum"]
-                    for s in storage
+                    for s in storage + participant_storage
                 )
             )
             or (

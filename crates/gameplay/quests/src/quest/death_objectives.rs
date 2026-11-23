@@ -1,4 +1,5 @@
 //! Bounded, once-only authored kill objectives over the existing quest writer.
+use super::reward_callbacks::StateOperation;
 use super::world_callbacks::Position;
 use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition};
 use serde::{Deserialize, Serialize};
@@ -18,6 +19,8 @@ pub struct DeathObjective {
     pub stage_value: i64,
     pub counter: String,
     pub required: u16,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    state_ops: Vec<StateOperation>,
     pub minimum: Position,
     pub maximum: Position,
     pub sources: Vec<String>,
@@ -61,7 +64,7 @@ impl DeathObjective {
             completes: false,
             experience: None,
             world_change: None,
-            effects: vec![
+            effects: [
                 QuestEffect {
                     track: self.stage.clone(),
                     from: QuestComparison::Eq(self.stage_value),
@@ -72,7 +75,10 @@ impl DeathObjective {
                     from: QuestComparison::Between(0, i64::from(self.required) - 1),
                     effect: QuestEffectKind::Add(1),
                 },
-            ],
+            ]
+            .into_iter()
+            .chain(self.state_ops.iter().map(StateOperation::quest_effect))
+            .collect(),
         }
     }
 
@@ -126,6 +132,11 @@ fn parse(text: &str) -> Result<Vec<DeathObjective>, String> {
                 .is_none_or(str::is_empty)
             || objective.stage == objective.counter
             || objective.required == 0
+            || objective.state_ops.len() > super::QUESTSTATE0_RL_02 - 2
+            || objective
+                .state_ops
+                .iter()
+                .any(|operation| !operation.valid())
             || !(-15..=0).contains(&objective.minimum.floor)
             || objective.minimum.floor != objective.maximum.floor
             || objective.maximum.x < objective.minimum.x

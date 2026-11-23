@@ -224,6 +224,8 @@ def append(root, callbacks, inputs, pin):
                         }
                     )
                 add(name, -1, 0, addon=addon)
+                # Jack opens a fresh programme and preserves any existing commission.
+                callbacks[-1]["storage"][0].update(maximum=3, at_least=True)
                 callbacks[-1].update(
                     keywords=branch["requested_by"]["keywords"],
                     reply=reply,

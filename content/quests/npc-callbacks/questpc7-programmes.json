@@ -4129,8 +4129,9 @@
         {
           "track": "oteryn:quest-progress/questpc7/inquisition/programme",
           "minimum": -1,
-          "maximum": -1,
-          "set": 0
+          "maximum": 3,
+          "set": 0,
+          "at_least": true
         }
       ],
       "requirements": {
@@ -4186,8 +4187,9 @@
         {
           "track": "oteryn:quest-progress/questpc7/inquisition/programme",
           "minimum": -1,
-          "maximum": -1,
-          "set": 0
+          "maximum": 3,
+          "set": 0,
+          "at_least": true
         }
       ],
       "requirements": {
@@ -4241,8 +4243,9 @@
         {
           "track": "oteryn:quest-progress/questpc7/inquisition/programme",
           "minimum": -1,
-          "maximum": -1,
-          "set": 0
+          "maximum": 3,
+          "set": 0,
+          "at_least": true
         }
       ],
       "requirements": {
@@ -4303,8 +4306,9 @@
         {
           "track": "oteryn:quest-progress/questpc7/inquisition/programme",
           "minimum": -1,
-          "maximum": -1,
-          "set": 0
+          "maximum": 3,
+          "set": 0,
+          "at_least": true
         }
       ],
       "requirements": {

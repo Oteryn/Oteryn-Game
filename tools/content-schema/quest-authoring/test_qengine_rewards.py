@@ -1026,7 +1026,8 @@ class QuestRewards(unittest.TestCase):
             },
         )
         self.assertEqual(sum(c["outfit"] is not None for c in callbacks), 96)
-        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 150)
+        # Three Golden ownership branches advance the programme without a grant.
+        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 153)
         self.assertTrue(
             any(
                 len(c["take"]) > 1 and any(i["count"] == 100 for i in c["take"])

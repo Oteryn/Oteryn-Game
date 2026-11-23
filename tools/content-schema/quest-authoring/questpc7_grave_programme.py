@@ -194,7 +194,15 @@ def build(root):
         (root / "content/quests/grave-danger-final-source.json").read_bytes()
     )["transitions"][0]
     questline = final["effects"][0]
-    report_ready = questline["from"]["value"]
+    report_ready = {
+        "track": questline["track"],
+        "from": {"kind": "any"},
+        "effect": {
+            "kind": "add_at_least",
+            "value": 0,
+            "minimum": questline["from"]["value"],
+        },
+    }
     king = BOSSES[6]
     row = callback(
         "zelos-passage",
@@ -208,13 +216,8 @@ def build(root):
         ],
         "King Zelos is defeated. Investigate the Cobra Bastion.",
     )
-    row["state_ops"] = [
-        {
-            "track": questline["track"],
-            "from": {"kind": "any"},
-            "effect": {"kind": "add_at_least", "value": 0, "minimum": report_ready},
-        }
-    ]
+    # Keep the catch-up for saves credited before death advanced the questline.
+    row["state_ops"] = [report_ready]
     row["teleport"] = pos(COBRA_APPROACH)
     worlds.append(row)
     row = callback(
@@ -279,4 +282,6 @@ def build(root):
                 "sources": sources(center),
             }
         )
+        if i == 6:
+            objectives[-1]["state_ops"] = [report_ready]
     return worlds, objectives

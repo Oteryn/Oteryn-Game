@@ -1090,8 +1090,10 @@ fn validate_document_with_capacity(
                 && c.counter.is_none()
                 && !c.value_only_guarded()
                 && !c.is_save_restart_only()
+                // A foreign participant can close eligibility in the same transaction.
                 && c.storage
                     .iter()
+                    .chain(c.participants.iter().flat_map(|p| &p.storage))
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || c.required_receipts.len() > 8
             || c.required_receipts.iter().collect::<BTreeSet<_>>().len()

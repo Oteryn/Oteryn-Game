@@ -373,6 +373,10 @@ fn callback_keyword(npc: &str, text: &str) -> String {
             .unwrap_or_default()
             .into();
     }
+    use oteryn_gameplay_quests::quest::grave_danger;
+    if npc == grave_danger::NPC && grave_danger::matches_report(text) {
+        return "report".into();
+    }
     text.trim().to_ascii_lowercase()
 }
 

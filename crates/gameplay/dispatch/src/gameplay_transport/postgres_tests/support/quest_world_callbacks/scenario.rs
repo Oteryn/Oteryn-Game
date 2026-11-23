@@ -23,6 +23,10 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let (name, grave_report_case) = match name.strip_prefix("questpc7-grave/") {
+        Some(case) => ("questpc7-grave", Some(case)),
+        None => (name, None),
+    };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
@@ -2657,7 +2661,13 @@ fn scenario_case(
         } else if name == "qengine-rewards-grimvale-contacts" {
             super::super::questpc7_grimvale_fixtures::contacts(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-grave" {
-            super::super::questpc7_grave_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
+            super::super::questpc7_grave_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                grave_report_case,
+            )
+            .await?;
         } else if name == "questpc7-ferumbras" {
             super::super::questpc7_ferumbras_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "questpc7-hero" {

@@ -112,6 +112,20 @@ fn contains(message: &str, keyword: &str) -> bool {
             }))
 }
 
+fn basic_reply(message: &str) -> Option<Reply> {
+    BASIC
+        .iter()
+        .find_map(|(keyword, reply)| message.contains(keyword).then_some(*reply))
+}
+
+#[must_use]
+pub fn matches_report(message: &str) -> bool {
+    let message = message.to_ascii_lowercase();
+    basic_reply(&message).is_none()
+        && !super::quests_2_focus::intercepts(&message)
+        && contains(&message, "report")
+}
+
 #[must_use]
 pub fn choose(message: &str, topic: Option<Topic>, questline: i64, _outfit: i64) -> Option<Choice> {
     let message = message.to_ascii_lowercase();
@@ -123,8 +137,8 @@ pub fn choose(message: &str, topic: Option<Topic>, questline: i64, _outfit: i64)
             deferred: false,
         })
     };
-    if let Some((_, reply)) = BASIC.iter().find(|(keyword, _)| message.contains(keyword)) {
-        return choice(*reply, None, topic);
+    if let Some(reply) = basic_reply(&message) {
+        return choice(reply, None, topic);
     }
     if super::quests_2_focus::intercepts(&message) {
         return None;

@@ -88,6 +88,20 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
         )],
     ),
     (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"43161afcc986695e8999938e3395de140ec57134c00b1e89bcbe0e640775b5a0"),
+        &[hash(
+            b"4fe40f437a6acad51a574510d5d0bcef6dd7476ff7b1bed9438cc6b88c222ffe",
+        )],
+    ),
+    (
+        "oteryn:quest.hand_of_the_inquisition_outfits_quest",
+        hash(b"6ce138c8d2d98d0869359e3a93c25e2053fe55fcd729a5dc9887fb0e76cd073e"),
+        &[hash(
+            b"e73c8c57b74a19a1da0b5e2172458951140b1774dc0b526222c8742a156245fc",
+        )],
+    ),
+    (
         "oteryn:quest.the_ancient_tombs_quest",
         hash(b"5a7765b1239512ce87772a6d2c366b9443cd5596969c7b52ff789d50db0d501a"),
         &[
@@ -134,7 +148,7 @@ mod tests {
         assert_eq!(
             catalogue.definition_hash(grave),
             Some(hash(
-                b"c2ae319776b9920057272cdee4caa2827f2f66aeb6bdff3946ef7383224da5db"
+                b"43161afcc986695e8999938e3395de140ec57134c00b1e89bcbe0e640775b5a0"
             ))
         );
         assert_eq!(
@@ -172,7 +186,7 @@ mod tests {
                     hash(b"29c02b41a74e92e5adcd94218e4cad52db38134f2de0fe7c0f9363b0ecfc9769")
                 }
                 "oteryn:quest.grave_danger_quest" => {
-                    hash(b"c2ae319776b9920057272cdee4caa2827f2f66aeb6bdff3946ef7383224da5db")
+                    hash(b"43161afcc986695e8999938e3395de140ec57134c00b1e89bcbe0e640775b5a0")
                 }
                 _ => published,
             };
