@@ -163,6 +163,42 @@ mod tests {
     }
 
     #[test]
+    fn loyalty_preserves_high_trained_sword_and_uses_its_committed_remainder() {
+        use crate::durability::character_build::DurableBuildState;
+
+        let formula = formula();
+        // These banked tries cross the next threshold only with the full lifetime bonus.
+        for (tries, expected) in [(0, 403), (450_000_000_000_000_000, 404)] {
+            let mut state = state(Vocation::Knight);
+            let mut skills = [(10, 0); 7];
+            skills[2] = (403, tries);
+            let build = DurableBuildState::new("knight", (0, 0), skills).unwrap();
+            state.load_owned_build(&build).unwrap();
+            state.enable_owned_training(&build, &formula).unwrap();
+            assert_eq!(state.live_skill(2, 0), Some(403));
+            state.set_combat_loyalty(
+                CombatLoyaltyProjection {
+                    points: 360,
+                    platform_revision: 1,
+                },
+                &formula,
+            );
+
+            assert_eq!(
+                (state.live_skill(2, 0), state.swing_skills(2, 0)),
+                (
+                    Some(expected),
+                    Some(Some(SwingSkills {
+                        attack: expected,
+                        shielding: 10,
+                    })),
+                ),
+                "committed sword tries: {tries}"
+            );
+        }
+    }
+
+    #[test]
     fn loyalty_uses_trained_skill_for_condition_percentages() {
         use crate::durability::character_build::{BuildFormula, DurableBuildState};
         use oteryn_gameplay_domain::domain::condition::ConditionValues;
