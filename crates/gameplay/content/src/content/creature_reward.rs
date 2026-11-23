@@ -4,7 +4,6 @@
 //! `kill_reward_refused` line with the reason.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::num::NonZeroU32;
 use std::sync::{Arc, LazyLock};
 
 use oteryn_simulation_determinism::ExactI64;
@@ -17,7 +16,6 @@ use super::{
 };
 use crate::domain::bestiary::BestiaryRace;
 use crate::domain::bosstiary::{BosstiaryBoss, progress};
-use oteryn_gameplay_domain::domain::currency::{COIN_STACK_MAXIMUM, Coin};
 use oteryn_gameplay_domain::domain::loot_data::{
     LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
 };
@@ -400,15 +398,7 @@ fn lower_loot_entries(
                 container_capacity: facts.container_capacity,
                 charges: facts.charges,
                 stackable: facts.stackable,
-                // Carry the pickup ceiling to the planner without changing the source roll.
-                corpse_stack_maximum: if facts.stackable
-                    && entry.item.key == Coin::Gold.production_key()
-                    && entry.max_count > COIN_STACK_MAXIMUM
-                {
-                    NonZeroU32::new(COIN_STACK_MAXIMUM)
-                } else {
-                    None
-                },
+                corpse_stack_maximum: None,
                 subtype: entry.subtype,
                 unique: entry.unique,
                 creature_product: facts.creature_product,

@@ -4,6 +4,8 @@
 
 use sha2::{Digest, Sha256};
 
+use crate::item_transfer::GAMEITEM01_STACK_QUANTITY_MAX;
+
 mod boss;
 pub use boss::{plan_boss_loot, plan_boss_loot_with_bonus};
 
@@ -396,10 +398,14 @@ fn roll_entries(
         if quantity == 0 {
             return Err(LootPlanError::InvalidQuantityRange);
         }
-        let maximum = entry
-            .details
-            .corpse_stack_maximum
-            .map_or(quantity, std::num::NonZeroU32::get);
+        let maximum = if entry.details.stackable {
+            entry
+                .details
+                .corpse_stack_maximum
+                .map_or(GAMEITEM01_STACK_QUANTITY_MAX, std::num::NonZeroU32::get)
+        } else {
+            quantity
+        };
         let index = state.entries.len();
         for stack_index in 0..quantity.div_ceil(maximum) {
             if state.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
@@ -696,7 +702,6 @@ fn deterministic_draw(
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::item_transfer::GAMEITEM01_STACK_QUANTITY_MAX;
 
     #[test]
     fn instance_loot_entropy_is_separate_and_preserves_channel_draws() {
@@ -793,6 +798,120 @@ mod tests {
                 plan_creature_loot(death, reference, &reward.loot_table)?
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn behemoth_corpse_gold_fits_the_pickup_stack_limit() -> Result<(), Box<dyn std::error::Error>>
+    {
+        use crate::item_transfer::{
+            BackpackEntry, InventoryItem, ItemTransferDestination, PlanInput, TransferPlan,
+            plan_transfer,
+        };
+        use oteryn_gameplay_content::content::creature_reward::{
+            CreatureRewardTable, LootTablesSection,
+        };
+        use oteryn_gameplay_domain::domain::currency::Coin;
+        use oteryn_gameplay_domain::domain::item_definition::{
+            ItemDefinitionFacts, ItemStackClass, TypedDefinitionRef,
+        };
+
+        let profiles = serde_json::from_slice(include_bytes!(
+            "../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))?;
+        let section = LootTablesSection::decode(
+            include_bytes!("../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &profiles,
+        )?;
+        let rewards = CreatureRewardTable::from_pin(&profiles, Some(&section));
+        let reward = rewards
+            .row("oteryn:creature.behemoth")
+            .map_err(|reason| reason.as_str())?;
+        let reference = reward.loot_table_ref.as_ref().ok_or("missing loot table")?;
+        let death = death_key(1);
+        let plan = plan_creature_loot(death, reference, &reward.loot_table)?;
+        let gold = Coin::Gold.production_key();
+        let backpack = ItemDefinitionFacts {
+            definition: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "fixture:backpack".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            stack: ItemStackClass::NonStackable,
+            container_capacity: Some(2),
+            container_slot_equip_pattern: true,
+            weight: None,
+        };
+        let slot = InventoryItem {
+            item_instance_id: [1; 16],
+            definition: backpack.definition.clone(),
+            quantity: 1,
+        };
+        let mut entries = Vec::new();
+        for entry in plan
+            .entries
+            .iter()
+            .filter(|entry| entry.parent.is_none() && entry.item.production_key == gold)
+        {
+            let item = ItemDefinitionFacts {
+                definition: TypedDefinitionRef {
+                    family: entry.item.family.clone(),
+                    production_key: entry.item.production_key.clone(),
+                    revision_ref: entry.item.revision_ref.clone(),
+                },
+                stack: ItemStackClass::Stackable {
+                    proven_maximum: None,
+                },
+                container_capacity: None,
+                container_slot_equip_pattern: false,
+                weight: None,
+            };
+            let source = InventoryItem {
+                item_instance_id: [u8::try_from(entries.len())? + 2; 16],
+                definition: item.definition.clone(),
+                quantity: entry.quantity,
+            };
+            let TransferPlan::NewEntry { position } = plan_transfer(&PlanInput {
+                destination: ItemTransferDestination::MainBackpack,
+                item: &item,
+                backpack: Some(&backpack),
+                source: &source,
+                source_has_entries: false,
+                slot: Some(&slot),
+                entries: &entries,
+            })
+            .map_err(|reason| format!("{} gold: {reason:?}", source.quantity))?
+            else {
+                return Err("expected a new backpack entry".into());
+            };
+            entries.push(BackpackEntry {
+                item: source,
+                placement_ordinal: position.placement_ordinal,
+            });
+        }
+        let mut unsplit = reward.loot_table.clone();
+        let source = unsplit
+            .entries
+            .iter_mut()
+            .find(|entry| entry.item.production_key == gold)
+            .ok_or("missing gold entry")?;
+        assert!(source.details.charges.is_none());
+        source.details.stackable = false;
+        let total = plan_creature_loot(death, reference, &unsplit)?
+            .entries
+            .iter()
+            .filter(|entry| entry.parent.is_none() && entry.item.production_key == gold)
+            .map(|entry| entry.quantity)
+            .sum::<u32>();
+        let maximum = GAMEITEM01_STACK_QUANTITY_MAX;
+        assert!((maximum + 1..=2 * maximum).contains(&total));
+        assert_eq!(
+            entries
+                .iter()
+                .map(|entry| entry.item.quantity)
+                .collect::<Vec<_>>(),
+            [maximum, total - maximum],
+        );
         Ok(())
     }
 
@@ -895,7 +1014,9 @@ mod tests {
                 .find(|entry| entry.item.production_key == gold)
                 .ok_or("missing gold roll")?;
             let source_maximum = source.max_count;
-            source.details.corpse_stack_maximum = None;
+            // Gold has no charges, so disabling stacks here leaves the raw source roll.
+            assert!(source.details.charges.is_none());
+            source.details.stackable = false;
             let mut largest = 0;
             for seed in 0..=u8::MAX {
                 let death = death_key(seed);
@@ -938,53 +1059,6 @@ mod tests {
             assert!(largest > COIN_STACK_MAXIMUM, "{creature}");
         }
         assert!(oversized.is_empty(), "uncollectable gold: {oversized:?}");
-        Ok(())
-    }
-
-    #[test]
-    fn behemoth_corpse_gold_fits_the_pickup_stack_limit() -> Result<(), Box<dyn std::error::Error>>
-    {
-        use oteryn_gameplay_content::content::creature_reward::{
-            CreatureRewardTable, LootTablesSection,
-        };
-        use oteryn_gameplay_domain::domain::currency::Coin;
-
-        let profiles = serde_json::from_slice(include_bytes!(
-            "../../../../content/creatures/definitions/spell-native-profiles.json"
-        ))?;
-        let section = LootTablesSection::decode(
-            include_bytes!("../../../../tools/content-schema/native-gameplay/loot-tables.json"),
-            &profiles,
-        )?;
-        let rewards = CreatureRewardTable::from_pin(&profiles, Some(&section));
-        let reward = rewards
-            .row("oteryn:creature.behemoth")
-            .map_err(|reason| reason.as_str())?;
-        let reference = reward.loot_table_ref.as_ref().ok_or("missing loot table")?;
-        let death = death_key(1);
-        let mut unsplit = reward.loot_table.clone();
-        let gold = unsplit
-            .entries
-            .iter_mut()
-            .find(|entry| entry.item.production_key == Coin::Gold.production_key())
-            .ok_or("missing gold entry")?;
-        gold.details.corpse_stack_maximum = None;
-        let gold_quantities = |table| {
-            plan_creature_loot(death, reference, table).map(|plan| {
-                plan.entries
-                    .into_iter()
-                    .filter(|entry| entry.item.production_key == Coin::Gold.production_key())
-                    .map(|entry| entry.quantity)
-                    .collect::<Vec<_>>()
-            })
-        };
-        let total = gold_quantities(&unsplit)?.into_iter().sum::<u32>();
-        let maximum = GAMEITEM01_STACK_QUANTITY_MAX;
-        assert!((maximum + 1..=2 * maximum).contains(&total));
-        assert_eq!(
-            gold_quantities(&reward.loot_table)?,
-            [maximum, total - maximum]
-        );
         Ok(())
     }
 
