@@ -16,12 +16,24 @@ mod tests;
 const REFRESH: Duration = Duration::from_secs(5);
 #[derive(Component)]
 struct Tracker(u64);
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Destination {
+    Weekly,
+    Prey,
+    Toggle,
+}
+#[derive(Component)]
+struct TrackerControl {
+    generation: u64,
+    kind: Destination,
+}
 #[derive(Resource, Default)]
 struct State {
     generation: Option<u64>,
     next_refresh: Duration,
     root: Option<Entity>,
     text: String,
+    collapsed: bool,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>().add_systems(Update, project);
@@ -185,7 +197,11 @@ fn project(
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
-    let text = content(&board, &prey, now);
+    let text = if state.collapsed {
+        String::new()
+    } else {
+        content(&board, &prey, now)
+    };
     if state.root.is_some() && state.text == text {
         return;
     }
@@ -219,9 +235,70 @@ fn project(
         ))
         .id();
     commands.entity(root).add_child(label);
+    for (kind, caption) in [
+        (
+            Destination::Toggle,
+            if state.collapsed {
+                "Show task tracker"
+            } else {
+                "Hide task tracker"
+            },
+        ),
+        (Destination::Weekly, "Open weekly tasks"),
+        (Destination::Prey, "Open Prey"),
+    ] {
+        if state.collapsed && kind != Destination::Toggle {
+            continue;
+        }
+        let control = commands
+            .spawn((
+                Button,
+                TrackerControl {
+                    generation: owner.generation(),
+                    kind,
+                },
+            ))
+            .observe(control)
+            .id();
+        let text = commands
+            .spawn(source::button_caption(caption, skins.font.clone()))
+            .id();
+        commands.entity(control).add_child(text);
+        commands.entity(root).add_child(control);
+    }
     commands.entity(sidebar.right_widgets).add_child(root);
     state.root = Some(root);
     state.text = text;
+}
+fn control(
+    event: On<Activate>,
+    nodes: Query<&TrackerControl>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    mut state: ResMut<State>,
+) {
+    let Ok(control) = nodes.get(event.entity) else {
+        return;
+    };
+    if owner.modal_active()
+        || !guard.allows(event.entity)
+        || control.generation != owner.generation()
+    {
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    match control.kind {
+        Destination::Toggle => {
+            state.collapsed = !state.collapsed;
+        }
+        Destination::Weekly => play.link.open_task_board_tab(true),
+        Destination::Prey => {
+            play.link.prey_request(prey::Intent::Refresh);
+            play.link.prey_set_open(true);
+        }
+    }
 }
 fn open_board(
     event: On<Activate>,

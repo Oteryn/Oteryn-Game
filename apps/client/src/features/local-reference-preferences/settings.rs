@@ -154,17 +154,53 @@ pub struct ReferencePreferences {
     pub arc_opacity: u8,
     #[serde(default)]
     pub chat_context_hotkeys: bool,
+    #[serde(default)]
+    pub chat_drag_locked: bool,
     /// The chat mode the character last chose; `None` keeps the console default.
     #[serde(default)]
     pub chat_mode: Option<ChatMode>,
     #[serde(default)]
     pub manual_hotkey_profile: bool,
+    #[serde(default = "enabled")]
+    pub confirm_store_purchase: bool,
+    #[serde(default = "enabled")]
+    pub confirm_copy_link: bool,
+    #[serde(default)]
+    pub expiry_containers: bool,
+    #[serde(default)]
+    pub expiry_inventory: bool,
+    #[serde(default)]
+    pub expiry_unused: bool,
+    #[serde(default)]
+    pub highlight_mouse_target: bool,
+    #[serde(default)]
+    pub animated_cursor: bool,
+    #[serde(default)]
+    pub large_cursor: bool,
+    #[serde(default = "enabled")]
+    pub system_cursor: bool,
     #[serde(default = "default_console_font")]
     pub console_font_px: u16,
     #[serde(default)]
     pub compact_status: bool,
     #[serde(default = "enabled")]
     pub status_panel_visible: bool,
+    #[serde(default = "enabled")]
+    pub conditions_bar_enabled: bool,
+    #[serde(default = "enabled")]
+    pub conditions_hud_enabled: bool,
+    #[serde(default = "enabled")]
+    pub status_bar_visible: bool,
+    #[serde(default = "enabled")]
+    pub top_menu_visible: bool,
+    #[serde(default)]
+    pub status_bar_bottom: bool,
+    #[serde(default)]
+    pub status_bar_style: u8,
+    #[serde(default = "enabled")]
+    pub status_bar_experience: bool,
+    #[serde(default)]
+    pub status_bar_skills: [bool; 8],
     #[serde(default)]
     pub skill_order: Vec<u8>,
     #[serde(default)]
@@ -215,6 +251,15 @@ pub struct ReferencePreferences {
     pub hud_bounds: [u16; 4],
     #[serde(default = "enabled")]
     pub hud_bars: bool,
+    #[serde(default = "enabled")]
+    pub hud_other_health: bool,
+    #[serde(default)]
+    pub harmony_left: bool,
+    #[serde(default = "enabled")]
+    pub player_hud_enabled: bool,
+    #[serde(default = "enabled")]
+    pub other_hud_enabled: bool,
+
     #[serde(default = "enabled")]
     pub show_effects: bool,
     #[serde(default = "enabled")]
@@ -324,11 +369,29 @@ impl Default for ReferencePreferences {
             hud_npc_names: None,
             arc_opacity: 100,
             chat_context_hotkeys: false,
+            chat_drag_locked: false,
             chat_mode: None,
             manual_hotkey_profile: false,
+            confirm_store_purchase: true,
+            confirm_copy_link: true,
+            expiry_containers: false,
+            expiry_inventory: false,
+            expiry_unused: false,
+            highlight_mouse_target: false,
+            animated_cursor: false,
+            large_cursor: false,
+            system_cursor: true,
             console_font_px: 14,
             compact_status: false,
             status_panel_visible: true,
+            conditions_bar_enabled: true,
+            conditions_hud_enabled: true,
+            status_bar_visible: true,
+            top_menu_visible: true,
+            status_bar_bottom: false,
+            status_bar_style: 0,
+            status_bar_experience: true,
+            status_bar_skills: [false; 8],
             skill_order: Vec::new(),
             condition_order: Vec::new(),
             special_condition_order: Vec::new(),
@@ -354,6 +417,11 @@ impl Default for ReferencePreferences {
             keyboard_delay_ms: 0,
             hud_bounds: default_hud_bounds(),
             hud_bars: true,
+            hud_other_health: true,
+            harmony_left: false,
+            player_hud_enabled: true,
+            other_hud_enabled: true,
+
             game_window: Default::default(),
             show_effects: true,
             show_lights: true,

@@ -14,16 +14,18 @@
 //! 6. Log out, obtain a fresh admission, walk back to the locker, and re-check My Offers and
 //!    History so the ended offer and refund outcome are shown to be durable.
 //! 7. Having driven the real settlement path, require independent scheduled expiry. The current
-//!    server exposes only command/query-driven advancement, so this step reports MISSING-SERVER
-//!    at the production owner rather than fabricating a 30-day clock advance or a PASS.
+//!    node runs a scheduler, but real offer expiry exceeds the qualification budget.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::market::{self as wire, MarketReply, MarketRequest};
 use std::collections::BTreeSet;
 
-const GAP: &str = "source:crates/gameplay/durability/src/durability/market/settlement.rs:240";
+const GAP: &str = "step=scheduled-expiry need=uncancelled-offer-reaching-natural-expiry-and-observed-refund source:crates/gameplay/durability/src/durability/market/settlement.rs:236";
 
-async fn command(client: &mut DevClientSession, request: MarketRequest) -> TestResult<MarketReply> {
+pub(super) async fn command(
+    client: &mut DevClientSession,
+    request: MarketRequest,
+) -> TestResult<MarketReply> {
     let payload =
         wire::encode_request(request).map_err(|error| format!("market input: {error:?}"))?;
     let response = client
@@ -59,6 +61,19 @@ async fn at_market(client: &mut DevClientSession, world: &BundleWorld) -> TestRe
     })
     .ok_or("E06 step 1: no reachable authored depot locker")?;
     walk(client, world, &path).await
+}
+
+pub(super) async fn bank_balance(clients: &SeamClients<'_>, index: usize) -> TestResult<u64> {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let amount: i64 = sqlx::query_scalar(
+        "SELECT coalesce((SELECT balance FROM game_account_bank_balances
+         WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid),0)",
+    )
+    .bind(&clients.accounts[index])
+    .bind(clients.world.as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    Ok(u64::try_from(amount)?)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
@@ -120,9 +135,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
     }
     evidence("E06_CHECK step=3 status=PASS observed-code=14");
 
+    let initial_balance = bank_balance(clients, 1).await?;
+    let fee = oteryn_gameplay_economy::market::placement_fee(1, 1)
+        .map_err(|error| format!("market fee: {error:?}"))?;
     let created = command(&mut client, request(5, definitions[0], [0; 16], 0)).await?;
     if created.code != 1 {
         return Err(format!("E06 step 4: create observed-code={}; need premium-current and at least fee+escrow bank gold", created.code).into());
+    }
+    let reserved_balance = bank_balance(clients, 1).await?;
+    if initial_balance.checked_sub(fee + 1) != Some(reserved_balance) {
+        return Err(format!("E06 step 4: bank balance {initial_balance}->{reserved_balance}, expected fee={fee} and escrow=1").into());
     }
     let offer = created.offer;
     let own = command(&mut client, request(3, 0, [0; 16], 0)).await?;
@@ -142,7 +164,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
     }
     let own = command(&mut client, request(3, 0, [0; 16], 0)).await?;
     let history = command(&mut client, request(4, 0, [0; 16], 0)).await?;
-    if own.rows.iter().any(|row| row.offer == offer)
+    if own.code != 1
+        || history.code != 1
+        || own.rows.iter().any(|row| row.offer == offer)
         || !history
             .rows
             .iter()
@@ -152,6 +176,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
             "E06 step 5: refund/history delta missing own={own:?} history={history:?}"
         )
         .into());
+    }
+    let refunded_balance = bank_balance(clients, 1).await?;
+    if reserved_balance.checked_add(1) != Some(refunded_balance) {
+        return Err(format!("E06 step 5: cancel refund bank balance {reserved_balance}->{refunded_balance}, expected one gold escrow returned").into());
     }
     evidence("E06_CHECK step=5 status=PASS cancelled-refund-history");
 
@@ -164,7 +192,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
     at_market(&mut client, world).await?;
     let own = command(&mut client, request(3, 0, [0; 16], 0)).await?;
     let history = command(&mut client, request(4, 0, [0; 16], 0)).await?;
-    if own.rows.iter().any(|row| row.offer == offer)
+    if own.code != 1
+        || history.code != 1
+        || own.rows.iter().any(|row| row.offer == offer)
         || !history
             .rows
             .iter()
@@ -180,27 +210,41 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
     {
         return Err("E06 step 6: final logout refused".into());
     }
-    evidence("E06_CHECK step=6 status=PASS durable-ended-offer");
+    if bank_balance(clients, 1).await? != refunded_balance {
+        return Err("E06 step 6: refunded balance changed after fresh admission".into());
+    }
+    evidence("E06_CHECK step=6 status=PASS durable-ended-offer-and-refunded-balance");
     Ok(GAP)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+            .await;
     match result {
-        Ok(Ok(source)) => evidence(&format!(
-            "e2e_all scenario=E06.full status=MISSING-SERVER seconds={:.3} evidence={source}",
-            started.elapsed().as_secs_f64()
-        )),
-        Ok(Err(error)) => evidence(&format!(
-            "e2e_all scenario=E06.full status=FAIL seconds={:.3} evidence={}",
-            started.elapsed().as_secs_f64(),
-            error.to_string().replace(' ', "_")
-        )),
-        Err(_) => evidence(&format!(
-            "e2e_all scenario=E06.full status=FAIL seconds={:.3} evidence=step-deadline-timeout",
-            started.elapsed().as_secs_f64()
-        )),
+        Ok(Ok(gap)) => {
+            evidence(&format!("E06_GAP {gap}"));
+            evidence(&format!(
+                "e2e_all scenario=E06.full status=FAIL seconds={:.3} evidence=scheduled-expiry-unproven",
+                started.elapsed().as_secs_f64()
+            ));
+        }
+        Ok(Err(error)) => {
+            evidence(&format!("E06_GAP {error}"));
+            evidence(&format!(
+                "e2e_all scenario=E06.full status=FAIL seconds={:.3} evidence={}",
+                started.elapsed().as_secs_f64(),
+                error.to_string().replace(' ', "_")
+            ));
+        }
+        Err(_) => {
+            evidence("E06_GAP step=journey-deadline need=responsive-market-owner");
+            evidence(&format!(
+                "e2e_all scenario=E06.full status=FAIL seconds={:.3} evidence=step-deadline-timeout",
+                started.elapsed().as_secs_f64()
+            ));
+        }
     }
 }
 

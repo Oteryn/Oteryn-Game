@@ -47,6 +47,7 @@ pub(crate) struct Authority {
     pub paginate: bool,
     pub fail_pages: bool,
     pub status_failure: Option<u16>,
+    pub held_bazaar_status: Option<String>,
     pub status_barrier: Option<Arc<tokio::sync::Barrier>>,
     pub offline: bool,
     pub lease_active: bool,

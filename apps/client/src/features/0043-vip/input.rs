@@ -6,6 +6,33 @@ use oteryn_client_ui::vip::{Intent, request};
 use oteryn_input_actions::{ButtonState, Modifier, NormalizedInputEvent};
 
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn vip_private_channel_available(&self) -> bool {
+        let mailbox = lock(&self.mailbox);
+        owns_private_channel(&mailbox.chat_private)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn vip_private_recipient(&self, name: &str, invite: bool) {
+        use oteryn_client_ui::chat_private_channel::Intent as PrivateIntent;
+        let mut mailbox = lock(&self.mailbox);
+        if !owns_private_channel(&mailbox.chat_private) {
+            return;
+        }
+        let draft = std::mem::replace(&mut mailbox.chat_private.name, name.to_owned());
+        let intent = if invite {
+            PrivateIntent::Invite
+        } else {
+            PrivateIntent::Exclude
+        };
+        crate::play::feature_0080_chat_private_channel::input::enqueue(
+            &mut mailbox,
+            &self.commands,
+            intent,
+        );
+        mailbox.chat_private.name = draft;
+    }
+
     pub fn vip_request(&self, intent: Intent) {
         let mut mailbox = lock(&self.mailbox);
         if let Some(command) = request(&mut mailbox.vip, intent)
@@ -27,4 +54,14 @@ impl PlayLink {
         lock(&self.mailbox).vip.open = true;
         true
     }
+}
+
+#[cfg(bevy_shell)]
+fn owns_private_channel(panel: &oteryn_client_ui::chat_private_channel::ChatPanel) -> bool {
+    panel.selected
+        && !panel.pending
+        && panel
+            .list
+            .as_ref()
+            .is_some_and(|list| list.own_channel.is_some())
 }

@@ -3,6 +3,7 @@
 //! projection alone: a projection only says an effect may occur, so a zero projection means the
 //! player holds no source and the step FAILs naming what is needed.
 //!
+//! Confirm fresh admission, then observe the following steps.
 //! 1. `tabs`: request the native Offence and Defence tabs; require revisioned projections.
 //! 2. `baseline`: attack a live compiled-world monster; require attributed player hits, monster
 //!    hits on the player, and an idle vitals regeneration rate to compare against.
@@ -23,16 +24,17 @@ use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::cyclopedia_character::{CharacterTab, combat};
 use oteryn_protocol_oteryn::item_view as items;
 use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
+use std::collections::{BTreeMap, BTreeSet};
 
 use combat::CombatStat as Stat;
 
-const STEPS: [&str; 9] = [
-    "tabs", "baseline", "critical", "leech", "reflect", "cleave", "perfect-shot", "fatal", "refusal-relog",
+const STEPS: [&str; 10] = [
+    "admission", "tabs", "baseline", "critical", "leech", "reflect", "cleave", "perfect-shot", "fatal", "refusal-relog",
 ];
 const FIGHT_SECONDS: u64 = 25;
 /// The attributed damage frames carry no critical, fatal or perfect-shot mark, so the client
 /// cannot tell those hits from ordinary damage.
-const UNMARKED: &str = "needed=server-mark-on-the-hit;attributed-damage-frames-carry-no-critical-fatal-or-perfect-shot-mark";
+const UNMARKED: &str = "needed=server-mark-on-the-hit;ValueText-has-no-critical-fatal-or-perfect-shot-mark;source=crates/protocol-oteryn/src/presentation.rs:101";
 
 struct Row {
     started: std::time::Instant,
@@ -87,7 +89,16 @@ impl Row {
                 .filter(|s| !self.passed.contains(s) && !self.failures.iter().any(|(f, _)| f == *s))
                 .copied()
                 .collect();
-            format!(" evidence=failed:{};not-run:{}", failed.join("|"), missing.join(","))
+            evidence(&format!(
+                "C03_GAP row=C03 failed={} unexecuted={}",
+                failed.join("|"),
+                missing.join(","),
+            ));
+            format!(
+                " evidence=failed:{};not-run:{}",
+                failed.join("|"),
+                missing.join(",")
+            )
         };
         evidence(&format!(
             "e2e_all scenario=C03.full status={} seconds={:.3}{detail}",
@@ -114,15 +125,41 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn tab(client: &mut DevClientSession, tab: CharacterTab) -> TestResult<combat::CombatStats> {
-    use oteryn_protocol_oteryn::cyclopedia_character as wire;
-    let response = client
-        .session_mut()
-        .gated_command(wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1, wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[tab as u8, 0, 0, 50])
-        .await?;
-    if response.status != CommandStatus::Accepted {
-        return Err(format!("character-tab-{tab:?}-status:{:?}", response.status).into());
+    use oteryn_dev_client::client_ui::cyclopedia_character::{
+        CyclopediaCharacterPanel, Intent, request,
+    };
+    let mut panel = CyclopediaCharacterPanel {
+        selected: true,
+        tab,
+        ..Default::default()
+    };
+    let command = request(&mut panel, Intent::Tab).ok_or("C03 combat page request unavailable")?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let response = client
+            .session_mut()
+            .gated_command(command.capability, command.kind, &command.payload)
+            .await?;
+        if response.status == CommandStatus::Accepted {
+            let stats = combat::CombatStats::decode(&response.payload)
+                .map_err(|error| format!("tab-{tab:?}-decode:{error:?}"))?;
+            if stats.tab() != tab {
+                return Err(format!("C03 expected {tab:?} but received {:?}", stats.tab()).into());
+            }
+            return Ok(stats);
+        }
+        if !retry_combat_page(response.status, tokio::time::Instant::now() >= deadline) {
+            return Err(format!("character-tab-{tab:?}-status:{:?}; combat snapshot unavailable (attack/cyclopedia.rs:113)", response.status).into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
     }
-    combat::CombatStats::decode(&response.payload).map_err(|error| format!("tab-{tab:?}-decode:{error:?}").into())
+}
+
+fn retry_combat_page(status: CommandStatus, expired: bool) -> bool {
+    // The snapshot owner can reject a read while an equipment refresh or
+    // combat lock is in flight. A closed transport still returns immediately.
+    status == CommandStatus::Rejected && !expired
 }
 
 struct Stats {
@@ -159,9 +196,47 @@ impl Stats {
     }
 
     fn same(&self, other: &Self) -> bool {
-        let tabs = [(&self.offence, &other.offence, CharacterTab::Offence), (&self.defence, &other.defence, CharacterTab::Defence)];
-        tabs.iter().all(|(a, b, tab)| a.equipment_revision == b.equipment_revision && Stat::for_tab(*tab).iter().all(|k| a.get(*k) == b.get(*k)))
+        let tabs = [
+            (&self.offence, &other.offence, CharacterTab::Offence),
+            (&self.defence, &other.defence, CharacterTab::Defence),
+        ];
+        tabs.iter()
+            .all(|(a, b, tab)| Stat::for_tab(*tab).iter().all(|k| a.get(*k) == b.get(*k)))
     }
+}
+
+#[derive(PartialEq, Eq)]
+struct Custody {
+    main_backpack: (u32, u32, u32),
+    items: BTreeMap<(Option<items::EquipmentSlot>, u32, u32), u64>,
+}
+
+fn custody(client: &DevClientSession) -> TestResult<Custody> {
+    let inventory = client
+        .inventory()
+        .ok_or("C03 inventory projection absent")?;
+    let pack = inventory
+        .main_backpack
+        .ok_or("C03 main backpack projection absent")?;
+    let mut items = BTreeMap::new();
+    for (slot, item) in inventory
+        .equipment
+        .iter()
+        .map(|equipped| (Some(equipped.slot), &equipped.item))
+        .chain(inventory.entries.iter().map(|item| (None, item)))
+    {
+        *items
+            .entry((slot, item.item_definition_ref.get(), item.sub_type))
+            .or_default() += u64::from(item.count.get());
+    }
+    Ok(Custody {
+        main_backpack: (
+            pack.item_definition_ref.get(),
+            pack.count.get(),
+            pack.sub_type,
+        ),
+        items,
+    })
 }
 
 fn own(client: &DevClientSession) -> TestResult<EntityRef> {
@@ -191,29 +266,137 @@ fn monsters_near(client: &DevClientSession, within: i32) -> Vec<EntityRef> {
         .unwrap_or_default()
 }
 
-async fn reachable_monster(client: &mut DevClientSession, world: &BundleWorld, spawns: &oteryn_world_bundle::spawn::Table) -> TestResult<EntityRef> {
-    for _ in 0..4 {
-        if let Some(entity) = monsters_near(client, 1).first() {
-            return Ok(*entity);
+fn outside_protection(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|ground| !ground.protection_zone())
+}
+
+fn baseline_route(
+    world: &BundleWorld,
+    from: TilePos,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    available: impl Fn(TilePos) -> bool,
+    searched: &[TilePos],
+) -> Option<Vec<StepDirection>> {
+    let mut approaches = BTreeSet::new();
+    for (spawn, _) in full_e2ef3::ordinary_spawn_points(spawns) {
+        if !outside_protection(world, spawn) {
+            continue;
         }
-        let points: Vec<_> = spawns
-            .sources
-            .iter()
-            .flat_map(|source| source.points.iter().map(move |p| TilePos { x: p.x, y: p.y, floor: source.floor }))
-            .collect();
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            !world.base().tile(at.x, at.y, at.floor).is_none_or(|t| t.protection_zone())
-                && points.iter().any(|s| s.floor == at.floor && s.x.abs_diff(at.x).max(s.y.abs_diff(at.y)) <= 1)
-        })
-        .ok_or("no-reachable-compiled-monster-spawn")?;
-        walk(client, world, &path).await?;
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-        while monsters_near(client, 1).is_empty() && tokio::time::Instant::now() < deadline {
-            client.service_liveness(Duration::from_millis(100)).await?;
-            client.take_events();
+        for dx in -1..=1 {
+            for dy in -1..=1 {
+                if let (Some(x), Some(y)) = (
+                    spawn.x.checked_add_signed(dx),
+                    spawn.y.checked_add_signed(dy),
+                ) {
+                    let at = TilePos { x, y, ..spawn };
+                    if at != spawn
+                        && outside_protection(world, at)
+                        && !searched.iter().any(|prior| {
+                            prior.floor == at.floor
+                                && prior.x.abs_diff(at.x).max(prior.y.abs_diff(at.y)) <= 8
+                        })
+                    {
+                        approaches.insert(at);
+                    }
+                }
+            }
         }
     }
-    monsters_near(client, 1).first().copied().ok_or_else(|| "spawn-reached-without-live-monster-frame".into())
+    // The compiled town includes reachable underground floors beyond the
+    // shared two-floor radius. Search its finite movement graph.
+    find_route(
+        from,
+        |at| approaches.contains(&at) && available(at),
+        |at, direction| destination(world, at, direction).filter(|next| available(*next)),
+    )
+    .ok()
+}
+
+async fn reachable_monster(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult<EntityRef> {
+    let mut searched = Vec::new();
+    for _ in 0..3 {
+        let from = tile(client.world_spatial().actor_position)?;
+        let occupied = full_e2ef3::occupied_tiles(client);
+        let path = baseline_route(
+            world,
+            from,
+            spawns,
+            |at| full_e2ef3::route_available(at) && !occupied.contains(&at),
+            &searched,
+        )
+        .ok_or_else(|| format!("no reachable compiled monster approach from {from:?}; prior approaches={searched:?}"))?;
+        walk(client, world, &path).await?;
+        searched.push(tile(client.world_spatial().actor_position)?);
+        if let Some(target) = visible_monster(client, world).await? {
+            return Ok(target);
+        }
+    }
+    Err(format!("no live adjacent spawn at compiled approaches {searched:?}").into())
+}
+
+fn live_approach_route(
+    world: &BundleWorld,
+    from: TilePos,
+    target: TilePos,
+    occupied: &BTreeSet<TilePos>,
+) -> Option<Vec<StepDirection>> {
+    route_avoiding(
+        world,
+        from,
+        |cell| {
+            cell != target
+                && cell.floor == target.floor
+                && outside_protection(world, cell)
+                && cell.x.abs_diff(target.x).max(cell.y.abs_diff(target.y)) <= 1
+        },
+        |cell| full_e2ef3::route_available(cell) && cell != target && !occupied.contains(&cell),
+    )
+}
+
+async fn visible_monster(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<Option<EntityRef>> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(7);
+    while tokio::time::Instant::now() < deadline {
+        let here = tile(client.world_spatial().actor_position)?;
+        if outside_protection(world, here) {
+            let target = client
+                .world_entities()
+                .into_iter()
+                .flat_map(|entities| entities.others())
+                .filter(|entity| entity.kind == EntityKind::Creature)
+                .filter_map(|entity| {
+                    let at = tile(entity.position).ok()?;
+                    (here.floor == at.floor && outside_protection(world, at)).then_some((
+                        entity.entity,
+                        at,
+                        here.x.abs_diff(at.x).max(here.y.abs_diff(at.y)),
+                    ))
+                })
+                .min_by_key(|(_, _, distance)| *distance);
+            if let Some((entity, at, distance)) = target {
+                if distance <= 1 {
+                    return Ok(Some(entity));
+                }
+                let occupied = full_e2ef3::occupied_tiles(client);
+                let path = live_approach_route(world, here, at, &occupied);
+                if let Some(direction) = path.and_then(|path| path.first().copied()) {
+                    walk(client, world, &[direction]).await?;
+                }
+            }
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+    Ok(None)
 }
 
 /// One attributed ValueText observation: decision ordinal, target, attacker, value.
@@ -283,6 +466,12 @@ async fn fight(client: &mut DevClientSession, target: EntityRef, seconds: u64, h
         }
         if log.flank.is_none() {
             log.flank = monsters_near(client, 1).into_iter().find(|m| *m != target);
+        }
+        if client
+            .world_entities()
+            .is_some_and(|entities| entities.get(&target).is_none())
+        {
+            break;
         }
     }
     log.seconds = began.elapsed().as_secs_f64();
@@ -379,6 +568,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_world(clients, 0xc3).await?;
     let first_session = client.join_snapshot().game_session_id;
+    row.pass("admission", first_session);
     let me = own(&client)?;
 
     let with = Stats::read(&mut client).await?;
@@ -387,10 +577,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     // Clean baseline: the same fight with every strippable source out of the equipment.
     let (stripped, clean) = if with.offence_sources() > 0 { strip(&mut client).await? } else { (Vec::new(), true) };
     let (idle_hp, idle_mp) = idle_rate(&mut client, 8).await?;
-    let target = reachable_monster(&mut client, world, &metadata.spawns).await?;
-    let base = fight(&mut client, target, FIGHT_SECONDS, 12).await?;
-    let base_hits = base.own_hits(me);
-    let base_taken = base.seen.iter().filter(|s| s.1 == me).count();
+    let mut base_hits = Vec::new();
+    let mut base_taken = 0;
+    for _ in 0..3 {
+        let target = reachable_monster(&mut client, world, &metadata.spawns).await?;
+        let base = fight(&mut client, target, FIGHT_SECONDS, 12).await?;
+        base_hits.extend(base.own_hits(me));
+        base_taken += base
+            .seen
+            .iter()
+            .filter(|seen| seen.1 == me && seen.2 == Some(target))
+            .count();
+        if base_hits.len() >= 6 && base_taken > 0 {
+            break;
+        }
+    }
     for (slot, definition) in &stripped {
         restore(&mut client, *slot, *definition).await?;
     }
@@ -425,13 +626,23 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let (life, mana) = (with.off(Stat::LifeLeech), with.off(Stat::ManaLeech));
     let dealt: u64 = hits.iter().sum();
     let vitals = *client.actor_vitals().ok_or("vitals-absent")?;
-    if life <= 0 && mana <= 0 {
-        row.fail("leech", needed("life-or-mana-leech", 0));
+    if life <= 0 || mana <= 0 {
+        row.fail(
+            "leech",
+            format!("needed=both-leech-sources;life={life};mana={mana}"),
+        );
     } else {
-        let life_ok = life > 0 && dealt.saturating_mul(life as u64) / 1_000_000 >= 1 && hunt.health_up as f64 > idle_hp * hunt.seconds;
-        let mana_ok = mana > 0 && dealt.saturating_mul(mana as u64) / 1_000_000 >= 1 && hunt.mana_up as f64 > idle_mp * hunt.seconds;
-        if (life <= 0 || life_ok) && (mana <= 0 || mana_ok) {
-            row.pass("leech", (life, mana, hunt.health_up, hunt.mana_up, idle_hp, idle_mp));
+        let life_ok = life > 0
+            && dealt.saturating_mul(life as u64) / 1_000_000 >= 1
+            && hunt.health_up as f64 > idle_hp * hunt.seconds;
+        let mana_ok = mana > 0
+            && dealt.saturating_mul(mana as u64) / 1_000_000 >= 1
+            && hunt.mana_up as f64 > idle_mp * hunt.seconds;
+        if life_ok && mana_ok {
+            row.pass(
+                "leech",
+                (life, mana, hunt.health_up, hunt.mana_up, idle_hp, idle_mp),
+            );
         } else {
             row.fail("leech", format!(
                 "life-projection={life} health-up={} idle={:.2}/s;mana-projection={mana} mana-up={} idle={:.2}/s;dealt={dealt};vitals={vitals:?}",
@@ -499,16 +710,26 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let before_vitals = *client.actor_vitals().ok_or("vitals-absent")?;
     let refusal = client.session_mut().attack_target(Some(&me)).await?;
     client.service_liveness(Duration::from_millis(300)).await?;
-    let self_damage: Vec<_> = client.take_events().iter().fold(Vec::new(), |mut seen, e| {
-        collect(e, &mut seen);
-        seen
-    }).into_iter().filter(|s| s.1 == me && s.2 == Some(me)).collect();
-    let inventory = client.inventory().cloned();
+    let self_damage: Vec<_> = client
+        .take_events()
+        .iter()
+        .fold(Vec::new(), |mut seen, e| {
+            collect(e, &mut seen);
+            seen
+        })
+        .into_iter()
+        .filter(|s| s.1 == me && s.2 == Some(me))
+        .collect();
+    let inventory = custody(&client)?;
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_world(clients, 0xc4).await?;
     let after = Stats::read(&mut fresh).await?;
-    let durable = fresh.join_snapshot().game_session_id != first_session && fresh.inventory().cloned() == inventory && after.same(&with);
+    let durable = fresh.join_snapshot().game_session_id != first_session
+        && custody(&fresh)? == inventory
+        && after.same(&after_restore)
+        && after.offence.equipment_revision == after_restore.offence.equipment_revision
+        && after.defence.equipment_revision == after_restore.defence.equipment_revision;
     if refusal.disposition != AttackIntentDisposition::Ok && self_damage.is_empty() && durable {
         row.pass("refusal-relog", (refusal, before_vitals.health));
     } else {
@@ -545,6 +766,114 @@ mod tests {
         row.fail("leech", "no vitals increase");
         row.pass("leech", "late");
         assert!(row.passed.is_empty() && row.failures.len() == 1);
+    }
+
+    #[test]
+    fn baseline_route_reaches_compiled_town_spawn() -> TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| check_compiled_town_route().map_err(|error| error.to_string()))?
+            .join()
+            .map_err(|_| "compiled town route test thread panicked")??;
+        Ok(())
+    }
+
+    fn check_compiled_town_route() -> TestResult {
+        use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let regions: Vec<_> =
+            include_str!("../../../../../tools/qualification/node_boot/town-regions.txt")
+                .trim()
+                .split(';')
+                .map(|region| -> TestResult<_> {
+                    let (x, y) = region.split_once(',').ok_or("invalid town region")?;
+                    Ok((x.parse()?, y.parse()?))
+                })
+                .collect::<TestResult<_>>()?;
+        let project = source::project_regions(&root, &regions)?;
+        let (registry, palette) = source::registry(&root, &project)?;
+        let input = compile::Input {
+            regions: &project.regions,
+            palette: &palette,
+            identity: serde_json::from_slice(&std::fs::read(
+                root.join("content/world/pins/oteryn.identity.json"),
+            )?)?,
+            world: source::world_extent(&root)?,
+            build_class: BuildClass::NonProduction,
+            draft_areas: oteryn_world_bundle_compiler::project::draft_areas(&project.index)?,
+            families: &project.families,
+        };
+        let compiled = compile::compile(&input, &registry)?;
+        let metadata = oteryn_world_bundle::bundle::visit(&compiled.bytes, |_, _| Ok(()))?;
+        let mut pin: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(root.join("content/world/pins/oteryn.json"))?)?;
+        pin["digest"] = compiled
+            .digest
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+            .into();
+        let world = &boot_world(
+            compiled.bytes,
+            &pin,
+            WorldId::decode(&v7(1, 2))?,
+            ChannelId::decode(&v7(1, 3))?,
+        )?
+        .bundle;
+        let initial = baseline_route(world, TOWN, &metadata.spawns, |_| true, &[])
+            .ok_or("C03 baseline could not reach a compiled town spawn")?;
+        let first = *initial.first().ok_or("C03 route must leave the temple")?;
+        let occupied = destination(world, TOWN, first).ok_or("C03 route has invalid first step")?;
+        let path = baseline_route(world, TOWN, &metadata.spawns, |at| at != occupied, &[])
+            .ok_or("C03 baseline could not route around an occupied temple exit")?;
+        let mut at = TOWN;
+        for step in path {
+            at = destination(world, at, step).ok_or("C03 route has invalid step")?;
+            assert_ne!(at, occupied);
+        }
+        assert_ne!(at, TOWN);
+        let target = full_e2ef3::ordinary_spawn_points(&metadata.spawns)
+            .map(|(spawn, _)| spawn)
+            .find(|spawn| {
+                spawn.floor == at.floor
+                    && at.x.abs_diff(spawn.x).max(at.y.abs_diff(spawn.y)) <= 1
+                    && outside_protection(world, *spawn)
+            })
+            .ok_or("C03 compiled route ended beside no spawn")?;
+        let open = live_approach_route(world, TOWN, target, &BTreeSet::from([target]))
+            .ok_or("C03 live approach has no route from town")?;
+        let blocked = destination(world, TOWN, *open.first().ok_or("C03 approach must move")?)
+            .ok_or("C03 approach first step invalid")?;
+        let alternate = live_approach_route(world, TOWN, target, &BTreeSet::from([target, blocked]))
+            .ok_or("C03 live approach must detour around the other actor")?;
+        let mut cell = TOWN;
+        for step in alternate {
+            cell = destination(world, cell, step).ok_or("C03 live approach step invalid")?;
+            assert_ne!(cell, blocked);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn failed_admission_remains_separate_from_unexecuted_tabs() {
+        let mut row = Row::new();
+        assert_eq!(STEPS.first(), Some(&"admission"));
+        row.fail("admission", "fixture-release closed the connection");
+        assert!(!row.complete());
+        assert_eq!(
+            row.failures,
+            [("admission", "fixture-release closed the connection".to_owned())]
+        );
+        assert!(!row.passed.contains(&"tabs"));
+    }
+
+    #[test]
+    fn combat_page_retries_rejection_only_before_deadline() {
+        assert!(retry_combat_page(CommandStatus::Rejected, false));
+        assert!(!retry_combat_page(CommandStatus::Rejected, true));
+        assert!(!retry_combat_page(CommandStatus::Accepted, false));
     }
 
     #[test]

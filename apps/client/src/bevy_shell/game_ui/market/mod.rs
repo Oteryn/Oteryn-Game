@@ -28,19 +28,7 @@ struct Action {
     key: Key,
     kind: Kind,
 }
-#[derive(Clone, Copy)]
-enum Kind {
-    Close,
-    Coins,
-    Search,
-    Category(usize),
-    Item(usize),
-    Catalogue(i32),
-    Book(i32),
-    Statistics,
-    Intent(Intent),
-    Browse,
-}
+use actions::Kind;
 #[derive(Component)]
 struct Overlay;
 #[derive(Component)]
@@ -104,6 +92,7 @@ struct State {
     root: Option<Entity>,
     body: Option<Entity>,
     pending: Option<(Action, Entity, Entity)>,
+    character_filter: Option<Action>,
 }
 pub(super) fn install(app: &mut App) {
     offers::install(app);
@@ -157,7 +146,10 @@ fn project(
     let Ok((overlay, mut node)) = overlay.single_mut() else {
         return;
     };
-    let panel = owner.play.as_ref().map(|play| play.link.market_panel());
+    let panel = owner.play.as_ref().map(|play| {
+        play.link.market_request_hand();
+        play.link.market_panel()
+    });
     let panel = panel.filter(|panel| panel.open);
     let Some(panel) = panel else {
         node.display = Display::None;
@@ -171,6 +163,7 @@ fn project(
         return;
     };
     node.display = Display::Flex;
+    actions::finish_character_filter(&owner, &mut state);
     let generation = owner.generation();
     if state.key.is_some_and(|key| key.generation == generation)
         && state.seen.as_ref() == Some(&panel)

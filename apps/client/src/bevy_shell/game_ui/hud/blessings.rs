@@ -83,6 +83,15 @@ fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins:
         .insert(bevy::picking::Pickable::default())
         .observe(toggle_details)
         .id();
+    let premium = commands
+        .spawn((
+            Name::new("blessings.premium"),
+            bevy::ui_widgets::Button,
+            source::text("Premium offers", source::font(skins.font.clone(), false)),
+        ))
+        .insert(Pickable::default())
+        .observe(open_premium)
+        .id();
     let details = commands
         .spawn((
             Details,
@@ -101,7 +110,7 @@ fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins:
         .id();
     commands
         .entity(root)
-        .add_children(&[title, toggle, icons, details]);
+        .add_children(&[title, toggle, premium, icons, details]);
     commands.entity(regions.equipment).add_child(root);
     commands
         .spawn((
@@ -118,6 +127,19 @@ fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins:
             GlobalZIndex(120),
         ))
         .insert(TextLayout::default());
+}
+fn open_premium(
+    event: On<Activate>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    widget: Res<super::EquipmentWidget>,
+) {
+    if !widget.blessings || owner.modal_active() || !guard.allows(event.entity) {
+        return;
+    }
+    if let Some(play) = &owner.play {
+        play.link.store_open_premium_time();
+    }
 }
 fn toggle_details(
     event: On<Activate>,

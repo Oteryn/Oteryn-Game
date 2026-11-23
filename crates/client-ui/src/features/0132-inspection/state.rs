@@ -1,6 +1,9 @@
 use super::*;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub allow_inspection: bool,
+    pub permission_pending: Option<bool>,
+    pub permission_retry_at: Option<(bool, std::time::Instant)>,
     pub catalogue_open: bool,
     pub catalogue_loaded: bool,
     pub catalogue_next: Option<u32>,
@@ -8,6 +11,8 @@ pub struct Panel {
     pub catalogue_query_categories: Vec<String>,
     pub catalogue_market: Option<u32>,
     pub catalogue: std::collections::BTreeMap<u32, InspectedItem>,
+    /// Confirmed detail replies retained independently of paged browse summaries.
+    pub inspected_items: std::collections::VecDeque<InspectedItem>,
     pub catalogue_query: Option<catalogue::PageQuery>,
     pub catalogue_items_query: Option<catalogue::Query>,
     pub catalogue_market_requested: Option<u32>,
@@ -107,6 +112,7 @@ impl Panel {
     pub fn invalidate_catalogue(&mut self) {
         let had_catalogue = self.catalogue_loaded || !self.catalogue.is_empty();
         self.catalogue.clear();
+        self.inspected_items.clear();
         self.catalogue_query_categories.clear();
         self.catalogue_next = None;
         self.catalogue_drop_next = None;
