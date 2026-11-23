@@ -3033,6 +3033,47 @@ pub mod tests {
     }
 
     #[test]
+    fn pkmisc_review_authored_open_key_door_closes_to_its_own_family() -> Result<(), Box<dyn Error>>
+    {
+        use crate::map::{door::DoorUse, view::MapFacts};
+        let world_id = WorldId::decode(&id(1))?;
+        let channel_id = ChannelId::decode(&id(2))?;
+        let (controller, _) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                world_id, None,
+            );
+        let native = controller
+            .active()
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native")?;
+        let definition = |key: &str| native_item_definition(Some(native), key);
+        let coin = "oteryn:item.tibia.i1000";
+        let coin_id = definition(coin).ok_or("coin definition")?.reference.get() - 1;
+        for (open, closed) in [(44917, 44913), (20445, 20443), (20454, 20452)] {
+            let key = format!("oteryn:item.tibia.i{open}");
+            let id = definition(&key).ok_or("door definition")?.reference.get() - 1;
+            let (bytes, load) = bundle_with_item_ids((&key, id), (coin, coin_id));
+            let world = boot(&bytes, &pins(load, 2), world_id, channel_id, definition)?;
+            assert!(world.enterable(DOOR_AT), "open pose {open}");
+            assert_eq!(
+                world.facts().doors().toggle(door_key(), 0, false, 1, false),
+                Some(DoorUse::Toggled {
+                    revision: 1,
+                    open: false
+                }),
+                "open pose {open}",
+            );
+            let entry = world
+                .facts()
+                .base_entry(DOOR_AT, 1, id)
+                .ok_or("closed key door")?;
+            assert_eq!(entry.appearance_id, closed);
+            assert!(!world.enterable(DOOR_AT));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn map_door_plain_gate_preserves_authored_collision() -> Result<(), Box<dyn Error>> {
         use crate::map::door::{AuthoredClosedDoor, DoorUse};
         use crate::map::view::MapFacts;
