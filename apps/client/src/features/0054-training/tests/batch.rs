@@ -18,7 +18,7 @@ fn training_batch_completion_requires_the_offline_server_receipt_and_survives_se
                             exchanges: exchanges.clone(),
                         },
                         commands,
-                        outbox,
+                        outbox.clone(),
                     ));
                     tokio::time::timeout(Duration::from_secs(3), async {
                         while !link.training_panel().selected {
@@ -62,7 +62,20 @@ fn training_batch_completion_requires_the_offline_server_receipt_and_survives_se
                     .map_err(|e| e.to_string())?;
                     assert!(completion());
                     #[cfg(bevy_shell)]
-                    assert!(link.take_window_notices().pop_back().is_some_and(|notice| notice.text.contains("Offline training selected")));
+                    assert!(
+                        link.take_window_notices()
+                            .pop_back()
+                            .is_some_and(|notice| notice
+                                .text
+                                .contains("Offline training selected"))
+                    );
+                    #[cfg(bevy_shell)]
+                    {
+                        outbox.logged_out();
+                        let status = crate::bevy_shell::offline_training_logout_status(link)?;
+                        assert!(status.contains("Offline training confirmed"), "{status}");
+                    }
+                    #[cfg(not(bevy_shell))]
                     drop(link);
                     task.await.map_err(|e| e.to_string())?;
                     assert!(completion());

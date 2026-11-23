@@ -195,7 +195,14 @@ mod tests {
             .screenshots
             .directory = folder.to_string_lossy().into_owned();
         app.insert_resource(FolderOpener(|directory| {
-            std::fs::write(directory.join("opened"), [])
+            use std::io::Write;
+            let mut file = std::fs::File::options()
+                .append(true)
+                .create(true)
+                .open(directory.join("opened"))?;
+            file.write_all(b"1")?;
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            Ok(())
         }));
         let button = app
             .world_mut()
@@ -206,11 +213,13 @@ mod tests {
             })
             .ok_or("folder button")?;
         app.world_mut().trigger(Activate { entity: button });
+        app.world_mut().trigger(Activate { entity: button });
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
         while !folder.join("opened").exists() && std::time::Instant::now() < deadline {
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
-        assert!(folder.join("opened").is_file());
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        assert_eq!(std::fs::read(folder.join("opened"))?, b"1");
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;

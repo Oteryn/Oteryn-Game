@@ -34,6 +34,10 @@ pub(in crate::play) fn submit(
 }
 impl PlayLink {
     /// Keep the confirmed receipt readable after session shutdown, without owning a PlayLink.
+    #[cfg(bevy_shell)]
+    pub(crate) fn offline_training_confirmed(&self) -> bool {
+        lock(&self.mailbox).properties.training.offline_confirmed
+    }
     pub fn training_completion(&self) -> impl Fn() -> bool + Send + 'static {
         let shared = self.mailbox.clone();
         move || lock(&shared).properties.training.offline_confirmed

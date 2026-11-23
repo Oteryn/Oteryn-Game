@@ -425,6 +425,81 @@ fn incoming_private_message_projects_over_world() -> TestResult {
             .all(|t| t.0.is_empty()),
         "a recovery snapshot must not replay the previous private message"
     );
+    outbox.bevy_party_selected(true, true, "Ann");
+    outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
+        server_sequence: 3,
+        base_revision: 2,
+        new_revision: 3,
+        value: oteryn_session::ChatLine::Private {
+            speaker_name: "Ann".into(),
+            text: "Own echo".into(),
+        },
+    })]);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .all(|t| t.0.is_empty())
+    );
+    let echo = oteryn_session::ChatLine::Private {
+        speaker_name: "Sender".into(),
+        text: "Outgoing".into(),
+    };
+    outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
+        server_sequence: 4,
+        base_revision: 3,
+        new_revision: 4,
+        value: echo.clone(),
+    })]);
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        Default::default(),
+        vec![echo],
+    );
+    let play = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?;
+    crate::play::feature_0007_chat::protocol::edit_chat_fixture(&play.link, |panel| {
+        panel.recipients = vec![Some("Recipient".into())];
+    });
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .all(|t| t.0.is_empty())
+    );
+    // History has published the first message but the next receipt is already in the mailbox.
+    for (seq, message) in [(5, "Published"), (6, "Newest")] {
+        let line = oteryn_session::ChatLine::Private {
+            speaker_name: "Bryn".into(),
+            text: message.into(),
+        };
+        outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
+            server_sequence: seq,
+            base_revision: seq - 1,
+            new_revision: seq,
+            value: line.clone(),
+        })]);
+        if seq == 5 {
+            crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+                &outbox,
+                Default::default(),
+                vec![line],
+            );
+        }
+    }
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Bryn: Newest")
+    );
     Ok(())
 }
 
@@ -576,6 +651,49 @@ fn confirmed_loot_paints_each_item_at_its_own_value() -> TestResult {
         app.update();
         assert_eq!(spans.iter(app.world()).count(), count);
     }
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .view
+            .notification_input(&[NormalizedInputEvent::Key {
+                code: KeyCode::new(69)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Control)
+                    .with(Modifier::Alt)
+                    .with(Modifier::Shift),
+                repeat: false,
+            }])
+    );
+    app.update();
+    app.world_mut().non_send_mut::<HostOwner>().play = None;
+    app.update();
+    let (link, _commands, outbox) = play_channel();
+    app.world_mut().non_send_mut::<HostOwner>().play = Some(crate::bevy_shell::owner::ActivePlay {
+        link,
+        view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+    });
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: vec![AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: vec![],
+            gold: 5,
+        }],
+    })]);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&TextSpan>()
+            .iter(app.world())
+            .any(|text| text.0.contains('5')),
+        "first loot of new session"
+    );
     Ok(())
 }
 
@@ -622,6 +740,11 @@ fn general_message_switch_only_hides_game_window_text() -> TestResult {
 
 #[test]
 fn private_message_receipt_reaches_game_window_only_when_enabled() -> TestResult {
+    private_message_receipt(true)?;
+    private_message_receipt(false)
+}
+
+fn private_message_receipt(project_history: bool) -> TestResult {
     let mut owner = HostOwner::new(None)?;
     let (link, _commands, outbox) = play_channel();
     owner.play = Some(crate::bevy_shell::owner::ActivePlay {
@@ -661,11 +784,13 @@ fn private_message_receipt_reaches_game_window_only_when_enabled() -> TestResult
             new_revision: seq,
             value: line.clone(),
         })]);
-        crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
-            &outbox,
-            Default::default(),
-            vec![line],
-        );
+        if project_history {
+            crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+                &outbox,
+                Default::default(),
+                vec![line],
+            );
+        }
         // A second receipt for a different screen area arrives before Bevy's next frame.
         let play = host.play.as_ref().ok_or("play")?;
         let (_, action) = play

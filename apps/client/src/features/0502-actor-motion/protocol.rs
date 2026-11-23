@@ -87,18 +87,32 @@ impl PlayLink {
         lock(&self.mailbox).riding()
     }
 
-    pub(crate) fn mount_request(&self) { self.mount_request_to(None); }
-
-    pub(crate) fn mount_request_to(&self, desired: Option<bool>) {
+    pub(crate) fn mount_request(&self) {
         let mut mailbox = lock(&self.mailbox);
+        mailbox.properties.appearance.committed_riding = None;
+        self.mount_request_to(&mut mailbox, None);
+    }
+
+    pub(crate) fn apply_committed_riding(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        if let Some(desired) = mailbox.properties.appearance.committed_riding
+            && self.mount_request_to(&mut mailbox, Some(desired))
+        {
+            mailbox.properties.appearance.committed_riding = None;
+        }
+    }
+
+    fn mount_request_to(&self, mailbox: &mut Mailbox, desired: Option<bool>) -> bool {
         if mailbox.mount_pending.is_some() || mailbox.world_input_blocked() {
-            return;
+            return false;
         }
         let Some(riding) = mailbox.riding() else {
-            return;
+            return false;
         };
         let next = desired.unwrap_or(!riding);
-        if next == riding { return; }
+        if next == riding {
+            return true;
+        }
         let riding = next;
         if let Some(command) =
             oteryn_client_ui::actor_motion::mount_command(mailbox.motion_selected, riding)
@@ -112,6 +126,7 @@ impl PlayLink {
                     ..Default::default()
                 });
         }
+        mailbox.mount_pending.is_some()
     }
 
     pub(crate) fn mount_input(

@@ -99,6 +99,33 @@ impl WheelPanel {
         );
         code
     }
+    pub fn preset_vessel_change(&self, slot: u8) -> Option<Option<[u8; 16]>> {
+        if !self.atelier_v2 || self.dirty() {
+            return None;
+        }
+        let board = self.vessel_board.as_ref()?;
+        if board.wheel_revision != self.confirmed_wheel.as_ref()?.revision {
+            return None;
+        }
+        let index = usize::from(slot);
+        let vessel = board.slots.get(index)?;
+        let wanted = *self.preset_vessels.as_ref()?.get(index)?;
+        if !vessel.open || vessel.gem == wanted {
+            return None;
+        }
+        if let Some(id) = wanted {
+            let gem = self
+                .confirmed_atelier
+                .as_ref()?
+                .gems
+                .iter()
+                .find(|g| g.id == id)?;
+            if crate::gem_atelier::replace_block(board, gem, slot).is_some() {
+                return None;
+            }
+        }
+        Some(wanted)
+    }
     pub fn load_named_build(&mut self, code: &str) -> Result<(), &'static str> {
         let (points, slots) = named_parts(code)?;
         if let Some(slots) = &slots {
@@ -116,7 +143,7 @@ impl WheelPanel {
                     self.vessel_board
                         .as_ref()
                         .and_then(|b| b.slots.get(slot))
-                        .is_some_and(|v| v.open && v.quality == gem.quality)
+                        .is_some_and(|v| v.quality == gem.quality)
                 } else {
                     usize::from(gem.domain) == slot
                 };

@@ -41,6 +41,8 @@ pub struct Panel {
     pub loot: std::collections::BTreeMap<u32, ItemStats>,
     pub auto_track_value: u64,
     pub auto_tracked: std::collections::BTreeSet<u32>,
+    pub pending_drop_groups: std::collections::VecDeque<Vec<u32>>,
+    pub tracked_loot_receipts: u64,
     pub pending_drop_values: std::collections::BTreeMap<u32, u64>,
     pub loot_tracked: std::collections::BTreeSet<u32>,
     pub loot_only_tracked: bool,

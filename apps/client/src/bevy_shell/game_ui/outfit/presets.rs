@@ -136,7 +136,6 @@ pub(super) fn activate(owner: &mut HostOwner, state: &mut State, action: &Contro
                 Control::Delete => {
                     presets.remove(name);
                     state.preset = None;
-                    state.preset_riding = None;
                 }
                 Control::Update if panel.preview().is_some() => {
                     presets.insert(name.clone(), draft);
@@ -176,10 +175,7 @@ pub(super) fn send_selection(link: &crate::play::PlayLink, kind: &Kind, state: &
     if matches!(kind, Kind::Ok)
         && let Some(riding) = state.preset_riding
     {
-        if let Some(riding) = link.appearance_accept_preset(riding) {
-            state.preset_riding = None;
-            link.mount_request_to(Some(riding));
-        }
+        link.appearance_accept_preset(riding);
         return;
     }
     send(link, kind);
