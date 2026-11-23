@@ -12,6 +12,9 @@ use std::collections::VecDeque;
 struct ItemField;
 #[derive(Clone, Copy)]
 enum Action {
+    Clear,
+    Cyclopedia,
+    Threshold,
     Track,
     Untrack,
     Filter,
@@ -64,8 +67,10 @@ fn finish(
         }
         play.link.analyser_select(Tool::LootTracker.key());
         match control.action {
+            Action::Clear => play.link.analyser_clear_tracked(),
+            Action::Cyclopedia => play.link.item_catalogue_open(),
             Action::Filter => play.link.analyser_filter_tracked(),
-            Action::Track | Action::Untrack => {
+            Action::Threshold | Action::Track | Action::Untrack => {
                 let Ok(field) = fields.single() else { continue };
                 if field.pending_paste.is_some()
                     || field
@@ -75,6 +80,10 @@ fn finish(
                 {
                     pending.0.push_front((entity, control));
                     break;
+                }
+                if matches!(control.action, Action::Threshold) {
+                    play.link.analyser_auto_value(&field.value().to_string());
+                    continue;
                 }
                 play.link.analyser_track_item(
                     &field.value().to_string(),
@@ -93,13 +102,13 @@ pub(super) fn build(
 ) -> Entity {
     let label = commands
         .spawn(source::text(
-            "Item number from the report",
+            "Item number or auto-track unit value",
             source::font(skins.font.clone(), false),
         ))
         .id();
     commands.entity(panel).add_child(label);
     let mut value = EditableText::new("");
-    value.max_characters = Some(10);
+    value.max_characters = Some(20);
     let field = commands
         .spawn((
             ItemField,
@@ -123,6 +132,7 @@ pub(super) fn build(
     commands.entity(panel).add_child(field);
     let row = commands
         .spawn(Node {
+            flex_wrap: FlexWrap::Wrap,
             column_gap: px(8.),
             flex_shrink: 0.,
             ..default()
@@ -144,6 +154,30 @@ pub(super) fn build(
         generation,
         Action::Untrack,
         "Untrack item",
+    );
+    button(
+        commands,
+        skins,
+        row,
+        generation,
+        Action::Threshold,
+        "Set auto-track value",
+    );
+    button(
+        commands,
+        skins,
+        row,
+        generation,
+        Action::Clear,
+        "Remove all tracked items",
+    );
+    button(
+        commands,
+        skins,
+        row,
+        generation,
+        Action::Cyclopedia,
+        "Item Cyclopedia",
     );
     button(
         commands,

@@ -20,6 +20,7 @@ pub(super) struct CloseNotice(u64);
 #[path = "death_controls.rs"]
 mod death_controls;
 pub(super) fn install(app: &mut App) {
+    app.add_systems(Update, super::guide::project_index.after(project));
     app.add_systems(Update, death_controls::project.after(project));
 }
 
@@ -50,7 +51,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         ))
         .insert(TextLayout::default());
     let notices = overlay(&mut commands, 170, NoticeOverlay);
-    let panel = notice_panel(&mut commands, &skins, notices, "Compendium — Player Guide");
+    let panel = notice_panel(&mut commands, &skins, notices, "Compendium");
     let scroll = commands
         .spawn((
             ScrollArea,
@@ -73,7 +74,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         .id();
     commands.entity(scroll).add_child(text);
     commands.entity(panel).add_child(scroll);
-    super::guide::setup(&mut commands, &skins, panel);
+    super::guide::setup(&mut commands, &skins, scroll);
     close_button(&mut commands, &skins, panel, 0);
 }
 fn overlay<C: Component>(commands: &mut Commands, z: i32, marker: C) -> Entity {

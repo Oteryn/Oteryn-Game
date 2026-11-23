@@ -100,7 +100,7 @@ pub(super) fn equipment_grid(
                 ItemMoveDestination::Equipment(slot) => Location::Equipment(slot),
                 _ => Location::Inventory,
             };
-            slot_node(
+            let cell = slot_node(
                 commands,
                 skins,
                 grid,
@@ -113,6 +113,9 @@ pub(super) fn equipment_grid(
                 snapshot.selection,
                 SILHOUETTES.get(index).copied(),
             );
+            commands
+                .entity(cell)
+                .insert(super::super::expiry::EquipmentCell);
         } else {
             let cell = commands
                 .spawn((
@@ -216,7 +219,7 @@ pub(super) fn slot_node(
     slot: Slot,
     selection: Option<Slot>,
     silhouette: Option<&'static str>,
-) {
+) -> Entity {
     let selected = selection.is_some_and(|selected| {
         selected.item.is_some()
             && selected.item.map(|item| item.handle) == slot.item.map(|item| item.handle)
@@ -270,6 +273,7 @@ pub(super) fn slot_node(
         commands.entity(art).insert(Pickable::IGNORE);
         commands.entity(entity).add_child(art);
     }
+    entity
 }
 
 pub(super) fn container(
@@ -278,6 +282,7 @@ pub(super) fn container(
     parent: Entity,
     view: &oteryn_session::container_tree::ContainerView,
     snapshot: &Snapshot,
+    scene: &crate::scene::Scene,
 ) {
     let title = if let Some(page) = view.browse {
         format!("Browse Field ({}/{})", view.entries.len(), page.total)
@@ -380,7 +385,17 @@ pub(super) fn container(
         snapshot.generation,
         view,
         snapshot.windows.get(&view.view_id),
+        snapshot.manual_sort,
     );
+    let mut entries = view.entries.clone();
+    if !snapshot.manual_sort
+        && snapshot
+            .windows
+            .get(&view.view_id)
+            .is_some_and(|window| window.containers_first)
+    {
+        entries.sort_by_key(|item| scene.container_flag(item.appearance_id) != Some(true));
+    }
     grid(
         commands,
         skins,
@@ -390,7 +405,7 @@ pub(super) fn container(
             view: view.view_id,
             handle: view.container_handle,
         },
-        &view.entries,
+        &entries,
         usize::from(view.capacity),
         Some(ItemMoveDestination::Container(view.container_handle, None)),
         snapshot.selection,

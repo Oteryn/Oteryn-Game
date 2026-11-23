@@ -130,3 +130,44 @@ pub(super) fn finish(
         }
     }
 }
+
+fn capture_history(mut state: ResMut<ChatState>, fields: Query<(&Field, &EditableText)>) {
+    if state.pending.is_none() {
+        return;
+    }
+    if let Some((_, value)) = &mut state.history_pending {
+        for (field, text) in &fields {
+            if *field == Field::Message && text.pending_paste.is_none() {
+                *value = Some(text.value().to_string());
+            }
+        }
+    }
+}
+fn finish_history(
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<ChatState>,
+    fields: Query<(&Field, &EditableText)>,
+) {
+    if state.pending.is_some() {
+        return;
+    }
+    if let Some((generation, Some(value))) = state.history_pending.take()
+        && generation == owner.generation()
+        && state.generation == Some(generation)
+        && !value.is_empty()
+        && fields
+            .iter()
+            .any(|(field, text)| *field == Field::Message && text.value() == "")
+    {
+        state.history.sent(value);
+    }
+}
+pub(super) fn install_history(app: &mut App) {
+    app.add_systems(
+        PostUpdate,
+        capture_history
+            .after(bevy::text::EditableTextSystems)
+            .before(submission::finish),
+    );
+    app.add_systems(PostUpdate, finish_history.after(submission::finish));
+}

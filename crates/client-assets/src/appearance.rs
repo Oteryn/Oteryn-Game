@@ -49,6 +49,8 @@ struct FrameGroupMsg {
 
 #[derive(Clone, PartialEq, Message)]
 struct SpriteInfoMsg {
+    #[prost(bool, optional, tag = "8")]
+    is_opaque: Option<bool>,
     #[prost(uint32, optional, tag = "1")]
     pattern_width: Option<u32>,
     #[prost(uint32, optional, tag = "2")]
@@ -79,6 +81,8 @@ struct PhaseMsg {
 
 #[derive(Clone, PartialEq, Message)]
 struct FlagsMsg {
+    #[prost(bool, optional, tag = "32")]
+    fullbank: Option<bool>,
     #[prost(message, optional, tag = "1")]
     bank: Option<BankMsg>,
     #[prost(bool, optional, tag = "2")]
@@ -87,8 +91,16 @@ struct FlagsMsg {
     bottom: Option<bool>,
     #[prost(bool, optional, tag = "4")]
     top: Option<bool>,
+    #[prost(bool, optional, tag = "7")]
+    usable: Option<bool>,
+    #[prost(bool, optional, tag = "8")]
+    forceuse: Option<bool>,
+    #[prost(bool, optional, tag = "13")]
+    unpass: Option<bool>,
     #[prost(bool, optional, tag = "9")]
     multiuse: Option<bool>,
+    #[prost(bool, optional, tag = "5")]
+    container: Option<bool>,
     #[prost(bool, optional, tag = "6")]
     cumulative: Option<bool>,
     #[prost(bool, optional, tag = "12")]
@@ -149,11 +161,15 @@ struct HeightMsg {
 /// Frame group 0 of an appearance. Visual effects resolve all animation phases.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Appearance {
+    pub covers_tile: bool,
     pub id: u32,
     /// Official appearance light intensity and palette colour.
     pub light: Option<(u8, u8)>,
     pub minimap_color: Option<u8>,
     pub multi_use: bool,
+    pub usable: bool,
+    pub container: bool,
+    pub unpassable: bool,
     pub pattern_width: u32,
     pub pattern_height: u32,
     pub pattern_depth: u32,
@@ -356,6 +372,7 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         return None;
     }
     Some(Appearance {
+        covers_tile: info.is_opaque.unwrap_or(false) || flags.fullbank.unwrap_or(false),
         id,
         light: flags.light.and_then(|light| {
             Some((
@@ -365,6 +382,15 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         }),
         minimap_color: flags.automap.and_then(|map| u8::try_from(map.color?).ok()),
         multi_use: flags.multiuse.unwrap_or(false),
+        usable: [
+            flags.usable,
+            flags.forceuse,
+            flags.container,
+            flags.multiuse,
+        ]
+        .contains(&Some(true)),
+        unpassable: flags.unpass.unwrap_or(false),
+        container: flags.container.unwrap_or(false),
         pattern_width: width,
         pattern_height: height,
         pattern_depth: depth,

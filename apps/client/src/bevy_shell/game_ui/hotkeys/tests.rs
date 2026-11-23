@@ -89,6 +89,7 @@ fn editor_app() -> Result<(App, Entity), Box<dyn std::error::Error>> {
             feedback: String::new(),
             capturing: false,
             picking: false,
+            map_pick: false,
         })
         .id();
     for index in 0..4 {
@@ -285,6 +286,16 @@ fn object_picker_assigns_live_definition_and_subtype_and_rejects_stale_entry() -
             matches!(control, Control::Object(entry) if *entry == item).then_some(entity)
         })
         .ok_or("live object card")?;
+    assert!(
+        app.world()
+            .get::<Children>(card)
+            .ok_or("card children")?
+            .iter()
+            .any(|child| app
+                .world()
+                .get::<super::super::ItemIcon>(child)
+                .is_some_and(|icon| icon.0 == item))
+    );
     app.world_mut().trigger(Activate { entity: card });
     assert_eq!(value(&mut app, 2), "42");
     assert_eq!(value(&mut app, 3), "5");
@@ -356,4 +367,167 @@ fn hotkey_editor_exposes_key_capture_and_object_picker() {
         labels.contains(&"Choose carried object"),
         "editor requires a reachable object picker"
     );
+}
+
+#[test]
+fn reset_restores_custom_defaults_in_preferences_draft() -> TestResult {
+    let mut owner = HostOwner::new(None)?;
+    owner.open_graphics();
+    owner.edit_preferences(|prefs| {
+        prefs.custom_hotkeys.clear();
+    });
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .init_resource::<bevy::input_focus::InputFocus>()
+        .add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .add_systems(
+            Startup,
+            (
+                crate::bevy_shell::ui::setup,
+                |mut commands: Commands, skins: Res<Skins>| {
+                    let root = commands.spawn(Node::default()).id();
+                    build(&mut commands, root, &skins);
+                },
+            )
+                .chain(),
+        )
+        .add_systems(Update, project);
+    app.update();
+    let entity = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "Reset hotkeys").then_some(parent.parent()))
+        .ok_or("reset control")?;
+    app.world_mut().trigger(Activate { entity });
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .preferences_draft()
+            .ok_or("draft")?
+            .custom_hotkeys,
+        ReferencePreferences::default().custom_hotkeys
+    );
+    Ok(())
+}
+
+#[test]
+fn clear_object_keeps_selected_shortcut_in_draft() -> TestResult {
+    let (mut app, _) = editor_app()?;
+    let original = CustomAction::Object {
+        definition: 42,
+        sub_type: 3,
+        target: ObjectTarget::Use,
+    };
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .edit_preferences(|p| {
+            p.custom_hotkeys.insert("F9".into(), original.clone());
+        });
+    control(&mut app, Control::Select("F9".into()));
+    control(&mut app, Control::ClearObject);
+    assert_eq!(value(&mut app, 0), "F9");
+    assert!(value(&mut app, 2).is_empty());
+    let bound = app
+        .world()
+        .non_send::<HostOwner>()
+        .preferences_draft()
+        .ok_or("draft")?
+        .custom_hotkeys
+        .get("F9")
+        .ok_or("shortcut removed")?;
+    assert_ne!(*bound, original);
+    set_value(&mut app, 1, "previous draft");
+    set_value(&mut app, 2, "777");
+    control(&mut app, Control::Select("F9".into()));
+    assert!(value(&mut app, 1).is_empty());
+    assert!(value(&mut app, 2).is_empty());
+    Ok(())
+}
+
+#[test]
+fn map_picker_reads_clicked_world_object_through_overlay() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::{Pointer, PointerClick},
+        pointer::{Location, PointerButton, PointerId},
+    };
+    use oteryn_session::{ActorPosition, EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+    let (mut app, _) = editor_app()?;
+    let tile = oteryn_renderer::TileCoord::new(100, 100);
+    let view =
+        crate::play::PlayView::new(tile, 7, &[])?.with_entities(vec![WorldSpatialEntity {
+            motion: None,
+            display_name: None,
+            entity: EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            kind: EntityKind::GroundItem,
+            position: ActorPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            detail: EntityDetail::Object {
+                item_definition_ref: 42,
+                quantity: 9,
+                item_handle: Some(7.try_into()?),
+            },
+        }])?;
+    let [x, y] = view.scene().view().tile_to_screen(tile);
+    let (w, h) = view.scene().view().viewport_px();
+    let (link, _, _) = crate::play::play_channel();
+    app.world_mut().non_send_mut::<HostOwner>().play =
+        Some(crate::bevy_shell::owner::ActivePlay { link, view });
+    app.insert_resource(super::super::viewport::WorldViewport {
+        origin: UVec2::ZERO,
+        size: UVec2::new(w, h),
+    })
+    .add_systems(Update, map_picker::project);
+    control(&mut app, Control::PickMap);
+    app.update();
+    press(&mut app, KeyCode::Escape, false);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query_filtered::<Entity, With<map_picker::Overlay>>()
+            .iter(app.world())
+            .next()
+            .is_none()
+    );
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .preferences_draft()
+            .is_some()
+    );
+    control(&mut app, Control::PickMap);
+    app.update();
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<map_picker::Overlay>>()
+        .single(app.world())?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: w,
+                    height: h,
+                },
+                position: Vec2::new(x + 16., y + 16.),
+            },
+        ),
+        button: PointerButton::Primary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    assert_eq!(value(&mut app, 2), "42");
+    assert_eq!(value(&mut app, 3), "0");
+    Ok(())
 }

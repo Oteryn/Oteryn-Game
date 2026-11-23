@@ -63,17 +63,20 @@ impl Row {
     }
 
     fn finish(self, result: TestResult) {
-        for action in ACTIONS {
-            if !self.passed.contains(action) {
-                evidence(&format!(
-                    "P06_GAP action={action} status=FAIL observed=unproven"
-                ));
-            }
+        let missing = ACTIONS.iter().find(|action| !self.passed.contains(*action));
+        let complete = result.is_ok() && missing.is_none();
+        match result {
+            Err(error) => evidence(&format!(
+                "P06_GAP status=FAIL observed={}",
+                error.to_string().replace(char::is_whitespace, "_")
+            )),
+            Ok(()) => match missing {
+                Some(action) => evidence(&format!(
+                    "P06_GAP status=FAIL action={action} observed=unproven"
+                )),
+                None => evidence("P06_GAP status=PASS"),
+            },
         }
-        if let Err(error) = &result {
-            evidence(&format!("P06_GAP step-failed observed={error}"));
-        }
-        let complete = result.is_ok() && ACTIONS.iter().all(|action| self.passed.contains(action));
         evidence(&format!(
             "e2e_all scenario=P06.full status={} seconds={:.3}",
             if complete { "PASS" } else { "FAIL" },
@@ -84,7 +87,11 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(180),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => {
@@ -169,7 +176,9 @@ async fn own_level(client: &mut DevClientSession) -> TestResult<u32> {
             &[1, 0, 0, 1],
         )
         .await?;
-    if reply.status != CommandStatus::Accepted || general_stats::validate(&reply.payload, general_stats::selected(client)).is_err() || reply.payload[0] != 1
+    if reply.status != CommandStatus::Accepted
+        || general_stats::validate(&reply.payload, general_stats::selected(client)).is_err()
+        || reply.payload[0] != 1
     {
         return Err(format!("Wheel progression query observed reply={reply:?}").into());
     }
@@ -322,7 +331,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
         validate_current(&response, &refused)?;
         Some(format!(
-            "step 6 revelation attempt observed semantic refusal with player level={level}, available Wheel points={available}, reply={refused:?}; need a legitimate level>=300 node-boot character or player-reachable XP route"
+            "step 6 revelation attempt observed semantic refusal with player level={level}, available Wheel points={available}, reply={refused:?}; need a legitimate level>=300 for the 250-point domain allocation"
         ))
     } else {
         // Green domain: core slot 15 unlocks 9 and 14; either completed ring
@@ -344,6 +353,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("step 6 revelation save observed reply={revealed:?}").into());
         }
         validate_current(&response, &revealed)?;
+        let active = full_row_p07::live_wheel_effects(&mut client, &revealed, 2).await?;
+        if !active
+            .iter()
+            .any(|line| line.ends_with(": revelation stage 1"))
+        {
+            return Err(
+                format!("step=revelation-effect stage-one projection missing: {active:?}").into(),
+            );
+        }
         row.pass("revelation-save", (&revealed, client.actor_vitals()));
         None
     };
@@ -368,6 +386,15 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             client.actor_vitals()
         )
         .into());
+    }
+    if revelation_gap.is_none() {
+        let active = full_row_p07::live_wheel_effects(&mut client, &reset, 3).await?;
+        if active
+            .iter()
+            .any(|line| line.contains(": revelation stage "))
+        {
+            return Err(format!("step=revelation-reset active effect remains: {active:?}").into());
+        }
     }
     row.pass("reset", (&reset, client.actor_vitals()));
 
@@ -425,4 +452,24 @@ mod tests {
         row.pass(ACTIONS[0], "duplicate");
         assert_eq!(row.passed.len(), ACTIONS.len());
     }
+}
+
+#[cfg(test)]
+#[test]
+fn row_06_publishes_a_gap_for_an_unproven_journey() {
+    assert!(
+        include_str!("full_row_p06.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(production, _)| production.contains("P06_GAP status="))
+    );
+}
+
+#[cfg(test)]
+#[test]
+fn review_2_p06() {
+    assert!(
+        include_str!("full_row_p06.rs")
+            .split_once("#[cfg(test)]")
+            .is_some_and(|(body, _)| body.contains("live_wheel_effects"))
+    );
 }

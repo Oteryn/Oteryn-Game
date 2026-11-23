@@ -489,3 +489,73 @@ fn help_lens_picks_the_displayed_creature_during_camera_glide() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn game_cursor_uses_the_selected_size_and_animation_frame() -> TestResult {
+    let mut app = fixture(0)?;
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings.preferences.system_cursor = false;
+        owner.settings.preferences.large_cursor = true;
+        owner.settings.preferences.animated_cursor = true;
+    }
+    let icon = |app: &mut App| -> Result<_, Box<dyn std::error::Error>> {
+        let (node, image) = app
+            .world_mut()
+            .query_filtered::<(&Node, &ImageNode), With<cursor::GameCursor>>()
+            .single(app.world())?;
+        assert_eq!(node.display, Display::Flex);
+        assert_eq!(
+            app.world()
+                .resource::<Assets<Image>>()
+                .get(&image.image)
+                .ok_or("cursor image")?
+                .width(),
+            32
+        );
+        Ok(image.image.clone())
+    };
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_millis(250),
+    ));
+    app.update();
+    let first = icon(&mut app)?;
+    app.update();
+    assert_ne!(icon(&mut app)?, first);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .cursor_crosshair = true;
+    app.update();
+    assert_ne!(icon(&mut app)?, first);
+    app.world_mut()
+        .query_filtered::<&mut Window, With<PrimaryWindow>>()
+        .single_mut(app.world_mut())?
+        .set_physical_cursor_position(Some(DVec2::new(2., 2.)));
+    app.update();
+    icon(&mut app)?;
+    Ok(())
+}
+
+#[test]
+fn highlight_marks_the_hovered_world_object_with_tooltips_off() -> TestResult {
+    let mut app = fixture(0)?;
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings.preferences.highlight_mouse_target = true;
+        owner.settings.preferences.tooltips_enabled = false;
+    }
+    app.update();
+    let display = |app: &mut App| -> TestResult {
+        let node = app
+            .world_mut()
+            .query_filtered::<&Node, With<cursor::TargetHighlight>>()
+            .single(app.world())?;
+        assert_eq!(node.display, Display::Flex);
+        Ok(())
+    };
+    display(&mut app)?;
+    assert!(!shown(&mut app));
+    Ok(())
+}

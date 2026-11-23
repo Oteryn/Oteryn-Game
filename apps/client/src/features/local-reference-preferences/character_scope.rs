@@ -40,6 +40,9 @@ impl SettingsState {
                 });
             let mut preferences = selected.preferences().clone();
             preferences.miscellaneous = self.preferences.miscellaneous;
+            if let Some(engine) = self.preferences.miscellaneous.startup_engine {
+                preferences.graphics.engine = engine;
+            }
             if let Some(store) = self.store.replace(selected).filter(PreferenceStore::saving) {
                 self.outgoing_stores.push(store);
             }
@@ -79,11 +82,17 @@ impl SettingsState {
             selected.remember_epoch = self.remember_epoch.clone();
         }
         selected.preferences.miscellaneous = self.preferences.miscellaneous;
+        if let Some(engine) = self.preferences.miscellaneous.startup_engine {
+            selected.preferences.graphics.engine = engine;
+        }
         if character.is_some() && missing {
             match PreferenceStore::load(base.clone()) {
                 Ok(template) => {
                     let mut inherited = template.preferences().clone();
                     inherited.miscellaneous = self.preferences.miscellaneous;
+                    if let Some(engine) = self.preferences.miscellaneous.startup_engine {
+                        inherited.graphics.engine = engine;
+                    }
                     selected.apply(inherited);
                 }
                 Err(error) => {

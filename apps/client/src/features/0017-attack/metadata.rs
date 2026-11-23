@@ -37,6 +37,29 @@ pub(in crate::play) fn refresh(
         mailbox.battle.metadata.send_failed();
     }
 }
+impl Mailbox {
+    pub(in crate::play) fn party_summons(
+        &self,
+    ) -> std::collections::BTreeMap<oteryn_session::EntityRef, oteryn_session::EntityRef> {
+        self.party
+            .state
+            .iter()
+            .flat_map(|p| &p.members)
+            .flat_map(|member| {
+                let owner = member
+                    .list
+                    .first()
+                    .filter(|entry| !entry.summon)
+                    .map(|entry| entry.entity);
+                member
+                    .list
+                    .iter()
+                    .filter(|entry| entry.summon)
+                    .filter_map(move |entry| owner.map(|master| (entry.entity, master)))
+            })
+            .collect()
+    }
+}
 impl PlayLink {
     pub fn filtered_battle_rows(&self, index: usize) -> Vec<oteryn_session::WorldSpatialEntity> {
         let mut mailbox = lock(&self.mailbox);
@@ -44,8 +67,41 @@ impl PlayLink {
             return Vec::new();
         }
         refresh(&mut mailbox, &self.commands);
-        mailbox.battle_lists.preferences[index]
-            .rows_with_metadata(&mailbox.battle.rows, &mailbox.battle.metadata.values)
+        mailbox.filtered_battle_rows(index)
+    }
+}
+impl Mailbox {
+    pub(in crate::play) fn filtered_battle_rows(
+        &self,
+        index: usize,
+    ) -> Vec<oteryn_session::WorldSpatialEntity> {
+        let mailbox = self;
+        let list = &mailbox.battle_lists.preferences[index];
+        let summons = list.hide_summons.then(|| mailbox.party_summons());
+        let icons = &mailbox.properties.party_skull.icons;
+        list.rows_with_metadata(
+            &mailbox.battle.visible_actors,
+            mailbox.wire.own_native(),
+            &mailbox.battle.metadata.values,
+        )
+        .into_iter()
+        .filter(|row| {
+            if summons
+                .as_ref()
+                .is_some_and(|summons| summons.contains_key(&row.entity))
+            {
+                return false;
+            }
+            if row.kind != oteryn_session::EntityKind::Player
+                || (!list.hide_party && !list.hide_non_skull)
+            {
+                return true;
+            }
+            let icon = icons.iter().find(|icon| icon.entity == row.entity);
+            !(list.hide_party && icon.is_some_and(|icon| (3..=10).contains(&icon.shield))
+                || list.hide_non_skull && icon.is_none_or(|icon| icon.skull == 0))
+        })
+        .collect()
     }
 }
 impl Outbox {

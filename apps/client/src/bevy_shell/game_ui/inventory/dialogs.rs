@@ -24,13 +24,27 @@ pub(super) fn button(
 }
 /// Logical height of the item context menu: five fixed entries plus the admitted `extra`
 /// entries, each 16 pixels high with 3-pixel spacing inside the 4-pixel popup padding.
-pub(super) fn menu_height(extra: (bool, bool)) -> f32 {
-    let rows = 5. + f32::from(u8::from(extra.0) + u8::from(extra.1));
+pub(super) fn menu_height(
+    slot: Slot,
+    extra: (bool, bool),
+    parent: Option<oteryn_session::ItemHandle>,
+) -> f32 {
+    let rows = 5.
+        + f32::from(u8::from(parent.is_some()))
+        + f32::from(u8::from(matches!(
+            slot.location,
+            Location::Container { .. }
+        )))
+        + f32::from(u8::from(extra.0) + u8::from(extra.1));
     rows * popup::ENTRY_HEIGHT + (rows - 1.) * popup::ENTRY_SPACING + 8.
 }
 /// The item menu entries in Tibia order. `extra` admits the writing and timed item windows
 /// (capabilities 115 and 39).
-pub(super) fn menu_entries(slot: Slot, extra: (bool, bool)) -> Vec<(popup::Item, Control)> {
+pub(super) fn menu_entries(
+    slot: Slot,
+    extra: (bool, bool),
+    parent: Option<oteryn_session::ItemHandle>,
+) -> Vec<(popup::Item, Control)> {
     use oteryn_client_ui::world_interaction::menu::Action;
     let mut entries = vec![
         (
@@ -51,6 +65,15 @@ pub(super) fn menu_entries(slot: Slot, extra: (bool, bool)) -> Vec<(popup::Item,
         ),
         (popup::Item::entry("Open"), Control::Open(slot)),
     ];
+    if matches!(slot.location, Location::Container { .. }) {
+        entries.push((
+            popup::Item::entry("Open in New Window"),
+            Control::OpenSeparate(slot),
+        ));
+    }
+    if let Some(parent) = parent {
+        entries.push((popup::Item::entry("Move up"), Control::MoveUp(slot, parent)));
+    }
     if extra.0 {
         entries.push((popup::Item::entry("Write ..."), Control::Write(slot)));
     }
@@ -66,8 +89,9 @@ pub(super) fn context(
     slot: Slot,
     position: Vec2,
     extra: (bool, bool),
+    parent: Option<oteryn_session::ItemHandle>,
 ) {
-    let entries = menu_entries(slot, extra);
+    let entries = menu_entries(slot, extra, parent);
     let items: Vec<_> = entries.iter().map(|(item, _)| item.clone()).collect();
     let look = popup::Look {
         font: skins.font.clone(),

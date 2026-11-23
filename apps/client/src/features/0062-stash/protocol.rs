@@ -4,6 +4,8 @@ use crate::play::{
 };
 use oteryn_client_runtime::stash::StashResponse;
 
+#[path = "reverse.rs"]
+mod reverse;
 impl Outbox {
     pub(in crate::play) fn stash_publish(&self, session: &impl Stepper) {
         let sources = oteryn_client_ui::depot::DepotPanel {

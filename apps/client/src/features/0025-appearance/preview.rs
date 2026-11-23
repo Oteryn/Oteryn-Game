@@ -8,10 +8,29 @@ use oteryn_client_ui::appearance::Preview;
 #[cfg(bevy_shell)]
 use std::path::Path;
 #[cfg(bevy_shell)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Layers {
+    pub familiar: Option<u32>,
+    pub character: bool,
+    pub mount: bool,
+    pub floor: bool,
+}
+#[cfg(bevy_shell)]
+impl Default for Layers {
+    fn default() -> Self {
+        Self {
+            familiar: None,
+            character: true,
+            mount: true,
+            floor: false,
+        }
+    }
+}
+#[cfg(bevy_shell)]
 pub struct Assets {
     index: AppearanceIndex,
     sheets: SpriteSheets,
-    mounts: Option<([u8; 32], std::collections::BTreeMap<String, u32>)>,
+    pub(super) mounts: Option<std::sync::Arc<mount_binding::Metadata>>,
 }
 #[cfg(bevy_shell)]
 impl Assets {
@@ -27,22 +46,32 @@ impl Assets {
         let index = AppearanceIndex::load(&store, &catalog).map_err(|e| e.to_string())?;
         Ok(Self {
             index,
-            mounts: mount_binding::load(root).ok(),
+            mounts: mount_binding::load(root).ok().map(std::sync::Arc::new),
             sheets: SpriteSheets::new(store, catalog),
         })
     }
     pub fn draw(&mut self, preview: &Preview) -> Result<Vec<u8>, String> {
+        self.draw_portrait(preview.look_type, preview.addons, Some(preview.colours))
+    }
+
+    pub fn draw_portrait(
+        &mut self,
+        look_type: u32,
+        addons: u8,
+        colours: Option<[[u8; 3]; 4]>,
+    ) -> Result<Vec<u8>, String> {
         let mut pixels = vec![32; 96 * 96 * 4];
         self.draw_look(
-            preview.look_type,
-            preview.addons,
-            Some(preview.colours),
+            look_type,
+            addons,
+            colours,
             false,
             (2, 0, false),
             &mut pixels,
         )?;
         Ok(pixels)
     }
+    #[cfg(test)]
     pub fn draw_panel(
         &mut self,
         panel: &oteryn_client_ui::appearance::Panel,
@@ -50,10 +79,67 @@ impl Assets {
         elapsed_ms: u64,
         moving: bool,
     ) -> Result<Vec<u8>, String> {
+        self.draw_layers(panel, direction, elapsed_ms, moving, Layers::default())
+    }
+    pub fn draw_layers(
+        &mut self,
+        panel: &oteryn_client_ui::appearance::Panel,
+        direction: u32,
+        elapsed_ms: u64,
+        moving: bool,
+        layers: Layers,
+    ) -> Result<Vec<u8>, String> {
         let preview = panel.preview().ok_or("Choose an outfit")?;
         let mount = panel.fields[2].trim();
         let mut pixels = vec![32; 96 * 96 * 4];
-        if !mount.is_empty() {
+        if layers.floor {
+            let sprite = self
+                .index
+                .get(4526)
+                .and_then(|ground| ground.sprite_ids.first())
+                .ok_or("Floor artwork unavailable")?;
+            let tile = self
+                .sheets
+                .cell_rgba(*sprite, 0, 0)
+                .map_err(|e| e.to_string())?;
+            let offset = if moving {
+                (elapsed_ms / 50 % 4) as usize * 8
+            } else {
+                0
+            };
+            let (dx, dy) = match direction {
+                0 => (0, 32 - offset),
+                1 => (offset, 0),
+                2 => (0, offset),
+                _ => (32 - offset, 0),
+            };
+            for (index, pixel) in pixels.as_chunks_mut::<4>().0.iter_mut().enumerate() {
+                let source = (((index / 96 + dy) % 32) * 32 + (index % 96 + dx) % 32) * 4;
+                pixel.copy_from_slice(&[tile[source + 2], tile[source + 1], tile[source], 255]);
+            }
+        }
+        if let Some(look) = layers.familiar {
+            let mut companion = vec![0; 96 * 96 * 4];
+            self.draw_look(
+                look,
+                0,
+                None,
+                false,
+                (direction, elapsed_ms, moving),
+                &mut companion,
+            )?;
+            for y in 32..96 {
+                for x in 32..96 {
+                    let src = (y * 96 + x) * 4;
+                    if companion[src + 3] != 0 {
+                        let dst = ((y - 32) * 96 + x - 32) * 4;
+                        pixels[dst..dst + 4].copy_from_slice(&companion[src..src + 4]);
+                    }
+                }
+            }
+        }
+        let mounted = layers.mount && !mount.is_empty();
+        if mounted {
             let catalogue = panel
                 .catalogue
                 .as_ref()
@@ -61,12 +147,15 @@ impl Assets {
             if !catalogue.mounts.iter().any(|key| key == mount) {
                 return Err("Choose an owned mount".into());
             }
-            let (_, mounts) = self
+            let metadata = self
                 .mounts
                 .as_ref()
-                .filter(|(digest, _)| *digest == catalogue.context.cosmetics_digest)
+                .filter(|metadata| metadata.digest == catalogue.context.cosmetics_digest)
                 .ok_or("Mount artwork needs updating")?;
-            let look = *mounts.get(mount).ok_or("Mount artwork unavailable")?;
+            let look = *metadata
+                .mounts
+                .get(mount)
+                .ok_or("Mount artwork unavailable")?;
             self.draw_look(
                 look,
                 0,
@@ -76,11 +165,14 @@ impl Assets {
                 &mut pixels,
             )?;
         }
+        if !layers.character {
+            return Ok(pixels);
+        }
         self.draw_look(
             preview.look_type,
             preview.addons,
             Some(preview.colours),
-            !mount.is_empty(),
+            mounted,
             (direction, elapsed_ms, moving),
             &mut pixels,
         )?;
@@ -151,6 +243,9 @@ impl Assets {
                             let src = ((row * 32 + column) * 4) as usize;
                             let dst = ((dy * 96 + dx) * 4) as usize;
                             let alpha = u16::from(cell[src + 3]);
+                            if alpha > 0 {
+                                pixels[dst + 3] = 255;
+                            }
                             // GDI's bitmap surface uses BGR, with an opaque background.
                             for channel in 0..3 {
                                 pixels[dst + channel] =

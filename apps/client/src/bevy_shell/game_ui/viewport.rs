@@ -6,6 +6,22 @@ use bevy::{
     window::PrimaryWindow,
 };
 
+#[derive(Default, Clone, Copy)]
+pub(in crate::bevy_shell) enum ViewMode {
+    #[default]
+    Panel,
+    Framed,
+    Full,
+}
+impl ViewMode {
+    pub fn cycle(&mut self) {
+        *self = match self {
+            Self::Panel => Self::Full,
+            Self::Framed => Self::Panel,
+            Self::Full => Self::Framed,
+        };
+    }
+}
 #[derive(Component)]
 pub(in crate::bevy_shell) struct WorldCamera;
 #[derive(Component)]
@@ -98,6 +114,20 @@ pub(in crate::bevy_shell) fn project(
             window.physical_height(),
         ));
     let size = end.saturating_sub(start);
+    let (start, size) = match owner.view_mode {
+        ViewMode::Panel => (start, size),
+        ViewMode::Framed => {
+            let fitted = (Vec2::new(15., 11.) * (size.x as f32 / 15.).min(size.y as f32 / 11.))
+                .floor()
+                .as_uvec2()
+                .min(size);
+            (start + (size - fitted) / 2, fitted)
+        }
+        ViewMode::Full => (
+            UVec2::ZERO,
+            UVec2::new(window.physical_width(), window.physical_height()),
+        ),
+    };
     for (mut sprite, mut visibility) in &mut backdrops {
         sprite.custom_size = Some(size.as_vec2() / window.scale_factor());
         *visibility = if size.min_element() > 0 {
@@ -146,6 +176,80 @@ mod tests {
         assert!(map.scene_point(Vec2::new(f32::NAN, 44.), size).is_none());
         // Letterbox space is not a tile, even though it belongs to the map camera.
         assert!(map.scene_point(Vec2::new(10., 30.), size).is_none());
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod modes {
+    use super::*;
+    use crate::bevy_shell::{
+        input::route_keyboard,
+        owner::{ActivePlay, Phase},
+    };
+    #[test]
+    fn control_period_cycles_camera_viewports() -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_input_actions::{
+            ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent,
+        };
+        let mut owner = HostOwner::new(None)?;
+        let (link, _, _) = crate::play::play_channel();
+        owner.play = Some(ActivePlay {
+            link,
+            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        });
+        owner.phase = Phase::Playing;
+        let mut app = App::new();
+        app.insert_non_send(owner)
+            .init_resource::<WorldViewport>()
+            .add_systems(Update, project);
+        let mut window = Window::default();
+        window.resolution.set_physical_resolution(1200, 900);
+        app.world_mut().spawn((window, PrimaryWindow));
+        let world = app
+            .world_mut()
+            .spawn((
+                WorldRegion,
+                ComputedNode {
+                    size: Vec2::new(800., 500.),
+                    ..default()
+                },
+                UiGlobalTransform::from_translation(Vec2::new(500., 350.)),
+            ))
+            .id();
+        app.insert_resource(super::super::GameRegions {
+            world,
+            vitals: world,
+            minimap: world,
+            equipment: world,
+            containers: world,
+            battle: world,
+            skills: world,
+            vip: world,
+            analyzers: world,
+            chat: world,
+            bars: world,
+        });
+        app.world_mut().spawn((WorldCamera, Camera::default()));
+        let mut areas = Vec::new();
+        for _ in 0..4 {
+            app.update();
+            areas.push(app.world().resource::<WorldViewport>().size);
+            route_keyboard(
+                &mut app.world_mut().non_send_mut::<HostOwner>(),
+                NormalizedInputEvent::Key {
+                    code: KeyCode::new(55)?,
+                    modifiers: Modifiers::one(Modifier::Control),
+                    state: ButtonState::Pressed,
+                    repeat: false,
+                },
+                false,
+                None,
+            );
+        }
+        assert_eq!(areas[0], areas[3]);
+        assert_ne!(areas[0], areas[1]);
+        assert!(areas[..3].contains(&UVec2::new(1200, 900)));
         Ok(())
     }
 }

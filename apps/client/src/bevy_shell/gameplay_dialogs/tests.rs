@@ -121,16 +121,19 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
         browse: Some((tile, 0)),
         npc: None,
         player: Some("Bryn".into()),
-        attack: Some(Box::new((
-            tile,
-            (
-                oteryn_session::EntityRef {
-                    identity: [1; 16],
-                    generation: 1,
-                },
-                false,
-            ),
-        ))),
+        attack: Some(Box::new(AttackChoice {
+            position: oteryn_session::ActorPosition {
+                x: tile.x,
+                y: tile.y,
+                floor: 7,
+            },
+            target: oteryn_session::EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            attacking: false,
+            from_row: false,
+        })),
     };
     let items = projection::context_items(&content, true, false);
     let rows: Vec<String> = items
@@ -177,16 +180,19 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
         browse: None,
         npc: None,
         player: None,
-        attack: Some(Box::new((
-            tile,
-            (
-                oteryn_session::EntityRef {
-                    identity: [1; 16],
-                    generation: 1,
-                },
-                true,
-            ),
-        ))),
+        attack: Some(Box::new(AttackChoice {
+            position: oteryn_session::ActorPosition {
+                x: tile.x,
+                y: tile.y,
+                floor: 7,
+            },
+            target: oteryn_session::EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            attacking: true,
+            from_row: false,
+        })),
     };
     let rows = projection::context_items(&current, false, false);
     assert!(matches!(
@@ -340,6 +346,182 @@ fn context_stop_refuses_an_opponent_published_after_validation() -> Result {
     let submitted = host.choose_dialog(id, Choice::Attack);
     assert!(AFTER_ATTACK_VALIDATION.take().is_none());
     assert!(!submitted);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn stalled_logout_offers_a_local_disconnect_after_confirmation() -> Result {
+    let mut host = HostOwner::new(None)?;
+    let (link, mut commands, _) = play_channel();
+    host.play = Some(super::super::owner::ActivePlay {
+        view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    host.phase = Phase::Playing;
+    let now = std::time::Instant::now();
+    host.play.as_ref().ok_or("play")?.link.request_logout();
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Logout
+    ));
+    host.request_logout_confirmation_at(now + std::time::Duration::from_secs(10));
+    let id = host
+        .dialogs
+        .pending
+        .as_ref()
+        .ok_or("force confirmation")?
+        .id;
+    assert!(host.choose_dialog(id, Choice::ForceLogout));
+    assert!(host.play.is_none());
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn silent_connection_can_disconnect_before_a_logout_request() -> Result {
+    let mut host = HostOwner::new(None)?;
+    let (link, mut commands, _) = play_channel();
+    host.play = Some(super::super::owner::ActivePlay {
+        view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    host.phase = Phase::Playing;
+    let traffic = std::sync::Arc::new(crate::traffic::Traffic::default());
+    let mut stream = crate::traffic::Counting::new(&b"welcome"[..], traffic.clone());
+    let mut received = [0; 7];
+    tokio::runtime::Builder::new_current_thread()
+        .build()?
+        .block_on(tokio::io::AsyncReadExt::read_exact(
+            &mut stream,
+            &mut received,
+        ))?;
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    let task = runtime.spawn(std::future::pending::<()>());
+    let link = &host.play.as_ref().ok_or("play")?.link;
+    link.set_session_task(task.abort_handle());
+    link.set_traffic(traffic);
+    host.request_logout_confirmation_at(
+        std::time::Instant::now() + std::time::Duration::from_secs(10),
+    );
+    let id = host.dialogs.pending.as_ref().ok_or("confirmation")?.id;
+    assert!(host.choose_dialog(id, Choice::ForceLogout));
+    assert!(host.play.is_none() && commands.try_recv().is_err());
+    assert!(
+        runtime
+            .block_on(task)
+            .is_err_and(|error| error.is_cancelled())
+    );
+    Ok(())
+}
+
+#[test]
+fn secondary_list_context_keeps_attack_for_the_unambiguous_creature() -> Result {
+    secondary_context(true)
+}
+#[test]
+fn secondary_list_context_can_attack_without_look() -> Result {
+    secondary_context(false)
+}
+fn secondary_context(look: bool) -> Result {
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+    };
+
+    let own = TileCoord::new(100, 100);
+    let tile = TileCoord::new(101, 100);
+    let creature = WorldSpatialEntity {
+        entity: EntityRef {
+            identity: [3; 16],
+            generation: 1,
+        },
+        kind: EntityKind::Creature,
+        position: ActorPosition {
+            x: tile.x,
+            y: tile.y,
+            floor: 7,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+        motion: None,
+        display_name: None,
+    };
+    let mut host = HostOwner::new(None)?;
+    let (link, mut commands, outbox) = play_channel();
+    if look {
+        outbox.bevy_world_look_selected();
+    }
+    outbox.battle_publish(None, Some(7), &[creature]);
+    let mut lists = vec![
+        serde_json::from_value(serde_json::json!({"creatures":false}))?,
+        serde_json::from_value(serde_json::json!({"name":"Monsters"}))?,
+    ];
+    link.sync_battle_lists(&mut lists, 0);
+    assert!(link.filtered_battle_rows(0).is_empty());
+    assert_eq!(link.filtered_battle_rows(1), [creature]);
+    host.play = Some(super::super::owner::ActivePlay {
+        view: PlayView::new(own, 7, &[])?.with_entities(vec![creature])?,
+        link,
+    });
+    host.phase = Phase::Playing;
+    host.request_creature_context(creature.entity);
+    let request = host
+        .dialogs
+        .pending
+        .as_ref()
+        .ok_or("secondary list context")?;
+    assert!(matches!(
+        request.content,
+        Content::Context {
+            attack: Some(_),
+            ..
+        }
+    ));
+    let other = WorldSpatialEntity {
+        entity: EntityRef {
+            identity: [4; 16],
+            generation: 1,
+        },
+        ..creature
+    };
+    outbox.battle_publish(None, Some(7), &[creature, other]);
+    let play = host.play.as_mut().ok_or("play")?;
+    play.view = PlayView::new(own, 7, &[])?.with_entities(vec![creature, other])?;
+    for selected in [creature.entity, other.entity] {
+        host.request_creature_context(selected);
+        let Some(Request {
+            id,
+            content:
+                Content::Context {
+                    attack: Some(attack),
+                    ..
+                },
+            ..
+        }) = &host.dialogs.pending
+        else {
+            return Err("stacked row missing attack".into());
+        };
+        assert_eq!(attack.target, selected);
+        let id = *id;
+
+        assert!(host.choose_dialog(id, Choice::Attack));
+        assert!(
+            matches!(commands.try_recv()?,crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Attack(id)) if id==selected)
+        );
+    }
+    host.request_creature_context(creature.entity);
+    let id = host.dialogs.pending.as_ref().ok_or("menu")?.id;
+    AFTER_ATTACK_VALIDATION.set(Some(Box::new(move || {
+        outbox.battle_publish(None, Some(7), &[other])
+    })));
+    assert!(
+        !host.choose_dialog(id, Choice::Attack),
+        "a removed row must not submit an attack"
+    );
+    assert!(AFTER_ATTACK_VALIDATION.take().is_none());
     assert!(commands.try_recv().is_err());
     Ok(())
 }

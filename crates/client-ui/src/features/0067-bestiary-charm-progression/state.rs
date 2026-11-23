@@ -6,6 +6,9 @@ pub enum Intent {
     Remove,
     ResetAll,
 }
+/// Confirmed race stages shared by the screenshot observer across rendered frames.
+pub type BestiaryStages = std::sync::Arc<[(std::num::NonZeroU32, u8)]>;
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
     pub selector: super::Selector,
@@ -16,10 +19,14 @@ pub struct Panel {
     pub open: bool,
     pub classic_open: bool,
     pub pending: bool,
+    pub discard_capture: bool,
+    pub capture_pending: bool,
+    pub capture_stages: Option<BestiaryStages>,
     pub pending_kind: u32,
     pub fields: [String; 2],
     pub feedback: String,
     pub summary: String,
+    pub reply_revision: u64,
     pub reply: Option<oteryn_client_runtime::charm_progression::CharmProgressionReply>,
 }
 impl Panel {

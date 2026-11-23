@@ -14,7 +14,7 @@ is made. `E2EF3_GAP` explicitly lists unexecuted actions; only strict
 | --- | --- | --- |
 | I01 | Drop and pick up the starter rope through browse-field custody. Buy six five-slot presents from Lubo, USE one in the starter backpack, move and split/merge the gold stack in it, fill its four remaining slots with presents, require `NoRoom` and unchanged custody, then reopen and verify exact quantities after fresh admission. | Node boot must confirm the route and each assertion. |
 | I04 | The ground routes target 2818 at (32320, 32254, 6) and 2814 at (32493, 32246, 8). After MOVE into the backpack, the journey checks the 1,024-character refusal, the 2818 → 2834 transform, rewrite refusal, two rewritable write/read cycles, and retained text and definitions after fresh admission. | Expected FAIL on the town bundle at `write-once-transform`. Door 1631 at (32321, 32258, 6) gates 2818 and has no key action. The 2814 room has no connected approach even when ordinary doors are treated as open. The placed scroll sellers are outside the compiled town regions. |
-| I06 | Follow a served rat spawn route excluding (32427, 32158, 7). Attack and require the target to leave and a corpse to enter. USE and retain nonempty loot, wait for that corpse to leave while the actor stays in place, require stale corpse USE and stale loot MOVE, then log out, re-admit and walk back to check the exact corpse is absent and custody is unchanged. | PASS requires all five assertions on node boot. Reply/projection owners are `connection/serve/result.rs:230`, `item_ref_admission.rs:115` and `:198`, `corpse_decay.rs:61` and `:92`, `connection/appearance_change/mapping_refresh.rs:49`, `connection/serve/result.rs:129`, `item_move.rs:373` and `:550`, and `connection/serve/setup.rs:114` in gameplay dispatch. |
+| I06 | Follow a served rat spawn route excluding (32427, 32158, 7). Attack and require the target to leave and a corpse to enter. USE and retain nonempty loot, wait for that corpse to leave while the actor stays in place, require stale corpse USE and stale loot MOVE, then log out, re-admit and walk back to check the exact corpse is absent and custody is unchanged. | The row also requires server timestamps to verify the 60-second fallback lifetime. Reply/projection owners are `connection/serve/result.rs:230`, `item_ref_admission.rs:115` and `:198`, `corpse_decay.rs:61` and `:92`, `connection/appearance_change/mapping_refresh.rs:49`, `connection/serve/result.rs:129`, `item_move.rs:373` and `:550`, and `connection/serve/setup.rs:114` in gameplay dispatch. |
 | I07 | Same served rat route. Click records the result for the actual visible corpse identity. Loot All checks accepted/skipped counts, remaining corpse entries and exact reopened backpack quantities. Exercised policy includes Skip, empty Accept and matching Accept, then fresh admission with custody and a repeat behavioral policy check. Gold→Main assignment records the live reply. The quiver route uses carried or rat-looted gold at an ordinary NPC selling 35562/3447, then hotkey equip, ammunition transfer, container credit and fresh custody. | FAIL at manual click. The corpse exposes an opaque spatial identity and item handle, while command 114 requires the bound item UUID (`item_ref_admission.rs:150`, `kill_reward.rs:3041`, durability `item_quick_loot.rs:197`). Distinct category routing also needs an unpublished recipient UUID and premium; Gold Pouch 23721 needs Inbox custody and the same UUID, with no starter acquisition in the served trade catalogue (`item_quick_loot.rs:88`, `:170`). Other reply owners are `connection/routing/quick_loot.rs:27`, `connection/routing/container_view.rs:43`, `connection/routing/npc.rs:46`, `connection.rs:1538`, `connection/routing/npc_trade.rs:65`, and `hotkey_equip.rs:420` in gameplay dispatch. |
 | I08 | Existing conditional USE, one bag consumed, exactly one pinned pool reward and fresh admission inventory equality | Primal Bag 39546: the Hazard 12 Primal Ordeal reward is held, and the compiled town crop has no Plunder Patriarch spawn. Acquisition FAIL when absent |
 | I09 | Walk to the nonhouse chair at (32355, 32206, 7), confirm unbound base origin, and step onto and off its tile. USE revision 0 and require the domain-17 update to 2359 at the same ordinal and revision 1. Repeat the same steps to prove movement remains allowed. | PASS requires each observed frame and both collision probes. |
@@ -61,3 +61,31 @@ Validation on base `098c18800b4bc17cd66132370fecd310c70560cf` plus this diff:
 No commit, push or publication was performed. The supplied base includes #2902;
 the local `origin/main` tracking ref is older than that base and was not used
 to include unrelated upstream changes in the delivered patch.
+
+## Follow-up on base dc4f1b293
+
+The node-boot command stopped at `NODE_BOOT_RESULT=BLOCKED reason=missing_binary_sudo`.
+The compiled town route test exercises production map and spawn facts. Wire
+journey outcomes below are expectations pending a served run.
+
+| Row | Follow-up and remaining gap |
+| --- | --- |
+| I01 | Fund and buy the six presents through Lubo's live window. Resolve his named actor within two tiles of the shop and compare the entire purchase delta. The nested custody checks still require the served result. |
+| I04 | Try ordinary trade after a blocked ground pickup. Exercise both inscriptions independently and verify any successful inscription after fresh admission. The locked document room and disconnected parchment remain acquisition gaps if no seller is served. |
+| I06 | Use native chase, wait for a live rat after a depleted spawn and check retirement and fresh absence. The 60-second fallback assertion requires server materialization and retirement timestamps absent from the spatial deltas. |
+| I07 | Retain the Loot All, filter and quiver journeys. Gold-to-main requires an accepted assignment reply. Manual click and distinct recipients require durable IDs that the current spatial/container projections do not expose. Starter Gold Pouch 23721 acquisition also remains unavailable. |
+| I08 | Hazard 12 Primal Ordeal or a Plunder Patriarch drop is needed for Primal Bag 39546. |
+| I09 | Exclude the reported occupied western landing in this family's route. Keep both walk-through checks and the exact rotation revision assertion. |
+| I12 | Acquire the pick at Lubo's live window and take only the required definition from matching compiled loot sources. Exact acknowledged USE replay still requires client support for retaining the original command ID. |
+| I13 | Bag You Covet 43895 requires a Rotten Blood boss or the Crimson Offering path. |
+| I15 | Use matching compiled loot sources and check expiry and fresh absence. Timing against the restored budget requires server activation and retirement timestamps absent from the timer and inventory replies. The first failed acquisition, Energy Field, timer or durability step remains a FAIL. |
+| I16 | The shared shrine route still depends on the shared-world detour. Basic Strike also needs twenty Protective Charms and 7,500 gold through ordinary play. |
+| C03 | Search the compiled movement graph for an ordinary spawn outside protection and approach the live actor. Positive effect sources and attributed critical, perfect-shot and fatal outcome markers remain gaps. |
+
+Reference comparison used the Crystal pin `201189f871d23597b82caf88fd611454a2ddefb8`
+as donor evidence and archived Tibia pages for the acquisition gates. Crystal's
+bag pools are in `data/scripts/actions/items/reward_bags.lua:26` and `:43`.
+The pick action is in `data/scripts/actions/tools/pick.lua:3`. The current
+Energy Ring article specifies ten minutes at two mana per damage, matching the
+accepted ring rule. The Crystal `rotate.lua` entry turns the player and the
+furniture row instead follows the native change to the map item.

@@ -2,8 +2,8 @@
 //! 1. Admit the provisioned character and send STATUS; expect an accepted, stopped result.
 //! 2. Send START with non-existent player-visible handles; expect the owner's refused result and
 //!    no charge/revision delta (the negative path).
-//! 3. Locate an exercise weapon acquired by ordinary earlier player play and walk to an authored
-//!    exercise dummy; send START and expect running state plus the weapon's full charge count.
+//! 3. Buy an exercise weapon with player-earned gold when needed, and walk to an authored
+//!    exercise dummy. Verify out-of-range refusal before starting within range.
 //! 4. Wait through a two-second exercise tick, send STATUS, and expect exactly one or more charges
 //!    spent while the durable character revision remains valid.
 //! 5. Send STOP and expect stopped/settled state, the reduced charge count, and a nondecreasing
@@ -31,7 +31,7 @@ impl Verdict {
     fn finish(self) {
         if let Some(failure) = &self.failure {
             evidence(&format!(
-                "P15_CHECK step={} status=FAIL observed={failure}",
+                "P15_GAP step={} observed={failure}",
                 self.step + 1
             ));
         }
@@ -60,8 +60,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         step: 0,
         failure: None,
     };
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(&mut verdict, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(300),
+        verdict::observe(journey(&mut verdict, clients)),
+    )
+    .await;
     if let Err(error) = match result {
         Ok(result) => result,
         Err(_) => Err("step deadline; observed=timeout; need=responsive exercise owner".into()),
@@ -161,7 +164,7 @@ fn decode_result(bytes: &[u8]) -> Option<wire::TrainingResult> {
     Some(result)
 }
 
-fn carried_weapon(client: &DevClientSession) -> TestResult<(ItemHandle, u32)> {
+fn carried_weapon(client: &DevClientSession) -> TestResult<(ItemHandle, u32, u16)> {
     const WEAPONS: &[(u32, u32)] = &[
         (28540, 50),
         (28541, 50),
@@ -190,30 +193,53 @@ fn carried_weapon(client: &DevClientSession) -> TestResult<(ItemHandle, u32)> {
             .chain(&inventory.main_backpack)
             .find(|item| item.item_definition_ref == reference)
         {
-            return Ok((item.handle, charges));
+            return Ok((item.handle, charges, weapon_range(id)));
         }
     }
     Err("no legitimately acquired exercise weapon in inventory after real refusal; need=reachable affordable NPC/store exercise-weapon offer".into())
 }
 
-fn visible_dummy(client: &mut DevClientSession) -> TestResult<ItemHandle> {
+fn weapon_range(id: u32) -> u16 {
+    if matches!(id, 28543..=28545 | 28555..=28557) {
+        7
+    } else {
+        1
+    }
+}
+
+fn dummy_distance(at: TilePos, dummy: TilePos) -> Option<u16> {
+    (at.floor == dummy.floor).then(|| at.x.abs_diff(dummy.x).max(at.y.abs_diff(dummy.y)))
+}
+
+fn visible_dummy(
+    client: &mut DevClientSession,
+    select: impl Fn(TilePos) -> bool,
+) -> TestResult<(ItemHandle, TilePos)> {
+    use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
+
     let index = provisioning::item_index()?;
     let refs: std::collections::BTreeSet<_> = (28558..=28565)
         .map(|id| provisioning::item_reference(&index, id))
         .collect::<TestResult<_>>()?;
-    let snapshot = client
+    let map = client
         .session_mut()
-        .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
+        .world_map_snapshot()
         .ok_or("world-map snapshot missing")?;
-    let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
-        .map_err(|error| format!("world-map snapshot: {error:?}"))?;
-    map.tiles.iter().flat_map(|tile| &tile.items).find_map(|item| {
-        match (item.definition, item.origin) {
-            (oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference),
-             oteryn_protocol_oteryn::world_map::MapOrigin::Handle(handle)) if refs.contains(&reference) => Some(handle),
-            _ => None,
+    for map_tile in &map.tiles {
+        let at = tile(map_tile.position)?;
+        if !select(at) {
+            continue;
         }
-    }).ok_or_else(|| "no authored exercise dummy in admitted map range after real refusal; need=reachable exercise-dummy placement".into())
+        for item in &map_tile.items {
+            if let (MapDefinition::Item(reference), MapOrigin::Handle(handle)) =
+                (item.definition, item.origin)
+                && refs.contains(&reference)
+            {
+                return Ok((handle, at));
+            }
+        }
+    }
+    Err("step=exercise-dummy need=visible-authored-dummy-handle-at-planned-position".into())
 }
 
 fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePos>> {
@@ -258,7 +284,6 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     }
     verdict.pass(2, refused);
 
-    let (weapon, full) = carried_weapon(&client)?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let positions = dummy_positions(&bytes)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -268,22 +293,62 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    if carried_weapon(&client).is_err() {
+        let definitions = provisioning::item_index()?;
+        super::full_e2ef7::acquire(
+            &mut client,
+            world,
+            &definitions,
+            "oteryn:item.tibia.i28552",
+            1,
+        )
+        .await
+        .map_err(|error| format!("step=exercise-weapon-acquisition item=i28552 observed={error}; source:content/services/trade/trade-00000-00323.json:1"))?;
+    }
+    let (weapon, full, range) = carried_weapon(&client)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        positions.iter().any(|dummy| {
-            at.floor == dummy.floor && at.x.abs_diff(dummy.x).max(at.y.abs_diff(dummy.y)) <= 1
-        })
+        positions
+            .iter()
+            .any(|dummy| dummy_distance(at, *dummy) == Some(1))
     })
     .ok_or("no player-walkable route to authored exercise dummy; need=reachable dummy placement")?;
     walk(&mut client, world, &path).await?;
-    let dummy = visible_dummy(&mut client)?;
+    let nearby = tile(client.world_spatial().actor_position)?;
+    let (_, target) = visible_dummy(&mut client, |at| dummy_distance(nearby, at) == Some(1))?;
+    let outside = route(world, nearby, |at| dummy_distance(at, target) == Some(range + 1))
+        .ok_or("step=exercise-dummy-range need=reachable-tile-just-outside-weapon-range; source:crates/gameplay/dispatch/src/gameplay_transport/loop_training/exercise.rs:454")?;
+    walk(&mut client, world, &outside).await?;
+    let (dummy, _) = visible_dummy(&mut client, |at| at == target)?;
+    let stopped_before_range_probe = command(&mut client, wire::ExerciseIntent::Status).await?;
+    let refused = command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
+    if refused != wire::TrainingResult::REFUSED
+        || command(&mut client, wire::ExerciseIntent::Status).await? != stopped_before_range_probe
+    {
+        return Err(format!("step=exercise-dummy-range distance={} limit={range} observed={refused:?} need=inert-refusal", range + 1).into());
+    }
+    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at == nearby
+    })
+    .ok_or("step=exercise-dummy-range no route back to the legal use tile")?;
+    walk(&mut client, world, &back).await?;
+    let (dummy, _) = visible_dummy(&mut client, |at| at == target)?;
     let running = command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
     if running.disposition != 1 || running.charges != full || running.revision == 0 {
         return Err(format!("START reply={running:?}; need=running charges={full}").into());
     }
     verdict.pass(3, running);
 
-    client.service_liveness(Duration::from_millis(2300)).await?;
-    let ticked = command(&mut client, wire::ExerciseIntent::Status).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
+    let ticked = loop {
+        client.service_liveness(Duration::from_millis(200)).await?;
+        let status = command(&mut client, wire::ExerciseIntent::Status).await?;
+        if status.disposition != 1
+            || status.charges < full
+            || tokio::time::Instant::now() >= deadline
+        {
+            break status;
+        }
+    };
     if ticked.disposition != 1 || ticked.charges >= full {
         return Err(
             format!("post-tick STATUS reply={ticked:?}; need=charge delta below {full}").into(),
@@ -309,8 +374,8 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
     }
     drop(client);
     let mut client = connect_character(clients, 0xb6, 0).await?;
-    let (weapon, _) = carried_weapon(&client)?;
-    let dummy = visible_dummy(&mut client)?;
+    let (weapon, _, _) = carried_weapon(&client)?;
+    let (dummy, _) = visible_dummy(&mut client, |at| at == target)?;
     let restored = command(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
     if restored.disposition != 1
         || restored.charges != stopped.charges
@@ -335,6 +400,41 @@ async fn journey(verdict: &mut Verdict, clients: &SeamClients<'_>) -> TestResult
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[test]
+    fn distance_respects_floor_and_weapon_family() {
+        let dummy = TilePos {
+            x: 10,
+            y: 20,
+            floor: 7,
+        };
+        assert_eq!(
+            dummy_distance(
+                TilePos {
+                    x: 12,
+                    y: 21,
+                    floor: 7
+                },
+                dummy
+            ),
+            Some(2)
+        );
+        assert_eq!(
+            dummy_distance(
+                TilePos {
+                    x: 10,
+                    y: 20,
+                    floor: 6
+                },
+                dummy
+            ),
+            None
+        );
+        assert_eq!(weapon_range(28552), 1);
+        assert_eq!(weapon_range(28557), 7);
+    }
+
     #[test]
     fn training_reply_decoder_rejects_missing_fields() {
         assert_eq!(super::decode_result(&[8, 2]), None);

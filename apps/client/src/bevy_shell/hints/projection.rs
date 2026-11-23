@@ -48,6 +48,7 @@ pub(super) fn resolve(sources: Sources, mut state: ResMut<HintState>) {
         state.generation = scope;
     }
     state.pointer = None;
+    state.highlight = None;
     state.cursor = SystemCursorIcon::Default;
     let mut target = None;
     if let Ok((_, window)) = sources.windows.single()
@@ -91,6 +92,17 @@ pub(super) fn resolve(sources: Sources, mut state: ResMut<HintState>) {
                 .scene_point(pointer, UVec2::new(width, height))
             {
                 state.pointer = Some(pointer);
+                if sources.owner.settings.preferences.highlight_mouse_target
+                    && let Some(tile) = play.view.click_tile(point.x.into(), point.y.into())
+                    && play.view.has_pointer_target(tile)
+                {
+                    let view = play.view.scene().view();
+                    let camera = play.view.camera_offset(Instant::now()).unwrap_or_default();
+                    let position = pointer - point
+                        + Vec2::from_array(view.tile_to_screen(tile))
+                        + Vec2::from_array(camera);
+                    state.highlight = Some((position, view.tile_px() as f32));
+                }
                 state.cursor = if play.link.lens_active() {
                     SystemCursorIcon::Help
                 } else if sources.owner.settings.preferences.cursor_crosshair {

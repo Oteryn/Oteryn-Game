@@ -219,3 +219,34 @@ mod tests {
         result
     }
 }
+
+#[cfg(test)]
+#[test]
+fn condition_column_controls_update_all_keys_independently()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut app = super::tests::app(Page::Hud, None)?;
+    for (id, field) in [
+        ("hud.conditions_bar_all", "conditions_bar_enabled"),
+        ("hud.conditions_hud_all", "conditions_hud_enabled"),
+    ] {
+        let check = app
+            .world_mut()
+            .spawn(Control::Check(id))
+            .observe(super::toggle)
+            .id();
+        for enabled in [false, true] {
+            app.world_mut().trigger(bevy::ui_widgets::ValueChange {
+                source: check,
+                value: enabled,
+                is_final: true,
+            });
+            let owner = app.world().non_send::<HostOwner>();
+            let draft = owner.preferences_draft().ok_or("draft")?;
+            assert_eq!(serde_json::to_value(draft)?[field], enabled);
+            assert!(
+                draft.condition_hud_hidden.is_empty() && draft.condition_status_hidden.is_empty()
+            );
+        }
+    }
+    Ok(())
+}

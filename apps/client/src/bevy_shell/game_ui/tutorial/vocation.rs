@@ -11,6 +11,7 @@ struct State {
     generation: u64,
     last_poll: Option<Duration>,
     prompted: bool,
+    preview: Option<u8>,
     panel: Option<Entity>,
     rendered: Option<VocationPanel>,
 }
@@ -18,6 +19,7 @@ struct State {
 struct Choice {
     generation: u64,
     id: u8,
+    confirming: bool,
 }
 
 pub(super) fn install(app: &mut App) {
@@ -28,6 +30,7 @@ fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
+    assets: Res<AssetServer>,
     time: Res<Time<Real>>,
     mut state: ResMut<State>,
 ) {
@@ -45,6 +48,7 @@ fn project(
             commands.entity(panel).despawn();
         }
         state.rendered = None;
+        state.preview = None;
         return;
     };
     let panel = play.link.tutorial_vocation_panel();
@@ -78,6 +82,9 @@ fn project(
         commands.entity(panel).despawn();
     }
     let offered = choices(&panel);
+    if offered.is_empty() || panel.pending {
+        state.preview = None;
+    }
     state.rendered = Some(panel.clone());
     if offered.is_empty() && panel.feedback.is_none() {
         return;
@@ -111,10 +118,51 @@ fn project(
         .id();
     commands.entity(root).add_child(title);
     for (id, title) in offered {
+        let (icons, spells) = match id {
+            1 => ([21, 19], "Fierce Berserk · Front Sweep"),
+            2 => ([102, 41], "Great Fire Wave · Great Energy Beam"),
+            3 => ([46, 153], "Terra Wave · Ice Burst"),
+            4 => ([38, 155], "Divine Missile · Divine Grenade"),
+            5 => ([177, 169], "Greater Flurry of Blows · Focus Serenity"),
+            _ => continue,
+        };
+        let row = commands
+            .spawn(Node {
+                align_items: AlignItems::Center,
+                column_gap: px(4.),
+                ..default()
+            })
+            .id();
+        commands.entity(root).add_child(row);
+        for icon in icons {
+            let x = (icon * 32) as f32;
+            let image = commands
+                .spawn((
+                    ImageNode {
+                        image: assets.load("images/game/spells/spell-icons-32x32.png"),
+                        rect: Some(Rect::new(x, 0., x + 32., 32.)),
+                        ..default()
+                    },
+                    Node {
+                        width: px(32.),
+                        height: px(32.),
+                        ..default()
+                    },
+                ))
+                .id();
+            commands.entity(row).add_child(image);
+        }
+        let confirming = state.preview == Some(id);
         let button = commands
             .spawn((
                 source::button(skins.buttons.clone(), 220.),
+                Name::new(if confirming {
+                    "Confirm vocation"
+                } else {
+                    "Select vocation"
+                }),
                 Choice {
+                    confirming,
                     generation: owner.generation(),
                     id,
                 },
@@ -123,12 +171,19 @@ fn project(
             .id();
         let caption = commands
             .spawn(source::button_caption(
-                &format!("Select {title}"),
+                &format!("{} {title}", if confirming { "Confirm" } else { "Select" }),
                 skins.font.clone(),
             ))
             .id();
         commands.entity(button).add_child(caption);
-        commands.entity(root).add_child(button);
+        commands.entity(row).add_child(button);
+        let spell_names = commands
+            .spawn(source::text(
+                spells,
+                source::font(skins.font.clone(), false),
+            ))
+            .id();
+        commands.entity(row).add_child(spell_names);
     }
     if let Some(feedback) = panel.feedback {
         let feedback = commands
@@ -155,6 +210,7 @@ fn activate(
     buttons: Query<&Choice>,
     owner: NonSend<HostOwner>,
     guard: ModalGuard,
+    mut state: ResMut<State>,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -163,7 +219,14 @@ fn activate(
         && choice.generation == owner.generation()
         && let Some(play) = &owner.play
     {
-        play.link.tutorial_vocation_request(Some(choice.id));
+        if choice.confirming {
+            if state.preview.take() == Some(choice.id) {
+                play.link.tutorial_vocation_request(Some(choice.id));
+            }
+        } else {
+            state.preview = Some(choice.id);
+        }
+        state.rendered = None;
     }
 }
 
@@ -202,6 +265,40 @@ mod tests {
             Duration::from_secs(3),
         ));
         app.update();
+        let mut icons: Vec<_> = app
+            .world_mut()
+            .query::<&ImageNode>()
+            .iter(app.world())
+            .filter_map(|image| {
+                image
+                    .rect
+                    .filter(|rect| rect.size() == Vec2::splat(32.))
+                    .map(|rect| (rect.min.x / 32.) as u32)
+            })
+            .collect();
+        for node in app.world_mut().query::<&ImageNode>().iter(app.world()) {
+            if let Some(rect) = node.rect {
+                let asset = node.image.path().ok_or("missing spell atlas path")?;
+                let sheet = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("installer/ui-assets")
+                    .join(asset.path());
+                let bytes = std::fs::read(sheet)?;
+                assert_eq!(bytes.get(..8), Some(&b"\x89PNG\r\n\x1a\n"[..]));
+                let width = u32::from_be_bytes(bytes[16..20].try_into()?);
+                let height = u32::from_be_bytes(bytes[20..24].try_into()?);
+                assert!(rect.max.x <= width as f32 && rect.max.y <= height as f32);
+            }
+        }
+        icons.sort_unstable();
+        assert_eq!(icons, [19, 21, 38, 41, 46, 102, 153, 155, 169, 177]);
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains("Great Fire Wave")
+                    && text.0.contains("Great Energy Beam")),
+            "the installed theme can preview genuine spells without an external atlas"
+        );
         let entity = app
             .world_mut()
             .query::<(Entity, &Choice)>()
@@ -210,6 +307,16 @@ mod tests {
             .ok_or("choice")?
             .0;
         app.world_mut().trigger(Activate { entity });
+        assert!(rx.try_recv().is_err(), "preview must await confirmation");
+        app.update();
+        let confirm = app
+            .world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find(|(_, name)| name.as_str() == "Confirm vocation")
+            .ok_or("confirm button")?
+            .0;
+        app.world_mut().trigger(Activate { entity: confirm });
         let crate::combat_input::PlayCommand::Feature(command) = rx.try_recv()? else {
             return Err("vocation command".into());
         };

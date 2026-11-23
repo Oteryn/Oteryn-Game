@@ -479,7 +479,11 @@ fn close_and_cancel_fence_login_links_before_forget_finishes()
         let mut owner = HostOwner::new(None)?;
         let entry = owner.entry.as_mut().ok_or("entry")?;
         assert!(entry.configure(config));
-        entry.arm_cancel_fixture();
+        let (previous, _) = entry
+            .start_web_link(crate::web_links::WebLink::CookiePolicy)
+            .ok_or("initial link")?;
+        assert!(entry.request_picker());
+        assert!(previous.is_cancelled());
         let (epoch, _) = entry
             .start_web_link(crate::web_links::WebLink::CookiePolicy)
             .ok_or("link")?;
