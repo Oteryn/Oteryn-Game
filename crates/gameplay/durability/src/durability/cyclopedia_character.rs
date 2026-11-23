@@ -37,20 +37,21 @@ const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level
  FROM game_character_progression_state p JOIN game_character_build_state b ON b.character_id=p.character_id \
  LEFT JOIN game_character_last_positions l ON l.character_id=p.character_id WHERE p.character_id=encode($1,'hex')::uuid";
 
-/// Deaths in the history window, newest first, with the Character killers the PvP owners
-/// recorded for the same death (unjustified points and guild war frags). `killer` is the
-/// public final-blow killer (ordinal 0 when its kind matches the death classification), empty
-/// when the final blow is unknown; `unjustified` is true when the death awarded unjustified
-/// points to any killer.
+/// Deaths in the history window, newest first. `killer` is the captured final blow (ordinal 0
+/// when its kind matches the death classification), and `most_damage` is the captured top damage
+/// dealer. Unjustified points and guild war frags retain names for older receipts.
 const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before, \
- COALESCE((SELECT k.name FROM game_public_death_killers k JOIN game_public_death_classifications c ON c.death_occurrence_id=k.death_occurrence_id \
-   WHERE k.death_occurrence_id=d.death_occurrence_id AND k.ordinal=0 AND ((k.kind='creature' AND c.killer_key=k.creature_key) OR (k.kind='player' AND c.killer_key='player'))),'') AS killer, \
- COALESCE((SELECT k.name FROM game_public_death_killers k JOIN game_public_death_classifications c ON c.death_occurrence_id=k.death_occurrence_id AND c.most_damage_ordinal=k.ordinal \
-   WHERE k.death_occurrence_id=d.death_occurrence_id),'') AS most_damage, \
+ COALESCE(k.name,'') AS killer, COALESCE(m.name,'') AS most_damage, \
+ COALESCE(k.ordinal=m.ordinal,false) AS same_source, \
  EXISTS(SELECT 1 FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id) AS unjustified, \
  ARRAY(SELECT r.name FROM (SELECT u.character_id AS killer FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id \
    UNION SELECT f.killer_character_id FROM game_guild_war_frags f WHERE f.death_occurrence_id=d.death_occurrence_id) k JOIN game_character_roots r ON r.character_id=k.killer ORDER BY r.name) AS killers \
- FROM game_character_death_receipts d WHERE d.character_id=encode($1,'hex')::uuid AND d.committed_at BETWEEN $2 AND $3 ORDER BY d.committed_at DESC,d.death_occurrence_id DESC OFFSET $4 LIMIT $5";
+ FROM game_character_death_receipts d \
+ LEFT JOIN game_public_death_classifications c ON c.death_occurrence_id=d.death_occurrence_id \
+ LEFT JOIN game_public_death_killers k ON k.death_occurrence_id=c.death_occurrence_id AND k.ordinal=0 \
+   AND ((k.kind='creature' AND c.killer_key=k.creature_key) OR (k.kind='player' AND c.killer_key='player')) \
+ LEFT JOIN game_public_death_killers m ON m.death_occurrence_id=c.death_occurrence_id AND m.ordinal=c.most_damage_ordinal \
+ WHERE d.character_id=encode($1,'hex')::uuid AND d.committed_at BETWEEN $2 AND $3 ORDER BY d.committed_at DESC,d.death_occurrence_id DESC OFFSET $4 LIMIT $5";
 
 /// PvP kills in the history window, newest first. A guild war frag wins over unjustified
 /// points for the same death (Crystal reports one status per kill).
@@ -174,10 +175,7 @@ impl DurabilityRoot {
                     let mut details = Vec::with_capacity(rows.len());
                     for row in rows {
                         let level: i64 = row.try_get("level_before")?;
-                        let killers: Vec<String> = row.try_get("killers")?;
-                        entries.push((row.try_get("committed_at")?, death_cause(narrow(level)?, &killers)));
                         let killer: String = row.try_get("killer")?;
-                        // The death owner's captured most-damage row; empty when unknown.
                         let most_damage: String = row.try_get("most_damage")?;
                         details.push(DeathDetails {
                             level: narrow(level)?,
@@ -185,6 +183,17 @@ impl DurabilityRoot {
                             most_damage: bounded_death_name(&most_damage),
                             unjustified: row.try_get("unjustified")?,
                         });
+                        let mut killers = Vec::with_capacity(2);
+                        if !killer.is_empty() {
+                            killers.push(killer);
+                        }
+                        if !most_damage.is_empty() && !row.try_get::<bool, _>("same_source")? {
+                            killers.push(most_damage);
+                        }
+                        if killers.is_empty() {
+                            killers = row.try_get("killers")?;
+                        }
+                        entries.push((row.try_get("committed_at")?, death_cause(narrow(level)?, &killers)));
                     }
                     extension.deaths = Some(details);
                     TabView::RecentDeaths(entries)
