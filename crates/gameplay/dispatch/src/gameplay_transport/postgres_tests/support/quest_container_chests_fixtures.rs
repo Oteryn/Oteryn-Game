@@ -44,6 +44,10 @@ pub(super) enum Case {
     ForgemasterChoices {
         policy: ForgemasterAccessPolicy,
     },
+    PlacedForgemaster {
+        x: u16,
+        reward: &'static str,
+    },
     Weight,
     DemonBoots,
     DemonHelmet,
@@ -133,6 +137,13 @@ fn scenario_case(
             },
             57244,
             "oteryn:item.tibia.i49530",
+            vec![],
+        ),
+        Case::PlacedForgemaster { x, reward } => (
+            forgemaster::CLAIM,
+            (x, forgemaster::SERVED_CHEST.1, forgemaster::SERVED_CHEST.2),
+            0,
+            reward,
             vec![],
         ),
         Case::Authored | Case::Forgemaster => (
@@ -275,7 +286,8 @@ fn scenario_case(
             None
         };
         phase("session_prepare");
-        let production_forgemaster = matches!(
+        let placed_forgemaster = matches!(case, Case::PlacedForgemaster { .. });
+        let production_forgemaster = placed_forgemaster || matches!(
             case, Case::ForgemasterChoices { policy: forgemaster::AccessPolicy::Verified }
         );
         let mut deps = Dependencies::new()?;
@@ -308,6 +320,15 @@ fn scenario_case(
                 ]),
                 2472,
                 matches!(case, Case::ChoiceDoor).then_some(native),
+            )?
+        } else if placed_forgemaster {
+            use crate::map::overlay::TilePos;
+            let start = TilePos { x: chest.0, y: chest.1 + 1, floor: chest.2 };
+            super::source_world_crop::world(
+                TilePos { x: 34087, y: chest.1, ..start },
+                TilePos { x: 34107, y: chest.1 + 2, ..start },
+                start,
+                native,
             )?
         } else if production_forgemaster {
             forgemaster::production_chests(native)?
@@ -437,6 +458,11 @@ fn scenario_case(
         } else {
             activated_pin.frame_binding().digest()
         };
+        let (start_x, start_y) = if placed_forgemaster {
+            (i32::from(world.start().x), i32::from(world.start().y))
+        } else {
+            (i32::from(chest.0) - 1, i32::from(chest.1))
+        };
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -445,8 +471,8 @@ fn scenario_case(
             frame_binding,
             world.map_revision_digest(),
             (
-                i32::from(chest.0) - 1,
-                i32::from(chest.1),
+                start_x,
+                start_y,
                 -i16::from(chest.2),
             ),
         );
@@ -470,8 +496,8 @@ fn scenario_case(
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(chest.0) - i32::from(!matches!(case, Case::ChoiceDoor)),
-                    y: i32::from(chest.1),
+                    x: start_x + i32::from(matches!(case, Case::ChoiceDoor)),
+                    y: start_y,
                     floor: -i16::from(chest.2),
                 },
             )
@@ -525,7 +551,7 @@ fn scenario_case(
                     .ok_or("live chest tile")?;
                 super::qc_pinned_world::ordinal(tile, source.appearance, Some(unique))?
             } else if production_forgemaster {
-                2
+                if x == 34107 { 3 } else { 2 }
             } else {
                 1
             };
@@ -540,7 +566,11 @@ fn scenario_case(
         };
         let target = target_at(chest.0)?;
         phase("actor_and_equipment");
-        if let Case::ForgemasterChoices { policy } = case {
+        if let Some(policy) = match case {
+            Case::ForgemasterChoices { policy } => Some(policy),
+            Case::PlacedForgemaster { .. } => Some(forgemaster::AccessPolicy::Verified),
+            _ => None,
+        } {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
             owner.movement_cells = (&cells).into();
@@ -620,9 +650,13 @@ fn scenario_case(
                     );
                 }
             }
-            let alternate = target_at(chest.0 - 2)?;
+            let repeat = if placed_forgemaster {
+                target
+            } else {
+                target_at(chest.0 - 2)?
+            };
             assert_eq!(
-                forgemaster::use_chest(&mut owner, &admitted, deps.actor, 3, &alternate).await?,
+                forgemaster::use_chest(&mut owner, &admitted, deps.actor, 3, &repeat).await?,
                 UseDisposition::Rejected
             );
             assert_eq!(forgemaster::claim_count(&harness).await?, 1);
@@ -640,6 +674,9 @@ fn scenario_case(
                 .ok_or("Forgemaster backpack")?;
             assert_eq!(bag.entries.len(), 1);
             assert_eq!(bag.entries[0].item.definition.production_key, root_key);
+            if placed_forgemaster {
+                assert_eq!(bag.entries[0].item.quantity, 1);
+            }
             drop(owner);
             drop(authority);
             drop(seal);
