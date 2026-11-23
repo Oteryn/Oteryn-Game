@@ -89,26 +89,27 @@ mod tests {
     }
 
     #[test]
-    fn asura_authored_doors_project_passable_replacements() -> Result<(), String> {
-        let bindings = crate::quest::authored_bindings::Bindings::parse(include_bytes!(
+    fn asura_loader_keeps_door_admission_personal() -> Result<(), String> {
+        use crate::quest::{authored_bindings::Bindings, loader, world_callbacks};
+        let bindings = Bindings::parse(include_bytes!(
             "../../../../../../content/quests/authored-bindings/engenc-asura-palace.json"
         ))?;
+        let loaded = loader::load_embedded_quest_state_with_bindings("content-1", &bindings)
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = world_callbacks::load_for(loaded.catalogue())?;
         for suffix in ["s2/door", "s3/door", "s4/door", "orchid/library-door"] {
             let key = format!("oteryn:quest-callback/engenc/asura/{suffix}");
-            let door = bindings
-                .world_callbacks()
-                .find(|callback| callback.key == key)
-                .ok_or(&key)?;
-            let native = door.selector.native.as_ref().ok_or("native door")?;
+            let door = callbacks.iter().find(|door| door.key == key).ok_or(&key)?;
             assert!(
-                door.passages.iter().any(|passage| {
-                    passage.position == native.position
-                        && passage.appearance == native.appearance
-                        && passage.replacement == Some(native.appearance + 1)
-                        && passage.replacement_passable != Some(false)
-                }),
-                "{key} never opens collision"
+                door.passages.is_empty(),
+                "{key} opens shared STEP collision"
             );
+            assert_eq!(door.effects.transform, None);
+            let native = door.selector.native.as_ref().ok_or("native door")?.position;
+            let target = door.teleport.ok_or("personal crossing")?;
+            assert_eq!(target.floor, native.floor);
+            assert_ne!(target, native);
+            assert!(target.x.abs_diff(native.x) <= 1 && target.y.abs_diff(native.y) <= 1);
         }
         Ok(())
     }
@@ -222,7 +223,7 @@ mod tests {
         );
         let door = find("library-door")?;
         assert_eq!(door.minimum_level, Some(250));
-        assert_eq!(door.effects.transform, Some(1677));
+        assert!(door.teleport.is_some());
         Ok(())
     }
 

@@ -91,6 +91,32 @@ pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
     Ok(b.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?)
 }
 
+fn library_portal() -> TestResult<super::l6_world_pickups_fixtures::ExpectedTeleport> {
+    let packet: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../../content/world/transitions/teleports-00000-00499.json"
+    ))?;
+    let portal = packet["records"]
+        .as_array()
+        .ok_or("native teleport records")?
+        .iter()
+        .map(|row| &row["declaration"])
+        .find(|row| row["identity"]["key"] == "oteryn:transition.teleport.x32962_y32673_z2")
+        .ok_or("library portal")?;
+    let coordinates = |key: &str| -> TestResult<(u16, u16, u8)> {
+        let point = &portal[key];
+        Ok((
+            u16::try_from(point["x"].as_u64().ok_or("portal x")?)?,
+            u16::try_from(point["y"].as_u64().ok_or("portal y")?)?,
+            u8::try_from(point["floor"].as_u64().ok_or("portal floor")?)?,
+        ))
+    };
+    Ok(super::l6_world_pickups_fixtures::ExpectedTeleport {
+        position: coordinates("from")?,
+        ordinal: 1,
+        destination: coordinates("to")?,
+    })
+}
+
 pub(super) fn world(
     native: &NativeGameplayState,
     name: &str,
@@ -125,7 +151,7 @@ pub(super) fn world(
             include_bytes!("../../../../../../../content/world/placements/region-z02-x128-y127.b3")
                 .as_slice(),
             (2, 128, 127),
-            (32952, 32674, 32963, 32683),
+            (32952, 32673, 32963, 32683),
             vec![927, 1674],
         ),
         _ => return Err("Asura stage".into()),
@@ -156,6 +182,7 @@ pub(super) fn world(
             }],
         });
     }
+    let mut teleports = Vec::new();
     if stage(name)? == "orchid" {
         crops.push(NativeCrop {
             bytes: include_bytes!(
@@ -166,8 +193,20 @@ pub(super) fn world(
             start: (32945, 32678),
             expected: vec![],
         });
+        let portal = library_portal()?;
+        let (x, y, z) = portal.destination;
+        crops.push(NativeCrop {
+            bytes: include_bytes!(
+                "../../../../../../../content/world/placements/region-z09-x128-y127.b3"
+            ),
+            region: (z, x / 256, y / 256),
+            bounds: (x, y, x + 1, y + 1),
+            start: (x, y),
+            expected: vec![],
+        });
+        teleports.push(portal);
     }
-    let world = native_scene_with_appearances(native, crops, &[], &[1675, 1677, 5737])?;
+    let world = native_scene_with_appearances(native, crops, &teleports, &[])?;
     for defender in &cb.effects.encounter.as_ref().ok_or("encounter")?.monsters {
         assert!(
             world.enterable(crate::map::overlay::TilePos {
@@ -241,6 +280,48 @@ pub(super) async fn exercise(
         },
     )
     .map_err(debug)?;
+    if name.contains("-reentry-") {
+        use super::questpc8_authored_programmes_fixtures::{object_target, use_target};
+        use super::questpc8_mystery_geometry_fixtures::arrive;
+        let door_key = format!("oteryn:quest-callback/engenc/asura/{}/door", stage(name)?);
+        let door = bindings()?
+            .world_callbacks()
+            .find(|callback| callback.key == door_key)
+            .and_then(|callback| callback.selector.native.clone())
+            .ok_or("chamber door")?;
+        let position = crate::map::overlay::TilePos {
+            x: door.position.x,
+            y: door.position.y,
+            floor: door.position.floor,
+        };
+        arrive(
+            owner,
+            admitted,
+            crate::map::overlay::TilePos {
+                x: position.x - 1,
+                ..position
+            },
+        )
+        .await?;
+        let target = object_target(owner, position, door.ordinal)?;
+        let command = admitted.continuity.next_command_id;
+        assert_eq!(
+            use_target(owner, admitted, command, &target).await?,
+            oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+            "saved clearance authorizes the earlier crossing",
+        );
+        let staging = encounter.players[0].from;
+        arrive(
+            owner,
+            admitted,
+            crate::map::overlay::TilePos {
+                x: staging.x,
+                y: staging.y,
+                floor: staging.floor,
+            },
+        )
+        .await?;
+    }
     let command = admitted.continuity.next_command_id;
     let reply =
         super::quest_world_callbacks_fixtures::wire(owner, admitted, command, 2, payload.clone()).await;
@@ -322,9 +403,6 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(count, 1);
-    if name.contains("-reentry-") {
-        return Ok(());
-    }
     if stage(name)? == "orchid" {
         return exercise_orchid(owner, admitted, h, &roster, &cb).await;
     }
@@ -343,6 +421,21 @@ pub(super) async fn exercise(
         command + 1,
     )
     .await?;
+    if name.contains("-reentry-") {
+        use oteryn_protocol_oteryn::world_spatial::{
+            StepDirection, StepDisposition, decode_step_result, encode_step_intent,
+        };
+        let reply = super::quest_world_callbacks_fixtures::wire(
+            owner, admitted, next_command, 1, encode_step_intent(StepDirection::East),
+        )
+        .await?;
+        assert_eq!(
+            decode_step_result(&reply).map_err(debug)?,
+            StepDisposition::Blocked,
+            "STEP must refuse a re-entered chamber while both defenders are alive",
+        );
+        return Ok(());
+    }
     let key = oteryn_world_bundle::bundle::placement_key(
         selector.position.floor,
         selector.position.x,
@@ -616,17 +709,8 @@ async fn exercise_orchid(
         use_target(owner, admitted, command, &target).await?,
         UseDisposition::Committed
     );
-    let command = admitted.continuity.next_command_id;
-    super::quest_world_callbacks_fixtures::wire(
-        owner,
-        admitted,
-        command,
-        1,
-        oteryn_protocol_oteryn::world_spatial::encode_step_intent(
-            oteryn_protocol_oteryn::world_spatial::StepDirection::North,
-        ),
-    )
-    .await?;
+    let (x, y, floor) = library_portal()?.destination;
+    let library_landing = Position { x, y, floor: -i8::try_from(floor)? };
     assert_eq!(
         owner
             .runtime
@@ -635,14 +719,33 @@ async fn exercise_orchid(
             .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
             .map_err(debug)?
             .position(),
-        super::quest_world_callbacks_fixtures::local(
-            oteryn_gameplay_quests::quest::world_callbacks::Position {
-                x: library_door.x,
-                y: library_door.y,
-                floor: library_door.floor,
-            },
-        ),
-        "the open library door admits ordinary movement"
+        super::quest_world_callbacks_fixtures::local(library_landing),
+        "authorized USE crosses the library door and enters its portal",
+    );
+    use oteryn_protocol_oteryn::world_spatial::{
+        StepDirection, StepDisposition, decode_step_result, encode_step_intent,
+    };
+    arrive(
+        owner,
+        admitted,
+        TilePos {
+            y: library_door.y + 1,
+            ..library_door
+        },
+    )
+    .await?;
+    let command = admitted.continuity.next_command_id;
+    let reply = super::quest_world_callbacks_fixtures::wire(
+        owner,
+        admitted,
+        command,
+        1,
+        encode_step_intent(StepDirection::North),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Blocked
     );
 
     for (position, approach, item) in [(sapphire, west, 3029), (ruby, east, 3030)] {

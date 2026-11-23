@@ -549,6 +549,18 @@ pub struct Callback {
 }
 
 impl Callback {
+    /// Crystal's return use changes only the switch; its opening timers keep running.
+    pub fn chayenne_timed_lever(&self) -> bool {
+        self.key == "oteryn:quest-callback/m07/realm-trial"
+            && self.quest == "oteryn:quest.chayenne_realm"
+            && self.selector.action == Some(55021)
+            && self.trigger == Trigger::Use
+            && self.reversible
+            && self.lever.is_some()
+            && self.effects.reset_after_ms.is_some()
+            && self.effects.passages_reset_after_ms.is_some()
+    }
+
     pub fn operations(&self) -> impl Iterator<Item = &super::reward_callbacks::StateOperation> {
         self.state_ops.iter().chain(&self.state_operations)
     }
@@ -1249,7 +1261,7 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
                 (!a.regular_blessings && !a.promotion && !a.premium)
                     || callback.actor_kind != ActorKind::Player
                     || !callback.has_personal_state()
-                    || callback.reversible
+                    || (callback.reversible && !callback.chayenne_timed_lever())
                     || callback.opening_only
             })
             || callback

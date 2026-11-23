@@ -98,6 +98,26 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     }
     assert_eq!(Box::pin(use_source(owner,admitted,6,CONTROL,3,2)).await?,UseDisposition::Committed,"the shared reset permits a new use with the retained key");
     assert_eq!(key_count(harness).await?,1);assert_eq!(receipts(harness).await?,3);
+    let map = owner.bundle_map().ok_or("map")?;
+    let due = map.facts.next_movement_decay_time().ok_or("second wall reset")?;
+    assert_eq!(
+        Box::pin(use_source(owner, admitted, 7, CONTROL, 3, 3)).await?,
+        UseDisposition::Committed,
+        "the active lever returns independently of the passage",
+    );
+    let map = owner.bundle_map().ok_or("map")?;
+    let wall = placement_key(crate::map::overlay::TilePos { x: 33075, y: 32591, floor: -3 }, 1)
+        .ok_or("wall key")?;
+    assert!(map.facts.base_hidden(wall));
+    assert_eq!(map.facts.next_movement_decay_time(), Some(due));
+    assert_eq!(map.facts.expire_movement_items(due), 1);
+    assert!(!map.facts.base_hidden(wall));
+    assert_eq!(
+        Box::pin(use_source(owner, admitted, 8, CONTROL, 3, 4)).await?,
+        UseDisposition::NothingToUse,
+        "returning the switch leaves the opening cooldown in force",
+    );
+    assert_eq!(receipts(harness).await?, 3);
     Ok(())
 }
 

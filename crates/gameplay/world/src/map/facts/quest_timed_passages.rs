@@ -83,6 +83,16 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
+    /// A manual return can change the source revision without ending its cooldown.
+    pub fn quest_callback_reset_pending(&self, key: u64, now: u64) -> bool {
+        self.callbacks.lock().is_ok_and(|states| {
+            states
+                .movement_decays
+                .range((now, 0)..)
+                .any(|(&(due, entry), decay)| due > now && entry == key && decay.overlay.is_none())
+        })
+    }
+
     /// Preflight the same bounded projection before reserving durable quest inputs.
     pub fn quest_timed_passages_ready(
         &self,

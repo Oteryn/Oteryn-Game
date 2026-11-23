@@ -201,6 +201,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
+        if callback.chayenne_timed_lever()
+            && let Some([resting, _]) = callback.lever
+        {
+            if close {
+                return if map.facts.apply_quest_callback(
+                    key,
+                    expected_revision,
+                    crate::map::view::EntryFacts {
+                        appearance_id: resting,
+                        ..after
+                    },
+                    &[],
+                    &[],
+                    true,
+                    None,
+                ) {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::StaleState
+                };
+            }
+            if map
+                .facts
+                .quest_callback_reset_pending(key, self.owner_now().get())
+            {
+                return UseDisposition::NothingToUse;
+            }
+        }
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
@@ -556,6 +584,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let closed = crate::map::floor::BundleDoors(&map.facts);
         let blocked = super::super::pvp_live::pz_blocked(states, actor, session, self.owner_now());
         let mut destination = callback.teleport;
+        if let Some(target) = destination
+            && callback
+                .key
+                .starts_with("oteryn:quest-callback/engenc/asura/")
+            && (callback.key.ends_with("/door") || callback.key.ends_with("/library-door"))
+            && let Some(at) = native(expected.position())
+        {
+            // The same authorized USE can cross in either direction.
+            if target.x != pos.x && at.x == target.x {
+                let Some(x) = pos
+                    .x
+                    .checked_add_signed(if target.x > pos.x { -1 } else { 1 })
+                else {
+                    return UseDisposition::Rejected;
+                };
+                destination = Some(Position {
+                    x,
+                    y: pos.y,
+                    floor: pos.floor,
+                });
+            } else if target.x == pos.x && at.y == target.y {
+                let Some(y) = pos
+                    .y
+                    .checked_add_signed(if target.y > pos.y { -1 } else { 1 })
+                else {
+                    return UseDisposition::Rejected;
+                };
+                destination = Some(Position {
+                    x: pos.x,
+                    y,
+                    floor: pos.floor,
+                });
+            }
+        }
+        if callback.key == "oteryn:quest-callback/engenc/asura/orchid/library-door"
+            && let Some(landing) = destination
+            && let Ok(arrival) = crate::map::floor::resolve_teleport_arrival(
+                self.movement_cells(),
+                crate::content::LogicalCell {
+                    x: i32::from(landing.x),
+                    y: i32::from(landing.y),
+                    z: -i32::from(landing.floor),
+                },
+            )
+        {
+            let (Ok(x), Ok(y), Ok(floor)) = (
+                u16::try_from(arrival.x),
+                u16::try_from(arrival.y),
+                i8::try_from(-arrival.z),
+            ) else {
+                return UseDisposition::Rejected;
+            };
+            destination = Some(Position { x, y, floor });
+        }
         if let Some(remote) = &callback.remote_teleport {
             let p = tile(remote.position);
             let Some(base) = map.overlay.base().tile(p.x, p.y, p.floor) else {

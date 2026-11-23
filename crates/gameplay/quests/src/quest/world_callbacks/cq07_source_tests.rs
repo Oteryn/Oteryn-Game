@@ -99,6 +99,10 @@ fn realm_loader_binds_lever_to_independent_wall_and_switch_deadlines()
     assert_eq!(lever.trigger, Trigger::Use);
     assert_eq!(lever.present[0].item, "oteryn:item.tibia.i14682");
     assert_eq!(lever.lever, Some([2772, 2773]));
+    assert!(
+        lever.reversible,
+        "active source lever must accept its return use"
+    );
     assert_eq!(lever.effects.passages_reset_after_ms, Some(60_000));
     assert_eq!(lever.effects.reset_after_ms, Some(300_000));
     assert_eq!(lever.passages[0].appearance, 2129);

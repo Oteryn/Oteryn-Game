@@ -123,11 +123,19 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.authored.asura_palace_quest",
-        hash(b"a807363e56c5966b6e3bba458b4e29151bbf31230de20d129e0864e13c795a53"),
+        hash(b"cfee58077cc792a8e8360d96a51c5fae025a539009d3f82689121dfc20290ede"),
         &[
+            hash(b"a807363e56c5966b6e3bba458b4e29151bbf31230de20d129e0864e13c795a53"),
             hash(b"f46458b071254e14908bea9b5f40d7924f6a3ca818e27c8961e01b35632d0518"),
             hash(b"7d2ff46451588dd3ff2352c5db743480e1511730cce8c4ffcdf10f716a1d7caa"),
         ],
+    ),
+    (
+        "oteryn:quest.chayenne_realm",
+        hash(b"cf99ff0b1b68f740343bc53faeff3928a1dd510b10b69f28a17c58c26f669a31"),
+        &[hash(
+            b"200ff087735610eda7ae1d765c08491c3508fbff97967865b6cba1a1045b9d10",
+        )],
     ),
     (
         "oteryn:quest.authored.braindeath_quest",

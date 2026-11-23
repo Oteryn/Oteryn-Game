@@ -73,17 +73,9 @@ def attach_chambers(document, root):
         )
         return cb
 
-    def open_door(door):
-        native = door["selector"]["native"]
-        appearance = native["appearance"]
-        door["effects"] = {"transform": appearance + 1}
-        door["passages"] = [
-            {
-                "position": native["position"],
-                "appearance": appearance,
-                "replacement": appearance + 1,
-            }
-        ]
+    def cross_door(door, destination):
+        # The authorized actor crosses by USE while the native door stays solid.
+        door["teleport"] = pos(destination)
 
     quest["sources"].append(INPUT)
     for number, chamber in enumerate(rows, 2):
@@ -152,7 +144,8 @@ def attach_chambers(document, root):
         )
         if door["selector"]["appearance"] != chamber["door_appearance"]:
             raise ValueError("Asura authored door changed")
-        open_door(door)
+        x, y, z = chamber["door"]
+        cross_door(door, chamber.get("exit", [x + 1, y, z]))
         quest["stages"].extend(
             [
                 {
@@ -293,7 +286,7 @@ def attach_chambers(document, root):
     if library_door["selector"]["native"]["appearance"] != 1676:
         raise ValueError("Asura library door source changed")
     library_door["minimum_level"] = 250
-    open_door(library_door)
+    cross_door(library_door, [32962, 32673, 2])
     library_door["sources"].append(
         "https://github.com/zimbadev/crystalserver/blob/"
         "201189f871d23597b82caf88fd611454a2ddefb8/"

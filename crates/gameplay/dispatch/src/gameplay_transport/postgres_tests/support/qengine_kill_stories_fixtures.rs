@@ -563,6 +563,11 @@ async fn spike(
             .await?;
         assert_eq!(erased.rows_affected(), 1);
     }
+    // The only character can cancel scheduled deletion after this migration runs.
+    let pending = sqlx::query("UPDATE game_character_roots SET lifecycle=3")
+        .execute(&mut *fixture)
+        .await?;
+    assert_eq!(pending.rows_affected(), 1);
     fixture.commit().await?;
     let migration = include_str!(
         "../../../../../../../apps/game-server/migrations/3033_cave_completionist_backfill.sql"
@@ -570,6 +575,15 @@ async fn spike(
     for _ in 0..2 {
         sqlx::raw_sql(migration).execute(&h.pool).await?;
     }
+    let mut fixture = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    let restored = sqlx::query("UPDATE game_character_roots SET lifecycle=1 WHERE lifecycle=3")
+        .execute(&mut *fixture)
+        .await?;
+    assert_eq!(restored.rows_affected(), 1);
+    fixture.commit().await?;
     arrange_track(h, FAME, 100).await?;
     owner.refresh_quest_session(admitted.game_session_id, false).await;
     for (id, keyword) in [(26, "worthy"), (27, "first")] {

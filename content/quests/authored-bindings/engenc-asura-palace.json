@@ -331,18 +331,12 @@
               "lever": null,
               "reversible": false,
               "requires_world_admission": true,
-              "passages": [
-                {
-                  "position": {
-                    "x": 32963,
-                    "y": 32677,
-                    "floor": -4
-                  },
-                  "appearance": 5736,
-                  "replacement": 5737
-                }
-              ],
-              "teleport": null,
+              "passages": [],
+              "teleport": {
+                "x": 32964,
+                "y": 32676,
+                "floor": -4
+              },
               "storage": [
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s2/entered",
@@ -372,10 +366,7 @@
               "sources": [
                 "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
                 "authored per owner rule"
-              ],
-              "effects": {
-                "transform": 5737
-              }
+              ]
             }
           }
         },
@@ -541,18 +532,12 @@
               "lever": null,
               "reversible": false,
               "requires_world_admission": true,
-              "passages": [
-                {
-                  "position": {
-                    "x": 32959,
-                    "y": 32679,
-                    "floor": -2
-                  },
-                  "appearance": 1674,
-                  "replacement": 1675
-                }
-              ],
-              "teleport": null,
+              "passages": [],
+              "teleport": {
+                "x": 32960,
+                "y": 32679,
+                "floor": -2
+              },
               "storage": [
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s3/entered",
@@ -582,10 +567,7 @@
               "sources": [
                 "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
                 "authored per owner rule"
-              ],
-              "effects": {
-                "transform": 1675
-              }
+              ]
             }
           }
         },
@@ -751,18 +733,12 @@
               "lever": null,
               "reversible": false,
               "requires_world_admission": true,
-              "passages": [
-                {
-                  "position": {
-                    "x": 32947,
-                    "y": 32679,
-                    "floor": -2
-                  },
-                  "appearance": 1674,
-                  "replacement": 1675
-                }
-              ],
-              "teleport": null,
+              "passages": [],
+              "teleport": {
+                "x": 32948,
+                "y": 32679,
+                "floor": -2
+              },
               "storage": [
                 {
                   "track": "oteryn:quest-progress/engenc/asura/s4/entered",
@@ -792,10 +768,7 @@
               "sources": [
                 "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
                 "authored per owner rule"
-              ],
-              "effects": {
-                "transform": 1675
-              }
+              ]
             }
           }
         },
@@ -1096,18 +1069,12 @@
               "lever": null,
               "reversible": false,
               "requires_world_admission": true,
-              "passages": [
-                {
-                  "position": {
-                    "x": 32962,
-                    "y": 32674,
-                    "floor": -2
-                  },
-                  "appearance": 1676,
-                  "replacement": 1677
-                }
-              ],
-              "teleport": null,
+              "passages": [],
+              "teleport": {
+                "x": 32962,
+                "y": 32673,
+                "floor": -2
+              },
               "storage": [
                 {
                   "track": "oteryn:quest-progress/engenc/asura/orchid/count",
@@ -1131,10 +1098,7 @@
                 "authored per owner rule",
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_doors.lua"
               ],
-              "minimum_level": 250,
-              "effects": {
-                "transform": 1677
-              }
+              "minimum_level": 250
             }
           }
         }

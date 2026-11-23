@@ -681,7 +681,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
                 || callback.trigger != Trigger::Use
-                || callback.reversible
+                || (callback.reversible && !callback.chayenne_timed_lever())
                 || callback.passages.is_empty()
                 || callback
                     .passages
