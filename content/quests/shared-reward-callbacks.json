@@ -8689,7 +8689,8 @@
       "counter": {
         "track": "oteryn:quest-progress/quest/u7_24/mad_mage_room/apple_payments",
         "maximum": 2147483647
-      }
+      },
+      "failure_topic": 0
     },
     {
       "key": "oteryn:quest-reward/prisoner-key-3666",
@@ -9971,7 +9972,8 @@
       "repeatable": true,
       "failure_reply": [
         "You don't have enough money."
-      ]
+      ],
+      "failure_topic": 0
     },
     {
       "key": "oteryn:quest-reward/skjaar-key-3142",
@@ -10048,7 +10050,8 @@
       },
       "failure_reply": [
         "You don't have enough money"
-      ]
+      ],
+      "failure_topic": 0
     }
   ],
   "item_disguises": [

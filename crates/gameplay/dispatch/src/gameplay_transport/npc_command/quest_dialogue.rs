@@ -123,12 +123,14 @@ pub(super) struct Step {
     transition: Option<String>,
     reply: Vec<String>,
     failure_reply: Vec<String>,
+    failure_topic: Option<u16>,
     refused: bool,
 }
 
 impl Step {
-    pub(super) fn with_failure_reply(mut self, lines: Vec<String>) -> Self {
+    pub(super) fn with_failure_reply(mut self, lines: Vec<String>, topic: Option<u16>) -> Self {
         self.failure_reply = lines;
+        self.failure_topic = topic;
         self
     }
     pub(super) fn with_refusal(mut self, refused: bool) -> Self {
@@ -187,6 +189,7 @@ pub(super) fn prepare(
         transition: choice.transition,
         reply: choice.reply,
         failure_reply: Vec::new(),
+        failure_topic: None,
         refused: false,
     })
 }
@@ -253,15 +256,25 @@ fn publish_committed_reply(
     }
 }
 
-fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId, committed: bool) {
+fn finish(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    committed: bool,
+    failure_topic: Option<Topic>,
+) {
     if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
         && let Some(state) = sessions.get_mut(&session)
         && let Some(pending) = state.quest_dialogue.pending.take()
-        && committed
+        && (committed || failure_topic.is_some())
     {
-        state
-            .quest_dialogue
-            .apply_topic(pending.context, pending.next_topic);
+        state.quest_dialogue.apply_topic(
+            pending.context,
+            if committed {
+                pending.next_topic
+            } else {
+                failure_topic
+            },
+        );
     }
 }
 
@@ -427,7 +440,7 @@ pub(super) async fn apply(
         match super::endgame::prepare_reward_fee(admission, command, fence).await {
             Ok(payment) => Some(payment),
             Err(outcome) => {
-                finish(admission, command.game_session_id, false);
+                finish(admission, command.game_session_id, false, None);
                 return *outcome;
             }
         }
@@ -439,7 +452,7 @@ pub(super) async fn apply(
             .active_generation
             .and_then(|g| g.native_gameplay())
         else {
-            finish(admission, command.game_session_id, false);
+            finish(admission, command.game_session_id, false, None);
             return rejected();
         };
         let weights = super::super::item_ref_admission::NativeItemWeights(native)
@@ -490,7 +503,7 @@ pub(super) async fn apply(
                 state.quest_dialogue.interrupt_after_commit = None;
                 return unknown();
             }
-            finish(admission, command.game_session_id, true);
+            finish(admission, command.game_session_id, true, None);
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
@@ -526,8 +539,12 @@ pub(super) async fn apply(
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,
         )) => unknown(),
-        _ => {
-            finish(admission, command.game_session_id, false);
+        outcome => {
+            let failure_topic = match outcome {
+                Ok(QuestTransitionOutcome::Refused(_)) => step.failure_topic.map(Topic::from),
+                _ => None,
+            };
+            finish(admission, command.game_session_id, false, failure_topic);
             if step.failure_reply.is_empty() {
                 return rejected();
             }
@@ -590,7 +607,7 @@ pub(in crate::gameplay_transport) async fn resume(
         .await
     {
         Ok(receipt) => {
-            finish(admission, command.game_session_id, receipt.is_some());
+            finish(admission, command.game_session_id, receipt.is_some(), None);
             if receipt.is_some() {
                 admission
                     .refresh_quest_session(command.game_session_id, false)

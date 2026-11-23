@@ -362,6 +362,9 @@ pub struct RewardCallback {
     pub reply: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub failure_reply: Vec<String>,
+    /// Source-authored dialogue topic after a definitive refusal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure_topic: Option<u16>,
     pub sources: Vec<String>,
 }
 
@@ -1162,6 +1165,8 @@ fn validate_document_with_capacity(
             || c.inventory.iter().any(|rule| {
                 !slug(&rule.item, "oteryn:item.", b"._/:-", 256) || rule.minimum > rule.maximum
             })
+            || (c.failure_topic.is_some()
+                && (c.failure_reply.is_empty() || c.carried_item.is_some()))
             || c.failure_reply.len() > 8
             || c.failure_reply.iter().any(|line| {
                 line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
@@ -1221,6 +1226,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     let terms = terms.as_object_mut().ok_or("reward terms")?;
     terms.remove("reply");
     terms.remove("failure_reply");
+    terms.remove("failure_topic");
     terms.remove("sources");
     let bytes = serde_json::to_vec(terms).map_err(|e| e.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))

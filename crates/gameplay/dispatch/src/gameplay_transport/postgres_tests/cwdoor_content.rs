@@ -469,3 +469,119 @@ fn cwdoor_npc_key_sources_load_exact_cost_and_key_numbers() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn cwdoor_refused_numbered_key_exchanges_clear_confirmation_postgres() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cwdoor-refused-keys", || {
+        super::full_world_support::world_scenario!(
+            "cwdoor_refused_keys",
+            |h,
+             request,
+             seal,
+             authority,
+             world_id,
+             native,
+             world,
+             cells,
+             room,
+             pin,
+             deps,
+             actor,
+             session,
+             owner,
+             fence,
+             admitted| {
+                use super::classic_quests_fixtures::{install, talk, talk_expecting};
+                use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+
+                let state =
+                    oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                        .map_err(debug)?;
+                owner.quest_catalogue = Some(std::sync::Arc::new(state.catalogue().clone()));
+                owner.refresh_quest_session(session, true).await;
+                let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::offered_for(
+                    state.catalogue(),
+                )?;
+                let [shirith, skjaar, prisoner] = install(
+                    &owner,
+                    &admitted,
+                    [
+                        "oteryn:npc.shirith",
+                        "oteryn:npc.skjaar",
+                        "oteryn:npc.a_prisoner",
+                    ],
+                )
+                .await?;
+
+                let offers: serde_json::Value = serde_json::from_str(include_str!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/quests/shared-reward-offers.json"
+                )))?;
+                let riddle_answer = offers["offers"]
+                    .as_array()
+                    .and_then(|rows| rows.iter().find(|row| {
+                        row["npc"] == "oteryn:npc.a_prisoner" && row["topic"] == 1
+                    }))
+                    .and_then(|offer| offer["keywords"][0].as_str())
+                    .ok_or("published riddle answer")?;
+                sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
+                    .execute(&h.pool)
+                    .await?;
+                // Spend the fixture's 100 gold through its two ordinary key purchases.
+                for (index, line) in ["hi", "key", "yes", "key", "yes", "key"]
+                    .into_iter()
+                    .enumerate()
+                {
+                    talk(&mut owner, &admitted, shirith, 10 + u64::try_from(index)?, line).await?;
+                }
+                assert_eq!(gold(&ledger(&h).await?), 0);
+
+                let mut refused_topics = Vec::new();
+                for (npc, key, lines) in [
+                    (shirith, "shirith-key-3033", &[][..]),
+                    (skjaar, "skjaar-quiz-donation", &["hi", "key", "yes"][..]),
+                    (
+                        prisoner,
+                        "prisoner-apples",
+                        &["hi", "riddle", riddle_answer][..],
+                    ),
+                ] {
+                    let callback = callbacks
+                        .iter()
+                        .find(|callback| callback.key == format!("oteryn:quest-reward/{key}"))
+                        .ok_or("published key callback")?;
+                    let start = 20 + 10 * u64::try_from(refused_topics.len())?;
+                    for (index, line) in lines.iter().enumerate() {
+                        talk(&mut owner, &admitted, npc, start + u64::try_from(index)?, line).await?;
+                    }
+                    assert_eq!(
+                        owner
+                            .states
+                            .npc_conversations
+                            .fixture_quest_topic(session)?,
+                        callback.topic
+                    );
+                    let refusal = talk_expecting(
+                        &mut owner,
+                        &admitted,
+                        npc,
+                        start + 3,
+                        "yes",
+                        NpcIntentDisposition::Rejected,
+                    )
+                    .await?;
+                    assert_eq!(refusal, callback.failure_reply);
+                    refused_topics.push(
+                        owner
+                            .states
+                            .npc_conversations
+                            .fixture_quest_topic(session)?,
+                    );
+                    talk(&mut owner, &admitted, npc, start + 4, "bye").await?;
+                }
+                assert_eq!(refused_topics, [0, 0, 0], "Shirith, Skjaar, A Prisoner");
+                Ok(())
+            }
+        )
+    })
+}
