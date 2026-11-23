@@ -9,6 +9,34 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use sqlx::Row;
 
+/// Conditions follow the Character across ordinary scopes and named Houses.
+/// The Activity branch of the item fence requires the committed handoff and
+/// current Instance holder. The House proof keeps its separate origin and custody.
+pub(super) async fn assert_condition_checkpoint_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    origin_channel: [u8; 16],
+) -> Result<bool, DurabilityError> {
+    if matches!(
+        fence.runtime_scope,
+        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+    ) {
+        if super::house_hireling::fence::assert_house_custody_fence(tx, node, fence, origin_channel)
+            .await?
+            .is_some()
+        {
+            return Ok(true);
+        }
+        return Ok(
+            super::character_progression::assert_item_only_fence(tx, fence, node)
+                .await?
+                .is_ok(),
+        );
+    }
+    super::house_hireling::fence::assert_inventory_fence(tx, node, fence, origin_channel).await
+}
+
 #[derive(Debug, Clone)]
 pub struct CharacterConditionSnapshot {
     pub lease_generation: u64,
@@ -77,10 +105,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            let current = match fence.runtime_scope {
-                crate::foundation::RuntimeScopeRefV1::Instance { .. } => super::house_hireling::fence::assert_house_custody_fence(&mut tx, &node, &fence, origin_channel).await?.is_some(),
-                _ => super::house_hireling::fence::assert_inventory_fence(&mut tx, &node, &fence, origin_channel).await?,
-            };
+            let current = assert_condition_checkpoint_fence(&mut tx, &node, &fence, origin_channel).await?;
             if !current { return Ok(Err(ItemUseError::AuthorityRejected)); }
             sqlx::query("INSERT INTO game_character_condition_snapshots(character_id,character_lease_generation,content_digest,snapshot) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4) ON CONFLICT(character_id) DO UPDATE SET character_lease_generation=EXCLUDED.character_lease_generation,content_digest=EXCLUDED.content_digest,snapshot=EXCLUDED.snapshot,saved_at=clock_timestamp()")
                 .bind(fence.character_id.as_bytes().as_slice())

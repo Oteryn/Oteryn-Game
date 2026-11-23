@@ -127,10 +127,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn flush_wheel_gifts(
         &self,
         settled: &mut std::collections::HashSet<GameSessionId>,
+        blocked: &std::collections::HashSet<GameSessionId>,
     ) -> usize {
         let mut failed = 0;
         for (session, actor) in self.states.last_positions.tracked_actors() {
-            if settled.contains(&session) {
+            if settled.contains(&session) || blocked.contains(&session) {
                 continue;
             }
             if self.save_wheel_gift(actor, session, true).await {

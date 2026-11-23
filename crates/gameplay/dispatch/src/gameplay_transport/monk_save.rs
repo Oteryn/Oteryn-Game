@@ -88,10 +88,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// save as the actor-end one, so a session ended meanwhile writes nothing. Actors without
     /// monk state are skipped without a durable read. Returns the number of unproven saves,
     /// which the caller retries; sessions in `settled` are skipped.
+    #[cfg(test)]
     pub(super) async fn flush_monk_states(&self, settled: &mut HashSet<GameSessionId>) -> usize {
+        self.flush_monk_states_except(settled, &HashSet::new())
+            .await
+    }
+
+    pub(super) async fn flush_monk_states_except(
+        &self,
+        settled: &mut HashSet<GameSessionId>,
+        blocked: &HashSet<GameSessionId>,
+    ) -> usize {
         let mut failed = 0;
         for (session, actor) in self.states.last_positions.tracked_actors() {
-            if settled.contains(&session) || !self.is_monk(session, actor).await {
+            if settled.contains(&session)
+                || blocked.contains(&session)
+                || !self.is_monk(session, actor).await
+            {
                 continue;
             }
             // One save at a time: the durability root has a single holder, so concurrent saves

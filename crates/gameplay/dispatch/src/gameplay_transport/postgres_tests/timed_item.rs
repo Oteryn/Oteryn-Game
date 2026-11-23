@@ -158,7 +158,7 @@ fn timed_item_postgres_wire_charges_replay_repair_and_owner_expiry() -> TestResu
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     std::thread::Builder::new()
         .stack_size(128 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "timed item thread")??;
     Ok(())
@@ -170,13 +170,26 @@ fn timed_equipment_grace_expiry_checkpoints_below_periodic_threshold() -> TestRe
     }
     std::thread::Builder::new()
         .stack_size(128 << 20)
-        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "timed grace expiry thread")??;
     Ok(())
 }
 
-fn scenario(expiry: bool) -> TestResult {
+#[test]
+fn timed_equipment_fenced_grace_release_with_production_proficiency() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(128 << 20)
+        .spawn(|| scenario(true, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "timed proficiency grace thread")??;
+    Ok(())
+}
+
+fn scenario(expiry: bool, proficiency: bool) -> TestResult {
     run(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, "timed_item_wire", true, false).await?;
         prepare_current_session(&h).await?;
@@ -354,7 +367,24 @@ fn scenario(expiry: bool) -> TestResult {
         let lifecycle:i16=sqlx::query_scalar("SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(100).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(lifecycle, 2);
         if expiry {
+            if proficiency {
+                use crate::foundation::{CharacterId, CharacterLease};
+                owner.proficiency_catalogue = Some(
+                    crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue::embedded()
+                        .ok_or("production proficiency catalogue")?,
+                );
+                owner.runtime.lock().await.bind_attacker_lease(
+                    deps.actor, session,
+                    CharacterLease::new(
+                        CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                        fence.character_lease_generation,
+                    ).map_err(debug)?,
+                ).map_err(debug)?;
+            }
             duration::grace_expiry(&mut owner, &h, &deps, admitted).await?;
+            if proficiency {
+                eprintln!("FENCED_TIMED_PROFICIENCY_POSTGRES_CASE_COMPLETED");
+            }
             eprintln!("TIMED_GRACE_EXPIRY_POSTGRES_CASE_COMPLETED");
             drop(owner);
             drop(authority);

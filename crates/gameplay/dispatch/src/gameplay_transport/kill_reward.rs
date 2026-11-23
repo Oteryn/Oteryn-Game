@@ -1045,6 +1045,41 @@ impl KillSettlementQueue {
         principals.into_iter().collect()
     }
 
+    /// Checkpoint dependencies also include non-damaging members eligible
+    /// for shared rewards. Producer joins leave the retained census stable.
+    pub(super) fn blocks_shutdown_checkpoint(
+        &self,
+        session: GameSessionId,
+        character: Option<crate::foundation::CharacterId>,
+    ) -> bool {
+        if !self.proficiency_principals(session).is_empty() {
+            return true;
+        }
+        let state = self.state();
+        state
+            .queued
+            .iter()
+            .chain(
+                state
+                    .releasing
+                    .iter()
+                    .flat_map(|mark| mark.parked.iter().map(|(entry, _)| entry)),
+            )
+            .any(|entry| {
+                entry.task_board_recipients.get().is_some_and(|recipients| {
+                    recipients
+                        .iter()
+                        .any(|recipient| recipient.fence.game_session_id == session)
+                }) || character.is_some_and(|character| {
+                    entry.activity_at_death.as_ref().is_some_and(|activity| {
+                        activity
+                            .iter()
+                            .any(|cell| &cell.character == character.as_bytes())
+                    })
+                })
+            })
+    }
+
     pub(super) fn prune_proficiency(&self, runtime: &ChannelRuntimeV1) {
         let mut state = self.state();
         state.boss_contributions.prune(runtime);

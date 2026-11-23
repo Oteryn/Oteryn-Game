@@ -1,5 +1,6 @@
 //! First entry reconciles vocation looks even when no familiar needs restoration.
 use super::*;
+use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildOccurrence, convert_vocation,
 };
@@ -18,15 +19,23 @@ use std::sync::Arc;
 
 #[test]
 fn familiar_first_entry_grants_and_selects_vocation_look_postgres() -> TestResult {
-    scenario("familiar_login_grant_look", true)
+    scenario("familiar_login_grant_look", true, false)
 }
 
 #[test]
 fn familiar_first_entry_removes_expired_premium_vocation_look_postgres() -> TestResult {
-    scenario("familiar_login_remove_look", false)
+    scenario("familiar_login_remove_look", false, false)
 }
 
-fn scenario(name: &'static str, premium_current: bool) -> TestResult {
+#[test]
+fn shutdown_checkpoint_retires_familiar_for_pending_player_death() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    scenario("shutdown_familiar_death", true, true)
+}
+
+fn scenario(name: &'static str, premium_current: bool, shutdown_death: bool) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, name, false, false).await?;
         let result: TestResult = async {
@@ -166,8 +175,8 @@ fn scenario(name: &'static str, premium_current: bool) -> TestResult {
                         occurrence: FamiliarStateOccurrence::from_bytes(id(183)).map_err(debug)?,
                         before,
                         after: checkpoint,
-                        content_revision: progression.context.content,
-                        policy_revision: progression.policy_revision,
+                        content_revision: progression.context.content.clone(),
+                        policy_revision: progression.policy_revision.clone(),
                         policy_digest: native.source_digest(),
                     },
                 )
@@ -189,6 +198,67 @@ fn scenario(name: &'static str, premium_current: bool) -> TestResult {
                 assert_eq!(after.state().selected_look, look);
             } else {
                 assert!(after.state().granted_looks.is_empty());
+            }
+            if shutdown_death {
+                let definition = profile.familiar_creature_definition().ok_or("production familiar creature")?;
+                let fence = death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
+                let before = after.state().clone();
+                let mut summoned = before.clone();
+                summoned.lifecycle = Some(FamiliarLifecycleV2 {
+                    version: 2,
+                    familiar_remaining_ms: 60_000,
+                    open: true,
+                    writer: FamiliarLifecycleWriter::from_fence(&fence).map_err(debug)?,
+                    clean_end_game_session_id: None,
+                });
+                summoned.lifecycle_epoch = before.lifecycle_epoch + 1;
+                summoned.familiar_definition = Some(definition.key.clone());
+                summoned.familiar_revision = Some(definition.revision);
+                let epoch = summoned.lifecycle_epoch;
+                h.root.commit_character_familiar_state(
+                    &authority, &h.node, fence,
+                    FamiliarStateRequest {
+                        occurrence: FamiliarStateOccurrence::from_bytes(id(184)).map_err(debug)?,
+                        before,
+                        after: summoned,
+                        content_revision: progression.context.content,
+                        policy_revision: progression.policy_revision,
+                        policy_digest: native.source_digest(),
+                    },
+                ).await.map_err(debug)?;
+                owner.revision_sequencer =
+                    crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new().into();
+                {
+                    let mut runtime = owner.runtime.lock().await;
+                    let mut position = runtime.read_actor_position(deps.actor).map_err(debug)?.position();
+                    position.x += 1;
+                    let spawn = runtime.prepare_companion_spawn(
+                        deps.actor, session, &definition.key, position, Some(look),
+                        None, epoch, 0, true,
+                    ).map_err(debug)?;
+                    let familiar = runtime.install_companion_spawn(spawn).map_err(debug)?;
+                    assert!(runtime.companion_snapshot(familiar).map_err(debug)?.state.policy.is_familiar);
+                    let mut states = owner.states.spell_states.lock().await;
+                    let hit = states.apply_creature_damage(
+                        &mut runtime, deps.actor, session, 100_000,
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(owner.owner_now().get()),
+                    ).ok_or("lethal damage")?;
+                    assert_eq!(hit.damage.health_after, 0);
+                }
+                let flush = crate::gameplay_transport::LastPositionFlush::default();
+                flush.request();
+                assert!(flush.serve(
+                    &owner,
+                    &crate::gameplay_transport::serving::QuiescedKillOwners::for_test(),
+                ).await);
+                let state = h.root.read_character_familiar_state(&authority, character).await.map_err(debug)?;
+                let lifecycle = state.state().lifecycle.as_ref().ok_or("familiar lifecycle")?;
+                assert!(!lifecycle.open, "the next login must not restore the familiar");
+                assert_eq!(lifecycle.familiar_remaining_ms, 0);
+                let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pending_respawns")
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(pending, 1);
+                eprintln!("SHUTDOWN_FAMILIAR_DEATH_POSTGRES_CASE_COMPLETED");
             }
             Ok(())
         }

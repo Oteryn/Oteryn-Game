@@ -38,7 +38,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// cell and vitals unchanged since their last write write nothing; a dead actor is skipped.
     /// Returns the number of failed writes, which stay due.
     pub(super) async fn write_due_last_positions(&self, all: bool) -> usize {
-        let due = self.states.last_positions.due(Instant::now(), all);
+        self.write_due_last_positions_except(all, &HashSet::new())
+            .await
+    }
+
+    pub(super) async fn write_due_last_positions_except(
+        &self,
+        all: bool,
+        blocked: &HashSet<GameSessionId>,
+    ) -> usize {
+        let mut due = self.states.last_positions.due(Instant::now(), all);
+        due.retain(|(session, _)| !blocked.contains(session));
         let mut failed = 0;
         let batches: Vec<_> = due.chunks(LAST_POSITION_WRITE_BATCH).collect();
         let start = self.background_start("last-positions", batches.len());

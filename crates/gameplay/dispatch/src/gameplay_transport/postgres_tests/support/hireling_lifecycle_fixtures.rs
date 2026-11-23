@@ -98,6 +98,7 @@ pub(super) enum Case {
     LegacyWire,
     Trader,
     Gourmet,
+    ShutdownGourmet,
     Cook,
     CookBank,
     Steward,
@@ -908,6 +909,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(case, Case::Gourmet) {
         return gourmet::scenario(h, &owner, admitted, deps.actor, hireling).await;
+    }
+    if matches!(case, Case::ShutdownGourmet) {
+        return position::shutdown_gourmet(h, &mut owner, admitted).await;
     }
     if matches!(case, Case::Cook) {
         return cook::scenario(h, &owner, admitted, deps.actor, hireling).await;

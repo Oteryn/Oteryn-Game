@@ -15,7 +15,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         releasing: bool,
     ) -> bool {
         if !self.reconcile_pending_item_effects(actor, session).await
-            || !self.stop_timed_actor(actor, session).await
+            || !self
+                .stop_timed_actor_with_publication(actor, session, !releasing)
+                .await
         {
             return false;
         }

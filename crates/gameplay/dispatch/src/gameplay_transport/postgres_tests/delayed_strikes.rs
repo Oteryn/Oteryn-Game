@@ -46,6 +46,7 @@ enum Case {
     QueuedOrder,
     LethalCleanup,
     ShutdownReward,
+    ShutdownBlockedReward,
 }
 
 #[test]
@@ -160,6 +161,18 @@ fn shutdown_checkpoint_settles_queued_spell_reward() -> TestResult {
         weapon: "oteryn:item.tibia.i3277",
         spells: &[("candidate:spell/death_echo", 120, 150)],
         case: Case::ShutdownReward,
+    })
+}
+
+#[test]
+fn shutdown_checkpoint_saves_peer_while_reward_character_is_locked() -> TestResult {
+    scenario(Plan {
+        tag: "shutdown_blocked_reward",
+        vocation: "sorcerer",
+        experience: 30_000_000,
+        weapon: "oteryn:item.tibia.i3277",
+        spells: &[("candidate:spell/death_echo", 120, 150)],
+        case: Case::ShutdownBlockedReward,
     })
 }
 
@@ -825,7 +838,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             );
             continue;
         }
-        if matches!(plan.case, Case::LethalCleanup | Case::ShutdownReward) {
+        if matches!(plan.case, Case::LethalCleanup | Case::ShutdownReward | Case::ShutdownBlockedReward) {
             deps.runtime
                 .lock()
                 .await
@@ -851,6 +864,10 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                     .kills()
                     .has_session(session)
             );
+            if plan.case == Case::ShutdownBlockedReward {
+                assert_independent_checkpoints(&h, &owner, actor, session).await?;
+                continue;
+            }
             let receipts = || {
                 sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
                     .fetch_one(&h.pool)
@@ -1053,4 +1070,61 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     drop(authority);
     drop(seal);
     h.cleanup().await
+}
+
+async fn assert_independent_checkpoints(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    principal: crate::foundation::ExactActorRef,
+    principal_session: crate::foundation::GameSessionId,
+) -> TestResult {
+    use crate::gameplay_transport::last_position::AdmissionPosition;
+    let source = super::house_transfer_fixtures::RecoverySource::start(h).await?;
+    let peer_session =
+        super::boss_rewards_fixtures::privacy::admit_peer(h, &source.evidence, 1).await?;
+    let peer_fence = current_fence(owner, peer_session).await?;
+    let facts = match load_character_cast_facts(&h.root, owner.character, peer_fence.character_id).await {
+        CastFactsLoad::Ready { facts, .. } | CastFactsLoad::NoVocation { facts, .. } => facts,
+        CastFactsLoad::Unavailable => return Err("peer Character facts".into()),
+    };
+    let peer = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime.reserve_fresh_session(peer_session).map_err(debug)?;
+        let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime.bind_attacker_lease(peer, peer_session, CharacterLease::new(
+            crate::foundation::CharacterId::decode(peer_fence.character_id.as_bytes()).map_err(debug)?,
+            peer_fence.character_lease_generation,
+        ).map_err(debug)?).map_err(debug)?;
+        let mut position = runtime.read_actor_position(principal).map_err(debug)?.position();
+        position.x += 2;
+        runtime.initialize_pinned_test_position(peer, position).map_err(debug)?;
+        owner.states.spell_states.lock().await.initialize(
+            &runtime, peer, peer_session, facts, (0, 0), owner.owner_now(),
+        ).ok_or("peer spell state")?;
+        peer
+    };
+    assert!(owner.track_restored(peer_session, peer, &AdmissionPosition::FirstLogin, peer_fence));
+    let mut lock = h.pool.begin().await?;
+    let character = current_fence(owner, principal_session).await?.character_id;
+    sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+        .bind(character.as_bytes().as_slice()).fetch_one(&mut *lock).await?;
+    let flush = crate::gameplay_transport::LastPositionFlush::default();
+    flush.request();
+    assert!(tokio::time::timeout(Duration::from_secs(3), flush.serve(
+        owner, &crate::gameplay_transport::serving::QuiescedKillOwners::for_test(),
+    )).await.is_err());
+    assert!(owner.states.attack.lock().await.kills().has_session(principal_session));
+    // The timed-out combat pass may still be retiring its runtime holder.
+    // Inspect committed checkpoints through the independent fixture pool.
+    let conditions: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_condition_snapshots WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(peer_fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(conditions, 1, "the peer condition snapshot survived a blocked reward");
+    let positions: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(peer_fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(positions, 1, "the peer position survived a blocked reward");
+    lock.rollback().await?;
+    eprintln!("INDEPENDENT_SHUTDOWN_CHECKPOINT_POSTGRES_CASE_COMPLETED");
+    Ok(())
 }

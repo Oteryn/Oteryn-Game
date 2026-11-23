@@ -27,11 +27,23 @@ fn uuid(bytes: &[u8; 16]) -> String {
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Called under the spell lane, before and after equipment moves and on release.
+    #[cfg(test)]
     pub(super) async fn checkpoint_imbuement_equipment(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
         fence: CurrentCharacterGameplayFence,
+    ) -> bool {
+        self.checkpoint_imbuement_clock(actor, session, fence, true)
+            .await
+    }
+
+    pub(super) async fn checkpoint_imbuement_clock(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        fence: CurrentCharacterGameplayFence,
+        publish_equipment: bool,
     ) -> bool {
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
         let Some(combat) = self.observe_actor_combat_state(actor, session).await else {
@@ -156,7 +168,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         clock.at_ms = now;
         drop(clocks);
-        if !has_combat_effects {
+        if !publish_equipment || !has_combat_effects {
             return true;
         }
         self.refresh_clock_equipment_effects(

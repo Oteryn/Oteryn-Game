@@ -515,6 +515,29 @@ async fn logout(h: &Harness, owner: &ComposedFreshAdmission<'_, '_, '_>,
     Ok(())
 }
 
+pub(super) async fn shutdown_gourmet(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+) -> TestResult {
+    consume_carrot(h, owner, &mut admitted).await?;
+    let character = admitted.item_fence.ok_or("House character")?.character_id;
+    let before = h.root.read_gourmet_conditions(owner.character, character).await.map_err(debug)?
+        .attributes.ok_or("native gourmet food persisted")?;
+    owner.clock_origin -= std::time::Duration::from_secs(30);
+    let flush = crate::gameplay_transport::LastPositionFlush::default();
+    flush.request();
+    assert!(flush.serve(
+        owner, &crate::gameplay_transport::serving::QuiescedKillOwners::for_test(),
+    ).await);
+    let after = h.root.read_gourmet_conditions(owner.character, character).await.map_err(debug)?
+        .attributes.ok_or("the condition is still live")?;
+    assert_eq!(after.item_id, before.item_id);
+    assert!((29_999..=31_000).contains(&(before.remaining_ms - after.remaining_ms)));
+    eprintln!("SHUTDOWN_GOURMET_POSTGRES_CASE_COMPLETED");
+    Ok(())
+}
+
 async fn consume_carrot(h: &Harness, owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession) -> TestResult {
     super::super::item_look_fixtures::seed_main_backpack(h, &[("oteryn:item.tibia.i29409", 1)]).await?;

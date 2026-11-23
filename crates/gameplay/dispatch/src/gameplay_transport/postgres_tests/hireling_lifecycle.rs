@@ -52,6 +52,13 @@ fn hireling_postgres_gourmet_use_audit_cooldown_and_persistent_conditions() -> T
     run_case(Case::Gourmet)
 }
 #[test]
+fn shutdown_checkpoint_persists_authoritative_gourmet_duration() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    run_case(Case::ShutdownGourmet)
+}
+#[test]
 fn hireling_postgres_cook_carrot_purchase_package_and_replay() -> TestResult {
     run_case(Case::Cook)
 }

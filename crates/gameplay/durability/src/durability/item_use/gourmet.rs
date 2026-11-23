@@ -294,12 +294,8 @@ impl DurabilityRoot {
             // Persist only a monotone projection of this existing actor's
             // conditions. Revoked service ACL cannot trap terminal release;
             // actual new consumption still uses the full service fence above.
-            let current = match fence.runtime_scope {
-                RuntimeScopeRefV1::Instance { .. } => super::super::house_hireling::fence::assert_house_custody_fence(
-                    &mut tx,&node,&fence,origin_channel).await?.is_some(),
-                _ => super::super::house_hireling::fence::assert_inventory_fence(
-                    &mut tx,&node,&fence,origin_channel).await?,
-            };
+            let current = super::super::character_condition_snapshot::assert_condition_checkpoint_fence(
+                &mut tx, &node, &fence, origin_channel).await?;
             if !current { return Ok(Err(ItemUseError::AuthorityRejected)); }
             let before=snapshot(&mut tx,fence.character_id.as_bytes(),true).await?;
             if !transition_allowed(before,conditions,None){return Ok(Err(ItemUseError::StaleState));}

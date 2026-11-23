@@ -9,6 +9,7 @@ use crate::durability::coin_exchange::{
 };
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_timed_state::TimedDefinitionFacts;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::item_use::ItemUseInventory;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
 use oteryn_gameplay_economy::coin_exchange::CoinExchange;
@@ -43,6 +44,7 @@ fn inventory_revision(inventory: &ItemUseInventory) -> [u8; 16] {
 #[derive(Clone)]
 pub(super) struct MagicConverterAttempt {
     command: CommandRef,
+    fence: CurrentCharacterItemFence,
     inventory_revision: [u8; 16],
     request: CoinExchangeRequest,
     converter: (CoinConverter, TimedDefinitionFacts),
@@ -274,6 +276,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let attempt = MagicConverterAttempt {
                 command: CommandRef::new(session, command_id),
+                fence,
                 inventory_revision,
                 request: CoinExchangeRequest {
                     exchange,
@@ -293,18 +296,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             clock.pending = Some(attempt.clone());
             attempt
         };
+        let source = attempt.request.npc_identity;
+        if attempt.fence != fence {
+            // The old fence cannot accept or finish an exchange now. Observe
+            // any committed outcome, then let the next tick select under the
+            // new generation, including when the old command was refused.
+            if self
+                .root
+                .observe_magic_converter_receipt(
+                    self.character,
+                    attempt.fence.character_id,
+                    attempt.command,
+                    source,
+                    attempt.converter.0,
+                )
+                .await
+                .is_ok()
+                && let Some(clock) = self
+                    .states
+                    .timed_items
+                    .magic_converters
+                    .lock()
+                    .await
+                    .get_mut(&session)
+            {
+                clock.pending = None;
+                clock.serial = clock.serial.wrapping_add(1);
+                clock.refused = None;
+            }
+            return true;
+        }
         let coins = {
             let runtime = self.runtime.lock().await;
             super::npc_command::bank_coin_definitions(self, &runtime).map(|(a, b, c)| [a, b, c])
         };
-        let source = attempt.request.npc_identity;
         let result = self
             .root
             .exchange_carried_coins(
                 &permit,
                 self.character,
                 self.holder,
-                fence,
+                attempt.fence,
                 attempt.command,
                 Some(attempt.request),
                 Some(source),

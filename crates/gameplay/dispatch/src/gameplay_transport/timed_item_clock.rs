@@ -21,6 +21,16 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         actor: crate::foundation::ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        self.stop_timed_actor_with_publication(actor, session, false)
+            .await
+    }
+
+    pub(super) async fn stop_timed_actor_with_publication(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        publish_equipment: bool,
+    ) -> bool {
         let has_timed_items = self
             .states
             .timed_items
@@ -42,7 +52,17 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(_permit) = self.spell_lane_permit().await else {
             return false;
         };
-        let settled = self.checkpoint_timed_equipment(actor, session, true).await;
+        // The actor may already have fenced its attacker authority. Only the
+        // durable item/imbuement clocks need to settle before it can leave.
+        let settled = self
+            .root
+            .with_background_operation(self.checkpoint_timed_equipment_inner(
+                actor,
+                session,
+                true,
+                publish_equipment,
+            ))
+            .await;
         if settled {
             self.states
                 .timed_items
@@ -207,7 +227,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         force: bool,
     ) -> bool {
         self.root
-            .with_background_operation(self.checkpoint_timed_equipment_inner(actor, session, force))
+            .with_background_operation(
+                self.checkpoint_timed_equipment_inner(actor, session, force, true),
+            )
             .await
     }
 
@@ -216,6 +238,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         actor: crate::foundation::ExactActorRef,
         session: GameSessionId,
         force: bool,
+        publish_equipment: bool,
     ) -> bool {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
@@ -250,22 +273,24 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         if !self
-            .checkpoint_imbuement_equipment(actor, session, fence)
+            .checkpoint_imbuement_clock(actor, session, fence, publish_equipment)
             .await
         {
             // IMBUE-FORGE0 §4.3: an unknown checkpoint suspends installed effects.
             // Keep only the independently fenced equipment projection until replay succeeds.
             use super::equipment_move::equipment_effects_owner as effects;
-            if let Some(base) = (|| {
-                Some((
-                    effects::equipment_effects(&equipment, native)?,
-                    effects::equipped_armor(&equipment, native)?,
-                    effects::equipped_defence(&equipment, native)?,
-                    effects::equipped_mana_shield(&equipment, native)?,
-                    effects::equipped_offence(&equipment, native)?,
-                    equipment.clone(),
-                ))
-            })() {
+            if publish_equipment
+                && let Some(base) = (|| {
+                    Some((
+                        effects::equipment_effects(&equipment, native)?,
+                        effects::equipped_armor(&equipment, native)?,
+                        effects::equipped_defence(&equipment, native)?,
+                        effects::equipped_mana_shield(&equipment, native)?,
+                        effects::equipped_offence(&equipment, native)?,
+                        equipment.clone(),
+                    ))
+                })()
+            {
                 let runtime = self.runtime.lock().await;
                 if house {
                     let _ = self
@@ -286,13 +311,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
-        let Some(mut active_mana_shield) =
-            super::equipment_move::equipment_effects_owner::equipped_mana_shield(
-                &equipment, native,
-            )
-        else {
-            return false;
-        };
         let mut clocks = self.states.timed_items.sessions.lock().await;
         let clock = clocks.entry(session).or_default();
         let held: HashSet<_> = equipment
@@ -447,6 +465,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         drop(clocks);
+        if !publish_equipment {
+            return true;
+        }
         if house {
             // Expiry can change the resident's equipment and every derived effect.
             if !retired_equipment {
@@ -478,6 +499,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // its contribution cannot outlive the timed budget. An ordinary checkpoint uses
         // its initial read, also repairing a previous expiry's failed acknowledgement/read.
         let mut retired_effects = None;
+        let Some(mut active_mana_shield) =
+            super::equipment_move::equipment_effects_owner::equipped_mana_shield(
+                &proficiency_equipment,
+                native,
+            )
+        else {
+            return false;
+        };
         if retired_equipment {
             #[cfg(test)]
             if let Ok((entered, proceed)) = RETIRED_EQUIPMENT_READ.try_with(Clone::clone) {

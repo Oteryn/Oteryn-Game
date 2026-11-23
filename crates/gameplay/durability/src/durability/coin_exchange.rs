@@ -1,8 +1,12 @@
 //! Command-retained banker and native item-use conversion of carried coins only.
-use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
+use super::character_authority::{
+    ReconciledCharacterAuthority, assert_recovery_fence, observe_recovery_fence,
+};
 use super::character_equipment::assert_current_equipment_in_transaction;
 use super::character_progression::CurrentCharacterGameplayFence;
-use super::db::begin_type2_transaction;
+use super::db::{
+    begin_observation_transaction, begin_type2_transaction, commit_semantic_transaction,
+};
 use super::item_loop_move::{ItemLoopContent, carried_weight};
 use super::item_mint::TypedDefinitionRef;
 use super::item_timed_state::{
@@ -82,6 +86,48 @@ fn from_code(value: i16) -> Result<CoinExchange, DurabilityError> {
 }
 
 impl DurabilityRoot {
+    /// Observe a superseded converter command. This path cannot accept or
+    /// finalize an exchange even if the original acceptance committed.
+    pub async fn observe_magic_converter_receipt(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character: crate::domain::CharacterId,
+        command: CommandRef,
+        source: [u8; 16],
+        converter: CoinConverter,
+    ) -> Result<Option<bool>, DurabilityError> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_observation_transaction(holder, deadline).await?;
+                    observe_recovery_fence(&mut tx, &record).await?;
+                    let result = sqlx::query_scalar::<_, i16>(
+                        "SELECT result FROM game_coin_exchange_receipts
+                         WHERE game_session_id=encode($1,'hex')::uuid
+                           AND command_id=$2::text::numeric
+                           AND character_id=encode($3,'hex')::uuid
+                           AND item_source=encode($4,'hex')::uuid
+                           AND converter_source=encode($5,'hex')::uuid
+                           AND converter_kind=$6 AND result<>0",
+                    )
+                    .bind(command.game_session_id().as_bytes().as_slice())
+                    .bind(command.command_id().get().to_string())
+                    .bind(character.as_bytes().as_slice())
+                    .bind(source.as_slice())
+                    .bind(converter.id().as_slice())
+                    .bind(converter.code())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(result.map(|result| result == 1))
+                })
+            })
+            .await
+    }
+
     /// Accept a banker request or one exact item-use source, or resume its retained command.
     /// Acceptance commits before execution; the source binding separates item USE from NPC replay.
     #[allow(clippy::too_many_arguments)]

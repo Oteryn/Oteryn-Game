@@ -14,6 +14,10 @@ struct HeldPlayerState {
     pvp: Option<oteryn_gameplay_combat_rules::pvp::CombatLock>,
     prey: Option<super::super::prey::LivePrey>,
     stamina: Option<super::super::hunting_stamina::LiveStamina>,
+    gourmet: Option<(
+        oteryn_gameplay_domain::domain::hireling::food::GourmetConditions,
+        u64,
+    )>,
     item_uses: super::super::item_use::ItemUseGates,
 }
 
@@ -108,6 +112,10 @@ impl ChannelSpellStates {
             .hunting_stamina
             .try_reserve(count)
             .map_err(|_| ())?;
+        destination
+            .gourmet_checkpoints
+            .try_reserve(count)
+            .map_err(|_| ())?;
         destination.item_uses.reserve_activity(count)?;
         let mut held = Vec::new();
         held.try_reserve_exact(count).map_err(|_| ())?;
@@ -157,6 +165,14 @@ impl ChannelSpellStates {
                 .iter()
                 .position(|p| p.activity_matches(actor, session))
                 .map(|i| self.hunting_stamina.swap_remove(i));
+            let gourmet = self
+                .gourmet_checkpoints
+                .iter()
+                .position(|(a, s, _, _)| *a == actor && *s == session)
+                .map(|index| {
+                    let (_, _, conditions, at) = self.gourmet_checkpoints.swap_remove(index);
+                    (conditions, at)
+                });
             self.item_uses
                 .extract_activity(actor, session, &mut item_uses);
             held.push(HeldPlayerState {
@@ -168,6 +184,7 @@ impl ChannelSpellStates {
                 pvp,
                 prey,
                 stamina,
+                gourmet,
                 item_uses,
             });
         }
@@ -196,6 +213,10 @@ impl ChannelSpellStates {
             }
             if let Some(stamina) = player.stamina {
                 self.hunting_stamina.push(stamina);
+            }
+            if let Some((conditions, at)) = player.gourmet {
+                self.gourmet_checkpoints
+                    .push((player.actor, player.session, conditions, at));
             }
             self.item_uses.restore_activity(&mut player.item_uses);
         }
@@ -255,6 +276,14 @@ impl ChannelSpellStates {
             if let Some(mut stamina) = player.stamina {
                 stamina.rebind_activity(next.destination_actor, next.destination_session);
                 self.hunting_stamina.push(stamina);
+            }
+            if let Some((conditions, at)) = player.gourmet {
+                self.gourmet_checkpoints.push((
+                    next.destination_actor,
+                    next.destination_session,
+                    conditions,
+                    at,
+                ));
             }
             self.item_uses.commit_activity(
                 &mut player.item_uses,

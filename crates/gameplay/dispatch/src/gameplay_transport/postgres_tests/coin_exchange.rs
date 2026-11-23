@@ -786,27 +786,28 @@ async fn report_coin_use_failure(
 
 #[test]
 fn coin_converter_postgres_charges_burn_toggle_and_tick() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
-        return Ok(());
-    }
-    std::thread::Builder::new()
-        .stack_size(256 << 20)
-        .spawn(|| converter_scenario(false).map_err(|error| error.to_string()))?
-        .join()
-        .map_err(|_| "coin converter PostgreSQL thread panicked")??;
-    Ok(())
+    run_converter_case(false, false)
 }
 
 #[test]
 fn magic_converter_postgres_reconciles_consumed_source_before_next_conversion() -> TestResult {
+    run_converter_case(true, false)
+}
+
+#[test]
+fn magic_converter_postgres_reselects_after_connection_generation_changes() -> TestResult {
+    run_converter_case(false, true)
+}
+
+fn run_converter_case(lose_clock_ack: bool, reconnect: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| converter_scenario(true).map_err(|error| error.to_string()))?
+        .spawn(move || converter_scenario(lose_clock_ack, reconnect).map_err(|error| error.to_string()))?
         .join()
-        .map_err(|_| "magic converter PostgreSQL thread panicked")??;
+        .map_err(|_| "coin converter PostgreSQL thread panicked")??;
     Ok(())
 }
 
@@ -850,7 +851,7 @@ async fn converter_row(h: &Harness, seed: u8) -> TestResult<(String, i16, Option
     Ok(row)
 }
 
-fn converter_scenario(lose_clock_ack: bool) -> TestResult {
+fn converter_scenario(lose_clock_ack: bool, reconnect: bool) -> TestResult {
     use crate::gameplay_transport::item_view::ItemKey;
     use oteryn_protocol_oteryn::world_object::UseDisposition;
     run(async |admin| {
@@ -958,6 +959,56 @@ fn converter_scenario(lose_clock_ack: bool) -> TestResult {
         assert_eq!(replay.disposition, UseDisposition::Committed);
         assert_eq!(converter_row(&h, 180).await?.0, "oteryn:item.tibia.i28526");
         assert_eq!(quantity(&h, "3031").await?, 100);
+
+        if reconnect {
+            sqlx::raw_sql("CREATE FUNCTION reject_clock_acceptance() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'clock acceptance interrupted'; END $$; CREATE TRIGGER reject_clock_acceptance BEFORE INSERT ON game_coin_exchange_receipts FOR EACH ROW EXECUTE FUNCTION reject_clock_acceptance()")
+                .execute(&h.pool).await?;
+            owner.tick_timed_items().await;
+            assert_eq!(converter_row(&h, 180).await?.2, Some(500));
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_coin_exchange_receipts WHERE command_id>=9223372036854775808")
+                .fetch_one(&h.pool).await?, 0, "the retained attempt never reached acceptance");
+            sqlx::raw_sql("DROP TRIGGER reject_clock_acceptance ON game_coin_exchange_receipts; DROP FUNCTION reject_clock_acceptance()")
+                .execute(&h.pool).await?;
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1,current_transport_ref=$1 WHERE game_session_id=encode($2,'hex')::uuid")
+                .bind([91_u8; 16].as_slice()).bind(session.as_bytes().as_slice()).execute(&h.pool).await?;
+            owner.clock_origin -= std::time::Duration::from_secs(2);
+            owner.tick_timed_items().await;
+            assert_eq!(converter_row(&h, 180).await?.2, Some(500), "the old attempt cannot write through the replacement connection");
+            assert_eq!(quantity(&h, "3031").await?, 100);
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_coin_exchange_receipts WHERE command_id>=9223372036854775808")
+                .fetch_one(&h.pool).await?, 0, "cross-generation reconciliation is read-only");
+            owner.clock_origin -= std::time::Duration::from_secs(2);
+            owner.tick_timed_items().await;
+            assert_eq!(quantity(&h, "3031").await?, 0, "fresh selection converts the stack");
+            assert_eq!(converter_row(&h, 180).await?.2, Some(499));
+
+            // A later generation change must also observe a completed receipt
+            // without spending another charge on its consumed platinum source.
+            owner.clock_origin -= std::time::Duration::from_secs(2);
+            let reached = Arc::new(tokio::sync::Notify::new());
+            {
+                let tick = crate::gameplay_transport::coin_use::MAGIC_CONVERTER_ACK.scope(
+                    Arc::clone(&reached), owner.tick_timed_items(),
+                );
+                tokio::pin!(tick);
+                tokio::select! {
+                    () = reached.notified() => {}
+                    () = &mut tick => return Err("second converter receipt was not published".into()),
+                }
+            }
+            assert_eq!(quantity(&h, "3043").await?, 1);
+            assert_eq!(converter_row(&h, 180).await?.2, Some(498));
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1,current_transport_ref=$1 WHERE game_session_id=encode($2,'hex')::uuid")
+                .bind([92_u8; 16].as_slice()).bind(session.as_bytes().as_slice()).execute(&h.pool).await?;
+            owner.clock_origin -= std::time::Duration::from_secs(2);
+            owner.tick_timed_items().await;
+            assert_eq!(converter_row(&h, 180).await?.2, Some(498));
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_coin_exchange_receipts WHERE command_id>=9223372036854775808 AND result=1")
+                .fetch_one(&h.pool).await?, 2);
+            eprintln!("MAGIC_CONVERTER_GENERATION_POSTGRES_CASE_COMPLETED");
+            drop(owner); drop(authority); drop(seal);
+            return h.cleanup().await;
+        }
 
         // L23-55: the owner tick upgrades a carried 100-stack and spends one durable charge.
         if lose_clock_ack {

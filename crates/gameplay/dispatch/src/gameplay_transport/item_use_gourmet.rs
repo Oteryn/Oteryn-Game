@@ -379,7 +379,9 @@ async fn checkpoint_inner(
     };
     let runtime = owner.runtime.lock().await;
     let mut states = owner.states.spell_states.lock().await;
-    if !current(&runtime, actor, session, fence, true) {
+    if super::super::condition_persistence::checkpoint_is_house(&runtime, actor, session, fence)
+        .is_none()
+    {
         return allow_fenced_out;
     }
     let Some((_, _, state)) = states

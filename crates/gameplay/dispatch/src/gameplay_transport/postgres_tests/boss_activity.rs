@@ -66,6 +66,7 @@ enum Case {
     Difficulty,
     EssenceUse,
     AwardContinuity,
+    ShutdownConditions,
     EndgameReceipts,
     Rewards,
     InstanceCorpse,
@@ -118,6 +119,11 @@ fn boss_activity_postgres_real_wire_native_entry_and_scope_barrier() -> TestResu
 #[test]
 fn boss_activity_postgres_native_award_effects_follow_return_and_apply_once() -> TestResult {
     run_scenario(Case::AwardContinuity)
+}
+
+#[test]
+fn shutdown_checkpoint_writes_conditions_under_native_activity_fence() -> TestResult {
+    run_scenario(Case::ShutdownConditions)
 }
 
 #[test]
@@ -901,6 +907,9 @@ fn scenario(case: Case) -> TestResult {
             difficulty::exercise(&h, &owner, &mut admitted, &boss_key, &policy).await?;
             return Ok(());
         }
+        if case == Case::ShutdownConditions {
+            assert!(owner.save_conditions_at_actor_end(deps.actor, admitted.game_session_id).await);
+        }
         let old = admitted;
         let (command, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, true).await?;
         let BossActivityReply::Accepted {
@@ -1104,6 +1113,22 @@ fn scenario(case: Case) -> TestResult {
                     &policy,
                 )
                 .await?
+            }
+            Case::ShutdownConditions => {
+                let current = admitted.item_fence.ok_or("Activity fence")?;
+                let read = || h.root.read_character_conditions(owner.character, current.character_id);
+                let before = read().await.map_err(debug)?.ok_or("source snapshot")?;
+                assert_eq!(before.lease_generation, fence.character_lease_generation);
+
+                let flush = crate::gameplay_transport::LastPositionFlush::default();
+                flush.request();
+                assert!(flush.serve(
+                    &owner, &crate::gameplay_transport::serving::QuiescedKillOwners::for_test(),
+                ).await);
+                let after = read().await.map_err(debug)?.ok_or("Activity snapshot")?;
+                assert_eq!(after.lease_generation, current.character_lease_generation);
+                assert_eq!(after.conditions["conditions"], serde_json::json!([]));
+                eprintln!("SHUTDOWN_ACTIVITY_CONDITIONS_POSTGRES_CASE_COMPLETED");
             }
             Case::NonRewardDefeat => {
                 nonreward::assert_defeat_and_return(&h, &owner, &destination, admitted, &policy)

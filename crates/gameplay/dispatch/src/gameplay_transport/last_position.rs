@@ -60,7 +60,7 @@
 //! the final write after an in-flight periodic one.
 
 use crate::map::boot::BundleCollisionIndexExt;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -172,43 +172,26 @@ impl LastPositionFlush {
         quiesced: &super::serving::QuiescedKillOwners,
     ) -> bool {
         let mut deaths_settled = HashMap::new();
-        let mut conditions_settled = std::collections::HashSet::new();
-        let mut monks_settled = std::collections::HashSet::new();
-        let mut training_settled = std::collections::HashSet::new();
-        let mut wheel_gifts_settled = std::collections::HashSet::new();
+        let mut checkpoints = ShutdownCheckpoints::default();
+        let owners = authority.activity_runtimes.activity_owners();
+        let activities = owners.as_deref().unwrap_or_default();
         for _ in 0..FLUSH_ATTEMPTS {
-            // Input and the activity jobs have joined, so the owners stay stable
-            // across the combat drain and the following Character checkpoints.
-            let mut failed = authority.flush_shutdown_combat(&mut deaths_settled).await;
-            let owners = authority.activity_runtimes.activity_owners();
-            if let Ok(owners) = &owners {
-                for owner in owners {
-                    failed += authority
-                        .runtime_view(owner)
-                        .flush_shutdown_combat(&mut deaths_settled)
-                        .await;
-                }
-            } else {
-                failed += 1;
+            let mut failed = usize::from(owners.is_err());
+            let activity_views = || activities.iter().map(|owner| authority.runtime_view(owner));
+            // Capture every independent Character before a combat SQL pass can
+            // spend the remaining shutdown budget waiting on a locked principal.
+            for view in std::iter::once(authority.clone()).chain(activity_views()) {
+                let blocked = view.shutdown_combat_sessions(&deaths_settled).await;
+                failed += checkpoints.flush(&view, &blocked).await;
             }
-            // Death penalties and the last kill rewards can change the durable
-            // build. Finish combat before taking any Character checkpoint.
-            if failed == 0 {
-                failed = authority.write_due_last_positions(true).await
-                    + authority.flush_wheel_gifts(&mut wheel_gifts_settled).await
-                    + authority.flush_monk_states(&mut monks_settled).await
-                    + authority.flush_spell_training(&mut training_settled).await
-                    + authority.flush_conditions(&mut conditions_settled).await
-                    + usize::from(!authority.finish_daily_kill_statistics(quiesced).await);
-                if let Ok(owners) = &owners {
-                    for owner in owners {
-                        let view = authority.runtime_view(owner);
-                        failed += view.write_due_last_positions(true).await
-                            + view.flush_monk_states(&mut monks_settled).await
-                            + view.flush_spell_training(&mut training_settled).await
-                            + view.flush_conditions(&mut conditions_settled).await
-                            + usize::from(!view.finish_daily_kill_statistics(quiesced).await);
-                    }
+            for view in std::iter::once(authority.clone()).chain(activity_views()) {
+                let pending = view.flush_shutdown_combat(&mut deaths_settled).await;
+                failed += pending;
+                if pending == 0 {
+                    // Combat can update equipment, build and vitals. Capture the
+                    // actors deferred above and any newly changed positions.
+                    failed += checkpoints.flush(&view, &HashSet::new()).await;
+                    failed += usize::from(!view.finish_daily_kill_statistics(quiesced).await);
                 }
             }
             if failed == 0 {
@@ -222,19 +205,115 @@ impl LastPositionFlush {
     }
 }
 
+#[derive(Default)]
+struct ShutdownCheckpoints {
+    conditions: HashSet<GameSessionId>,
+    monks: HashSet<GameSessionId>,
+    training: HashSet<GameSessionId>,
+    wheel_gifts: HashSet<GameSessionId>,
+}
+
+impl ShutdownCheckpoints {
+    async fn flush(
+        &mut self,
+        owner: &ComposedFreshAdmission<'_, '_, '_>,
+        blocked: &HashSet<GameSessionId>,
+    ) -> usize {
+        let mut failed = owner.write_due_last_positions_except(true, blocked).await;
+        if owner.runtime.lock().await.binding().channel_id().is_some() {
+            failed += owner
+                .flush_wheel_gifts(&mut self.wheel_gifts, blocked)
+                .await;
+        }
+        failed
+            + owner
+                .flush_monk_states_except(&mut self.monks, blocked)
+                .await
+            + owner
+                .flush_spell_training_except(&mut self.training, blocked)
+                .await
+            + owner.flush_conditions(&mut self.conditions, blocked).await
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn shutdown_combat_sessions(
+        &self,
+        settled: &HashMap<GameSessionId, Option<super::actor_spell::PlayerDeath>>,
+    ) -> HashSet<GameSessionId> {
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let attack = self.states.attack.lock().await;
+        let kills = attack.kills();
+        states
+            .deaths
+            .iter()
+            .filter(|(_, session, death)| settled.get(session) != Some(&Some(*death)))
+            .map(|(_, session, _)| *session)
+            .chain(states.actors.iter().filter_map(|(actor, session, _)| {
+                let character = runtime
+                    .bound_attacker_lease(*actor, *session)
+                    .ok()
+                    .map(|lease| lease.character_id());
+                kills
+                    .blocks_shutdown_checkpoint(*session, character)
+                    .then_some(*session)
+            }))
+            .collect()
+    }
+
     async fn flush_shutdown_combat(
         &self,
         settled: &mut HashMap<GameSessionId, Option<super::actor_spell::PlayerDeath>>,
     ) -> usize {
-        if self.drain_queued_kill_rewards().await != super::kill_reward::DrainOutcome::Drained {
-            return 1;
-        }
+        let mut failed = usize::from(
+            self.drain_queued_kill_rewards().await != super::kill_reward::DrainOutcome::Drained,
+        );
         let deaths = self.states.spell_states.lock().await.deaths.clone();
-        let mut failed = 0;
-        for (actor, session, _) in deaths {
+        for (actor, session, death) in deaths {
+            let already_settled = settled.entry(session).or_default();
+            if *already_settled == Some(death) {
+                continue;
+            }
+            let end_familiar = {
+                let runtime = self.runtime.lock().await;
+                !runtime.is_tibiadrome(actor)
+                    && self
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .player_death(&runtime, actor, session)
+                        == Some(death)
+            };
+            if end_familiar {
+                if self
+                    .end_familiars_at_owner_death(actor, session, death.occurrence)
+                    .await
+                    .is_err()
+                {
+                    failed += 1;
+                    continue;
+                }
+                // A retained unrelated familiar operation can defer the death
+                // callback. Only advance to the death writer once its familiar is gone.
+                if self
+                    .runtime
+                    .lock()
+                    .await
+                    .owned_companions(actor, session)
+                    .is_ok_and(|companions| {
+                        companions.iter().any(|companion| {
+                            companion.health > 0 && companion.state.policy.is_familiar
+                        })
+                    })
+                {
+                    failed += 1;
+                    continue;
+                }
+            }
             if !self
-                .settle_released_death(actor, session, settled.entry(session).or_default())
+                .settle_released_death(actor, session, already_settled)
                 .await
             {
                 failed += 1;
@@ -245,7 +324,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     async fn flush_conditions(
         &self,
-        settled: &mut std::collections::HashSet<GameSessionId>,
+        settled: &mut HashSet<GameSessionId>,
+        blocked: &HashSet<GameSessionId>,
     ) -> usize {
         let actors: Vec<_> = self
             .states
@@ -258,10 +338,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect();
         let mut failed = 0;
         for (actor, session) in actors {
-            if settled.contains(&session) {
+            if settled.contains(&session) || blocked.contains(&session) {
                 continue;
             }
-            if self.save_conditions_at_actor_end(actor, session).await {
+            if super::item_use::gourmet::checkpoint_at_actor_end(self, actor, session).await
+                && self.save_conditions_at_actor_end(actor, session).await
+            {
                 settled.insert(session);
             } else {
                 failed += 1;
@@ -275,13 +357,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Returns the number of unproven saves, which the caller retries; settled sessions are
     /// skipped. Familiar state is not flushed: its save is a logout save, valid only after the
     /// grace deadline.
-    pub(super) async fn flush_spell_training(
+    #[cfg(test)]
+    pub(super) async fn flush_spell_training(&self, settled: &mut HashSet<GameSessionId>) -> usize {
+        self.flush_spell_training_except(settled, &HashSet::new())
+            .await
+    }
+
+    async fn flush_spell_training_except(
         &self,
-        settled: &mut std::collections::HashSet<GameSessionId>,
+        settled: &mut HashSet<GameSessionId>,
+        blocked: &HashSet<GameSessionId>,
     ) -> usize {
         let mut failed = 0;
         for (session, actor) in self.states.last_positions.tracked_actors() {
-            if settled.contains(&session) {
+            if settled.contains(&session) || blocked.contains(&session) {
                 continue;
             }
             // In-memory pre-filter: an actor with nothing to checkpoint costs no store read.

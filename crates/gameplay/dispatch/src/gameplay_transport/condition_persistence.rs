@@ -5,6 +5,34 @@ use crate::durability::item_use::ItemUseError;
 use oteryn_gameplay_domain::domain::condition::ConflictKey;
 use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
 
+/// A native Activity has its own runtime binding. Named-House actors instead
+/// use the custody projection hosted by the origin runtime.
+pub(super) fn checkpoint_is_house(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    fence: CurrentCharacterItemFence,
+) -> Option<bool> {
+    let binding = runtime.binding();
+    if fence.game_session_id == session
+        && binding.runtime_scope() == fence.runtime_scope
+        && binding.scope_generation() == fence.scope_ownership_generation
+        && runtime.player_control_facts(actor, session).is_ok()
+    {
+        Some(false)
+    } else {
+        runtime
+            .house_actor_state(actor, session)
+            .ok()
+            .filter(|house| {
+                fence.game_session_id == session
+                    && house.scope == fence.runtime_scope
+                    && house.generation == fence.scope_ownership_generation
+            })
+            .map(|_| true)
+    }
+}
+
 fn has_world_cake_regeneration(conditions: &ConditionStore<String>) -> bool {
     conditions
         .get(ConflictKey::Recovery)
@@ -100,27 +128,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let saved = {
             let runtime = self.runtime.lock().await;
-            let valid = match fence.runtime_scope {
-                RuntimeScopeRefV1::Channel {
-                    world_id,
-                    channel_id,
-                } => {
-                    let binding = runtime.binding();
-                    binding.world_id() == world_id
-                        && binding.channel_id() == Some(channel_id)
-                        && binding.scope_generation() == fence.scope_ownership_generation
-                        && runtime.player_control_facts(actor, session).is_ok()
-                }
-                RuntimeScopeRefV1::Instance { .. } => {
-                    runtime.house_actor_state(actor, session).is_ok_and(|h| {
-                        h.scope == fence.runtime_scope
-                            && h.generation == fence.scope_ownership_generation
-                    })
-                }
-            };
-            if !valid {
+            let Some(house) = checkpoint_is_house(&runtime, actor, session, fence) else {
                 return true;
-            }
+            };
             let Ok(states) = self.states.spell_states.try_lock() else {
                 return false;
             };
@@ -137,13 +147,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // hold pre-death conditions until its respawn step clears them.
                 None
             } else {
-                let native = match fence.runtime_scope {
-                    RuntimeScopeRefV1::Channel { .. } => {
-                        runtime.actor_conditions_at(actor, Some(session), now)
-                    }
-                    RuntimeScopeRefV1::Instance { .. } => {
-                        runtime.house_actor_conditions_at(actor, session, now)
-                    }
+                let native = if house {
+                    runtime.house_actor_conditions_at(actor, session, now)
+                } else {
+                    runtime.actor_conditions_at(actor, Some(session), now)
                 };
                 let Ok(native) = native else {
                     return false;
