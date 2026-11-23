@@ -517,6 +517,8 @@ pub struct LoopGroundCache {
     state: Mutex<CacheState>,
     #[cfg(test)]
     pub(super) interrupt_parchment_publication: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) interrupt_after_parchment_mint: std::sync::atomic::AtomicBool,
 }
 
 /// Cancellation after a COMMIT must also discard any pre-commit map projection.

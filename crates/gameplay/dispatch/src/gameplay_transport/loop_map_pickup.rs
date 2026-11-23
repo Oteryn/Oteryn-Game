@@ -386,6 +386,16 @@ pub(super) async fn move_map_item(
             return mint_error(error);
         }
     };
+    #[cfg(test)]
+    if placement_key == oteryn_gameplay_items::map_pickup::PARCHMENT_SEAL_PLACEMENT
+        && admission
+            .states
+            .loop_ground
+            .interrupt_after_parchment_mint
+            .swap(false, std::sync::atomic::Ordering::AcqRel)
+    {
+        return LoopMoveResult::Unknown;
+    }
     // The invalidated read proves this exact instance is still on its own tile, even on retry.
     let Some(ground) = loop_ground(admission, base, Some(index)).await else {
         return LoopMoveResult::Unknown;

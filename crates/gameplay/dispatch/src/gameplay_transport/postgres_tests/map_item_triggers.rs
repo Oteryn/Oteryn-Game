@@ -31,6 +31,15 @@ fn parchment_wave_recovers_from_map_snapshot_after_committed_pickup_loses_public
 }
 
 #[test]
+fn parchment_removal_accepts_the_exact_mint_inherited_by_the_successor() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_scene(Scene::InheritedParchment)
+}
+
+#[test]
 fn scarab_coin_basin_atomically_consumes_the_drop_and_routes_the_flame_player() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -60,6 +69,7 @@ fn scarab_coin_basin_blocked_landing_keeps_the_coins_and_quest_state() -> TestRe
 #[derive(Clone, Copy)]
 enum Scene {
     Parchment { lost_publication: bool },
+    InheritedParchment,
     CoalBasin { occupant: bool, landing_blocked: bool },
 }
 
@@ -67,7 +77,7 @@ fn run_scene(scene: Scene) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |admin| {
         // The seal goes into the backpack, so pickup preflight needs the actual
         // durable level to derive carry capacity. A Ground-only move does not.
-        let initialized = matches!(scene, Scene::Parchment { .. });
+        let initialized = matches!(scene, Scene::Parchment { .. } | Scene::InheritedParchment);
         let h = Harness::create_with_admission_seed(admin, "map_item_trigger", initialized, false)
             .await?;
         prepare_current_session(&h).await?;
@@ -86,7 +96,7 @@ fn run_scene(scene: Scene) -> TestResult {
         let generation = controller.active().ok_or("content generation")?;
         let native = generation.native_gameplay().ok_or("native content")?;
         let (origin, world) = match scene {
-            Scene::Parchment { .. } => {
+            Scene::Parchment { .. } | Scene::InheritedParchment => {
                 let origin = MovementLocalPosition {
                     x: 33062,
                     y: 31625,
@@ -272,6 +282,9 @@ fn run_scene(scene: Scene) -> TestResult {
         match scene {
             Scene::Parchment { lost_publication } =>
                 exercise_parchment(&owner, &h, &deps, admitted, &world, lost_publication).await?,
+            Scene::InheritedParchment => {
+                exercise_inherited_parchment(&owner, &h, deps.actor, admitted, &world).await?
+            }
             Scene::CoalBasin { occupant, landing_blocked } => {
                 owner.quest_catalogue = Some(std::sync::Arc::new(
                     oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -431,6 +444,111 @@ async fn exercise_parchment(
         ).bind(placement.to_string()).fetch_one(&h.pool).await?;
     assert_eq!((mints, linked), (2, 1));
 
+    Ok(())
+}
+
+async fn exercise_inherited_parchment(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    actor: crate::foundation::ExactActorRef,
+    admitted: super::AdmittedSession,
+    world: &crate::map::boot::BundleWorld,
+) -> TestResult {
+    let placement = oteryn_gameplay_items::map_pickup::PARCHMENT_SEAL_PLACEMENT;
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: 1,
+        item_fence: admitted.item_fence,
+    };
+    let pickup = LoopMove {
+        item: ItemKey::MapBase { bundle_digest: world.base().digest(), placement_key: placement, reset_epoch: 0 },
+        target: LoopTarget::MainBackpack,
+        count: None,
+        slot: None,
+    };
+    owner.states.loop_ground.interrupt_after_parchment_mint
+        .store(true, std::sync::atomic::Ordering::Release);
+    assert_eq!(owner.move_loop_item(actor, command, pickup).await, LoopMoveResult::Unknown);
+    let (item, mint, predecessor): (Vec<u8>, String, String) = sqlx::query_as(
+        "SELECT uuid_send(m.item_instance_id),m.transaction_id::text,g.runtime_scope_ownership_generation::text
+         FROM game_map_item_mint_receipts m JOIN game_item_ground_locations g USING(item_instance_id)
+         WHERE m.placement_key=$1::text::numeric",
+    ).bind(placement.to_string()).fetch_one(&h.pool).await?;
+    assert_eq!(predecessor, "1");
+
+    // Model a restored session on its successor using the trusted fixture.
+    // The real MOVE still verifies all current assignment and admission guards.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    let source_revision: String = sqlx::query_scalar(
+        "UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water=source_revision_high_water+1
+         WHERE writer_id=1 RETURNING source_revision_high_water::text",
+    ).fetch_one(&mut *tx).await?;
+    let decision = format!("runtime-scope-assignment:{source_revision}");
+    sqlx::query(
+        "INSERT INTO game_runtime_scope_assignment_receipts(operation_key,command,scope_key,
+         ownership_generation,state,holder_node_id,holder_registration_revision,source_revision,decision_identity,decided_at)
+         SELECT sha256(a.operation_key),r.command,a.scope_key,2,a.state,a.holder_node_id,
+                a.holder_registration_revision,$3::text::numeric,$4,a.decided_at
+         FROM game_runtime_scope_assignments a JOIN game_runtime_scope_assignment_receipts r USING(operation_key)
+         WHERE a.world_id=encode($1,'hex')::uuid AND a.channel_id=encode($2,'hex')::uuid",
+    ).bind(admitted.world_id.as_bytes().as_slice()).bind(admitted.channel_id.as_bytes().as_slice())
+        .bind(&source_revision).bind(&decision).execute(&mut *tx).await?;
+    sqlx::query(
+        "UPDATE game_runtime_scope_assignments a SET ownership_generation=r.ownership_generation,
+         source_revision=r.source_revision,operation_key=r.operation_key,decision_identity=r.decision_identity
+         FROM game_runtime_scope_assignment_receipts r WHERE r.scope_key=a.scope_key
+           AND r.source_revision=$1::text::numeric",
+    ).bind(&source_revision).execute(&mut *tx).await?;
+    sqlx::query(
+        "UPDATE game_durability_admission_runtime_guards g SET ownership_generation=a.ownership_generation
+         FROM game_runtime_scope_assignments a WHERE a.scope_key=g.scope_key
+           AND a.source_revision=$1::text::numeric",
+    ).bind(&source_revision).execute(&mut *tx).await?;
+    sqlx::query(
+        "UPDATE game_durability_reconnect_sessions SET scope_ownership_generation=2
+         WHERE game_session_id=encode($1,'hex')::uuid",
+    ).bind(admitted.game_session_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+
+    let fence = owner.current_quest_fence(admitted.game_session_id).await
+        .map_err(|()| "successor Character fence")?.ok_or("successor Character fence")?;
+    assert_eq!(fence.scope_ownership_generation.get(), 2);
+    let successor = {
+        let mut previous = owner.runtime.lock().await;
+        let pin = previous.content_pin().clone();
+        let position = previous.read_actor_position(actor).map_err(debug)?.position();
+        let binding = previous.binding();
+        previous.retire_owner_cycle();
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            admitted.world_id, admitted.channel_id, binding.node_id(),
+            binding.node_registration_revision(), 2, source_revision.parse()?, &decision, 8, pin,
+        ).map_err(debug)?;
+        let reservation = runtime.reserve_fresh_session(admitted.game_session_id).map_err(debug)?;
+        let successor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime.initialize_pinned_test_position(successor, position).map_err(debug)?;
+        runtime.bind_attacker_lease(successor, admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                fence.character_lease_generation,
+            ).map_err(debug)?,
+        ).map_err(debug)?;
+        *previous = runtime;
+        successor
+    };
+    owner.states.loop_ground.invalidate();
+    let item = ItemKey::Instance(item.try_into().map_err(|_| "minted parchment id")?);
+    assert_eq!(owner.move_loop_item(
+        successor,
+        UseCommand { command_id: 2, item_fence: Some(fence.item_fence()), ..command },
+        LoopMove { item, ..pickup },
+    ).await, LoopMoveResult::Committed);
+    let removal: Option<(String, String)> = sqlx::query_as(
+        "SELECT p.mint_transaction_id::text,r.scope_generation::text
+         FROM game_parchment_removals p JOIN game_item_loop_move_receipts r
+         ON r.transaction_id=p.move_transaction_id",
+    ).fetch_optional(&h.pool).await?;
+    assert_eq!(removal, Some((mint, "2".into())));
     Ok(())
 }
 
