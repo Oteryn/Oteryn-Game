@@ -213,6 +213,7 @@ fn new_incoming_pvp_situation_requests_a_capture() -> Result {
             situations: vec![
                 oteryn_client_runtime::party_skull::PvpSituation {
                     incoming,
+                    situation_id: None,
                     remaining_ms: 9000,
                 };
                 1 + usize::from(index == 3)
