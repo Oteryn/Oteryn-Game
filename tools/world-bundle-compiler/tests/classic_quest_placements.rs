@@ -180,10 +180,11 @@ fn classic_quest_contacts_realize_at_crystal_npc_cells() -> TestResult {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let expected = BTreeMap::from([
         ("oteryn:npc.a_prisoner", (32394, 32138, -13)),
+        ("oteryn:npc.arito", (33070, 32885, -6)),
         ("oteryn:npc.gregor", (32406, 32201, -6)),
         ("oteryn:npc.sam", (32361, 32198, -7)),
     ]);
-    let selected = [(126, 125)];
+    let selected = [(126, 125), (129, 128)];
     let mut project = source::project_regions(&root, &selected)?;
     project
         .families
