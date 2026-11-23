@@ -1,8 +1,7 @@
 use super::TestResult;
 use super::fixture::{Harness, debug, id};
 use super::server_modal_bed::command;
-use crate::content::LogicalCell;
-use crate::durability::bed_sleep::BedUseOutcome;
+use crate::durability::bed_sleep::{BedUseOutcome, BedUsePart, BedUsePlacement, BedUseReceipt};
 use crate::durability::consume_transform::HouseActionContext;
 use crate::foundation::{AuthenticatedTransportRefV1, CommandId, CommandRef};
 use crate::gameplay_transport::item_view::{ItemKey, SessionItemView};
@@ -35,13 +34,12 @@ pub(super) enum Case {
     Cooldown,
     Contended,
     Resume,
+    Rollback,
+    PlacementRace,
+    StaleTarget,
+    TooFar,
 }
 
-const HEAD: LogicalCell = LogicalCell {
-    x: 32310,
-    y: 32804,
-    z: 7,
-};
 const FIRST_SLEEPER: u8 = 121;
 const NEXT_SLEEPER: u8 = 122;
 
@@ -76,7 +74,10 @@ pub(super) async fn scenario(
         Case::Replay => {}
         Case::Revoked => return revoked(h, owner, admitted).await,
         Case::Contended => return contended(h, owner, admitted).await,
-        Case::Resume => return resume(h, owner, admitted).await,
+        Case::Resume => return resume(h, owner, admitted, false).await,
+        Case::Rollback => return resume(h, owner, admitted, true).await,
+        Case::PlacementRace => return placement_race(h, owner, admitted).await,
+        Case::StaleTarget | Case::TooFar => return target_refusal(h, owner, admitted, case).await,
         Case::WorldOnly | Case::NonPremium | Case::Cooldown => {
             return wire_case(h, owner, admitted, case).await;
         }
@@ -155,7 +156,7 @@ pub(super) async fn scenario(
                 admitted,
                 wake_occurrence,
                 context,
-                HEAD,
+                original_placement(owner)?,
                 &AdmissionRetryBudget::for_command(owner.root),
             )
             .await
@@ -228,6 +229,34 @@ pub(super) async fn scenario(
     result
 }
 
+fn original_placement(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult<BedUsePlacement> {
+    let bundle_digest = owner
+        .bundle_map()
+        .ok_or("bed fixture bundle")?
+        .overlay
+        .base()
+        .digest();
+    let part = |x| -> TestResult<BedUsePart> {
+        Ok(BedUsePart {
+            placement_key: placement_key(
+                TilePos {
+                    x,
+                    y: 32804,
+                    floor: -7,
+                },
+                1,
+            )
+            .ok_or("fixture bed placement")?,
+            revision: 0,
+        })
+    };
+    Ok(BedUsePlacement {
+        bundle_digest,
+        head: part(32310)?,
+        foot: part(32311)?,
+    })
+}
+
 async fn house_context(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -287,7 +316,7 @@ async fn revoked(
             admitted,
             admitted.continuity.next_command_id,
             house_context(owner, admitted).await?,
-            HEAD,
+            original_placement(owner)?,
             &AdmissionRetryBudget::for_command(owner.root),
         )
         .await
@@ -316,7 +345,7 @@ async fn contended(
             admitted,
             admitted.continuity.next_command_id + 1,
             context,
-            HEAD,
+            original_placement(owner)?,
             &AdmissionRetryBudget::for_command(owner.root),
         ),
         return_contended_holder(held),
@@ -351,7 +380,18 @@ async fn resume(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
+    rollback: bool,
 ) -> TestResult {
+    if rollback {
+        sqlx::raw_sql(
+            "CREATE FUNCTION fail_bed_commit() RETURNS trigger LANGUAGE plpgsql AS $$
+             BEGIN PERFORM pg_terminate_backend(pg_backend_pid()); RETURN NEW; END $$;
+             CREATE CONSTRAINT TRIGGER fail_bed_commit AFTER INSERT ON game_house_bed_use_receipts
+             DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fail_bed_commit();",
+        )
+        .execute(&h.pool)
+        .await?;
+    }
     let command = admitted.continuity.next_command_id;
     let reference = CommandRef::new(
         admitted.game_session_id,
@@ -372,14 +412,40 @@ async fn resume(
             admitted,
             command,
             house_context(owner, admitted).await?,
-            HEAD,
+            original_placement(owner)?,
             &AdmissionRetryBudget::for_command(owner.root),
         )
-        .await
-        .map_err(debug)?;
-    assert!(matches!(outcome, BedUseOutcome::Woken));
-    // Model a lost storage acknowledgement after COMMIT. Do not publish the
-    // result to the connection's still-pending occurrence.
+        .await;
+    if rollback {
+        assert!(outcome.is_err() || matches!(outcome, Ok(BedUseOutcome::RolledBack)));
+        assert_eq!(freed(h, FIRST_SLEEPER).await?.1, None);
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_house_bed_use_receipts")
+                .fetch_one(&h.pool)
+                .await?,
+            0
+        );
+        if !h.root.is_ready() {
+            h.root.maintain_ready_once().await.map_err(debug)?;
+        }
+    } else {
+        assert!(matches!(outcome.map_err(debug)?, BedUseOutcome::Woken));
+    }
+    let fence = admitted.item_fence.ok_or("original House fence")?;
+    let transport = admitted.controller.ok_or("original transport")?.transport;
+    let read_receipt = async |transport| {
+        h.root
+            .read_house_bed_use_receipt(
+                fence,
+                transport,
+                reference.command_id(),
+                std::time::Instant::now() + crate::durability::DB_PASS_DEADLINE,
+            )
+            .await
+            .map_err(debug)
+    };
+    assert_eq!(read_receipt(transport).await?, BedUseReceipt::Unfenced);
+    // Leave the occurrence pending as if the storage acknowledgement was lost.
     drop(stream);
     assert!(
         owner
@@ -393,21 +459,43 @@ async fn resume(
             .await,
         ControlLossResult::Recorded
     );
-    let wrong_transport = AuthenticatedTransportRefV1::decode(&id(123)).map_err(debug)?;
-    let fence = admitted.item_fence.ok_or("original House fence")?;
-    assert!(
-        h.root
-            .read_house_bed_use_receipt(
-                fence,
-                wrong_transport,
-                reference.command_id(),
-                std::time::Instant::now() + crate::durability::DB_PASS_DEADLINE,
-            )
-            .await
-            .map_err(debug)?
-            .is_none()
-    );
-    seed_sleeper(h, NEXT_SLEEPER).await?;
+    if rollback {
+        assert_eq!(read_receipt(transport).await?, BedUseReceipt::Absent);
+    } else {
+        let wrong_transport = AuthenticatedTransportRefV1::decode(&id(123)).map_err(debug)?;
+        assert_eq!(
+            read_receipt(wrong_transport).await?,
+            BedUseReceipt::BindingMismatch
+        );
+        let mut mismatched = admitted;
+        mismatched
+            .controller
+            .as_mut()
+            .ok_or("original transport")?
+            .transport = wrong_transport;
+        let rejected = owner
+            .reconcile_bed_use(&mismatched, &AdmissionRetryBudget::for_command(owner.root))
+            .await;
+        assert_eq!(
+            rejected,
+            Err(crate::gameplay_transport::connection::AdmissionRefusal::Rejected)
+        );
+        assert!(
+            owner
+                .states
+                .command_ingress
+                .pending_reconciliation(reference)
+        );
+        assert_eq!(read_receipt(transport).await?, BedUseReceipt::Woken);
+    }
+    let sleeper = if rollback {
+        FIRST_SLEEPER
+    } else {
+        NEXT_SLEEPER
+    };
+    if !rollback {
+        seed_sleeper(h, sleeper).await?;
+    }
     let revision = bed_revision(h).await?;
     let resumed = super::hireling_lifecycle_fixtures::bed_owner_resume(owner, admitted).await?;
     assert_eq!(resumed.continuity.next_command_id, command + 1);
@@ -441,10 +529,147 @@ async fn resume(
     assert_eq!(result.status, CommandStatus::DuplicateReplay);
     assert_eq!(
         decode_use_result(result.payload).map_err(debug)?,
-        UseDisposition::BedWoken
+        if rollback {
+            UseDisposition::Rejected
+        } else {
+            UseDisposition::BedWoken
+        }
     );
     assert_eq!(bed_revision(h).await?, revision);
-    assert_eq!(freed(h, NEXT_SLEEPER).await?.1, None);
+    assert_eq!(freed(h, sleeper).await?.1, None);
+    Ok(())
+}
+
+async fn target_refusal(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    case: Case,
+) -> TestResult {
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let playing = async move {
+        let (head, foot) = bed_targets(&mut client).await?;
+        let mut next = admitted.continuity.next_command_id;
+        if matches!(case, Case::StaleTarget) {
+            let UseTarget::WorldObject(mut target) = head else {
+                return Err("static bed".into());
+            };
+            target.expected_revision += 1;
+            assert_eq!(
+                use_bed(
+                    &mut client,
+                    admitted,
+                    &mut next,
+                    UseTarget::WorldObject(target)
+                )
+                .await?,
+                (CommandStatus::Accepted, UseDisposition::StaleState),
+            );
+        } else {
+            let wire = use_bed(&mut client, admitted, &mut next, foot.clone()).await?;
+            let handle = handle_use(owner, admitted, next, foot).await?;
+            assert_eq!(
+                (wire, handle),
+                (
+                    (CommandStatus::Accepted, UseDisposition::TooFar),
+                    UseDisposition::TooFar
+                )
+            );
+        }
+        assert_eq!(freed(h, FIRST_SLEEPER).await?.1, None);
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let (_, result) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::fixture::join_two(serving, playing),
+    )
+    .await?;
+    result
+}
+
+async fn placement_race(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::bed_sleep_production::BED_USE_PLACEMENT_BARRIER;
+    let barrier = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = BED_USE_PLACEMENT_BARRIER.scope(barrier.clone(), async {
+        let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    });
+    let playing = async move {
+        let (head, foot) = bed_targets(&mut client).await?;
+        let mut next = admitted.continuity.next_command_id;
+        let commit_decoration = async {
+            barrier.0.notified().await;
+            let result = commit_bed_projection(h, admitted, &head, &foot).await;
+            barrier.1.notify_one();
+            result
+        };
+        let (reply, changed) = super::fixture::join_two(
+            use_bed(&mut client, admitted, &mut next, head.clone()),
+            commit_decoration,
+        )
+        .await;
+        changed?;
+        assert_eq!(
+            reply?,
+            (CommandStatus::Accepted, UseDisposition::StaleState)
+        );
+        assert_eq!(freed(h, FIRST_SLEEPER).await?.1, None);
+        Ok::<(), Box<dyn std::error::Error>>(())
+    };
+    let (_, result) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::fixture::join_two(serving, playing),
+    )
+    .await?;
+    result
+}
+
+async fn commit_bed_projection(
+    h: &Harness,
+    admitted: AdmittedSession,
+    head: &UseTarget,
+    foot: &UseTarget,
+) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    // Install the committed projection of an east-facing bed kit while the
+    // live owner is paused between resolving the pair and checking it in SQL.
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:house-base:'||encode($1,'hex')::uuid::text||':'||$2,0))")
+        .bind(admitted.world_id.as_bytes().as_slice()).bind(HOUSE).execute(&mut *tx).await?;
+    for (ordinal, target, before, after) in [(0_i16, head, 696, 736), (1, foot, 697, 737)] {
+        let UseTarget::WorldObject(target) = target else {
+            return Err("static bed".into());
+        };
+        let placement = u64::from_be_bytes(target.placement[32..].try_into()?).to_string();
+        sqlx::query(
+            "WITH receipt AS (
+                 INSERT INTO game_house_base_decoration_receipts
+                     (game_session_id,command_id,ordinal,character_id,world_id,house_key,
+                      bundle_digest,placement_key,before_key,after_key,before_revision,intent)
+                 VALUES(encode($1,'hex')::uuid,1,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,
+                        $6,$7::text::numeric,$8,$9,0,convert_to('fixture bed modification','UTF8'))
+                 RETURNING *
+             )
+             INSERT INTO game_house_base_decorations
+                 (world_id,house_key,bundle_digest,placement_key,definition_key,revision,last_transaction_id)
+             SELECT world_id,house_key,bundle_digest,placement_key,after_key,1,transaction_id FROM receipt",
+        )
+        .bind(admitted.game_session_id.as_bytes().as_slice()).bind(ordinal).bind(id(41).as_slice())
+        .bind(admitted.world_id.as_bytes().as_slice()).bind(HOUSE).bind(&target.placement[..32])
+        .bind(placement).bind(format!("oteryn:item.tibia.i{before}"))
+        .bind(format!("oteryn:item.tibia.i{after}")).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
     Ok(())
 }
 

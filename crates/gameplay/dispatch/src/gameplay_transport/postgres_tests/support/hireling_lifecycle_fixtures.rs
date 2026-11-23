@@ -633,7 +633,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         admitted.continuity.selected_capabilities, source_selection,
         "the native House handoff retains the complete authenticated source selection"
     );
-    if !matches!(case, Case::Wire) {
+    if !matches!(
+        case,
+        Case::Wire | Case::BedOwnerWake(super::bed_owner_wake_fixtures::Case::TooFar)
+    ) {
         wire::enter_interior(&owner, &mut admitted, deps.actor).await?;
     }
     if matches!(case, Case::Store) {

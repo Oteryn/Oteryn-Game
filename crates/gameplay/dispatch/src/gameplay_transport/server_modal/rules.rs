@@ -1,13 +1,15 @@
 //! Server rules retain exact callback inputs; answers never supply gameplay authority.
 use super::{ComposedFreshAdmission, ServerModalOutcome, actor_is_current, owner::Root};
-use crate::content::LogicalCell;
-use crate::durability::bed_sleep::BedUseOutcome;
+use crate::durability::bed_sleep::{BedUseOutcome, BedUsePlacement};
 use crate::durability::consume_transform::HouseActionContext;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::gameplay_transport::{
     AdmissionRetryBudget,
     connection::{AdmittedSession, UseCommand, UseOutcome},
     item_view::ItemKey,
+    world_map::{
+        DecoratedFacts, MapTargetRefusal, MapViewSource, resolve_map_handle, resolve_map_target,
+    },
 };
 use crate::map::view::MapFacts as _;
 use oteryn_protocol_oteryn::{
@@ -29,6 +31,12 @@ pub(super) struct BedSelection {
     target: ItemKey,
     revision: u64,
     fence: CurrentCharacterItemFence,
+}
+
+struct PreparedBedUse {
+    context: HouseActionContext,
+    placement: BedUsePlacement,
+    selection: BedSelection,
 }
 
 /// Crystal 201189f game.cpp:261-272,10912-10990: native bed skill choice.
@@ -78,15 +86,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Box::pin(self.resolve_bed_use(admitted, target, resolved, &budget)),
         )
         .await;
-        let Ok(Some((context, head, selection, action_admitted))) = resolved else {
-            return Ok(None);
+        let PreparedBedUse {
+            context,
+            placement,
+            selection,
+        } = match resolved {
+            Ok(Ok(Some(prepared))) => prepared,
+            Ok(Err(disposition)) => {
+                return Ok(Some(UseOutcome {
+                    disposition,
+                    ..UseOutcome::rejected()
+                }));
+            }
+            Ok(Ok(None)) | Err(_) => return Ok(None),
         };
-        if !action_admitted {
-            return Ok(Some(UseOutcome {
-                disposition: UseDisposition::Exhausted,
-                ..UseOutcome::rejected()
-            }));
-        }
         // Crystal 201189f bed.cpp:102-123 applies Premium before USE.
         if !self
             .session_premium_gate(admitted.game_session_id)
@@ -101,7 +114,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Crystal 201189f bed.cpp:162-175,221-259: occupied USE ends at refusal or wake.
         let decision =
-            Box::pin(self.production_bed_use(admitted, command_id, context, head, &budget)).await?;
+            Box::pin(self.production_bed_use(admitted, command_id, context, placement, &budget))
+                .await?;
         let disposition = match decision {
             BedUseOutcome::Occupied => UseDisposition::BedOccupied,
             BedUseOutcome::Woken => UseDisposition::BedWoken,
@@ -157,87 +171,107 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: UseTarget,
         resolved: Option<ItemKey>,
         budget: &AdmissionRetryBudget<'_>,
-    ) -> Option<(HouseActionContext, LogicalCell, BedSelection, bool)> {
+    ) -> Result<Option<PreparedBedUse>, UseDisposition> {
         if !admitted
             .continuity
             .selected_capabilities
             .contains(CAPABILITY_WORLD_INTERACTION_V1)
+            || (matches!(&target, UseTarget::Item(_))
+                && !matches!(resolved, Some(ItemKey::MapBase { .. })))
         {
-            return None;
+            return Ok(None);
         }
-        if matches!(&target, UseTarget::Item(_))
-            && !matches!(resolved, Some(ItemKey::MapBase { .. }))
-        {
-            return None;
-        }
-        let actor = admitted.runtime_actor?;
-        let map = self.bundle_map()?;
+        let (Some(actor), Some(fence), Some(map)) = (
+            admitted.runtime_actor,
+            admitted.item_fence,
+            self.bundle_map(),
+        ) else {
+            return Ok(None);
+        };
         let context = {
             let runtime = self.runtime.lock().await;
             if !actor_is_current(&runtime, admitted) {
-                return None;
+                return Ok(None);
             }
-            HouseActionContext::from_native_owner(
+            let Ok(context) = HouseActionContext::from_native_owner(
                 &runtime,
                 actor,
                 admitted.game_session_id,
-                admitted.item_fence?,
-            )
-            .ok()?
+                fence,
+            ) else {
+                return Ok(None);
+            };
+            context
         };
-        let changes = self
-            .house_base_decoration_facts_with_retry(
-                &context,
-                map.overlay.base().digest(),
-                Some(budget),
-            )
-            .await?;
+        let bundle_digest = map.overlay.base().digest();
+        let Some(changes) = self
+            .house_base_decoration_facts_with_retry(&context, bundle_digest, Some(budget))
+            .await
+        else {
+            return Ok(None);
+        };
         let runtime = self.runtime.lock().await;
+        if !actor_is_current(&runtime, admitted) {
+            return Ok(None);
+        }
         let base = map.facts.base_only();
-        let facts = crate::gameplay_transport::world_map::DecoratedFacts {
+        let facts = DecoratedFacts {
             base: &base,
             changes: &changes,
         };
+        let source = MapViewSource {
+            overlay: &map.overlay,
+            facts: &facts,
+            content_generation: runtime.content_pin().client_artifact_digest(),
+            reset_epoch: self.reset_epoch,
+        };
         let target = match target {
-            UseTarget::Item(_) => resolved?,
+            UseTarget::Item(_) => {
+                let Some(key) = resolved else {
+                    return Ok(None);
+                };
+                resolve_map_handle(&source, key)?;
+                key
+            }
             UseTarget::WorldObject(target) => {
-                let key = crate::gameplay_transport::world_map::resolve_map_target(
-                    &crate::gameplay_transport::world_map::MapViewSource {
-                        overlay: &map.overlay,
-                        facts: &facts,
-                        content_generation: runtime.content_pin().client_artifact_digest(),
+                match resolve_map_target(&source, &target, |_| None::<()>) {
+                    Ok(key) => ItemKey::MapBase {
+                        bundle_digest,
+                        placement_key: key.placement_key,
                         reset_epoch: self.reset_epoch,
                     },
-                    &target,
-                    |_| None::<()>,
-                )
-                .ok()?;
-                ItemKey::MapBase {
-                    bundle_digest: map.overlay.base().digest(),
-                    placement_key: key.placement_key,
-                    reset_epoch: self.reset_epoch,
+                    Err(MapTargetRefusal::StateRevisionMismatch) => {
+                        return Err(UseDisposition::StaleState);
+                    }
+                    Err(MapTargetRefusal::Use(UseDisposition::NothingToUse)) => return Ok(None),
+                    Err(MapTargetRefusal::Use(disposition)) => return Err(disposition),
                 }
             }
-            _ => return None,
+            _ => return Ok(None),
         };
-        if !actor_is_current(&runtime, admitted) {
-            return None;
-        }
         let ItemKey::MapBase { placement_key, .. } = target else {
-            return None;
+            return Ok(None);
         };
-        let head = self.bed_modal_head(&runtime, admitted, target, &changes)?;
-        let selection = BedSelection {
-            target,
-            revision: facts.object_revision(placement_key),
-            fence: admitted.item_fence?,
+        let Some(placement) = self.bed_use_placement(&runtime, admitted, target, &changes)? else {
+            return Ok(None);
         };
-        let action_admitted = self
+        if !self
             .states
             .world_gate
             .lock()
-            .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()));
-        Some((context, head, selection, action_admitted))
+            .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
+        {
+            return Err(UseDisposition::Exhausted);
+        }
+        Ok(Some(PreparedBedUse {
+            context,
+            placement,
+            selection: BedSelection {
+                target,
+                revision: facts.object_revision(placement_key),
+                fence,
+            },
+        }))
     }
 }
 

@@ -65,7 +65,30 @@ pub struct BedUseRequest {
     pub origin_channel: ChannelId,
     pub transport: AuthenticatedTransportRefV1,
     pub command_id: u64,
-    pub head: LogicalCell,
+    pub placement: BedUsePlacement,
+}
+
+#[derive(Clone, Copy)]
+pub struct BedUsePlacement {
+    pub bundle_digest: [u8; 32],
+    pub head: BedUsePart,
+    pub foot: BedUsePart,
+}
+
+#[derive(Clone, Copy)]
+pub struct BedUsePart {
+    pub placement_key: u64,
+    pub revision: u64,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum BedUseReceipt {
+    Vacant,
+    Occupied,
+    Woken,
+    Absent,
+    BindingMismatch,
+    Unfenced,
 }
 
 pub enum BedUseOutcome {
@@ -134,7 +157,8 @@ impl DurabilityRoot {
                     let value: String = sqlx::query_scalar(
                         "SELECT game_house_bed_use(encode($1,'hex')::uuid,encode($2,'hex')::uuid,\
                          encode($3,'hex')::uuid,$4,$5::text::numeric,$6::text::numeric,$7::text::numeric,\
-                         $8,$9::text::numeric,$10,$11,$12,encode($13,'hex')::uuid,$14::text::numeric)",
+                         $8,$9::text::numeric,$10,$11::text::numeric,$12::text::numeric,\
+                         $13::text::numeric,$14::text::numeric,encode($15,'hex')::uuid,$16::text::numeric)",
                     )
                     .bind(fence.game_session_id.as_bytes().as_slice())
                     .bind(fence.character_id.as_bytes().as_slice())
@@ -145,9 +169,11 @@ impl DurabilityRoot {
                     .bind(fence.scope_ownership_generation.get().to_string())
                     .bind(request.transport.to_bytes().as_slice())
                     .bind(request.command_id.to_string())
-                    .bind(request.head.x)
-                    .bind(request.head.y)
-                    .bind(request.head.z)
+                    .bind(request.placement.bundle_digest.as_slice())
+                    .bind(request.placement.head.placement_key.to_string())
+                    .bind(request.placement.head.revision.to_string())
+                    .bind(request.placement.foot.placement_key.to_string())
+                    .bind(request.placement.foot.revision.to_string())
                     .bind(fact.node_id().as_bytes().as_slice())
                     .bind(fact.registration_revision().to_string())
                     .fetch_one(&mut *tx)
@@ -183,11 +209,11 @@ impl DurabilityRoot {
         transport: AuthenticatedTransportRefV1,
         command: CommandId,
         deadline: Instant,
-    ) -> Result<Option<BedUseOutcome>, DurabilityError> {
+    ) -> Result<BedUseReceipt, DurabilityError> {
         self.try_issue_semantic_pass_by(deadline)?
             .run(move |holder, _| {
                 Box::pin(async move {
-                    let value: Option<String> = sqlx::query_scalar(
+                    let value: String = sqlx::query_scalar(
                         "SELECT game_house_bed_use_receipt(encode($1,'hex')::uuid,\
                          encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,\
                          $5::text::numeric,$6,$7::text::numeric)",
@@ -201,13 +227,15 @@ impl DurabilityRoot {
                     .bind(command.get().to_string())
                     .fetch_one(&mut **holder)
                     .await?;
-                    value
-                        .as_deref()
-                        .map(|value| {
-                            BedUseOutcome::from_receipt(value)
-                                .ok_or(DurabilityError::InvalidStoredState)
-                        })
-                        .transpose()
+                    match value.as_str() {
+                        "vacant" => Ok(BedUseReceipt::Vacant),
+                        "occupied" => Ok(BedUseReceipt::Occupied),
+                        "woken" => Ok(BedUseReceipt::Woken),
+                        "absent" => Ok(BedUseReceipt::Absent),
+                        "binding_mismatch" => Ok(BedUseReceipt::BindingMismatch),
+                        "unfenced" => Ok(BedUseReceipt::Unfenced),
+                        _ => Err(DurabilityError::InvalidStoredState),
+                    }
                 })
             })
             .await

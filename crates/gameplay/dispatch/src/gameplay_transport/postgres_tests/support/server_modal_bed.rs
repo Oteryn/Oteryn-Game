@@ -195,17 +195,18 @@ pub(super) async fn sleep(
         .await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(Reply::decode(&bytes).map_err(debug)?, Reply::None);
+        let (status, bytes) = command(
+            &mut client,
+            admitted,
+            &mut next,
+            COMMAND_TYPE_USE_INTENT,
+            &stale,
+        )
+        .await?;
+        assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(
-            command(
-                &mut client,
-                admitted,
-                &mut next,
-                COMMAND_TYPE_USE_INTENT,
-                &stale
-            )
-            .await?
-            .0,
-            CommandStatus::Rejected
+            decode_use_result(&bytes).map_err(debug)?,
+            UseDisposition::StaleState
         );
         super::m44_source_lifecycle_fixtures::wait_for_world_action(owner, &admitted).await?;
         let (status, bytes) = command(

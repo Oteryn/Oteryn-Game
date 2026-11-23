@@ -15,7 +15,8 @@ CREATE TRIGGER game_house_bed_use_receipt_immutable BEFORE UPDATE OR DELETE OR T
 CREATE FUNCTION game_house_bed_use(
     p_session UUID, p_character UUID, p_world UUID, p_house TEXT,
     p_generation NUMERIC, p_lease NUMERIC, p_scope NUMERIC, p_transport BYTEA,
-    p_command NUMERIC, p_x INTEGER, p_y INTEGER, p_z INTEGER,
+    p_command NUMERIC, p_bundle BYTEA,
+    p_head NUMERIC, p_head_revision NUMERIC, p_foot NUMERIC, p_foot_revision NUMERIC,
     p_node UUID, p_registration NUMERIC
 ) RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -23,10 +24,33 @@ DECLARE
     prior game_house_bed_use_receipts%ROWTYPE;
     access_role TEXT;
     result TEXT;
+    bed_head BIGINT;
+    bed_foot BIGINT;
+    head_x INTEGER;
+    head_y INTEGER;
+    head_z INTEGER;
 BEGIN
     IF p_command IS NULL OR p_command NOT BETWEEN 1 AND 18446744073709551615
        OR p_command <> trunc(p_command)
-       OR p_x IS NULL OR p_y IS NULL OR p_z IS NULL THEN
+       OR octet_length(p_bundle) IS DISTINCT FROM 32
+       OR p_head IS NULL OR p_head NOT BETWEEN 1 AND 281474976710655 OR p_head<>trunc(p_head)
+       OR p_foot IS NULL OR p_foot NOT BETWEEN 1 AND 281474976710655 OR p_foot<>trunc(p_foot)
+       OR p_head=p_foot
+       OR p_head_revision IS NULL OR p_head_revision NOT BETWEEN 0 AND 18446744073709551615
+       OR p_head_revision<>trunc(p_head_revision)
+       OR p_foot_revision IS NULL OR p_foot_revision NOT BETWEEN 0 AND 18446744073709551615
+       OR p_foot_revision<>trunc(p_foot_revision) THEN
+        RETURN 'denied';
+    END IF;
+
+    -- Placement keys pack the tile and its top-level ordinal.
+    bed_head := p_head::bigint;
+    bed_foot := p_foot::bigint;
+    head_x := (bed_head >> 32)::integer;
+    head_y := ((bed_head >> 16) & 65535)::integer;
+    head_z := ((bed_head >> 8) & 255)::integer;
+    IF head_z > 15 OR head_z <> ((bed_foot >> 8) & 255)
+       OR abs(head_x - (bed_foot >> 32)) + abs(head_y - ((bed_foot >> 16) & 65535)) <> 1 THEN
         RETURN 'denied';
     END IF;
 
@@ -54,7 +78,8 @@ BEGIN
     END IF;
 
     intent := jsonb_build_array(p_character,p_world,p_house,p_generation,p_lease,p_scope,
-                               encode(p_transport,'hex'),p_x,p_y,p_z);
+                               encode(p_transport,'hex'),encode(p_bundle,'hex'),
+                               p_head,p_head_revision,p_foot,p_foot_revision);
     SELECT * INTO prior FROM game_house_bed_use_receipts
         WHERE game_session_id=p_session AND command_id=p_command;
     IF FOUND THEN
@@ -67,6 +92,18 @@ BEGIN
     SELECT role INTO access_role FROM game_house_access(p_world,p_house,p_character)
         WHERE content_fenced IS FALSE;
     IF NOT FOUND THEN RETURN 'denied'; END IF;
+    -- Bed kits replace both parts under this lock. A revision of zero
+    -- denotes a placement with no durable decoration yet.
+    PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:house-base:'||p_world::text||':'||p_house,0));
+    IF COALESCE((SELECT d.revision FROM game_house_base_decorations d
+            WHERE d.world_id=p_world AND d.house_key=p_house AND d.bundle_digest=p_bundle
+              AND d.placement_key=p_head),0) <> p_head_revision
+       OR COALESCE((SELECT d.revision FROM game_house_base_decorations d
+            WHERE d.world_id=p_world AND d.house_key=p_house AND d.bundle_digest=p_bundle
+              AND d.placement_key=p_foot),0) <> p_foot_revision THEN
+        RETURN 'stale';
+    END IF;
+
     PERFORM 1 FROM game_house_ownership WHERE world_id=p_world AND house_key=p_house FOR SHARE;
     PERFORM 1 FROM game_house_bed_revisions
         WHERE world_id=p_world AND house_key=p_house FOR UPDATE;
@@ -74,8 +111,8 @@ BEGIN
 
     IF NOT EXISTS (
         SELECT 1 FROM game_house_bed_sleepers
-          WHERE world_id=p_world AND house_key=p_house AND bed_x=p_x AND bed_y=p_y
-            AND bed_z=p_z AND freed_at IS NULL
+          WHERE world_id=p_world AND house_key=p_house AND bed_x=head_x AND bed_y=head_y
+            AND bed_z=head_z AND freed_at IS NULL
     ) THEN
         result := 'vacant';
     ELSIF access_role IS DISTINCT FROM 'OWNER' THEN
@@ -84,8 +121,8 @@ BEGIN
         UPDATE game_house_bed_sleepers
             SET freed_at = greatest(slept_at, floor(extract(epoch FROM clock_timestamp())*1000)::bigint),
                 freed_cause = 'owner_wake'
-            WHERE world_id=p_world AND house_key=p_house AND bed_x=p_x AND bed_y=p_y
-              AND bed_z=p_z AND freed_at IS NULL;
+            WHERE world_id=p_world AND house_key=p_house AND bed_x=head_x AND bed_y=head_y
+              AND bed_z=head_z AND freed_at IS NULL;
         result := 'woken';
     END IF;
 
@@ -93,27 +130,42 @@ BEGIN
     RETURN result;
 END $$;
 DO $$ BEGIN
-    EXECUTE format('ALTER FUNCTION game_house_bed_use(UUID,UUID,UUID,TEXT,NUMERIC,NUMERIC,NUMERIC,BYTEA,NUMERIC,INTEGER,INTEGER,INTEGER,UUID,NUMERIC) SET search_path = pg_catalog, %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_house_bed_use(UUID,UUID,UUID,TEXT,NUMERIC,NUMERIC,NUMERIC,BYTEA,NUMERIC,BYTEA,NUMERIC,NUMERIC,NUMERIC,NUMERIC,UUID,NUMERIC) SET search_path = pg_catalog, %I, pg_temp', current_schema());
 END $$;
 REVOKE ALL ON FUNCTION game_house_bed_use(UUID,UUID,UUID,TEXT,NUMERIC,NUMERIC,NUMERIC,
-    BYTEA,NUMERIC,INTEGER,INTEGER,INTEGER,UUID,NUMERIC) FROM PUBLIC, oteryn_game_runtime, oteryn_game_control;
+    BYTEA,NUMERIC,BYTEA,NUMERIC,NUMERIC,NUMERIC,NUMERIC,UUID,NUMERIC) FROM PUBLIC, oteryn_game_runtime, oteryn_game_control;
 GRANT EXECUTE ON FUNCTION game_house_bed_use(UUID,UUID,UUID,TEXT,NUMERIC,NUMERIC,NUMERIC,
-    BYTEA,NUMERIC,INTEGER,INTEGER,INTEGER,UUID,NUMERIC) TO oteryn_game_runtime;
+    BYTEA,NUMERIC,BYTEA,NUMERIC,NUMERIC,NUMERIC,NUMERIC,UUID,NUMERIC) TO oteryn_game_runtime;
 
--- Loss publication has acquired the same session lock as the writer. Read the
--- original transport's immutable receipt without requiring current custody.
+-- An absent receipt proves rollback only after the original generation
+-- has lost control. The shared session lock excludes its active writer.
 CREATE FUNCTION game_house_bed_use_receipt(
     p_session UUID, p_character UUID, p_generation NUMERIC,
     p_lease NUMERIC, p_scope NUMERIC, p_transport BYTEA, p_command NUMERIC
-) RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER AS $$
-    SELECT r.outcome FROM game_house_bed_use_receipts r
-    WHERE r.game_session_id=p_session AND r.command_id=p_command
-      AND r.binding->0=to_jsonb(p_character)
-      AND r.binding->3=to_jsonb(p_generation)
-      AND r.binding->4=to_jsonb(p_lease)
-      AND r.binding->5=to_jsonb(p_scope)
-      AND r.binding->6=to_jsonb(encode(p_transport,'hex'))
-$$;
+) RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE prior game_house_bed_use_receipts%ROWTYPE;
+BEGIN
+    PERFORM 1 FROM game_durability_reconnect_sessions s
+        WHERE s.game_session_id=p_session AND s.character_id=p_character
+          AND s.current_generation=p_generation AND s.predecessor_generation=p_generation
+          AND s.character_lease_generation=p_lease AND s.scope_ownership_generation=p_scope
+          AND s.runtime_scope_kind=2 AND s.session_state=1
+          AND s.current_transport_ref IS NULL AND s.control_loss_epoch IS NOT NULL
+        FOR SHARE OF s;
+    IF NOT FOUND THEN RETURN 'unfenced'; END IF;
+
+    SELECT * INTO prior FROM game_house_bed_use_receipts
+        WHERE game_session_id=p_session AND command_id=p_command;
+    IF NOT FOUND THEN RETURN 'absent'; END IF;
+    IF prior.binding->0 IS DISTINCT FROM to_jsonb(p_character)
+       OR prior.binding->3 IS DISTINCT FROM to_jsonb(p_generation)
+       OR prior.binding->4 IS DISTINCT FROM to_jsonb(p_lease)
+       OR prior.binding->5 IS DISTINCT FROM to_jsonb(p_scope)
+       OR prior.binding->6 IS DISTINCT FROM to_jsonb(encode(p_transport,'hex')) THEN
+        RETURN 'binding_mismatch';
+    END IF;
+    RETURN prior.outcome;
+END $$;
 DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_house_bed_use_receipt(UUID,UUID,NUMERIC,NUMERIC,NUMERIC,BYTEA,NUMERIC) SET search_path = pg_catalog, %I, pg_temp', current_schema());
 END $$;

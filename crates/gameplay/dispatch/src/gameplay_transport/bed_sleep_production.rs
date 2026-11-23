@@ -1,13 +1,21 @@
 //! Production House-runtime qualification for bed sleep.
 use super::*;
 use crate::content::LogicalCell;
-use crate::durability::bed_sleep::{BedSleepOwner, BedSleepRequest, BedUseOutcome, BedUseRequest};
+use crate::durability::bed_sleep::{
+    BedSleepOwner, BedSleepRequest, BedUseOutcome, BedUsePart, BedUsePlacement, BedUseReceipt,
+    BedUseRequest,
+};
 use crate::durability::character_last_position::{HouseLastPosition, LastPositionCell};
 use crate::durability::consume_transform::HouseActionContext;
 use crate::durability::house_scope_handoff::HouseId;
 use crate::gameplay_transport::connection::{UseCommand, UseOutcome};
 use crate::gameplay_transport::item_view::ItemKey;
-use oteryn_protocol_oteryn::bed::BedSleepIntent;
+use oteryn_protocol_oteryn::{bed::BedSleepIntent, world_object::UseDisposition};
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static BED_USE_PLACEMENT_BARRIER: std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn production_bed_sleep(
@@ -200,7 +208,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: connection::AdmittedSession,
         command_id: u64,
         context: HouseActionContext,
-        head: LogicalCell,
+        placement: BedUsePlacement,
         budget: &AdmissionRetryBudget<'_>,
     ) -> Result<BedUseOutcome, crate::durability::DurabilityError> {
         let Some(controller) = admitted.controller else {
@@ -215,12 +223,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 admitted.game_session_id,
                 command,
             ));
+        #[cfg(test)]
+        if let Ok(barrier) = BED_USE_PLACEMENT_BARRIER.try_with(std::sync::Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
         let request = BedUseRequest {
             context,
             origin_channel: admitted.channel_id,
             transport: controller.transport,
             command_id,
-            head,
+            placement,
         };
         loop {
             let decision = self
@@ -248,7 +261,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         budget: &AdmissionRetryBudget<'_>,
     ) -> Result<(), connection::AdmissionRefusal> {
         use connection::AdmissionRefusal;
-        use oteryn_protocol_oteryn::world_object::UseDisposition;
         let Some(command) = self.states.command_ingress.pending_bed_use(lost) else {
             return Ok(());
         };
@@ -269,18 +281,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .await?;
         let disposition = match receipt {
-            Some(BedUseOutcome::Woken) => UseDisposition::BedWoken,
-            Some(BedUseOutcome::Occupied) => UseDisposition::BedOccupied,
-            // Modal selections belong to the lost connection and cannot be restored.
-            Some(BedUseOutcome::Vacant) => UseDisposition::Rejected,
-            None => return Ok(()),
-            Some(
-                BedUseOutcome::Denied
-                | BedUseOutcome::Stale
-                | BedUseOutcome::CheckoutUnavailable
-                | BedUseOutcome::RolledBack,
-            ) => {
-                return Err(AdmissionRefusal::Unavailable);
+            BedUseReceipt::Woken => UseDisposition::BedWoken,
+            BedUseReceipt::Occupied => UseDisposition::BedOccupied,
+            // A vacant modal belongs to the lost connection. An absent
+            // receipt after the durable loss fence proves no wake committed.
+            BedUseReceipt::Vacant | BedUseReceipt::Absent => UseDisposition::Rejected,
+            BedUseReceipt::BindingMismatch | BedUseReceipt::Unfenced => {
+                return Err(AdmissionRefusal::Rejected);
             }
         };
         self.states
@@ -289,18 +296,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(AdmissionRefusal::Unavailable)
     }
 
-    /// Resolve a fixed, reachable pair before the owner decides the USE.
-    pub(super) fn bed_modal_head(
+    /// Prove both parts before applying reach, so an out-of-reach bed is
+    /// claimed by this owner and cannot fall through to another item action.
+    pub(super) fn bed_use_placement(
         &self,
         runtime: &crate::foundation::ChannelRuntimeV1,
         admitted: connection::AdmittedSession,
         target: ItemKey,
         changes: &[super::world_map::HouseBaseMapEntry],
-    ) -> Option<LogicalCell> {
-        let state = runtime
-            .house_actor_state(admitted.runtime_actor?, admitted.game_session_id)
-            .ok()?;
-        self.bed_head_for_item(runtime, &state.house, state.position, target, Some(changes))
+    ) -> Result<Option<BedUsePlacement>, UseDisposition> {
+        let scope = self.movement_cells().scope();
+        if scope.world_id != self.world_id
+            || scope.generation_digest != runtime.content_pin().server_artifact_digest()
+        {
+            return Ok(None);
+        }
+        let ItemKey::MapBase {
+            bundle_digest,
+            placement_key,
+            ..
+        } = target
+        else {
+            return Ok(None);
+        };
+        let (Some(actor), Some(map), Some((pos, ordinal)), Some(native), Some(index)) = (
+            admitted.runtime_actor,
+            self.bundle_map(),
+            crate::map::view::placement_of(placement_key),
+            self.active_generation
+                .and_then(|generation| generation.native_gameplay()),
+            super::item_ref_admission::pinned_index(runtime, self.active_generation),
+        ) else {
+            return Ok(None);
+        };
+        let Ok(state) = runtime.house_actor_state(actor, admitted.game_session_id) else {
+            return Ok(None);
+        };
+        let base = map.facts.base_only();
+        let facts = super::world_map::DecoratedFacts {
+            base: &base,
+            changes,
+        };
+        let Some(pair) = bundle_bed_pair(map, &facts, native, index, &state.house, pos, ordinal)
+        else {
+            return Ok(None);
+        };
+        if !bed_part_reachable(state.position, pos) {
+            return Err(UseDisposition::TooFar);
+        }
+        let part = |placement_key| BedUsePart {
+            placement_key,
+            revision: changes
+                .binary_search_by_key(&placement_key, |change| change.placement_key)
+                .ok()
+                .map_or(0, |at| changes[at].revision),
+        };
+        Ok(Some(BedUsePlacement {
+            bundle_digest,
+            head: part(pair.head_placement),
+            foot: part(pair.foot_placement),
+        }))
     }
 
     fn bed_head_for_item(
@@ -327,10 +382,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let (pos, ordinal) = crate::map::view::placement_of(placement_key)?;
-        if position.floor != -i16::from(pos.floor)
-            || position.x.abs_diff(i32::from(pos.x)) > 1
-            || position.y.abs_diff(i32::from(pos.y)) > 1
-        {
+        if !bed_part_reachable(position, pos) {
             return None;
         }
         let index = super::item_ref_admission::pinned_index(runtime, self.active_generation)?;
@@ -346,9 +398,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     base: &base,
                     changes,
                 };
-                return bundle_bed_head(map, &facts, native, index, house, pos, ordinal);
+                return bundle_bed_pair(map, &facts, native, index, house, pos, ordinal)
+                    .map(|pair| pair.head);
             }
-            return bundle_bed_head(map, &map.facts, native, index, house, pos, ordinal);
+            return bundle_bed_pair(map, &map.facts, native, index, house, pos, ordinal)
+                .map(|pair| pair.head);
         }
         if bundle_digest != runtime.content_pin().server_artifact_digest() {
             return None;
@@ -440,7 +494,22 @@ fn bundle_bed_part<'a>(
     Some(bed)
 }
 
-fn bundle_bed_head(
+fn bed_part_reachable(
+    position: crate::foundation::LocalPosition,
+    part: crate::map::overlay::TilePos,
+) -> bool {
+    position.floor == -i16::from(part.floor)
+        && position.x.abs_diff(i32::from(part.x)) <= 1
+        && position.y.abs_diff(i32::from(part.y)) <= 1
+}
+
+struct BundleBedPair {
+    head: LogicalCell,
+    head_placement: u64,
+    foot_placement: u64,
+}
+
+fn bundle_bed_pair(
     map: &crate::map::boot::BundleMap,
     facts: &impl crate::map::view::MapFacts,
     native: &crate::content::native_gameplay::NativeGameplayState,
@@ -448,7 +517,7 @@ fn bundle_bed_head(
     house: &str,
     pos: crate::map::overlay::TilePos,
     ordinal: u8,
-) -> Option<LogicalCell> {
+) -> Option<BundleBedPair> {
     // Crystal 201189f `src/items/bed.cpp:91-100,112-123,145-160` requires the
     // reciprocal physical half and accepts USE only through the pillow/head.
     // Oteryn canonicalizes either visible half to that single reservation cell.
@@ -482,28 +551,28 @@ fn bundle_bed_head(
         .filter(|depth| **depth == 0)
         .enumerate()
         .filter_map(|(ordinal, _)| {
-            let other = bundle_bed_part(
-                map,
-                facts,
-                native,
-                index,
-                partner,
-                u8::try_from(ordinal).ok()?,
-            )?;
-            (other.part != part.part && other.partner_direction == opposite).then_some(other)
+            let ordinal = u8::try_from(ordinal).ok()?;
+            let other = bundle_bed_part(map, facts, native, index, partner, ordinal)?;
+            (other.part != part.part && other.partner_direction == opposite).then_some(ordinal)
         });
-    matches.next()?;
+    let partner_ordinal = matches.next()?;
     if matches.next().is_some() {
         return None;
     }
-    let head = if part.part == Part::Head {
-        pos
+    let target_placement = crate::map::view::placement_key(pos, ordinal)?;
+    let partner_placement = crate::map::view::placement_key(partner, partner_ordinal)?;
+    let (head, head_placement, foot_placement) = if part.part == Part::Head {
+        (pos, target_placement, partner_placement)
     } else {
-        partner
+        (partner, partner_placement, target_placement)
     };
-    Some(LogicalCell {
-        x: i32::from(head.x),
-        y: i32::from(head.y),
-        z: -i32::from(head.floor),
+    Some(BundleBedPair {
+        head: LogicalCell {
+            x: i32::from(head.x),
+            y: i32::from(head.y),
+            z: -i32::from(head.floor),
+        },
+        head_placement,
+        foot_placement,
     })
 }

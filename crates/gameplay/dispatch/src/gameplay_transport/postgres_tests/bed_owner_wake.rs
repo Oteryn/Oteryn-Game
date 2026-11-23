@@ -50,3 +50,23 @@ fn bed_owner_retries_temporary_holder_contention_postgres() -> TestResult {
 fn bed_owner_resume_reconciles_committed_unacknowledged_wake_postgres() -> TestResult {
     run(Case::Resume)
 }
+
+#[test]
+fn bed_owner_resume_terminalizes_database_rollback_postgres() -> TestResult {
+    run(Case::Rollback)
+}
+
+#[test]
+fn bed_owner_use_fences_intervening_placement_commit_postgres() -> TestResult {
+    run(Case::PlacementRace)
+}
+
+#[test]
+fn bed_owner_use_preserves_stale_static_revision_postgres() -> TestResult {
+    run(Case::StaleTarget)
+}
+
+#[test]
+fn bed_owner_use_preserves_map_handle_and_static_reach_refusals_postgres() -> TestResult {
+    run(Case::TooFar)
+}
