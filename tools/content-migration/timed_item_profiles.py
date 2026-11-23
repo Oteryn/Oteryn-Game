@@ -17,11 +17,37 @@ from native_profile_composition import encode_native_profile
 # (:7392-7457); each active form lasts 1800 s with stopduration on the base.
 SKILL_RINGS = {3050: 3087, 3091: 3094, 3092: 3095, 3093: 3096}
 
-IDS = {3051, 3053, 3081, 3088, 3090, 3097, 3099, 3549, 6529, 6530} | set(SKILL_RINGS) | set(SKILL_RINGS.values())
+# Crystal 201189f8 items.xml:6917-6926, :6948-6957, :7326-7338, :7365-7380.
+# The worn forms supply the effects. Their durations and transforms are already promoted.
+WORN_EFFECT_RINGS = {3049: 3086, 3052: 3089}
+WORN_EFFECT_MODIFIERS = {
+    3086: [('INVISIBILITY', 'BOOLEAN', True)],
+    3089: [
+        ('HEALTH_GAIN', 'SIGNED_POINTS', 2),
+        ('HEALTH_TICKS', 'MILLISECONDS', 6000),
+        ('MANA_GAIN', 'SIGNED_POINTS', 8),
+        ('MANA_TICKS', 'MILLISECONDS', 6000),
+    ],
+}
+RING_PAIRS = SKILL_RINGS | WORN_EFFECT_RINGS
+RING_IDS = set(RING_PAIRS) | set(RING_PAIRS.values())
 SKILL_RING_KEYS = {f'oteryn:item.tibia.i{i}' for i in set(SKILL_RINGS) | set(SKILL_RINGS.values())}
+IDS = {3051, 3053, 3081, 3088, 3090, 3097, 3099, 3549, 6529, 6530} | RING_IDS
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
+    from hireling_item_profiles import PATH as TRADER_PROFILES, RICH_GROUPS
+
+    # Carry the existing Trader profiles forward with their source metadata and
+    # physical facts. Only their equipment requirements need completion here.
+    worn_base_keys = {f'oteryn:item.tibia.i{i}' for i in WORN_EFFECT_RINGS}
+    trader_bases = {
+        row['production_definition']['production_key']: row
+        for row in json.loads((root / TRADER_PROFILES).read_bytes())['records']
+        if row['production_definition']['production_key'] in worn_base_keys
+    }
+    if trader_bases.keys() != worn_base_keys:
+        raise ValueError('TIMED_TRADER_BASE_PROFILES_MISSING')
     document = json.loads(generated[profile_path])
     bindings = json.loads((root / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']
     definitions = {}
@@ -39,6 +65,14 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if binding['disposition'] != 'EXACT':
             raise ValueError('TIMED_PROFILE_BINDING')
         semantics = copy.deepcopy(source['semantics'])
+        trader_base = trader_bases.get(key)
+        if trader_base is not None:
+            if trader_base['production_binding'] != binding:
+                raise ValueError(f'TIMED_TRADER_BASE_BINDING:{key}')
+            for group in RICH_GROUPS:
+                if semantics.get(group, {}).get('state') == 'KNOWN':
+                    trader_base['semantics'][group] = semantics[group]
+            semantics = trader_base['semantics']
         # TIMEDITEMS2-1: the inactive time ring has no speed ability. The active
         # form carries the admitted +30 modifier and inherits the base wearability.
         # Canary items.xml: 3053 -> 3090, speed=30, duration=600, deequip=3053.
@@ -56,11 +90,23 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         # stopduration); the active form keeps its definition skill and inherits base wearability.
         if key in {f'oteryn:item.tibia.i{i}' for i in SKILL_RINGS}:
             semantics['skill_modifiers'] = {'state': 'UNKNOWN'}
-        for base_id, active_id in SKILL_RINGS.items():
+        for base_id, active_id in RING_PAIRS.items():
             if key == f'oteryn:item.tibia.i{active_id}':
                 base = definitions[f'oteryn:item.tibia.i{base_id}']['semantics']
                 for group in ('equipment', 'stack', 'physical'):
                     semantics[group] = copy.deepcopy(base[group])
+                if active_id in WORN_EFFECT_MODIFIERS:
+                    semantics['skill_modifiers'] = {'state': 'KNOWN', 'value': {
+                        'modifiers': {'state': 'KNOWN', 'value': [
+                            {
+                                'kind': kind,
+                                'parameter': {'state': 'KNOWN', 'value': {'kind': parameter, 'value': value}},
+                                'evaluation_phase': {'state': 'UNKNOWN'},
+                                'priority': {'state': 'UNKNOWN'},
+                                'target_domain': {'state': 'UNKNOWN'},
+                            }
+                            for kind, parameter, value in WORN_EFFECT_MODIFIERS[active_id]
+                        ]}}}
         if key == 'oteryn:item.tibia.i3099':
             base = definitions['oteryn:item.tibia.i3097']['semantics']
             for group in ('equipment', 'stack', 'physical'):
@@ -95,7 +141,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                            'oteryn:item.tibia.i3097', 'oteryn:item.tibia.i3099') or key in SKILL_RING_KEYS:
                     pattern['vocations']['value'] = ['DRUID', 'KNIGHT', 'MONK', 'PALADIN', 'SORCERER']
                 pattern['level'] = {'state': 'KNOWN', 'value': 0}
-        document['records'].append({
+        document['records'].append(trader_base if trader_base is not None else {
             'authoring': {'item': source['identity']}, 'semantics': semantics,
             'attributes': {'speed_bonus': 30 if key == 'oteryn:item.tibia.i3090' else 0},
             'admission': {'materializable': True, 'stack_class': 'NonStackable',

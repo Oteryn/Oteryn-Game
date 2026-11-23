@@ -73,13 +73,15 @@ fn i05_crystal_charged_amulet_matches() {
 /// `items.xml:7458-7489`, decayTo 0) are admitted with their active-time budgets and no decay
 /// item. The power, sword, axe and club rings 3050/3091/3092/3093 -> 3087/3094/3095/3096
 /// (1,800 s, Crystal `items.xml:6927-6936`, `:7339-7350`, `:7392-7457`) are admitted too.
-/// Stealth, life and healing rings are pinned below until their invisibility and
-/// regeneration effects are production-ready.
+/// Stealth 3049 -> 3086 and life 3052 -> 3089 last 600 s and 1,200 s respectively
+/// (Crystal `items.xml:6917-6926`, `:6948-6957`, `:7326-7338`, `:7365-7380`).
 #[test]
-fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
+fn i05_crystal_timed_ring_pairs_match() {
     let controller = native();
     let native = native_state(&controller);
     for (base, active, seconds) in [
+        (3049, 3086, 600),
+        (3052, 3089, 1_200),
         (3053, 3090, 600),
         (3097, 3099, 3_600),
         (3050, 3087, 1_800),
@@ -95,6 +97,12 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
             key(active),
             "{base}"
         );
+        let active = typed_of(native, active).expect("active ring admitted");
+        assert_eq!(
+            transform(native, &active, ReferenceTransformKind::Deequip),
+            Some(definition.clone()),
+            "{base}"
+        );
         let (ring_facts, target) = facts(native, &definition).expect("timed facts");
         assert_eq!(
             ring_facts.full.remaining_ms(),
@@ -104,40 +112,11 @@ fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
         assert_eq!(ring_facts.full.charges(), None, "{base}");
         assert!(target.is_none(), "{base}");
     }
-
-    // I05 (2026-10-31): the skill rings left this pin when they were admitted above. These three
-    // active forms stay out: stealth 3049 -> 3086 needs invisibility, life 3052 -> 3089
-    // and healing 3098 -> 3100 need regeneration; neither effect is production-ready.
-    for base in [3049, 3052, 3098] {
-        let definition = typed_of(native, base);
-        // W15b admits the base stealth/life rings as chest rewards and E12 (915cc3787) admits
-        // the base healing ring as Trader stock. E12 also closes their equipment path until
-        // invisibility/regeneration are hosted (`unhosted_equipment_effect`, pinned by
-        // `i05_trader_custody_keeps_unhosted_ring_equipment_closed`), so no worn form exists.
-        let equipped = definition
-            .as_ref()
-            .and_then(|definition| equipped_definition(native, definition));
-        assert!(equipped.is_none(), "{base}");
-        assert!(
-            definition
-                .as_ref()
-                .and_then(|definition| facts(native, definition))
-                .is_none(),
-            "{base}"
-        );
-    }
-    for active in [3086, 3089, 3100] {
-        assert!(
-            native.item_policy(&key(active), "definition-r1").is_none(),
-            "{active}"
-        );
-    }
 }
 
-/// E12 adds genuine physical Trader stock. That must not grant an equipment
-/// writer or a timed-effect owner the previously withheld I05 mechanics.
+/// Trader custody preserves the healing ring's physical facts and its equipment refusal.
 #[test]
-fn i05_trader_custody_keeps_unhosted_ring_equipment_closed() {
+fn i05_trader_custody_keeps_healing_ring_equipment_closed() {
     use crate::durability::character_equipment::EquipmentMoveContent as _;
     use oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup as _;
     let controller = native();
@@ -152,24 +131,27 @@ fn i05_trader_custody_keeps_unhosted_ring_equipment_closed() {
         .expect("source physical facts");
         assert_eq!(
             physical.stack,
-            crate::durability::item_transfer::ItemStackClass::NonStackable
+            crate::durability::item_transfer::ItemStackClass::NonStackable,
+            "{base}"
         );
         assert!(physical.weight.is_some(), "{base}");
-        assert!(equipped_definition(native, &definition).is_none(), "{base}");
-        assert!(facts(native, &definition).is_none(), "{base}");
-        assert!(
-            weights
-                .equipment_policy(&definition.production_key, &definition.revision_ref)
-                .is_none(),
-            "{base}: no equipment writer grant"
-        );
-        assert!(
-            weights.is_timed_item(&definition.production_key, &definition.revision_ref),
-            "{base}: no ordinary untimed fallback"
-        );
-        assert!(weights.full_timed_values(&definition).is_none(), "{base}");
     }
-    for admitted in [3053, 3097] {
+    let definition = typed_of(native, 3098).expect("healing ring admitted for custody");
+    assert!(equipped_definition(native, &definition).is_none());
+    assert!(facts(native, &definition).is_none());
+    assert!(
+        weights
+            .equipment_policy(&definition.production_key, &definition.revision_ref)
+            .is_none(),
+        "healing ring has no equipment writer grant"
+    );
+    assert!(
+        weights.is_timed_item(&definition.production_key, &definition.revision_ref),
+        "healing ring cannot use ordinary untimed equip"
+    );
+    assert!(weights.full_timed_values(&definition).is_none());
+    assert!(native.item_policy(&key(3100), "definition-r1").is_none());
+    for admitted in [3049, 3052, 3053, 3097] {
         let definition = typed_of(native, admitted).expect("existing hosted ring");
         assert!(
             weights

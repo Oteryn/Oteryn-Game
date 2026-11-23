@@ -7,14 +7,9 @@ use crate::domain::timed_item_host::resolve_timed_definition;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_timed_state::{TimedDefinitionFacts, TimedExpiryTarget};
 
-/// I05 keeps these effects closed until invisibility/regeneration are hosted.
-/// Crystal 201189f items.xml:6917,6948,7468 supplies their physical identities;
-/// E12 admitting those identities for Trader custody cannot activate equipment.
+/// The healing ring remains admitted for Trader custody with its equipment path closed.
 pub(super) fn unhosted_equipment_effect(production_key: &str) -> bool {
-    matches!(
-        production_key,
-        "oteryn:item.tibia.i3049" | "oteryn:item.tibia.i3052" | "oteryn:item.tibia.i3098"
-    )
+    production_key == "oteryn:item.tibia.i3098"
 }
 
 fn typed(target: &ReferenceItemTarget) -> TypedDefinitionRef {
