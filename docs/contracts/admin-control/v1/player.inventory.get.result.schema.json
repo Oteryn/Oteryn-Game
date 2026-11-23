@@ -14,11 +14,18 @@
         "string",
         "null"
       ]
+    },
+    "stash_balances": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/StashBalance"
+      }
     }
   },
   "additionalProperties": false,
   "required": [
-    "items"
+    "items",
+    "stash_balances"
   ],
   "$defs": {
     "Item": {
@@ -51,6 +58,24 @@
         "type_id",
         "count",
         "location"
+      ]
+    },
+    "StashBalance": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "string"
+        },
+        "type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type_id",
+        "count"
       ]
     }
   }

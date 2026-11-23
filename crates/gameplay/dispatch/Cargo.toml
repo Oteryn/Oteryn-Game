@@ -78,6 +78,7 @@ oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests", features = ["
 oteryn-gameplay-social = { version = "=0.1.0", path = "../../gameplay/social", features = ["test-support"] }
 oteryn-gameplay-spell = { version = "=0.1.0", path = "../../gameplay/spell", features = ["test-support"] }
 oteryn-gameplay-world = { version = "=0.1.0", path = "../../gameplay/world", features = ["test-support"] }
+oteryn-test-support = { version = "=0.1.0", path = "../../test-support", features = ["postgres"] }
 oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../../tools/world-bundle-compiler" }
 rcgen.workspace = true
 rustls = { workspace = true, features = ["tls12"] }

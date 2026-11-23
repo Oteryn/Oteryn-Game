@@ -565,10 +565,11 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     qengine_reward_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import elephant_corpse_profiles
     elephant_corpse_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
-    # Arbaziloth owns corpse 50029. The retained Item source closes its
-    # Ground-only decay chain (Canary items.xml:82814-82829).
+    import quest_shared_boss_corpses
+    # Keep the existing native body policies with Crystal's 60 s, eight-slot stages.
     arbaziloth_corpses = elephant_corpse_profiles.capture_chain(
-        root, {50029: (300, 50028, 15), 50028: (300, 50027, 15), 50027: (60, 0, None)})
+        root, {50029: (60, 50028, 8), 50028: (60, 50027, 8), 50027: (60, 0, None)},
+        project_xml=quest_shared_boss_corpses.apply_arbaziloth_corpse_facts)
     qengine_reward_item_profiles.admit_records(
         root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
         NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes, arbaziloth_corpses)

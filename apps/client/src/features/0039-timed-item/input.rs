@@ -23,9 +23,20 @@ pub(in crate::play) fn submit(
     }
     match super::protocol::command(panel, intent) {
         Ok(command) => {
-            if oteryn_client_ui::timed_item::request(panel, command.kind)
-                && commands.send(PlayCommand::Feature(command)).is_err()
+            if !oteryn_client_ui::timed_item::request(panel, command.kind) {
+                return;
+            }
+            #[cfg(bevy_shell)]
+            if intent == Intent::Inspect
+                && let Some(target) = mailbox.properties.expiry_pending
+                && oteryn_client_runtime::timed_item::decode_timed_item_intent(&command.payload)
+                    .is_ok_and(|inspect| inspect.target == target && inspect.expected_revision == 0)
             {
+                // The form now owns this reply. Its reducer also updates the expiry label.
+                mailbox.properties.expiry_pending = None;
+                return;
+            }
+            if commands.send(PlayCommand::Feature(command)).is_err() {
                 panel.failed(tr!("The session has ended"));
             }
         }

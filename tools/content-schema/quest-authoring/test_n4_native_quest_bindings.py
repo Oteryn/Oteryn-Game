@@ -11,7 +11,9 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class NativeYalaharMechanisms(unittest.TestCase):
     def test_startup_uids_resolve_to_native_mechanisms(self):
-        rows = json.loads(n4_yalahar.generate(ROOT))["callbacks"]
+        generated = n4_yalahar.generate(ROOT)
+        self.assertEqual((ROOT / n4_yalahar.WORLD).read_text(encoding="utf-8"), generated)
+        rows = json.loads(generated)["callbacks"]
         mechanisms = {
             int(row["key"].rsplit("-", 1)[1]): row
             for row in rows

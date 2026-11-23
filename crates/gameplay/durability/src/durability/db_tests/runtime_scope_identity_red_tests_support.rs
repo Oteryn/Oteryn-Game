@@ -1,4 +1,4 @@
-use crate::durability::{AdmissionReconnectJournalV2, MigrationExecutor};
+use crate::durability::AdmissionReconnectJournalV2;
 use crate::foundation::{
     AccountPresenceClaimV1, AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId,
     CharacterId, CharacterLease, CharacterWorldEligibilityClaimV1, CommandId, ConnectionGeneration,
@@ -100,11 +100,13 @@ impl IsolatedDatabase {
             normalized
         );
         let mut admin = PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {database_name}"
-            ))))
-            .await?;
+        oteryn_test_support::postgres::create_migrated_database(
+            &mut admin,
+            &admin_url,
+            &database_name,
+            &oteryn_gameplay_durability::GAME_MIGRATOR,
+        )
+        .await?;
         Ok(Self {
             admin_url,
             database_name,
@@ -154,8 +156,6 @@ where
 async fn migrated_database(test_name: &str) -> Result<(IsolatedDatabase, String), Box<dyn Error>> {
     let database = IsolatedDatabase::create(test_name).await?;
     let database_url = database.database_url()?;
-    let executor = MigrationExecutor::connect_migration(&database_url).await?;
-    executor.apply_embedded_ledger().await?;
     Ok((database, database_url))
 }
 
