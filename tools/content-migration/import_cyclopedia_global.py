@@ -790,8 +790,14 @@ def project_item_authoring(root, definitions, legacy_authoring, *, rows=None):
     return effective
 
 
-def apply_trade_source(root, rows, identities, counts):
-    path = root / "content/world/definitions/declarations.json"
+def apply_trade_source(package_root, rows, reference, counts):
+    identities = {
+        item_id(record["identity"]): record["identity"]
+        for record in reference["records"]
+        if record["identity"]["family"] == "Item"
+        and item_id(record["identity"]) is not None
+    }
+    path = package_root / "definitions/declarations.json"
     raw = path.read_bytes()
     document = json.loads(raw)
     apply_trades(document["records"], rows, identities, counts)
@@ -1007,16 +1013,11 @@ def main():
     if args.details_only:
         rows = load_capture(root)
         counts = Counter()
+        package_root = root / "content/world"
         reference = json.loads(
-            (root / "content/world/definitions/reference.json").read_bytes()
+            (package_root / "definitions/reference.json").read_bytes()
         )
-        identities = {
-            item_id(record["identity"]): record["identity"]
-            for record in reference["records"]
-            if record["identity"]["family"] == "Item"
-            and item_id(record["identity"]) is not None
-        }
-        declarations = apply_trade_source(root, rows, identities, counts)
+        declarations = apply_trade_source(package_root, rows, reference, counts)
         materialize_details(root, reference, declarations)
         print(json.dumps(counts, sort_keys=True, indent=2))
         return
