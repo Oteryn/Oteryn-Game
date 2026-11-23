@@ -648,6 +648,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             || self.states.server_messages.join_selected(
                 admitted.game_session_id,
                 admitted.continuity.connection_generation,
+                admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(oteryn_protocol_oteryn::zones_nologout::CAPABILITY_BOSS_DEFEATED_V1),
                 admitted.continuity.selected_capabilities.contains(
                     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_SERVER_MESSAGE_CATEGORY_V1,
                 ),

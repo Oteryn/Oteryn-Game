@@ -27,6 +27,7 @@ type ConnectionRoot = (GameSessionId, u64);
 struct Recipient {
     connection_generation: u64,
     connection_root: ConnectionRoot,
+    boss_defeats: bool,
     categorized: bool,
     soulpit_completion: Option<[u8; 16]>,
     queue: VecDeque<Arc<ServerNotification>>,
@@ -58,13 +59,14 @@ impl ServerMessageHub {
 
     #[cfg(test)]
     pub(super) fn join(&self, session: GameSessionId, connection_generation: u64) -> bool {
-        self.join_selected(session, connection_generation, false)
+        self.join_selected(session, connection_generation, false, false)
     }
 
     pub(super) fn join_selected(
         &self,
         session: GameSessionId,
         connection_generation: u64,
+        boss_defeats: bool,
         categorized: bool,
     ) -> bool {
         if connection_generation == 0 {
@@ -97,6 +99,7 @@ impl ServerMessageHub {
             Recipient {
                 connection_generation,
                 connection_root,
+                boss_defeats,
                 categorized,
                 soulpit_completion: None,
                 queue: VecDeque::new(),
@@ -130,7 +133,9 @@ impl ServerMessageHub {
         let Some(recipient) = state.recipients.get_mut(&session) else {
             return false;
         };
-        if recipient.queue.len() >= MAX_ANNOUNCEMENTS {
+        if recipient.queue.len() >= MAX_ANNOUNCEMENTS
+            || (matches!(message, ServerMessage::BossDefeated(_)) && !recipient.boss_defeats)
+        {
             return false;
         }
         recipient.queue.push_back(Arc::new(message.into()));

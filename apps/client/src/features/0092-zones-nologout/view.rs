@@ -24,11 +24,13 @@ impl PlayView {
             return None;
         }
         self.server_messages
-            .back()
-            .map(|message| match &message.value {
-                ServerMessage::StatusText(text) => text.clone(),
-                ServerMessage::Warning(text) => lfmt!("Warning: {text}", text = text),
-                ServerMessage::Advance(text) => lfmt!("Advance: {text}", text = text),
+            .iter()
+            .rev()
+            .find_map(|message| match &message.value {
+                ServerMessage::StatusText(text) => Some(text.clone()),
+                ServerMessage::Warning(text) => Some(lfmt!("Warning: {text}", text = text)),
+                ServerMessage::Advance(text) => Some(lfmt!("Advance: {text}", text = text)),
+                ServerMessage::BossDefeated(_) => None,
             })
     }
 }

@@ -1,0 +1,16 @@
+{
+  "mechanic": "0617-chat-system-message",
+  "kind": "handlers",
+  "id": "0617-chat-system-message-observe",
+  "status": "unsupported",
+  "commands": [],
+  "direction": "server_to_client",
+  "reason": "The client chat lane will opt in to authenticated system feedback.",
+  "not_applicable": {
+    "state": "The native client leaves this capability unselected.",
+    "protocol": "Selected independently through capability negotiation.",
+    "view": "The client chat lane will opt in to authenticated system feedback.",
+    "input": "This extension adds no new client input.",
+    "settings": "No new setting is defined by the wire extension."
+  }
+}

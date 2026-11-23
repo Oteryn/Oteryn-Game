@@ -137,9 +137,9 @@ impl Mailbox {
             return;
         }
         if let Some(price) = price {
-            self.analyser.loot_prices.insert(id, price);
+            std::sync::Arc::make_mut(&mut self.analyser.loot_prices).insert(id, price);
         } else {
-            self.analyser.loot_prices.remove(&id);
+            std::sync::Arc::make_mut(&mut self.analyser.loot_prices).remove(&id);
         }
         self.analyser.party.clear();
         self.analyser.party_revision = self.analyser.party_revision.saturating_add(1);

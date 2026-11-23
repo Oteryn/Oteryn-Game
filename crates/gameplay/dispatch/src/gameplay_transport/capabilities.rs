@@ -113,8 +113,8 @@ pub(super) const BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES: &[OfferedCapability]
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
 /// CAPCAP-1 raised it from 32 to 64, CAPCAP-2 to 112, CAPCAP-4 to 128 and the WU26 native-client
-/// batch to 160. Package s9sp has 187 base Bundle World offers. Leave room for conditional
-/// offers such as Training, Store, rule-violation and character presentation.
+/// batch to 160. The combined package and capabilities 615–617 fit within 224, with room for
+/// conditional offers such as Training, Store, rule-violation and character presentation.
 /// A selection larger than this bound fails as `SelectionUnavailable`.
 pub const SELECTED_CAPACITY: usize = 224;
 const _: () = {

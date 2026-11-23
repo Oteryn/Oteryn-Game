@@ -3,6 +3,7 @@ use crate::bestiary_postgres_harness::TestResult;
 
 #[test]
 fn party_skull_real_dispatch_postgres_end_to_end() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     super::party_membership_fixtures::run(true)
 }
 

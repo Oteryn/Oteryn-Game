@@ -8,6 +8,7 @@ use crate::charm_wire::{
 
 pub const CAPABILITY_ZONES_NOLOGOUT_V1: u32 = 92;
 pub const CAPABILITY_SERVER_MESSAGE_CATEGORY_V1: u32 = 575;
+pub const CAPABILITY_BOSS_DEFEATED_V1: u32 = 615;
 pub const STATE_DOMAIN_SERVER_MESSAGES: u32 = 57;
 pub const MAX_SERVER_MOTD_BYTES: usize = 255;
 pub const SERVER_MESSAGES_EMPTY_SNAPSHOT: &[u8] = &[8, 1];
@@ -19,6 +20,7 @@ pub enum ServerMessage {
     StatusText(String),
     Warning(String),
     Advance(String),
+    BossDefeated(String),
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -49,7 +51,7 @@ impl From<ServerMessage> for ServerNotification {
 pub fn encode_server_notification(notice: &ServerNotification) -> WireResult<Vec<u8>> {
     let mut payload = encode_server_message(&notice.message)?;
     if notice.category != ServerMessageCategory::Default {
-        push_varint_field(&mut payload, 5, notice.category as u64);
+        push_varint_field(&mut payload, 6, notice.category as u64);
     }
     Ok(payload)
 }
@@ -59,6 +61,7 @@ pub fn encode_server_message(message: &ServerMessage) -> WireResult<Vec<u8>> {
         ServerMessage::StatusText(text) => (2, text),
         ServerMessage::Warning(text) => (3, text),
         ServerMessage::Advance(text) => (4, text),
+        ServerMessage::BossDefeated(key) => (5, key),
     };
     if text.is_empty() || text.len() > MAX_SERVER_MOTD_BYTES {
         return Err(ServerMessageError::Malformed);
@@ -78,7 +81,7 @@ pub fn decode_server_notification(bytes: &[u8]) -> WireResult<ServerNotification
     }
     let mut cursor = 0;
     let tag = read_varint(bytes, &mut cursor)?;
-    if !matches!(tag, 0x12 | 0x1a | 0x22) {
+    if !matches!(tag, 0x12 | 0x1a | 0x22 | 0x2a) {
         return Err(ServerMessageError::Malformed);
     }
     let text = read_bytes(bytes, &mut cursor)?;
@@ -92,12 +95,14 @@ pub fn decode_server_notification(bytes: &[u8]) -> WireResult<ServerNotification
         0x12 => ServerMessage::StatusText(text),
         0x1a => ServerMessage::Warning(text),
         0x22 => ServerMessage::Advance(text),
+        0x2a => ServerMessage::BossDefeated(text),
         _ => return Err(ServerMessageError::Malformed),
     };
     let category = if cursor == bytes.len() {
         ServerMessageCategory::Default
     } else {
-        if read_varint(bytes, &mut cursor)? != 0x28 {
+        // Field 5 varint was emitted by the staging version of capability 575.
+        if !matches!(read_varint(bytes, &mut cursor)?, 0x30 | 0x28) {
             return Err(ServerMessageError::Malformed);
         }
         match read_varint(bytes, &mut cursor)? {
