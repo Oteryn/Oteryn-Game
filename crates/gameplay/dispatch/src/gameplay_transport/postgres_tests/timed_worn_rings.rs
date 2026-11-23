@@ -17,21 +17,76 @@ use std::time::Duration;
 
 #[test]
 fn stealth_ring_equip_hides_until_expiry_postgres() -> TestResult {
-    run_ring("stealth_ring", 3049, 3086, 600_000)
+    run_ring("stealth_ring", 3049, 3086, 600_000, Case::Lifecycle)
 }
 
 #[test]
 fn life_ring_regen_pauses_and_resumes_postgres() -> TestResult {
-    run_ring("life_ring", 3052, 3089, 1_200_000)
+    run_ring("life_ring", 3052, 3089, 1_200_000, Case::Lifecycle)
 }
 
-fn run_ring(name: &'static str, base: u32, worn: u32, full_ms: i64) -> TestResult {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Lifecycle,
+    Replacement,
+    StalledCadence,
+    Status,
+    ExpiryPublication,
+    InterruptedMove,
+}
+
+#[test]
+fn timed_worn_rings_replacement_has_its_own_regeneration_clock_postgres() -> TestResult {
+    run_ring("ring_replacement", 3052, 3089, 1_200_000, Case::Replacement)
+}
+
+#[test]
+fn timed_worn_rings_stall_credits_elapsed_wear_postgres() -> TestResult {
+    run_ring("ring_stalled", 3052, 3089, 1_200_000, Case::StalledCadence)
+}
+
+#[test]
+fn timed_worn_rings_project_condition_status_postgres() -> TestResult {
+    run_ring("stealth_status", 3049, 3086, 600_000, Case::Status)?;
+    run_ring("life_status", 3052, 3089, 1_200_000, Case::Status)
+}
+
+#[test]
+fn timed_worn_rings_clear_effect_before_expiry_publication_postgres() -> TestResult {
+    run_ring(
+        "stealth_expiry_publication",
+        3049,
+        3086,
+        600_000,
+        Case::ExpiryPublication,
+    )?;
+    run_ring(
+        "life_expiry_publication",
+        3052,
+        3089,
+        1_200_000,
+        Case::ExpiryPublication,
+    )
+}
+
+#[test]
+fn timed_worn_rings_reconcile_interrupted_move_publication_postgres() -> TestResult {
+    run_ring(
+        "ring_interrupted_move",
+        3052,
+        3089,
+        1_200_000,
+        Case::InterruptedMove,
+    )
+}
+
+fn run_ring(name: &'static str, base: u32, worn: u32, full_ms: i64, case: Case) -> TestResult {
     super::journal_watchdog::run(name, move |stage| {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, name, true, false).await?;
             eprintln!("POSTGRES_STARTED {name}");
             stage.set("equip, reconnect, and expire");
-            let result = exercise_ring(&h, base, worn, full_ms).await;
+            let result = exercise_ring(&h, base, worn, full_ms, case).await;
             stage.set("cleanup");
             let cleanup = h.cleanup().await;
             result.and(cleanup)
@@ -39,7 +94,7 @@ fn run_ring(name: &'static str, base: u32, worn: u32, full_ms: i64) -> TestResul
     })
 }
 
-async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64) -> TestResult {
+async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64, case: Case) -> TestResult {
     let recovery = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -116,6 +171,7 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64) -> TestR
                     .ok_or("backpack revision")?,
             ),
             (&base_key, index.revision(&base_key).ok_or("ring revision")?),
+            (&base_key, index.revision(&base_key).ok_or("ring revision")?),
         ],
     )
     .await?;
@@ -128,7 +184,7 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64) -> TestR
         .bind(frame.as_slice()).execute(&h.pool).await?;
 
     deps.initialize(&owner).await;
-    {
+    let (max_health, max_mana) = {
         let mut runtime = owner.runtime.lock().await;
         assert_eq!(
             crate::gameplay_transport::actor_spell::qualified_protection_zone(
@@ -144,7 +200,9 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64) -> TestR
             .get_mut(&runtime, actor, session)
             .ok_or("actor spell state")?;
         state.restore_saved_vitals(25, 0);
-    }
+        let facts = state.character_facts();
+        (facts.max_health, facts.max_mana)
+    };
     let invisible = base == 3049;
     let starting = ring_effects(&owner, &deps).await?;
     assert_eq!(starting, (false, 0, 25, 0));
@@ -189,13 +247,119 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64) -> TestR
         (invisible, usize::from(!invisible), 25, 0)
     );
 
+    match case {
+        Case::Replacement => {
+            for _ in 0..5 {
+                tick_one_second(&mut owner, &deps).await;
+            }
+            let replacement = EquipmentMove::Equip {
+                item: ItemKey::Instance(id(94)),
+                to: EquipmentSlot::Ring,
+            };
+            assert_eq!(
+                move_equipment(&owner, actor, command(admitted, 2), replacement).await,
+                EquipmentMoveResult::Committed
+            );
+            tick_one_second(&mut owner, &deps).await;
+            let (_, _, health, mana) = ring_effects(&owner, &deps).await?;
+            assert_eq!(
+                (health, mana),
+                (25, 1),
+                "the replacement must wait for its own pulse"
+            );
+            return Ok(());
+        }
+        Case::StalledCadence => {
+            tick_regen_pulse(&mut owner, &deps).await;
+            let (_, _, health, mana) = ring_effects(&owner, &deps).await?;
+            owner.clock_origin -= Duration::from_secs(7);
+            owner.tick_timed_items().await;
+            let _ = owner.tick_spell_periodic(actor, session).await;
+            let (_, _, next_health, next_mana) = ring_effects(&owner, &deps).await?;
+            assert_eq!(
+                next_health - health,
+                2,
+                "the seven-second stall includes a six-second pulse"
+            );
+            assert!(next_mana - mana >= 8);
+            return Ok(());
+        }
+        Case::Status => {
+            owner.clock_origin -= Duration::from_secs(7);
+            return assert_ring_status(&owner, admitted, invisible, full_ms - 7_000).await;
+        }
+        Case::ExpiryPublication => {
+            use crate::gameplay_transport::timed_item_clock::RETIRED_EQUIPMENT_READ;
+            let entered = std::sync::Arc::new(tokio::sync::Notify::new());
+            let proceed = std::sync::Arc::new(tokio::sync::Notify::new());
+            owner.clock_origin -= Duration::from_millis(u64::try_from(full_ms)?);
+            let expiry = RETIRED_EQUIPMENT_READ
+                .scope((entered.clone(), proceed.clone()), owner.tick_timed_items());
+            let inspect = async {
+                entered.notified().await;
+                let effects = ring_effects(&owner, &deps).await;
+                proceed.notify_one();
+                effects
+            };
+            let ((), effects) = tokio::join!(expiry, inspect);
+            let (hidden, regen, _, _) = effects?;
+            assert_eq!(
+                (hidden, regen),
+                (false, 0),
+                "commit must retire the effect before reread"
+            );
+            return Ok(());
+        }
+        Case::InterruptedMove => {
+            use crate::durability::character_equipment::EquipmentMove as DurableMove;
+            use crate::foundation::{CommandId, CommandRef};
+            use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+
+            let native = active.native_gameplay().ok_or("native gameplay")?;
+            let ring_slot = oteryn_protocol_oteryn::item_view::durable_slot(EquipmentSlot::Ring);
+            for (command, from_slot, to_slot, expected) in
+                [(2, ring_slot, None, 0), (3, None, ring_slot, 1)]
+            {
+                owner
+                    .root
+                    .commit_equipment_move(
+                        owner.character,
+                        owner.holder,
+                        &fence.item_fence(),
+                        CommandRef::new(session, CommandId::new(command).map_err(debug)?),
+                        &NativeItemWeights(native),
+                        DurableMove {
+                            item: id(90),
+                            from_slot,
+                            to_slot,
+                        },
+                    )
+                    .await
+                    .map_err(debug)?
+                    .map_err(debug)?;
+                // The transaction committed, but its caller never published the new effects.
+                owner.clock_origin -= Duration::from_secs(1);
+                owner.tick_timed_items().await;
+                assert_eq!(ring_effects(&owner, &deps).await?.1, expected);
+            }
+            return Ok(());
+        }
+        Case::Lifecycle => {}
+    }
     tick_regen_pulse(&mut owner, &deps).await;
     owner.clock_origin -= Duration::from_secs(54);
     owner.tick_timed_items().await;
     assert!((full_ms - 62_000..=full_ms - 60_000).contains(&budget(h).await?));
     let (_, _, health, mana) = ring_effects(&owner, &deps).await?;
     // The hungry monk also gains one mana on the first six native ticks.
-    assert_eq!((health, mana), if invisible { (25, 1) } else { (27, 9) });
+    assert_eq!(
+        (health, mana),
+        if invisible {
+            (25, 1)
+        } else {
+            (45.min(max_health), 81.min(max_mana))
+        }
+    );
 
     assert_eq!(
         move_equipment(&owner, actor, command(admitted, 2), unequip).await,
@@ -243,7 +407,7 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64) -> TestR
         if invisible {
             (true, 0, 26, 3)
         } else {
-            (false, 1, 30, 19)
+            (false, 1, 66.min(max_health), 163.min(max_mana))
         }
     );
     let remaining = budget(h).await?;
@@ -255,6 +419,15 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64) -> TestR
     assert!((1..=2_000).contains(&budget(h).await?));
     owner.clock_origin -= Duration::from_secs(3);
     owner.tick_timed_items().await;
+    let final_pulses = u32::try_from(paused / 6_000 - 10)?;
+    let (health, mana) = if invisible {
+        (health, mana)
+    } else {
+        (
+            (health + 2 * final_pulses).min(max_health),
+            (mana + 8 * final_pulses).min(max_mana),
+        )
+    };
     assert_eq!(ring_effects(&owner, &deps).await?, (false, 0, health, mana));
     assert!(
         observe_character_equipment(&owner, session)
@@ -272,12 +445,72 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64) -> TestR
     Ok(())
 }
 
+async fn assert_ring_status(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: super::AdmittedSession,
+    invisible: bool,
+    full_ms: i64,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+    use oteryn_protocol_oteryn::condition_status::{
+        CAPABILITY_CONDITION_STATUS_V1, COMMAND_TYPE_CONDITION_STATUS_QUERY, ConditionStatus,
+    };
+
+    let fence = admitted.item_fence.ok_or("condition status item fence")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            admitted.runtime_actor.ok_or("condition status actor")?,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        &[OfferedCapability {
+            id: CAPABILITY_CONDITION_STATUS_V1,
+            requires: &[],
+        }],
+        &[CAPABILITY_CONDITION_STATUS_V1],
+    )
+    .ok_or("condition-status capability")?;
+    let command_id = admitted.continuity.next_command_id;
+    let (status, bytes) = super::cyclopedia_fixtures::support::exchange(
+        owner,
+        &mut admitted,
+        command_id,
+        COMMAND_TYPE_CONDITION_STATUS_QUERY,
+        &[],
+    )
+    .await?;
+    assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+    let page = ConditionStatus::decode(&bytes).ok_or("condition status decode")?;
+    let effect = page
+        .conditions
+        .iter()
+        .find(|effect| effect.icon == if invisible { 9 } else { 21 })
+        .ok_or("the worn ring effect is missing from condition status")?;
+    assert!((full_ms - 2_000..=full_ms).contains(&effect.remaining_ms));
+    Ok(())
+}
+
+async fn tick_one_second(owner: &mut ComposedFreshAdmission<'_, '_, '_>, deps: &Dependencies) {
+    owner.clock_origin -= Duration::from_secs(1);
+    owner.tick_timed_items().await;
+    let _ = owner
+        .tick_spell_periodic(deps.actor, deps.admitted.game_session_id)
+        .await;
+}
+
 async fn tick_regen_pulse(owner: &mut ComposedFreshAdmission<'_, '_, '_>, deps: &Dependencies) {
     for _ in 0..6 {
-        owner.clock_origin -= Duration::from_secs(1);
-        let _ = owner
-            .tick_spell_periodic(deps.actor, deps.admitted.game_session_id)
-            .await;
+        tick_one_second(owner, deps).await;
     }
 }
 
@@ -306,12 +539,12 @@ async fn budget(h: &Harness) -> TestResult<i64> {
         .bind(id(90).as_slice()).fetch_one(&h.pool).await?)
 }
 
-async fn seed_custody(h: &Harness, items: &[(&str, &str); 2]) -> TestResult {
+async fn seed_custody(h: &Harness, items: &[(&str, &str); 3]) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    for (seed, (key, revision)) in [70, 90].into_iter().zip(items) {
+    for (seed, (key, revision)) in [70, 90, 94].into_iter().zip(items) {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
             .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(*key).bind(*revision).bind(id(seed + 1).as_slice()).execute(&mut *tx).await?;
     }
@@ -319,8 +552,10 @@ async fn seed_custody(h: &Harness, items: &[(&str, &str); 2]) -> TestResult {
         .bind(id(41).as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
         .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(42).as_slice()).bind(id(72).as_slice()).execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($5,'hex')::uuid)")
-        .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(90).as_slice()).bind(id(42).as_slice()).bind(id(92).as_slice()).execute(&mut *tx).await?;
+    for (ordinal, seed) in [(1, 90), (2, 94)] {
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(ordinal).bind(id(seed + 2).as_slice()).execute(&mut *tx).await?;
+    }
     sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'monk',10,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET vocation='monk'")
         .bind(id(41).as_slice()).bind(id(30).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;

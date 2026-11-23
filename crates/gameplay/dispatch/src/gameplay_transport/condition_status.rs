@@ -1,4 +1,4 @@
-//! C08: read the admitted actor's two existing condition owners under their locks.
+//! C08: project the admitted actor's live conditions and timed equipment.
 use super::{
     ComposedFreshAdmission, actor_spell::ChannelSpellStates, capabilities::OfferedCapability,
     connection::AdmittedSession,
@@ -9,7 +9,7 @@ use oteryn_gameplay_domain::domain::condition::{
 };
 use oteryn_gameplay_foundation::foundation::condition::ConditionStore;
 use oteryn_protocol_oteryn::condition_status::{
-    ActiveCondition, CAPABILITY_CONDITION_STATUS_V1, ConditionStatus,
+    ActiveCondition, CAPABILITY_CONDITION_STATUS_V1, ConditionStatus, MAX_CONDITION_STATUS_COUNT,
 };
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
@@ -81,6 +81,23 @@ fn catalogue(kind: ConditionType) -> Option<(u8, u8)> {
         ConditionType::Agony => (27, 0),
     })
 }
+fn merge(
+    conditions: &mut std::collections::BTreeMap<(u8, u8), i64>,
+    key: (u8, u8),
+    remaining: i64,
+) {
+    conditions
+        .entry(key)
+        .and_modify(|current| {
+            *current = if *current == -1 || remaining == -1 {
+                -1
+            } else {
+                (*current).max(remaining)
+            };
+        })
+        .or_insert(remaining);
+}
+
 fn append<S: Clone>(
     conditions: &mut std::collections::BTreeMap<(u8, u8), i64>,
     store: &ConditionStore<S>,
@@ -90,16 +107,7 @@ fn append<S: Clone>(
         // The monster-only source marker is not a byte-sized player icon.
         // Refuse an unrepresentable player snapshot instead of truncating it.
         let key = catalogue(kind)?;
-        conditions
-            .entry(key)
-            .and_modify(|current| {
-                *current = if *current == -1 || remaining == -1 {
-                    -1
-                } else {
-                    (*current).max(remaining)
-                };
-            })
-            .or_insert(remaining);
+        merge(conditions, key, remaining);
     }
     Some(())
 }
@@ -109,6 +117,17 @@ pub(super) fn snapshot(
     actor: ExactActorRef,
     session: GameSessionId,
     now: u64,
+) -> Option<ConditionStatus> {
+    snapshot_with_equipment(runtime, states, actor, session, now, |_| None)
+}
+
+fn snapshot_with_equipment(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now: u64,
+    remaining_wear: impl Fn(&[u8; 16]) -> Option<i64>,
 ) -> Option<ConditionStatus> {
     if runtime
         .player_control_facts(actor, session)
@@ -128,6 +147,42 @@ pub(super) fn snapshot(
     let mut conditions = std::collections::BTreeMap::new();
     append(&mut conditions, state.owned_conditions(), now)?;
     append(&mut conditions, native, now)?;
+    let equipment = [
+        (
+            catalogue(ConditionType::Invisible)?,
+            state
+                .equipped_invisibility_sources()
+                .iter()
+                .filter_map(&remaining_wear)
+                .max(),
+        ),
+        (
+            // Sub-id zero denotes native equipment regeneration.
+            catalogue(ConditionType::SpellRegeneration(0))?,
+            state
+                .equipped_regeneration()
+                .iter()
+                .filter_map(|clock| remaining_wear(&clock.worn.item))
+                .max(),
+        ),
+    ];
+    for (key, remaining) in equipment {
+        let Some(remaining) = remaining else { continue };
+        if conditions.len() == MAX_CONDITION_STATUS_COUNT && !conditions.contains_key(&key) {
+            // Keep the worn entries and the existing wire bound at a full snapshot.
+            let last_unworn = conditions
+                .keys()
+                .rev()
+                .find(|key| {
+                    !equipment
+                        .iter()
+                        .any(|(worn, time)| worn == *key && time.is_some())
+                })
+                .copied()?;
+            conditions.remove(&last_unworn);
+        }
+        merge(&mut conditions, key, remaining);
+    }
     Some(ConditionStatus {
         conditions: conditions
             .into_iter()
@@ -166,12 +221,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let states = self.states.spell_states.try_lock().ok()?;
-        snapshot(
+        let state = states.get(&runtime, actor, admitted.game_session_id)?;
+        let wear = if !state.equipped_invisibility_sources().is_empty()
+            || state
+                .equipped_regeneration()
+                .iter()
+                .any(|clock| clock.worn.timed)
+        {
+            Some(self.states.timed_items.sessions.try_lock().ok()?)
+        } else {
+            None
+        };
+        let clock = wear
+            .as_ref()
+            .and_then(|wear| wear.get(&admitted.game_session_id));
+        let wear_now = super::timed_item_clock::clock_ms(self);
+        snapshot_with_equipment(
             &runtime,
             &states,
             actor,
             admitted.game_session_id,
             self.owner_now().get(),
+            |item| {
+                let remaining = clock?.items.get(item)?.deadline_ms?.checked_sub(wear_now)?;
+                i64::try_from(remaining)
+                    .ok()
+                    .filter(|remaining| *remaining > 0)
+            },
         )?
         .encode()
     }

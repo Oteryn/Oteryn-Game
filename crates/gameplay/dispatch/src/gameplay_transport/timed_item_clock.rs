@@ -7,6 +7,10 @@ use crate::foundation::{ExactActorRef, GameSessionId};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 
+pub(super) fn clock_ms(owner: &super::ComposedFreshAdmission<'_, '_, '_>) -> u64 {
+    u64::try_from(owner.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX)
+}
+
 #[cfg(test)]
 tokio::task_local! {
     pub(super) static RETIRED_EQUIPMENT_READ: (
@@ -104,7 +108,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn tick_timed_items(&self) {
-        let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let now = clock_ms(self);
         use std::sync::atomic::Ordering;
         let next = &self.states.timed_items.next_tick_ms;
         if now < next.load(Ordering::Relaxed) {
@@ -285,7 +289,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
             return false;
         }
-        let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let now = clock_ms(self);
         let Some(mut active_mana_shield) =
             super::equipment_move::equipment_effects_owner::equipped_mana_shield(
                 &equipment, native,
@@ -305,148 +309,217 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // cannot prove whether the value-moving transaction committed.
         let mut retired_equipment =
             clock.refresh_equipment || (house && clock.items.keys().any(|id| !held.contains(id)));
-        for (id, lane) in &clock.items {
-            if !held.contains(id)
-                && let Some((request, _)) = &lane.pending
-            {
-                if !self.states.player_trades.physical(session, None) {
-                    return false;
+        let mut retired_items = Vec::new();
+        let advanced = async {
+            for (id, lane) in &clock.items {
+                if !held.contains(id)
+                    && let Some((request, _)) = &lane.pending
+                {
+                    if !self.states.player_trades.physical(session, None) {
+                        return false;
+                    }
+                    match self
+                        .root
+                        .commit_timed_action_in_scope(
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                            house_origin,
+                        )
+                        .await
+                    {
+                        Ok(_)
+                        | Err(crate::durability::item_timed_state::TimedWriteError::NotHeld) => {}
+                        Err(_) => return false,
+                    }
+                    retired_equipment = true;
                 }
+            }
+            clock.refresh_equipment = retired_equipment;
+            if !house {
+                clock.items.retain(|id, _| held.contains(id));
+            }
+            for item in &equipment.items {
+                let Some((definition, target)) = facts(native, &item.definition) else {
+                    continue;
+                };
+                if definition.full.remaining_ms().is_none() {
+                    continue;
+                }
+                let lane = clock
+                    .items
+                    .entry(item.item_instance_id)
+                    .or_insert(ItemClock {
+                        started_at_ms: now,
+                        deadline_ms: None,
+                        at_ms: now,
+                        pending: None,
+                    });
+                if lane.pending.is_none() {
+                    let elapsed = now.saturating_sub(lane.at_ms);
+                    let Ok(row) = self
+                        .root
+                        .read_timed_row_in_scope(
+                            self.character,
+                            self.holder,
+                            fence,
+                            item.item_instance_id,
+                            house_origin,
+                        )
+                        .await
+                    else {
+                        return false;
+                    };
+                    if row.is_some_and(|row| row.values.is_none()) {
+                        lane.deadline_ms = None;
+                        continue;
+                    }
+                    let remaining = row
+                        .and_then(|row| row.values)
+                        .unwrap_or(definition.full)
+                        .remaining_ms()
+                        .unwrap_or(0);
+                    lane.deadline_ms = Some(lane.at_ms.saturating_add(remaining));
+                    if elapsed == 0 || (!force && elapsed < 60_000 && elapsed < remaining) {
+                        continue;
+                    }
+
+                    clock.serial = match clock.serial.checked_add(1) {
+                        Some(n) => n,
+                        None => return false,
+                    };
+                    // The owner incarnation, session and item are independent of client command ids.
+                    let mut hash = Sha256::new();
+                    hash.update(b"oteryn:timed-owner-clock:v1");
+                    hash.update(session.as_bytes());
+                    hash.update(item.item_instance_id);
+                    hash.update(self.holder.fact().registration_revision().to_be_bytes());
+                    hash.update(fence.connection_generation.get().to_be_bytes());
+                    hash.update(row.map_or(0, |row| row.revision).to_be_bytes());
+                    hash.update(clock.serial.to_be_bytes());
+                    let binding: [u8; 32] = hash.finalize().into();
+                    let mut id = [0; 16];
+                    id.copy_from_slice(&binding[..16]);
+                    id[6] = (id[6] & 15) | 0x70;
+                    id[8] = (id[8] & 63) | 0x80;
+                    let mut event = id;
+                    event[15] ^= 1;
+                    lane.pending = Some((
+                        TimedRequest {
+                            transaction_id: id,
+                            content_digest: native.source_digest(),
+                            event_id: event,
+                            binding,
+                            item: item.item_instance_id,
+                            expected_revision: row.map_or(0, |row| row.revision),
+                            definition,
+                            target,
+                            operation: TimedOperation::Advance(elapsed.min(604_800_000)),
+                            occurred_at_unix_ms: super::npc_trade_command::unix_ms_now(),
+                        },
+                        now,
+                    ));
+                }
+                let Some((request, at)) = lane.pending.clone() else {
+                    continue;
+                };
                 match self
                     .root
                     .commit_timed_action_in_scope(
                         self.character,
                         self.holder,
                         fence,
-                        request.clone(),
+                        request,
                         house_origin,
                     )
                     .await
                 {
-                    Ok(_) | Err(crate::durability::item_timed_state::TimedWriteError::NotHeld) => {}
+                    Ok(result)
+                        if result.disposition
+                            == oteryn_protocol_oteryn::timed_item::TimedDisposition::Ok =>
+                    {
+                        retired_equipment |= result.retired;
+                        clock.refresh_equipment |= result.retired;
+                        if result.retired {
+                            retired_items.push(item.item_instance_id);
+                        }
+                        lane.at_ms = at;
+                        lane.pending = None;
+                    }
+                    // A distinct command changed the revision. No old elapsed time may be applied
+                    // to its successor lifetime; reload from that committed row.
+                    Ok(_) => {
+                        lane.at_ms = now;
+                        lane.deadline_ms = None;
+                        lane.pending = None;
+                    }
                     Err(_) => return false,
                 }
-                retired_equipment = true;
             }
+            true
         }
-        clock.refresh_equipment = retired_equipment;
-        if !house {
-            clock.items.retain(|id, _| held.contains(id));
-        }
-        let mut proficiency_equipment = equipment.clone();
-        for item in equipment.items {
-            let Some((definition, target)) = facts(native, &item.definition) else {
-                continue;
-            };
-            if definition.full.remaining_ms().is_none() {
-                continue;
-            }
-            let lane = clock
-                .items
-                .entry(item.item_instance_id)
-                .or_insert(ItemClock {
-                    at_ms: now,
-                    pending: None,
-                });
-            if lane.pending.is_none() {
-                let elapsed = now.saturating_sub(lane.at_ms);
-                if elapsed == 0 {
-                    continue;
-                }
-                let Ok(row) = self
-                    .root
-                    .read_timed_row_in_scope(
-                        self.character,
-                        self.holder,
-                        fence,
-                        item.item_instance_id,
-                        house_origin,
-                    )
-                    .await
-                else {
-                    return false;
-                };
-                if row.is_some_and(|row| row.values.is_none()) {
-                    continue;
-                }
-                let remaining = row
-                    .and_then(|row| row.values)
-                    .unwrap_or(definition.full)
-                    .remaining_ms()
-                    .unwrap_or(0);
-                if !force && elapsed < 60_000 && elapsed < remaining {
-                    continue;
-                }
-
-                clock.serial = match clock.serial.checked_add(1) {
-                    Some(n) => n,
-                    None => return false,
-                };
-                // The owner incarnation, session and item are independent of client command ids.
-                let mut hash = Sha256::new();
-                hash.update(b"oteryn:timed-owner-clock:v1");
-                hash.update(session.as_bytes());
-                hash.update(item.item_instance_id);
-                hash.update(self.holder.fact().registration_revision().to_be_bytes());
-                hash.update(fence.connection_generation.get().to_be_bytes());
-                hash.update(row.map_or(0, |row| row.revision).to_be_bytes());
-                hash.update(clock.serial.to_be_bytes());
-                let binding: [u8; 32] = hash.finalize().into();
-                let mut id = [0; 16];
-                id.copy_from_slice(&binding[..16]);
-                id[6] = (id[6] & 15) | 0x70;
-                id[8] = (id[8] & 63) | 0x80;
-                let mut event = id;
-                event[15] ^= 1;
-                lane.pending = Some((
-                    TimedRequest {
-                        transaction_id: id,
-                        content_digest: native.source_digest(),
-                        event_id: event,
-                        binding,
-                        item: item.item_instance_id,
-                        expected_revision: row.map_or(0, |row| row.revision),
-                        definition,
-                        target,
-                        operation: TimedOperation::Advance(elapsed.min(604_800_000)),
-                        occurred_at_unix_ms: super::npc_trade_command::unix_ms_now(),
-                    },
-                    now,
-                ));
-            }
-            let Some((request, at)) = lane.pending.clone() else {
-                continue;
-            };
-            match self
-                .root
-                .commit_timed_action_in_scope(
-                    self.character,
-                    self.holder,
-                    fence,
-                    request,
-                    house_origin,
-                )
-                .await
-            {
-                Ok(result)
-                    if result.disposition
-                        == oteryn_protocol_oteryn::timed_item::TimedDisposition::Ok =>
-                {
-                    retired_equipment |= result.retired;
-                    clock.refresh_equipment |= result.retired;
-                    lane.at_ms = at;
-                    lane.pending = None;
-                }
-                // A distinct command changed the revision. No old elapsed time may be applied
-                // to its successor lifetime; reload from that committed row.
-                Ok(_) => {
-                    lane.at_ms = now;
-                    lane.pending = None;
-                }
-                Err(_) => return false,
-            }
+        .await;
+        let wear = clock
+            .items
+            .iter()
+            .filter_map(|(item, lane)| {
+                let deadline = lane.deadline_ms?;
+                held.contains(item)
+                    .then_some((*item, lane.started_at_ms, deadline.min(now)))
+            })
+            .collect::<Vec<_>>();
+        for item in &retired_items {
+            clock.items.remove(item);
         }
         drop(clocks);
+
+        use super::equipment_move::equipment_effects_owner as effects;
+        let Some(regeneration) = effects::equipped_regeneration(&equipment, native) else {
+            return false;
+        };
+        let Some(invisible) = effects::equipped_invisibility(&equipment, native) else {
+            return false;
+        };
+        {
+            let mut runtime = self.runtime.lock().await;
+            // Unqualified locations cannot grant outside-PZ regeneration.
+            let in_pz = house
+                || super::actor_spell::qualified_protection_zone(
+                    &mut runtime,
+                    self.movement_cells(),
+                    actor,
+                ) != Some(false);
+            let mut states = self.states.spell_states.lock().await;
+            let state = if house {
+                states.house_equipment_state_mut(&runtime, actor, session, item_fence)
+            } else {
+                states.get_mut(&runtime, actor, session)
+            };
+            if let Some(state) = state {
+                state.install_equipped_regeneration(regeneration);
+                state.install_equipped_invisibility(invisible);
+                for (item, start, until) in wear {
+                    state.settle_worn_regeneration(item, start, until, in_pz);
+                }
+                // Successful burns are authoritative even if the follow-up read is unavailable.
+                for item in retired_items {
+                    state.retire_worn_effect(item);
+                }
+            }
+        }
+        if !advanced {
+            return false;
+        }
+
+        #[cfg(test)]
+        if retired_equipment
+            && let Ok((entered, proceed)) = RETIRED_EQUIPMENT_READ.try_with(Clone::clone)
+        {
+            entered.notify_one();
+            proceed.notified().await;
+        }
+        let mut proficiency_equipment = equipment;
         if house {
             // Expiry can change the resident's equipment and every derived effect.
             if !retired_equipment {
@@ -479,11 +552,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // its initial read, also repairing a previous expiry's failed acknowledgement/read.
         let mut retired_effects = None;
         if retired_equipment {
-            #[cfg(test)]
-            if let Ok((entered, proceed)) = RETIRED_EQUIPMENT_READ.try_with(Clone::clone) {
-                entered.notify_one();
-                proceed.notified().await;
-            }
             let retry = super::AdmissionRetryBudget::for_command(self.root);
             let Some(equipment) = super::equipment_move::read_equipment_within(
                 self,
@@ -506,23 +574,16 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 return false;
             };
-            let Some(regeneration) =
-                super::equipment_move::equipment_effects_owner::equipped_regeneration(
-                    &equipment, native,
-                )
-            else {
+            let Some(regeneration) = effects::equipped_regeneration(&equipment, native) else {
+                return false;
+            };
+            let Some(invisible) = effects::equipped_invisibility(&equipment, native) else {
                 return false;
             };
             active_mana_shield = active;
-            retired_effects = Some((effects, regeneration));
+            retired_effects = Some((effects, regeneration, invisible));
             proficiency_equipment = equipment;
         }
-        let Some(invisible) = super::equipment_move::equipment_effects_owner::equipped_invisibility(
-            &proficiency_equipment,
-            native,
-        ) else {
-            return false;
-        };
         let runtime = self.runtime.lock().await;
         if self
             .install_proficiency_equipment(&runtime, actor, session, &proficiency_equipment)
@@ -537,9 +598,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         };
         {
             state.install_equipped_mana_shield(active_mana_shield);
-            state.install_equipped_invisibility(invisible);
-            if let Some((effects, regeneration)) = retired_effects {
+            if let Some((effects, regeneration, invisible)) = retired_effects {
                 state.install_equipped_regeneration(regeneration);
+                state.install_equipped_invisibility(invisible);
                 super::equipment_move::equipment_effects_owner::install_suppressions(
                     state, effects,
                 );

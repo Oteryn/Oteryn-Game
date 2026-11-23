@@ -217,11 +217,12 @@ pub(in crate::gameplay_transport) fn equipped_mana_shield(
 pub(in crate::gameplay_transport) fn equipped_invisibility(
     equipment: &EquipmentSnapshot,
     content: &NativeGameplayState,
-) -> Option<bool> {
+) -> Option<Vec<[u8; 16]>> {
     use crate::content::{ReferenceModifierParameter, ReferenceSkillModifierKind};
     if equipment.content_digest != content.source_digest() {
         return None;
     }
+    let mut sources = Vec::new();
     for item in &equipment.items {
         if item.definition.family != "Item" {
             return None;
@@ -242,10 +243,10 @@ pub(in crate::gameplay_transport) fn equipped_invisibility(
                 if modifiers.iter().any(|modifier| modifier.kind == ReferenceSkillModifierKind::Invisibility
                     && modifier.parameter == ReferenceItemField::Known(ReferenceModifierParameter::Boolean(true)))))
         {
-            return Some(true);
+            sources.push(item.item_instance_id);
         }
     }
-    Some(false)
+    Some(sources)
 }
 
 /// I05-r1 (Crystal movement.cpp:664-685): one regeneration per worn item in its own slot,
@@ -255,14 +256,9 @@ pub(in crate::gameplay_transport) fn equipped_invisibility(
 pub(in crate::gameplay_transport) fn equipped_regeneration(
     equipment: &EquipmentSnapshot,
     content: &NativeGameplayState,
-) -> Option<
-    Vec<(
-        u8,
-        oteryn_gameplay_progression::regeneration::EquipmentRegeneration,
-    )>,
-> {
+) -> Option<Vec<oteryn_gameplay_progression::regeneration::WornRegeneration>> {
     use crate::content::{ReferenceModifierParameter as Parameter, ReferenceSkillModifierKind};
-    use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
+    use oteryn_gameplay_progression::regeneration::{EquipmentRegeneration, WornRegeneration};
 
     if equipment.content_digest != content.source_digest() {
         return None;
@@ -330,7 +326,13 @@ pub(in crate::gameplay_transport) fn equipped_regeneration(
         if (regeneration.health_gain > 0 && regeneration.health_ticks_ms > 0)
             || (regeneration.mana_gain > 0 && regeneration.mana_ticks_ms > 0)
         {
-            worn.push((item.slot, regeneration));
+            worn.push(WornRegeneration {
+                slot: item.slot,
+                item: item.item_instance_id,
+                timed: super::super::timed_item_content::facts(content, &item.definition)
+                    .is_some_and(|(definition, _)| definition.full.remaining_ms().is_some()),
+                regeneration,
+            });
         }
     }
     Some(worn)

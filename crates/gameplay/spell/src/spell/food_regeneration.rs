@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn equipped_regeneration_runs_on_the_native_tick_and_survives_reinstall() {
-        use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
+        use oteryn_gameplay_progression::regeneration::{EquipmentRegeneration, WornRegeneration};
 
         let ring = EquipmentRegeneration {
             health_gain: 6,
@@ -208,9 +208,15 @@ mod tests {
             mana_gain: 24,
             mana_ticks_ms: 6_000,
         };
+        let worn = WornRegeneration {
+            slot: 8,
+            item: [1; 16],
+            timed: false,
+            regeneration: ring,
+        };
         let mut with_ring = actor(Vocation::Knight);
         let mut without_ring = actor(Vocation::Knight);
-        with_ring.install_equipped_regeneration(vec![(8, ring)]);
+        with_ring.install_equipped_regeneration(vec![worn]);
         for second in 1..=6 {
             step_due(&mut with_ring, second * 1_000_000, false);
             step_due(&mut without_ring, second * 1_000_000, false);
@@ -227,19 +233,19 @@ mod tests {
         assert_eq!(with_ring.mana - without_ring.mana, 24);
 
         let mut reinstalled = actor(Vocation::Knight);
-        reinstalled.install_equipped_regeneration(vec![(8, ring)]);
+        reinstalled.install_equipped_regeneration(vec![worn]);
         for second in 1..=3 {
             step_due(&mut reinstalled, second * 1_000_000, false);
         }
-        reinstalled.install_equipped_regeneration(vec![(8, ring)]);
+        reinstalled.install_equipped_regeneration(vec![worn]);
         assert_eq!(reinstalled.equipped_regeneration()[0].health_ms, 3_000);
-        reinstalled.install_equipped_regeneration(vec![(
-            8,
-            EquipmentRegeneration {
+        reinstalled.install_equipped_regeneration(vec![WornRegeneration {
+            regeneration: EquipmentRegeneration {
                 health_gain: 2,
                 ..ring
             },
-        )]);
+            ..worn
+        }]);
         assert_eq!(reinstalled.equipped_regeneration()[0].health_ms, 0);
         reinstalled.install_equipped_regeneration(vec![]);
         assert!(reinstalled.equipped_regeneration().is_empty());

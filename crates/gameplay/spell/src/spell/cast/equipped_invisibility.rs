@@ -2,14 +2,19 @@ use super::PlayerSpellState;
 
 impl PlayerSpellState {
     /// Replace the worn invisibility with that of a fresh committed equipment read.
-    pub fn install_equipped_invisibility(&mut self, invisible: bool) {
+    pub fn install_equipped_invisibility(&mut self, invisible: Vec<[u8; 16]>) {
         self.equipped_invisible = invisible;
+    }
+
+    /// Durable sources used to project the currently worn condition durations.
+    pub fn equipped_invisibility_sources(&self) -> &[[u8; 16]] {
+        &self.equipped_invisible
     }
 
     /// Whether a worn item currently grants invisibility (not spell invisibility).
     #[must_use]
-    pub const fn equipped_invisible(&self) -> bool {
-        self.equipped_invisible
+    pub fn equipped_invisible(&self) -> bool {
+        !self.equipped_invisible.is_empty()
     }
 }
 
@@ -39,11 +44,11 @@ mod tests {
         assert_eq!(state.owned_invisible_at(0), Ok(false));
         assert!(!state.equipped_invisible());
 
-        state.install_equipped_invisibility(true);
+        state.install_equipped_invisibility(vec![[1; 16]]);
         assert_eq!(state.owned_invisible_at(0), Ok(true));
         assert!(state.equipped_invisible());
 
-        state.install_equipped_invisibility(false);
+        state.install_equipped_invisibility(vec![]);
         assert_eq!(state.owned_invisible_at(0), Ok(false));
         assert!(!state.equipped_invisible());
     }

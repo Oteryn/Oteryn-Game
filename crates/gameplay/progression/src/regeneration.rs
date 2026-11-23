@@ -96,16 +96,25 @@ pub struct EquipmentRegeneration {
     pub mana_ticks_ms: u32,
 }
 
+/// The durable occupant and parameters of one worn regeneration condition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WornRegeneration {
+    pub slot: u8,
+    pub item: [u8; 16],
+    pub timed: bool,
+    pub regeneration: EquipmentRegeneration,
+}
+
 /// One slot's runtime condition: its params and its own internal tick counters.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EquipmentRegenerationClock {
-    pub slot: u8,
-    pub regeneration: EquipmentRegeneration,
+    pub worn: WornRegeneration,
+    pub wear_at_ms: Option<u64>,
     pub health_ms: u32,
     pub mana_ms: u32,
 }
 
-/// One 1000 ms tick of every worn regeneration condition, in slice order.
+/// One 1000 ms tick of each untimed worn regeneration condition, in slice order.
 pub fn credit_equipment_second(
     state: &mut RegenerationState,
     clocks: &mut [EquipmentRegenerationClock],
@@ -117,10 +126,10 @@ pub fn credit_equipment_second(
     if state.health == 0 {
         return;
     }
-    for clock in clocks {
+    for clock in clocks.iter_mut().filter(|clock| !clock.worn.timed) {
         clock.health_ms = clock.health_ms.saturating_add(FOOD_TICK_MS);
         clock.mana_ms = clock.mana_ms.saturating_add(FOOD_TICK_MS);
-        let regeneration = clock.regeneration;
+        let regeneration = clock.worn.regeneration;
         if (!in_protection_zone || effective_streak >= 2)
             && regeneration.health_gain > 0
             && regeneration.health_ticks_ms > 0
@@ -145,6 +154,52 @@ pub fn credit_equipment_second(
                 .saturating_add(regeneration.mana_gain.saturating_mul(multiplier))
                 .min(max_mana);
         }
+    }
+}
+
+impl EquipmentRegenerationClock {
+    /// Settle elapsed active wear, retaining any fractional pulse. A blocked pool
+    /// carries at most one due pulse into its next eligible interval.
+    pub fn settle_wear(
+        &mut self,
+        elapsed_ms: u64,
+        in_protection_zone: bool,
+        streak: u32,
+    ) -> (u32, u32) {
+        fn pulses(progress: &mut u32, elapsed_ms: u64, period: u32, eligible: bool) -> u32 {
+            if period == 0 || elapsed_ms == 0 {
+                return 0;
+            }
+            let elapsed = u64::from(*progress).saturating_add(elapsed_ms);
+            if eligible {
+                *progress = (elapsed % u64::from(period)) as u32;
+                u32::try_from(elapsed / u64::from(period)).unwrap_or(u32::MAX)
+            } else {
+                *progress = elapsed.min(u64::from(period)) as u32;
+                0
+            }
+        }
+
+        let regeneration = self.worn.regeneration;
+        let health = pulses(
+            &mut self.health_ms,
+            elapsed_ms,
+            regeneration.health_ticks_ms,
+            !in_protection_zone || streak >= 2,
+        );
+        let mana = pulses(
+            &mut self.mana_ms,
+            elapsed_ms,
+            regeneration.mana_ticks_ms,
+            !in_protection_zone || streak >= 3,
+        );
+        (
+            health
+                .saturating_mul(regeneration.health_gain)
+                .saturating_mul(u32::from(in_protection_zone && streak >= 5) + 1),
+            mana.saturating_mul(regeneration.mana_gain)
+                .saturating_mul(u32::from(in_protection_zone && streak >= 6) + 1),
+        )
     }
 }
 
@@ -454,8 +509,13 @@ mod tests {
             regen_mana_carry: 0,
         };
         let mut clocks = [EquipmentRegenerationClock {
-            slot: 8,
-            regeneration,
+            wear_at_ms: None,
+            worn: WornRegeneration {
+                slot: 8,
+                item: [8; 16],
+                timed: false,
+                regeneration,
+            },
             health_ms: 0,
             mana_ms: 0,
         }];
@@ -488,8 +548,13 @@ mod tests {
                 ..state
             };
             let mut tier_clocks = [EquipmentRegenerationClock {
-                slot: 8,
-                regeneration,
+                wear_at_ms: None,
+                worn: WornRegeneration {
+                    slot: 8,
+                    item: [8; 16],
+                    timed: false,
+                    regeneration,
+                },
                 health_ms: 5_000,
                 mana_ms: 5_000,
             }];
@@ -519,23 +584,33 @@ mod tests {
         };
         let mut clocks = [
             EquipmentRegenerationClock {
-                slot: 8,
-                regeneration: EquipmentRegeneration {
-                    health_gain: 2,
-                    health_ticks_ms: 6_000,
-                    mana_gain: 0,
-                    mana_ticks_ms: 0,
+                wear_at_ms: None,
+                worn: WornRegeneration {
+                    slot: 8,
+                    item: [8; 16],
+                    timed: false,
+                    regeneration: EquipmentRegeneration {
+                        health_gain: 2,
+                        health_ticks_ms: 6_000,
+                        mana_gain: 0,
+                        mana_ticks_ms: 0,
+                    },
                 },
                 health_ms: 0,
                 mana_ms: 0,
             },
             EquipmentRegenerationClock {
-                slot: 9,
-                regeneration: EquipmentRegeneration {
-                    health_gain: 0,
-                    health_ticks_ms: 0,
-                    mana_gain: 5,
-                    mana_ticks_ms: 3_000,
+                wear_at_ms: None,
+                worn: WornRegeneration {
+                    slot: 9,
+                    item: [9; 16],
+                    timed: false,
+                    regeneration: EquipmentRegeneration {
+                        health_gain: 0,
+                        health_ticks_ms: 0,
+                        mana_gain: 5,
+                        mana_ticks_ms: 3_000,
+                    },
                 },
                 health_ms: 0,
                 mana_ms: 0,

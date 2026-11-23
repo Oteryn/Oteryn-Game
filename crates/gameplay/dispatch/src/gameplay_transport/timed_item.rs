@@ -36,6 +36,8 @@ pub(super) struct SessionClock {
     pub(super) serial: u64,
 }
 pub(super) struct ItemClock {
+    pub(super) started_at_ms: u64,
+    pub(super) deadline_ms: Option<u64>,
     pub(super) at_ms: u64,
     pub(super) pending: Option<(TimedRequest, u64)>,
 }

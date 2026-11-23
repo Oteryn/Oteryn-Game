@@ -5,7 +5,7 @@ mod questpc2_source_profile_cohort;
 
 #[test]
 fn equipment_effects_owner_regeneration_reads_worn_item_in_own_slot_only() -> TestResult {
-    use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
+    use oteryn_gameplay_progression::regeneration::{EquipmentRegeneration, WornRegeneration};
 
     let modifier = |kind: &str, parameter: &str, value: u64| {
         serde_json::json!({"kind":kind,
@@ -29,13 +29,16 @@ fn equipment_effects_owner_regeneration_reads_worn_item_in_own_slot_only() -> Te
         mana_ticks_ms: 6_000,
     };
     for slot in 1..=10 {
+        let equipment = snapshot(&content, "oteryn:item.tibia.i2854", slot);
         assert_eq!(
-            equipped_regeneration(
-                &snapshot(&content, "oteryn:item.tibia.i2854", slot),
-                &content,
-            ),
+            equipped_regeneration(&equipment, &content),
             Some(if slot == 9 {
-                vec![(9, regeneration)]
+                vec![WornRegeneration {
+                    slot: 9,
+                    item: equipment.items[0].item_instance_id,
+                    timed: false,
+                    regeneration,
+                }]
             } else {
                 vec![]
             }),
@@ -1318,12 +1321,14 @@ fn equipment_effects_owner_invisibility_reads_worn_item_in_own_slot_only() -> Te
         Some(0),
     )?)?;
     for slot in 1..=10 {
+        let equipment = snapshot(&content, "oteryn:item.tibia.i2854", slot);
         assert_eq!(
-            equipped_invisibility(
-                &snapshot(&content, "oteryn:item.tibia.i2854", slot),
-                &content
-            ),
-            Some(slot == 9),
+            equipped_invisibility(&equipment, &content),
+            Some(if slot == 9 {
+                vec![equipment.items[0].item_instance_id]
+            } else {
+                vec![]
+            }),
             "slot {slot}"
         );
     }
@@ -1334,13 +1339,13 @@ fn equipment_effects_owner_invisibility_reads_worn_item_in_own_slot_only() -> Te
     )?)?;
     assert_eq!(
         equipped_invisibility(&snapshot(&content, "oteryn:item.tibia.i2854", 9), &content),
-        Some(false)
+        Some(vec![])
     );
 
     let content = native(&input()?)?;
     assert_eq!(
         equipped_invisibility(&snapshot(&content, "oteryn:item.tibia.i2854", 9), &content),
-        Some(false)
+        Some(vec![])
     );
     Ok(())
 }

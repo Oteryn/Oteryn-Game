@@ -59,6 +59,8 @@ pub(super) async fn exercise(
         .insert(
             id(100),
             ItemClock {
+                started_at_ms: 0,
+                deadline_ms: None,
                 at_ms: 0,
                 pending: Some((request, 1)),
             },

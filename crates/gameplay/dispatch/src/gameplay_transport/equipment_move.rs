@@ -699,7 +699,7 @@ async fn move_equipment_inner(
                 || admission
                     .refresh_clock_equipment_effects(actor, session, fence, house)
                     .await
-                    .is_err()
+                    != Ok(true)
             {
                 return EquipmentMoveResult::Unknown;
             }
