@@ -8,9 +8,9 @@ impl Offer {
     }
 }
 
-// These services enter at topic 0. A refused request still supersedes the
-// steel quote, so a later "yes" cannot spend the shield.
-pub(super) fn retire_cyclops_steel_quote(
+// These services enter at topic 0 and replace the previous exchange even
+// when their own prerequisites are missing.
+pub(super) fn retire_cyclops_offer(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
     context: &Context,
@@ -19,12 +19,17 @@ pub(super) fn retire_cyclops_steel_quote(
     if context.2 == "oteryn:npc.a_sweaty_cyclops"
         && matches!(
             text,
-            "amulet" | "forge royal steel" | "dragon slayer trial" | "dragon slayer report"
+            "amulet"
+                | "forge royal steel"
+                | "dragon slayer trial"
+                | "dragon slayer report"
+                | "forging friendship"
+                | "deliver skirts"
         )
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         let state = &mut sessions.get_mut(&session)?.quest_dialogue;
-        if state.topic(context).number == 6 && !state.retire_for_source(context) {
+        if !state.retire_for_source(context) {
             return None;
         }
     }

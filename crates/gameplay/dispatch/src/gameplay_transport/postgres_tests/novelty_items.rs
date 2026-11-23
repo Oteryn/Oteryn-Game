@@ -27,6 +27,7 @@ enum Case {
     VoodooFarTarget,
     Present,
     GroundDice,
+    Lantern { lit: bool, ground: bool },
     GroundRocket,
     GroundTrumpet,
     NestedCostume,
@@ -43,6 +44,8 @@ impl Case {
         match self {
             Self::Costume | Self::NestedCostume | Self::GroundCostume => "oteryn:item.tibia.i653",
             Self::Dice | Self::DiceStreak | Self::GroundDice => "oteryn:item.tibia.i5792",
+            Self::Lantern { lit: false, .. } => "oteryn:item.tibia.i23734",
+            Self::Lantern { lit: true, .. } => "oteryn:item.tibia.i23738",
             Self::Trumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
             Self::Rocket | Self::GroundRocket | Self::PendingLifecycle => "oteryn:item.tibia.i6576",
             Self::Hat | Self::HatInBag => "oteryn:item.tibia.i6578",
@@ -59,6 +62,7 @@ impl Case {
         matches!(
             self,
             Self::GroundDice
+                | Self::Lantern { ground: true, .. }
                 | Self::GroundRocket
                 | Self::GroundTrumpet
                 | Self::GroundCostume
@@ -139,6 +143,16 @@ fn novelty_voodoo_without_player_refuses_without_receipt() -> TestResult {
 #[test]
 fn novelty_explosive_present_commits_consumption_and_donor_cues_once() -> TestResult {
     run_case(Case::Present)
+}
+
+#[test]
+fn novelty_lantern_transforms_both_variants_by_definition_and_on_ground() -> TestResult {
+    for ground in [false, true] {
+        for lit in [false, true] {
+            run_case(Case::Lantern { lit, ground })?;
+        }
+    }
+    Ok(())
 }
 
 #[test]

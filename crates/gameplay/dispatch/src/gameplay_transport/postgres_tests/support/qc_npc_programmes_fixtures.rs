@@ -74,7 +74,9 @@ pub(super) async fn exercise(
         "keyword" | "repeat" => mint(owner, admitted, SHIELD, 1, 7101).await?,
         "other-services" => {
             mint(owner, admitted, SHIELD, 1, 7100).await?;
-            mint(owner, admitted, 3381, 1, 7101).await?;
+            for (nonce, item) in (7101..).zip([3381, 3381, 3356, 3281]) {
+                mint(owner, admitted, item, 1, nonce).await?;
+            }
         }
         "mint-refusal" => fill_backpack_with_nested_shield(owner, admitted, h).await?,
         _ => {}
@@ -274,6 +276,7 @@ async fn unlock(
     h: &Harness,
     cyclops: EntityRef,
 ) -> TestResult {
+    let session = admitted.game_session_id;
     with_wire(owner, admitted, cyclops, async |wire| {
         wire.greet().await?;
         wire.line("uth'lokr", FAVOR_QUOTE).await?;
@@ -288,6 +291,7 @@ async fn unlock(
             Some((NpcIntentDisposition::Rejected, vec![SKIRT_PROMPT.into()]))
         );
         assert_eq!(snapshot(h).await?, before);
+        assert_eq!(owner.states.npc_conversations.fixture_quest_topic(session)?, 3);
         Ok(())
     })
     .await?;
@@ -333,7 +337,7 @@ async fn replaces_with_other_services(h: &Harness, wire: &mut Wire<'_>) -> TestR
     wire.line("forge royal steel", "Cling clang!").await?;
     wire.disposition("yes", NpcIntentDisposition::Rejected)
         .await?;
-    assert_eq!(quantity(h, 3381).await?, 0);
+    assert_eq!(quantity(h, 3381).await?, 1);
     assert_eq!(quantity(h, 5887).await?, 1);
 
     wire.line("uth'lokr", STEEL_QUOTE).await?;
@@ -350,6 +354,25 @@ async fn replaces_with_other_services(h: &Harness, wire: &mut Wire<'_>) -> TestR
         .await?;
     assert_eq!(quantity(h, SHIELD).await?, 1);
     assert_eq!(quantity(h, STEEL).await?, 0);
+
+    for (keyword, input, output) in [
+        ("uth'kean", 3381, 5887),
+        ("za'ralator", 3356, 5888),
+        ("uth'prta", 3281, 5892),
+    ] {
+        let before = quantity(h, output).await?;
+        wire.line("uth'lokr", STEEL_QUOTE).await?;
+        assert_eq!(wire.talk(keyword, true).await?.map(|(result, lines)| (result, !lines.is_empty())), Some((NpcIntentDisposition::Ok, true)));
+        assert_eq!(wire.talk("yes", true).await?.map(|(result, lines)| (result, !lines.is_empty())), Some((NpcIntentDisposition::Ok, true)));
+        assert_eq!(quantity(h, SHIELD).await?, 1, "{keyword} replaced the shield quote");
+        assert_eq!(quantity(h, input).await?, 0, "{keyword}");
+        assert_eq!(quantity(h, output).await?, before + 1, "{keyword}");
+
+        wire.line("uth'lokr", STEEL_QUOTE).await?;
+        assert_eq!(wire.talk(keyword, true).await?.map(|(result, lines)| (result, !lines.is_empty())), Some((NpcIntentDisposition::Ok, true)));
+        wire.disposition("yes", NpcIntentDisposition::Rejected).await?;
+        assert_eq!(quantity(h, SHIELD).await?, 1, "{keyword} replaced the shield quote");
+    }
     Ok(())
 }
 

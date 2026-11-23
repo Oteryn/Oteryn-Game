@@ -58,3 +58,29 @@ fn twenty_miles_npc_chain_has_one_completing_turn() -> Result<(), String> {
     );
     Ok(())
 }
+
+#[test]
+fn twenty_miles_shell_can_issue_an_ear_after_a_borrowed_one_is_reported() -> Result<(), String> {
+    let shell = load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/qc-twenty-miles-sea-ear-shell")
+        .ok_or("Sea Ear shell")?;
+    let turns = crate::quest::reward_callbacks::load()?;
+    let guardian = turns
+        .iter()
+        .find(|callback| callback.key == "oteryn:quest-reward/qc-twenty-miles-guardian-sea-ear")
+        .ok_or("Guardian's Sea Ear turn")?;
+    assert_eq!(guardian.present[0].item, phase::SEA_EAR_ITEM);
+    assert_eq!(guardian.storage[0].set, 20);
+    for stage in 19..=21 {
+        let tracks = BTreeMap::from([
+            (guardian.storage[0].track.clone(), stage),
+            (phase::SEA_EAR_TRACK.to_owned(), -1),
+        ]);
+        assert!(
+            phase::matches(&shell, &tracks),
+            "shell should work at stage {stage}"
+        );
+    }
+    Ok(())
+}

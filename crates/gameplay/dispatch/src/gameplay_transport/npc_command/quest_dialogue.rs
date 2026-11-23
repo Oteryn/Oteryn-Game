@@ -123,6 +123,7 @@ pub(super) struct Step {
     transition: Option<String>,
     reply: Vec<String>,
     failure_reply: Vec<String>,
+    failure_topic: Option<u16>,
     refused: bool,
 }
 
@@ -131,6 +132,11 @@ impl Step {
         self.failure_reply = lines;
         self
     }
+    pub(super) fn with_failure_topic(mut self, topic: Option<u16>) -> Self {
+        self.failure_topic = topic;
+        self
+    }
+
     pub(super) fn with_refusal(mut self, refused: bool) -> Self {
         self.refused = refused;
         self
@@ -145,6 +151,7 @@ struct Pending {
     intent: NpcTalkIntent,
     context: Context,
     next_topic: Option<Topic>,
+    failure_topic: Option<u16>,
     reply: Vec<String>,
 }
 
@@ -187,6 +194,7 @@ pub(super) fn prepare(
         transition: choice.transition,
         reply: choice.reply,
         failure_reply: Vec::new(),
+        failure_topic: None,
         refused: false,
     })
 }
@@ -257,11 +265,17 @@ fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId
     if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
         && let Some(state) = sessions.get_mut(&session)
         && let Some(pending) = state.quest_dialogue.pending.take()
-        && committed
     {
-        state
-            .quest_dialogue
-            .apply_topic(pending.context, pending.next_topic);
+        if committed {
+            state
+                .quest_dialogue
+                .apply_topic(pending.context, pending.next_topic);
+        } else if let Some(topic) = pending.failure_topic {
+            state.quest_dialogue.reward_request = None;
+            state
+                .quest_dialogue
+                .apply_topic(pending.context, Some(topic.into()));
+        }
     }
 }
 
@@ -323,6 +337,9 @@ pub(super) async fn apply(
             .quest_dialogue;
         if state.pending.is_some() || state.topic(&step.context) != step.topic {
             return rejected();
+        }
+        if step.refused && step.failure_topic.is_some() {
+            state.reward_request = None;
         }
         state.apply_topic(step.context, step.next_topic);
         if step.refused {
@@ -441,6 +458,7 @@ pub(super) async fn apply(
             intent: intent.clone(),
             context: step.context.clone(),
             next_topic: step.next_topic,
+            failure_topic: step.failure_topic,
             reply: step.reply.clone(),
         });
     }

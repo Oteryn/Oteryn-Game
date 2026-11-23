@@ -255,7 +255,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             }
             tx.commit().await?;
         }
-        let expected = if case.feroxa() {
+        let mut expected = if case.feroxa() {
             let output = &native.item_policy_for_source_id(22059).ok_or("open trap policy")?.record().production_definition;
             novelty_items::NoveltyPlan {
                 recipe: "oteryn:feroxa-silvered-trap.v1".into(),
@@ -273,7 +273,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                     "achievement_progress":[],
                 }),
             }
-        } else if case.ground() {
+        } else if case.ground() && !matches!(case, Case::Lantern { .. }) {
             novelty_items::plan_ground(
                 native,
                 &used,
@@ -298,6 +298,10 @@ pub(super) fn scenario(case: Case) -> TestResult {
             )
             .ok_or("novelty source admitted")?
         };
+        if matches!(case, Case::Lantern { ground: true, .. }) {
+            expected.recipe = format!("oteryn:novelty-ground.i{}.v1", expected.effects["source_item_id"]);
+            expected.effects["kind"] = "transform".into();
+        }
         let effects: NoveltyEffects = serde_json::from_value(expected.effects.clone())?;
         let before_vitals = {
             let runtime = owner.runtime.lock().await;
@@ -358,8 +362,13 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 .ok_or("offers")?;
         assert!(admitted.continuity.selected_capabilities.contains(350));
         assert!(!admitted.continuity.selected_capabilities.contains(23));
+        let by_definition = matches!(case, Case::Lantern { ground: false, .. });
         let intent = UseIntent {
-            target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?),
+            target: if by_definition {
+                UseTarget::ItemByDefinition(reference(key).ok_or("lantern definition")?)
+            } else {
+                UseTarget::Item(std::num::NonZeroU64::MIN)
+            },
             use_with: target,
             use_with_map_item: None,
             use_with_position: None,
@@ -379,7 +388,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 admitted,
                 command_id,
                 &payload,
-                reference(key),
+                if by_definition { None } else { reference(key) },
             )
             .await?;
         let current: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).fetch_one(&harness.pool).await?;

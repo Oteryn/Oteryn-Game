@@ -4,11 +4,12 @@ use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::NativeItemWeights;
 use super::item_view::ItemKey;
 use crate::durability::consume_transform::{ConsumeTransformRequest, ConsumeTransformResult};
+use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::gameplay_transport::actor_spell::NoveltyEffectRequest;
 use oteryn_gameplay_items::novelty_items::{self, NoveltyEffects, NoveltyKind};
-use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 #[path = "novelty_ground_use.rs"]
 mod ground;
 #[path = "novelty_item_pending.rs"]
@@ -67,6 +68,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(fence) = command.item_fence else {
             return Ok(None);
         };
+        let definition = if let UseTarget::ItemByDefinition(wanted) = intent.target {
+            if intent.use_with.is_some()
+                || intent.use_with_map_item.is_some()
+                || intent.use_with_position.is_some()
+            {
+                return Ok(None);
+            }
+            let runtime = self.runtime.lock().await;
+            let Some((key, revision)) =
+                super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                    .and_then(|index| index.definition_at(wanted))
+            else {
+                return Ok(None);
+            };
+            if novelty_items::rule_for_key(key)
+                .is_none_or(|rule| rule.kind != NoveltyKind::CarriedTransform)
+            {
+                return Ok(None);
+            }
+            Some(TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: key.into(),
+                revision_ref: revision.into(),
+            })
+        } else {
+            None
+        };
         let command_ref = CommandRef::new(
             command.game_session_id,
             CommandId::new(command.command_id).map_err(|_| ())?,
@@ -91,7 +119,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => None,
             })
             .unwrap_or([0; 16]);
-        let request = ConsumeTransformRequest {
+        let mut request = ConsumeTransformRequest {
             command: command_ref,
             source: id,
             target: None,
@@ -132,9 +160,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Ok(None);
         }
-        if let Some(outcome) = self
-            .use_ground_event_item(actor, command, &intent, &request, &permit)
-            .await?
+        if definition.is_none()
+            && let Some(outcome) = self
+                .use_ground_event_item(actor, command, &intent, &request, &permit)
+                .await?
         {
             return Ok(Some(outcome));
         }
@@ -143,6 +172,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_item_use_inventory(self.character, self.holder, fence)
             .await
             .map_err(|_| ())?;
+        if let Some(definition) = definition {
+            let states = self.states.spell_states.lock().await;
+            let reserved = states
+                .item_uses
+                .reserved_sources(actor, command.game_session_id);
+            request.source = match inventory.first_unreserved(&definition, reserved) {
+                Ok(id) => id,
+                Err(oteryn_gameplay_items::hotkey_search::HotkeyRefusal::BoundExceeded) => {
+                    return Ok(Some(outcome(UseDisposition::Rejected)));
+                }
+                Err(_) => return Ok(Some(outcome(UseDisposition::NothingToUse))),
+            };
+        }
+        let id = request.source;
         let carried = inventory
             .backpack
             .iter()

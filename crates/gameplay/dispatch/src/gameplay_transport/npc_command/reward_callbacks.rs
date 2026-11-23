@@ -116,12 +116,7 @@ pub(super) fn prepare(
     );
     let text = intent.text.trim().to_ascii_lowercase();
     if phase == Phase::Rewards {
-        offer_topic::retire_cyclops_steel_quote(
-            admission,
-            command.game_session_id,
-            &context,
-            &text,
-        )?;
+        offer_topic::retire_cyclops_offer(admission, command.game_session_id, &context, &text)?;
     }
     if text == "no"
         || (phase == Phase::Offers
@@ -140,6 +135,7 @@ pub(super) fn prepare(
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
     let mut failure_reply = Vec::new();
+    let mut failure_topic = None;
     let mut refused = false;
     let step = quest_dialogue::prepare(
         admission,
@@ -149,6 +145,14 @@ pub(super) fn prepare(
         runtime,
         |context, topic, _, tracks| {
             let text = callback_keyword(&admission.states.chat, &context.2, &intent.text);
+            // A refused hand-in consumes its confirmation. Crystal leaves the
+            // Cyclops waiting for a new skirt offer at topic 3 after a short delivery.
+            failure_topic = match (context.2.as_str(), topic.number, text.as_str()) {
+                ("oteryn:npc.a_sweaty_cyclops", 4, "yes") => Some(3),
+                ("oteryn:npc.a_sweaty_cyclops", 5..=8 | 12, "yes")
+                | ("oteryn:npc.yeo", 1, "yes") => Some(0),
+                _ => None,
+            };
             let meets_level = |minimum: Option<u32>| {
                 minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
             };
@@ -156,7 +160,7 @@ pub(super) fn prepare(
                 refused = !lines.is_empty();
                 (!lines.is_empty()).then(|| Choice {
                     transition: None,
-                    next_topic: None,
+                    next_topic: failure_topic.map(Topic::from),
                     reply: lines.to_vec(),
                 })
             };
@@ -325,7 +329,11 @@ pub(super) fn prepare(
             })
         },
     );
-    step.map(|step| step.with_failure_reply(failure_reply).with_refusal(refused))
+    step.map(|step| {
+        step.with_failure_reply(failure_reply)
+            .with_failure_topic(failure_topic)
+            .with_refusal(refused)
+    })
 }
 
 #[cfg(test)]

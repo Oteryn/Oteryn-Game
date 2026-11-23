@@ -133,6 +133,93 @@
       "crystal_keyword": true
     },
     {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'kean"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Very noble. Shiny. Me like. But breaks so fast. Me can make from shiny armour. Lil' one want to trade?"
+      ],
+      "crystal_keyword": true
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Cling clang!"
+      ],
+      "transition": "oteryn:quest-reward/questpc7-friends-royal-steel"
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "za'ralator"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Hellsteel is. Cursed and evil. Dangerous to work with. Me can make from evil helmet. Lil' one want to trade?"
+      ],
+      "crystal_keyword": true
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'prta"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Good iron is. Me friends use it much for fight. Me can make from weapon. Lil' one want to trade?"
+      ],
+      "crystal_keyword": true
+    },
+    {
       "npc": "oteryn:npc.sinatuki",
       "keywords": [
         "nupi"
