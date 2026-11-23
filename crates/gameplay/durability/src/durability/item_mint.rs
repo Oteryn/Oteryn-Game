@@ -448,6 +448,8 @@ pub enum ItemMintError {
     InvalidInput,
     /// A registered DUR-03 ceiling (including RL-08) was exceeded.
     CapacityExceeded,
+    /// No durable work units remain for an uncommitted atomic kill batch.
+    WorkBudgetExhausted,
     /// The current recovery, runtime-scope or node-incarnation fence rejected
     /// the MINT. Under D52 a death whose generation ended is never minted.
     AuthorityRejected,
@@ -478,6 +480,7 @@ impl std::fmt::Display for ItemMintError {
         match self {
             Self::InvalidInput => formatter.write_str("invalid item MINT input"),
             Self::CapacityExceeded => formatter.write_str("item MINT capacity exceeded"),
+            Self::WorkBudgetExhausted => formatter.write_str("item MINT work budget exhausted"),
             Self::AuthorityRejected => formatter.write_str("item MINT authority rejected"),
             Self::ConflictingCause => {
                 formatter.write_str("MINT cause was reused with different semantics")
@@ -842,40 +845,11 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
-                    let used = bind_cause!(
-                        sqlx::query(concat!(
-                            "UPDATE game_item_mint_reservations \
-                                SET work_units_used = work_units_used + 1 WHERE ",
-                            cause_key!(),
-                            " AND transaction_id = encode($11,'hex')::uuid \
-                              AND work_units_used < $12 RETURNING work_units_used"
-                        )),
-                        &cause
-                    )
-                    .bind(transaction_id.as_slice())
-                    .bind(i16::from(RL08_RETRY_WORK_UNITS_MAX))
-                    .fetch_optional(&mut *tx)
-                    .await?;
-                    let Some(used) = used else {
-                        let reserved = bind_cause!(
-                            sqlx::query(concat!(
-                                "SELECT 1 FROM game_item_mint_reservations WHERE ",
-                                cause_key!(),
-                                " AND transaction_id = encode($11,'hex')::uuid"
-                            )),
-                            &cause
-                        )
-                        .bind(transaction_id.as_slice())
-                        .fetch_optional(&mut *tx)
-                        .await?;
-                        return Ok(Err(if reserved.is_some() {
-                            ItemMintError::CapacityExceeded
-                        } else {
-                            ItemMintError::ConflictingCandidate
-                        }));
-                    };
-                    let used = u8::try_from(used.try_get::<i16, _>("work_units_used")?)
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let used =
+                        match increment_mint_work_unit(&mut tx, &cause, transaction_id).await? {
+                            Ok(used) => used,
+                            Err(error) => return Ok(Err(error)),
+                        };
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(used))
                 })
@@ -1081,15 +1055,17 @@ impl DurabilityRoot {
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
     ) -> Result<ItemMintOutcome> {
         let mut outcomes = self
-            .commit_kill_loot_mints(
+            .commit_kill_loot_mints_inner(
                 permit,
                 authority,
                 node,
                 candidate,
                 &mut [],
-                top_damage_character_id,
+                Some(top_damage_character_id),
                 boss,
                 None,
+                None,
+                false,
             )
             .await?;
         outcomes.pop().ok_or(ItemMintError::InvalidInput)
@@ -1122,6 +1098,7 @@ impl DurabilityRoot {
             boss,
             tutorial_corruptor,
             None,
+            true,
         )
         .await
     }
@@ -1147,6 +1124,7 @@ impl DurabilityRoot {
                 None,
                 None,
                 Some(source),
+                false,
             )
             .await?;
         result.pop().ok_or(ItemMintError::InvalidInput)
@@ -1173,6 +1151,7 @@ impl DurabilityRoot {
             None,
             None,
             Some(source),
+            false,
         )
         .await
     }
@@ -1192,6 +1171,7 @@ impl DurabilityRoot {
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
         tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
         source: Option<source_death::SourceCorpseMintProof<'_>>,
+        atomic_budget: bool,
     ) -> Result<Vec<ItemMintOutcome>> {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
             return Err(ItemMintError::InvalidInput);
@@ -1236,22 +1216,18 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
-        self.charge_item_mint_work_unit(recovery.clone(), candidate)
-            .await?;
-        let mut parents = vec![candidate.item_instance_id];
-        let mut frozen_children = Vec::with_capacity(children.len());
         if children.len() > 4096 {
             return Err(ItemMintError::CapacityExceeded);
         }
-        for child in children {
+        let mut parents = vec![candidate.item_instance_id];
+        let mut frozen_children = Vec::with_capacity(children.len());
+        for child in children.iter() {
             let placement = child.corpse_entry.ok_or(ItemMintError::InvalidInput)?;
             if child.request.cause.death != candidate.request.cause.death
                 || !parents.contains(&placement.corpse_item_instance_id)
             {
                 return Err(ItemMintError::InvalidInput);
             }
-            self.charge_item_mint_work_unit(recovery.clone(), child)
-                .await?;
             frozen_children.push((FrozenMint::of(child), placement));
             parents.push(child.item_instance_id);
         }
@@ -1288,6 +1264,15 @@ impl DurabilityRoot {
                 return Err(ItemMintError::InvalidInput);
             }
         }
+        if atomic_budget {
+            self.charge_atomic_kill_work(recovery.clone(), node, candidate, children)
+                .await?;
+        } else {
+            for mint in std::iter::once(&mut *candidate).chain(children.iter_mut()) {
+                self.charge_item_mint_work_unit(recovery.clone(), mint)
+                    .await?;
+            }
+        }
         let frozen = FrozenMint::of(candidate);
         let node = node.clone();
         let mut context = permit;
@@ -1302,34 +1287,31 @@ impl DurabilityRoot {
                     lock_cause(&mut tx, &frozen.request.cause).await?;
 
                     if let Some(row) = load_receipt(&mut tx, &frozen.request.cause).await? {
-                        let stored: Vec<u8> = row.try_get("intent_binding")?;
-                        if stored != frozen.intent_binding {
-                            return Ok(Err(ItemMintError::ConflictingCause));
-                        }
-                        // D132/§4.3: the committed top-damage CharacterId is
-                        // part of this corpse's frozen intent even though it
-                        // is bound only at commit; a replay carrying another
-                        // winner must never silently return the first
-                        // winner's outcome as its own.
-                        let stored_top_damage: Option<String> =
-                            row.try_get("corpse_top_damage_character_id")?;
-                        let stored_top_damage = stored_top_damage
-                            .map(|value| uuid_text(&value))
-                            .transpose()?;
-                        if stored_top_damage != top_damage_character_id {
-                            return Ok(Err(ItemMintError::ConflictingCause));
-                        }
+                        let committed = match decode_corpse_receipt(
+                            &row,
+                            &frozen.intent_binding,
+                            top_damage_character_id,
+                        )? {
+                            Ok(committed) => committed,
+                            Err(error) => return Ok(Err(error)),
+                        };
                         if let Some(source) = &source
                             && !source.matches_committed(&mut tx, &frozen).await?
                         {
                             return Ok(Err(ItemMintError::ConflictingCause));
                         }
-                        let committed = decode_receipt(&row)?;
                         let mut outcomes = vec![ItemMintOutcome::AlreadyCommitted(committed)];
                         for (child, _) in &frozen_children {
                             let Some(row) = load_receipt(&mut tx, &child.request.cause).await?
                             else {
-                                return Ok(Err(ItemMintError::ConflictingCandidate));
+                                let live =
+                                    fence_is_live(&mut tx, &child.request.cause.death, &node)
+                                        .await?;
+                                return Ok(Err(if live {
+                                    ItemMintError::ConflictingCandidate
+                                } else {
+                                    ItemMintError::AuthorityRejected
+                                }));
                             };
                             if row.try_get::<Vec<u8>, _>("intent_binding")? != child.intent_binding
                             {
@@ -1509,6 +1491,104 @@ impl DurabilityRoot {
                     let mut outcomes = vec![ItemMintOutcome::Committed(committed)];
                     outcomes.extend(child_outcomes);
                     Ok(Ok(outcomes))
+                })
+            })
+            .await?
+    }
+
+    /// A terminal corpse needs no more write work. For fresh batches, charge all causes
+    /// together after checking current ownership. Partial budget charges are rolled back.
+    async fn charge_atomic_kill_work(
+        &self,
+        recovery: CharacterRecoveryFenceV1,
+        node: &NodeIncarnationProof,
+        corpse: &mut ItemMintCandidate,
+        children: &mut [ItemMintCandidate],
+    ) -> Result<()> {
+        let causes: Vec<_> = std::iter::once(&*corpse)
+            .chain(children.iter())
+            .map(|mint| (mint.request.cause.clone(), mint.transaction_id))
+            .collect();
+        let node = node.clone();
+        let charged = self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let (root, _) = &causes[0];
+                    lock_cause(&mut tx, root).await?;
+                    if load_receipt(&mut tx, root).await?.is_some() {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(Vec::new()));
+                    }
+                    if !fence_is_live(&mut tx, &root.death, &node).await? {
+                        return Ok(Err(ItemMintError::AuthorityRejected));
+                    }
+                    let mut charged = Vec::with_capacity(causes.len());
+                    for (cause, transaction) in causes {
+                        match increment_mint_work_unit(&mut tx, &cause, transaction).await? {
+                            Ok(used) => charged.push(used),
+                            Err(ItemMintError::CapacityExceeded) => {
+                                return Ok(Err(ItemMintError::WorkBudgetExhausted));
+                            }
+                            Err(error) => return Ok(Err(error)),
+                        }
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(charged))
+                })
+            })
+            .await??;
+        for (mint, used) in std::iter::once(corpse)
+            .chain(children.iter_mut())
+            .zip(charged)
+        {
+            mint.work_units_used = used;
+        }
+        Ok(())
+    }
+
+    /// Read a historical corpse for a refused child. Qualify the complete frozen
+    /// corpse intent and winner without spending write work or opening a live fence.
+    pub async fn reconcile_kill_corpse_mint(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        candidate: &ItemMintCandidate,
+        top_damage_character_id: [u8; 16],
+    ) -> Result<Option<CommittedItemMint>> {
+        if candidate.corpse_entry.is_some()
+            || candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY
+            || candidate.request.cause.draw_ordinal != 0
+        {
+            return Err(ItemMintError::InvalidInput);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemMintError::AuthorityRejected)?;
+        let cause = candidate.request.cause.clone();
+        let binding = candidate.intent_binding;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_cause(&mut tx, &cause).await?;
+                    let receipt = load_receipt(&mut tx, &cause).await?;
+                    let receipt = match receipt {
+                        Some(row) => match decode_corpse_receipt(
+                            &row,
+                            &binding,
+                            Some(top_damage_character_id),
+                        )? {
+                            Ok(committed) => Some(committed),
+                            Err(error) => return Ok(Err(error)),
+                        },
+                        None => None,
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(receipt))
                 })
             })
             .await?
@@ -2023,6 +2103,65 @@ async fn lock_cause(
     .execute(&mut **tx)
     .await?;
     Ok(())
+}
+
+async fn increment_mint_work_unit(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    cause: &ItemMintCause,
+    transaction_id: [u8; 16],
+) -> std::result::Result<Result<u8>, DurabilityError> {
+    let used = bind_cause!(
+        sqlx::query(concat!(
+            "UPDATE game_item_mint_reservations \
+                SET work_units_used = work_units_used + 1 WHERE ",
+            cause_key!(),
+            " AND transaction_id = encode($11,'hex')::uuid \
+              AND work_units_used < $12 RETURNING work_units_used"
+        )),
+        cause
+    )
+    .bind(transaction_id.as_slice())
+    .bind(i16::from(RL08_RETRY_WORK_UNITS_MAX))
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(used) = used else {
+        let reserved = bind_cause!(
+            sqlx::query(concat!(
+                "SELECT 1 FROM game_item_mint_reservations WHERE ",
+                cause_key!(),
+                " AND transaction_id = encode($11,'hex')::uuid"
+            )),
+            cause
+        )
+        .bind(transaction_id.as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
+        return Ok(Err(if reserved.is_some() {
+            ItemMintError::CapacityExceeded
+        } else {
+            ItemMintError::ConflictingCandidate
+        }));
+    };
+    let used = u8::try_from(used.try_get::<i16, _>("work_units_used")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(Ok(used))
+}
+
+// D132 §4.3: the receipt's winner is part of the frozen intent even
+// though it is first bound at commit.
+fn decode_corpse_receipt(
+    row: &sqlx::postgres::PgRow,
+    binding: &[u8; 33],
+    winner: Option<[u8; 16]>,
+) -> std::result::Result<Result<CommittedItemMint>, DurabilityError> {
+    let stored: Vec<u8> = row.try_get("intent_binding")?;
+    let stored_winner: Option<String> = row.try_get("corpse_top_damage_character_id")?;
+    if stored != binding.as_slice()
+        || stored_winner.as_deref().map(uuid_text).transpose()? != winner
+    {
+        return Ok(Err(ItemMintError::ConflictingCause));
+    }
+    Ok(Ok(decode_receipt(row)?))
 }
 
 async fn load_receipt(

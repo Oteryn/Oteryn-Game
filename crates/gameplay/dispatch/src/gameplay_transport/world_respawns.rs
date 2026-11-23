@@ -111,6 +111,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(channel) = binding.channel_id() else {
             return Ok(true);
         };
+        self.drain_released_boss_clocks().await;
         let count = spawns.len() + 2;
         let start = self.background_start("boss-turn", count);
         for index in (start..count).chain(0..start) {

@@ -23,6 +23,7 @@ pub(super) enum Case {
     DuplexOnlineSpent,
     BoostedBossUnique,
     FlatAtomic,
+    FlatExhausted,
     DuplexRetry,
 }
 
@@ -51,7 +52,7 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
         .ok_or("rat table")?;
     match case {
         Case::Large => table["entries"] = Value::Array(vec![entry(3031); 20]),
-        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent | Case::FlatAtomic | Case::DuplexRetry => {
+        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent | Case::FlatAtomic | Case::FlatExhausted | Case::DuplexRetry => {
             table["entries"] = Value::Array(vec![entry(3031); DUPLEX_BASE_ENTRIES]);
         }
         Case::ChargedSubtype => {
@@ -375,9 +376,10 @@ pub(super) async fn fail_flat_mint_once(
     session: crate::foundation::GameSessionId,
 ) -> TestResult {
     use crate::gameplay_transport::kill_reward::DrainOutcome;
-    let (ordinal, atomic) = match CASE.get() {
-        Some(Case::FlatAtomic) => (2, true),
-        Some(Case::DuplexRetry) => (6, false),
+    let (ordinal, atomic, faults) = match CASE.get() {
+        Some(Case::FlatAtomic) => (2, true, 1),
+        Some(Case::FlatExhausted) => (2, true, 3),
+        Some(Case::DuplexRetry) => (6, false, 1),
         _ => return Ok(()),
     };
     sqlx::raw_sql("CREATE SEQUENCE creatures_mint_fault_hits;
@@ -396,15 +398,19 @@ pub(super) async fn fail_flat_mint_once(
         FOR EACH ROW EXECUTE FUNCTION creatures_mint_fault('{ordinal}')"
     )))
     .execute(&h.pool).await?;
-    for attempt in 0..8 {
-        assert_eq!(owner.drain_kill_rewards(session).await, DrainOutcome::Deferred);
-        if sqlx::query_scalar::<_, bool>("SELECT is_called FROM creatures_mint_fault_hits")
-            .fetch_one(&h.pool).await?
-        {
-            break;
+    for fault in 1..=faults {
+        for attempt in 0..8 {
+            assert_eq!(owner.drain_kill_rewards(session).await, DrainOutcome::Deferred);
+            let hits: i64 = sqlx::query_scalar(
+                "SELECT CASE WHEN is_called THEN last_value ELSE 0 END FROM creatures_mint_fault_hits",
+            )
+            .fetch_one(&h.pool).await?;
+            if hits == fault {
+                break;
+            }
+            assert!(attempt < 7, "the real MINT reached the injected child failure");
+            owner.root.maintain_ready_once().await.map_err(debug)?;
         }
-        assert!(attempt < 7, "the real MINT reached the injected child failure");
-        owner.root.maintain_ready_once().await.map_err(debug)?;
     }
     let counts: (i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_item_mint_receipts),
@@ -420,6 +426,13 @@ pub(super) async fn fail_flat_mint_once(
     sqlx::query("DROP TRIGGER creatures_mint_fault ON game_item_corpse_container_entries")
         .execute(&h.pool).await?;
     owner.root.maintain_ready_once().await.map_err(debug)?;
+    if matches!(CASE.get(), Some(Case::FlatExhausted)) {
+        assert_eq!(
+            owner.drain_kill_rewards(session).await,
+            DrainOutcome::Drained,
+            "permanent MINT exhaustion releases the ordered kill head"
+        );
+    }
     Ok(())
 }
 
@@ -438,6 +451,7 @@ pub(super) async fn qualify(
         .await?;
     match case {
         Case::Gut => assert_eq!(nested, 0),
+        Case::FlatExhausted => assert_eq!((direct, nested), (0, 0)),
         Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent | Case::FlatAtomic | Case::DuplexRetry => {
             // W22b: two wall-clock hours spent offline leave the online hour live; spent
             // online, they end it.

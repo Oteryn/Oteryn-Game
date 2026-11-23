@@ -129,6 +129,7 @@ pub struct PendingKillSettlement {
     /// The effective table and one-shot claim are frozen before the first MINT attempt.
     prepared_loot: Arc<OnceLock<PreparedKillLoot>>,
     boss_clock_settled: Arc<OnceLock<()>>,
+    boss_clock_only: bool,
     forge_sliver: Option<Arc<crate::combat::LootTableEntry>>,
     source_completion: Option<
         oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathCompletion,
@@ -293,6 +294,7 @@ impl PendingKillSettlement {
             prepared_experience: Arc::default(),
             prepared_loot: Arc::default(),
             boss_clock_settled: Arc::default(),
+            boss_clock_only: false,
             forge_sliver: None,
             source_completion: None,
             no_progression_logged: false,
@@ -371,7 +373,7 @@ type BossSpawnCycle = (String, u64, crate::content::BossPolicy);
 struct QueuedKillHead {
     principal: Principal,
     death: CreatureDeathOccurrenceKey,
-    boss: Option<(BossSpawnCycle, Arc<OnceLock<()>>)>,
+    boss_clock_only: bool,
 }
 
 impl PendingKillSettlement {
@@ -493,6 +495,26 @@ impl KillQueueState {
                 reason,
             });
         }
+    }
+
+    /// Release discards the Character's rewards but retains its exact boss death.
+    fn end_principal_kills(
+        &mut self,
+        entries: impl IntoIterator<Item = PendingKillSettlement>,
+    ) -> (bool, Vec<PendingKillSettlement>) {
+        let mut pending_clock = false;
+        let mut gone = Vec::new();
+        for mut entry in entries {
+            if entry.pending_boss_clock().is_some() {
+                entry.boss_clock_only = true;
+                self.queued.push_back(entry);
+                pending_clock = true;
+            } else {
+                self.refuse_source_drop(&entry, SourceDropRefusalReason::PrincipalGone);
+                gone.push(entry);
+            }
+        }
+        (pending_clock, gone)
     }
 
     fn prune_accepted_order(&mut self) {
@@ -970,12 +992,33 @@ impl KillSettlementQueue {
                 Some(QueuedKillHead {
                     principal: principal_of(entry),
                     death: entry.facts.death,
-                    boss: entry
-                        .pending_boss_clock()
-                        .map(|boss| (boss.clone(), Arc::clone(&entry.boss_clock_settled))),
+                    boss_clock_only: entry.boss_clock_only,
                 })
             })
             .ok_or(())
+    }
+
+    fn pending_boss_death(
+        &self,
+        death: CreatureDeathOccurrenceKey,
+    ) -> Option<Box<PendingKillSettlement>> {
+        self.state()
+            .queued
+            .iter()
+            .find(|entry| entry.facts.death == death && entry.pending_boss_clock().is_some())
+            .map(|entry| Box::new(entry.clone()))
+    }
+
+    fn finish_boss_clock_only(&self, death: CreatureDeathOccurrenceKey) {
+        let mut state = self.state();
+        if let Some(index) = state
+            .queued
+            .iter()
+            .position(|entry| entry.facts.death == death)
+            && let Some(entry) = state.queued.remove(index)
+        {
+            state.refuse_source_drop(&entry, SourceDropRefusalReason::PrincipalGone);
+        }
     }
 
     #[cfg(test)]
@@ -1389,8 +1432,8 @@ impl KillSettlementQueue {
         false
     }
 
-    /// §1.3 step 5, Committed: the session ended at the phase change, so every parked entry is
-    /// a kill after it ended and is freed with `principal_gone`. The mark stays until
+    /// §1.3 step 5, Committed: the session ended at the phase change, so parked Character
+    /// rewards are refused. A pending boss clock returns to the Channel queue. The mark stays until
     /// [`KillSettlementQueue::forget_released`]. `held`: the caller gives up its hold.
     fn release_committed(&self, hold: KillReleaseMark, held: bool) {
         let parked = {
@@ -1405,25 +1448,21 @@ impl KillSettlementQueue {
                     std::mem::take(&mut mark.parked)
                 })
                 .unwrap_or_default();
-            for (entry, _) in &parked {
-                state.refuse_source_drop(entry, SourceDropRefusalReason::PrincipalGone);
-            }
-            parked
+            state
+                .end_principal_kills(parked.into_iter().map(|(entry, _)| entry))
+                .1
         };
-        for (entry, _) in parked {
+        for entry in parked {
             refuse("principal_gone", &entry.creature);
         }
     }
 
-    /// The released actor slot is removed: drop the mark, freeing any late park.
+    /// The released actor slot is removed: retire late Character rewards and retain boss clocks.
     fn forget_released(&self, hold: KillReleaseMark) {
         let parked = {
             let mut state = self.state();
             let parked = state.unmark(hold.mark);
-            for entry in &parked {
-                state.refuse_source_drop(entry, SourceDropRefusalReason::PrincipalGone);
-            }
-            parked
+            state.end_principal_kills(parked).1
         };
         for entry in parked {
             refuse("principal_gone", &entry.creature);
@@ -1478,7 +1517,7 @@ impl KillSettlementQueue {
     /// Their marks go with them. A pending boss clock survives loss of its loot recipient.
     pub fn discard_gone(&self, session: GameSessionId, live: Option<u64>) -> bool {
         let gone_principal = |(owner, lease): Principal| owner == session && Some(lease) != live;
-        let (gone, clock_pending) = {
+        let (clock_pending, gone) = {
             let mut state = self.state();
             let (mut gone, kept) = std::mem::take(&mut state.queued)
                 .into_iter()
@@ -1493,15 +1532,7 @@ impl KillSettlementQueue {
                     .into_iter()
                     .flat_map(|mark| mark.parked.into_iter().map(|(entry, _)| entry)),
             );
-            let (pending, gone): (Vec<_>, Vec<_>) = gone
-                .into_iter()
-                .partition(|entry| entry.pending_boss_clock().is_some());
-            let clock_pending = !pending.is_empty();
-            state.queued.extend(pending);
-            for entry in &gone {
-                state.refuse_source_drop(entry, SourceDropRefusalReason::PrincipalGone);
-            }
-            (gone, clock_pending)
+            state.end_principal_kills(gone)
         };
         for entry in gone {
             refuse("principal_gone", &entry.creature);
@@ -1624,6 +1655,9 @@ impl KillSettlementQueue {
             };
         };
         let entry = &state.queued[index];
+        if entry.boss_clock_only {
+            return TakeOutcome::Empty;
+        }
         // CPP's deferred death task freezes the current drop profile before
         // handlers complete. Never reserve MINTs or yield an immutable Taken
         // entry while that ordered source phase still owns this death.
@@ -2324,6 +2358,7 @@ pub fn record_creature_kill(
                             prepared_experience: Arc::default(),
                             prepared_loot: Arc::default(),
                             boss_clock_settled: Arc::default(),
+                            boss_clock_only: false,
                             forge_sliver: None,
                             source_completion: None,
                             no_progression_logged: false,
@@ -2731,6 +2766,7 @@ pub fn record_creature_kill(
         prepared_experience: Arc::default(),
         prepared_loot: Arc::default(),
         boss_clock_settled: Arc::default(),
+        boss_clock_only: false,
         forge_sliver: if personal_rewards { None } else { forge_sliver },
         source_completion: None,
         no_progression_logged: false,
@@ -3098,7 +3134,7 @@ pub async fn release_handshake(
     }
 }
 /// An unknown durable outcome: the write may or may not have committed, or capacity freed later
-/// may admit it.
+/// may admit it. An exhausted MINT work budget is terminal.
 fn loot_unknown(error: &CombatDeathRewardLootError) -> bool {
     matches!(
         error,
@@ -3309,39 +3345,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(None) => return DrainOutcome::Drained,
                 Err(()) => return DrainOutcome::Deferred,
             };
-            if let Some((boss, settled)) = head.boss {
-                let Some(permit) = self.spell_lane_permit().await else {
-                    return DrainOutcome::Deferred;
-                };
-                if let Err(error) = self
-                    .root
-                    .settle_open_world_boss_clock(
-                        &permit,
-                        self.character,
-                        self.holder,
-                        head.death,
-                        boss,
-                    )
-                    .await
-                {
-                    operator_event(&format!("boss_clock_death_deferred reason={error:?}"));
-                    return DrainOutcome::Deferred;
-                }
-                let _ = settled.set(());
-            }
             let principal = head.principal;
-            let fence = match self.current_quest_fence(principal.0).await {
-                Ok(Some(fence)) => fence,
-                Ok(None) => {
-                    self.states
-                        .attack
-                        .lock()
-                        .await
-                        .kills()
-                        .discard_gone(principal.0, None);
-                    continue;
+            let current = if head.boss_clock_only {
+                None
+            } else {
+                match self.current_quest_fence(principal.0).await {
+                    Ok(fence) => fence,
+                    Err(()) => return DrainOutcome::Deferred,
                 }
-                Err(()) => return DrainOutcome::Deferred,
+            };
+            let Some(fence) =
+                current.filter(|fence| fence.character_lease_generation == principal.1)
+            else {
+                let queue = self.states.attack.lock().await.kills().clone();
+                if let Some(entry) = queue.pending_boss_death(head.death) {
+                    let Some(permit) = self.spell_lane_permit().await else {
+                        return DrainOutcome::Deferred;
+                    };
+                    if !Box::pin(self.settle_boss_clock_without_rewards(&permit, &entry)).await {
+                        return DrainOutcome::Deferred;
+                    }
+                    let mut runtime = self.runtime.lock().await;
+                    queue.finish_boss_clock_only(head.death);
+                    release_settled_corpse(&mut runtime, &entry, SettleVerdict::Final);
+                } else if head.boss_clock_only {
+                    // A concurrent pass observed the same retained death already settled.
+                    queue.finish_boss_clock_only(head.death);
+                } else {
+                    queue.discard_gone(
+                        principal.0,
+                        current.map(|fence| fence.character_lease_generation),
+                    );
+                }
+                continue;
             };
             let core_head = match self.states.attack.lock().await.kills().core_head() {
                 Ok(Some(core_head)) if core_head.1 == head.death => core_head,
@@ -3427,6 +3463,94 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             DrainOutcome::Drained
         }
     }
+    /// The World respawn owner also drives release-retained clocks when there are no clients.
+    pub(super) async fn drain_released_boss_clocks(&self) {
+        let session = self
+            .states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .state()
+            .queued
+            .iter()
+            .find(|entry| entry.boss_clock_only)
+            .map(|entry| entry.facts.principal.session);
+        if let Some(session) = session {
+            let _ = Box::pin(self.drain_kill_rewards(session)).await;
+        }
+    }
+
+    async fn settle_boss_clock_without_rewards(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        entry: &PendingKillSettlement,
+    ) -> bool {
+        let Some(boss) = entry.pending_boss_clock() else {
+            return true;
+        };
+        if boss.0.starts_with("qn1.elemental:") {
+            let Some((body, race)) = entry.row.as_ref().and_then(|row| {
+                row.corpse_item
+                    .as_ref()
+                    .map(|body| (body, row.race.clone()))
+            }) else {
+                refuse("elemental_boss_corpse_unavailable", &entry.creature);
+                return false;
+            };
+            let session = DurabilitySession {
+                root: self.root,
+                authority: self.character,
+                node: self.holder,
+            };
+            match crate::combat::settle_boss_death_corpse(
+                permit,
+                &session,
+                entry.facts,
+                &entry.ground,
+                body,
+                race,
+            )
+            .await
+            {
+                Ok(corpse) => {
+                    self.states.loop_ground.invalidate();
+                    let loot = Ok(Some(CommittedCorpseLoot {
+                        corpse,
+                        entries: Vec::new(),
+                    }));
+                    if let CorpseBind::Refused(error) =
+                        bind_settled_corpse(&mut *self.runtime.lock().await, entry, &loot)
+                    {
+                        operator_event(&format!(
+                            "elemental_boss_corpse_unbound creature={} reason={error:?}",
+                            entry.creature
+                        ));
+                    }
+                }
+                Err(error) => {
+                    operator_event(&format!("elemental_boss_death_deferred reason={error:?}"));
+                    return false;
+                }
+            }
+        } else if let Err(error) = self
+            .root
+            .settle_open_world_boss_clock(
+                permit,
+                self.character,
+                self.holder,
+                entry.facts.death,
+                boss.clone(),
+            )
+            .await
+        {
+            operator_event(&format!("boss_clock_death_deferred reason={error:?}"));
+            return false;
+        }
+        let _ = entry.boss_clock_settled.set(());
+        true
+    }
+
     /// Drain earlier deaths even for a non-damaging shared member before its
     /// terminal release. A prior committing mark only reconciles its own outcome.
     pub(super) async fn seal_kill_rewards(&self, session: GameSessionId) -> KillRelease {
@@ -3911,7 +4035,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             }
         }
         if let Some(boss) = &entry.bosstiary_only {
-            let Some(_permit) = admission.spell_lane_permit().await else {
+            let Some(permit) = admission.spell_lane_permit().await else {
                 return SettleReport {
                     verdict: SettleVerdict::Retry,
                     no_progression: false,
@@ -3965,8 +4089,15 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     no_progression: false,
                 };
             }
+            let settled = admission
+                .settle_boss_clock_without_rewards(&permit, entry)
+                .await;
             return SettleReport {
-                verdict: SettleVerdict::Final,
+                verdict: if settled {
+                    SettleVerdict::Final
+                } else {
+                    SettleVerdict::Retry
+                },
                 no_progression: false,
             };
         }
@@ -3974,6 +4105,23 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         // A missing reward row admits no additional progression, Task Board,
         // equipment, proficiency or loot descendant.
         if entry.row.is_none() {
+            if entry.pending_boss_clock().is_some() {
+                let Some(permit) = admission.spell_lane_permit().await else {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                };
+                if !admission
+                    .settle_boss_clock_without_rewards(&permit, entry)
+                    .await
+                {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                }
+            }
             return SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,
@@ -4019,6 +4167,15 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .settle_boss_without_experience(&permit, entry)
                 .await
                 .is_err()
+            {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
+            if !admission
+                .settle_boss_clock_without_rewards(&permit, entry)
+                .await
             {
                 return SettleReport {
                     verdict: SettleVerdict::Retry,
@@ -4145,8 +4302,10 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 Ok(party) => Some(party),
                 Err(error) => {
                     operator_event(&format!("party_xp_settle_deferred reason={error:?}"));
-                    // A composed Quest failure must retry the entire settlement.
-                    if super::quest_kill_objectives::has_grave_boss_credit(&entry) {
+                    // Do not advance a live boss before its XP writer commits.
+                    if entry.pending_boss_clock().is_some()
+                        || super::quest_kill_objectives::has_grave_boss_credit(&entry)
+                    {
                         return SettleReport {
                             verdict: SettleVerdict::Retry,
                             no_progression: false,
@@ -4238,10 +4397,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
             loot_table: prepared.table.clone(),
-            ground: DeathGroundContext {
-                boss_spawn: None,
-                ..entry.ground.clone()
-            },
+            ground: entry.ground.clone(),
             inflight_loot_mints_before_this_death: inflight_before,
             reward_principals: vec![RewardPrincipal {
                 gameplay_fence: fence,
@@ -4286,6 +4442,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .await
         };
         if let Ok(outcome) = &outcome {
+            if entry.ground.boss_spawn.is_some() && matches!(outcome.rewards.loot, Ok(Some(_))) {
+                let _ = entry.boss_clock_settled.set(());
+            }
             admission
                 .analyser_loot(&entry, &outcome.rewards.committed_loot)
                 .await;

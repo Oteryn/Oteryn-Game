@@ -25,6 +25,8 @@ enum Scenario {
     FenceReadFailure,
     GonePrincipal,
     GoneBossPrincipal,
+    ParkedBossPrincipal { late: bool },
+    LiveBossPrincipal,
 }
 
 #[test]
@@ -45,6 +47,27 @@ fn proficiency_kill_credit_surviving_contributor_when_xp_principal_is_gone() -> 
 #[test]
 fn creatures_open_world_boss_respawns_after_top_damager_logs_out() -> TestResult {
     run(Scenario::GoneBossPrincipal, "creatures_gone_boss_principal")
+}
+
+#[test]
+fn boss_clock_survives_terminal_release_of_parked_kill() -> TestResult {
+    run(
+        Scenario::ParkedBossPrincipal { late: false },
+        "boss_release_park",
+    )
+}
+
+#[test]
+fn boss_clock_survives_forgetting_a_late_release_park() -> TestResult {
+    run(
+        Scenario::ParkedBossPrincipal { late: true },
+        "boss_release_late_park",
+    )
+}
+
+#[test]
+fn live_boss_clock_waits_for_its_corpse_transaction() -> TestResult {
+    run(Scenario::LiveBossPrincipal, "boss_waits_for_corpse")
 }
 
 fn run(case: Scenario, name: &'static str) -> TestResult {
@@ -137,10 +160,15 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
     native
         .install_companion_policies(&mut runtime)
         .map_err(debug)?;
-    let boss = matches!(case, Scenario::GoneBossPrincipal);
+    let boss = matches!(
+        case,
+        Scenario::GoneBossPrincipal
+            | Scenario::ParkedBossPrincipal { .. }
+            | Scenario::LiveBossPrincipal
+    );
     if boss {
         use crate::durability::boss_encounter::{BossClockClaim, BossClockKey};
-        let policy = crate::content::BossPolicy::Respawn { min_s: 1, max_s: 1 };
+        let policy = crate::content::BossPolicy::Respawn { min_s: 60, max_s: 60 };
         let key = "creatures:gone-boss";
         runtime
             .configure_boss_spawns(vec![crate::foundation::BossSpawn {
@@ -424,6 +452,130 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
             let actor = replacement.actor.ok_or("replacement boss")?;
             assert_ne!(actor, creature.actor);
             runtime.companion_snapshot(actor).map_err(debug)?;
+        }
+        return Ok(());
+    }
+    if matches!(
+        case,
+        Scenario::LiveBossPrincipal | Scenario::ParkedBossPrincipal { .. }
+    ) {
+        use crate::gameplay_transport::kill_reward::{ReleaseEnd, ReleasePhase, Seal};
+        let queue = owner.states.attack.lock().await.kills().clone();
+        let first_lease = first.current_character_lease();
+        let parked = match case {
+            Scenario::ParkedBossPrincipal { late } => {
+                let principal = (players[0].1, first_lease.generation());
+                let Seal::Sealed(hold) = queue.seal(principal) else {
+                    return Err("seal the highest damager's release".into());
+                };
+                assert!(queue.commit_point(hold));
+                if late {
+                    owner
+                        .settle_kill_release(Some(hold), ReleaseEnd::Committed)
+                        .await;
+                }
+                Some((principal, hold, late))
+            }
+            _ => None,
+        };
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let amount = runtime
+                .companion_snapshot(creature.actor)
+                .map_err(debug)?
+                .health;
+            damage(
+                &mut runtime,
+                creature.actor,
+                players[0],
+                amount - 1,
+                399_999,
+            )?;
+            damage(&mut runtime, creature.actor, players[1], 1, 400_000)?;
+            record(
+                &mut runtime,
+                &queue,
+                native.reward_table(),
+                creature.actor,
+                crate::combat::CapturedRewardPrincipal {
+                    character: second.current_character_lease().character_id(),
+                    lease_generation: second.current_character_lease().generation(),
+                    session: players[1].1,
+                    actor: players[1].0,
+                },
+            );
+        }
+        if let Some((principal, hold, late)) = parked {
+            assert_eq!(
+                queue.parked(principal),
+                Some((ReleasePhase::Committing, vec![ReleasePhase::Committing]))
+            );
+            if !late {
+                owner
+                    .settle_kill_release(Some(hold), ReleaseEnd::Committed)
+                    .await;
+            }
+            owner.forget_kill_release(Some(hold)).await;
+            owner
+                .boss_spawn_pass(&mut Default::default())
+                .await
+                .map_err(debug)?;
+            eprintln!("PARKED_BOSS_CLOCK_PG_EXECUTED late={late}");
+            assert_eq!(boss_clock(h).await?, ("1".into(), 1));
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_mint_receipts")
+                    .fetch_one(&h.pool)
+                    .await?,
+                0,
+            );
+        } else {
+            sqlx::raw_sql(
+                "CREATE FUNCTION fail_boss_corpse() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN RAISE EXCEPTION 'boss corpse transaction fault'; END $$;
+                CREATE TRIGGER fail_boss_corpse BEFORE INSERT ON game_item_mint_receipts
+                FOR EACH ROW EXECUTE FUNCTION fail_boss_corpse();",
+            )
+            .execute(&h.pool)
+            .await?;
+            assert_eq!(
+                owner.drain_kill_rewards(players[1].1).await,
+                DrainOutcome::Deferred
+            );
+            eprintln!("LIVE_BOSS_FAULT_PG_EXECUTED");
+            assert_eq!(boss_clock(h).await?, ("0".into(), 2));
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
+                    .fetch_one(&h.pool)
+                    .await?,
+                1,
+                "the live winner's XP is durable before the clock may advance"
+            );
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_mint_receipts")
+                    .fetch_one(&h.pool)
+                    .await?,
+                0,
+            );
+            sqlx::query("DROP TRIGGER fail_boss_corpse ON game_item_mint_receipts")
+                .execute(&h.pool)
+                .await?;
+            owner.root.maintain_ready_once().await.map_err(debug)?;
+            assert_eq!(
+                owner.drain_kill_rewards(players[1].1).await,
+                DrainOutcome::Drained
+            );
+            assert_eq!(boss_clock(h).await?, ("1".into(), 1));
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION'")
+                    .fetch_one(&h.pool).await?,
+                1,
+            );
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
+                    .fetch_one(&h.pool)
+                    .await?,
+                1,
+            );
         }
         return Ok(());
     }
@@ -775,6 +927,14 @@ async fn initialize_build(
         return Err("official classed Character facts".into());
     };
     Ok((facts, after))
+}
+
+async fn boss_clock(h: &Harness) -> TestResult<(String, i16)> {
+    Ok(
+        sqlx::query_as("SELECT cycle::text,state FROM game_boss_spawn_clocks")
+            .fetch_one(&h.pool)
+            .await?,
+    )
 }
 
 fn damage(

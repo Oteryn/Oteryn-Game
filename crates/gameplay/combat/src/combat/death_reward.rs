@@ -449,9 +449,8 @@ fn ground_placement(
 /// table order, into `Container(parent = that corpse)` ordinal `i + 1`,
 /// stopping at the first MINT failure (a fence failure mid batch would reject
 /// every remaining entry too; nothing is gained by continuing past it).
-/// Already-committed entries stay committed: this never retries or undoes a
-/// prior `freeze`/`commit`, so a generation that ends mid-plan leaves the
-/// corpse holding only the entries that did commit (D52).
+/// A fresh corpse and its children commit together. An old generation can
+/// return a historical corpse receipt without minting a newly requested child (D52).
 #[allow(clippy::too_many_arguments)]
 async fn settle_loot(
     permit: &SpellLanePermit,
@@ -555,36 +554,8 @@ async fn settle_loot(
     )
     .map_err(CombatDeathRewardLootError::Capacity)?;
 
-    // The corpse's cause reuses the loot-cause tuple with the reserved
-    // sentinel purpose key, draw ordinal 0 and the corpse's own definition in
-    // place of a loot table (D3 §4.1).
-    let corpse_definition = to_typed_definition(corpse_item);
-    let mut corpse_cause = ItemMintCause::from_creature_death(
-        death,
-        corpse_definition.clone(),
-        CORPSE_MATERIALIZATION_PURPOSE_KEY.to_owned(),
-        0,
-    )
-    .map_err(CombatDeathRewardLootError::Corpse)?;
-    if let Some(race) = corpse_race {
-        corpse_cause = corpse_cause
-            .with_corpse_race(race)
-            .map_err(CombatDeathRewardLootError::Corpse)?;
-    }
-    let corpse_request = ItemMintRequest {
-        cause: corpse_cause,
-        item: corpse_definition,
-        quantity: 1,
-        ground: ground_placement(death, corpse, ground),
-        content_revision: ground.content_revision.clone(),
-        ruleset_revision: ground.ruleset_revision.clone(),
-        sim_revision: ground.sim_revision.clone(),
-    };
-    let mut corpse_candidate = session
-        .root
-        .freeze_item_mint(session.authority, session.node, corpse_request)
-        .await
-        .map_err(CombatDeathRewardLootError::Corpse)?;
+    let mut corpse_candidate =
+        freeze_corpse(session, death, corpse, ground, corpse_item, corpse_race).await?;
     let mut children = Vec::with_capacity(plan.entries.len());
     for entry in &plan.entries {
         let parent = match entry.parent {
@@ -617,15 +588,24 @@ async fn settle_loot(
             ruleset_revision: ground.ruleset_revision.clone(),
             sim_revision: ground.sim_revision.clone(),
         };
-        children.push(
-            session
-                .root
-                .freeze_kill_loot_entry(session.authority, session.node, request)
-                .await
-                .map_err(CombatDeathRewardLootError::Corpse)?,
-        );
+        match session
+            .root
+            .freeze_kill_loot_entry(session.authority, session.node, request)
+            .await
+        {
+            Ok(child) => children.push(child),
+            Err(error) => {
+                return Err(classify_loot_mint_refusal(
+                    session,
+                    &corpse_candidate,
+                    top_damage_character_id,
+                    error,
+                )
+                .await);
+            }
+        }
     }
-    let outcomes = session
+    let outcomes = match session
         .root
         .commit_kill_loot_mints(
             permit,
@@ -638,7 +618,18 @@ async fn settle_loot(
             tutorial_corruptor,
         )
         .await
-        .map_err(CombatDeathRewardLootError::Corpse)?;
+    {
+        Ok(outcomes) => outcomes,
+        Err(error) => {
+            return Err(classify_loot_mint_refusal(
+                session,
+                &corpse_candidate,
+                top_damage_character_id,
+                error,
+            )
+            .await);
+        }
+    };
     let mut outcomes = outcomes.into_iter().map(committed);
     let corpse = outcomes.next().ok_or(CombatDeathRewardLootError::Corpse(
         ItemMintError::InvalidInput,
@@ -651,6 +642,114 @@ async fn settle_loot(
             .map(|(mint, entry)| (mint.clone(), entry.item.clone(), entry.quantity)),
     );
     Ok(Some(CommittedCorpseLoot { corpse, entries }))
+}
+
+async fn freeze_corpse(
+    session: &DurabilitySession<'_, '_, '_>,
+    death: CreatureDeathOccurrenceKey,
+    corpse: MovementLocalPosition,
+    ground: &DeathGroundContext,
+    corpse_item: &LootDefinitionRef,
+    corpse_race: Option<BestiaryRace>,
+) -> Result<crate::durability::item_mint::ItemMintCandidate, CombatDeathRewardLootError> {
+    // The corpse's cause reuses the loot-cause tuple with the reserved
+    // sentinel purpose key, draw ordinal 0 and the corpse's own definition in
+    // place of a loot table (D3 §4.1).
+    let corpse_definition = to_typed_definition(corpse_item);
+    let mut corpse_cause = ItemMintCause::from_creature_death(
+        death,
+        corpse_definition.clone(),
+        CORPSE_MATERIALIZATION_PURPOSE_KEY.to_owned(),
+        0,
+    )
+    .map_err(CombatDeathRewardLootError::Corpse)?;
+    if let Some(race) = corpse_race {
+        corpse_cause = corpse_cause
+            .with_corpse_race(race)
+            .map_err(CombatDeathRewardLootError::Corpse)?;
+    }
+    let corpse_request = ItemMintRequest {
+        cause: corpse_cause,
+        item: corpse_definition,
+        quantity: 1,
+        ground: ground_placement(death, corpse, ground),
+        content_revision: ground.content_revision.clone(),
+        ruleset_revision: ground.ruleset_revision.clone(),
+        sim_revision: ground.sim_revision.clone(),
+    };
+    session
+        .root
+        .freeze_item_mint(session.authority, session.node, corpse_request)
+        .await
+        .map_err(CombatDeathRewardLootError::Corpse)
+}
+
+/// An altar lease requires the physical corpse even when there is no eligible
+/// Character to receive its loot. The clock and empty corpse use one Channel write.
+pub async fn settle_boss_death_corpse(
+    permit: &SpellLanePermit,
+    session: &DurabilitySession<'_, '_, '_>,
+    facts: ProjectedCreatureDeathFacts,
+    ground: &DeathGroundContext,
+    corpse_item: &LootDefinitionRef,
+    corpse_race: Option<BestiaryRace>,
+) -> Result<CommittedItemMint, CombatDeathRewardLootError> {
+    let boss = ground
+        .boss_spawn
+        .clone()
+        .ok_or(CombatDeathRewardLootError::Corpse(
+            ItemMintError::InvalidInput,
+        ))?;
+    let mut corpse = freeze_corpse(
+        session,
+        facts.death,
+        facts.corpse,
+        ground,
+        corpse_item,
+        corpse_race,
+    )
+    .await?;
+    let outcomes = session
+        .root
+        .commit_kill_loot_mints(
+            permit,
+            session.authority,
+            session.node,
+            &mut corpse,
+            &mut [],
+            *facts.top_damage_character.as_bytes(),
+            Some(boss),
+            None,
+        )
+        .await
+        .map_err(CombatDeathRewardLootError::Corpse)?;
+    outcomes
+        .into_iter()
+        .next()
+        .map(committed)
+        .ok_or(CombatDeathRewardLootError::Corpse(
+            ItemMintError::InvalidInput,
+        ))
+}
+
+async fn classify_loot_mint_refusal(
+    session: &DurabilitySession<'_, '_, '_>,
+    corpse: &crate::durability::item_mint::ItemMintCandidate,
+    top_damage_character_id: [u8; 16],
+    error: ItemMintError,
+) -> CombatDeathRewardLootError {
+    if matches!(error, ItemMintError::AuthorityRejected) {
+        return match session
+            .root
+            .reconcile_kill_corpse_mint(session.authority, corpse, top_damage_character_id)
+            .await
+        {
+            Ok(Some(committed)) => CombatDeathRewardLootError::Mint(error, committed),
+            Ok(None) => CombatDeathRewardLootError::Corpse(error),
+            Err(error) => CombatDeathRewardLootError::Corpse(error),
+        };
+    }
+    CombatDeathRewardLootError::Corpse(error)
 }
 
 fn committed(outcome: ItemMintOutcome) -> CommittedItemMint {

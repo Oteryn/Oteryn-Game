@@ -54,6 +54,7 @@ impl SourceCorpseMint {
             Err(
                 ItemMintError::InvalidInput
                 | ItemMintError::CapacityExceeded
+                | ItemMintError::WorkBudgetExhausted
                 | ItemMintError::AuthorityRejected,
             ) => {
                 // This attempt certainly did not commit, but Capacity also
@@ -103,6 +104,7 @@ impl SourceCorpseMint {
             Err(
                 ItemMintError::InvalidInput
                 | ItemMintError::CapacityExceeded
+                | ItemMintError::WorkBudgetExhausted
                 | ItemMintError::AuthorityRejected
                 | ItemMintError::Unavailable(_),
             ) => {}

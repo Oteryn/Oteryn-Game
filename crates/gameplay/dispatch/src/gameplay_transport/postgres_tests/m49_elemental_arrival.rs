@@ -63,3 +63,9 @@ fn m49_arrival_retires_real_corpse_loot_with_the_root() -> TestResult {
 fn m49_current_arrival_recovers_after_lost_projection_response() -> TestResult {
     run("m49-fire-response")
 }
+
+
+#[test]
+fn elemental_altar_boss_death_commits_corpse_and_closes_clock() -> TestResult {
+    run("m49-fire-kill")
+}

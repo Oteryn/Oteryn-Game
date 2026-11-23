@@ -1434,6 +1434,17 @@ fn scenario_with_creature_observed(
                 .fetch_one(&harness.pool)
                 .await?;
         assert_eq!(experience, expected_xp);
+        if matches!(
+            super::w22a_loot_fixtures::CASE.get(),
+            Some(super::w22a_loot_fixtures::Case::FlatExhausted)
+        ) {
+            assert_eq!(corpse_receipts(&harness).await?, 0);
+            super::w22a_loot_fixtures::qualify(&mut owner, &harness).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         // Corpse: one materialized corpse minted for this Character's kill, and its loot rows
         // are children of that very corpse.
         assert_eq!(corpse_receipts(&harness).await?, 1);

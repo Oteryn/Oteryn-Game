@@ -61,23 +61,23 @@ async fn settle_on_fresh_lane<const N: usize>(
         .map_err(|error| debug(error).into())
 }
 
-type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+pub(super) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const WORLD: u8 = 42;
 const CHANNEL: u8 = 43;
 const RAT_XP: i64 = 5;
 
-fn id(seed: u8) -> [u8; 16] {
+pub(super) fn id(seed: u8) -> [u8; 16] {
     [
         seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
     ]
 }
 
-fn debug<E: std::fmt::Debug>(error: E) -> String {
+pub(super) fn debug<E: std::fmt::Debug>(error: E) -> String {
     format!("{error:?}")
 }
 
-fn configured_admin() -> Option<String> {
+pub(super) fn configured_admin() -> Option<String> {
     match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
         Ok(value) => Some(value),
         Err(_) => {
@@ -89,7 +89,7 @@ fn configured_admin() -> Option<String> {
     }
 }
 
-fn runtime() -> TestResult<tokio::runtime::Runtime> {
+pub(super) fn runtime() -> TestResult<tokio::runtime::Runtime> {
     Ok(tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?)
@@ -368,18 +368,18 @@ async fn seed_character(pool: &sqlx::PgPool) -> TestResult {
     Ok(())
 }
 
-struct Harness {
+pub(super) struct Harness {
     database: Database,
-    root: DurabilityRoot,
-    pool: sqlx::PgPool,
-    recovery: CharacterRecoveryStore,
+    pub(super) root: DurabilityRoot,
+    pub(super) pool: sqlx::PgPool,
+    pub(super) recovery: CharacterRecoveryStore,
     retained: std::path::PathBuf,
-    node: NodeIncarnationProof,
+    pub(super) node: NodeIncarnationProof,
     writer: RuntimeScopeAssignmentWriter,
 }
 
 impl Harness {
-    async fn create(admin: String, tag: &str) -> TestResult<Self> {
+    pub(super) async fn create(admin: String, tag: &str) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
@@ -435,7 +435,7 @@ impl Harness {
         })
     }
 
-    async fn count(&self, relation: &str) -> TestResult<i64> {
+    pub(super) async fn count(&self, relation: &str) -> TestResult<i64> {
         Ok(sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
             "SELECT count(*) FROM {relation}"
         )))
@@ -443,7 +443,7 @@ impl Harness {
         .await?)
     }
 
-    async fn cleanup(self) -> TestResult {
+    pub(super) async fn cleanup(self) -> TestResult {
         drop(self.writer);
         self.pool.close().await;
         self.database.cleanup().await?;
@@ -452,7 +452,7 @@ impl Harness {
     }
 }
 
-fn death_fixture() -> TestResult<CombatDeathFixture> {
+pub(super) fn death_fixture() -> TestResult<CombatDeathFixture> {
     CombatDeathFixture::new(
         WorldId::decode(&id(WORLD)).map_err(debug)?,
         ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
@@ -634,7 +634,7 @@ fn input(
 /// §1.2: the facts the projecting owner turn captures under the lock, for
 /// the fixed reward principal `id(41)`. No clocked damage is recorded here,
 /// so the facts carry no last-damage time.
-fn capture(
+pub(super) fn capture(
     fixture: &mut CombatDeathFixture,
     actor: ExactActorRef,
 ) -> TestResult<ProjectedCreatureDeathFacts> {
@@ -1099,7 +1099,7 @@ fn an_unsupported_loot_table_rejects_loot_without_blocking_xp() -> TestResult {
     })
 }
 
-fn definition(family: &str, key: &str, revision: &str) -> TypedDefinitionRef {
+pub(super) fn definition(family: &str, key: &str, revision: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: family.into(),
         production_key: key.into(),
@@ -1258,31 +1258,7 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
         .ok_or("fixture physical corpse")?;
         assert_eq!(first.entries.len(), 1);
 
-        // D52: the scope moves to another node, ending generation 1.
-        let predecessor = harness
-            .root
-            .read_runtime_scope_predecessor(scope()?)
-            .await
-            .map_err(debug)?
-            .ok_or("expected a live assignment predecessor")?;
-        let node2 = register(&harness.root, 2).await?;
-        let moved = harness
-            .writer
-            .submit(&AssignmentRequest {
-                operation_key: OperationKey::from_bytes([8_u8; 32]),
-                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
-                command: AssignmentCommand::Replace {
-                    scope: scope()?,
-                    predecessor,
-                    target: node2.fact(),
-                },
-            })
-            .await
-            .map_err(debug)?;
-        let AssignmentOutcome::Committed(moved) = moved else {
-            return Err(format!("unexpected replacement outcome: {moved:?}").into());
-        };
-        assert_eq!(moved.assignment.ownership_generation, 2);
+        replace_scope_owner(&harness).await?;
 
         // The same death now plans a second entry: the corpse and the first
         // entry replay to their original results; the second entry is
@@ -1320,6 +1296,36 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
         drop(seal);
         harness.cleanup().await
     })
+}
+
+pub(super) async fn replace_scope_owner(harness: &Harness) -> TestResult {
+    // D52: the scope moves to another node, ending generation 1.
+    let predecessor = harness
+        .root
+        .read_runtime_scope_predecessor(scope()?)
+        .await
+        .map_err(debug)?
+        .ok_or("expected a live assignment predecessor")?;
+    let node2 = register(&harness.root, 2).await?;
+    let moved = harness
+        .writer
+        .submit(&AssignmentRequest {
+            operation_key: OperationKey::from_bytes([8_u8; 32]),
+            actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+            command: AssignmentCommand::Replace {
+                scope: scope()?,
+                predecessor,
+                target: node2.fact(),
+            },
+        })
+        .await
+        .map_err(debug)?;
+    let AssignmentOutcome::Committed(moved) = moved else {
+        return Err(format!("unexpected replacement outcome: {moved:?}").into());
+    };
+    assert_eq!(moved.assignment.ownership_generation, 2);
+
+    Ok(())
 }
 
 #[test]

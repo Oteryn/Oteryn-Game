@@ -459,6 +459,10 @@ impl super::DurabilityRoot {
         death: crate::foundation::CreatureDeathOccurrenceKey,
         (spawn, cycle, policy): (String, u64, oteryn_gameplay_content::content::BossPolicy),
     ) -> Result<()> {
+        // Elemental altar leases require the native corpse in the same transaction.
+        if spawn.starts_with("qn1.elemental:") {
+            return Err(BossClockError::InvalidInput);
+        }
         permit.check_scope(death.runtime_scope())?;
         let key = BossClockKey {
             world: death.world_id(),

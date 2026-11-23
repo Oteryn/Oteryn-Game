@@ -719,6 +719,10 @@ pub(super) async fn exercise(
                  (SELECT count(*) FROM game_boss_spawn_clocks WHERE spawn_key LIKE 'qn1.elemental:%')",
             ).fetch_one(&h.pool).await?;
             assert_eq!(clocks, (1, 1));
+            if name.ends_with("-kill") {
+                Box::pin(settle_altar_boss_death(owner, admitted, h, actor, bosses[0])).await?;
+            }
+
         }
     }
     if name.contains("-fields") {
@@ -728,6 +732,74 @@ pub(super) async fn exercise(
     for (key, rev) in charged {
         assert_eq!(map.facts.object_revision(key), rev);
     }
+    Ok(())
+}
+
+async fn settle_altar_boss_death(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    player: crate::foundation::ExactActorRef,
+    boss: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use crate::foundation::{CommandId, CommandRef, OwnerDamageCommand};
+    use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_creature_kill};
+    let session = admitted.game_session_id;
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let lease = runtime.bound_attacker_lease(player, session).map_err(debug)?;
+        let target = runtime.companion_snapshot(boss).map_err(debug)?;
+        let now = owner.owner_now().get();
+        runtime
+            .borrow_exact_actor_commit_at(now / 1_000)
+            .commit_damage_for_bound_attacker(
+                boss,
+                player,
+                CommandRef::new(session, CommandId::new(900).map_err(debug)?),
+                0,
+                OwnerDamageCommand {
+                    target: target.state.policy.definition_key.as_bytes(),
+                    occurrence: session.as_bytes(),
+                    binding: b"m49-live-boss-death",
+                    damage: target.health,
+                },
+            )
+            .map_err(debug)?;
+        let attack = owner.states.attack.lock().await;
+        attack.kills().boss_damage_dealt(&runtime, boss, player, session);
+        record_creature_kill(
+            &mut runtime,
+            KillSink {
+                queue: attack.kills(),
+                rewards: owner.reward_table(),
+                prey: None,
+                activity: &[],
+                charms: None,
+            },
+            boss,
+            crate::combat::CapturedRewardPrincipal {
+                character: lease.character_id(),
+                lease_generation: lease.generation(),
+                session,
+                actor: player,
+            },
+            now / 1_000,
+            Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now)),
+        );
+        assert!(attack.kills().has_session(session));
+    }
+    let outcome = owner.drain_kill_rewards(session).await;
+    let settled: (String, i16, i64, i64) = sqlx::query_as(
+        "SELECT cycle::text,state,(SELECT count(*) FROM game_elemental_boss_leases),
+           (SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION' AND death_actor_local_id=$1)
+         FROM game_boss_spawn_clocks WHERE spawn_key LIKE 'qn1.elemental:%'",
+    )
+    .bind(i64::from(boss.actor_local_id()))
+    .fetch_one(&h.pool)
+    .await?;
+    eprintln!("ELEMENTAL_ALTAR_BOSS_KILL_PG_EXECUTED");
+    assert_eq!(settled, ("1".into(), 3, 0, 1));
+    assert_eq!(outcome, DrainOutcome::Drained);
     Ok(())
 }
 
