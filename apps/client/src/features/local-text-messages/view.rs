@@ -32,13 +32,17 @@ impl NoticeKind {
 pub(crate) struct WindowNotice {
     pub kind: NoticeKind,
     pub text: String,
+    private_receipt: Option<u64>,
 }
 #[cfg(bevy_shell)]
 impl crate::play::mailbox::Mailbox {
     pub(in crate::play) fn window_notice(&mut self, kind: NoticeKind, text: String) {
         // Each category contributes at most its newest notice between frames.
         self.window_notices.retain(|notice| notice.kind != kind);
-        self.window_notices.push_back(WindowNotice { kind, text });
+        let private_receipt = (kind == NoticeKind::Private).then(|| {
+            self.chat.received.wrapping_add(self.chat.pending_lines).wrapping_add(1)
+        });
+        self.window_notices.push_back(WindowNotice { kind, text, private_receipt });
     }
 }
 #[cfg(bevy_shell)]
@@ -56,9 +60,14 @@ impl crate::play::PlayLink {
         let panel = &mailbox.chat;
         let previous = cursor.replace((panel.scope, panel.received));
         let reset = previous.is_none_or(|(scope, _)| scope != panel.scope);
-        let received = previous.map_or(0, |(_, n)| n);
+        let received = previous.filter(|(scope, _)| *scope == panel.scope).map_or(0, |(_, n)| n);
         let count = usize::try_from(panel.received.wrapping_sub(received)).unwrap_or(usize::MAX);
-        if count == 0 || !notices.iter().any(|notice| notice.kind == NoticeKind::Private) {
+        let Some(receipt) = notices.iter().find_map(|notice| notice.private_receipt) else {
+            return (reset, notices);
+        };
+        // Only a published receipt can be classified by the transcript's recipient metadata.
+        let ahead = receipt.wrapping_sub(panel.received);
+        if count == 0 || (1..=panel.pending_lines).contains(&ahead) {
             return (reset, notices);
         }
         let start = panel.lines.len().saturating_sub(count);

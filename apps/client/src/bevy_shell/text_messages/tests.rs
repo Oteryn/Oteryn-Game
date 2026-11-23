@@ -473,6 +473,33 @@ fn incoming_private_message_projects_over_world() -> TestResult {
             .iter(app.world())
             .all(|t| t.0.is_empty())
     );
+    // History has published the first message but the next receipt is already in the mailbox.
+    for (seq, message) in [(5, "Published"), (6, "Newest")] {
+        let line = oteryn_session::ChatLine::Private {
+            speaker_name: "Bryn".into(),
+            text: message.into(),
+        };
+        outbox.push(vec![SessionEvent::ChatLine(AppliedDelta {
+            server_sequence: seq,
+            base_revision: seq - 1,
+            new_revision: seq,
+            value: line.clone(),
+        })]);
+        if seq == 5 {
+            crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+                &outbox,
+                Default::default(),
+                vec![line],
+            );
+        }
+    }
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Bryn: Newest")
+    );
     Ok(())
 }
 
