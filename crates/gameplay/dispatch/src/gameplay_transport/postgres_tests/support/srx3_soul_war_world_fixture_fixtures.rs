@@ -24,6 +24,14 @@ pub(super) fn source_world_with_bundle(
         .runtime_scope
         .channel_id()
         .ok_or("World Channel")?;
+    // Nextest runs each case in a separate process. Resolve the shared artifact
+    // before activating native content so the cold pin build runs only once and
+    // its compiler allocations are released before the World is booted.
+    let bytes = if let Some(path) = std::env::var_os("SRX3_DEFAULT_WORLD_BUNDLE") {
+        std::fs::read(path)?
+    } else {
+        super::qc_pinned_world::artifact()?.0
+    };
     let (controller, baseline) =
         super::death_ml_loss_composed_fixtures::production_generation_with_pin(world, "content-1")?;
     let active = controller.active().ok_or("actual active content")?;
@@ -31,29 +39,6 @@ pub(super) fn source_world_with_bundle(
         .native_gameplay()
         .ok_or("actual native definitions")?;
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let bytes = if let Some(path) = std::env::var_os("SRX3_DEFAULT_WORLD_BUNDLE") {
-        std::fs::read(path)?
-    } else {
-        use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
-        let project = source::project(&root)?;
-        let (registry, palette) = source::registry(&root, &project)?;
-        let identity = serde_json::from_slice(&std::fs::read(
-            root.join("content/world/pins/oteryn.identity.json"),
-        )?)?;
-        compile::compile(
-            &compile::Input {
-                regions: &project.regions,
-                palette: &palette,
-                identity,
-                world: source::world_extent(&root)?,
-                build_class: BuildClass::NonProduction,
-                draft_areas: oteryn_world_bundle_compiler::project::draft_areas(&project.index)?,
-                families: &project.families,
-            },
-            &registry,
-        )?
-        .bytes
-    };
     let decoded = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(())).map_err(debug)?;
     let pin: serde_json::Value =
         serde_json::from_slice(&std::fs::read(root.join("content/world/pins/oteryn.json"))?)?;
