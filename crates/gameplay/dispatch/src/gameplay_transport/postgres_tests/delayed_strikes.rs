@@ -44,6 +44,8 @@ enum Case {
     Logout,
     DepartedTarget,
     QueuedOrder,
+    LethalCleanup,
+    ShutdownReward,
 }
 
 #[test]
@@ -134,6 +136,30 @@ fn delayed_strikes_postgres_overlapping_callbacks_follow_lane_order() -> TestRes
             ("candidate:spell/death_echo", 120, 150),
         ],
         case: Case::QueuedOrder,
+    })
+}
+
+#[test]
+fn delayed_strikes_postgres_lethal_cleanup_failure_keeps_reward() -> TestResult {
+    scenario(Plan {
+        tag: "delayed_lethal_cleanup",
+        vocation: "sorcerer",
+        experience: 30_000_000,
+        weapon: "oteryn:item.tibia.i3277",
+        spells: &[("candidate:spell/death_echo", 120, 150)],
+        case: Case::LethalCleanup,
+    })
+}
+
+#[test]
+fn shutdown_checkpoint_settles_queued_spell_reward() -> TestResult {
+    scenario(Plan {
+        tag: "shutdown_spell_reward",
+        vocation: "sorcerer",
+        experience: 30_000_000,
+        weapon: "oteryn:item.tibia.i3277",
+        spells: &[("candidate:spell/death_echo", 120, 150)],
+        case: Case::ShutdownReward,
     })
 }
 
@@ -797,6 +823,71 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                     .pending_len(),
                 0
             );
+            continue;
+        }
+        if matches!(plan.case, Case::LethalCleanup | Case::ShutdownReward) {
+            deps.runtime
+                .lock()
+                .await
+                .set_test_creature_health(target, 1)
+                .map_err(debug)?;
+            owner.clock_origin -= Duration::from_millis(1100);
+            if plan.case == Case::LethalCleanup {
+                let result = crate::gameplay_transport::actor_spell::DUE_READ_CLEANUP_FAILURE
+                    .scope((), owner.drain_native_ai_timers())
+                    .await;
+                assert!(result.is_err(), "read cleanup failure reached");
+            } else {
+                let report = owner.drain_native_ai_timers().await.map_err(debug)?;
+                assert_eq!(report.receipts.len(), 1);
+            }
+            assert_eq!(deps.runtime.lock().await.live_creature_health(target), None);
+            assert!(
+                owner
+                    .states
+                    .attack
+                    .lock()
+                    .await
+                    .kills()
+                    .has_session(session)
+            );
+            let receipts = || {
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
+                    .fetch_one(&h.pool)
+            };
+            let before = receipts().await?;
+            if plan.case == Case::ShutdownReward {
+                let flush = crate::gameplay_transport::LastPositionFlush::default();
+                flush.request();
+                assert!(
+                    flush
+                        .serve(
+                            &owner,
+                            &crate::gameplay_transport::serving::QuiescedKillOwners::for_test(),
+                        )
+                        .await
+                );
+            } else {
+                assert_eq!(
+                    owner.drain_kill_rewards(session).await,
+                    crate::gameplay_transport::kill_reward::DrainOutcome::Drained,
+                );
+            }
+            assert_eq!(receipts().await?, before + 1);
+            assert!(
+                !owner
+                    .states
+                    .attack
+                    .lock()
+                    .await
+                    .kills()
+                    .has_session(session)
+            );
+            if plan.case == Case::ShutdownReward {
+                eprintln!("SHUTDOWN_SPELL_REWARD_POSTGRES_CASE_COMPLETED");
+            } else {
+                eprintln!("LETHAL_SPELL_CLEANUP_POSTGRES_CASE_COMPLETED");
+            }
             continue;
         }
         // Both promoted red-quadrant fixtures include slot 12's 0.25% mana

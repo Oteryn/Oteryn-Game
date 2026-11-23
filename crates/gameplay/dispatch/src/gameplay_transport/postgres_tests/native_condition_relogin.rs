@@ -26,7 +26,7 @@ fn native_finite_condition_postgres_relogin_preserves_remaining_ticks() -> TestR
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_thread(admin, false)
+    on_thread(admin, false, false)
 }
 
 #[test]
@@ -34,10 +34,18 @@ fn native_condition_postgres_terminal_save_excludes_environment_and_stale_lease(
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_thread(admin, true)
+    on_thread(admin, true, false)
 }
 
-fn on_thread(admin: String, with_environment: bool) -> TestResult {
+#[test]
+fn shutdown_condition_checkpoint_replaces_expired_snapshot_with_empty() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_thread(admin, false, true)
+}
+
+fn on_thread(admin: String, with_environment: bool, shutdown: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
@@ -50,7 +58,7 @@ fn on_thread(admin: String, with_environment: bool) -> TestResult {
                     false,
                 ))?;
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    rt.block_on(scenario(&h, with_environment))
+                    rt.block_on(scenario(&h, with_environment, shutdown))
                 }));
                 let cleanup = rt.block_on(h.cleanup());
                 match result {
@@ -79,7 +87,7 @@ impl ConnectionIdentifiers for FreshIds {
     }
 }
 
-async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
+async fn scenario(h: &Harness, with_environment: bool, shutdown: bool) -> TestResult {
     let recovery = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -130,6 +138,24 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
             .ok_or("fixture spell state")?;
     }
     let applied_at = install_conditions(&owner, &deps, with_environment).await?;
+    if shutdown {
+        assert!(owner.save_conditions_at_actor_end(deps.actor, session).await);
+        let saved = h.root.read_character_conditions(&authority, character).await.map_err(debug)?
+            .ok_or("existing snapshot")?;
+        assert_eq!(saved.conditions["conditions"].as_array().ok_or("conditions")?.len(), 1);
+        owner.clock_origin -= Duration::from_secs(61);
+        let flush = crate::gameplay_transport::LastPositionFlush::default();
+        flush.request();
+        assert!(flush.serve(
+            &owner,
+            &crate::gameplay_transport::serving::QuiescedKillOwners::for_test(),
+        ).await);
+        let saved = h.root.read_character_conditions(&authority, character).await.map_err(debug)?
+            .ok_or("shutdown snapshot")?;
+        assert_eq!(saved.conditions["conditions"], serde_json::json!([]));
+        eprintln!("SHUTDOWN_CONDITIONS_POSTGRES_CASE_COMPLETED");
+        return Ok(());
+    }
     owner.clock_origin -= Duration::from_millis(750);
     let _clock = owner.freeze_owner_clock_for_test();
     let elapsed_at_save = owner.owner_now().get() - applied_at;

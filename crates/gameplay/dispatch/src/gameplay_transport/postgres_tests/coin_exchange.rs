@@ -791,9 +791,22 @@ fn coin_converter_postgres_charges_burn_toggle_and_tick() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| converter_scenario().map_err(|error| error.to_string()))?
+        .spawn(|| converter_scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "coin converter PostgreSQL thread panicked")??;
+    Ok(())
+}
+
+#[test]
+fn magic_converter_postgres_reconciles_consumed_source_before_next_conversion() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| converter_scenario(true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "magic converter PostgreSQL thread panicked")??;
     Ok(())
 }
 
@@ -837,7 +850,7 @@ async fn converter_row(h: &Harness, seed: u8) -> TestResult<(String, i16, Option
     Ok(row)
 }
 
-fn converter_scenario() -> TestResult {
+fn converter_scenario(lose_clock_ack: bool) -> TestResult {
     use crate::gameplay_transport::item_view::ItemKey;
     use oteryn_protocol_oteryn::world_object::UseDisposition;
     run(async |admin| {
@@ -947,11 +960,37 @@ fn converter_scenario() -> TestResult {
         assert_eq!(quantity(&h, "3031").await?, 100);
 
         // L23-55: the owner tick upgrades a carried 100-stack and spends one durable charge.
-        assert!(owner.tick_magic_converter(session).await);
+        if lose_clock_ack {
+            let reached = Arc::new(tokio::sync::Notify::new());
+            {
+                let tick = crate::gameplay_transport::coin_use::MAGIC_CONVERTER_ACK.scope(
+                    Arc::clone(&reached),
+                    owner.tick_timed_items(),
+                );
+                tokio::pin!(tick);
+                tokio::select! {
+                    () = reached.notified() => {}
+                    () = &mut tick => return Err("converter finished before loss of acknowledgement".into()),
+                }
+                // Drop the owner turn after SQL committed, before the clock sees its receipt.
+            }
+            assert_eq!(quantity(&h, "3031").await?, 0);
+            assert_eq!(quantity(&h, "3035").await?, 100);
+            assert_eq!(converter_row(&h, 180).await?.2, Some(499));
+            owner.clock_origin -= std::time::Duration::from_secs(2);
+            owner.tick_timed_items().await;
+        } else {
+            assert!(owner.tick_magic_converter(session).await);
+        }
         assert_eq!(quantity(&h, "3031").await?, 0);
         assert_eq!(quantity(&h, "3035").await?, 100);
         assert_eq!(converter_row(&h, 180).await?.2, Some(499));
-        assert!(owner.tick_magic_converter(session).await);
+        if lose_clock_ack {
+            owner.clock_origin -= std::time::Duration::from_secs(2);
+            owner.tick_timed_items().await;
+        } else {
+            assert!(owner.tick_magic_converter(session).await);
+        }
         assert_eq!(quantity(&h, "3035").await?, 0);
         assert_eq!(quantity(&h, "3043").await?, 1);
         assert_eq!(converter_row(&h, 180).await?.2, Some(498));
@@ -967,6 +1006,9 @@ fn converter_scenario() -> TestResult {
         assert_eq!(journal, 2);
         // A switch cannot alter charges outside its own arm.
         assert!(sqlx::query("UPDATE game_item_timed_states SET charges=500 WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(180).as_slice()).execute(&h.pool).await.is_err());
+        if lose_clock_ack {
+            eprintln!("MAGIC_CONVERTER_ACK_POSTGRES_CASE_COMPLETED");
+        }
         eprintln!("POSTGRES_COMPLETED goldconv2");
         drop(owner); drop(authority); drop(seal);
         h.cleanup().await

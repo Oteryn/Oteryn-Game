@@ -119,6 +119,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // No whole-population grant is introduced.
             let start = self.background_start("source-cycle", 16);
             for index in (start..16).chain(0..start) {
+                // Finish the in-flight unit and leave later work to the next owner.
+                if shutdown.is_cancelled() {
+                    return;
+                }
                 self.background_turn("source-cycle", index + 1, async {
                     match index {
                         0 => {

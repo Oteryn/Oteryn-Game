@@ -158,13 +158,26 @@ fn timed_item_postgres_wire_charges_replay_repair_and_owner_expiry() -> TestResu
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     std::thread::Builder::new()
         .stack_size(128 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "timed item thread")??;
     Ok(())
 }
-fn scenario() -> TestResult {
-    run(async |admin| {
+#[test]
+fn timed_equipment_grace_expiry_checkpoints_below_periodic_threshold() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(128 << 20)
+        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "timed grace expiry thread")??;
+    Ok(())
+}
+
+fn scenario(expiry: bool) -> TestResult {
+    run(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, "timed_item_wire", true, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -340,6 +353,14 @@ fn scenario() -> TestResult {
         assert!(result_value(&spent[3])?.retired);
         let lifecycle:i16=sqlx::query_scalar("SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(100).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(lifecycle, 2);
+        if expiry {
+            duration::grace_expiry(&mut owner, &h, &deps, admitted).await?;
+            eprintln!("TIMED_GRACE_EXPIRY_POSTGRES_CASE_COMPLETED");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         recovery::exercise(&owner, &h, admitted, &commands[3].1).await?;
         repair::exercise(&mut owner, &h, &deps, admitted).await?;
         duration::exercise(&mut owner, &h, &deps, admitted).await?;

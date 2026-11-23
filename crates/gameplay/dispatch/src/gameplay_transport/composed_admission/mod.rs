@@ -30,6 +30,8 @@ mod achievements;
 mod admission;
 mod combat;
 mod control_loss;
+#[cfg(test)]
+pub(super) use control_loss::RELEASE_FENCE_BARRIER;
 mod death;
 mod familiar;
 mod first_entry;

@@ -141,9 +141,9 @@ const WRITER_MIN_PAUSE: Duration = Duration::from_secs(1);
 const FLUSH_ATTEMPTS: usize = 8;
 const FLUSH_RETRY_PAUSE: Duration = Duration::from_millis(250);
 
-/// The node's shutdown write of every tracked last position: requested by the node before it
-/// withdraws readiness (which fences every session write), and marked done by the gameplay seam
-/// once each tracked session was written or refused.
+/// The node requests this checkpoint while it still holds readiness. The seam joins its
+/// producers, settles combat, saves the live actors, and closes the physical kill sources
+/// before acknowledging the request.
 #[derive(Debug, Default)]
 pub struct LastPositionFlush {
     requested: oteryn_foundation::CancellationToken,
@@ -160,50 +160,116 @@ impl LastPositionFlush {
     pub async fn done(&self) {
         self.done.cancelled().await;
     }
-    /// The seam's side: wait for the request, write every tracked session, retrying failed
-    /// writes, and mark it done only once none failed. The node stops waiting at its budget.
-    pub(super) async fn serve(&self, authority: &ComposedFreshAdmission<'_, '_, '_>) {
+    pub(super) async fn requested(&self) {
         self.requested.cancelled().await;
-        // OPS-SAVE-2: admissions and player commands stop, and those in flight finish, before
-        // the first snapshot, so no write below is overtaken. Server-driven work is not input.
-        authority.states.input_gate.quiesce().await;
+    }
+
+    /// The seam's side. Joined combat producers leave a stable set of deaths,
+    /// rewards and conditions to settle while the current scopes still own writes.
+    pub(super) async fn serve(
+        &self,
+        authority: &ComposedFreshAdmission<'_, '_, '_>,
+        quiesced: &super::serving::QuiescedKillOwners,
+    ) -> bool {
+        let mut deaths_settled = HashMap::new();
+        let mut conditions_settled = std::collections::HashSet::new();
         let mut monks_settled = std::collections::HashSet::new();
         let mut training_settled = std::collections::HashSet::new();
         let mut wheel_gifts_settled = std::collections::HashSet::new();
         for _ in 0..FLUSH_ATTEMPTS {
-            // OPS-SAVE-1: the monk values of the live actors go with the positions.
-            // Input is already quiesced through the shared node gate. Keep a
-            // participant from moving between two owner snapshots in this pass;
-            // all checkpoints below remain the existing exact-scope writers.
-            let transition = authority.activity_runtimes.transitions.lock().await;
-            let mut failed = authority.write_due_last_positions(true).await
-                + authority.flush_wheel_gifts(&mut wheel_gifts_settled).await
-                + authority.flush_monk_states(&mut monks_settled).await
-                + authority.flush_spell_training(&mut training_settled).await;
-            match authority.activity_runtimes.activity_owners() {
-                Ok(owners) => {
+            // Input and the activity jobs have joined, so the owners stay stable
+            // across the combat drain and the following Character checkpoints.
+            let mut failed = authority.flush_shutdown_combat(&mut deaths_settled).await;
+            let owners = authority.activity_runtimes.activity_owners();
+            if let Ok(owners) = &owners {
+                for owner in owners {
+                    failed += authority
+                        .runtime_view(owner)
+                        .flush_shutdown_combat(&mut deaths_settled)
+                        .await;
+                }
+            } else {
+                failed += 1;
+            }
+            // Death penalties and the last kill rewards can change the durable
+            // build. Finish combat before taking any Character checkpoint.
+            if failed == 0 {
+                failed = authority.write_due_last_positions(true).await
+                    + authority.flush_wheel_gifts(&mut wheel_gifts_settled).await
+                    + authority.flush_monk_states(&mut monks_settled).await
+                    + authority.flush_spell_training(&mut training_settled).await
+                    + authority.flush_conditions(&mut conditions_settled).await
+                    + usize::from(!authority.finish_daily_kill_statistics(quiesced).await);
+                if let Ok(owners) = &owners {
                     for owner in owners {
-                        let view = authority.runtime_view(&owner);
+                        let view = authority.runtime_view(owner);
                         failed += view.write_due_last_positions(true).await
                             + view.flush_monk_states(&mut monks_settled).await
-                            + view.flush_spell_training(&mut training_settled).await;
+                            + view.flush_spell_training(&mut training_settled).await
+                            + view.flush_conditions(&mut conditions_settled).await
+                            + usize::from(!view.finish_daily_kill_statistics(quiesced).await);
                     }
                 }
-                Err(()) => failed += 1,
             }
-            drop(transition);
             if failed == 0 {
                 self.done.cancel();
-                return;
+                return true;
             }
             tokio::time::sleep(FLUSH_RETRY_PAUSE).await;
         }
-        // Never done: the node's budget ends its wait, and the shutdown is reported incomplete.
         operator_event("last_position_flush_incomplete");
+        false
     }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn flush_shutdown_combat(
+        &self,
+        settled: &mut HashMap<GameSessionId, Option<super::actor_spell::PlayerDeath>>,
+    ) -> usize {
+        if self.drain_queued_kill_rewards().await != super::kill_reward::DrainOutcome::Drained {
+            return 1;
+        }
+        let deaths = self.states.spell_states.lock().await.deaths.clone();
+        let mut failed = 0;
+        for (actor, session, _) in deaths {
+            if !self
+                .settle_released_death(actor, session, settled.entry(session).or_default())
+                .await
+            {
+                failed += 1;
+            }
+        }
+        failed
+    }
+
+    async fn flush_conditions(
+        &self,
+        settled: &mut std::collections::HashSet<GameSessionId>,
+    ) -> usize {
+        let actors: Vec<_> = self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .actors
+            .iter()
+            .map(|(actor, session, _)| (*actor, *session))
+            .collect();
+        let mut failed = 0;
+        for (actor, session) in actors {
+            if settled.contains(&session) {
+                continue;
+            }
+            if self.save_conditions_at_actor_end(actor, session).await {
+                settled.insert(session);
+            } else {
+                failed += 1;
+            }
+        }
+        failed
+    }
+
     /// OPS-SAVE-2: the spell-training checkpoint of every tracked live actor, the forced
     /// actor-end save run while the session is still Active (a terminal session is fenced out).
     /// Returns the number of unproven saves, which the caller retries; settled sessions are

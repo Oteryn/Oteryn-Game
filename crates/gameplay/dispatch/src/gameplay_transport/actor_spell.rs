@@ -65,6 +65,8 @@ mod parameter_cast;
 pub(in crate::gameplay_transport) mod player_field;
 #[path = "spell_timer_callbacks.rs"]
 mod spell_timer_callbacks;
+#[cfg(test)]
+pub(super) use spell_timer_callbacks::DUE_READ_CLEANUP_FAILURE;
 #[path = "world_item_cast.rs"]
 mod world_item_cast;
 pub(in crate::gameplay_transport) use native_combat_cast::ordinary_combat::due_chain_presentations as prepare_ordinary_due_presentations;

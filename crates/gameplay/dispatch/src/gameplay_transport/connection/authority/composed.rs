@@ -1713,6 +1713,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let _permit = self.states.input_gate.enter().await?;
         self.expire_house_furniture_on_tick(actor, game_session_id)
             .await;
         self.tick_actor_vitals(actor, game_session_id).await
@@ -1723,6 +1724,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         admitted: AdmittedSession,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let _permit = self.states.input_gate.enter().await?;
         self.expire_house_furniture_on_tick(actor, admitted.game_session_id)
             .await;
         self.tick_house_actor_vitals(actor, admitted).await
@@ -1792,6 +1794,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<oteryn_protocol_oteryn::attack::ActorCombatState> {
+        let _permit = self.states.input_gate.enter().await?;
         self.tick_actor_combat(actor, game_session_id).await
     }
 

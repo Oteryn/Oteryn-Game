@@ -20,11 +20,29 @@ fn familiar_logout_save_returns_fenced_out_on_respawn_pending() -> TestResult {
     scenario(Case::Familiar)
 }
 
+#[test]
+fn grace_expiry_settles_death_that_lands_before_the_fence() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    scenario(Case::FenceRace)
+}
+
+#[test]
+fn shutdown_checkpoint_settles_unhandled_player_death() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    scenario(Case::Shutdown)
+}
+
 #[derive(Clone, Copy)]
 enum Case {
     Release,
     AlreadyDurable,
     Familiar,
+    FenceRace,
+    Shutdown,
 }
 
 fn scenario(case: Case) -> TestResult {
@@ -127,7 +145,7 @@ fn scenario(case: Case) -> TestResult {
                 .into();
         // Record the same expired loss in the durable and runtime owners, then kill offline.
         deps.loss(&h, -1).await?;
-        let death = {
+        let lethal = async {
             let mut runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             let hit = states
@@ -144,7 +162,7 @@ fn scenario(case: Case) -> TestResult {
             assert_eq!(hit.damage.health_after, 0);
             states
                 .player_death(&runtime, actor, session)
-                .ok_or("offline death")?
+                .ok_or("offline death")
         };
         let store = FreshAdmissionStore::from_root(h.root.clone());
         assert_eq!(
@@ -152,7 +170,47 @@ fn scenario(case: Case) -> TestResult {
             GameSessionState::Reconnectable
         );
         match case {
+            Case::FenceRace => {
+                let barrier =
+                    std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+                let release = crate::gameplay_transport::composed_admission::RELEASE_FENCE_BARRIER
+                    .scope(barrier.clone(), owner.release_after_grace(admitted));
+                let hit = async {
+                    barrier.0.notified().await;
+                    let death = lethal.await;
+                    barrier.1.notify_one();
+                    death
+                };
+                let (released, death) = tokio::time::timeout(Duration::from_secs(10), async {
+                    tokio::join!(release, hit)
+                })
+                .await?;
+                death?;
+                assert_eq!(released, GraceExpiryResult::Released);
+                assert_eq!(pending(&h).await?, 1);
+                eprintln!("RELEASE_FENCE_RACE_POSTGRES_CASE_COMPLETED");
+            }
+            Case::Shutdown => {
+                lethal.await?;
+                let flush = crate::gameplay_transport::LastPositionFlush::default();
+                flush.request();
+                assert!(
+                    flush
+                        .serve(
+                            &owner,
+                            &crate::gameplay_transport::serving::QuiescedKillOwners::for_test(),
+                        )
+                        .await
+                );
+                assert_eq!(pending(&h).await?, 1);
+                assert_eq!(
+                    store.current_session(session).await?.session_state(),
+                    GameSessionState::Reconnectable,
+                );
+                eprintln!("SHUTDOWN_PLAYER_DEATH_POSTGRES_CASE_COMPLETED");
+            }
             Case::Release => {
+                lethal.await?;
                 let released = tokio::time::timeout(
                     Duration::from_secs(10),
                     owner.release_after_grace(admitted),
@@ -173,6 +231,7 @@ fn scenario(case: Case) -> TestResult {
                 assert_eq!(pending(&h).await?, 0);
             }
             Case::AlreadyDurable | Case::Familiar => {
+                let death = lethal.await?;
                 assert!(owner.settle_released_death(actor, session, &mut None).await);
                 assert!(
                     h.root
@@ -233,7 +292,8 @@ fn scenario(case: Case) -> TestResult {
                             FamiliarStateOccurrence, FamiliarStateRequest,
                         };
                         use crate::durability::character_progression::CharacterProgressionError;
-                        let fence = death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
+                        let fence =
+                            death_ml_loss_composed_fixtures::current_fence(&owner, session).await?;
                         let before = h
                             .root
                             .read_character_familiar_state(&authority, fence.character_id)
@@ -291,7 +351,9 @@ fn scenario(case: Case) -> TestResult {
                             );
                         }
                     }
-                    Case::Release => return Err("unexpected release case".into()),
+                    Case::Release | Case::Shutdown | Case::FenceRace => {
+                        return Err("unexpected release case".into());
+                    }
                 }
                 owner.states.fence_holders.release(&mut hold);
             }

@@ -181,23 +181,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 foreground = Some(demand);
             }
-            if !self
-                .settle_released_death(actor, session, &mut settled_death)
-                .await
-            {
-                pending("death_save");
-                deferred(DeferReason::DeathSettlement, expired, attempts);
-                tokio::time::sleep(next_backoff()).await;
-                continue;
-            }
             if matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. }) {
-                // Original deadline, combat hold and death settlement above
+                // Original deadline and combat hold above
                 // remain the existing owner. Return before fencing the actor:
                 // a frozen release cannot also reserve a native transfer.
                 if hold.held {
                     pending("activity_return");
                     deferred(DeferReason::ActivityHeld, expired, attempts);
                     return GraceExpiryResult::Unknown;
+                }
+                if !self
+                    .settle_released_death(actor, session, &mut settled_death)
+                    .await
+                {
+                    pending("death_save");
+                    deferred(DeferReason::DeathSettlement, expired, attempts);
+                    tokio::time::sleep(next_backoff()).await;
+                    continue;
                 }
                 match self
                     .return_due_activity(
@@ -253,6 +253,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     deferred(DeferReason::FenceRefused, expired, attempts);
                     return GraceExpiryResult::Unknown;
                 }
+            }
+            if !self
+                .settle_released_death(actor, session, &mut settled_death)
+                .await
+            {
+                pending("death_save");
+                deferred(DeferReason::DeathSettlement, expired, attempts);
+                tokio::time::sleep(next_backoff()).await;
+                continue;
+            }
+            if !self.stop_timed_actor(actor, session).await {
+                pending("timed_equipment");
+                tokio::time::sleep(next_backoff()).await;
+                continue;
             }
             if self.save_familiar_at_actor_end(actor, session, None).await
                 == actor_spell::FamiliarLogoutSave::Unknown

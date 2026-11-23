@@ -84,7 +84,8 @@ pub(super) fn restore(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Called only after the release fence stops this actor's mutation lanes.
+    /// Called after the actor's release fence or the shutdown quiescence
+    /// stops its mutation lanes.
     pub(super) async fn save_conditions_at_actor_end(
         &self,
         actor: ExactActorRef,

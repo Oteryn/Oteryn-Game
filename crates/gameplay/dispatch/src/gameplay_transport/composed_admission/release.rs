@@ -132,8 +132,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         GraceExpiryResult::Unknown
     }
 
-    /// One attempt of a terminal release (`release_terminal`, `release_logout`): the death
-    /// settle, the fence, the actor-end saves, the §1.3 kill seal, the durable transaction and
+    /// One attempt of a terminal release (`release_terminal`, `release_logout`): the fence,
+    /// death settlement, the actor-end saves, the §1.3 kill seal, the durable transaction and
     /// its settle. `kills` keeps the attempt's kill mark for a later reconcile.
     pub(in crate::gameplay_transport) async fn release_attempt(
         &self,
@@ -163,15 +163,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return ReleaseAttempt::Retry;
         }
         let account_id = canonical_uuid(&account);
-        if !self
-            .settle_released_death(actor, session, settled_death)
-            .await
-        {
-            return ReleaseAttempt::Retry;
-        }
-        if !self.stop_timed_actor(actor, session).await {
-            return ReleaseAttempt::Retry;
-        }
         // Settle committed item successors while this owner still holds its live lease.
         if !self.reconcile_pending_item_effects(actor, session).await {
             return ReleaseAttempt::Retry;
@@ -183,6 +174,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             FenceStep::Fenced => {}
             FenceStep::Wait => return ReleaseAttempt::Retry,
             FenceStep::Refused(_) => return ReleaseAttempt::Done(GraceExpiryResult::Unknown),
+        }
+        if !self
+            .settle_released_death(actor, session, settled_death)
+            .await
+        {
+            return ReleaseAttempt::Retry;
+        }
+        if !self.stop_timed_actor(actor, session).await {
+            return ReleaseAttempt::Retry;
         }
         // A logout's fence is its own minted transition id: one per attempt.
         let logout = match (release, hold.token) {

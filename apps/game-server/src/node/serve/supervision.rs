@@ -269,20 +269,23 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     if let Some(reporter) = &reporter {
         reporter.stop_heartbeats();
     }
-    // D3 step 10: withdraw readiness first, within the shutdown budget. The
-    // loops keep being driven meanwhile, so work already inside a durability
-    // pass finishes and releases the holder the withdrawal needs.
+    // Let gameplay finish its fenced shutdown checkpoint before publishing
+    // the readiness withdrawal. Keep polling the other holders meanwhile.
     let budget = tokio::time::Instant::now() + SHUTDOWN_BUDGET;
-    // CHAR-POSITION-0 §3.2: the tracked last positions are written while the sessions are still
-    // fenced in, so before the withdrawal, within its own share of the budget.
+    // The combat drain and Character checkpoint share the existing pre-withdrawal budget.
     if !gameplay_done {
         last_position_flush.request();
-        let mut flushed = pin!(first(
+        let mut flushed = pin!(tokio::time::timeout(
+            LAST_POSITION_FLUSH_BUDGET,
             last_position_flush.done(),
-            tokio::time::sleep(LAST_POSITION_FLUSH_BUDGET),
         ));
         poll_fn(|context| {
-            if flushed.as_mut().poll(context).is_ready() {
+            if let Poll::Ready(result) = flushed.as_mut().poll(context) {
+                if result.is_err() {
+                    event("event=shutdown state=checkpoint_timeout");
+                    serve_error =
+                        Some(crate::gameplay_transport::GameplayServeError::OwnerUnavailable);
+                }
                 return Poll::Ready(());
             }
             if let Poll::Ready(result) = gameplay.as_mut().poll(context) {

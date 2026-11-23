@@ -192,13 +192,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn finish_daily_kill_statistics(
         &self,
         _proof: &super::serving::QuiescedKillOwners,
-    ) {
+    ) -> bool {
         for _ in 0..=KILL_PENDING_MAX / KILL_BATCH_MAX {
             if self.flush_daily_kill_statistics_pass(true).await {
-                break;
+                return true;
             }
             tokio::task::yield_now().await;
         }
+        false
     }
     /// The lifecycle holds the Instance transition lock while checking both
     /// retirement witnesses. Its local owner group has joined before this call;

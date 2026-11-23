@@ -40,6 +40,19 @@ fn inventory_revision(inventory: &ItemUseInventory) -> [u8; 16] {
     key
 }
 
+#[derive(Clone)]
+pub(super) struct MagicConverterAttempt {
+    command: CommandRef,
+    inventory_revision: [u8; 16],
+    request: CoinExchangeRequest,
+    converter: (CoinConverter, TimedDefinitionFacts),
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static MAGIC_CONVERTER_ACK: std::sync::Arc<tokio::sync::Notify>;
+}
+
 /// Canary items.xml gives every coin converter form charges="500"; the content definitions
 /// and the admitted native profiles record the same count. The converters carry no temporal
 /// or transform semantics, so their charge-only facts are formed here and the durable owner
@@ -164,6 +177,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             nonce: transaction,
                             serial: 0,
                             refused: None,
+                            pending: None,
                         }
                     });
                 } else {
@@ -190,76 +204,100 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return true;
         };
         let fence = fence.item_fence();
-        let Ok(inventory) = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
-            .await
-        else {
+        // Serialize selection, receipt submission and acknowledgement with converter
+        // toggles and other item writers.
+        let Some(permit) = self.spell_lane_permit().await else {
             return true;
         };
-        let main = inventory.backpack.iter().flat_map(|bag| &bag.entries);
-        let Some(converter) = main
-            .clone()
-            .find(|entry| entry.item.definition.production_key == MAGIC_CONVERTER_ACTIVE)
-        else {
-            return false;
+        let (nonce, serial, refused, pending) = {
+            let clocks = self.states.timed_items.magic_converters.lock().await;
+            let Some(clock) = clocks.get(&session) else {
+                return false;
+            };
+            (
+                clock.nonce,
+                clock.serial,
+                clock.refused,
+                clock.pending.clone(),
+            )
         };
-        let Some(facts) = converter_facts(&converter.item.definition) else {
-            return false;
-        };
-        let source = main
-            .chain(inventory.nested.iter().map(|(_, entry)| entry))
-            .find_map(|entry| {
-                let exchange = match entry.item.definition.production_key.as_str() {
-                    GOLD_COIN => CoinExchange::GoldToPlatinum,
-                    PLATINUM_COIN => CoinExchange::PlatinumToCrystal,
-                    _ => return None,
-                };
-                (entry.item.quantity == 100).then_some((entry.item.item_instance_id, exchange))
-            });
-        let Some((source, exchange)) = source else {
-            return true;
-        };
-        let (nonce, serial) = {
-            let mut clocks = self.states.timed_items.magic_converters.lock().await;
-            let Some(clock) = clocks.get_mut(&session) else {
+        let attempt = if let Some(pending) = pending {
+            pending
+        } else {
+            let Ok(inventory) = self
+                .root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+            else {
                 return true;
             };
-            if clock.refused == Some((source, inventory_revision(&inventory))) {
+            let main = inventory.backpack.iter().flat_map(|bag| &bag.entries);
+            let Some(converter) = main
+                .clone()
+                .find(|entry| entry.item.definition.production_key == MAGIC_CONVERTER_ACTIVE)
+            else {
+                return false;
+            };
+            let Some(facts) = converter_facts(&converter.item.definition) else {
+                return false;
+            };
+            let source = main
+                .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                .find_map(|entry| {
+                    let exchange = match entry.item.definition.production_key.as_str() {
+                        GOLD_COIN => CoinExchange::GoldToPlatinum,
+                        PLATINUM_COIN => CoinExchange::PlatinumToCrystal,
+                        _ => return None,
+                    };
+                    (entry.item.quantity == 100).then_some((entry.item.item_instance_id, exchange))
+                });
+            let Some((source, exchange)) = source else {
+                return true;
+            };
+            let inventory_revision = inventory_revision(&inventory);
+            if refused == Some((source, inventory_revision)) {
                 return true;
             }
-            (clock.nonce, clock.serial)
-        };
-        let mut hash = Sha256::new();
-        hash.update(b"oteryn:magic-converter-clock:v1");
-        hash.update(session.as_bytes());
-        hash.update(self.holder.fact().registration_revision().to_be_bytes());
-        hash.update(fence.connection_generation.get().to_be_bytes());
-        hash.update(nonce);
-        hash.update(serial.to_be_bytes());
-        let digest: [u8; 32] = hash.finalize().into();
-        let mut raw = [0; 8];
-        raw.copy_from_slice(&digest[..8]);
-        // The high bit keeps owner ticks apart from client command sequences.
-        let Ok(command_id) = CommandId::new(u64::from_be_bytes(raw) | 1 << 63) else {
-            return true;
+            let mut hash = Sha256::new();
+            hash.update(b"oteryn:magic-converter-clock:v1");
+            hash.update(session.as_bytes());
+            hash.update(self.holder.fact().registration_revision().to_be_bytes());
+            hash.update(fence.connection_generation.get().to_be_bytes());
+            hash.update(nonce);
+            hash.update(serial.to_be_bytes());
+            let digest: [u8; 32] = hash.finalize().into();
+            let mut raw = [0; 8];
+            raw.copy_from_slice(&digest[..8]);
+            // The high bit keeps owner ticks apart from client command sequences.
+            let Ok(command_id) = CommandId::new(u64::from_be_bytes(raw) | 1 << 63) else {
+                return true;
+            };
+            let attempt = MagicConverterAttempt {
+                command: CommandRef::new(session, command_id),
+                inventory_revision,
+                request: CoinExchangeRequest {
+                    exchange,
+                    amount: 1,
+                    npc_identity: source,
+                    npc_generation: 1,
+                    npc_key: "item-use".into(),
+                    catalogue_revision: 1,
+                    conversation_revision: 1,
+                },
+                converter: (CoinConverter::Magic(converter.item.item_instance_id), facts),
+            };
+            let mut clocks = self.states.timed_items.magic_converters.lock().await;
+            let Some(clock) = clocks.get_mut(&session) else {
+                return false;
+            };
+            clock.pending = Some(attempt.clone());
+            attempt
         };
         let coins = {
             let runtime = self.runtime.lock().await;
             super::npc_command::bank_coin_definitions(self, &runtime).map(|(a, b, c)| [a, b, c])
         };
-        let Some(permit) = self.spell_lane_permit().await else {
-            return true;
-        };
-        let request = CoinExchangeRequest {
-            exchange,
-            amount: 1,
-            npc_identity: source,
-            npc_generation: 1,
-            npc_key: "item-use".into(),
-            catalogue_revision: 1,
-            conversation_revision: 1,
-        };
+        let source = attempt.request.npc_identity;
         let result = self
             .root
             .exchange_carried_coins(
@@ -267,25 +305,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.character,
                 self.holder,
                 fence,
-                CommandRef::new(session, command_id),
-                Some(request),
+                attempt.command,
+                Some(attempt.request),
                 Some(source),
                 Some(&NativeItemWeights(native).with_wheel(self.premium_coordinator)),
                 coins,
-                Some((CoinConverter::Magic(converter.item.item_instance_id), facts)),
+                Some(attempt.converter),
             )
             .await;
-        // An ambiguous result keeps its serial, so the next tick resumes the same receipt.
+        // A committed conversion may already have consumed the original source or
+        // converter. Retry the retained command and request until the receipt is known.
+        #[cfg(test)]
+        if result.as_ref().is_ok_and(|receipt| receipt.is_some())
+            && let Ok(barrier) = MAGIC_CONVERTER_ACK.try_with(std::sync::Arc::clone)
+        {
+            barrier.notify_one();
+            std::future::pending::<()>().await;
+        }
         if let Ok(Some(receipt)) = result {
             let mut clocks = self.states.timed_items.magic_converters.lock().await;
             if let Some(clock) = clocks.get_mut(&session) {
+                clock.pending = None;
                 clock.serial = clock.serial.wrapping_add(1);
-                clock.refused =
-                    (!receipt.changed).then_some((source, inventory_revision(&inventory)));
+                clock.refused = (!receipt.changed).then_some((source, attempt.inventory_revision));
             }
         }
         true
     }
+
     pub(super) async fn use_gold_converter(
         &self,
         actor: ExactActorRef,

@@ -5,6 +5,14 @@ use super::*;
 /// guard or a source-cycle cancellation alone cannot construct this proof.
 pub(super) struct QuiescedKillOwners(());
 
+#[cfg(test)]
+impl QuiescedKillOwners {
+    /// An isolated fixture has no producer tasks to join.
+    pub(super) fn for_test() -> Self {
+        Self(())
+    }
+}
+
 /// The production gameplay seam: TCP + TLS 1.3 (ALPN `oteryn-game/1`),
 /// bounded FND-02 framing and fresh admission through the composed owners,
 /// served on `listener` until `shutdown`.
@@ -203,16 +211,27 @@ pub async fn serve_gameplay(
             return Ok(());
         }
     }
+    let stop = CancellationToken::new();
+    let mut stopping = pin!(async {
+        let graceful = async {
+            if let Some(flush) = owners.last_position_flush {
+                flush.requested().await;
+                authority.states.input_gate.quiesce().await;
+            } else {
+                std::future::pending::<()>().await;
+            }
+        };
+        let _ = first(graceful, shutdown.cancelled()).await;
+        stop.cancel();
+    });
+    let mut stop_requested = false;
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
     let quest_retries = async {
         loop {
-            if first(
-                tokio::time::sleep(QUEST_RETRY_CADENCE),
-                shutdown.cancelled(),
-            )
-            .await
-            .is_none()
+            if first(tokio::time::sleep(QUEST_RETRY_CADENCE), stop.cancelled())
+                .await
+                .is_none()
             {
                 std::future::pending::<()>().await;
             }
@@ -227,7 +246,7 @@ pub async fn serve_gameplay(
             &authority,
             &SecureIdentifiers,
             &(),
-            shutdown,
+            &stop,
             Some(drain),
         ),
         DurabilityRoot::with_background_holder(quest_retries),
@@ -242,11 +261,11 @@ pub async fn serve_gameplay(
     ));
     let mut activities_done = false;
     let mut respawns = Box::pin(DurabilityRoot::with_background_holder(
-        authority.run_world_respawns(shutdown),
+        authority.run_world_respawns(&stop),
     ));
     let mut respawns_done = false;
     let mut owner_failed = false;
-    let mut countdown = pin!(authority.run_server_save_countdown(shutdown));
+    let mut countdown = pin!(authority.run_server_save_countdown(&stop));
     let mut countdown_done = false;
     let mut quiesce = pin!(async {
         drain.requested().await;
@@ -255,27 +274,23 @@ pub async fn serve_gameplay(
     let mut quiesced = false;
     // CHAR-POSITION-0 §3.2 (`CHARPOS0-RL-01`): the periodic last-position writes run on their own
     // deadlines, so no other cadence work delays them.
-    let mut positions = pin!(DurabilityRoot::with_background_holder(
-        authority.run_last_position_writes(shutdown)
+    let mut positions = Box::pin(DurabilityRoot::with_background_holder(
+        authority.run_last_position_writes(&stop),
     ));
-    // CHAR-POSITION-0 §3.2: the shutdown write is polled with the seam and never holds its end.
-    let mut flush = pin!(async {
-        match owners.last_position_flush {
-            Some(flush) => flush.serve(&authority).await,
-            None => std::future::pending().await,
-        }
-    });
     // CHAT-2B: the relay listener; it parks once shutdown is requested.
     let mut relay = pin!(async {
         match authority.states.chat.relay() {
-            Some(relay) => relay.run(&authority.states.chat, shutdown).await,
+            Some(relay) => relay.run(&authority.states.chat, &stop).await,
             None => std::future::pending().await,
         }
     });
     let mut serving_done = false;
     let mut cycles_done = false;
-    let mut flush_done = false;
     poll_fn(|context| {
+        if !stop_requested && stopping.as_mut().poll(context).is_ready() {
+            stop_requested = true;
+            cycles_stop.cancel();
+        }
         if !respawns_done && let Poll::Ready(exit) = respawns.as_mut().poll(context) {
             respawns_done = true;
             if exit != crate::monster_owner_cycle::respawn_job::RespawnExit::Shutdown {
@@ -288,12 +303,6 @@ pub async fn serve_gameplay(
         }
         if !quiesced && quiesce.as_mut().poll(context).is_ready() {
             quiesced = true;
-        }
-        if shutdown.is_cancelled() {
-            cycles_stop.cancel();
-        }
-        if !flush_done && flush.as_mut().poll(context).is_ready() {
-            flush_done = true;
         }
         // Never ends on its own; it parks once shutdown is requested.
         let _ = positions.as_mut().poll(context);
@@ -321,18 +330,25 @@ pub async fn serve_gameplay(
     // above. Drop the remaining boxed respawn/raid/Soulpit future so none of
     // its local child owners can be polled while the terminal SQL awaits.
     drop(respawns);
+    drop(positions);
     if !owner_failed && serving_done && cycles_done && activities_done {
         authority.states.input_gate.quiesce().await;
         let quiesced = QuiescedKillOwners(());
-        authority.finish_daily_kill_statistics(&quiesced).await;
-        // Activity views share this same closed input gate. Their autonomous
-        // jobs have joined too; include each still-registered Instance queue.
-        if let Ok(owners) = authority.activity_runtimes.activity_owners() {
-            for owner in owners {
-                authority
-                    .runtime_view(&owner)
-                    .finish_daily_kill_statistics(&quiesced)
-                    .await;
+        if drain.reset().is_none() {
+            let standalone = LastPositionFlush::default();
+            let flush = owners.last_position_flush.unwrap_or(&standalone);
+            if !Box::pin(flush.serve(&authority, &quiesced)).await {
+                owner_failed = true;
+            }
+        } else {
+            let _ = authority.finish_daily_kill_statistics(&quiesced).await;
+            if let Ok(owners) = authority.activity_runtimes.activity_owners() {
+                for owner in owners {
+                    let _ = authority
+                        .runtime_view(&owner)
+                        .finish_daily_kill_statistics(&quiesced)
+                        .await;
+                }
             }
         }
     }

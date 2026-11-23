@@ -155,3 +155,40 @@ pub(super) async fn exercise(
     );
     Ok(())
 }
+
+pub(super) async fn grace_expiry(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    deps: &Dependencies,
+    mut admitted: AdmittedSession,
+) -> TestResult {
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[4, 6, 12, CAPABILITY_TIMED_ITEM_V1],
+        )
+        .ok_or("equip selection")?;
+    move_item(
+        owner,
+        admitted,
+        20,
+        3,
+        ItemMoveDestination::Equipment(EquipmentSlot::Feet),
+    )
+    .await?;
+    let before = writes(h).await?;
+    deps.loss(h, -1).await?;
+    owner.clock_origin -= std::time::Duration::from_secs(10);
+    owner.tick_timed_items().await;
+    assert_eq!(writes(h).await?, before);
+    assert_eq!(
+        owner.release_after_grace(admitted).await,
+        crate::gameplay_transport::connection::GraceExpiryResult::Released,
+    );
+    assert_eq!(writes(h).await?, before + 1);
+    assert!(
+        stored(h).await?.1.is_some_and(|remaining| (14_385_000..=14_390_000).contains(&remaining)),
+        "the next admission must load a budget with the worn time deducted",
+    );
+    Ok(())
+}

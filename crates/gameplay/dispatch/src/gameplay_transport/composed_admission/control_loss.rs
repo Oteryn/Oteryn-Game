@@ -1,5 +1,11 @@
 use super::*;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static RELEASE_FENCE_BARRIER:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Drop the lost entry of `session` only if it is still the one that ended at
     /// `generation`; a later resumed and lost again connection keeps its own entry.
@@ -27,6 +33,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && self.spell_lane_permit().await.is_none()
         {
             return FenceStep::Wait;
+        }
+        #[cfg(test)]
+        if let Ok(barrier) = RELEASE_FENCE_BARRIER.try_with(std::sync::Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
         }
         let mut runtime = self.runtime.lock().await;
         // IDLEKICK: the tile can change after the idle/fight observation or while actor-end

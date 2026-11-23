@@ -27,6 +27,7 @@ pub(super) struct MagicConverterClock {
     pub(super) nonce: [u8; 16],
     pub(super) serial: u64,
     pub(super) refused: Option<([u8; 16], [u8; 16])>,
+    pub(super) pending: Option<super::coin_use::MagicConverterAttempt>,
 }
 #[derive(Default)]
 pub(super) struct SessionClock {
