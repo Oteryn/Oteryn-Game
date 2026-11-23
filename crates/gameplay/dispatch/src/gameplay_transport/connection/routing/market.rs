@@ -1,11 +1,13 @@
 use super::super::{AdmittedSession, FreshAdmissionAuthority};
 use super::Dispatch;
+use crate::gameplay_transport::session_ingress::SessionCommandStream;
 use oteryn_protocol_oteryn::market_details::{self, Query, Reply};
 use oteryn_protocol_oteryn::{ClientCommandView, CommandStatus};
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
-    admitted: &mut AdmittedSession,
+    admitted: &AdmittedSession,
+    commands: &SessionCommandStream,
     command: ClientCommandView<'_>,
 ) -> Option<Dispatch> {
     let details = command.command_type == market_details::COMMAND_TYPE_MARKET_DETAILS;
@@ -27,7 +29,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     }
     if details
         && matches!(market_details::decode_query(command.payload), Ok(Query::Statistics { .. }))
-        && !admitted.continuity.market_statistics.admit(tokio::time::Instant::now())
+        && !commands.admit_market_statistics(tokio::time::Instant::now())?
     {
         let bytes = market_details::encode_reply(&Reply::Refused {
             code: market_details::STATISTICS_RATE_LIMITED,

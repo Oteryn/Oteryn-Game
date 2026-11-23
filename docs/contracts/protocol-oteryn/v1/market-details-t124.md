@@ -54,8 +54,8 @@ Capability 63 gains read-only command 6126, claimed against cgmech `af6ab2c76` (
 `market_details::Query`: `Catalogue {filter,page}` or `Statistics {definition}`, or `Book {definition,page}`. Book pages advance each side independently, up to 32 offers per side and 700 visible offers per side, using the existing price/time/id keyset reader.
 Original command 80 and actions 1–8 are unchanged (see `market_v1.proto`). Command 6126 is never relayed as a legacy domain-28 value, and command 80 refuses its read-query envelope. The new route rejects all old mutation payloads. Both commands require the existing negotiated capabilities. Command 6126
 Statistics is available away from a depot, with a sliding limit of ten statistics
-requests per second per GameSession, including resume and transfer. Over-limit
-requests return Refused code 15. Catalogue, Book and command 80 still require a
+requests per second per GameSession, including reconnects that resume that session.
+Over-limit requests return Refused code 15. Catalogue, Book and command 80 still require a
 reachable authored depot. The durable projection independently checks current
 recovery, node, session generation, character and World/Channel scope.
 
