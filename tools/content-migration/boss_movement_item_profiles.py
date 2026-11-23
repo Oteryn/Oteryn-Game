@@ -9,7 +9,8 @@ import boss_corpse_profiles as base
 import boss_conditional_item_reference as reference
 
 ROOT=base.ROOT
-IDS=frozenset({20121,23726,23727,23728,33004,37000,42851,42853,43294,43295,43589,43590,43625})
+HERALD_EXIT_DEBRIS=6383
+IDS=frozenset({HERALD_EXIT_DEBRIS,20121,23726,23727,23728,25051,33004,37000,42851,42853,43294,43295,43589,43590,43625})
 NEW=(43589,43590,42851,42853,43625)
 FIRST=34112
 PATH='tools/content-schema/native-gameplay/boss-movement-item-profiles.json'
@@ -108,6 +109,10 @@ def packet():
             'disposition':'EXACT'} for i,value in zip(NEW,definitions())]}
 
 
+def admission(item):
+    return {'materializable':item!=HERALD_EXIT_DEBRIS,'stack_class':'NonStackable','legal_destinations':['Ground']}
+
+
 def capture(cache):
     blobs=load(cache);source=base.source;xml=source.xml_index(blobs['data/items/items.xml'])
     objects=source.engine_items.load_appearance_objects(blobs['data/items/appearances.dat'])
@@ -123,6 +128,12 @@ def capture(cache):
         base.complete_source_top_order(row, objects[item])
         if row['admission']!={'materializable':True,'stack_class':'NonStackable','legal_destinations':['Ground']}:
             raise ValueError('BOSS_MOVEMENT_GROUND_CUSTODY')
+        # The exit's existing debris is reference-only static geometry.
+        if item==HERALD_EXIT_DEBRIS:
+            if row['attributes']['blocks_movement'] is not False or source.attrs(xml[item]).get('primarytype') != 'rocks':
+                raise ValueError('HERALD_EXIT_DEBRIS_PHYSICS')
+            row['authoring']['taxonomy'] = {'primary': 'Rocks'}
+        row['admission']=admission(item)
         row['authoring']['item']['revision']='srx3-rotten-movement-crystal-201189f'
         row['production_binding']=copy.deepcopy(bindings[str(item)])
         row['production_binding_qualification']=copy.deepcopy(proof) if item in NEW else None
@@ -152,7 +163,8 @@ def admit(root,generated,destination,manifest_path,order,canonical):
         if (item not in IDS or item in seen or binding!=bindings.get(str(item))
                 or row['production_definition']!={'family':'Item','production_key':binding['target']['key'],'revision_ref':'definition-r1'}
                 or row['production_binding_qualification']!=(proof if item in NEW else None)
-                or row['admission']!={'materializable':True,'stack_class':'NonStackable','legal_destinations':['Ground']}):
+                or row['admission']!=admission(item)
+                or (item==HERALD_EXIT_DEBRIS and row['attributes']['blocks_movement'] is not False)):
             raise ValueError('BOSS_MOVEMENT_CUSTODY_CHANGED')
         seen.add(item)
         if key in existing:raise ValueError('BOSS_MOVEMENT_DUPLICATE')

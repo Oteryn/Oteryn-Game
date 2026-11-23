@@ -159,6 +159,24 @@ def capture_primal_hooks(root):
     return hooks, bool(events) and set(events).issubset(declared) and think
 
 
+HERALD_LEVER = "data-global/scripts/quests/targuna/actions_herald_lever.lua"
+HERALD_LEVER_SHA256 = "8fef4f405b5b497c9c1dbc50326e5169f876545107108beee324005f370412db"
+HERALD_CALLBACK_SOURCES = {
+    "data-global/monster/targuna/bosses/herald_of_fire.lua":
+        "38bf20dc215b1711707694b2a099120bd0e39ab79fbf073fa17e0cbeded51162",
+    "data-global/scripts/quests/targuna/creaturescripts_herald_of_fire.lua":
+        "901ad3192582e0a4237d321b774dfbf8bf8fca4892a262a4fb23684a8d43e534",
+}
+
+
+def herald_callback_facts(root):
+    for name, digest in HERALD_CALLBACK_SOURCES.items():
+        file = root / name
+        if not file.is_file() or sha(file.read_bytes()) != digest:
+            return [], False
+    return ["TargunaHeraldDeath", "TargunaHeraldImmunity"], True
+
+
 def capture(root, path, profiles, defaults, *, configuration=None):
     raw = path.read_bytes()
     text = raw.decode()
@@ -208,12 +226,20 @@ def capture(root, path, profiles, defaults, *, configuration=None):
         hooks, callbacks_known = capture_primal_hooks(root)
     if key == "oteryn:creature.goshnar_s_spite" and configuration is not None:
         hooks, callbacks_known = m26_endgame_capture.spite_hooks(root, table)
+    boss_position = position(boss, r"\bposition")
+    herald = path.relative_to(root).as_posix() == HERALD_LEVER and sha(raw) == HERALD_LEVER_SHA256
+    if herald:
+        # The pinned createFunction only returns Game.createMonster with this
+        # literal local, using the same extended and force flags as BossLever.
+        boss_position = position(clean, r"\blocal\s+HERALD_SPAWN")
+        blockers.remove("config.createFunction")
+        hooks, callbacks_known = herald_callback_facts(root)
     row = {
         "path":path.relative_to(root).as_posix(),"sha256":sha(raw),
         "line":text.count("\n",0,text.find("local config") if configuration is None else
             re.search(r"\b"+re.escape(configuration[0])+r"\s*=\s*\{",text).start())+1,
         "boss_name":name.group(1) if name else None,"creature_key":key,
-        "boss_position":position(boss,r"\bposition"),"lever_positions":lever,"entry_positions":entry,
+        "boss_position":boss_position,"lever_positions":lever,"entry_positions":entry,
         "zone_from":position(area,r"\bfrom"),"zone_to":position(area,r"\bto"),
         "exit_position":position(config,r"\bexit"),"blockers":blockers,
         "required_callbacks":hooks,"callbacks_known":callbacks_known,
@@ -222,6 +248,15 @@ def capture(root, path, profiles, defaults, *, configuration=None):
     if galthen is not None:
         row["source_callback_closure"] = galthen[0]
         row["source_exit_teleporter"] = galthen[1]
+    if herald and callbacks_known:
+        # creaturescripts_herald_of_fire.lua:5-7,51-58. The exit exists only
+        # after the actual source boss dies.
+        monster_path = "data-global/monster/targuna/bosses/herald_of_fire.lua"
+        row["source_callback_closure"] = {
+            "monster_path": monster_path,
+            "monster_sha256": HERALD_CALLBACK_SOURCES[monster_path],
+        }
+        row["source_exit_teleporter"] = [32496, 32661, 15]
     for target, source, default in [
         ("minimum_players","minPlayers",1),("minimum_level","requiredLevel",0),
         ("cooldown_seconds","timeToFightAgain",defaults["cooldown"]),
@@ -229,6 +264,9 @@ def capture(root, path, profiles, defaults, *, configuration=None):
     ]:
         try: row[target] = policy(config or "",source,default)
         except (ValueError,SyntaxError): row[target]=None;blockers.append("nonliteral."+source)
+    if herald:
+        # The custom createFunction bypasses BossLeverOnDeath registration.
+        row["after_kill_seconds"] = 0
     row["complete_literal_layout"] = bool(name and row["boss_position"] and lever and row["zone_from"] and row["zone_to"] and row["exit_position"])
     return row
 
@@ -251,6 +289,8 @@ def main():
                         help="replace only the seven SHA-verified M26 source files in an existing capture")
     parser.add_argument("--update-galthen",action="store_true",
                         help="replace only the two pinned Galthen source files in an existing capture")
+    parser.add_argument("--update-herald",action="store_true",
+                        help="replace only the pinned Herald lever capture")
     args=parser.parse_args()
     config=(args.source_root/"config.lua.dist").read_text()
     defaults={key:number(re.search(r"^"+name+r"\s*=\s*([^\n-]+)",config,re.M).group(1))
@@ -258,7 +298,7 @@ def main():
     profiles={r["profile"]["target"]["key"]:r for r in json.loads(args.native_profiles.read_bytes())["records"]}
     records=[]
     paths=sorted(args.source_root.rglob("*.lua"))
-    if args.update_endgame or args.update_galthen:
+    if args.update_endgame or args.update_galthen or args.update_herald:
         existing=json.loads(args.output.read_bytes())
         if (existing["schema"] != "OTERYN_CRYSTAL_BOSS_LEVER_CANDIDATES/v1"
                 or existing["source_repository"] != "zimbadev/crystalserver"
@@ -267,6 +307,10 @@ def main():
         selected=set(m26_endgame_capture.ENDGAME_PATHS) if args.update_endgame else set()
         if args.update_galthen:
             selected.update(proof[0] for proof in GALTHEN_CLOSURES.values())
+        if args.update_herald:
+            if not herald_callback_facts(args.source_root)[1]:
+                raise ValueError("HERALD_CALLBACK_SOURCE_MISMATCH")
+            selected.add(HERALD_LEVER)
         paths=[args.source_root/name for name in sorted(selected)]
         for path in paths:
             if not any(row["path"] == path.relative_to(args.source_root).as_posix()

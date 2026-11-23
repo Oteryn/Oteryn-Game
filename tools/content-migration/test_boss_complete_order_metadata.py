@@ -3,6 +3,7 @@ import json
 import unittest
 from pathlib import Path
 from item_detail_source_facts import WEIGHT_FACTS
+from import_cyclopedia_global import apply_profile_weights
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -17,9 +18,10 @@ class CompleteBossPolicyTests(unittest.TestCase):
                 native[row['production_binding']['external_id']] = row
         cohorts = [
             ('boss-reward-yield-profiles.json',
-             {'43778', '43779', '43780', '43781', '43782', '43860', '43946', '43947', '44048'}),
+             {'43778', '43779', '43780', '43781', '43782', '43860', '43946', '43947', '44048',
+              '52964', '53004'}),
             ('boss-movement-item-profiles.json', None),
-            ('boss-corpse-item-profiles.json', {'43666'}),
+            ('boss-corpse-item-profiles.json', {'43666', '53108'}),
         ]
         count = 0
         for filename, selected in cohorts:
@@ -34,9 +36,11 @@ class CompleteBossPolicyTests(unittest.TestCase):
                         physical = expected['semantics']['physical']['value']
                         self.assertEqual(physical['weight'], {'state': 'KNOWN', 'value': 0})
                         physical['weight'] = {'state': 'KNOWN', 'value': weights[key]}
+                    if key in ('52964', '53004'):
+                        apply_profile_weights(expected, ROOT)
                     self.assertEqual(native[key], expected)
                 count += 1
-        self.assertEqual(count, 23)
+        self.assertEqual(count, 28)
 
 
 if __name__ == '__main__':

@@ -392,6 +392,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.use_soulpit_exit(actor, command, &target).await {
             return outcome;
         }
+        let is_source_world = self
+            .rooms()
+            .gate_source_world()
+            .is_some_and(|room| room.source_world().is_some());
+        // Source activity replays precede the ordinary USE owner-fence check:
+        // the original Channel actor has already been retired by the handoff.
+        if !is_source_world
+            && let Some(outcome) = self.use_herald_source_lever(actor, command, &target).await
+        {
+            return outcome;
+        }
         if let Some(outcome) = self.use_cake_world_object(actor, command, &target).await {
             return outcome;
         }
@@ -401,11 +412,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return outcome;
         }
-        if self
-            .rooms()
-            .gate_source_world()
-            .is_some_and(|room| room.source_world().is_some())
-        {
+        if is_source_world {
             return UseOutcome::rejected();
         }
         if let Some(map) = self.bundle_map() {

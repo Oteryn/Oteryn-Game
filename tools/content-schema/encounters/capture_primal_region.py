@@ -16,17 +16,18 @@ MAP_BLOB = "e61658ec0ab7b70ec35025ae969426d6fc57ae75"
 LEVER_PATH = "data-global/scripts/actions/bosses_levers/the_primal_manace.lua"
 
 
-def capture(raw):
+def capture(raw, lever_path=LEVER_PATH, extra_required=()):
     blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
     if blob != MAP_BLOB:
         raise ValueError("pinned Crystal map blob mismatch")
     document = json.loads((Path(__file__).resolve().parents[3] / "content/encounters/bosses/crystal-lever-candidates.json").read_bytes())
     if document["source_revision"] != PIN:
         raise ValueError("lever capture revision mismatch")
-    lever = next(row for row in document["records"] if row["path"] == LEVER_PATH)
+    lever = next(row for row in document["records"] if row["path"] == lever_path)
     # Crystal 201189f the_primal_manace.lua:8-20 defines all required positions.
     low, high = lever["zone_from"], lever["zone_to"]
     required = {tuple(p) for p in lever["lever_positions"] + lever["entry_positions"] + [lever["boss_position"], lever["exit_position"]]}
+    required.update(extra_required)
     rows = {}
 
     def handle(node):
@@ -55,7 +56,7 @@ def capture(raw):
         raise ValueError("required Primal source placement missing")
     return {"schema": "OTERYN_CRYSTAL_PRIMAL_REGION_CAPTURE/v1", "source_repository": "zimbadev/crystalserver", "source_revision": PIN,
         "map_path": MAP_PATH, "map_git_blob": blob, "map_sha256": hashlib.sha256(raw).hexdigest(),
-        "lever_path": LEVER_PATH, "lever_sha256": lever["sha256"], "zone_from": low, "zone_to": high,
+        "lever_path": lever_path, "lever_sha256": lever["sha256"], "zone_from": low, "zone_to": high,
         "required_positions": [list(p) for p in sorted(required)], "tiles": [rows[p] for p in sorted(rows)]}
 
 
@@ -87,8 +88,25 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--appearances", type=Path, required=True)
     parser.add_argument("--items", type=Path, required=True)
+    parser.add_argument("--herald", action="store_true")
     args = parser.parse_args()
-    document = attach_item_semantics(capture(args.map.read_bytes()), args.appearances.read_bytes(), args.items.read_bytes())
+    raw = args.map.read_bytes()
+    if args.herald:
+        from import_boss_levers import HERALD_LEVER
+        document = capture(raw, HERALD_LEVER, [(32435, 32653, 15), (32496, 32661, 15)])
+        document["schema"] = "OTERYN_CRYSTAL_HERALD_REGION_CAPTURE/v1"
+        document["source_identity_bindings"] = [
+            {"external_id": str(identifier),
+             "target": {"family": family, "key": f"oteryn:{prefix}.tibia.i{identifier}",
+                        "revision": "definition-r1"}}
+            for identifier, family, prefix in [(53006, "WorldObject", "world-object"),
+                                               (53096, "Terrain", "terrain")]
+        ]
+        document["source_closure"] = [{"path": MAP_PATH, "git_blob": MAP_BLOB,
+                                       "sha256": document["map_sha256"]}]
+    else:
+        document = capture(raw)
+    document = attach_item_semantics(document, args.appearances.read_bytes(), args.items.read_bytes())
     args.output.write_text(json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n")
     print(f"Captured {len(document['tiles'])} source tiles; every required placement exists")
 

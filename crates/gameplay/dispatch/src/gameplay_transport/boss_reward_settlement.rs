@@ -365,6 +365,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let owner =
             crate::durability::activity_handoff::ActivityHandoffOwner::new(admission.root.clone());
+        use crate::durability::activity_handoff::boss_room::BossRoomDefeatDecision;
         match owner
             .record_boss_defeat(
                 admission.character,
@@ -379,7 +380,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            Ok(true) => true,
+            Ok(BossRoomDefeatDecision::Recorded)
+                if captured.creature == "oteryn:creature.herald_of_fire" =>
+            {
+                admission
+                    .publish_source_death_portal(&captured.creature)
+                    .await
+            }
+            Ok(
+                BossRoomDefeatDecision::Recorded
+                | BossRoomDefeatDecision::Unrelated
+                | BossRoomDefeatDecision::Late,
+            ) => true,
             result => {
                 operator_event(&format!(
                     "activity_defeat_deferred creature={} result={result:?}",

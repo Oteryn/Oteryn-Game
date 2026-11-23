@@ -46,7 +46,7 @@ fn expected() -> Option<&'static BTreeMap<String, (Value, StaticSurface)>> {
                     ),
                 );
             }
-            if records.len() != 238 {
+            if records.len() != 240 {
                 return None;
             }
             Some(records)
@@ -88,7 +88,7 @@ mod tests {
     #[test]
     fn m25_source_static_registry_includes_exact_donor_cohort() -> Result<(), Error> {
         let records = expected().ok_or_else(|| format("source-pinned static registry"))?;
-        assert_eq!(records.len(), 238);
+        assert_eq!(records.len(), 240);
         for id in pin::M25_SOURCE_IDS {
             let terrain = format!("oteryn:terrain.tibia.i{id}");
             let object = format!("oteryn:world-object.tibia.i{id}");

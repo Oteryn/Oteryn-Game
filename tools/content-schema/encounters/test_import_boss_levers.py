@@ -100,6 +100,18 @@ class CommittedBossCapture(unittest.TestCase):
         root = Path(__file__).resolve().parents[3]
         cls.rows = json.loads((root / "content/encounters/bosses/crystal-lever-candidates.json").read_bytes())["records"]
 
+    def test_herald_capture_retains_literal_spawn_and_source_callbacks(self):
+        herald, = [row for row in self.rows
+                   if row["path"].endswith("/targuna/actions_herald_lever.lua")]
+        self.assertEqual(herald["boss_position"], [32496, 32656, 15])
+        self.assertEqual(herald["minimum_level"], 12)
+        self.assertEqual(herald["after_kill_seconds"], 0)
+        self.assertTrue(herald["complete_literal_layout"])
+        self.assertEqual(herald["required_callbacks"],
+                         ["TargunaHeraldDeath", "TargunaHeraldImmunity"])
+        self.assertTrue(herald["callbacks_known"])
+        self.assertEqual(herald["source_exit_teleporter"], [32496, 32661, 15])
+
     def test_shipped_capture_has_strict_source_constructor_order(self):
         keys = [(row["path"], row["line"]) for row in self.rows]
         self.assertEqual(len(keys), len(set(keys)), "one record per source constructor")

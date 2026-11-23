@@ -25,6 +25,10 @@ mod soul_war_entry_gate;
 mod soul_war_spawns;
 pub use soul_war_spawns::QualifiedAmbientXmlSpawns;
 
+const HERALD_PATH: &str = "data-global/scripts/quests/targuna/actions_herald_lever.lua";
+const HERALD_CREATURE: &str = "oteryn:creature.herald_of_fire";
+const HERALD_PORTAL: u16 = 25051;
+
 pub const CRYSTAL_REVISION: &str = "201189f871d23597b82caf88fd611454a2ddefb8";
 pub use crate::content::project::native_spell_world::PinnedActivitySourceRoom;
 
@@ -59,6 +63,15 @@ pub struct BossLeverCandidate {
 }
 
 impl BossLeverCandidate {
+    fn herald_closure(&self) -> bool {
+        self.path == HERALD_PATH
+            && self.creature_key.as_deref() == Some(HERALD_CREATURE)
+            && self.sha256 == "8fef4f405b5b497c9c1dbc50326e5169f876545107108beee324005f370412db"
+            && self.callbacks_known
+            && self.required_callbacks == ["TargunaHeraldDeath", "TargunaHeraldImmunity"]
+            && self.source_exit_teleporter == Some([32496, 32661, 15])
+    }
+
     /// Crystal 201189f actions/bosses_levers/the_primal_manace.lua:2-4:
     /// the lever boss name identifies the captured creature; the room keeps
     /// that source identity in the boss namespace.
@@ -207,6 +220,22 @@ impl QualifiedActivityRoomTemplate {
     }
     pub fn exit_position(&self) -> LogicalCell {
         self.exit_position
+    }
+    /// Crystal Lever.teleportPlayers calls internalTeleport with FLAG_NOLIMIT.
+    /// Only the pinned Herald destination is authored on a solid ground tile.
+    pub fn permits_forced_entry(&self, cell: LogicalCell) -> bool {
+        self.has_herald_callbacks()
+            && cell
+                == (LogicalCell {
+                    x: 32493,
+                    y: 32663,
+                    z: 15,
+                })
+            && self.entries.contains(&cell)
+    }
+
+    pub fn has_herald_callbacks(&self) -> bool {
+        self.source_path == HERALD_PATH && self.creature_key == HERALD_CREATURE
     }
     pub fn exit_teleporter(&self) -> Option<QualifiedBossExitTeleporter> {
         self.exit_teleporter
@@ -633,9 +662,11 @@ impl ContentActivationController {
         let boss = project(boss)?;
         let exit = project(exit)?;
         let galthen = galthen::exact_closure(candidate);
+        let herald = candidate.herald_closure();
         if (candidate.source_callback_closure.is_some()
             || candidate.source_exit_teleporter.is_some())
             && !galthen
+            && !herald
         {
             return Err(R::SourceHookUnavailable);
         }
@@ -646,6 +677,7 @@ impl ContentActivationController {
             .map(|trigger| QualifiedBossExitTeleporter {
                 trigger,
                 destination: exit,
+                death_portal: herald.then_some(HERALD_PORTAL),
             });
         if let Some(teleporter) = exit_teleporter
             && (source.is_some()
@@ -688,12 +720,20 @@ impl ContentActivationController {
             .copied()
             .chain([boss, exit])
         {
-            if room
+            let collision = room
                 .movement_cells()
                 .index()
-                .lookup(room.movement_cells().scope(), position)
-                .ok()
-                != Some(crate::content::CollisionClass::Walkable)
+                .lookup(room.movement_cells().scope(), position);
+            if collision != Ok(crate::content::CollisionClass::Walkable)
+                && !(herald
+                    && collision == Ok(crate::content::CollisionClass::Blocked)
+                    && position
+                        == (LogicalCell {
+                            x: 32493,
+                            y: 32663,
+                            z: 15,
+                        })
+                    && entries.contains(&position))
             {
                 return Err(R::UnknownPlacement);
             }
@@ -701,6 +741,19 @@ impl ContentActivationController {
         let native = active
             .native_gameplay()
             .ok_or(R::CreatureClosureUnavailable)?;
+        if herald {
+            use crate::content::native_gameplay::{NativeItemDestination, NativeItemStackClass};
+            let portal = native
+                .item_policy("oteryn:item.tibia.i25051", "definition-r1")
+                .ok_or(R::SourceHookUnavailable)?;
+            let admission = &portal.record().admission;
+            if !admission.materializable
+                || admission.legal_destinations != [NativeItemDestination::Ground]
+                || admission.stack_class != NativeItemStackClass::NonStackable
+            {
+                return Err(R::SourceHookUnavailable);
+            }
+        }
         let primal = (creature == super::primal_closure::PRIMAL_MENACE_KEY)
             .then(|| super::primal_closure::qualify(native))
             .flatten();
@@ -718,17 +771,18 @@ impl ContentActivationController {
                     .is_none_or(|closure| !closure.implements_setup(hook))
             })
             || !candidate.callbacks_known
-            || unavailable_source_hooks(candidate).any(|hook| {
-                primal
-                    .as_ref()
-                    .is_none_or(|closure| !closure.implements(hook))
-                    && selected
+            || (!herald
+                && unavailable_source_hooks(candidate).any(|hook| {
+                    primal
                         .as_ref()
                         .is_none_or(|closure| !closure.implements(hook))
-                    && spite
-                        .as_ref()
-                        .is_none_or(|closure| !closure.implements(hook))
-            })
+                        && selected
+                            .as_ref()
+                            .is_none_or(|closure| !closure.implements(hook))
+                        && spite
+                            .as_ref()
+                            .is_none_or(|closure| !closure.implements(hook))
+                }))
         {
             return Err(R::SourceHookUnavailable);
         }

@@ -1,5 +1,5 @@
 //! Five explicit source movement IDs with new reference-only declarations.
-//! All thirteen movement/event profiles are body-bound, including the protected identities.
+//! All movement/event profiles are body-bound, including the protected identities.
 use super::*;
 #[path = "boss_movement_bindings_pin.rs"]
 mod pin;
@@ -48,12 +48,12 @@ pub(super) fn qualified_records() -> Result<Vec<ItemProfileRecord>, ContentError
     }
     let records: Vec<ItemProfileRecord> = serde_json::from_value(capture["records"].clone())
         .map_err(|_| invalid("native movement Item source profiles"))?;
-    if records.len() != 13 {
+    if records.len() != 15 {
         return Err(invalid("native movement Item complete closure"));
     }
     for (record, id) in records.iter().zip([
-        "20121", "23726", "23727", "23728", "33004", "37000", "42851", "42853", "43294", "43295",
-        "43589", "43590", "43625",
+        "6383", "20121", "23726", "23727", "23728", "25051", "33004", "37000", "42851", "42853",
+        "43294", "43295", "43589", "43590", "43625",
     ]) {
         use super::super::ReferenceItemField as F;
         let binding = &record.production_binding;
@@ -68,7 +68,8 @@ pub(super) fn qualified_records() -> Result<Vec<ItemProfileRecord>, ContentError
             || record.production_definition.family != "Item"
             || record.production_definition.production_key != binding.target.key
             || record.production_definition.revision_ref != binding.target.revision
-            || !record.admission.materializable
+            || record.admission.materializable != (id != "6383")
+            || (id == "6383" && record.attributes.blocks_movement != Some(false))
             || record.admission.stack_class != NativeItemStackClass::NonStackable
             || record.admission.legal_destinations != [NativeItemDestination::Ground]
             || !matches!(&record.semantics.physical,F::Known(value)
@@ -90,7 +91,16 @@ pub(super) fn admit_exact_bindings(
         let binding = &record.production_binding;
         if matches!(
             binding.external_id.as_str(),
-            "20121" | "23726" | "23727" | "23728" | "33004" | "37000" | "43294" | "43295"
+            "6383"
+                | "20121"
+                | "23726"
+                | "23727"
+                | "23728"
+                | "25051"
+                | "33004"
+                | "37000"
+                | "43294"
+                | "43295"
         ) {
             if admitted.get(&binding.external_id) != Some(binding) {
                 return Err(invalid("native movement protected Item binding changed"));
@@ -132,10 +142,10 @@ mod tests {
             .collect())
     }
     #[test]
-    fn srx3_movement_binding_closure_reuses_exact_eight_and_only_inserts_five_without_factory()
+    fn srx3_movement_binding_closure_reuses_exact_ten_and_only_inserts_five_without_factory()
     -> Result<(), ContentError> {
         let rows = qualified_records()?;
-        assert_eq!(rows.len(), 13);
+        assert_eq!(rows.len(), 15);
         let mut map = imports()?;
         let count = map.len();
         admit_exact_bindings(&mut map, &rows)?;
@@ -153,7 +163,7 @@ mod tests {
     -> Result<(), ContentError> {
         let rows = qualified_records()?;
         for id in [
-            "20121", "23726", "23727", "23728", "33004", "37000", "43294", "43295",
+            "6383", "20121", "23726", "23727", "23728", "25051", "33004", "37000", "43294", "43295",
         ] {
             let mut map = imports()?;
             let row = map

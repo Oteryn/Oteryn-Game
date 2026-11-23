@@ -14,10 +14,14 @@ pub struct BossCallbackSourceClosure {
 pub struct QualifiedBossExitTeleporter {
     pub(super) trigger: LogicalCell,
     pub(super) destination: LogicalCell,
+    pub(super) death_portal: Option<u16>,
 }
 impl QualifiedBossExitTeleporter {
     pub fn trigger(self) -> LogicalCell {
         self.trigger
+    }
+    pub fn death_portal(self) -> Option<u16> {
+        self.death_portal
     }
     pub fn destination(self) -> LogicalCell {
         self.destination

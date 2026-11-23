@@ -14,9 +14,12 @@ class BossMovementProfileTests(unittest.TestCase):
         movement.admit(ROOT,generated,'profiles','manifest',
             lambda row:row['production_definition']['production_key'],base.encode)
         records=json.loads(generated['profiles'])['records']
-        self.assertEqual(len(records),13)
+        self.assertEqual(len(records),15)
         self.assertEqual({int(row['production_binding']['external_id']) for row in records},movement.IDS)
         self.assertTrue(all(row['admission']['legal_destinations']==['Ground'] for row in records))
+        debris=next(row for row in records if row['production_binding']['external_id']=='6383')
+        self.assertFalse(debris['admission']['materializable'])
+        self.assertFalse(debris['attributes']['blocks_movement'])
 
     def test_reference_declarations_keep_the_existing_ordinals_and_unknown_semantics(self):
         import boss_movement_item_profiles as movement

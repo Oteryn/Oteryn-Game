@@ -4,6 +4,7 @@ use crate::durability::{
     DurabilityError,
     boss_encounter::{SourceBossAdmission, SourceBossLever, SourceBossReservation},
 };
+use crate::foundation::CommandStatus;
 use oteryn_gameplay_quests::quest::world_callbacks::court_warlock as source;
 
 pub(super) struct SourceBossUse<'a> {
@@ -23,6 +24,58 @@ tokio::task_local! {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Crystal actions_herald_lever.lua:29-30 registers the physical lever.
+    /// This room uses the published W02 Instance owner and its retained handoff.
+    pub(in crate::gameplay_transport) async fn use_herald_source_lever(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        target: &WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        use super::super::world_map::{MapViewSource, resolve_map_target};
+        if !matches!(
+            actor.runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) {
+            return None;
+        }
+        let map = self.bundle_map()?;
+        let source = MapViewSource {
+            overlay: &map.overlay,
+            facts: &map.facts,
+            content_generation: self.active_generation?.identity().client_artifact_digest(),
+            reset_epoch: self.reset_epoch,
+        };
+        let target = resolve_map_target(&source, target, |_| None::<()>).ok()?;
+        if (target.pos.x, target.pos.y, target.pos.floor) != (32435, 32653, -15)
+            || map
+                .overlay
+                .base()
+                .tile(target.pos.x, target.pos.y, target.pos.floor)?
+                .appearance(target.ordinal)
+                != Some(8911)
+        {
+            return None;
+        }
+        let disposition = if let Some(admitted) =
+            self.activity_runtimes.connection(command.game_session_id)
+            && admitted.runtime_actor == Some(actor)
+            && admitted.item_fence.is_some()
+            && admitted.item_fence == command.item_fence
+            && let Some((CommandStatus::Accepted, _)) = self
+                .boss_activity_source_lever(admitted, command.command_id)
+                .await
+        {
+            UseDisposition::Committed
+        } else {
+            UseDisposition::Rejected
+        };
+        Some(UseOutcome {
+            disposition,
+            ..UseOutcome::rejected()
+        })
+    }
+
     pub(super) async fn execute_source_boss_lever(
         &self,
         runtime: &mut ChannelRuntimeV1,

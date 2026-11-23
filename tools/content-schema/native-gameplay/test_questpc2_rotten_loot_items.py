@@ -118,12 +118,12 @@ class RottenItemAdmissionTests(unittest.TestCase):
             boss.admit(ROOT, generated, 'profiles', 'manifest', order, boss.corpses.encode)
             before = {row['production_definition']['production_key']: row
                       for row in json.loads(generated['profiles'])['records']}
-            self.assertEqual(len(before), 46)
+            self.assertEqual(len(before), 48)
             self.assertTrue(selected <= before.keys())
             tool.admit_native(ROOT, generated, 'profiles', 'manifest', order, boss.corpses.encode)
             records = json.loads(generated['profiles'])['records']
             actual = {row['production_definition']['production_key']: row for row in records}
-            self.assertEqual(len(records), 48)
+            self.assertEqual(len(records), 50)
             self.assertEqual(len(actual), len(records))
             self.assertEqual(set(actual) - set(before), {
                 'oteryn:item.tibia.i43899', 'oteryn:item.tibia.i43900'})

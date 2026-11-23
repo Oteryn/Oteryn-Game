@@ -457,7 +457,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 runtime
                     .install_companion_policies(native.policies().clone())
                     .map_err(|_| ActivityRefusal::ContentUnavailable)?;
-                runtime
+                let boss = runtime
                     .realize_activity_boss(template, active)
                     .map_err(|_| ActivityRefusal::ContentUnavailable)?;
                 let RuntimeScopeRefV1::Instance { instance_id, .. } = allocation.scope else {
@@ -469,6 +469,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         .for_activity_instance(instance_id)
                         .ok_or(ActivityRefusal::ContentUnavailable)?,
                 );
+                if template.has_herald_callbacks() {
+                    runtime
+                        .bind_herald_fire_field_map(boss, template, &room)
+                        .map_err(|_| ActivityRefusal::ContentUnavailable)?;
+                }
                 let reference =
                     crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
                         .map_err(|_| ActivityRefusal::ContentUnavailable)?;

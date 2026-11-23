@@ -99,6 +99,9 @@ pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
         scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError>;
+    fn herald_fire_field(&self, _instance: [u8; 16], _cell: LogicalCell) -> Option<bool> {
+        None
+    }
     /// Complete House-marker evidence from this exact loaded bundle scope.
     /// Older or unqualified ports provide no absence proof.
     fn house_tiles_present(

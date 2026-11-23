@@ -130,7 +130,7 @@ class ActivityStaticTests(unittest.TestCase):
         self.assertEqual(
             {row["source_item_id"] for row in registry["records"]}, missing
         )
-        self.assertEqual(len(missing), 238)
+        self.assertEqual(len(missing), 240)
         for row in registry["records"]:
             self.assertIn(row["identity"]["family"], ["Terrain", "WorldObject"])
             self.assertFalse(row["policy"]["pickupable"])

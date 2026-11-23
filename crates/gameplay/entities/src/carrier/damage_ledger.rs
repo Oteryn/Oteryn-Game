@@ -857,11 +857,18 @@ impl ChannelActorCarrier {
         // Resolve Crystal's onHealthChange callback after replay, from the real HP slot.
         // The receipt retains the original request: retrying at a new HP fraction cannot
         // change the already committed hit or its damage attribution.
+        let herald_immune = !health_change_resolved
+            && super::activity_boss_spawn::herald_occupies_fire_field(
+                self.runtime_scope,
+                &self.slots[index],
+            )?;
         let (effective_damage, arbaziloth_shields) = match &self.slots[index] {
             Slot::CreatureOccupied { spell_combat, .. } => {
                 let damage = if health_change_resolved {
                     // Periodic owner turns have already resolved each tick against its current HP.
                     damage
+                } else if herald_immune {
+                    0
                 } else {
                     match spell_combat.soulpit {
                         Some(tag) => tag.incoming_health_change(
@@ -886,7 +893,7 @@ impl ChannelActorCarrier {
         let mut prepared_w01_conditions = None;
         // Source prepareDeath can cancel the complete hit while healing or
         // transforming HP. This fact is independent of before/after HP deltas.
-        let mut source_damage_canceled = false;
+        let mut source_damage_canceled = herald_immune;
         if !health_change_resolved
             && let Slot::CreatureOccupied {
             spell_combat,

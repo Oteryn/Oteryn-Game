@@ -259,8 +259,8 @@ def checked_boss_corpse_capture():
             or capture['source_revision'] != corpses.PIN
             or capture['sources'] != sources
             or capture['roots'] != sorted(corpses.ROOT_IDS)
-            or len(capture['decay_chains']) != 55
-            or len(capture['records']) != 199):
+            or len(capture['decay_chains']) != len(corpses.ROOT_IDS)
+            or len(capture['records']) != 200):
         raise ValueError('Elder terminal source capture authority mismatch')
     chains = capture['decay_chains']
     if any(not isinstance(chain, list) or not 1 <= len(chain) <= 8
@@ -270,7 +270,7 @@ def checked_boss_corpse_capture():
     wanted = {item for chain in chains for item in chain}
     identifiers = [row['production_binding']['external_id'] for row in capture['records']]
     if ([chain[0] for chain in chains] != capture['roots']
-            or len(wanted) != 199 or len(set(identifiers)) != 199
+            or len(wanted) != 200 or len(set(identifiers)) != 200
             or set(identifiers) != {str(item) for item in wanted}):
         raise ValueError('Elder terminal source capture authority mismatch')
     return capture

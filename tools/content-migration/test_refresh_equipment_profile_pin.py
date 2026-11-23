@@ -1056,7 +1056,7 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
     def test_actual_trader_yield_house_chain_keeps_the_complete_cohort_guard(self):
         name, expected, previous = self.cohort
         self.assertEqual(name, 'SRX3-BOSS-YIELDS')
-        self.assertEqual(len(expected['records']), 46)
+        self.assertEqual(len(expected['records']), 48)
         self.assertEqual(len(previous), 14)
         self.assertNotIn(self.KEY, previous)
         self.assertEqual(refresh.keys(self.actual), refresh.keys(expected) | self.MAP_CARRIERS)
@@ -1069,10 +1069,10 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
             if row != isolated[key]:
                 changed.append(key)
         self.assertEqual(changed, [self.KEY])
-        self.assertEqual(len(refresh.keys(expected) - {self.KEY}), 45)
+        self.assertEqual(len(refresh.keys(expected) - {self.KEY}), 47)
         self.assertNotIn('taxonomy', self.row(expected)['authoring'])
         generated, count = self.generate()
-        self.assertEqual(count, 51)  # Fixed historical14 + map5 + new32.
+        self.assertEqual(count, 53)  # Fixed historical14 + map5 + new34.
         empty = {'records': []}
         self.assertEqual(regenerate(generated, self.actual, empty, empty, empty,
                                     srx3=[self.cohort]), (generated, count))

@@ -8,6 +8,26 @@ use crate::durability::activity_handoff::ActivityNativeStepExit;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1};
 use oteryn_gameplay_entities::carrier::native_translation_events::CommittedMovementOccurrence;
 
+fn portal_tile(trigger: crate::content::LogicalCell) -> Option<crate::map::overlay::TilePos> {
+    Some(crate::map::overlay::TilePos {
+        x: u16::try_from(trigger.x).ok()?,
+        y: u16::try_from(trigger.y).ok()?,
+        floor: i8::try_from(trigger.z.checked_neg()?).ok()?,
+    })
+}
+
+fn has_portal(
+    map: &crate::map::boot::BundleMap,
+    tile: crate::map::overlay::TilePos,
+    appearance: u16,
+) -> bool {
+    use crate::map::view::MapFacts;
+    map.facts
+        .movement_items(tile)
+        .iter()
+        .any(|entry| entry.facts.appearance_id == appearance)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct SourceBossExitProof {
     native_step: ActivityNativeStepExit,
@@ -67,6 +87,44 @@ impl SourceBossExitProof {
     }
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// The durable death receipt precedes the Instance-local portal projection.
+    pub(super) async fn publish_source_death_portal(&self, creature: &str) -> bool {
+        let runtime = self.runtime.lock().await;
+        let scope = runtime.binding().runtime_scope();
+        let Some(registered) = self
+            .activity_runtimes
+            .get(scope, runtime.binding().scope_generation().get())
+        else {
+            return false;
+        };
+        let Some(key) = registered.template.as_ref() else {
+            return false;
+        };
+        let Some(template) = self.activity_runtimes.template(&key.key, &key.revision) else {
+            return false;
+        };
+        if runtime.owner_fence().is_err() || template.creature_key() != creature {
+            return false;
+        }
+        let Some(exit) = template.exit_teleporter() else {
+            return false;
+        };
+        let (Some(appearance), Some(tile), Some(map)) = (
+            exit.death_portal(),
+            portal_tile(exit.trigger()),
+            self.bundle_map(),
+        ) else {
+            return false;
+        };
+        if map.overlay.runtime_scope() != scope {
+            return false;
+        }
+        has_portal(map, tile, appearance)
+            || map
+                .facts
+                .create_movement_item(tile, appearance, 11, || true)
+    }
+
     /// Flush the existing position owner's immutable receipt only after the
     /// caller finished its pace bookkeeping and released its movement guards.
     pub(super) async fn source_boss_exit_after_movement(
@@ -131,6 +189,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return;
             };
+            if let Some(appearance) = exit.death_portal()
+                && !self
+                    .bundle_map()
+                    .zip(portal_tile(exit.trigger()))
+                    .is_some_and(|(map, tile)| has_portal(map, tile, appearance))
+            {
+                return;
+            }
             SourceBossExitProof {
                 native_step,
                 actor,

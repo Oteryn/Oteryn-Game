@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 import boss_corpse_profiles as corpses
 import item_detail_source_facts as item_details
+from import_cyclopedia_global import apply_profile_weights
 
 ROOT = corpses.ROOT
 PIN = corpses.PIN
@@ -25,12 +26,12 @@ EXTRA_SOURCES = {
     'data-global/monster/quests/rotten_blood_quest/bakragore.lua':'974df9389e734ca947111cd41af9adec44f531adf0cc53233d5a7a94ab190178',
     'data-global/scripts/quests/rotten_blood_quest/bakragore_mechanics_death.lua':'21ba33eb58d1b5a4a88ca0c950d49a8369b34f3a11fe39a7e549a8b3ab154b46',
 }
-IDS = frozenset({3125,3130,23474,7428,23477,239,3028,3042,3081,3097,3384,3583,3723,3728,7385,7416,7642,7643,23373,23374,23375,23535,23545,33778,39037,43501,43502,43503,43504,43778,43779,43780,43781,43782,43847,43860,43946,43947,43961,43962,43966,43967,43968,44048,50150,50152})
+IDS = frozenset({3125,3130,23474,7428,23477,239,3028,3042,3081,3097,3384,3583,3723,3728,7385,7416,7642,7643,23373,23374,23375,23535,23545,33778,39037,43501,43502,43503,43504,43778,43779,43780,43781,43782,43847,43860,43946,43947,43961,43962,43966,43967,43968,44048,50150,50152,52964,53004})
 # The earlier chosen Trader callback admits Crimson Sword (7385) from its
 # canonical definition. Complete only its UNKNOWN custody facts from this
 # pinned yield capture, retaining that owner's equipment and weapon semantics.
 CLASSIFICATION_ENRICHMENT_IDS = frozenset({239,3028,3081,3097,3384,7385,7642,7643,23373,23374,23375,23535})
-BOSSES = ('foam_stalker','outburst','grand_mother_foulscale', 'bakragore', 'chagorz', 'ichgahal', 'murcion', 'vemiath', 'bloated_man_maggot', 'converter', 'darklight_construct', 'darklight_emitter', 'darklight_matter', 'darklight_source', 'darklight_striker', 'meandering_mushroom', 'mycobiontic_beetle', 'oozing_carcass', 'rotten_man_maggot', 'sopping_carcass', 'sopping_corpus', 'walking_pillar', 'wandering_pillar', 'goshnar_s_greed', 'goshnar_s_malice', 'monk_s_apparition', 'paladin_s_apparition', 'sorcerer_s_apparition', 'capricious_phantom', 'distorted_phantom', 'infernal_demon', 'rotten_golem', 'goshnar_s_spite', 'goshnar_s_hatred', 'goshnar_s_cruelty', 'goshnar_s_megalomania_green', 'goshnar_s_megalomania_blue', 'dreadful_disruptor')
+BOSSES = ('herald_of_fire','foam_stalker','outburst','grand_mother_foulscale', 'bakragore', 'chagorz', 'ichgahal', 'murcion', 'vemiath', 'bloated_man_maggot', 'converter', 'darklight_construct', 'darklight_emitter', 'darklight_matter', 'darklight_source', 'darklight_striker', 'meandering_mushroom', 'mycobiontic_beetle', 'oozing_carcass', 'rotten_man_maggot', 'sopping_carcass', 'sopping_corpus', 'walking_pillar', 'wandering_pillar', 'goshnar_s_greed', 'goshnar_s_malice', 'monk_s_apparition', 'paladin_s_apparition', 'sorcerer_s_apparition', 'capricious_phantom', 'distorted_phantom', 'infernal_demon', 'rotten_golem', 'goshnar_s_spite', 'goshnar_s_hatred', 'goshnar_s_cruelty', 'goshnar_s_megalomania_green', 'goshnar_s_megalomania_blue', 'dreadful_disruptor')
 
 
 HAM_FOOD_PATH = 'data/scripts/actions/items/foods.lua'
@@ -90,7 +91,7 @@ def source_selection(root):
 
 def binding_source_selection(root):
     return [row for row in source_selection(root)
-            if row.get('identity',{}).get('key') not in {'oteryn:loot.creature.grand_mother_foulscale','oteryn:loot.creature.outburst','oteryn:loot.creature.foam_stalker'}]
+            if row.get('identity',{}).get('key') not in {'oteryn:loot.creature.grand_mother_foulscale','oteryn:loot.creature.outburst','oteryn:loot.creature.foam_stalker','oteryn:loot.creature.herald_of_fire'}]
 
 def existing_targets(root):
     wanted = {'oteryn:item.tibia.i'+str(item) for item in EXTRA_IDS}
@@ -227,6 +228,9 @@ def admit(root, generated, destination, manifest_path, order, canonical):
             raise ValueError(f'BOSS_REWARD_YIELD_EXACT_CUSTODY_FACTS:{key}')
         if item in weights:
             item_details.apply_weight(row, item, weights)
+        if item in (52964, 53004):
+            # Keep the donor capture intact and apply the existing Global weight policy.
+            apply_profile_weights(row, root)
         seen.add(item)
         if key in existing:
             previous = existing[key]

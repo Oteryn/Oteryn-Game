@@ -11,6 +11,15 @@ use crate::durability::character_progression::CharacterProgressionError;
 use crate::foundation::{CharacterId, CommandStatus, MovementLocalPosition, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+const HERALD_BOSS: &str = "oteryn:boss.herald_of_fire";
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum BossActivityIngress {
+    Command,
+    DifficultyStart,
+    HeraldSourceLever,
+}
+
 pub(super) type BossActivityResult = Option<(CommandStatus, Vec<u8>)>;
 
 impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
@@ -21,7 +30,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         kind: u32,
         payload: &[u8],
     ) -> BossActivityResult {
-        self.boss_activity_action(admitted, id, kind, payload, false)
+        self.boss_activity_action(admitted, id, kind, payload, BossActivityIngress::Command)
             .await
     }
 
@@ -31,8 +40,30 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         id: u64,
         payload: &[u8],
     ) -> BossActivityResult {
-        self.boss_activity_action(admitted, id, wire::COMMAND_TYPE_BOSS_LEVER, payload, true)
-            .await
+        self.boss_activity_action(
+            admitted,
+            id,
+            wire::COMMAND_TYPE_BOSS_LEVER,
+            payload,
+            BossActivityIngress::DifficultyStart,
+        )
+        .await
+    }
+
+    pub(super) async fn boss_activity_source_lever(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+    ) -> BossActivityResult {
+        let payload = wire::encode_boss_key(HERALD_BOSS).ok()?;
+        self.boss_activity_action(
+            admitted,
+            id,
+            wire::COMMAND_TYPE_BOSS_LEVER,
+            &payload,
+            BossActivityIngress::HeraldSourceLever,
+        )
+        .await
     }
 
     async fn boss_activity_action(
@@ -41,7 +72,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         id: u64,
         kind: u32,
         payload: &[u8],
-        difficulty_start: bool,
+        ingress: BossActivityIngress,
     ) -> BossActivityResult {
         let malformed = || Some((CommandStatus::Rejected, Vec::new()));
         if id == 0
@@ -87,6 +118,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         if rotten.is_some() && !self.rotten_blood_source_qualified(&intent.boss_key).await {
             rotten = None;
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && intent.boss_key == HERALD_BOSS
+            && ingress != BossActivityIngress::HeraldSourceLever
+        {
+            return refusal(ActivityRefusal::Position);
         }
         let (Some(actor), Some(fence), Some(_)) = (
             admitted.runtime_actor,
@@ -199,7 +236,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             return refusal(ActivityRefusal::ContentUnavailable);
         };
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
-            && !difficulty_start
+            && ingress != BossActivityIngress::DifficultyStart
             && (oteryn_protocol_oteryn::boss_difficulty::boss_maximum(&definition.boss_key)
                 .is_some()
                 || oteryn_protocol_oteryn::boss_difficulty::boss_maximum(
@@ -259,6 +296,17 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) {
             return refusal(ActivityRefusal::AuthorityRejected);
+        }
+        if intent.boss_key == HERALD_BOSS {
+            let runtime = self.runtime.lock().await;
+            let position = runtime.read_actor_position(actor).ok()?.position();
+            if !definition
+                .lever_positions
+                .iter()
+                .any(|pad| (pad.x, pad.y, pad.floor) == (position.x, position.y, position.floor))
+            {
+                return refusal(ActivityRefusal::Position);
+            }
         }
         let template_ready = if outburst {
             self.ensure_outburst_definition_runtime(&definition).await

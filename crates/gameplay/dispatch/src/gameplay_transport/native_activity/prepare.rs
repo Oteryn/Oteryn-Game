@@ -135,6 +135,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         } else {
             None
         };
+        let sealed_template = destination
+            .template
+            .as_ref()
+            .and_then(|key| self.activity_runtimes.template(&key.key, &key.revision));
         let mut sources = Vec::new();
         sources
             .try_reserve_exact(request.participants.len())
@@ -340,14 +344,29 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 y: participant.destination_cell.y,
                 floor: participant.destination_cell.floor,
             };
-            if !super::respawn_cell_admissible(
-                destination_view.movement_cells().index(),
-                destination_view.movement_cells().scope(),
-                destination.scope.world_id(),
-                actual_pin.server_artifact_digest,
-                doors.blocking_cells(),
-                cell,
-            ) {
+            let logical = crate::content::LogicalCell {
+                x: cell.x,
+                y: cell.y,
+                z: i32::from(cell.floor),
+            };
+            let cells = destination_view.movement_cells();
+            let forced = sealed_template
+                .is_some_and(|template| template.permits_forced_entry(logical))
+                && cells.scope().world_id == destination.scope.world_id()
+                && cells.scope().generation_digest == actual_pin.server_artifact_digest
+                && cells.index().lookup(cells.scope(), logical)
+                    == Ok(crate::content::CollisionClass::Blocked)
+                && !doors.blocking_cells().contains(&logical);
+            if !forced
+                && !super::respawn_cell_admissible(
+                    cells.index(),
+                    cells.scope(),
+                    destination.scope.world_id(),
+                    actual_pin.server_artifact_digest,
+                    doors.blocking_cells(),
+                    cell,
+                )
+            {
                 return refuse(ActivityRefusal::Position);
             }
             let next_lease = CharacterLease::new(

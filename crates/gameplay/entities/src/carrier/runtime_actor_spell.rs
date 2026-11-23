@@ -120,6 +120,7 @@ pub struct ActorCombatState {
     pub(super) soul_war_defense_delta: u32,
     /// Set only by the closed Greed/Malice source immunity stat owner.
     pub(super) soul_war_source_immunity: bool,
+    pub(super) herald_fire_field_map: Option<oteryn_gameplay_content::content::native_cell_lookup::BundleCollisionIndex>,
     /// Literal absent-KV state differs from an explicitly reduced zero.
     pub(super) soul_war_cruelty_drain: Option<u64>,
     pub(super) soul_war_player_source: Option<Arc<super::soul_war_player_source::CurrentPlayerSource>>,

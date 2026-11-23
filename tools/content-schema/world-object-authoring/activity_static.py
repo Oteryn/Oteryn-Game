@@ -260,7 +260,8 @@ M25_IDENTIFIERS = frozenset(
         44502,
     ]
 )
-IDENTIFIERS = IDENTIFIERS | M25_IDENTIFIERS
+HERALD_IDENTIFIERS = frozenset({53006, 53096})
+IDENTIFIERS = IDENTIFIERS | M25_IDENTIFIERS | HERALD_IDENTIFIERS
 OFFICIAL_SHA = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
 SHARDS = {
@@ -565,12 +566,24 @@ def outputs(root=ROOT):
         ]
         for family, rows in records.items()
     }
+    herald = {
+        family: [row for row in rows if row["provenance"]["source_item_id"] in HERALD_IDENTIFIERS]
+        for family, rows in appended.items()
+    }
+    for family, rows in herald.items():
+        if len(rows) != 1:
+            raise ValueError("Herald static geometry family closure")
+        appended[family].remove(rows[0])
     if len(appended["Terrain"]) != 52:
         raise ValueError("activity/Soulpit canonical terrain union changed")
     files = {
         SHARDS[family]: encode({"family": family, "records": rows})
         for family, rows in appended.items()
     }
+    files["content/world/terrain/terrain-08751-08751.json"] = encode(
+        {"family": "Terrain", "records": herald["Terrain"]})
+    files["content/world/objects/objects-13109-13109.json"] = encode(
+        {"family": "WorldObject", "records": herald["WorldObject"]})
     files[existing_path] = encode(existing)
     terrain_keys = set()
     for path in (root / "content/world/terrain").glob("terrain-*.json"):

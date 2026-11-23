@@ -25,8 +25,8 @@ class CorpseSourceCohortTests(unittest.TestCase):
     def test_current_complete_capture_qualifies_without_changing_source(self):
         checked = full.checked_boss_corpse_capture()
         self.assertEqual(checked, self.capture)
-        self.assertEqual(len(checked['roots']), 55)
-        self.assertEqual(len(checked['records']), 199)
+        self.assertEqual(len(checked['roots']), 56)
+        self.assertEqual(len(checked['records']), 200)
         terminal = [row for row in checked['records']
                     if row['production_binding']['external_id'] == '43666']
         self.assertEqual(len(terminal), 1)

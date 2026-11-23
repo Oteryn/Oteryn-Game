@@ -242,6 +242,10 @@ impl ChannelRuntimeV1 {
         else {
             return Err(CarrierError::NotCreature);
         };
+        let herald_immune = super::activity_boss_spawn::herald_occupies_fire_field(
+            self.binding.runtime_scope(),
+            &self.carrier.slots[index],
+        )?;
         let soulpit = match &self.carrier.slots[index] {
             Slot::CreatureOccupied { spell_combat, .. } => spell_combat.soulpit,
             _ => return Err(CarrierError::NotCreature),
@@ -432,6 +436,7 @@ impl ChannelRuntimeV1 {
                     } else {
                         damage
                     };
+                    let damage = if herald_immune { 0 } else { damage };
                     let applied = damage.min(health_after).max(0);
                     had_damage |= applied > 0;
                     if applied > 0 {
@@ -501,6 +506,7 @@ impl ChannelRuntimeV1 {
                     } else {
                         damage
                     };
+                    let damage = if herald_immune { 0 } else { damage };
                     had_damage |= damage > 0;
                     if damage > 0 {
                         after.conditions.remove_type(

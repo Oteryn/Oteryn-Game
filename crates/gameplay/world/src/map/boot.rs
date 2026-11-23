@@ -962,6 +962,21 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
     ) -> Result<CollisionClass, StaticCellEngineError> {
         self.lookup(scope, cell)
     }
+    fn herald_fire_field(&self, instance: [u8; 16], cell: LogicalCell) -> Option<bool> {
+        if !matches!(self.map.overlay.runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } if instance_id == instance)
+        {
+            return None;
+        }
+        let pos = crate::content::bundle_spell_tiles::tile_pos(cell)?;
+        let tile = super::view::compose_tile(&self.map.overlay, &self.map.facts, pos).ok()??;
+        Some(
+            tile.entries
+                .iter()
+                .any(|entry| matches!(entry.facts.appearance_id, 2118..=2120)),
+        )
+    }
+
     fn house_tiles_present(
         &self,
         scope: &EngineeringStaticCellScope,
