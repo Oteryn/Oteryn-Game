@@ -366,9 +366,10 @@ impl NpcConversations {
                 .then(|| mordecai_shop::Category::for_message(&npc.key, &intent.text))
                 .flatten();
             let text = ChatText::parse(&intent.text).ok()?;
-            if category.is_none()
-                && !oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str())
-            {
+            let trade_requested = (focused
+                && reward_callbacks::cledwyn_silver_trade(&npc.key, text.as_str()))
+                || oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str());
+            if category.is_none() && !trade_requested {
                 return None;
             }
             if focused
@@ -855,11 +856,15 @@ pub(super) async fn npc_bank_talk(
     }
     // A live route quote owns its confirmation before any quest adapter runs.
     // The paid owner repeats this exact scope/expiry check before departure.
+    // Cledwyn's silver shop also precedes enchantment and confirmation.
     if admission
         .states
         .npc_conversations
         .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
-        .is_some_and(|context| admission.has_pending_paid_confirmation(command, &intent, &context))
+        .is_some_and(|context| {
+            admission.has_pending_paid_confirmation(command, &intent, &context)
+                || reward_callbacks::cledwyn_silver_trade(&context.2, &intent.text)
+        })
     {
         return ordinary;
     }

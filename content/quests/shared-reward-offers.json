@@ -1789,22 +1789,6 @@
     {
       "npc": "oteryn:npc.cledwyn",
       "keywords": [
-        "silver"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "reply": [
-        "My silver token shop is unavailable."
-      ],
-      "any_topic": true,
-      "preserve_topic": true,
-      "reward_order": "before",
-      "msg_contains": true
-    },
-    {
-      "npc": "oteryn:npc.cledwyn",
-      "keywords": [
         "enchant"
       ],
       "topic": 0,
@@ -2925,6 +2909,115 @@
     {
       "npc": "oteryn:npc.gnomally",
       "keywords": [
+        "equipment"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Ask me about {minor} or {major} crystal token goods."
+      ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "major"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "For major crystal tokens I offer {gill gugel}, {gill coat}, {gill legs}, {spellbook}, {prismatic helmet}, {prismatic armor}, {prismatic legs}, {prismatic boots}, {prismatic shield}, {iron loadstone}, {glow wine}, {basic soil guardian outfit}, {basic crystal warlord outfit}."
+      ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "minor"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "For minor crystal tokens I offer {muck}, {mission}, {lamp}, {backpack}, {supply}, {addition to the soil guardian outfit}, {addition to the crystal warlord armor outfit}."
+      ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "relations"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "You are not even a recruit of the Bigfoots. Sorry I can't help you."
+      ],
+      "any_topic": true,
+      "preserve_topic": true,
+      "reward_order": "before",
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 0,
+          "maximum": 24
+        }
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "relations"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Renown exchanges are unavailable."
+      ],
+      "any_topic": true,
+      "preserve_topic": false,
+      "reward_order": "before",
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 25,
+          "maximum": 30
+        }
+      ],
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "items"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Do you need to buy any mission items?"
+      ],
+      "any_topic": true,
+      "reward_order": "before",
+      "msg_contains": true
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
         "addition to the crystal warlord armor outfit"
       ],
       "topic": 0,
@@ -2986,22 +3079,6 @@
         "Will you help me with this task?"
       ],
       "any_topic": true
-    },
-    {
-      "npc": "oteryn:npc.gnomally",
-      "keywords": [
-        "equipment"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "reply": [
-        "Ask me about {minor} or {major} crystal token goods."
-      ],
-      "any_topic": true,
-      "preserve_topic": true,
-      "reward_order": "before",
-      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.gnomally",
@@ -3080,38 +3157,6 @@
         "Trade 15 minor crystal tokens for lamp?"
       ],
       "any_topic": true
-    },
-    {
-      "npc": "oteryn:npc.gnomally",
-      "keywords": [
-        "major"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "reply": [
-        "For major crystal tokens I offer {gill gugel}, {gill coat}, {gill legs}, {spellbook}, {prismatic helmet}, {prismatic armor}, {prismatic legs}, {prismatic boots}, {prismatic shield}, {iron loadstone}, {glow wine}, {basic soil guardian outfit}, {basic crystal warlord outfit}."
-      ],
-      "any_topic": true,
-      "preserve_topic": true,
-      "reward_order": "before",
-      "msg_contains": true
-    },
-    {
-      "npc": "oteryn:npc.gnomally",
-      "keywords": [
-        "minor"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [],
-      "reply": [
-        "For minor crystal tokens I offer {muck}, {mission}, {lamp}, {backpack}, {supply}, {addition to the soil guardian outfit}, {addition to the crystal warlord armor outfit}."
-      ],
-      "any_topic": true,
-      "preserve_topic": true,
-      "reward_order": "before",
-      "msg_contains": true
     },
     {
       "npc": "oteryn:npc.gnomally",

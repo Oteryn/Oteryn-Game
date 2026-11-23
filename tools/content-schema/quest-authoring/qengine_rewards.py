@@ -1123,12 +1123,12 @@ def build():
         elif name in ('l6-citizen-rook-backpack', 'qb-citizen-backpack'):
             callback['account_reservation'] = {'action': 'finish', 'key': backpack}
     callbacks.sort(key=lambda c:c['key'])
-    # Cledwyn's early branches overlap and must retain their authored order.
+    # Cledwyn's and Gnomally's early branches overlap and keep the source order.
     offers.sort(key=lambda c: (
         c['npc'],
         c['topic'],
-        [] if c['npc'] == 'oteryn:npc.cledwyn' and c.get('reward_order') == 'before'
-        else c['keywords'],
+        [] if c['npc'] in ('oteryn:npc.cledwyn', 'oteryn:npc.gnomally')
+        and c.get('reward_order') == 'before' else c['keywords'],
     ))
     item_disguises = load_module('quest_item_disguises', 'tools/content-schema/quest-authoring/quest_item_disguises.py').build(ROOT)
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks,'item_disguises':item_disguises})

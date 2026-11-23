@@ -118,6 +118,63 @@ pub(super) async fn exercise(
             .ok_or_else(|| format!("missing token callback {name}"))
     };
 
+    let mut regressions = Vec::new();
+    let mut shop_windows = Vec::new();
+    for (index, text) in ["hi", "trade silver", "silver", "bye"].into_iter().enumerate() {
+        use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+        use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
+
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?;
+        let outcome = owner
+            .npc_talk(
+                admitted.runtime_actor.ok_or("actor")?,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: 949_980 + u64::try_from(index)?,
+                    item_fence: Some(fence.item_fence()),
+                },
+                NpcTalkIntent { npc_actor: cledwyn, text: text.into() },
+            )
+            .await;
+        if text.contains("silver") {
+            shop_windows.push(outcome.window.and_then(|window| window.open));
+        }
+    }
+    for (message, window) in ["trade silver", "silver"].into_iter().zip(shop_windows) {
+        if !window.is_some_and(|(npc, _)| npc == cledwyn) {
+            regressions.push(format!("Cledwyn {message:?} did not open his shop"));
+        }
+    }
+
+    let supply = find("l9-gnomish-supply")?;
+    let initial_supply = quantity(h, 15698).await?;
+    assert_eq!(quantity(h, 16128).await?, 0);
+    let talk = super::qengine_rewards_fixtures::talk;
+    for (command, message) in [(949_990, "hi"), (949_991, "supply"), (949_992, "yes")] {
+        talk(owner, admitted, gnomally, command, message).await?;
+    }
+    assert_eq!(quantity(h, 15698).await?, initial_supply);
+    mint(owner, admitted, 16128, 2, 949_993).await?;
+    talk(owner, admitted, gnomally, 949_994, "yes").await?;
+    if quantity(h, 15698).await? != initial_supply || quantity(h, 16128).await? != 2 {
+        regressions.push("Gnomally accepted a stale quote after insufficient funds".to_owned());
+    } else {
+        talk(owner, admitted, gnomally, 949_995, "supply").await?;
+        talk(owner, admitted, gnomally, 949_996, "yes").await?;
+    }
+    assert_eq!(quantity(h, 15698).await?, initial_supply + 1);
+    assert_eq!(quantity(h, 16128).await?, 0);
+    assert!(supply.is_paid_exchange());
+    talk(owner, admitted, gnomally, 949_997, "bye").await?;
+
     for (npc, key, words, payment, cost, output, ingredient) in [
         (
             cledwyn,
@@ -328,7 +385,6 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 8192).await?, 50);
     assert_eq!(quantity(h, 8191).await?, 1);
     assert_eq!(experience(h).await?, xp);
-    let mut regressions = Vec::new();
     for (index, (npc, key, words, inputs, output, expected)) in [
         (
             cledwyn,
@@ -368,6 +424,30 @@ pub(super) async fn exercise(
             vec!["hi", "enchant", "pendulet", "yes silver", "yes"],
             vec![(29429, 1), (22516, 2)],
             30344,
+            1,
+        ),
+        (
+            gnomally,
+            "gnomally-exchange-16101",
+            vec!["hi", "muck", "yes, mission items"],
+            vec![(16128, 8)],
+            16101,
+            0,
+        ),
+        (
+            gnomally,
+            "gnomally-exchange-16101",
+            vec!["hi", "muck", "yes, relations"],
+            vec![(16128, 8)],
+            16101,
+            0,
+        ),
+        (
+            gnomally,
+            "l9-gnomish-supply",
+            vec!["hi", "supply", "no, yes"],
+            vec![(16128, 2)],
+            15698,
             1,
         ),
         (

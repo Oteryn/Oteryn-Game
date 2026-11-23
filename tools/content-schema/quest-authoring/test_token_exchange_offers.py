@@ -94,7 +94,7 @@ class TokenExchangeOffers(unittest.TestCase):
                     if row["npc"] == "oteryn:npc.cledwyn"
                     and row.get("reward_order") == "before"
                 ],
-                ["token", "information", "talk", "silver", "enchant"],
+                ["token", "information", "talk", "enchant"],
             )
         with self.subTest(npc="storkus"):
             first = next(row for row in offers if row["npc"] == "oteryn:npc.storkus")
@@ -102,6 +102,14 @@ class TokenExchangeOffers(unittest.TestCase):
             self.assertTrue(first.get("preserve_topic"))
             self.assertEqual(first.get("reward_order"), "before")
         gnomally = [row for row in offers if row["npc"] == "oteryn:npc.gnomally"]
+        self.assertEqual(
+            [
+                row["keywords"][0]
+                for row in gnomally
+                if row.get("reward_order") == "before" and row.get("any_topic")
+            ],
+            ["equipment", "major", "minor", "relations", "relations", "items"],
+        )
         for topic in range(101, 121):
             with self.subTest(npc="gnomally", topic=topic, action="replace"):
                 self.assertTrue(
@@ -121,3 +129,26 @@ class TokenExchangeOffers(unittest.TestCase):
                     ),
                     "cannot cancel pending quote",
                 )
+
+    def test_committed_gnomally_retained_confirmation_flags(self):
+        callbacks = json.loads(
+            (q.ROOT / "content/quests/shared-reward-callbacks.json").read_text()
+        )["callbacks"]
+        retained = [
+            row
+            for row in callbacks
+            if row["npc"] == "oteryn:npc.gnomally" and 101 <= row["topic"] <= 105
+        ]
+        self.assertEqual(
+            sorted(row["topic"] for row in retained), list(range(101, 106))
+        )
+        for row in retained:
+            with self.subTest(
+                callback=row["key"], behavior="confirmation before cancellation"
+            ):
+                self.assertEqual(row["keywords"], ["yes"])
+                self.assertTrue(row.get("msg_contains"))
+            with self.subTest(
+                callback=row["key"], behavior="failed purchase retires quote"
+            ):
+                self.assertTrue(row.get("clear_topic_on_refusal"))

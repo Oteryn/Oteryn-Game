@@ -8,6 +8,7 @@ from pathlib import Path
 
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
 SHARD = "content/quests/npc-callbacks/token-exchanges.json"
+GNOMALLY_SOURCE = "content/dialogues/quest-source/quest-batch3-a-bigfoot-burden.json"
 SOURCES = {
     "cledwyn": "crystal:"
     + PIN
@@ -203,18 +204,13 @@ def append(add, storage, callbacks, offers):
         return ", ".join("{" + name + "}" for name, *_ in rows)
 
     donor_reply = donor_replies()
-    for word in ("token", "information", "talk", "silver"):
-        reply = (
-            "My silver token shop is unavailable."
-            if word == "silver"
-            else donor_reply("cledwyn", word)
-        )
+    for word in ("token", "information", "talk"):
         offer(
             "cledwyn",
             word,
             0,
             0,
-            reply,
+            donor_reply("cledwyn", word),
             msg_contains=True,
             any_topic=True,
             preserve_topic=True,
@@ -282,7 +278,45 @@ def append(add, storage, callbacks, offers):
             preserve_topic=True,
             reward_order="before",
         )
+    source = json.loads(
+        (Path(__file__).resolve().parents[3] / GNOMALLY_SOURCE).read_text()
+    )
+    gnomally = next(
+        row for row in source["npcs"] if row["npc"] == "oteryn:npc.gnomally"
+    )
+    replies = {row["line"]: row["literal_parts"] for row in gnomally["fragments"]}
+    quest_line = "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line"
+    for minimum, maximum, reply, preserve in (
+        (0, 24, replies[133], True),
+        (25, 30, ["Renown exchanges are unavailable."], False),
+    ):
+        offer(
+            "gnomally",
+            "relations",
+            0,
+            0,
+            reply,
+            msg_contains=True,
+            any_topic=True,
+            preserve_topic=preserve,
+            reward_order="before",
+            requires=[{"track": quest_line, "minimum": minimum, "maximum": maximum}],
+        )
+    offer(
+        "gnomally",
+        "items",
+        0,
+        0,
+        replies[143],
+        msg_contains=True,
+        any_topic=True,
+        reward_order="before",
+    )
+
     # The retained vouchers and supply package share the same quote lifecycle.
+    for row in callbacks:
+        if row["npc"] == "oteryn:npc.gnomally" and 101 <= row["topic"] <= 105:
+            row.update(msg_contains=True, clear_topic_on_refusal=True)
     retained = [
         row
         for row in offers

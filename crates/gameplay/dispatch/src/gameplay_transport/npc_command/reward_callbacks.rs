@@ -82,6 +82,16 @@ pub(super) enum Phase {
     Offers,
 }
 
+pub(super) fn cledwyn_silver_trade(npc: &str, text: &str) -> bool {
+    use oteryn_gameplay_quests::quest::npc_rules::msg_contains;
+
+    npc == "oteryn:npc.cledwyn"
+        && msg_contains(text, "silver")
+        && !["token", "tokens", "information", "talk"]
+            .iter()
+            .any(|word| msg_contains(text, word))
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,

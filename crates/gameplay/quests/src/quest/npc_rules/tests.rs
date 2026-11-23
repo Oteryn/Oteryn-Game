@@ -2033,12 +2033,15 @@ fn completed_regional_hunts_explain_the_boss_route_hold() -> Result<(), NpcRuleE
         let admitted = rules
             .admitted_for_npc(npc, loaded.catalogue())?
             .ok_or_else(|| NpcRuleError::Invalid(format!("missing hunt programme: {hunt}")))?;
-        match admitted.plan_storage(&input)? {
-            Some(plan) if plan.reply.iter().any(|line| line.contains("boss route")) => {
-                assert!(plan.track_changes.is_empty(), "{hunt}");
-                assert!(plan.effects.is_empty(), "{hunt}");
+        for message in ["task", "I finished the task"] {
+            let input = NpcRuleInput { message, ..input };
+            match admitted.plan_storage(&input)? {
+                Some(plan) if plan.reply.iter().any(|line| line.contains("boss route")) => {
+                    assert!(plan.track_changes.is_empty(), "{hunt}");
+                    assert!(plan.effects.is_empty(), "{hunt}");
+                }
+                plan => missing.push((hunt, message, plan.map(|p| p.reply))),
             }
-            plan => missing.push((hunt, plan.map(|p| p.reply))),
         }
     }
     assert!(

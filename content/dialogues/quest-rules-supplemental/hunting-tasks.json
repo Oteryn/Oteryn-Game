@@ -1288,7 +1288,7 @@
         "task",
         "green djinns"
       ],
-      "keyword_mode": "exact",
+      "keyword_mode": "msg_contains",
       "topics": [
         0
       ],
@@ -1496,7 +1496,7 @@
         "task",
         "blue djinns"
       ],
-      "keyword_mode": "exact",
+      "keyword_mode": "msg_contains",
       "topics": [
         0
       ],
@@ -1885,7 +1885,7 @@
         "mission",
         "quest"
       ],
-      "keyword_mode": "exact",
+      "keyword_mode": "msg_contains",
       "topics": [
         0
       ],
@@ -2081,7 +2081,7 @@
         "task",
         "necromancers"
       ],
-      "keyword_mode": "exact",
+      "keyword_mode": "msg_contains",
       "topics": [
         0
       ],
