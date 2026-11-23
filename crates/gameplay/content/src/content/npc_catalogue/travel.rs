@@ -450,12 +450,12 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 234);
+        assert_eq!(corrections.len(), 236);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 234);
+        assert_eq!(keys.len(), corrections.len());
         let dalbrect = corrections
             .iter()
             .find(|row| row.key == "oteryn:service.travel.dalbrect/isle_of_kings")
@@ -467,11 +467,42 @@ mod tests {
             dalbrect.quest_gate.as_deref(),
             Some("oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log")
         );
+        // Crystal 201189f8 jack_fate.lua:86-97 and jack_fate_goroma.lua:65-76,100-104.
+        for (key, keyword, price, postman, arrival, gate) in [
+            (
+                "oteryn:service.travel.jack_fate/thais",
+                "thais",
+                180,
+                true,
+                (32310, 32210, 6),
+                None,
+            ),
+            (
+                "oteryn:service.travel.jack_fate_goroma/liberty_bay",
+                "liberty bay",
+                0,
+                false,
+                (32285, 32892, 6),
+                Some("oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma"),
+            ),
+        ] {
+            let row = corrections.iter().find(|row| row.key == key).ok_or(key)?;
+            assert!(row.native_addition && !row.held && !row.premium);
+            assert_eq!(
+                (&*row.keyword, row.price, row.postman),
+                (keyword, price, postman)
+            );
+            assert_eq!((row.x, row.y, row.floor), arrival);
+            assert_eq!(row.quest_gate.as_deref(), gate);
+        }
         let sources = source["rows"].as_array().ok_or("source rows")?;
         let evidence = evidence["records"].as_array().ok_or("evidence rows")?;
         let corrected = corrections
             .iter()
-            .filter(|row| !row.native_addition)
+            // A native owner can also serve a route in the original fare audit.
+            .filter(|row| {
+                !row.native_addition || sources.iter().any(|source| source["key"] == row.key)
+            })
             .collect::<Vec<_>>();
         assert_eq!(corrected.len(), 195);
         assert_eq!(sources.len(), 195);
@@ -506,7 +537,14 @@ mod tests {
                 assert!(row.premium, "{}", row.key);
             }
             // Source-backed access needs a live quest owner or event before admission.
-            if facts["quest_requirements"]["value"] != serde_json::json!([])
+            if row.key == "oteryn:service.travel.sebastian/nargor" {
+                // Crystal 201189f8 sebastian.lua:57-72 checks AccessToNargor == 1.
+                assert!(!row.held);
+                assert_eq!(
+                    row.quest_gate.as_deref(),
+                    Some("oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_nargor")
+                );
+            } else if facts["quest_requirements"]["value"] != serde_json::json!([])
                 || !facts["travel_guard_conditions"]["value"].is_null()
                 || row.key == "oteryn:service.travel.kendra_thais/nostalgia"
             {
