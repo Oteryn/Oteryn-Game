@@ -79,13 +79,15 @@ impl PlayerSpellState {
     /// Settle before a position or resting-tier transition, using the previous eligibility.
     pub fn settle_equipped_wear(&mut self, now_ms: u64, in_protection_zone: bool) {
         for index in 0..self.equipped_wear.len() {
-            let wear = self.equipped_wear[index];
-            self.settle_worn_regeneration(
-                wear.item,
-                wear.started_at_ms,
-                now_ms.min(wear.deadline_ms),
-                in_protection_zone,
-            );
+            let wear = &self.equipped_wear[index];
+            if !wear.suspended(now_ms) {
+                self.settle_worn_regeneration(
+                    wear.item,
+                    wear.started_at_ms,
+                    now_ms.min(wear.deadline_ms),
+                    in_protection_zone,
+                );
+            }
         }
     }
 

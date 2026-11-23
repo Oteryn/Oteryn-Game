@@ -1,9 +1,11 @@
 use super::*;
+use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn apply_staff_world(
         &self,
         runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
         issuer: StaffActorProof,
         request: &rules::Request,
         target: Option<StaffActorProof>,
@@ -46,6 +48,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }),
             rules::Action::Teleport { x, y, floor, .. } => self.staff_relocate(
                 runtime,
+                states,
                 actor,
                 session,
                 crate::foundation::MovementLocalPosition {
@@ -65,7 +68,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(at) = runtime.read_actor_position(to.actor) else {
                     return false;
                 };
-                self.staff_relocate(runtime, actor, session, at.position(), true)
+                self.staff_relocate(runtime, states, actor, session, at.position(), true)
             }
             _ => false,
         }
@@ -73,6 +76,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     fn staff_relocate(
         &self,
         runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
         actor: ExactActorRef,
         session: GameSessionId,
         to: crate::foundation::MovementLocalPosition,
@@ -120,7 +124,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false,
                 &closed,
             ) {
-                return runtime.commit_source_step(proof).is_ok();
+                return states.commit_relocation(
+                    runtime, self.movement_cells(), session, self.owner_now().get(), proof,
+                );
             }
         }
         false

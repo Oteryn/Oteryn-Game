@@ -158,7 +158,7 @@ pub fn credit_equipment_second(
 }
 
 impl EquipmentRegenerationClock {
-    /// Settle eligible active wear, retaining any fractional pulse.
+    /// Credit eligible wear and retain up to one ready pulse while suppressed.
     pub fn settle_wear(
         &mut self,
         elapsed_ms: u64,
@@ -166,12 +166,23 @@ impl EquipmentRegenerationClock {
         streak: u32,
     ) -> (u32, u32) {
         fn pulses(progress: &mut u32, elapsed_ms: u64, period: u32, eligible: bool) -> u32 {
-            if period == 0 || elapsed_ms == 0 || !eligible {
+            if period == 0 || elapsed_ms == 0 {
                 return 0;
             }
-            let elapsed = u64::from(*progress).saturating_add(elapsed_ms);
-            *progress = (elapsed % u64::from(period)) as u32;
-            u32::try_from(elapsed / u64::from(period)).unwrap_or(u32::MAX)
+            let period = u64::from(period);
+            let stored = u64::from(*progress);
+            if !eligible {
+                *progress = stored.saturating_add(elapsed_ms).min(period) as u32;
+                return 0;
+            }
+            // The first eligible tick pays the queued pulse and resets its counter.
+            let (queued, elapsed) = if stored == period {
+                (1, elapsed_ms.saturating_sub(u64::from(FOOD_TICK_MS)))
+            } else {
+                (0, stored.saturating_add(elapsed_ms))
+            };
+            *progress = (elapsed % period) as u32;
+            u32::try_from((elapsed / period).saturating_add(queued)).unwrap_or(u32::MAX)
         }
 
         let regeneration = self.worn.regeneration;
@@ -315,6 +326,30 @@ pub fn hold_fed_second(state: &mut RegenerationState, rate: RegenerationRate) {
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn timed_equipment_retains_one_pulse_per_resource_while_protected() {
+        let mut clock = EquipmentRegenerationClock {
+            worn: WornRegeneration {
+                item: [1; 16],
+                slot: 8,
+                timed: true,
+                regeneration: EquipmentRegeneration {
+                    health_gain: 2,
+                    health_ticks_ms: 6_000,
+                    mana_gain: 8,
+                    mana_ticks_ms: 6_000,
+                },
+            },
+            wear_at_ms: None,
+            health_ms: 0,
+            mana_ms: 0,
+        };
+        assert_eq!(clock.settle_wear(19_000, true, 0), (0, 0));
+        assert_eq!(clock.settle_wear(1_000, false, 0), (2, 8));
+        assert_eq!(clock.settle_wear(5_000, false, 0), (0, 0));
+        assert_eq!(clock.settle_wear(1_000, false, 0), (2, 8));
+    }
 
     #[test]
     fn monk_regeneration_equals_paladin_including_premium_fallback() {

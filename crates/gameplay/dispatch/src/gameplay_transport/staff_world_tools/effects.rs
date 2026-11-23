@@ -191,6 +191,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok("World action refused: staff permission revoked".into());
             }
             let mut runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             let mut receipts = self.states.staff_world.receipts.lock().map_err(|_| ())?;
             if let Some(previous) = receipts.get(&request.operation_id) {
                 *previous
@@ -199,7 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(());
                 }
                 let applied =
-                    self.apply_staff_world(&mut runtime, issuer, request, target, destination);
+                    self.apply_staff_world(&mut runtime, &mut states, issuer, request, target, destination);
                 receipts.insert(request.operation_id.clone(), applied);
                 applied
             }

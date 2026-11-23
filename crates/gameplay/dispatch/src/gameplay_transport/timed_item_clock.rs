@@ -5,8 +5,20 @@ use crate::durability::item_timed_runtime::{TimedOperation, TimedRequest};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ExactActorRef, GameSessionId};
 use crate::spell::cast::EquippedWear;
+use oteryn_gameplay_domain::domain::timed_item::{
+    TIMEDITEM0_RL_02_REMAINING_MS_MAX, TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS,
+    TIMEDITEM0B_RL_02_AMBIGUOUS_BOUND_MS,
+};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum EquipmentCheckpoint {
+    Settled,
+    /// Wear is durable but the actor owner could not publish its effects.
+    Deferred,
+    Unknown,
+}
 
 pub(super) fn clock_ms(owner: &super::ComposedFreshAdmission<'_, '_, '_>) -> u64 {
     owner.owner_now().get() / 1_000
@@ -17,7 +29,7 @@ fn track_item<'a>(
     item: &EquippedItem,
     session: GameSessionId,
     now: u64,
-    unix_now: u64,
+    root: &crate::durability::DurabilityRoot,
     full_ms: u64,
 ) -> &'a mut ItemClock {
     let placement = item.wear.map(|wear| wear.placement);
@@ -27,18 +39,9 @@ fn track_item<'a>(
     {
         let at_ms = item
             .wear
-            .filter(|wear| {
-                wear.placement_session.as_ref() == Some(session.as_bytes())
-                    && wear.placement[6] >> 4 == 7
-            })
-            .map_or(now, |wear| {
-                // The slot is fenced to the committed UUIDv7 transition. A previous
-                // debit is a later anchor, and an older session does not spend offline time.
-                let [a, b, c, d, e, f, ..] = wear.placement;
-                let placed = u64::from_be_bytes([0, 0, a, b, c, d, e, f]);
-                let anchor = placed.max(wear.checkpoint_unix_ms.unwrap_or(0));
-                now.saturating_sub(unix_now.saturating_sub(anchor))
-            });
+            .filter(|wear| wear.placement_session.as_ref() == Some(session.as_bytes()))
+            .and_then(|wear| root.equipment_placement_age_ms(wear))
+            .map_or(now, |age| now.saturating_sub(age));
         let remaining = item
             .wear
             .and_then(|wear| wear.stored_remaining_ms)
@@ -55,12 +58,27 @@ fn track_item<'a>(
 }
 
 impl ItemClock {
+    pub(super) fn begin_pending(&mut self, request: TimedRequest, debit_at: u64, now_ms: u64) {
+        self.pending = Some((request, debit_at));
+        self.pending_until_ms.store(
+            now_ms.saturating_add(TIMEDITEM0B_RL_02_AMBIGUOUS_BOUND_MS),
+            std::sync::atomic::Ordering::Release,
+        );
+    }
+
+    pub(super) fn clear_pending(&mut self) {
+        self.pending = None;
+        self.pending_until_ms
+            .store(0, std::sync::atomic::Ordering::Release);
+    }
+
     fn qualified_wear(&self, item: [u8; 16]) -> Option<EquippedWear> {
-        Some(EquippedWear {
+        Some(EquippedWear::new(
             item,
-            started_at_ms: self.started_at_ms,
-            deadline_ms: self.deadline_ms?,
-        })
+            self.started_at_ms,
+            self.deadline_ms?,
+            self.pending_until_ms.clone(),
+        ))
     }
 }
 
@@ -93,7 +111,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             })
             .collect::<Vec<_>>();
         let now = clock_ms(self);
-        let unix_now = super::npc_trade_command::unix_ms_now().try_into().ok()?;
         let mut clocks = self.states.timed_items.sessions.try_lock().ok()?;
         let clock = if timed.is_empty() {
             let Some(clock) = clocks.get_mut(&session) else {
@@ -106,7 +123,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let wear = timed
             .into_iter()
             .filter_map(|(item, full)| {
-                let lane = track_item(&mut clock.items, item, session, now, unix_now, full);
+                let lane = track_item(&mut clock.items, item, session, now, self.root, full);
                 if lane.retired {
                     None
                 } else {
@@ -154,7 +171,16 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(_permit) = self.spell_lane_permit().await else {
             return false;
         };
-        let settled = self.checkpoint_timed_equipment(actor, session, true).await;
+        let settled = self
+            .root
+            .with_background_operation(self.checkpoint_timed_equipment_inner(
+                actor,
+                session,
+                Some(clock_ms(self)),
+                true,
+            ))
+            .await
+            == EquipmentCheckpoint::Settled;
         if settled {
             self.states
                 .timed_items
@@ -318,19 +344,35 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> bool {
+        self.equipment_checkpoint(actor, session, force).await == EquipmentCheckpoint::Settled
+    }
+
+    pub(super) async fn equipment_checkpoint(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        force: bool,
+    ) -> EquipmentCheckpoint {
         self.root
-            .with_background_operation(self.checkpoint_timed_equipment_inner(actor, session, force))
+            .with_background_operation(self.checkpoint_timed_equipment_inner(
+                actor,
+                session,
+                force.then(|| clock_ms(self)),
+                false,
+            ))
             .await
     }
 
     async fn checkpoint_timed_equipment_inner(
         &self,
-        actor: crate::foundation::ExactActorRef,
+        actor: ExactActorRef,
         session: GameSessionId,
-        force: bool,
-    ) -> bool {
+        stop_at: Option<u64>,
+        actor_end: bool,
+    ) -> EquipmentCheckpoint {
+        use EquipmentCheckpoint::{Deferred, Settled, Unknown};
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return false;
+            return Unknown;
         };
         let (native, house) = {
             let runtime = self.runtime.lock().await;
@@ -341,13 +383,13 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 || super::item_ref_admission::pinned_index(&runtime, self.active_generation)
                     .is_none()
             {
-                return false;
+                return Unknown;
             }
             let Some(native) = self
                 .active_generation
                 .and_then(|active| active.native_gameplay())
             else {
-                return false;
+                return Unknown;
             };
             (native, house)
         };
@@ -359,7 +401,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .read_clock_equipment(actor, item_fence, native.source_digest(), house)
             .await
         else {
-            return false;
+            return Unknown;
         };
         if !self
             .checkpoint_imbuement_equipment(actor, session, fence)
@@ -395,25 +437,22 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         .await;
                 }
             }
-            return false;
+            return Unknown;
         }
-        let now = clock_ms(self);
-        let Ok(unix_now) = u64::try_from(super::npc_trade_command::unix_ms_now()) else {
-            return false;
-        };
+        let now = stop_at.unwrap_or_else(|| clock_ms(self));
         use super::equipment_move::equipment_effects_owner as effects;
         let Some(regeneration) = effects::equipped_regeneration(&equipment, native) else {
-            return false;
+            return Unknown;
         };
         let Some(invisible) = effects::equipped_invisibility(&equipment, native) else {
-            return false;
+            return Unknown;
         };
         let Some(mut active_mana_shield) =
             super::equipment_move::equipment_effects_owner::equipped_mana_shield(
                 &equipment, native,
             )
         else {
-            return false;
+            return Unknown;
         };
         let mut clocks = self.states.timed_items.sessions.lock().await;
         let clock = clocks.entry(session).or_default();
@@ -452,7 +491,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         Err(crate::durability::item_timed_state::TimedWriteError::NotHeld) => {}
                         Err(_) => return false,
                     }
-                    lane.pending = None;
+                    lane.clear_pending();
                     retired_equipment = true;
                 }
             }
@@ -469,7 +508,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 let Some(full_ms) = definition.full.remaining_ms() else {
                     continue;
                 };
-                let lane = track_item(&mut clock.items, item, session, now, unix_now, full_ms);
+                let lane = track_item(&mut clock.items, item, session, now, self.root, full_ms);
                 if lane.retired {
                     continue;
                 }
@@ -477,103 +516,116 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     .iter()
                     .find(|worn| worn.item == item.item_instance_id)
                     .copied();
-                if lane.pending.is_none() {
-                    let elapsed = now.saturating_sub(lane.at_ms);
-                    let Ok(row) = self
+                loop {
+                    if lane.pending.is_none() {
+                        let elapsed = now
+                            .saturating_sub(lane.at_ms)
+                            .min(TIMEDITEM0_RL_02_REMAINING_MS_MAX);
+                        let Ok(row) = self
+                            .root
+                            .read_timed_row_in_scope(
+                                self.character,
+                                self.holder,
+                                fence,
+                                item.item_instance_id,
+                                house_origin,
+                            )
+                            .await
+                        else {
+                            return false;
+                        };
+                        if row.is_some_and(|row| row.values.is_none()) {
+                            lane.deadline_ms = None;
+                            break;
+                        }
+                        let remaining = row
+                            .and_then(|row| row.values)
+                            .unwrap_or(definition.full)
+                            .remaining_ms()
+                            .unwrap_or(0);
+                        lane.deadline_ms = Some(lane.at_ms.saturating_add(remaining));
+                        if elapsed == 0
+                            || (stop_at.is_none()
+                                && elapsed < TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS
+                                && elapsed < remaining)
+                        {
+                            break;
+                        }
+
+                        clock.serial = match clock.serial.checked_add(1) {
+                            Some(n) => n,
+                            None => return false,
+                        };
+                        // The owner incarnation, session and item are independent of client command ids.
+                        let mut hash = Sha256::new();
+                        hash.update(b"oteryn:timed-owner-clock:v1");
+                        hash.update(session.as_bytes());
+                        hash.update(item.item_instance_id);
+                        hash.update(self.holder.fact().registration_revision().to_be_bytes());
+                        hash.update(fence.connection_generation.get().to_be_bytes());
+                        hash.update(row.map_or(0, |row| row.revision).to_be_bytes());
+                        hash.update(clock.serial.to_be_bytes());
+                        let binding: [u8; 32] = hash.finalize().into();
+                        let mut id = [0; 16];
+                        id.copy_from_slice(&binding[..16]);
+                        id[6] = (id[6] & 15) | 0x70;
+                        id[8] = (id[8] & 63) | 0x80;
+                        let mut event = id;
+                        event[15] ^= 1;
+                        lane.begin_pending(
+                            TimedRequest {
+                                transaction_id: id,
+                                content_digest: native.source_digest(),
+                                event_id: event,
+                                binding,
+                                item: item.item_instance_id,
+                                expected_revision: row.map_or(0, |row| row.revision),
+                                definition: definition.clone(),
+                                target: target.clone(),
+                                operation: TimedOperation::Advance(elapsed),
+                                occurred_at_unix_ms: super::npc_trade_command::unix_ms_now(),
+                            },
+                            lane.at_ms.saturating_add(elapsed),
+                            clock_ms(self),
+                        );
+                    }
+                    let Some((request, at)) = lane.pending.clone() else {
+                        break;
+                    };
+                    match self
                         .root
-                        .read_timed_row_in_scope(
+                        .commit_timed_action_in_scope(
                             self.character,
                             self.holder,
                             fence,
-                            item.item_instance_id,
+                            request,
                             house_origin,
                         )
                         .await
-                    else {
-                        return false;
-                    };
-                    if row.is_some_and(|row| row.values.is_none()) {
-                        lane.deadline_ms = None;
-                        continue;
-                    }
-                    let remaining = row
-                        .and_then(|row| row.values)
-                        .unwrap_or(definition.full)
-                        .remaining_ms()
-                        .unwrap_or(0);
-                    lane.deadline_ms = Some(lane.at_ms.saturating_add(remaining));
-                    if elapsed == 0 || (!force && elapsed < 60_000 && elapsed < remaining) {
-                        continue;
-                    }
-
-                    clock.serial = match clock.serial.checked_add(1) {
-                        Some(n) => n,
-                        None => return false,
-                    };
-                    // The owner incarnation, session and item are independent of client command ids.
-                    let mut hash = Sha256::new();
-                    hash.update(b"oteryn:timed-owner-clock:v1");
-                    hash.update(session.as_bytes());
-                    hash.update(item.item_instance_id);
-                    hash.update(self.holder.fact().registration_revision().to_be_bytes());
-                    hash.update(fence.connection_generation.get().to_be_bytes());
-                    hash.update(row.map_or(0, |row| row.revision).to_be_bytes());
-                    hash.update(clock.serial.to_be_bytes());
-                    let binding: [u8; 32] = hash.finalize().into();
-                    let mut id = [0; 16];
-                    id.copy_from_slice(&binding[..16]);
-                    id[6] = (id[6] & 15) | 0x70;
-                    id[8] = (id[8] & 63) | 0x80;
-                    let mut event = id;
-                    event[15] ^= 1;
-                    lane.pending = Some((
-                        TimedRequest {
-                            transaction_id: id,
-                            content_digest: native.source_digest(),
-                            event_id: event,
-                            binding,
-                            item: item.item_instance_id,
-                            expected_revision: row.map_or(0, |row| row.revision),
-                            definition,
-                            target,
-                            operation: TimedOperation::Advance(elapsed.min(604_800_000)),
-                            occurred_at_unix_ms: super::npc_trade_command::unix_ms_now(),
-                        },
-                        now,
-                    ));
-                }
-                let Some((request, at)) = lane.pending.clone() else {
-                    continue;
-                };
-                match self
-                    .root
-                    .commit_timed_action_in_scope(
-                        self.character,
-                        self.holder,
-                        fence,
-                        request,
-                        house_origin,
-                    )
-                    .await
-                {
-                    Ok(result)
-                        if result.disposition
-                            == oteryn_protocol_oteryn::timed_item::TimedDisposition::Ok =>
                     {
-                        retired_equipment |= result.retired;
-                        clock.refresh_equipment |= result.retired;
-                        lane.retired |= result.retired;
-                        lane.at_ms = at;
-                        lane.pending = None;
+                        Ok(result)
+                            if result.disposition
+                                == oteryn_protocol_oteryn::timed_item::TimedDisposition::Ok =>
+                        {
+                            retired_equipment |= result.retired;
+                            clock.refresh_equipment |= result.retired;
+                            lane.retired |= result.retired;
+                            lane.at_ms = at;
+                            lane.clear_pending();
+                            if lane.retired || lane.at_ms >= now {
+                                break;
+                            }
+                        }
+                        // A distinct command changed the revision. No old elapsed time may be applied
+                        // to its successor lifetime; reload from that committed row.
+                        Ok(_) => {
+                            lane.at_ms = now;
+                            lane.deadline_ms = None;
+                            lane.clear_pending();
+                            break;
+                        }
+                        Err(_) => return false,
                     }
-                    // A distinct command changed the revision. No old elapsed time may be applied
-                    // to its successor lifetime; reload from that committed row.
-                    Ok(_) => {
-                        lane.at_ms = now;
-                        lane.deadline_ms = None;
-                        lane.pending = None;
-                    }
-                    Err(_) => return false,
                 }
             }
             true
@@ -605,14 +657,24 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     actor,
                 ) != Some(false);
             let mut states = self.states.spell_states.lock().await;
-            let available = !states.has_pending_spell_commit(actor, session)
-                && if house {
-                    runtime
-                        .assert_house_actor_spell_unreserved(actor, session)
-                        .is_ok()
-                } else {
-                    runtime.assert_actor_spell_unreserved(actor).is_ok()
-                };
+            let pending = states.has_pending_spell_commit(actor, session);
+            let unreserved = if house {
+                runtime
+                    .assert_house_actor_spell_unreserved(actor, session)
+                    .is_ok()
+            } else {
+                runtime.assert_actor_spell_unreserved(actor).is_ok()
+            };
+            // A retained familiar save can be superseded only by this actor end.
+            // Its vitals predecessor is still reserved, but durable wear is settled.
+            if actor_end
+                && pending
+                && unreserved
+                && !states.has_pending_spell_commit_before_actor_end(actor, session)
+            {
+                return if advanced { Settled } else { Unknown };
+            }
+            let available = !pending && unreserved;
             let state = if !available {
                 None
             } else if house {
@@ -623,15 +685,15 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             let Some(state) = state else {
                 // The committed receipt and the wear interval survive until this
                 // exact actor can publish. Never change a parked predecessor.
-                return false;
+                return if advanced { Deferred } else { Unknown };
             };
             // Take this without waiting under the runtime and spell guards.
             // The pulse and the retirement acknowledgement are one owner turn.
             let Ok(mut clocks) = self.states.timed_items.sessions.try_lock() else {
-                return false;
+                return if advanced { Deferred } else { Unknown };
             };
             let Some(clock) = clocks.get_mut(&session) else {
-                return false;
+                return if advanced { Deferred } else { Unknown };
             };
             let mut regeneration = regeneration;
             for (item, source) in &retired {
@@ -644,14 +706,19 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             state.install_equipped_regeneration(regeneration);
             state.install_equipped_invisibility(invisible);
             state.install_equipped_wear(wear);
-            state.settle_equipped_wear(now, in_pz);
-            for (item, _) in &retired {
-                state.retire_worn_effect(*item);
-                clock.items.remove(item);
+            if advanced {
+                state.settle_equipped_wear(now, in_pz);
+                for (item, _) in &retired {
+                    state.retire_worn_effect(*item);
+                    clock.items.remove(item);
+                }
             }
         }
         if !advanced {
-            return false;
+            return Unknown;
+        }
+        if actor_end {
+            return Settled;
         }
 
         #[cfg(test)]
@@ -665,14 +732,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         if house {
             // Expiry can change the resident's equipment and every derived effect.
             if !retired_equipment {
-                return true;
+                return Settled;
             }
             if self
                 .refresh_clock_equipment_effects(actor, session, item_fence, true)
                 .await
                 != Ok(true)
             {
-                return false;
+                return Unknown;
             }
             // Retain a missing item's clock until publication succeeds so a
             // transient post-expiry read failure can be repaired on a later tick.
@@ -687,7 +754,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 clock.items.retain(|id, _| held.contains(id));
                 clock.refresh_equipment = false;
             }
-            return true;
+            return Settled;
         }
         // Expiry may burn the ring without a client move. Re-read committed custody so
         // its contribution cannot outlive the timed budget. An ordinary checkpoint uses
@@ -703,24 +770,24 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             else {
-                return false;
+                return Unknown;
             };
             let Some(active) = super::equipment_move::equipment_effects_owner::equipped_mana_shield(
                 &equipment, native,
             ) else {
-                return false;
+                return Unknown;
             };
             // I05: a burned dwarven ring's suppressdrunk ends with it, like the mana shield.
             let Some(effects) = super::equipment_move::equipment_effects_owner::equipment_effects(
                 &equipment, native,
             ) else {
-                return false;
+                return Unknown;
             };
             let Some(regeneration) = effects::equipped_regeneration(&equipment, native) else {
-                return false;
+                return Unknown;
             };
             let Some(invisible) = effects::equipped_invisibility(&equipment, native) else {
-                return false;
+                return Unknown;
             };
             active_mana_shield = active;
             retired_effects = Some((effects, regeneration, invisible));
@@ -732,11 +799,11 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .await
             .is_none()
         {
-            return false;
+            return Unknown;
         }
         let mut states = self.states.spell_states.lock().await;
         let Some(state) = states.get_mut(&runtime, actor, session) else {
-            return !retired_equipment;
+            return if retired_equipment { Deferred } else { Settled };
         };
         {
             state.install_equipped_mana_shield(active_mana_shield);
@@ -761,7 +828,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         {
             clock.refresh_equipment = false;
         }
-        true
+        Settled
     }
 
     async fn read_clock_equipment(

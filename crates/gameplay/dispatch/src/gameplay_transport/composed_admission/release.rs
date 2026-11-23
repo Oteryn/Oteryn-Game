@@ -169,11 +169,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return ReleaseAttempt::Retry;
         }
-        if !self.stop_timed_actor(actor, session).await {
-            return ReleaseAttempt::Retry;
+        if matches!(
+            release,
+            TerminalRelease::StaffKick(_) | TerminalRelease::Abandoned(_)
+        ) {
+            let _ = self.reconcile_pending_familiar_logout(actor, session).await;
         }
-        // Settle committed item successors while this owner still holds its live lease.
-        if !self.reconcile_pending_item_effects(actor, session).await {
+        // Publish parked successors before timed wear can revise their predecessor.
+        if !self.reconcile_pending_item_effects(actor, session).await
+            || !super::super::item_use::gourmet::resolve(self, actor, session).await
+            || !super::super::hireling::resolve_pending_lamp(self, actor, session).await
+            || !self.stop_timed_actor(actor, session).await
+        {
             return ReleaseAttempt::Retry;
         }
         match self

@@ -1230,6 +1230,57 @@ impl ChannelSpellStates {
     }
 }
 
+impl ChannelSpellStates {
+    fn has_timed_regeneration(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        self.get(runtime, actor, session).is_some_and(|state| {
+            state
+                .equipped_regeneration()
+                .iter()
+                .any(|clock| clock.worn.timed)
+        })
+    }
+
+    pub(super) fn settle_wear_before_movement(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now_us: u64,
+    ) {
+        if self.has_timed_regeneration(runtime, actor, session) {
+            let in_pz = qualified_protection_zone(runtime, cells, actor) != Some(false);
+            if let Some(state) = self.get_mut(runtime, actor, session) {
+                state.settle_equipped_wear(now_us / 1_000, in_pz);
+            }
+        }
+    }
+
+    /// Direct relocations share the outgoing eligibility sample with paced movement.
+    pub(super) fn commit_relocation(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+        session: GameSessionId,
+        now_us: u64,
+        proof: impl crate::foundation::SourceStepCommitProof,
+    ) -> bool {
+        let (actor, _, _, _) = proof.parts();
+        if self.has_timed_regeneration(runtime, actor, session)
+            && !self.spell_idle(runtime, actor, session)
+        {
+            return false;
+        }
+        self.settle_wear_before_movement(runtime, cells, actor, session, now_us);
+        runtime.commit_source_step(proof).is_ok()
+    }
+}
+
 pub(super) fn qualified_protection_zone(
     runtime: &mut ChannelRuntimeV1,
     cells: &crate::content::NativeEntryMovementCells,

@@ -5,7 +5,8 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{AuthenticatedTransportRefV1, ChannelContentPin, ChannelId, WorldId};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{
-    ControlLossResult, FirstEntryOutcome, FreshAdmissionAuthority, ResumeAttempt, UseCommand,
+    ControlLossResult, FirstEntryOutcome, FreshAdmissionAuthority, GraceExpiryResult,
+    ResumeAttempt, UseCommand,
 };
 use crate::gameplay_transport::equipment_move::{move_equipment, observe_character_equipment};
 use crate::gameplay_transport::item_move::{EquipmentMove, EquipmentMoveResult};
@@ -40,6 +41,12 @@ enum Case {
     RecoveredWearStart,
     ZoneBoundary,
     ReadmittedStatus,
+    ActorEndReplay,
+    PendingMoveRefusal,
+    ForcedStopReplay,
+    AmbiguousDebit,
+    DelayedPlacement,
+    TempleRelocation,
 }
 
 #[test]
@@ -164,6 +171,79 @@ fn timed_worn_rings_admission_projects_wear_before_first_sweep_postgres() -> Tes
     )
 }
 
+#[test]
+fn timed_worn_rings_actor_end_reconciles_parked_gourmet_postgres() -> TestResult {
+    run_ring(
+        "actor_end_reconciles_parked_gourmet",
+        3052,
+        3089,
+        1_200_000,
+        Case::ActorEndReplay,
+    )
+}
+
+#[test]
+fn timed_worn_rings_pending_owner_refuses_equipment_move_postgres() -> TestResult {
+    run_ring(
+        "pending_owner_refuses_equipment_move",
+        3052,
+        3089,
+        1_200_000,
+        Case::PendingMoveRefusal,
+    )
+}
+
+#[test]
+fn timed_worn_rings_forced_stop_debits_through_replay_postgres() -> TestResult {
+    run_ring(
+        "forced_stop_debits_through_replay",
+        3049,
+        3086,
+        600_000,
+        Case::ForcedStopReplay,
+    )
+}
+
+#[test]
+fn timed_worn_rings_ambiguous_debit_suspends_effects_postgres() -> TestResult {
+    run_ring(
+        "ambiguous_debit_suspends_effects",
+        3049,
+        3086,
+        600_000,
+        Case::AmbiguousDebit,
+    )?;
+    run_ring(
+        "ambiguous_life_debit",
+        3052,
+        3089,
+        1_200_000,
+        Case::AmbiguousDebit,
+    )
+}
+
+#[test]
+fn timed_worn_rings_delayed_placement_preserves_new_wear_postgres() -> TestResult {
+    run_ring(
+        "delayed_placement_preserves_new_wear",
+        3049,
+        3086,
+        600_000,
+        Case::DelayedPlacement,
+    )
+}
+
+#[test]
+fn timed_worn_rings_temple_relocation_settles_outgoing_wear_postgres() -> TestResult {
+    run_ring(
+        "temple_relocation_settles_outgoing_wear",
+        3052,
+        3089,
+        1_200_000,
+        Case::TempleRelocation,
+    )
+}
+
 fn run_ring(name: &'static str, base: u32, worn: u32, full_ms: i64, case: Case) -> TestResult {
     super::journal_watchdog::run(name, move |stage| {
         run(async |admin| {
@@ -245,7 +325,10 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64, case: Ca
     owner.states.command_ingress.admit(session);
 
     let base_key = format!("oteryn:item.tibia.i{base}");
-    let food_revision = if case == Case::ParkedReplay {
+    let food_revision = if matches!(
+        case,
+        Case::ParkedReplay | Case::ActorEndReplay | Case::PendingMoveRefusal
+    ) {
         Some(
             index
                 .revision("oteryn:item.tibia.i29409")
@@ -277,7 +360,32 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64, case: Ca
         .bind(active.identity().client_artifact_digest().as_slice())
         .bind(frame.as_slice()).execute(&h.pool).await?;
 
-    deps.initialize(&owner).await;
+    if case == Case::ActorEndReplay {
+        // Match the admitted Character's durable Monk projection. The test
+        // exercises item replay and wear without staging an unrelated Monk save.
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .initialize(
+                    &runtime,
+                    actor,
+                    session,
+                    crate::spell::cast::CharacterCastFacts {
+                        vocation: crate::spell::Vocation::Monk,
+                        ..crate::gameplay_transport::actor_spell::tests::FACTS
+                    },
+                    (0, 0),
+                    owner.owner_now(),
+                )
+                .is_some()
+        );
+    } else {
+        deps.initialize(&owner).await;
+    }
     let (max_health, max_mana) = {
         let mut runtime = owner.runtime.lock().await;
         assert_eq!(
@@ -467,7 +575,7 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64, case: Ca
             }
             return Ok(());
         }
-        Case::ParkedReplay => {
+        Case::ParkedReplay | Case::ActorEndReplay | Case::PendingMoveRefusal => {
             use crate::durability::item_use::{
                 ItemUseFlaskPlan, ItemUseKind, ItemUseRequest, gourmet::GourmetUseRequest,
             };
@@ -540,6 +648,37 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64, case: Ca
                 .commit_gourmet_use(owner.character, owner.holder, item_fence, request)
                 .await
                 .map_err(debug)?;
+            if case == Case::ActorEndReplay {
+                let transport = admitted.controller.ok_or("controller")?.transport;
+                let result = owner
+                    .release_terminal_in_scope(
+                        admitted,
+                        crate::gameplay_transport::TerminalRelease::StaffKick(transport),
+                    )
+                    .await;
+                assert_eq!(
+                    result,
+                    GraceExpiryResult::Released,
+                    "terminal release must resolve the parked successor before stopping wear"
+                );
+                return Ok(());
+            }
+            if case == Case::PendingMoveRefusal {
+                assert!(
+                    matches!(
+                        move_equipment(&owner, actor, command(admitted, 71), unequip).await,
+                        EquipmentMoveResult::Refused(_)
+                    ),
+                    "known pending owner must refuse the move before writing it"
+                );
+                let moves: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_equipment_receipts WHERE command_id=71",
+                )
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(moves, 0);
+                return Ok(());
+            }
             owner.clock_origin -= Duration::from_secs(7);
             owner.tick_timed_items().await;
             {
@@ -703,6 +842,158 @@ async fn exercise_ring(h: &Harness, base: u32, worn: u32, full_ms: i64, case: Ca
                 ring_effects(&owner, &deps).await?.2,
                 27,
                 "credit the wear before the zone crossing"
+            );
+            return Ok(());
+        }
+        Case::ForcedStopReplay | Case::AmbiguousDebit => {
+            // Hold the write lane until the same transaction can be replayed.
+            sqlx::raw_sql(
+                "CREATE FUNCTION reject_ring_debit() RETURNS trigger LANGUAGE plpgsql AS $$
+                 BEGIN RAISE EXCEPTION 'ring debit failure'; END $$;
+                 CREATE TRIGGER reject_ring_debit BEFORE INSERT ON game_item_timed_state_writes
+                 FOR EACH ROW EXECUTE FUNCTION reject_ring_debit();",
+            )
+            .execute(&h.pool)
+            .await?;
+            owner.clock_origin -= Duration::from_secs(60);
+            owner.tick_timed_items().await;
+            assert!(
+                owner.states.timed_items.sessions.lock().await[&session].items[&id(90)]
+                    .pending
+                    .is_some()
+            );
+            if case == Case::AmbiguousDebit {
+                owner.clock_origin -= Duration::from_secs(3);
+                let equipment = owner
+                    .read_fenced_equipment_effects(fence.item_fence())
+                    .await
+                    .map_err(debug)?;
+                let runtime = owner.runtime.lock().await;
+                owner
+                    .install_admission_suppressions(&runtime, actor, session, equipment)
+                    .await
+                    .ok_or("admission effect projection")?;
+                let mut states = owner.states.spell_states.lock().await;
+                let state = states.get_mut(&runtime, actor, session).ok_or("actor")?;
+                state.restore_saved_vitals(25, 0);
+                let now = owner.owner_now().get();
+                assert_eq!(state.equipped_remaining_ms(&id(90), now), None);
+                assert_eq!(state.owned_invisible_at(now), Ok(false));
+                state.settle_equipped_wear(now / 1_000 + 6_000, false);
+                assert_eq!((state.vitals().health, state.vitals().mana), (25, 0));
+            }
+            sqlx::query("DROP TRIGGER reject_ring_debit ON game_item_timed_state_writes")
+                .execute(&h.pool)
+                .await?;
+            if case == Case::ForcedStopReplay {
+                let request = owner.states.timed_items.sessions.lock().await[&session].items
+                    [&id(90)]
+                    .pending
+                    .as_ref()
+                    .ok_or("parked checkpoint")?
+                    .0
+                    .clone();
+                let result = owner
+                    .root
+                    .commit_timed_action_in_scope(
+                        owner.character,
+                        owner.holder,
+                        fence,
+                        request,
+                        None,
+                    )
+                    .await
+                    .map_err(debug)?;
+                assert_eq!(
+                    result.disposition,
+                    oteryn_protocol_oteryn::timed_item::TimedDisposition::Ok
+                );
+                assert!(budget(h).await? <= full_ms - 60_000);
+                owner.clock_origin -= Duration::from_secs(30);
+                assert_eq!(
+                    move_equipment(&owner, actor, command(admitted, 2), unequip).await,
+                    EquipmentMoveResult::Committed
+                );
+                assert!(
+                    budget(h).await? <= full_ms - 90_000,
+                    "stop must debit wear after the old request"
+                );
+            } else {
+                owner.clock_origin -= Duration::from_secs(1);
+                owner.tick_timed_items().await;
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                assert!(
+                    states
+                        .get(&runtime, actor, session)
+                        .ok_or("actor")?
+                        .equipped_remaining_ms(&id(90), owner.owner_now().get())
+                        .is_some()
+                );
+            }
+            return Ok(());
+        }
+        Case::DelayedPlacement => {
+            owner.clock_origin -= Duration::from_millis(u64::try_from(full_ms - 500)?);
+            assert_eq!(
+                move_equipment(&owner, actor, command(admitted, 2), unequip).await,
+                EquipmentMoveResult::Committed
+            );
+            sqlx::raw_sql(
+                "CREATE FUNCTION delay_ring_placement() RETURNS trigger LANGUAGE plpgsql AS $$
+                 BEGIN PERFORM pg_sleep(0.75); RETURN NEW; END $$;
+                 CREATE TRIGGER delay_ring_placement AFTER INSERT ON game_character_equipment_slots
+                 FOR EACH ROW EXECUTE FUNCTION delay_ring_placement();",
+            )
+            .execute(&h.pool)
+            .await?;
+            assert_eq!(
+                move_equipment(&owner, actor, command(admitted, 3), equip).await,
+                EquipmentMoveResult::Committed
+            );
+            assert!(
+                ring_effects(&owner, &deps).await?.0,
+                "placement latency cannot spend wear"
+            );
+            return Ok(());
+        }
+        Case::TempleRelocation => {
+            owner.clock_origin -= Duration::from_secs(7);
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let mut destination = runtime
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .position();
+                destination.x -= 1;
+                assert!(
+                    crate::gameplay_transport::item_use::temple_scroll::temple_landing(
+                        &mut runtime,
+                        &mut states,
+                        owner.movement_cells(),
+                        actor,
+                        session,
+                        destination,
+                        &crate::map::floor::BundleDoors(map.facts()),
+                        owner.owner_now(),
+                        true,
+                    )
+                );
+                assert_eq!(
+                    crate::gameplay_transport::actor_spell::qualified_protection_zone(
+                        &mut runtime,
+                        owner.movement_cells(),
+                        actor,
+                    ),
+                    Some(true),
+                );
+            }
+            owner.tick_timed_items().await;
+            assert_eq!(
+                ring_effects(&owner, &deps).await?.2,
+                27,
+                "credit the pulse earned outside protection"
             );
             return Ok(());
         }

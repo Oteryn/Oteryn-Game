@@ -149,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             if !temple_landing(
                 &mut runtime,
-                &states,
+                &mut states,
                 self.movement_cells(),
                 actor,
                 session,
@@ -170,6 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             gate.start(ItemUseKind::TempleScroll, self.owner_ms())?;
         }
         // The move runs inside the burn's transaction, before COMMIT (the writer calls it).
+        let owner_now = || self.owner_now();
         let landing = ScrollLanding {
             runtime: &self.runtime,
             spell_states: &self.states.spell_states,
@@ -178,7 +179,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             session,
             temple,
             closed,
-            now: self.owner_now(),
+            owner_now: &owner_now,
         };
         let commit = self.root.commit_temple_scroll_use(
             self.character,
@@ -223,24 +224,24 @@ struct ScrollLanding<'s> {
     session: GameSessionId,
     temple: MovementLocalPosition,
     closed: &'s dyn CellBlocker,
-    now: SemanticTimeMicros,
+    owner_now: &'s (dyn Fn() -> SemanticTimeMicros + Sync),
 }
 
 impl TempleLanding for ScrollLanding<'_> {
     fn land(&self) -> Pin<Box<dyn Future<Output = bool> + Send + '_>> {
         Box::pin(async move {
             let mut runtime = self.runtime.lock().await;
-            let states = self.spell_states.lock().await;
+            let mut states = self.spell_states.lock().await;
             !states.is_dead(self.actor)
                 && temple_landing(
                     &mut runtime,
-                    &states,
+                    &mut states,
                     self.cells,
                     self.actor,
                     self.session,
                     self.temple,
                     self.closed,
-                    self.now,
+                    (self.owner_now)(),
                     true,
                 )
         })
@@ -264,9 +265,9 @@ pub(super) fn landing_candidates(temple: MovementLocalPosition) -> [MovementLoca
     clippy::too_many_arguments,
     reason = "binds the exact actor, session, landing, closed doors, clock and the commit step"
 )]
-fn temple_landing(
+pub(in crate::gameplay_transport) fn temple_landing(
     runtime: &mut ChannelRuntimeV1,
-    states: &ChannelSpellStates,
+    states: &mut ChannelSpellStates,
     cells: &NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
@@ -283,7 +284,7 @@ fn temple_landing(
         if let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             runtime, cells, actor, session, entered, landing, blocked, closed, None,
         ) {
-            return !commit || runtime.commit_source_step(proof).is_ok();
+            return !commit || states.commit_relocation(runtime, cells, session, now.get(), proof);
         }
     }
     false

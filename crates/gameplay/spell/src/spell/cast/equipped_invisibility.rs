@@ -1,11 +1,49 @@
 use super::PlayerSpellState;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 /// One qualified timed slot on the Channel owner's monotonic clock.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct EquippedWear {
     pub item: [u8; 16],
     pub started_at_ms: u64,
     pub deadline_ms: u64,
+    /// Shared with the durable lane, including while a prepared actor state is parked.
+    pending_until_ms: Arc<AtomicU64>,
+}
+
+// The live write gate is shared by snapshots and does not change their identity.
+impl PartialEq for EquippedWear {
+    fn eq(&self, other: &Self) -> bool {
+        self.item == other.item
+            && self.started_at_ms == other.started_at_ms
+            && self.deadline_ms == other.deadline_ms
+    }
+}
+
+impl Eq for EquippedWear {}
+
+impl EquippedWear {
+    pub fn new(
+        item: [u8; 16],
+        started_at_ms: u64,
+        deadline_ms: u64,
+        pending_until_ms: Arc<AtomicU64>,
+    ) -> Self {
+        Self {
+            item,
+            started_at_ms,
+            deadline_ms,
+            pending_until_ms,
+        }
+    }
+
+    pub(super) fn suspended(&self, now_ms: u64) -> bool {
+        let pending_until = self.pending_until_ms.load(Ordering::Acquire);
+        pending_until != 0 && now_ms >= pending_until
+    }
 }
 
 impl PlayerSpellState {
@@ -14,12 +52,12 @@ impl PlayerSpellState {
     }
 
     pub fn equipped_remaining_ms(&self, item: &[u8; 16], now_us: u64) -> Option<i64> {
-        let deadline = self
-            .equipped_wear
-            .iter()
-            .find(|wear| wear.item == *item)?
-            .deadline_ms;
-        let remaining = deadline
+        let wear = self.equipped_wear.iter().find(|wear| wear.item == *item)?;
+        if wear.suspended(now_us / 1_000) {
+            return None;
+        }
+        let remaining = wear
+            .deadline_ms
             .saturating_mul(1_000)
             .checked_sub(now_us)?
             .div_ceil(1_000);
@@ -75,11 +113,7 @@ mod tests {
 
         state.install_equipped_invisibility(vec![[1; 16]]);
         assert_eq!(state.owned_invisible_at(0), Ok(false));
-        state.install_equipped_wear(vec![EquippedWear {
-            item: [1; 16],
-            started_at_ms: 0,
-            deadline_ms: 1,
-        }]);
+        state.install_equipped_wear(vec![EquippedWear::new([1; 16], 0, 1, Arc::default())]);
         assert_eq!(state.owned_invisible_at(0), Ok(true));
         assert_eq!(state.owned_invisible_at(1_000), Ok(false));
         assert!(state.equipped_invisible(0));

@@ -44,6 +44,7 @@ pub(super) struct ItemClock {
     pub(super) deadline_ms: Option<u64>,
     pub(super) at_ms: u64,
     pub(super) pending: Option<(TimedRequest, u64)>,
+    pub(super) pending_until_ms: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
 
 fn refusal(disposition: TimedDisposition) -> Option<Vec<u8>> {
@@ -113,8 +114,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         {
                             if result.disposition == TimedDisposition::Ok {
                                 lane.at_ms = *at;
+                                lane.retired |= result.retired;
+                                clock.refresh_equipment |= result.retired;
                             }
-                            lane.pending = None;
+                            lane.clear_pending();
                         }
                     }
                 }
@@ -170,7 +173,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.active_generation?.native_gameplay()?
         };
         {
-            let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
+            let now = super::timed_item_clock::clock_ms(self);
             let mut clocks = self.states.timed_items.sessions.lock().await;
             let clock = clocks.entry(command.game_session_id).or_default();
             let Some(slot) = clock
@@ -313,7 +316,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             // Retain the elapsed debit before issuing: an ambiguous commit must replay
             // this exact request before any later owner tick can consume its interval.
-            lane.pending = Some((request.clone(), now));
+            lane.begin_pending(
+                request.clone(),
+                now,
+                super::timed_item_clock::clock_ms(self),
+            );
         }
         match self
             .root
@@ -322,14 +329,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(result) => {
                 if is_use
-                    && let Some(clock) = clocks
-                        .get_mut(&command.game_session_id)
-                        .and_then(|clock| clock.items.get_mut(&item))
+                    && let Some(clock) = clocks.get_mut(&command.game_session_id)
+                    && let Some(lane) = clock.items.get_mut(&item)
                 {
                     if result.disposition == TimedDisposition::Ok {
-                        clock.at_ms = now;
+                        lane.at_ms = now;
+                        lane.retired |= result.retired;
+                        clock.refresh_equipment |= result.retired;
                     }
-                    clock.pending = None;
+                    lane.clear_pending();
                 }
                 encode_timed_item_result(result).ok()
             }
@@ -340,7 +348,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .get_mut(&command.game_session_id)
                         .and_then(|clock| clock.items.get_mut(&item))
                 {
-                    clock.pending = None;
+                    clock.clear_pending();
                 }
                 refusal(
                     if matches!(error, TimedWriteError::RevisionMismatch { .. }) {

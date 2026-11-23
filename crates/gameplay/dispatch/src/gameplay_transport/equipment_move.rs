@@ -547,6 +547,16 @@ async fn move_equipment_inner(
     }
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
+    // An actor-end save or a parked item effect is a known refusal before any move.
+    if admission
+        .states
+        .spell_states
+        .lock()
+        .await
+        .has_pending_spell_commit(actor, session)
+    {
+        return refused(RejectionStage::EquipmentAvailability);
+    }
     // EXTRA can qualify a death's talisman reward. Settle earlier deaths before
     // changing that slot, then retain the lane returned by the queue recheck.
     let changes_extra = match &request {
@@ -584,11 +594,11 @@ async fn move_equipment_inner(
     if !trade_ready {
         return refused(RejectionStage::EquipmentTrade);
     }
-    if !admission
-        .checkpoint_timed_equipment(actor, session, true)
-        .await
-    {
-        return EquipmentMoveResult::Unknown;
+    use super::timed_item_clock::EquipmentCheckpoint;
+    match admission.equipment_checkpoint(actor, session, true).await {
+        EquipmentCheckpoint::Settled => {}
+        EquipmentCheckpoint::Deferred => return refused(RejectionStage::EquipmentAvailability),
+        EquipmentCheckpoint::Unknown => return EquipmentMoveResult::Unknown,
     }
     let native = {
         let runtime = admission.runtime.lock().await;

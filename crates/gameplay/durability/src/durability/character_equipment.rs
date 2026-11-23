@@ -105,9 +105,39 @@ impl PartialEq for EquippedItem {
 pub struct EquipmentWear {
     pub placement: [u8; 16],
     pub placement_session: Option<[u8; 16]>,
-    pub checkpoint_unix_ms: Option<u64>,
+    placement_age_ms: Option<u64>,
+    checkpoint_age_ms: Option<u64>,
     /// No row means the definition's full budget. A row with no budget is spent.
     pub stored_remaining_ms: Option<Option<u64>>,
+}
+
+/// Only used to bridge an interrupted publication within the current process.
+#[derive(Default)]
+pub(super) struct EquipmentPlacementTimes(
+    std::collections::VecDeque<([u8; 16], std::time::Instant)>,
+);
+
+impl DurabilityRoot {
+    /// An exact committed placement from PostgreSQL, or the time of our COMMIT
+    /// acknowledgement when PostgreSQL does not retain commit timestamps.
+    pub fn equipment_placement_age_ms(&self, wear: EquipmentWear) -> Option<u64> {
+        let placement = wear.placement_age_ms.or_else(|| {
+            let observations = self.equipment_placements.lock().ok()?;
+            let (_, committed) = observations.0.iter().rev().find(|(id, _)| *id == wear.placement)?;
+            u64::try_from(committed.elapsed().as_millis()).ok()
+        })?;
+        Some(placement.min(wear.checkpoint_age_ms.unwrap_or(placement)))
+    }
+
+    fn observe_equipment_placement(&self, transaction: [u8; 16]) {
+        const RECENT_PLACEMENTS: usize = 1024;
+        if let Ok(mut observations) = self.equipment_placements.lock() {
+            if observations.0.len() == RECENT_PLACEMENTS {
+                observations.0.pop_front();
+            }
+            observations.0.push_back((transaction, std::time::Instant::now()));
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -454,11 +484,16 @@ async fn equipment_snapshot(
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment owner not initialized"))?;
     let slots_sql = "SELECT s.slot,COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.lifecycle,i.world_id::text AS item_world,s.world_id::text AS slot_world, \
         s.placed_transaction_id::text AS placement,r.game_session_id::text AS placement_session, \
-        ts.state_revision IS NOT NULL AS has_timing,ts.remaining_ms,tw.committed_at \
+        ts.state_revision IS NOT NULL AS has_timing,ts.remaining_ms, \
+        CASE WHEN timing.placed_ms IS NOT NULL THEN GREATEST(0, sample.now_ms - timing.placed_ms) END AS placement_age_ms, \
+        CASE WHEN tw.committed_at IS NOT NULL THEN GREATEST(0, sample.now_ms - tw.committed_at) END AS checkpoint_age_ms \
         FROM game_character_equipment_slots s JOIN game_item_instances i USING(item_instance_id) \
         LEFT JOIN game_character_equipment_receipts r ON r.transaction_id=s.placed_transaction_id \
         LEFT JOIN game_item_timed_states ts ON ts.item_instance_id=s.item_instance_id \
         LEFT JOIN game_item_timed_state_writes tw ON tw.item_instance_id=ts.item_instance_id AND tw.expected_revision=ts.state_revision-1 \
+        CROSS JOIN (SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms) sample \
+        CROSS JOIN LATERAL (SELECT CASE WHEN current_setting('track_commit_timestamp')='on' \
+            THEN floor(extract(epoch FROM pg_xact_commit_timestamp(r.created_xact_id::xid)) * 1000)::bigint END AS placed_ms) timing \
         WHERE s.character_id=encode($1,'hex')::uuid ORDER BY s.slot FOR UPDATE OF i";
     let rows = sqlx::query(if lock { slots_sql } else { slots_sql.trim_end_matches(" FOR UPDATE OF i") })
         .bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
@@ -494,8 +529,10 @@ async fn equipment_snapshot(
                 placement: uuid(row.try_get("placement")?)?,
                 placement_session: row.try_get::<Option<String>, _>("placement_session")?
                     .map(uuid).transpose()?,
-                checkpoint_unix_ms: row.try_get::<Option<i64>, _>("committed_at")?
-                    .map(u64::try_from).transpose().map_err(|_| rejected("equipment checkpoint time"))?,
+                placement_age_ms: row.try_get::<Option<i64>, _>("placement_age_ms")?
+                    .map(u64::try_from).transpose().map_err(|_| rejected("equipment placement age"))?,
+                checkpoint_age_ms: row.try_get::<Option<i64>, _>("checkpoint_age_ms")?
+                    .map(u64::try_from).transpose().map_err(|_| rejected("equipment checkpoint age"))?,
                 stored_remaining_ms: if row.try_get("has_timing")? {
                     Some(row.try_get::<Option<i64>, _>("remaining_ms")?
                         .map(u64::try_from).transpose().map_err(|_| rejected("equipment wear budget"))?)
@@ -1863,11 +1900,13 @@ impl DurabilityRoot {
         let fence = *fence;
         let digest = content.source_digest();
         let mut context = content;
+        let root = self.clone();
         self.try_issue_semantic_pass()?
             .run_with_context(&mut context, move |holder, deadline, content| {
                 Box::pin(async move {
                     let content: &C = content;
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    let mut placed = false;
                     let attempt: Result<
                         std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
                     > = async {
@@ -1942,16 +1981,20 @@ impl DurabilityRoot {
                         {
                             return Ok(Err(refusal));
                         }
-                        apply_resolved_equipment_in_transaction(
+                        let receipt = apply_resolved_equipment_in_transaction(
                             &mut tx, &authority, &snapshot, content, &resolved, &intent,
                         )
-                        .await
-                        .map(Ok)
+                        .await?;
+                        placed = request.to_slot.is_some();
+                        Ok(Ok(receipt))
                     }
                     .await;
                     match attempt {
                         Ok(Ok(receipt)) => {
                             super::db::commit_semantic_transaction(tx, deadline).await?;
+                            if placed {
+                                root.observe_equipment_placement(receipt.transaction_id);
+                            }
                             Ok(Ok(receipt))
                         }
                         // Dropping the transaction rolls it back: a refusal writes nothing.

@@ -1299,6 +1299,8 @@ pub struct DurabilityRoot {
     relay_options: Option<Box<PgConnectOptions>>,
     /// A separately admitted holder shared by all retained-receipt publishers for this root.
     retained_receipt_publisher_pool: Arc<OnceLock<Option<PgPool>>>,
+    /// Recent acknowledged equipment placements, for databases without commit timestamps.
+    pub(super) equipment_placements: Arc<StdMutex<super::character_equipment::EquipmentPlacementTimes>>,
     _root_i_charge: Option<Arc<RootICharge>>,
     pub(super) staff_trust: Arc<
         std::sync::OnceLock<Option<Arc<oteryn_gameplay_durability::durability::staff::StaffTrust>>>,
@@ -1463,6 +1465,7 @@ impl DurabilityRoot {
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: Some(Box::new(relay_options)),
             retained_receipt_publisher_pool: Arc::default(),
+            equipment_placements: Arc::default(),
             _root_i_charge: root_i_charge,
             staff_trust: Arc::default(),
         })
@@ -1539,6 +1542,7 @@ impl DurabilityRoot {
                 .ok()
                 .map(Box::new),
             retained_receipt_publisher_pool: Arc::default(),
+            equipment_placements: Arc::default(),
             _root_i_charge: None,
             staff_trust: Arc::default(),
         })

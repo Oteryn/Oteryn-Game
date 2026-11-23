@@ -15,6 +15,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         releasing: bool,
     ) -> bool {
         if !self.reconcile_pending_item_effects(actor, session).await
+            || !super::super::item_use::gourmet::resolve(self, actor, session).await
+            || !super::super::hireling::resolve_pending_lamp(self, actor, session).await
             || !self.stop_timed_actor(actor, session).await
         {
             return false;
