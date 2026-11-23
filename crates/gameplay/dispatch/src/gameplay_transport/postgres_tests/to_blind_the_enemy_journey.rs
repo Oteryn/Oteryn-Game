@@ -469,10 +469,23 @@ async fn journey(
         UseDisposition::NothingToUse
     );
     checkpoint(pool, character, 2, &bag).await?;
-    assert_eq!(
-        tool_use(owner, member, MIRROR, ball).await?,
-        UseDisposition::Committed
-    );
+    let key = crate::map::view::placement_key(
+        TilePos { x: BALL.x, y: BALL.y, floor: BALL.floor }, 2,
+    ).ok_or("scrying ball placement")?;
+    owner.states.quest_callbacks.interrupt_after_commit
+        .store(true, std::sync::atomic::Ordering::Release);
+    assert!(tool_use(owner, member, MIRROR, ball).await.is_err());
+    assert_eq!(owner.states.quest_callbacks.reserved_target_for_test(member.game_session_id), Some(key));
+    assert!(!owner.bundle_map().ok_or("World")?.facts.base_hidden(key));
+    owner.clock_origin -= std::time::Duration::from_secs(61);
+    assert!(owner.reconcile_quest_callbacks(member.game_session_id).await);
+    let published = owner.owner_now().get();
+    let map = owner.bundle_map().ok_or("World")?;
+    assert!(map.facts.base_hidden(key));
+    map.facts.expire_movement_items(published + 59_000_000);
+    assert!(map.facts.base_hidden(key), "reconciliation starts a fresh reset window");
+    map.facts.expire_movement_items(published + 60_000_000);
+    assert!(!map.facts.base_hidden(key));
     bag.insert(MIRROR, 0);
     checkpoint(pool, character, 3, &bag).await?;
     journal(
