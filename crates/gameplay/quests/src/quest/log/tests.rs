@@ -51,6 +51,32 @@ impl QuestLogFacts for Session {
     }
 }
 
+#[test]
+fn ape_city_journal_lists_both_published_and_authored_progress() -> Result<(), String> {
+    const APE_CITY: &str = "oteryn:quest.the_ape_city_quest";
+    const DONOR_START: &str = "oteryn:quest-progress/quest/u7_6/the_ape_city/started";
+    const AUTHORED_STAGE: &str = "oteryn:quest-progress/chosen/ape-city/stage";
+    let state = super::super::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let loaded = loader::load_embedded_quest_log(&state)?;
+    let index = u32::try_from(
+        loaded
+            .content
+            .active()
+            .index_of(APE_CITY)
+            .ok_or("Ape City journal")?,
+    )
+    .map_err(|error| error.to_string())?;
+    assert!(loaded.content.line(&Session::default(), index).is_none());
+    for start in [DONOR_START, AUTHORED_STAGE] {
+        let ongoing = Session::with(&[(start, 1)]).state(APE_CITY, "content-1", false);
+        assert!(matches!(loaded.content.line(&ongoing, index), Some(line) if !line.completed));
+    }
+    let completed = Session::with(&[(AUTHORED_STAGE, 15)]).state(APE_CITY, "content-1", true);
+    assert!(matches!(loaded.content.line(&completed, index), Some(line) if line.completed));
+    Ok(())
+}
+
 fn track(key: &str, quest: &str, initial: i64) -> QuestTrack {
     QuestTrack {
         key: key.into(),

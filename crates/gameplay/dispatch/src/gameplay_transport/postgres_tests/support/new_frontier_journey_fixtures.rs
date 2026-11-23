@@ -38,8 +38,8 @@ const CONTACTS: [(&str, Position, Position); 8] = [
     ("humgolf", pos(32598, 31880, 9), pos(32598, 31881, 9)),
     ("wyrdin", pos(33266, 31835, 6), pos(33266, 31836, 6)),
     ("angus", pos(32670, 32730, 7), pos(32670, 32729, 7)),
-    ("telas", pos(33276, 31800, 6), pos(33276, 31801, 6)),
-    ("king_tibianus", pos(32311, 32172, 6), pos(32311, 32173, 6)),
+    ("telas", pos(33276, 31800, 6), pos(33276, 31802, 6)),
+    ("king_tibianus", pos(32311, 32172, 6), pos(32313, 32172, 6)),
 ];
 const CITY: Position = pos(33061, 31527, 12);
 const ZAO: Position = pos(32993, 31547, 4);
@@ -94,7 +94,7 @@ async fn travel_to(
         false,
         &doors,
     )
-    .map_err(debug)?;
+    .map_err(|error| format!("Frontier approach {p:?}: {error:?}"))?;
     runtime.commit_source_step(proof).map_err(debug)?;
     Ok(())
 }
@@ -635,16 +635,16 @@ pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot
         crop!(
             "region-z06-x129-y124.b3",
             (6, 129, 124),
-            (33276, 31800, 33277, 31802),
-            (33276, 31801),
-            vec![]
+            (33276, 31800, 33277, 31803),
+            (33276, 31802),
+            vec![object(33276, 31802, vec![408])]
         ),
         crop!(
             "region-z06-x126-y125.b3",
             (6, 126, 125),
-            (32311, 32172, 32312, 32174),
-            (32311, 32173),
-            vec![]
+            (32311, 32172, 32314, 32173),
+            (32313, 32172),
+            vec![object(32313, 32172, vec![464])]
         ),
         crop!(
             "region-z07-x129-y121.b3",

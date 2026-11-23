@@ -362,7 +362,16 @@ impl QuestLogContent {
             return None;
         }
         let (track, at_least) = quest.start.as_ref()?;
-        (catalogue.value(facts, track)? >= *at_least).then_some((catalogue, quest, completed))
+        let started = catalogue
+            .value(facts, track)
+            .is_some_and(|value| value >= *at_least);
+        // Hairycles' authored programme records its start on the chosen stage.
+        // Published saves still open the same journal through the donor flag.
+        let authored_ape_city = quest.key == "oteryn:quest.the_ape_city_quest"
+            && catalogue
+                .value(facts, "oteryn:quest-progress/chosen/ape-city/stage")
+                .is_some_and(|stage| stage >= 1);
+        (started || authored_ape_city).then_some((catalogue, quest, completed))
     }
 
     /// The quest list: every listed quest in ascending index.
