@@ -52,6 +52,19 @@ checkout at the SHA under test and wait for both `ready client_env=...` and
 LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0 bash tools/qualification/login_local/run.sh
 ```
 
+An existing local `node_boot` stack with the pinned portal-rs producer can also
+serve this test. Use its public and Gateway loopback URLs, OAuth client ID, world,
+and gameplay certificate. Check that a Game-owned character is projected as
+`AVAILABLE` for the test account and the matching channel has a fresh ready report.
+Keep the disposable account handoff in the owner-only run directory.
+
+Portal-rs qualification registers an exact OAuth callback. For that stack, add
+`OTERYN_DEV_OAUTH_CALLBACK_PORT` with the port from its registered
+`http://127.0.0.1:<port>/callback` to the private profile. Use a client built
+with this option and leave that port free on Windows. The option is accepted
+only for a loopback Platform URL. Profiles without the option use an ephemeral
+callback port.
+
 On Windows, use the native executable from that SHA. For CI packages, verify the
 installer against the artifact's `SHA256SUMS` and use a test Windows account or
 machine if the existing installation must be preserved. The executable has a
@@ -61,7 +74,7 @@ with the approved private UI-art directory.
 
 In a fresh PowerShell session, set the three paths below to the run's
 Windows-readable profile, the matching pinned world-asset root and the native
-executable. Load only the six connection settings into this process. Splitting
+executable. Load the connection settings into this process. Splitting
 on the first equals sign preserves the Windows certificate path verbatim.
 
 ```powershell
@@ -73,11 +86,16 @@ $keys = 'OTERYN_PLATFORM_URL', 'OTERYN_GATEWAY_URL', 'OTERYN_OAUTH_CLIENT_ID',
 $settings = @{}
 foreach ($line in Get-Content -LiteralPath $profilePath -ErrorAction Stop) {
     $name, $value = $line -split '=', 2
-    if ($name -in $keys) { $settings[$name] = $value }
+    if ($name -in $keys -or $name -eq 'OTERYN_DEV_OAUTH_CALLBACK_PORT') {
+        $settings[$name] = $value
+    }
 }
 foreach ($name in $keys) {
     if ([string]::IsNullOrWhiteSpace($settings[$name])) { throw "Missing $name" }
     [Environment]::SetEnvironmentVariable($name, $settings[$name], 'Process')
+}
+if ($settings.ContainsKey('OTERYN_DEV_OAUTH_CALLBACK_PORT')) {
+    $env:OTERYN_DEV_OAUTH_CALLBACK_PORT = $settings['OTERYN_DEV_OAUTH_CALLBACK_PORT']
 }
 if (-not (Test-Path -LiteralPath $env:OTERYN_DEV_ROOT -PathType Leaf)) {
     throw 'Gameplay certificate is missing'
@@ -88,7 +106,9 @@ foreach ($path in 'content/assets/files/catalog-content.json',
         throw "World asset root is missing $path"
     }
 }
-foreach ($port in 18564, 18565, 17281) {
+$gameplayPort = 17281  # Use the run's advertised gameplay route port.
+foreach ($port in ([uri]$env:OTERYN_PLATFORM_URL).Port,
+                  ([uri]$env:OTERYN_GATEWAY_URL).Port, $gameplayPort) {
     if (-not (Test-NetConnection 127.0.0.1 -Port $port -InformationLevel Quiet)) {
         throw "RUNBOOK-1 loopback port $port is unreachable from Windows"
     }

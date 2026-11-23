@@ -138,9 +138,13 @@ impl LoginSettings {
                 .position(|field| field.1 == name)
                 .map(|index| self.values()[index].to_owned())
                 .or_else(|| {
-                    (name == "OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED")
-                        .then(|| std::env::var(name).ok())
-                        .flatten()
+                    matches!(
+                        name,
+                        "OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED"
+                            | "OTERYN_DEV_OAUTH_CALLBACK_PORT"
+                    )
+                    .then(|| std::env::var(name).ok())
+                    .flatten()
                 })
         })
         .map_err(|error| error.to_string())?

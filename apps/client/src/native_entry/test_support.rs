@@ -185,6 +185,7 @@ impl Stack {
             client_build: "oteryn-client/test".to_owned(),
             preference_path: None,
             callback_timeout: Duration::from_secs(10),
+            callback_port: 0,
             retry_unit: Duration::from_millis(10),
             system_browser: Default::default(),
             open_browser: Arc::new(complete_browser_sign_in),

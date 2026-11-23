@@ -213,7 +213,12 @@ pub struct LoopbackRedirect {
 
 impl LoopbackRedirect {
     pub async fn bind() -> Result<Self, IdentityError> {
-        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
+        Self::bind_port(0).await
+    }
+
+    /// Bind the registered IPv4 loopback port. Port zero lets the OS choose.
+    pub async fn bind_port(port: u16) -> Result<Self, IdentityError> {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port))
             .await
             .map_err(|_error| IdentityError::Listener)?;
         let address = listener
