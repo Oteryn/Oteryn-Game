@@ -126,29 +126,65 @@ pub(super) async fn place_ground(
     Ok(())
 }
 
-/// Breadth-first search of the carried backpack, while the marble still occupies its slot.
-pub(super) async fn nested_marble_destination<C: ItemLoopContent>(
+/// All marble yields add the figurine before debiting the marble, whether the
+/// operand came from a container, a dropped Item or a map placement.
+pub(super) async fn obtain_marble_destination<C: ItemLoopContent>(
     tx: &mut Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
     backpack: &[u8],
     content: &C,
+    output: &TypedDefinitionRef,
+    main_has_room: bool,
 ) -> Result<Option<(String, u64)>, DurabilityError> {
+    use oteryn_gameplay_items::quick_loot::Recipient;
+
+    let settings = super::super::character_quick_loot::load(tx, fence.character_id.as_bytes()).await?;
+    let key = &output.production_key;
+    let allowed = if settings.accept_only {
+        settings.accepted_items.is_empty() || settings.accepted_items.contains(key)
+    } else {
+        !settings.skipped_items.contains(key)
+    };
+    let preferred = settings
+        .category_targets
+        .get(&content.loot_category(output))
+        .copied()
+        .unwrap_or(settings.unassigned_target);
+    let preferred = match preferred {
+        Recipient::Container(id) if allowed && id.as_slice() != backpack => Some(id),
+        _ => None,
+    };
+    if main_has_room && preferred.is_none() {
+        return Ok(None);
+    }
+
+    // Resolve preferences only against the Character's current carried tree.
+    // After the preferred subtree and the main backpack, use the ordinary
+    // breadth-first backpack search before leaving the figurine on the floor.
     let rows = sqlx::query(
-        "WITH RECURSIVE tree(item, ordinals) AS (
-           SELECT item_instance_id, ARRAY[placement_ordinal]::numeric[]
+        "WITH RECURSIVE tree(item, ordinals, preferred) AS (
+           SELECT item_instance_id, ARRAY[placement_ordinal]::numeric[],
+                  coalesce(item_instance_id=encode($2,'hex')::uuid,false)
              FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid
            UNION ALL
-           SELECT e.item_instance_id, t.ordinals || e.placement_ordinal
+           SELECT e.item_instance_id, t.ordinals || e.placement_ordinal,
+                  t.preferred OR coalesce(e.item_instance_id=encode($2,'hex')::uuid,false)
              FROM tree t JOIN game_item_nested_entries e ON e.parent_item_instance_id=t.item
             WHERE cardinality(t.ordinals)<7
          )
-         SELECT item::text AS item, i.definition_family, i.definition_production_key, i.definition_revision_ref
+         SELECT item::text AS item, preferred, i.definition_family, i.definition_production_key,
+                i.definition_revision_ref
            FROM tree JOIN game_item_instances i ON i.item_instance_id=tree.item
-          WHERE i.lifecycle=1 ORDER BY cardinality(ordinals), ordinals DESC LIMIT 500",
+          WHERE i.lifecycle=1 ORDER BY preferred DESC, cardinality(ordinals), ordinals DESC LIMIT 500",
     )
     .bind(backpack)
+    .bind(preferred.as_ref().map(<[u8; 16]>::as_slice))
     .fetch_all(&mut ***tx)
     .await?;
     for row in rows {
+        if main_has_room && !row.try_get::<bool, _>("preferred")? {
+            return Ok(None);
+        }
         let definition = TypedDefinitionRef {
             family: row.try_get("definition_family")?,
             production_key: row.try_get("definition_production_key")?,
@@ -160,6 +196,9 @@ pub(super) async fn nested_marble_destination<C: ItemLoopContent>(
         else {
             continue;
         };
+        if content.is_quiver(&definition) && !content.is_ammunition(output) {
+            continue;
+        }
         let parent: String = row.try_get("item")?;
         let (occupied, highest): (i64, String) = sqlx::query_as(
             "SELECT count(*), coalesce(max(placement_ordinal),0)::text

@@ -263,6 +263,36 @@ async fn assert_mitmah_reward_grant_boundary(
     };
     let before = rewards().await?;
     sqlx::raw_sql(
+        "CREATE FUNCTION reject_mitmah_corpse() RETURNS trigger LANGUAGE plpgsql AS $$
+         BEGIN
+             IF NEW.loot_purpose_key = 'CORPSE_MATERIALIZATION' THEN
+                 RAISE EXCEPTION 'injected Mitmah corpse settlement failure';
+             END IF;
+             RETURN NEW;
+         END $$;
+         CREATE TRIGGER reject_mitmah_corpse BEFORE INSERT ON game_item_mint_receipts
+             FOR EACH ROW EXECUTE FUNCTION reject_mitmah_corpse()",
+    )
+    .execute(&h.pool)
+    .await?;
+    let target =
+        super::qengine_kill_stories_fixtures::queue_death(owner, admitted, creature, command).await?;
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        DrainOutcome::Deferred
+    );
+    let awards: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements
+         WHERE achievement_key='oteryn:achievement/museum_goer'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(rewards().await?.1, before.1);
+    assert_eq!(awards, 0, "failed corpse settlement left an orphan boss achievement");
+    sqlx::query("DROP TRIGGER reject_mitmah_corpse ON game_item_mint_receipts")
+        .execute(&h.pool)
+        .await?;
+    sqlx::raw_sql(
         "CREATE FUNCTION reject_mitmah_award() RETURNS trigger LANGUAGE plpgsql AS $$
          BEGIN
              IF NEW.achievement_key = 'oteryn:achievement/museum_goer' THEN
@@ -275,20 +305,29 @@ async fn assert_mitmah_reward_grant_boundary(
     )
     .execute(&h.pool)
     .await?;
-    let target =
-        super::qengine_kill_stories_fixtures::queue_death(owner, admitted, creature, command).await?;
     assert_eq!(
         owner.drain_kill_rewards(admitted.game_session_id).await,
         DrainOutcome::Deferred
     );
+    let settled = rewards().await?;
+    assert_eq!(settled.1, before.1 + 1, "corpse commits before the grant attempt");
     assert_eq!(
-        rewards().await?,
-        before,
-        "XP and corpse receipts must not survive a failed achievement grant"
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/museum_goer'",
+        ).fetch_one(&h.pool).await?,
+        0,
+        "the interrupted grant is invisible"
     );
     sqlx::query("DROP TRIGGER reject_mitmah_award ON game_account_achievement_grant_requests")
         .execute(&h.pool)
         .await?;
     super::qengine_kill_stories_fixtures::drain_deaths(owner, admitted, &[]).await?;
+    assert_eq!(rewards().await?, settled, "grant retry cannot duplicate death rewards");
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_account_achievement_grant_requests WHERE achievement_key='oteryn:achievement/museum_goer'",
+        ).fetch_one(&h.pool).await?,
+        1
+    );
     retire_death_actor(owner, target).await
 }

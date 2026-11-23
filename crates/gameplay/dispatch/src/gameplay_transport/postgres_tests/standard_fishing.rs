@@ -362,10 +362,12 @@ enum SculptureSetup {
     Base,
     Carried,
     NestedMaterial,
+    ConfiguredObtain,
     FullBackpackNestedMaterial,
     FullBackpackNestedDropped,
     FullBackpackNestedTerrain,
     FullBackpackDirectMaterial,
+    FullBackpackQuiver,
     NestedTool,
     Dropped,
     FullBackpack,
@@ -376,6 +378,16 @@ enum SculptureSetup {
 #[test]
 fn review_nested_sculpture_material_commits() -> TestResult {
     run_gathering_at(5908, 10426, None, Some(10429), true, false, SculptureSetup::NestedMaterial)
+}
+
+#[test]
+fn review_sculpture_prefers_configured_obtain_container() -> TestResult {
+    run_gathering_at(5908, 10426, None, Some(10429), true, false, SculptureSetup::ConfiguredObtain)
+}
+
+#[test]
+fn review_sculpture_skips_configured_quiver_before_dropping() -> TestResult {
+    run_gathering_at(5942, 10426, None, Some(10429), true, false, SculptureSetup::FullBackpackQuiver)
 }
 
 #[test]
@@ -486,6 +498,7 @@ fn gathering_scenario(
         setup,
         SculptureSetup::FullBackpackNestedMaterial
             | SculptureSetup::NestedMaterial
+            | SculptureSetup::ConfiguredObtain
             | SculptureSetup::NestedTool
     );
     let dropped = matches!(
@@ -504,6 +517,7 @@ fn gathering_scenario(
         setup,
         SculptureSetup::FullBackpack
             | SculptureSetup::FullBackpackDirectMaterial
+            | SculptureSetup::FullBackpackQuiver
             | SculptureSetup::Overweight
     );
     run(async |admin| {
@@ -677,8 +691,12 @@ fn gathering_scenario(
                 entries.resize(20 + usize::from(item_target), ("oteryn:item.tibia.i3031", 1));
             }
             SculptureSetup::FullBackpack | SculptureSetup::FullBackpackDirectMaterial => entries.resize(20, ("oteryn:item.tibia.i3031", 1)),
+            SculptureSetup::FullBackpackQuiver => {
+                entries.push(("oteryn:item.tibia.i35562", 1));
+                entries.resize(20, ("oteryn:item.tibia.i3031", 1));
+            }
             SculptureSetup::Overweight => entries.resize(10, ("oteryn:item.tibia.i3578", 100)),
-            SculptureSetup::NestedMaterial | SculptureSetup::NestedTool => entries.push((bag, 1)),
+            SculptureSetup::NestedMaterial | SculptureSetup::ConfiguredObtain | SculptureSetup::NestedTool => entries.push((bag, 1)),
             _ => {}
         }
         let source_handle = if (fallback && !carried)
@@ -694,6 +712,10 @@ fn gathering_scenario(
             2
         };
         super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
+        if matches!(setup, SculptureSetup::ConfiguredObtain | SculptureSetup::FullBackpackQuiver) {
+            sqlx::query("INSERT INTO game_character_quick_loot_settings(character_id,unassigned_container_id,unassigned_gold_pouch,fallback_to_main,committed_character_revision) SELECT character_id,encode($2,'hex')::uuid,false,true,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).bind(id(73).as_slice()).execute(&harness.pool).await?;
+        }
         if nested {
             let item = if setup == SculptureSetup::NestedTool { 71 } else { 72 };
             let mut tx = harness.pool.begin().await?;
@@ -987,7 +1009,7 @@ fn gathering_scenario(
             ).bind(format!("oteryn:item.tibia.i{next_stage}")).fetch_one(&harness.pool).await?;
             assert_eq!(minted, 0, "a carried position has no map tile for its next ice stage");
         }
-        if full_nested {
+        if full_nested || setup == SculptureSetup::ConfiguredObtain {
             let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
             assert_eq!(remaining, 0);
@@ -998,7 +1020,7 @@ fn gathering_scenario(
             .bind(id(73).as_slice())
             .bind(format!("oteryn:item.tibia.i{}", yield_item.ok_or("nested figurine")?))
             .fetch_one(&harness.pool).await?;
-            assert_eq!(nested_outputs, 1, "use space in the nested bag before dropping");
+            assert_eq!(nested_outputs, 1, "use the eligible obtain container before fallback");
         }
         if carried && after.is_some() {
             let state: i16 = sqlx::query_scalar(
