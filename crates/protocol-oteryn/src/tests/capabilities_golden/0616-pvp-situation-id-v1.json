@@ -1,0 +1,17 @@
+{
+  "id": 616,
+  "name": "PVP_SITUATION_ID_V1",
+  "constant": "party_skull::CAPABILITY_PVP_SITUATION_ID_V1",
+  "requires": [
+    134
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

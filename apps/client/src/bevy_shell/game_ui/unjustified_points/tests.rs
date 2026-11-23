@@ -27,6 +27,7 @@ fn toolbar_pvp_reply_projects_risk_timer_and_controls() -> Result {
         remaining_ms: 60001,
         situations: vec![oteryn_client_runtime::party_skull::PvpSituation {
             incoming: true,
+            situation_id: None,
             remaining_ms: 9000,
         }],
     };
@@ -212,6 +213,7 @@ fn new_incoming_pvp_situation_requests_a_capture() -> Result {
             situations: vec![
                 oteryn_client_runtime::party_skull::PvpSituation {
                     incoming,
+                    situation_id: None,
                     remaining_ms: if index == 2 { 15000 } else { 9000 },
                 };
                 1 + usize::from(index == 3)

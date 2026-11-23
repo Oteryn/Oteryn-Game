@@ -1,0 +1,16 @@
+{
+  "mechanic": "0615-boss-defeated",
+  "kind": "handlers",
+  "id": "0615-boss-defeated-observe",
+  "status": "unsupported",
+  "commands": [],
+  "direction": "server_to_client",
+  "reason": "The boss screenshot lane will opt in to the personal domain-57 event.",
+  "not_applicable": {
+    "state": "The native client leaves this capability unselected.",
+    "protocol": "Selected independently through capability negotiation.",
+    "view": "The boss screenshot lane will opt in to the personal domain-57 event.",
+    "input": "This extension adds no new client input.",
+    "settings": "No new setting is defined by the wire extension."
+  }
+}
