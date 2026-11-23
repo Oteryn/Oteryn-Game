@@ -5,9 +5,9 @@ pub use super::feature_local_reference_preferences::settings::{
     HoverTooltip, MiscellaneousPreferences, MousePreset, MouseScheme, MovementKeys, ObjectTarget,
     PerformancePacer, PerformanceSettings, PreferenceBinding, PreferenceInput, PreferenceStore,
     ReferencePreferences, RotationModifier, SHORTCUTS, ScreenshotPreferences, SettingsPage,
-    SettingsState, ShortcutEdit, SpecialAction, StatusBarStyle, TooltipTarget, UtilityAction,
-    WINDOW_ACTIONS, default_custom_hotkeys, fit_ui_scale, help, help_text, preference_bindings,
-    rescale_ui_rect, scale_ui_rect, screenshot,
+    SettingsState, ShortcutEdit, SpecialAction, TooltipTarget, UtilityAction, WINDOW_ACTIONS,
+    default_custom_hotkeys, fit_ui_scale, help, help_text, preference_bindings, rescale_ui_rect,
+    scale_ui_rect, screenshot,
 };
 pub use super::feature_local_spell_action_bar::view::{
     BarAction, BarDock, BarGesture, BarLayout, ItemUseMode, PassiveAbility, SpellAim,

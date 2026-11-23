@@ -163,6 +163,17 @@ pub(super) fn build(
         let filters = line(commands, root);
         for (kind, caption) in [
             (Kind::Filter, "Apply filters".to_owned()),
+            (
+                Kind::Reverse,
+                match (panel.sort, panel.reverse) {
+                    (oteryn_client_ui::stash::Sort::Name, false) => "Name: ascending",
+                    (oteryn_client_ui::stash::Sort::Name, true) => "Name: descending",
+                    (oteryn_client_ui::stash::Sort::Stock, false) => "Quantity: descending",
+                    (oteryn_client_ui::stash::Sort::Stock, true) => "Quantity: ascending",
+                }
+                .into(),
+            ),
+            (Kind::ManageContainers, "Manage containers".to_owned()),
             (Kind::Sort, format!("Sort: {:?}", panel.sort)),
         ] {
             button(commands, skins, filters, state, kind, &caption, enabled);

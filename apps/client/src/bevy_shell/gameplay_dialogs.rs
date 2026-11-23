@@ -31,6 +31,7 @@ struct AttackChoice {
 
 enum Content {
     Logout,
+    StalledLogout(std::time::Instant),
     /// chsw (capability 512): the Change Channel window, its confirmation and its errors.
     ChannelSwitch,
     Context {
@@ -49,6 +50,7 @@ enum Content {
 }
 #[derive(Clone, Copy, Component)]
 enum Choice {
+    ForceLogout,
     Cancel,
     Logout,
     SwitchRow([u8; 16]),
@@ -106,8 +108,17 @@ impl Dialogs {
 }
 impl HostOwner {
     pub(super) fn request_logout_confirmation(&mut self) {
-        if self.phase == Phase::Playing && self.play.is_some() {
-            self.dialogs.open(self.generation(), Content::Logout);
+        self.request_logout_confirmation_at(std::time::Instant::now());
+    }
+    fn request_logout_confirmation_at(&mut self, now: std::time::Instant) {
+        if self.phase == Phase::Playing
+            && let Some(play) = &self.play
+        {
+            let content = play
+                .link
+                .stalled_logout(now)
+                .map_or(Content::Logout, Content::StalledLogout);
+            self.dialogs.open(self.generation(), content);
         }
     }
     pub(super) fn request_channel_switch(&mut self) {
@@ -380,6 +391,15 @@ impl HostOwner {
                     }
                 }
             }),
+            (Content::StalledLogout(sent), Choice::ForceLogout)
+                if self
+                    .play
+                    .as_ref()
+                    .is_some_and(|play| play.link.force_disconnect(sent)) =>
+            {
+                self.leave("Disconnected before logout was confirmed.");
+                true
+            }
             (Content::Logout, Choice::Logout) => self.play.as_mut().is_some_and(|play| {
                 play.view.logout();
                 true

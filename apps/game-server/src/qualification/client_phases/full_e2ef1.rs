@@ -34,7 +34,6 @@ pub(super) async fn provision_fixture(
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     original::provision_at_level(client, clients, index, expected_level).await
 }
-pub(super) use original::provision_profile;
 
 pub(super) async fn provision(
     mut client: oteryn_dev_client::DevClientSession,
@@ -708,6 +707,13 @@ mod e2ef1 {
         Ok(())
     }
 
+    fn stair_landing(
+        actual: Option<TilePos>,
+        without_teleport: impl FnOnce() -> Option<TilePos>,
+    ) -> Option<TilePos> {
+        actual.filter(|at| without_teleport() == Some(*at))
+    }
+
     async fn m03(
         client: &mut DevClientSession,
         world: &BundleWorld,
@@ -755,12 +761,23 @@ mod e2ef1 {
                     let at = tile(client.world_spatial().actor_position)?;
                     let ObjectKind::Teleport(expected) = object.kind else { return Err("missing authored teleport".into()) };
                     let direction = teleport_entry(world, at, object).ok_or("no automatic teleport entry edge")?;
-                    walk(client, world, &[direction]).await?;
+                    walk_with_landings(client, &[direction], |origin, step| {
+                        (origin == at && step == direction).then_some(expected)
+                    }).await?;
                     checks.pass("teleport", (object.at, expected));
                 } else {
-                    let path = route(world, from, |at| at.floor != from.floor && outside(at)).ok_or("no reachable outside-PZ stair transition")?;
-                    walk(client, world, &path).await?;
-                    if tile(client.world_spatial().actor_position)?.floor == from.floor { return Err("stairs did not change floor".into()); }
+                    let landing = |at, direction| {
+                        stair_landing(destination(world, at, direction), || {
+                            destination_with_teleports(world, at, direction, false)
+                        })
+                    };
+                    let goal = |at: TilePos| at.floor != from.floor && outside(at);
+                    let path = route_with_landings(from, goal, |_| true, landing)
+                        .ok_or("no reachable outside-PZ stair transition")?;
+                    walk_with_landings(client, &path, landing).await?;
+                    if !goal(tile(client.world_spatial().actor_position)?) {
+                        return Err("stairs did not reach another floor outside protection".into());
+                    }
                     checks.pass("stairs", client.world_spatial());
                 }
                 let changed = std::time::Instant::now();
@@ -979,8 +996,10 @@ mod e2ef1 {
                 return Ok(());
             }
             if result != UseDisposition::Exhausted || tokio::time::Instant::now() >= deadline {
+                let from = client.world_spatial().actor_position;
+                let detail = client.session_mut().last_refusal_detail();
                 return Err(format!(
-                    "door {object:?} revision={revision}: {result:?}, wanted {expected:?}"
+                    "door {object:?} revision={revision} from {from:?}: {result:?}, wanted {expected:?}; detail={detail:?}"
                 )
                 .into());
             }
@@ -1077,11 +1096,25 @@ mod e2ef1 {
             (AuthoredClosedDoor::KeyUnlocked, "unlocked-key-door"),
         ] {
             let result: TestResult = async {
+                // Crystal 201189f8 CustomDoorTable includes the town gates 2177/2179.
+                // The runtime can also report Plain for a key door without both closed forms.
                 let object = approach(
                     client,
                     world,
                     objects,
-                    |o| o.kind == ObjectKind::Door(kind),
+                    |o| {
+                        o.kind == ObjectKind::Door(kind)
+                            && (kind != AuthoredClosedDoor::Plain
+                                || world
+                                    .base()
+                                    .tile(o.at.x, o.at.y, o.at.floor)
+                                    .and_then(|tile| tile.appearance(o.ordinal))
+                                    .is_some_and(|id| matches!(id, 2177 | 2179))
+                                    && crate::map::view::placement_key(o.at, o.ordinal)
+                                        .is_some_and(|key| {
+                                            world.facts().opening_door_enterable(world.base(), key)
+                                        }))
+                    },
                     1,
                     |_, _| true,
                 )
@@ -1161,10 +1194,7 @@ mod e2ef1 {
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(|e| format!("rope intent: {e:?}"))?;
-        let result = client
-            .session_mut()
-            .gated_command(CAPABILITY_ITEM_USE_V1, COMMAND_TYPE_USE_INTENT, &payload)
-            .await?;
+        let result = client.session_mut().world_context_use(&payload).await?;
         if result.status != CommandStatus::Accepted
             || decode_use_result(&result.payload).map_err(|e| format!("rope result: {e:?}"))?
                 != UseDisposition::Committed
@@ -1446,6 +1476,19 @@ mod e2ef1 {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn qualification_review_m03_stairs_exclude_teleport_landing() {
+            let upstairs = TilePos {
+                floor: TOWN.floor + 1,
+                ..TOWN
+            };
+            assert_eq!(stair_landing(Some(upstairs), || Some(TOWN)), None);
+            assert_eq!(
+                stair_landing(Some(upstairs), || Some(upstairs)),
+                Some(upstairs)
+            );
+        }
+
         #[test]
         fn qualification_e2ef1_floor_exhaust_uses_a_served_starter_spell() -> TestResult {
             let spell = native_spell_book()?

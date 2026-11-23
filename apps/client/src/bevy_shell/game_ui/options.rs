@@ -100,6 +100,7 @@ pub(super) fn install(app: &mut App) {
                 keyboard,
                 projection::project,
                 keys::filter,
+                audio_device::finish,
                 screenshots::project,
             )
                 .chain(),

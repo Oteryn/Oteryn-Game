@@ -105,15 +105,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if edited.code != 1 || renamed.code != 1 {
         return Err(format!("Edit/GroupRename mismatch: {edited:?} {renamed:?}").into());
     }
-    let (listed_bytes, listed) = raw(
-        &mut watcher,
-        &request(wire::Operation::Query, renamed.revision, ""),
-    )
-    .await?;
+    let (listed_bytes, listed) = raw(&mut watcher, &request(wire::Operation::Query, 0, "")).await?;
     let view: serde_json::Value = serde_json::from_str(&listed.view)?;
     let entry_ok = view["entries"].as_array().is_some_and(|entries| {
         entries.iter().any(|item| {
-            item["number"].as_u64() == Some(entry)
+            item["entry"].as_u64() == Some(entry)
                 && item["name"].as_str() == Some(&name)
                 && item["description"].as_str() == Some("node-boot friend")
                 && item["icon"].as_u64() == Some(7)
@@ -122,7 +118,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     });
     let group_ok = view["groups"].as_array().is_some_and(|groups| {
         groups.iter().any(|item| {
-            item["number"].as_u64() == Some(group.number)
+            item["group"].as_u64() == Some(group.number)
                 && item["name"].as_str() == Some("Raid Team")
         })
     });

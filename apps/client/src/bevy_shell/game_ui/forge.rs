@@ -46,6 +46,7 @@ struct Key {
     generation: u64,
     revision: u64,
     tab: Tab,
+    history_page: usize,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Kind {
@@ -60,6 +61,7 @@ enum Kind {
     Submit,
     Refresh,
     Next,
+    HistoryPage(usize),
     Convert(Operation),
     Confirm(u64),
     Dismiss(u64),
@@ -80,6 +82,7 @@ struct State {
     snapshot: Option<(Key, Panel)>,
     tab: Tab,
     revision: u64,
+    history_page: usize,
     widgets: Option<widgets::Widgets>,
     pending: Option<Pending>,
 }
@@ -143,6 +146,7 @@ fn project(
         }
         state.snapshot = None;
         state.tab = Tab::Fusion;
+        state.history_page = 0;
         return;
     };
     let generation = owner.generation();
@@ -151,6 +155,7 @@ fn project(
         .as_ref()
         .is_none_or(|(key, _)| key.generation != generation)
     {
+        state.history_page = 0;
         state.tab = if matches!(
             panel.operation,
             Operation::Transfer | Operation::ConvergenceTransfer
@@ -160,8 +165,13 @@ fn project(
             Tab::Fusion
         };
     }
+    let last = history_last_page(&panel);
+    state.history_page = state.history_page.min(last);
     if state.snapshot.as_ref().is_some_and(|(key, old)| {
-        key.generation == generation && key.tab == state.tab && old == &panel
+        key.generation == generation
+            && key.tab == state.tab
+            && key.history_page == state.history_page
+            && old == &panel
     }) {
         return;
     }
@@ -184,6 +194,7 @@ fn project(
         generation,
         revision,
         tab: state.tab,
+        history_page: state.history_page,
     };
     let widgets = state
         .widgets
@@ -196,6 +207,15 @@ fn project(
     }
     widgets::render(&mut commands, &skins, widgets, key, &panel);
     state.snapshot = Some((key, panel));
+}
+const HISTORY_PAGE_SIZE: usize = 10;
+fn history_last_page(panel: &Panel) -> usize {
+    match &panel.decoded {
+        Some(oteryn_client_ui::item_forge::reply::Reply::History(rows)) => {
+            rows.len().saturating_sub(1) / HISTORY_PAGE_SIZE
+        }
+        _ => 0,
+    }
 }
 fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
     let Some((key, panel)) = &state.snapshot else {
@@ -226,7 +246,18 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
             {
                 return;
             }
+            state.history_page = 0;
             state.tab = tab;
+            return;
+        }
+        Kind::HistoryPage(page) => {
+            if state.tab == Tab::History
+                && !panel.pending
+                && page <= history_last_page(panel)
+                && play.link.item_forge_panel() == *panel
+            {
+                state.history_page = page;
+            }
             return;
         }
         Kind::Close => Intent::Close,

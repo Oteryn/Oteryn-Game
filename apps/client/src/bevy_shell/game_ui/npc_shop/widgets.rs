@@ -130,6 +130,21 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
             ));
         });
     }
+    for (kind, caption) in [
+        (Kind::SortName, "Sort by name"),
+        (Kind::SortPrice, "Sort by price"),
+        (Kind::SortWeight, "Sort by weight"),
+    ] {
+        action(
+            commands,
+            skin,
+            shop_controls,
+            generation,
+            kind,
+            caption,
+            180.,
+        );
+    }
     // The accepted trade intent has no backpack-purchase flag or packing price.
     label(
         commands,
@@ -221,6 +236,15 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
         generation,
         Kind::SellAll,
         "Sell all",
+        100.,
+    );
+    action(
+        commands,
+        skin,
+        trade,
+        generation,
+        Kind::Cyclopedia,
+        "Cyclopedia",
         100.,
     );
     let footer = row(commands, panel);

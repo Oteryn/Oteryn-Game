@@ -56,7 +56,7 @@ impl UtilityAction {
 
     pub fn label(self) -> &'static str {
         match self {
-            Self::ToggleCreatureHuds => "Utility: show or hide creature health bars",
+            Self::ToggleCreatureHuds => "Utility: show or hide creature names and health bars",
             Self::ToggleFpsLagIndicator => "Utility: show or hide the FPS and lag indicator",
             Self::ToggleDiagnosticsOverlay => "Utility: show or hide the diagnostics overlay",
             Self::NextHotkeyPreset => "Utility: next hotkey preset",
@@ -84,6 +84,10 @@ impl UtilityAction {
 impl ReferencePreferences {
     pub fn toggle_creature_huds(&mut self) {
         self.creature_bars = !self.creature_bars;
+        self.hud_names.fill(self.creature_bars);
+        if let Some(show) = &mut self.hud_npc_names {
+            *show = self.creature_bars;
+        }
     }
 
     /// One switch for both readouts: any visible readout hides them, otherwise both show.

@@ -438,3 +438,20 @@ fn account_achievements_reply_encodes_or_fails_closed() -> Result<(), Box<dyn Er
 // USE-WIRE-V1 reach (#162 5868482467). SEAM_EVIDENCE: gameplay_transport/mod.rs
 // use_object_reachable unit coverage (a genuine TOO_FAR case cannot be reached through real
 // movement in the qualified native entry room; see `use_object_reachable`'s own doc comment).
+
+
+#[test]
+fn review_admission_post_entry_has_retry_time_after_familiar_login() {
+    run_paused(async {
+        let session = GameSessionId::decode(&uuid_v7(0x40)).expect("session");
+        let budget = AdmissionRetryBudget::new(&session);
+        tokio::time::sleep(crate::durability::ROOT_RECOVERY_WINDOW).await;
+        let budget = budget.for_post_entry();
+        let mut attempts = 0;
+        assert!(budget.retry_until(async || {
+            attempts += 1;
+            attempts == 2
+        }).await);
+        assert_eq!(attempts, 2);
+    });
+}

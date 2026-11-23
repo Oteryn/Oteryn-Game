@@ -17,13 +17,18 @@ pub(super) struct LevelText;
 pub(super) struct WeaponText;
 #[derive(Component)]
 pub(super) struct XpFill;
-
-#[derive(Component, Clone, Copy)]
-pub(super) enum Part {
+#[derive(Component)]
+pub(super) struct SelectedSkills;
+#[derive(Component)]
+pub(super) struct BarBody;
+#[derive(Component)]
+pub(super) enum BarLine {
     Vitals,
-    Track,
     Experience,
 }
+
+#[derive(Component)]
+pub(super) struct VitalTrack;
 
 /// Line heights of the large style (about 27 px for the two lines).
 const VITAL_HEIGHT: f32 = 14.;
@@ -40,6 +45,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
         .spawn((
             BarRoot,
             Name::new("Status bar"),
+            BarBody,
             Node {
                 width: percent(100.),
                 flex_shrink: 0.,
@@ -53,8 +59,8 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
         .id();
     let vitals = commands
         .spawn((
-            Part::Vitals,
             Name::new("Status bar vitals"),
+            BarLine::Vitals,
             Node {
                 width: percent(100.),
                 height: px(VITAL_HEIGHT),
@@ -68,7 +74,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
     ] {
         let track = commands
             .spawn((
-                Part::Track,
+                VitalTrack,
                 Node {
                     width: percent(50.),
                     height: percent(100.),
@@ -106,8 +112,8 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
     }
     let experience = commands
         .spawn((
-            Part::Experience,
             Name::new("Status bar experience"),
+            BarLine::Experience,
             Node {
                 width: percent(100.),
                 height: px(XP_LINE),
@@ -185,9 +191,19 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, parent: Entity) -> E
             ..default()
         })
         .id();
+    let skills = commands
+        .spawn((
+            SelectedSkills,
+            source::text("", font),
+            Node {
+                display: Display::None,
+                ..default()
+            },
+        ))
+        .id();
     commands
         .entity(bar)
-        .add_children(&[vitals, experience, conditions]);
+        .add_children(&[vitals, experience, skills, conditions]);
     commands.entity(parent).add_child(bar);
     conditions
 }
@@ -281,65 +297,135 @@ pub(super) fn equipped_weapon(
     }
 }
 
-pub(super) fn layout(
-    mut commands: Commands,
+pub(super) fn project_skills(
     owner: NonSend<HostOwner>,
-    status: Option<Res<super::super::StatusBar>>,
-    regions: Res<super::super::GameRegions>,
-    (parents, children): (Query<&ChildOf>, Query<&Children>),
-    mut regions_nodes: Query<&mut Node, Without<Part>>,
-    mut parts: Query<(&Part, &mut Node)>,
+    region: Option<Res<super::super::StatusBar>>,
+    mut nodes: Query<&mut Node, Without<SelectedSkills>>,
+    mut skills: Query<(&mut Node, &mut Text), With<SelectedSkills>>,
 ) {
-    use crate::play::StatusBarStyle;
-    let Some(status) = status else { return };
     let prefs = &owner.settings.preferences;
-    if let Ok(mut node) = regions_nodes.get_mut(status.0) {
+    if let Some(region) = region
+        && let Ok(mut node) = nodes.get_mut(region.0)
+    {
         node.display = if prefs.status_bar_visible {
             Display::Flex
         } else {
             Display::None
         };
     }
-    if let (Ok(parent), Ok(row)) = (parents.get(status.0), parents.get(regions.world))
-        && let Ok(items) = children.get(parent.parent())
-        && let (Some(bar), Some(map)) = (
-            items.iter().position(|e| e == status.0),
-            items.iter().position(|e| e == row.parent()),
-        )
-        && (bar > map) != prefs.status_bar_bottom
-    {
-        commands
-            .entity(parent.parent())
-            .insert_children(map, &[status.0]);
-    }
-    let style = prefs.status_bar_style;
-    let parallel = style == StatusBarStyle::Parallel;
-    let height = match style {
-        StatusBarStyle::Compact => 10.,
-        StatusBarStyle::Default => 12.,
-        StatusBarStyle::Large | StatusBarStyle::Parallel => VITAL_HEIGHT,
+    let Some(play) = &owner.play else { return };
+    let Ok((mut node, mut text)) = skills.single_mut() else {
+        return;
     };
-    for (part, mut node) in &mut parts {
-        match part {
-            Part::Vitals => {
-                node.flex_direction = if parallel {
-                    FlexDirection::Column
+    let panel = play.link.skill_progress_panel();
+    let snapshot = panel
+        .complete
+        .map(|complete| complete.trained)
+        .or(panel.snapshot);
+    let labels = oteryn_client_ui::skill_progress::SKILL_LABELS;
+    let values: Vec<_> = snapshot
+        .into_iter()
+        .flat_map(|snapshot| {
+            snapshot
+                .skills
+                .into_iter()
+                .enumerate()
+                .filter_map(|(index, skill)| {
+                    let level = panel
+                        .complete
+                        .and_then(|full| full.current_levels)
+                        .map_or(u32::from(skill.level), |levels| levels[index]);
+                    prefs.status_bar_skills[index].then(|| format!("{} {level}", labels[index]))
+                })
+        })
+        .collect();
+    node.display = if values.is_empty() {
+        Display::None
+    } else {
+        Display::Flex
+    };
+    let next = values.join("   ");
+    if text.0 != next {
+        text.0 = next;
+    }
+}
+
+// Track, body and line filters keep their mutable Node queries disjoint.
+#[allow(clippy::type_complexity)]
+pub(super) fn project_style(
+    owner: NonSend<HostOwner>,
+    mut bodies: Query<&mut Node, (With<BarBody>, Without<BarLine>, Without<VitalTrack>)>,
+    mut lines: Query<(&BarLine, &mut Node), Without<VitalTrack>>,
+    mut tracks: Query<&mut Node, With<VitalTrack>>,
+) {
+    let prefs = &owner.settings.preferences;
+    let parallel = matches!(prefs.status_bar_style, 1 | 3);
+    let large = matches!(prefs.status_bar_style, 2 | 3);
+    let stacked_vitals = prefs.status_bar_style == 3;
+    for mut track in &mut tracks {
+        track.width = percent(if stacked_vitals { 100. } else { 50. });
+        track.height = percent(if stacked_vitals { 50. } else { 100. });
+    }
+    for mut body in &mut bodies {
+        let direction = if parallel {
+            FlexDirection::Row
+        } else {
+            FlexDirection::Column
+        };
+        if body.flex_direction != direction {
+            body.flex_direction = direction;
+        }
+        let wrap = if parallel {
+            FlexWrap::Wrap
+        } else {
+            FlexWrap::NoWrap
+        };
+        if body.flex_wrap != wrap {
+            body.flex_wrap = wrap;
+        }
+    }
+    for (line, mut node) in &mut lines {
+        if matches!(line, BarLine::Vitals) {
+            node.flex_direction = if stacked_vitals {
+                FlexDirection::Column
+            } else {
+                FlexDirection::Row
+            };
+        }
+        let width = if parallel && prefs.status_bar_experience {
+            percent(50.)
+        } else {
+            percent(100.)
+        };
+        let height = px(match line {
+            BarLine::Vitals => {
+                if large {
+                    27.
                 } else {
-                    FlexDirection::Row
-                };
-                node.height = px(if parallel { 2. * height } else { height });
-            }
-            Part::Track => {
-                node.width = percent(if parallel { 100. } else { 50. });
-                node.height = px(height);
-            }
-            Part::Experience => {
-                node.display = if style == StatusBarStyle::Compact {
-                    Display::None
-                } else {
-                    Display::Flex
+                    VITAL_HEIGHT
                 }
             }
+            BarLine::Experience => {
+                if large {
+                    24.
+                } else {
+                    XP_LINE
+                }
+            }
+        });
+        let display = if matches!(line, BarLine::Experience) && !prefs.status_bar_experience {
+            Display::None
+        } else {
+            Display::Flex
+        };
+        if node.width != width {
+            node.width = width;
+        }
+        if node.height != height {
+            node.height = height;
+        }
+        if node.display != display {
+            node.display = display;
         }
     }
 }

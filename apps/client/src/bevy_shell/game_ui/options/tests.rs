@@ -562,6 +562,8 @@ fn console_display_checkboxes_edit_independent_options() -> TestResult {
     Ok(())
 }
 
+mod sound;
+
 #[test]
 fn side_lock_switches_update_the_live_rows_at_each_dock() -> TestResult {
     use crate::play::BarDock;

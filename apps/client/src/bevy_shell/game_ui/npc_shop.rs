@@ -8,6 +8,7 @@ use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::
 use oteryn_client_ui::npc_shop::{LiveShop, NpcTradeSide, Quote};
 use oteryn_client_ui_bevy as source;
 mod conversation;
+mod sales;
 mod submission;
 #[cfg(test)]
 mod tests;
@@ -30,18 +31,31 @@ enum Kind {
     Select(Quote),
     Trade,
     Look,
+    Cyclopedia,
     SellAll,
     Close,
     IgnoreCapacity,
     OnlyOwned,
+    SortName,
+    SortWeight,
+    SortPrice,
     OpenBackpack,
 }
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
+enum Sort {
+    #[default]
+    Name,
+    Price,
+    Weight,
+}
 struct RenderedOffers {
+    sell_items: std::collections::BTreeSet<u32>,
     shop: LiveShop,
     side: Option<NpcTradeSide>,
     query: String,
     selection: Option<Quote>,
     rows: Vec<Quote>,
+    sort: Sort,
 }
 
 #[derive(Resource, Default)]
@@ -53,6 +67,9 @@ struct State {
     feedback: String,
     widgets: Option<widgets::Widgets>,
     rendered: Option<RenderedOffers>,
+    sort: Sort,
+    sale_inventory: Option<(u32, u64)>,
+    sales: std::collections::VecDeque<Quote>,
     pending: Option<submission::Pending>,
     conversation: conversation::Ui,
 }
@@ -74,6 +91,7 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
     };
     if matches!(action.kind, Kind::Close) {
         let visible = play.link.npc_shop_is_open() || play.link.npc_dialogue_is_visible();
+        state.sales.clear();
         play.link.npc_dialogue_close();
         state.selection = None;
         state.conversation = conversation::Ui::default();
@@ -94,6 +112,15 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
             state.side = Some(side);
             state.selection = None;
             state.query.clear();
+            true
+        }
+        Kind::SortPrice | Kind::SortName | Kind::SortWeight => {
+            state.sort = match action.kind {
+                Kind::SortPrice => Sort::Price,
+                Kind::SortWeight => Sort::Weight,
+                _ => Sort::Name,
+            };
+            state.rendered = None;
             true
         }
         Kind::Select(quote) => {
@@ -117,8 +144,41 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
             }
             play.link.npc_shop_options(options)
         }
+        Kind::Cyclopedia => {
+            let Some(quote) = state.selection.filter(|q| panel.live.quotes().contains(q)) else {
+                return false;
+            };
+            if !play
+                .link
+                .inspect(oteryn_client_ui::inspection::Request::Catalogue(quote.item))
+            {
+                return false;
+            }
+            play.link.item_catalogue_set_open(true);
+            true
+        }
         Kind::OpenBackpack => play.link.npc_shop_open_backpack(),
-        Kind::Trade | Kind::Look | Kind::SellAll => {
+        Kind::SellAll => {
+            if !panel.selected || state.side != Some(NpcTradeSide::Sell) || !state.sales.is_empty()
+            {
+                return false;
+            }
+            let mut seen = std::collections::BTreeSet::new();
+            state.sales = sales::eligible(&panel)
+                .filter(|quote| seen.insert(quote.item))
+                .collect();
+            if let Some(first) = state.sales.pop_front() {
+                let sent = play.link.npc_sell_all_request(first);
+                state.sale_inventory = sent.then(|| (first.item, panel.live.owned(first.item)));
+                if !sent {
+                    state.sales.clear();
+                }
+                sent
+            } else {
+                false
+            }
+        }
+        Kind::Trade | Kind::Look => {
             let Some(quote) = state
                 .selection
                 .filter(|quote| panel.live.quotes().contains(quote))
@@ -141,11 +201,6 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
                     play.link.npc_trade_request(quote, amount);
                 }
                 Kind::Look if panel.selected => play.link.npc_shop_look_request(quote),
-                Kind::SellAll
-                    if panel.selected && quote.side == NpcTradeSide::Sell && quote.count == 1 =>
-                {
-                    play.link.npc_sell_all_request(quote)
-                }
                 _ => return false,
             }
             state.feedback.clear();
@@ -168,7 +223,7 @@ fn activate(
     let Ok(action) = actions.get(event.entity) else {
         return;
     };
-    if matches!(action.kind, Kind::Trade | Kind::Look | Kind::SellAll) {
+    if matches!(action.kind, Kind::Trade | Kind::Look) {
         submission::request(&mut owner, &mut state, event.entity, *action, &editors);
         return;
     }
@@ -188,10 +243,26 @@ std::thread_local! {
     static CATALOGUE_PASSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
-fn catalogue_rows(shop: &LiveShop, side: Option<NpcTradeSide>, query: &str) -> Vec<Quote> {
+fn catalogue_rows(
+    shop: &LiveShop,
+    side: Option<NpcTradeSide>,
+    query: &str,
+    sort: Sort,
+) -> Vec<Quote> {
     #[cfg(test)]
     CATALOGUE_PASSES.with(|passes| passes.set(passes.get() + 1));
-    shop.filtered_quotes(side, query)
+    let mut rows = shop.filtered_quotes(side, query);
+    if sort == Sort::Weight {
+        rows.sort_by_key(|quote| shop.total_weight(*quote, 1).unwrap_or(u128::MAX));
+    } else if sort == Sort::Price {
+        rows.sort_by_key(|quote| quote.price);
+    } else {
+        rows.sort_by_cached_key(|quote| {
+            shop.quote_name(*quote)
+                .map_or_else(|| format!("item #{}", quote.item), str::to_lowercase)
+        });
+    }
+    rows
 }
 
 // Carried counts affect captions, search results and the only-owned filter.
@@ -218,7 +289,7 @@ fn inventory_changed_rows(previous: &mut RenderedOffers, current: &LiveShop) -> 
         .filter(|offer| previous.side.is_none_or(|side| offer.side == side))
         .all(|offer| same_count(offer.item_definition_ref))
     {
-        let rows = catalogue_rows(current, previous.side, &previous.query);
+        let rows = catalogue_rows(current, previous.side, &previous.query, previous.sort);
         if previous.query.trim().is_empty()
             || rows != previous.rows
             || !rows.iter().all(|row| same_count(row.item))
@@ -280,6 +351,24 @@ fn project(
         };
         state.widgets = Some(widgets::build(&mut commands, &skins, generation));
     }
+    sales::advance(&mut state, &owner, &play.link, &panel);
+    if panel.live.weight_pending.is_none() {
+        let needed = state
+            .selection
+            .filter(|q| !panel.live.weights.contains_key(&q.item))
+            .or_else(|| {
+                (state.sort == Sort::Weight)
+                    .then(|| {
+                        panel.live.quotes().into_iter().find(|q| {
+                            Some(q.side) == state.side && !panel.live.weights.contains_key(&q.item)
+                        })
+                    })
+                    .flatten()
+            });
+        if let Some(quote) = needed {
+            play.link.npc_request_weight(quote);
+        }
+    }
     let quotes = &panel.live.window.offers;
     if panel.live.window.open.is_some()
         && !quotes.is_empty()
@@ -311,6 +400,7 @@ fn project(
     };
     let State {
         rendered,
+        sort,
         side,
         query,
         selection,
@@ -318,7 +408,8 @@ fn project(
     } = &mut *state;
     let changed_rows = match rendered.as_mut() {
         Some(shown)
-            if shown.shop.window == panel.live.window
+            if (*sort != Sort::Weight || shown.shop.weights == panel.live.weights)
+                && shown.shop.window == panel.live.window
                 && (*side == Some(NpcTradeSide::Buy)
                     || shown.shop.options.only_owned == panel.live.options.only_owned)
                 && shown.side == *side
@@ -327,7 +418,7 @@ fn project(
         {
             inventory_changed_rows(shown, &panel.live)
         }
-        _ => Some(catalogue_rows(&panel.live, *side, query)),
+        _ => Some(catalogue_rows(&panel.live, *side, query, *sort)),
     };
     if let Some(rows) = &changed_rows
         && state.selection.is_some_and(|quote| !rows.contains(&quote))
@@ -342,17 +433,56 @@ fn project(
         };
         text.0 = if checked { "[x]" } else { "[ ]" }.into();
     }
+    let replacing_rows = changed_rows.is_some();
+    if let Some(rows) = changed_rows {
+        commands.entity(widgets.rows).despawn_children();
+        widgets::rows(
+            &mut commands,
+            &skins,
+            widgets.rows,
+            generation,
+            &rows,
+            &panel.live,
+            state.selection,
+        );
+        state.rendered = Some(RenderedOffers {
+            sell_items: quotes
+                .iter()
+                .filter(|offer| offer.side == NpcTradeSide::Sell && offer.count == 1)
+                .map(|offer| offer.item_definition_ref)
+                .collect(),
+            shop: panel.live.clone(),
+            sort: state.sort,
+            side: state.side,
+            query: state.query.clone(),
+            selection: state.selection,
+            rows,
+        });
+    }
     for (entity, action) in &controls {
+        // The query still sees controls whose despawn was queued above.
+        if action.generation != generation
+            || replacing_rows && matches!(action.kind, Kind::Select(_))
+        {
+            continue;
+        }
         let supported = match action.kind {
             Kind::Close => true,
             _ if panel.pending || panel.live.pending || state.pending.is_some() => false,
+            Kind::Cyclopedia => state.selection.is_some() && play.link.inspection_panel().selected,
             Kind::Look => panel.selected && state.selection.is_some(),
             Kind::SellAll => {
                 panel.selected
-                    && state.selection.is_some_and(|quote| {
-                        quote.side == NpcTradeSide::Sell
-                            && quote.count == 1
-                            && !panel.sale_exclusions.contains(&quote.item)
+                    && state.side == Some(NpcTradeSide::Sell)
+                    && panel.live.inventory.as_ref().is_some_and(|inventory| {
+                        inventory.entries.iter().any(|entry| {
+                            let id = entry.item_definition_ref.get();
+                            !panel.sale_exclusions.contains(&id)
+                                && state
+                                    .rendered
+                                    .as_ref()
+                                    .is_some_and(|shown| shown.sell_items.contains(&id))
+                        })
                     })
             }
             Kind::Trade => {
@@ -380,25 +510,6 @@ fn project(
                 commands.entity(entity).remove::<bevy::ui::Checked>();
             }
         }
-    }
-    if let Some(rows) = changed_rows {
-        commands.entity(widgets.rows).despawn_children();
-        widgets::rows(
-            &mut commands,
-            &skins,
-            widgets.rows,
-            generation,
-            &rows,
-            &panel.live,
-            state.selection,
-        );
-        state.rendered = Some(RenderedOffers {
-            shop: panel.live.clone(),
-            side: state.side,
-            query: state.query.clone(),
-            selection: state.selection,
-            rows,
-        });
     }
     let status = if !play.link.npc_shop_is_open() {
         String::new()
@@ -434,6 +545,22 @@ fn project(
         });
     if let Ok(mut caption) = text.get_mut(widgets.price) {
         caption.0 = price;
+        if let Some(weight) = state.selection.and_then(|q| {
+            panel
+                .live
+                .total_weight(q, oteryn_client_ui::npc_shop::parse_amount(&amount)?)
+        }) {
+            caption.0.push_str(&format!(
+                " · Weight {}.{:02} oz",
+                weight / 100,
+                weight % 100
+            ));
+        }
+        if let Some(free) = panel.live.free_capacity {
+            caption
+                .0
+                .push_str(&format!(" · Free {}.{:02} oz", free / 100, free % 100));
+        }
     }
     let balance = panel
         .live

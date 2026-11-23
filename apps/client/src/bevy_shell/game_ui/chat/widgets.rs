@@ -36,10 +36,8 @@ pub(super) struct CopyText(pub(super) String);
 pub(super) mod copy_link;
 pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Res<Skins>) {
     commands.add_observer(
-        |request: On<CopyText>, clipboard: Option<ResMut<bevy::clipboard::Clipboard>>| {
-            if let Some(mut clipboard) = clipboard {
-                let _ = clipboard.set_text(request.0.clone());
-            }
+        |request: On<CopyText>, clipboard: Option<Res<crate::bevy_shell::game_ui::clipboard_writer::ClipboardWriter>>| {
+            if let Some(clipboard) = clipboard { clipboard.write(request.0.clone()); }
         },
     );
     let root = commands

@@ -3,6 +3,8 @@ use crate::play::{
     mailbox::{Mailbox, lock},
 };
 use oteryn_session::{NpcIntentDisposition, SessionEvent, npc_service};
+#[path = "weights.rs"]
+mod weights;
 impl Outbox {
     pub(in crate::play) fn npc_shop_initialize<T: Stepper>(&self, session: &T) {
         let mut mailbox = lock(&self.0);
@@ -199,6 +201,13 @@ impl Mailbox {
 
 #[cfg(all(test, bevy_shell))]
 impl Outbox {
+    pub(crate) fn bevy_npc_sale_accepted(&self) {
+        use oteryn_client_runtime::npc_shop::{CommandStatus, NpcShopResponse, npc_shop::NpcShopResult};
+        self.npc_shop_result(&NpcShopResponse {
+            status: CommandStatus::Accepted,
+            result: Some(NpcShopResult { disposition: NpcIntentDisposition::Ok, look_text: String::new(), sold_units: 3, total_gold_units: 21 }),
+        });
+    }
     pub(crate) fn bevy_npc_shop_supported(&self) {
         let mut mailbox = lock(&self.0);
         mailbox.npc_shop.selected = true;

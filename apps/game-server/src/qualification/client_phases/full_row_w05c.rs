@@ -15,20 +15,33 @@
 //!    must survive the player session boundary (there is no player-owned state
 //!    to persist for this world schedule).
 //!
-//! The audit also names sunrise/sunset NPCs as an unimplemented remainder.
-//! This journey therefore qualifies the row's implemented weekday lifecycle;
-//! it never changes the clock or claims day/night coverage from source text.
+//! 5. Walk to Fitzmaurice's placement and observe his presence change with
+//!    a native day/night clock transition.
 
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, SessionEvent};
+use oteryn_dev_client::{
+    DevClientSession, EntityKind, EntityRef, SessionEvent, WorldSpatialEntity,
+};
 use oteryn_protocol_oteryn::npc_service as npc;
 use std::collections::{BTreeMap, VecDeque};
+
+// Crystal 201189f8, data-global/scripts/world_changes/spawns_npc_by_time.lua:101-106.
+// The served clock-driven placement owner is bundle_npcs.rs:238.
+const FITZMAURICE: TilePos = TilePos {
+    x: 32_411,
+    y: 32_486,
+    floor: -7,
+};
+const DAY_NIGHT_ACTION: &str = "day-night-spawn-transition";
+const DAY_NIGHT_OWNER: &str = "apps/game-server/src/node/serve/bundle_npcs.rs:238";
+const W05C_BUDGET_SECONDS: u64 = 3_600;
 
 const ACTIONS: &[&str] = &[
     "walk-weekday-destination",
     "weekday-dialogue-trade",
     "out-of-range-refusal",
     "fresh-admission-weekday-trade",
+    DAY_NIGHT_ACTION,
 ];
 
 struct Row {
@@ -54,12 +67,18 @@ impl Row {
         }
     }
 
+    fn is_complete(&self) -> bool {
+        self.failure.is_none() && ACTIONS.iter().all(|action| self.passed.contains(action))
+    }
+
     fn finish(mut self, result: TestResult) {
         if let Err(error) = result {
             self.failure = Some(error.to_string());
         }
-        let complete =
-            self.failure.is_none() && ACTIONS.iter().all(|action| self.passed.contains(action));
+        let complete = self.is_complete();
+        if let Some(failure) = &self.failure {
+            evidence(&format!("W05c_GAP {failure}"));
+        }
         let evidence_suffix = self
             .failure
             .as_deref()
@@ -88,12 +107,14 @@ fn compact(value: &str) -> String {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(1_800), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(W05C_BUDGET_SECONDS),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     row.finish(match result {
         Ok(result) => result,
-        Err(_) => {
-            Err("step=journey observed=timeout-1800s need=reachable-weekday-NPC-route".into())
-        }
+        Err(_) => Err(format!("step=journey observed=timeout-{W05C_BUDGET_SECONDS}s").into()),
     });
 }
 
@@ -115,6 +136,17 @@ fn today() -> TestResult<oteryn_gameplay_entities::rashid_schedule::RashidDestin
     Ok(oteryn_gameplay_entities::rashid_schedule::destination_at(
         i64::try_from(elapsed.as_millis())?,
     ))
+}
+
+pub(super) fn destination_tile(
+    destination: oteryn_gameplay_entities::rashid_schedule::RashidDestination,
+) -> TilePos {
+    let placement = destination.placement;
+    TilePos {
+        x: placement.x,
+        y: placement.y,
+        floor: placement.floor,
+    }
 }
 
 fn full_route(world: &BundleWorld, from: TilePos, goal: TilePos) -> Option<Vec<StepDirection>> {
@@ -149,34 +181,58 @@ fn full_route(world: &BundleWorld, from: TilePos, goal: TilePos) -> Option<Vec<S
     None
 }
 
-async fn approach(
+fn rashid_wander_area(at: TilePos, target: TilePos) -> bool {
+    at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3
+}
+
+fn rashid_at(entity: &WorldSpatialEntity, target: TilePos) -> bool {
+    entity.kind == EntityKind::Npc
+        && tile(entity.position).is_ok_and(|at| rashid_wander_area(at, target))
+        && entity
+            .display_name
+            .is_some_and(|name| name.as_str() == Ok("Rashid"))
+}
+
+pub(super) async fn approach(
     client: &mut DevClientSession,
     world: &BundleWorld,
     target: TilePos,
 ) -> TestResult<EntityRef> {
     let start = tile(client.world_spatial().actor_position)?;
+    if world.base().tile(target.x, target.y, target.floor).is_none() {
+        return Err(format!(
+            "step=walk-weekday-destination observed=Rashid-placement-outside-served-map to={target:?} source=tools/qualification/node_boot/run.sh:139"
+        ).into());
+    }
     let path = full_route(world, start, target).ok_or_else(|| {
         format!("step=walk-weekday-destination observed=no-route from={start:?} to={target:?} need=player-reachable-Rashid-placement")
     })?;
     walk(client, world, &path).await.map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!(
             "step=walk-weekday-destination observed={error} need=accepted-STEP-and-spatial-delta"
         ), error) })?;
-    let entities = client.world_entities().ok_or_else(|| {
-        format!("step=observe-weekday-spawn observed=missing-world-entities need=exactly-one-NPC-at-{target:?}")
-    })?;
-    let mut matches = entities
-        .iter()
-        .filter(|entry| entry.kind == EntityKind::Npc && tile(entry.position).ok() == Some(target));
-    let actor = matches.next().map(|entry| entry.entity);
-    let extra = matches.count();
-    match (actor, extra) {
-        (Some(actor), 0) => Ok(actor),
-        (actor, extra) => Err(format!(
-            "step=observe-weekday-spawn observed=npc-count-{}-at-{target:?} need=exactly-one-Rashid-actor",
-            usize::from(actor.is_some()) + extra
-        )
-        .into()),
+    for _ in 0..8 {
+        let actor = {
+            let entities = client.world_entities().ok_or("step=observe-weekday-spawn observed=missing-world-entities")?;
+            let mut matches = entities.iter().filter(|entry| rashid_at(entry, target));
+            let actor = matches.next().copied().ok_or_else(|| {
+                format!("step=observe-weekday-spawn observed=Rashid-not-visible within-three-tiles-of={target:?}")
+            })?;
+            if matches.next().is_some() {
+                return Err("step=observe-weekday-spawn observed=duplicate-Rashid-actors".into());
+            }
+            actor
+        };
+        let here = tile(client.world_spatial().actor_position)?;
+        let at = tile(actor.position)?;
+        if rashid_wander_area(here, at) {
+            return Ok(actor.entity);
+        }
+        let path = full_route(world, here, at)
+            .ok_or("step=approach-Rashid observed=no-route-to-visible-actor")?;
+        let direction = path.first().ok_or("step=approach-Rashid observed=no-approach-step")?;
+        walk(client, world, &[*direction]).await?;
     }
+    Err("step=approach-Rashid observed=actor-remained-out-of-talk-range".into())
 }
 
 async fn talk(client: &mut DevClientSession, actor: EntityRef, text: &str) -> TestResult<u64> {
@@ -238,6 +294,15 @@ async fn open_trade(client: &mut DevClientSession, actor: EntityRef) -> TestResu
     Ok(())
 }
 
+fn outside_rashid_range(at: TilePos, anchor: TilePos) -> bool {
+    at.floor == anchor.floor
+        && u32::from(at.x.abs_diff(anchor.x).max(at.y.abs_diff(anchor.y))) > npc::TALK_RANGE_TILES + 3
+}
+
+fn range_refused(status: CommandStatus, disposition: npc::NpcIntentDisposition) -> bool {
+    status == CommandStatus::Rejected && disposition == npc::NpcIntentDisposition::NotInRange
+}
+
 async fn refusal(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -245,14 +310,7 @@ async fn refusal(
     npc_position: TilePos,
 ) -> TestResult {
     let origin = tile(client.world_spatial().actor_position)?;
-    let path = route(world, origin, |at| {
-        at.floor == npc_position.floor
-            && at
-                .x
-                .abs_diff(npc_position.x)
-                .max(at.y.abs_diff(npc_position.y))
-                > 4
-    })
+    let path = route(world, origin, |at| outside_rashid_range(at, npc_position))
     .ok_or("step=leave-range observed=no-route need=walkable-tile-beyond-NPC-range")?;
     walk(client, world, &path).await?;
     client.take_events();
@@ -271,8 +329,8 @@ async fn refusal(
         .await?;
     let disposition = npc::decode_npc_intent_result(&reply.payload)
         .map_err(|error| format!("refusal reply: {error:?}"))?;
-    if reply.status != CommandStatus::Rejected || disposition == npc::NpcIntentDisposition::Ok {
-        return Err(format!("step=out-of-range-refusal observed=status:{:?},reply:{disposition:?} need=Rejected/non-Ok", reply.status).into());
+    if !range_refused(reply.status, disposition) {
+        return Err(format!("step=out-of-range-refusal observed=status:{:?},reply:{disposition:?} need=Rejected/NotInRange", reply.status).into());
     }
     client.service_liveness(Duration::from_millis(250)).await?;
     let trade_window = client
@@ -288,7 +346,7 @@ async fn refusal(
         });
     if let Some(delta) = trade_window {
         return Err(format!(
-            "step=out-of-range-refusal observed=status:{:?},reply:{disposition:?},new-trade-window:{:?} need=Rejected/non-Ok-without-new-trade-window",
+            "step=out-of-range-refusal observed=status:{:?},reply:{disposition:?},new-trade-window:{:?} need=Rejected/NotInRange-without-new-trade-window",
             reply.status, delta.value
         )
         .into());
@@ -304,15 +362,127 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn fitzmaurice_at(
+    entities: impl Iterator<Item = WorldSpatialEntity>,
+) -> TestResult<Option<EntityRef>> {
+    let mut matching = entities.filter(|entity| {
+        entity.kind == EntityKind::Npc
+            && entity
+                .display_name
+                .is_some_and(|name| name.as_str() == Ok("Fitzmaurice"))
+    });
+    let Some(resident) = matching.next() else {
+        return Ok(None);
+    };
+    let at = tile(resident.position)?;
+    if matching.next().is_some()
+        || at.floor != FITZMAURICE.floor
+        || at
+            .x
+            .abs_diff(FITZMAURICE.x)
+            .max(at.y.abs_diff(FITZMAURICE.y))
+            > 2
+    {
+        return Err(format!("step={DAY_NIGHT_ACTION} observed=duplicate-or-misplaced-Fitzmaurice at={at:?} source={DAY_NIGHT_OWNER}").into());
+    }
+    Ok(Some(resident.entity))
+}
+
+async fn observe_day_night_transition(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult {
+    use oteryn_gameplay_world::world_clock::{SUNRISE_START, SUNSET_START, in_world_time};
+    use oteryn_protocol_oteryn::{
+        entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2, world_clock::CAPABILITY_WORLD_LIGHT_V1,
+    };
+
+    verdict::Harness::global().progress(DAY_NIGHT_ACTION);
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = full_route(world, from, FITZMAURICE).ok_or_else(|| {
+        format!("step={DAY_NIGHT_ACTION} observed=no-walkable-route from={from:?} to={FITZMAURICE:?} need=player-access-to-Fitzmaurice source={DAY_NIGHT_OWNER}")
+    })?;
+    walk(client, world, &path).await?;
+    if ![
+        CAPABILITY_WORLD_LIGHT_V1,
+        CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+    ]
+    .iter()
+    .all(|capability| client.selected_capabilities().contains(capability))
+    {
+        return Err(format!("step={DAY_NIGHT_ACTION} observed=missing-world-clock-or-entity-name-capability source={DAY_NIGHT_OWNER}").into());
+    }
+
+    client.take_events();
+    let mut is_day = None;
+    let mut initial = None;
+    // The clock publishes a delta at least once per Tibian hour (150 real seconds).
+    let now = tokio::time::Instant::now();
+    let mut deadline = now + Duration::from_secs(180);
+    let activity_interval = Duration::from_secs(600);
+    let mut next_activity = now + activity_interval;
+    verdict::Harness::global().bounded_wait(deadline, DAY_NIGHT_ACTION);
+    while tokio::time::Instant::now() < deadline {
+        if tokio::time::Instant::now() >= next_activity {
+            // A night can outlast the gameplay idle limit even while transport pings succeed.
+            let cleared = client.session_mut().attack_target(None).await?;
+            if cleared.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+                return Err(format!("step={DAY_NIGHT_ACTION} observed=attack-clear-refused reply={cleared:?} source={DAY_NIGHT_OWNER}").into());
+            }
+            next_activity = tokio::time::Instant::now() + activity_interval;
+        }
+        client.service_liveness(Duration::from_secs(1)).await?;
+        for event in client.take_events() {
+            if let SessionEvent::WorldClock(delta) = event {
+                is_day = Some(in_world_time(
+                    u32::from(delta.value.tibian_minute),
+                    SUNRISE_START,
+                    SUNSET_START,
+                ));
+            }
+        }
+        let entities = client
+            .world_entities()
+            .ok_or("day-night observation has no spatial entities")?;
+        let observed = fitzmaurice_at(entities.iter().copied())?;
+        if let Some(day) = is_day
+            && observed.is_some() != day
+        {
+            if let Some(first_day) = initial {
+                if day != first_day {
+                    return Ok(());
+                }
+            } else {
+                initial = Some(day);
+                // Sunset to sunrise is 750 world minutes, or 31m15s in real time.
+                deadline = tokio::time::Instant::now() + Duration::from_secs(1_920);
+                verdict::Harness::global().bounded_wait(deadline, DAY_NIGHT_ACTION);
+            }
+        }
+    }
+    Err(format!(
+        "step={DAY_NIGHT_ACTION} observed=clock-day:{is_day:?},initial-day:{initial:?} need=Fitzmaurice-present-at-night-and-absent-by-day source={DAY_NIGHT_OWNER}"
+    ).into())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = qualification_world(clients)?;
-    let destination = today()?.placement;
-    let target = TilePos {
-        x: destination.x,
-        y: destination.y,
-        floor: -destination.floor,
-    };
     let mut client = connect_world(clients, 0xe5).await?;
+    let target = destination_tile(today()?);
+    // A missing weekday destination does not prevent observing the timed NPC.
+    if world.base().tile(target.x, target.y, target.floor).is_none() {
+        let weekday = approach(&mut client, world, target).await;
+        let timed = observe_day_night_transition(&mut client, world).await;
+        if timed.is_ok() {
+            row.pass(DAY_NIGHT_ACTION);
+        } else if let Err(error) = timed {
+            evidence(&format!("W05c_GAP step={DAY_NIGHT_ACTION} observed={error}"));
+        }
+        if let Err(error) = logout(&mut client).await {
+            evidence(&format!("W05c_GAP step=logout observed={error}"));
+        }
+        return weekday.map(|_| ());
+    }
     let first_session = client.join_snapshot().game_session_id;
     let actor = approach(&mut client, world, target).await?;
     row.pass("walk-weekday-destination");
@@ -327,15 +497,67 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == first_session {
         return Err("step=fresh-admission observed=reused-game-session need=new-session".into());
     }
-    let actor = approach(&mut fresh, world, target).await?;
+    let fresh_target = destination_tile(today()?);
+    let actor = approach(&mut fresh, world, fresh_target).await?;
     open_trade(&mut fresh, actor).await?;
     row.pass("fresh-admission-weekday-trade");
-    logout(&mut fresh).await
+    let timed = observe_day_night_transition(&mut fresh, world).await;
+    let cleanup = logout(&mut fresh).await;
+    timed?;
+    row.pass(DAY_NIGHT_ACTION);
+    cleanup
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn review_rashid_refusal_covers_the_whole_wander_area() {
+        let anchor = TilePos { x: 100, y: 100, floor: -7 };
+        assert!(!outside_rashid_range(TilePos { x: 107, ..anchor }, anchor));
+        assert!(outside_rashid_range(TilePos { x: 108, ..anchor }, anchor));
+        assert!(range_refused(CommandStatus::Rejected, npc::NpcIntentDisposition::NotInRange));
+        assert!(!range_refused(CommandStatus::Rejected, npc::NpcIntentDisposition::RateLimited));
+    }
+
+    #[test]
+    fn rashid_can_wander_three_tiles_on_the_scheduled_floor() {
+        let target = TilePos { x: 32328, y: 31782, floor: -6 };
+        assert!(rashid_wander_area(TilePos { x: 32331, y: 31779, ..target }, target));
+        assert!(!rashid_wander_area(TilePos { x: 32332, ..target }, target));
+        assert!(!rashid_wander_area(TilePos { floor: -7, ..target }, target));
+    }
+
+    #[test]
+    fn rashid_route_uses_the_authored_signed_floor() {
+        use oteryn_gameplay_entities::rashid_schedule::destination_at;
+
+        let thursday = destination_at(0);
+        assert_eq!(
+            destination_tile(thursday),
+            TilePos {
+                x: 33_066,
+                y: 32_879,
+                floor: -6,
+            }
+        );
+    }
+
+    #[test]
+    fn weekday_trade_alone_does_not_qualify_day_night_spawns() {
+        let mut row = Row::new();
+        for action in ACTIONS
+            .iter()
+            .copied()
+            .filter(|action| *action != DAY_NIGHT_ACTION)
+        {
+            row.pass(action);
+        }
+        assert!(!row.is_complete());
+        row.pass(DAY_NIGHT_ACTION);
+        assert!(row.is_complete());
+    }
 
     #[test]
     fn verdict_requires_each_lifecycle_action() {

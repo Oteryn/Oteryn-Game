@@ -343,14 +343,14 @@ pub(super) fn page(
     }
     for row in metadata::rows(page) {
         let entity = match row.editor {
-            Editor::Check { read, .. } => checkbox(
+            Editor::Check { .. } => checkbox(
                 commands,
                 skins,
                 checks,
                 (oteryn_client_ui::localization::tr(row.label), row.id),
                 Control::Check(row.id),
                 true,
-                read(draft),
+                row.value(draft) == Value::Check(true),
             ),
             Editor::Number { read, min, max, .. } => {
                 rows::number(commands, skins, *row, min, max, read(draft))
@@ -359,6 +359,11 @@ pub(super) fn page(
                 rows::choice(commands, skins, *row, values, read(draft))
             }
         };
+        if !row.enabled(draft) {
+            commands
+                .entity(entity)
+                .insert(bevy::ui::InteractionDisabled);
+        }
         let entity = help::wrap(commands, skins, *row, entity);
         commands.entity(parent).add_child(entity);
     }

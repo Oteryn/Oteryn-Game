@@ -109,8 +109,9 @@ pub(super) fn install(app: &mut App) {
             battle::portrait::project,
             status_icons::project,
             top_bar::equipped_weapon,
-            top_bar::layout,
             top_bar::project,
+            top_bar::project_skills,
+            top_bar::project_style,
         )
             .chain(),
     )
@@ -469,6 +470,7 @@ mod tests;
 
 #[derive(Component)]
 struct VipNameLabel {
+    group: Option<u8>,
     generation: u64,
     entry: u64,
 }

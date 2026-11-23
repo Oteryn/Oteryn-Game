@@ -61,13 +61,24 @@ impl Journey {
             "FAIL"
         };
         let detail = match result {
-            Ok(()) => "all-eight-player-steps-observed".to_owned(),
+            Ok(()) => step_detail(self.completed),
             Err(error) => compact(&error.to_string()),
         };
+        if status == "FAIL" {
+            evidence(&format!("W17_GAP {detail}"));
+        }
         evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W17.full status={status} seconds={:.3} evidence={detail}",
             self.started.elapsed().as_secs_f64()
         ));
+    }
+}
+
+fn step_detail(completed: usize) -> String {
+    if completed == 8 {
+        "all-eight-player-steps-observed".to_owned()
+    } else {
+        format!("step-{}-not-observed", completed + 1)
     }
 }
 
@@ -134,6 +145,10 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn arena_entrance(at: TilePos) -> bool {
+    at.floor == -6 && (32220..=32260).contains(&at.x) && (31080..=31105).contains(&at.y)
+}
+
 async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xb7).await?;
     if !client.selected_capabilities().contains(&wire::CAPABILITY_ARENA_V1) {
@@ -198,7 +213,24 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
 
-    let entered = command(&mut client, ArenaAction::Enter).await?;
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, arena_entrance);
+    if let Some(path) = &path {
+        walk(&mut client, world, path).await?;
+    }
+    let entered = probe_entry(
+        path.is_some(),
+        after_relog.state,
+        command(&mut client, ArenaAction::Enter),
+    ).await?;
     if entered.disposition != ArenaDisposition::Applied
         || entered.state.active_rank == 0
         || entered.state.pit != 1
@@ -216,15 +248,52 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let premature = command(&mut client, ArenaAction::Advance).await?;
     if premature.disposition == ArenaDisposition::WrongState && premature.state == entered.state {
         return Err(format!(
-            "step-5 Advance-after-Enter observed={premature:?}; server-needs=arena-opponent-exposed-to-native-client-combat-journey"
+            "step-5 Advance-after-Enter observed={premature:?}; need=credited-arena-opponent-kill-before-Advance"
         ).into());
     }
     Err(format!("step-5 unexpected Advance-after-Enter observed={premature:?}").into())
 }
 
+async fn probe_entry(
+    route_found: bool,
+    before: ArenaState,
+    send: impl std::future::Future<Output = TestResult<wire::ArenaResult>>,
+) -> TestResult<wire::ArenaResult> {
+    let reply = send.await?;
+    if !route_found {
+        if reply.disposition != ArenaDisposition::WrongState || reply.state != before {
+            return Err(format!("step-4 off-site Enter expected unchanged WrongState; observed={reply:?} before={before:?}").into());
+        }
+        return Err("step-4 Enter observed=WrongState with unchanged arena state; need=starter route to Svargrond entrance x=32220..32260,y=31080..31105,floor=6".into());
+    }
+    Ok(reply)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn review_regression_missing_route_still_sends_enter() -> TestResult {
+        let mut sent = false;
+        let state = ArenaState::default();
+        let reply = wire::ArenaResult { disposition: ArenaDisposition::WrongState, state };
+        let result = probe_entry(false, state, async {
+            sent = true;
+            Ok(reply)
+        }).await;
+        assert!(sent);
+        assert!(result.err().is_some_and(|error| error.to_string().contains("observed=WrongState")));
+        assert_eq!(probe_entry(true, state, async { Ok(reply) }).await?, reply);
+        Ok(())
+    }
+
+
+    #[test]
+    fn journey_regression_names_the_first_unobserved_arena_step() {
+        assert_eq!(step_detail(3), "step-4-not-observed");
+        assert_eq!(step_detail(8), "all-eight-player-steps-observed");
+    }
 
     #[test]
     fn compact_evidence_is_one_token() {

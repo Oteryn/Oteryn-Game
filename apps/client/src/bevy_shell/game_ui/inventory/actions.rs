@@ -98,7 +98,16 @@ pub(super) fn click(
                 .clamp(0., (window.width() - 145. * scale.0).max(0.));
             position.y = position.y.clamp(
                 0.,
-                (window.height() - super::dialogs::menu_height(extra) * scale.0).max(0.),
+                (window.height()
+                    - super::dialogs::menu_height(
+                        *slot,
+                        extra,
+                        owner
+                            .play
+                            .as_ref()
+                            .and_then(|play| slot.parent_container(&play.link.container_panel())),
+                    ) * scale.0)
+                    .max(0.),
             );
         }
         ui.menu = Some((*slot, position));
@@ -205,13 +214,32 @@ pub(super) fn choose(control: Control, owner: &HostOwner, ui: &mut InventoryUi) 
         return;
     }
     match control {
-        Control::Open(slot) => {
+        Control::Open(slot) | Control::OpenSeparate(slot) => {
             if let Some(item) = slot.current_item(owner)
                 && let Some(play) = &owner.play
             {
-                play.link.container_open(item.handle);
+                if let Location::Container { view, handle } = slot.location {
+                    play.link.container_open_nested(
+                        view,
+                        handle,
+                        item.handle,
+                        matches!(control, Control::OpenSeparate(_)),
+                    );
+                } else {
+                    play.link.container_open(item.handle);
+                }
                 ui.menu = None;
             }
+        }
+        Control::MoveUp(slot, parent) => {
+            if let Some(play) = &owner.play
+                && let Some(item) = slot.current_item(owner)
+                && let Location::Container { view, handle } = slot.location
+            {
+                play.link
+                    .container_move_to_parent(view, handle, item.handle, parent);
+            }
+            ui.menu = None;
         }
         Control::Context(slot, action) => {
             if let Some(item) = slot.current_item(owner)

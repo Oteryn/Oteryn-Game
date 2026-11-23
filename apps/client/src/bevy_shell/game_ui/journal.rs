@@ -2,6 +2,7 @@
 mod actions;
 mod model;
 mod submission;
+mod tracker;
 mod widgets;
 use super::modal::ModalGuard;
 use super::{
@@ -40,6 +41,11 @@ enum Kind {
     Cast,
     Castable,
     Close,
+    ClearTracker,
+    CleanTracker,
+    HideQuest,
+    Pin,
+    ShowHidden,
     Completed,
     Refresh,
     Search,
@@ -51,6 +57,7 @@ enum Kind {
     Previous,
     Next,
     Vocation,
+    MyVocation,
     Premium,
     Group,
     Assign(usize),
@@ -84,6 +91,7 @@ struct QuestCache {
 
 #[derive(Resource, Default)]
 struct State {
+    displayed_quest: Option<u32>,
     key: Option<Key>,
     tab: Tab,
     widgets: Option<widgets::Widgets>,
@@ -116,6 +124,7 @@ pub(super) fn open_spells(owner: &mut HostOwner) {
     }
 }
 pub(super) fn install(app: &mut App) {
+    tracker::install(app);
     app.init_resource::<State>()
         .add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, (keyboard, project, refresh_labels).chain())
@@ -185,7 +194,7 @@ fn project(
     }
     let book = play.link.spellbook_state();
     let catalogue = play.link.spell_catalog_panel();
-    let q = quests.open || quests.tracker_open;
+    let q = quests.open;
     let s = book.open || catalogue.open || catalogue.archive_open;
     if !q && !s {
         hide(
@@ -273,6 +282,7 @@ fn project(
         );
         &spells
     };
+    state.displayed_quest = quests.journal_line().map(|line| line.quest_index);
     state.selected_spell = projection.selected_spell;
     if state.rows != projection.rows {
         commands.entity(widgets.rows).despawn_children();
@@ -413,6 +423,7 @@ fn refresh_labels(
             .into(),
             Kind::Sort => oteryn_client_ui::quest_log::QUEST_SORT_LABELS[sort].into(),
             Kind::Castable => "Only castable level".into(),
+            Kind::MyVocation => "My vocation".into(),
             Kind::Vocation if !book.selected => catalogue
                 .vocation
                 .clone()
@@ -510,7 +521,7 @@ fn fallback_controls(commands: &mut Commands, skin: &Skins, parent: Entity, key:
         })
         .id();
     commands.entity(parent).add_child(row);
-    for kind in [Kind::Vocation, Kind::Group, Kind::Premium] {
+    for kind in [Kind::MyVocation, Kind::Vocation, Kind::Group, Kind::Premium] {
         let button = commands
             .spawn((
                 source::button(skin.buttons.clone(), 220.),
