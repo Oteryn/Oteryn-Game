@@ -1820,6 +1820,48 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 #[cfg(test)]
 mod tests {
     #[test]
+    fn fiend_commission_accepts_the_forgemaster_reward_flag() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let commission = callbacks
+            .iter()
+            .find(|callback| callback.key == "oteryn:quest-reward/questpc7-fiend-commission")
+            .ok_or("fiend commission")?;
+        let requirements = commission
+            .requirements
+            .as_ref()
+            .ok_or("commission requirements")?;
+        assert!(requirements.completed_quests.is_empty());
+        assert!(requirements.premium);
+        assert_eq!(requirements.min_level, 250);
+
+        let catalogue = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let [gate] = commission.requires.as_slice() else {
+            return Err("expected one reward predicate".into());
+        };
+        let claimed = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .world_claim
+                    .as_ref()
+                    .is_some_and(|claim| claim.key == "oteryn:reward-claim.nrwicked-forgemaster")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(claimed.len(), 11);
+        assert!(!gate.holds(catalogue.catalogue(), &std::collections::BTreeMap::new()));
+        for reward in claimed {
+            let [write] = reward.storage.as_slice() else {
+                return Err("expected one Forgemaster reward write".into());
+            };
+            assert_eq!(write.track, gate.track);
+            let tracks = std::collections::BTreeMap::from([(write.track.clone(), write.set)]);
+            assert!(gate.holds(catalogue.catalogue(), &tracks));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
         let mut callback = super::parse(include_str!(
             "../../../../../content/quests/shared-reward-callbacks.json"
