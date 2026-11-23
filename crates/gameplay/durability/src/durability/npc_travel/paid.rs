@@ -77,7 +77,21 @@ async fn quote(
     fence: CurrentCharacterGameplayFence,
     route: &TravelRoute,
 ) -> Result<Result<u64, TravelRefusal>, DurabilityError> {
-    if route.held
+    // The catalogue holds these partial routes until their World-change owners
+    // exist. Admit only the routes covered by the contribution owner, with the
+    // exact catalogue requirements this owner supersedes.
+    let (authored_holds, contribution_gates): (&[&str], &[&str]) =
+        match (route.service.as_str(), route.route.key.as_str()) {
+            ("oteryn:service.travel.junkar_thais", "kazordoon") =>
+                (&["awash", "steamship"], &["steamship"]),
+            ("oteryn:service.travel.junkar_thais", "robsons_isle") =>
+                (&["awash"], &["steamship", "awash"]),
+            ("oteryn:service.travel.junkar_thais" | "oteryn:service.travel.junkar_robsons", "mines") =>
+                (&["awash"], &["awash"]),
+            _ => (&[], &[]),
+        };
+    let contribution_owns_hold = !authored_holds.is_empty() && route.world_changes == authored_holds;
+    if (route.held && !contribution_owns_hold)
         || route.route.price > 1_000_000
         || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
     {
@@ -91,16 +105,12 @@ async fn quote(
         }
     }
     let world = fence.runtime_scope.world_id();
-    for gate in match (route.service.as_str(), route.route.key.as_str()) {
-        ("oteryn:service.travel.junkar_thais", "kazordoon") => &["steamship"][..],
-        ("oteryn:service.travel.junkar_thais", "robsons_isle") => &["steamship", "awash"],
-        ("oteryn:service.travel.junkar_thais" | "oteryn:service.travel.junkar_robsons", "mines") => &["awash"],
-        _ => &[],
-    }
-    .iter()
-    .copied()
-    .chain(route.world_changes.iter().map(String::as_str))
-    {
+    let authored_gates = route.world_changes.iter().map(String::as_str);
+    let gates = contribution_gates
+        .iter()
+        .copied()
+        .chain(authored_gates.filter(|_| !contribution_owns_hold));
+    for gate in gates {
         if !crate::durability::world_event::change_active(tx, world, gate).await? {
             return Ok(Err(TravelRefusal::UnavailableRoute));
         }

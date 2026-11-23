@@ -99,11 +99,16 @@ pub(super) async fn exchange(
         for (offset, request) in requests(&shown)?.into_iter().enumerate() {
             let command_id = current.continuity.next_command_id + u64::try_from(offset)?;
             let payload = encode_quick_loot_request(&request).map_err(debug)?;
+            let command_type = if request.corpse.is_some() || request.recipient_id.is_some() {
+                COMMAND_TYPE_QUICK_LOOT_TARGET_HANDLES
+            } else {
+                COMMAND_TYPE_QUICK_LOOT
+            };
             let frame = protocol::encode_client_command(
                 current.continuity.connection_generation,
                 &protocol::ClientCommandValue {
                     command_id,
-                    command_type: COMMAND_TYPE_QUICK_LOOT,
+                    command_type,
                     payload: &payload,
                 },
             )

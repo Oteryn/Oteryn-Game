@@ -259,7 +259,10 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
         admitted.item_fence = Some(fence);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 98])
+            SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, 98, CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1],
+            )
                 .ok_or("capabilities")?;
         assert!(admitted.continuity.selected_capabilities.contains(98));
         let corpse_identity = {
@@ -553,7 +556,7 @@ fn scenario_with_pouch(pouch: bool, fence_case: Option<session_fence::FenceCase>
         // before its first command. Inject the stale fence at the Quick Loot owner.
         assert_eq!(
             owner
-                .quick_loot(stale_admitted, admitted.continuity.next_command_id, all, None)
+                .quick_loot(stale_admitted, admitted.continuity.next_command_id, all, None, false)
                 .await
                 .map(|result| result.0),
             Some(CommandStatus::Rejected)

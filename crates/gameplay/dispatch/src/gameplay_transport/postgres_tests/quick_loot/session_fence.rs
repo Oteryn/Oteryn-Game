@@ -145,6 +145,7 @@ impl FenceCase {
                         admitted.continuity.next_command_id,
                         click(encode_target_handle(handle)),
                         Some(&view),
+                        true,
                     )
                     .await
                     .ok_or("Quick Loot outcome")?;

@@ -75,7 +75,7 @@ pub async fn run_session<T: Stepper>(
                             292 => outbox.cast_consent_result(&response),
                             64 => outbox.target_move_result(&request, &response),
                             82 => outbox.creature_push_result(&response),
-                            98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
+                            98 | 132 | 200 | 232 | 285 | oteryn_client_ui::quick_loot::CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1 => outbox.discovery_result(request.capability, &response),
                             9 => outbox.highscores_result(&response),
                             14 => outbox.browse_field_result(&response),
                             152 => outbox.item_forge_result(&response),

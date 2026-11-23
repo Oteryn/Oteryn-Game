@@ -400,7 +400,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let credits_boss_objective =
             oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_some()
                 || entry.creature == oteryn_gameplay_quests::quest::death_objectives::GRAVE_NICTROS
-                    && super::quest_kill_objectives::has_grave_boss_credit(entry);
+                    && crate::gameplay_transport::quest_kill_objectives::has_grave_boss_credit(
+                        entry,
+                    );
         if entry.boss_reward.is_none() && entry.boss_outfit.is_none() {
             if credits_boss_objective {
                 let _ = entry.boss_reward_plan.set(

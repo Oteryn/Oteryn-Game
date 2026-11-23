@@ -54,7 +54,9 @@ pub const MAGIC: &[u8; 4] = b"OTWB";
 /// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
 /// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
 /// from the previous value lacks; it never goes down (decision ARCH-WORLD-CONTENT-SERVE-1 §1.2).
-pub const RUNTIME_VERSION: u32 = 4;
+pub const RUNTIME_VERSION: u32 = WEIGHTED_SPAWN_RUNTIME_VERSION;
+pub const BASE_RUNTIME_VERSION: u32 = 4;
+pub const WEIGHTED_SPAWN_RUNTIME_VERSION: u32 = 5;
 /// The sorted, unique capabilities the node implements. A PR adds a value only with the runtime
 /// code that implements it. Empty today.
 pub const SUPPORTED_CAPABILITIES: &[&str] = &["source-static-surfaces-v1"];
@@ -230,7 +232,7 @@ pub struct Identity {
     pub provenance_summary: String,
 }
 
-/// Empty values, except `min_runtime_version`, which is this node's [`RUNTIME_VERSION`] so a
+/// Empty values, except `min_runtime_version`, which starts at [`BASE_RUNTIME_VERSION`] so a
 /// default identity passes [`validate_manifest`].
 impl Default for Identity {
     fn default() -> Self {
@@ -239,7 +241,7 @@ impl Default for Identity {
             world_schema_version: String::new(),
             content_revision: String::new(),
             content_lock_digest: String::new(),
-            min_runtime_version: RUNTIME_VERSION.to_string(),
+            min_runtime_version: BASE_RUNTIME_VERSION.to_string(),
             required_capabilities: Vec::new(),
             ruleset_compatibility: Vec::new(),
             provenance_summary: String::new(),
@@ -508,6 +510,15 @@ pub fn validate_npcs(m: &Manifest, table: &npc::Table) -> Result<(), Error> {
 /// The spawn family against the manifest counts and the World extent (format v3).
 pub fn validate_spawns(m: &Manifest, table: &spawn::Table) -> Result<(), Error> {
     spawn::validate(table, &m.world)?;
+    if table.has_weighted_points() {
+        check(
+            m.identity
+                .min_runtime_version
+                .parse::<u32>()
+                .is_ok_and(|version| version >= WEIGHTED_SPAWN_RUNTIME_VERSION),
+            "weighted spawn points require runtime compatibility 5",
+        )?;
+    }
     if table
         .sources
         .iter()

@@ -8,7 +8,9 @@ use super::{
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, CommandStatus, MovementLocalPosition,
 };
-use oteryn_protocol_oteryn::quick_loot::{QuickLootRequest, QuickLootResult, decode_target_handle};
+use oteryn_protocol_oteryn::quick_loot::{
+    CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1, QuickLootRequest, QuickLootResult, decode_target_handle,
+};
 
 macro_rules! authority_methods {
     () => {
@@ -18,6 +20,7 @@ macro_rules! authority_methods {
             _command_id: u64,
             _request: oteryn_protocol_oteryn::quick_loot::QuickLootRequest,
             _item_view: Option<&crate::gameplay_transport::item_view::SessionItemView>,
+            _target_handles: bool,
         ) -> impl std::future::Future<
             Output = Option<(
                 crate::foundation::CommandStatus,
@@ -37,11 +40,12 @@ macro_rules! composed_methods {
             command_id: u64,
             request: oteryn_protocol_oteryn::quick_loot::QuickLootRequest,
             item_view: Option<&crate::gameplay_transport::item_view::SessionItemView>,
+            target_handles: bool,
         ) -> Option<(
             crate::foundation::CommandStatus,
             oteryn_protocol_oteryn::quick_loot::QuickLootResult,
         )> {
-            self.execute_quick_loot(admitted, command_id, request, item_view)
+            self.execute_quick_loot(admitted, command_id, request, item_view, target_handles)
                 .await
         }
     };
@@ -53,7 +57,16 @@ fn resolve_targets(
     position: MovementLocalPosition,
     view: Option<&SessionItemView>,
     mut request: QuickLootRequest,
+    target_handles: bool,
 ) -> Option<QuickLootRequest> {
+    if !target_handles {
+        // Legacy clients can name a corpse by the UUID shown in the spatial view.
+        // Preserve direct item UUIDs for Ground corpses without a runtime projection.
+        if let Some(corpse) = request.corpse.and_then(|identity| runtime.bound_corpse(identity)) {
+            request.corpse = Some(corpse.item.item_instance_id);
+        }
+        return Some(request);
+    }
     if let Some(handle) = request.corpse {
         request.corpse = Some(match view?.resolve(decode_target_handle(handle)?)? {
             ItemKey::Entity(identity) => {
@@ -89,6 +102,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         request: QuickLootRequest,
         item_view: Option<&SessionItemView>,
+        target_handles: bool,
     ) -> Option<(CommandStatus, QuickLootResult)> {
         let rejected = || {
             Some((
@@ -96,6 +110,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 QuickLootResult { items: Vec::new() },
             ))
         };
+        if target_handles && !admitted.continuity.selected_capabilities
+            .contains(CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1)
+        {
+            return rejected();
+        }
         let (Some(fence), Some(actor), Some(controller)) = (
             admitted.item_fence,
             admitted.runtime_actor,
@@ -135,7 +154,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 states.has_pending_spell_commit(actor, session),
             )?;
             let position = runtime.read_actor_position(actor).ok()?.position();
-            let Some(request) = resolve_targets(&runtime, position, item_view, request) else {
+            let Some(request) = resolve_targets(&runtime, position, item_view, request, target_handles) else {
                 return rejected();
             };
             (content, position, request)
@@ -180,6 +199,66 @@ mod tests {
     use oteryn_protocol_oteryn::quick_loot::{QuickLootAction, encode_target_handle};
 
     #[test]
+    fn quick_loot_handle_command_requires_separate_capability() -> Result<(), Box<dyn std::error::Error>> {
+        use crate::gameplay_transport::capabilities::{
+            BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+        };
+        use oteryn_protocol_oteryn::quick_loot::{
+            COMMAND_TYPE_QUICK_LOOT, COMMAND_TYPE_QUICK_LOOT_TARGET_HANDLES,
+        };
+
+        let legacy = SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[4, 6, 98])
+            .ok_or("legacy Quick Loot selection")?;
+        assert!(legacy.command_selected(COMMAND_TYPE_QUICK_LOOT));
+        assert!(!legacy.command_selected(COMMAND_TYPE_QUICK_LOOT_TARGET_HANDLES));
+        let extended = SelectedCapabilities::select(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[4, 6, 98, CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1],
+        )
+        .ok_or("Quick Loot handle selection")?;
+        assert!(extended.command_selected(COMMAND_TYPE_QUICK_LOOT));
+        assert!(extended.command_selected(COMMAND_TYPE_QUICK_LOOT_TARGET_HANDLES));
+        Ok(())
+    }
+
+    #[test]
+    fn quick_loot_v1_preserves_legacy_target_uuids() {
+        use oteryn_protocol_oteryn::quick_loot::QuickLootRecipient;
+
+        let (runtime, _, _) = runtime_with_player(1);
+        let position = MovementLocalPosition { x: 1, y: 2, floor: 7 };
+        let click = QuickLootRequest {
+            action: QuickLootAction::Click,
+            corpse: Some([7; 16]),
+            category: None,
+            recipient: None,
+            recipient_id: None,
+            fallback_to_main: false,
+            filter_mode: None,
+            filter_definition_ref: None,
+        };
+        for request in [
+            click,
+            QuickLootRequest {
+                action: QuickLootAction::Assign,
+                corpse: None,
+                recipient: Some(QuickLootRecipient::Container),
+                recipient_id: Some([8; 16]),
+                ..click
+            },
+            QuickLootRequest {
+                action: QuickLootAction::Assign,
+                corpse: None,
+                recipient: Some(QuickLootRecipient::GoldPouch),
+                recipient_id: Some([9; 16]),
+                ..click
+            },
+        ] {
+            assert_eq!(resolve_targets(&runtime, position, None, request, false), Some(request));
+        }
+    }
+
+    #[test]
     fn quick_loot_resolves_a_ground_handle_after_corpse_projection_eviction()
     -> Result<(), ItemViewError> {
         let (runtime, _, _) = runtime_with_player(1);
@@ -201,11 +280,12 @@ mod tests {
         };
 
         assert_eq!(
-            resolve_targets(&runtime, position, Some(&view), request).and_then(|r| r.corpse),
+            resolve_targets(&runtime, position, Some(&view), request, true).and_then(|r| r.corpse),
             Some(corpse),
         );
+        assert_eq!(resolve_targets(&runtime, position, Some(&view), request, false), Some(request));
         view.map_view(&[], |_| Ok(()))?;
-        assert_eq!(resolve_targets(&runtime, position, Some(&view), request), None);
+        assert_eq!(resolve_targets(&runtime, position, Some(&view), request, true), None);
         Ok(())
     }
 }

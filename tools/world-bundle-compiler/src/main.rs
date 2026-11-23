@@ -27,7 +27,7 @@ use std::process::{Command, ExitCode};
 
 use oteryn_world_bundle_compiler::Error;
 use oteryn_world_bundle_compiler::bundle::{
-    self, BuildClass, Family, Identity, Manifest, RUNTIME_VERSION, SUPPORTED_CAPABILITIES,
+    self, BASE_RUNTIME_VERSION, BuildClass, Family, Identity, Manifest, SUPPORTED_CAPABILITIES,
     TerrainKind,
 };
 use oteryn_world_bundle_compiler::compile::{
@@ -283,7 +283,7 @@ fn derive_identity(root: &Path, slug: &str) -> Result<Identity, Error> {
         world_schema_version: text(&manifest, "semantic_schema_version", "manifest.json")?,
         content_revision: text(&project, "project_revision", "project.json")?,
         content_lock_digest: lock_digest,
-        min_runtime_version: RUNTIME_VERSION.to_string(),
+        min_runtime_version: BASE_RUNTIME_VERSION.to_string(),
         required_capabilities,
         ruleset_compatibility,
         provenance_summary,

@@ -3,7 +3,9 @@ use super::Dispatch;
 use crate::foundation::CommandStatus;
 use oteryn_protocol_oteryn::{
     ClientCommandView,
-    quick_loot::{decode_quick_loot_request, encode_quick_loot_result},
+    quick_loot::{
+        COMMAND_TYPE_QUICK_LOOT_TARGET_HANDLES, decode_quick_loot_request, encode_quick_loot_result,
+    },
 };
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
@@ -17,7 +19,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         Err(_) => return Some(Dispatch::Reply(CommandStatus::Rejected, Vec::new())),
     };
     let (status, result) = authority
-        .quick_loot(*admitted, command.command_id, request, item_view)
+        .quick_loot(
+            *admitted,
+            command.command_id,
+            request,
+            item_view,
+            command.command_type == COMMAND_TYPE_QUICK_LOOT_TARGET_HANDLES,
+        )
         .await?;
     Some(Dispatch::Reply(
         status,

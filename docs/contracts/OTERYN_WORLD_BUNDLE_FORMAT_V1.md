@@ -641,7 +641,7 @@ default with `CHOSEN_OTERYN_APPROXIMATION` provenance.
 claims, including bosses subsequently killed. Occupancy may delay realization of
 a committed claim. It adds no wire payload or Platform authority.
 
-### Weighted ordinary spawn points
+### Weighted ordinary spawn points (runtime compatibility 5)
 
 An ordinary `Spawn.Source` point can declare a positive u32 `weight`. Admitted
 ordinary points at the same position within that source form one spawn cell when
@@ -652,7 +652,10 @@ existing interpretation.
 
 A weighted point writes zero in the delay field, tag byte 3, then its positive
 ordinary `respawn_ms` and weight as canonical varints. This escape preserves the
-ordinary and boss encodings. A reader predating tag 3 rejects a weighted payload.
+ordinary and boss encodings. The compiler declares runtime compatibility 5
+when the emitted table contains weighted points. A runtime 4 node rejects the
+bundle at the identity check, and runtime 5 rejects weighted payloads declaring
+an older minimum. Unweighted bundles retain their requested minimum.
 The spawn frame counts encoded entries, while the Channel counts the shared cell
 once. Boss policies do not take weights.
 

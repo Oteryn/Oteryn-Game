@@ -100,6 +100,8 @@ pub mod inspection;
 pub mod purchase_history;
 #[path = "features/0098-quick-loot/mod.rs"]
 pub mod quick_loot;
+#[path = "features/0516-quick-loot-target-handles/protocol.rs"]
+mod quick_loot_target_handles;
 #[path = "features/0232-team-finder-members/mod.rs"]
 pub mod team_finder;
 #[path = "features/0200-team-finder-leader/mod.rs"]

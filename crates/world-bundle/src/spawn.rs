@@ -149,6 +149,13 @@ pub struct Table {
 }
 
 impl Table {
+    pub fn has_weighted_points(&self) -> bool {
+        self.sources
+            .iter()
+            .flat_map(|source| &source.points)
+            .any(|point| point.weight.is_some())
+    }
+
     pub fn point_count(&self) -> usize {
         self.sources.iter().map(|source| source.points.len()).sum()
     }

@@ -547,7 +547,7 @@ fn scenario(
         admitted.continuity.selected_capabilities =
             crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                 crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-                &[4, 6, 12, 14, 98, 179, 180],
+                &[4, 6, 12, 14, 98, 179, 180, oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1],
             )
             .ok_or("Newhaven item command capabilities")?;
         let corpse_identity = owner

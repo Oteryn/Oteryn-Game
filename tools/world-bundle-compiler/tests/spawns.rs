@@ -415,6 +415,7 @@ const COBRA_SCOUT: &str = "oteryn:creature.cobra_scout";
 
 fn cobra_scout_families() -> Result<Families, Error> {
     let mut families = Families::default();
+    families.teleports.insert((5, 1, 7), (300, 40, 6));
     families.add_creatures(
         serde_json::json!({
             "family": "Creature",
@@ -488,6 +489,46 @@ fn encounter_owned_point_stays_out_of_the_world_bundle() -> TestResult {
 }
 
 #[test]
+fn weighted_world_spawns_require_runtime_five_when_loaded() -> TestResult {
+    let mut families = cobra_scout_families()?;
+    let mut spawns: serde_json::Value = serde_json::from_slice(&shard(1, 60_000))?;
+    let point = &mut spawns["records"][0]["declaration"]["points"][0];
+    point["creature"] = COBRA_SCOUT.into();
+    point["weight"] = 5.into();
+    families.add_spawns(&serde_json::to_vec(&spawns)?)?;
+
+    let (regions, palette) = (regions()?, palette());
+    let mut input = input(&regions, &palette, &families);
+    input.identity.min_runtime_version = "4".into();
+    let compiled = compile(&input, &Resolver)?;
+    let loaded = bundle::read(&compiled.bytes)?;
+    assert_eq!(loaded.manifest.identity.min_runtime_version, "5");
+    assert_eq!(
+        loaded.spawns.sources[0].points[0].weight,
+        std::num::NonZeroU32::new(5)
+    );
+    equivalence(&input, &Resolver, &compiled.bytes)?;
+
+    // Re-seal after lowering the declared runtime floor to exercise the
+    // loader's spawn compatibility check.
+    let mut understated = compiled.bytes;
+    let field = b"\"min_runtime_version\":\"5\"";
+    let offset = understated
+        .windows(field.len())
+        .position(|bytes| bytes == field)
+        .ok_or("weighted runtime version in manifest")?;
+    understated[offset + field.len() - 2] = b'4';
+    let footer = understated.len() - 32;
+    let digest = bundle::digest_of(&understated[..footer]);
+    understated[footer..].copy_from_slice(&digest);
+    assert!(matches!(
+        bundle::read(&understated),
+        Err(Error::Format(message)) if message == "weighted spawn points require runtime compatibility 5"
+    ));
+    Ok(())
+}
+
+#[test]
 fn excluded_points_do_not_make_world_spawns_weighted() -> TestResult {
     let mut families = cobra_scout_families()?;
     let rat = "oteryn:creature.rat";
@@ -507,6 +548,7 @@ fn excluded_points_do_not_make_world_spawns_weighted() -> TestResult {
     let compiled = compile(&input(&regions, &palette, &families), &Resolver)?;
     let bundle = bundle::read(&compiled.bytes)?;
     let admitted = &bundle.spawns.sources[0].points;
+    assert_eq!(bundle.manifest.identity.min_runtime_version, "4");
     assert_eq!(admitted.len(), 2);
     assert!(admitted.iter().all(|point| point.weight.is_none()));
     assert_eq!(compiled.spawns.dropped.len(), 2);

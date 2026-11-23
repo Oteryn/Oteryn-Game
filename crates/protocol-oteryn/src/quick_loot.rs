@@ -7,7 +7,9 @@ use crate::charm_wire::{
 use crate::item_view::ItemHandle;
 
 pub const CAPABILITY_QUICK_LOOT_V1: u32 = 98;
+pub const CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1: u32 = 516;
 pub const COMMAND_TYPE_QUICK_LOOT: u32 = 114;
+pub const COMMAND_TYPE_QUICK_LOOT_TARGET_HANDLES: u32 = 6253;
 pub const MAX_QUICK_LOOT_REQUEST_BYTES: usize = 64;
 pub const MAX_QUICK_LOOT_RESULT_BYTES: usize = 32_768;
 pub const MAX_QUICK_LOOT_RESULTS: usize = 1_280;
@@ -49,18 +51,20 @@ pub enum QuickLootFilterMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct QuickLootRequest {
     pub action: QuickLootAction,
-    /// Click uses a spatial item handle encoded by [`encode_target_handle`].
+    /// Click uses a corpse UUID on command 114 or a spatial item handle on
+    /// command 6253.
     pub corpse: Option<[u8; 16]>,
     pub category: Option<QuickLootCategory>,
     pub recipient: Option<QuickLootRecipient>,
-    /// A targeted assignment uses a visible handle encoded by [`encode_target_handle`].
+    /// Assignment uses a durable UUID on command 114 or a visible item handle
+    /// on command 6253.
     /// Without a target, Gold Pouch selects the character's sole native Inbox pouch.
     pub recipient_id: Option<[u8; 16]>,
     pub fallback_to_main: bool,
     pub filter_mode: Option<QuickLootFilterMode>,
     pub filter_definition_ref: Option<u32>,
 }
-/// Quick Loot targets keep their 16-byte wire fields. A session ItemHandle is
+/// Command 6253 targets keep their 16-byte wire fields. A session ItemHandle is
 /// the big-endian unsigned value, zero-extended to the field width.
 pub const fn encode_target_handle(handle: ItemHandle) -> [u8; 16] {
     (handle.get() as u128).to_be_bytes()
@@ -392,14 +396,20 @@ mod tests {
         let registry: serde_json::Value =
             serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)
                 .map_err(|_| QuickLootWireError::Malformed)?;
-        let command = registry["command_types"]
-            .as_array()
-            .and_then(|rows| rows.iter().find(|r| r["id"] == COMMAND_TYPE_QUICK_LOOT))
-            .ok_or(QuickLootWireError::Malformed)?;
-        assert_eq!(
-            command["max_result_payload_bytes"],
-            MAX_QUICK_LOOT_RESULT_BYTES
-        );
+        for command_id in [
+            COMMAND_TYPE_QUICK_LOOT,
+            COMMAND_TYPE_QUICK_LOOT_TARGET_HANDLES,
+        ] {
+            let command = registry["command_types"]
+                .as_array()
+                .and_then(|rows| rows.iter().find(|r| r["id"] == command_id))
+                .ok_or(QuickLootWireError::Malformed)?;
+            assert_eq!(command["max_payload_bytes"], MAX_QUICK_LOOT_REQUEST_BYTES);
+            assert_eq!(
+                command["max_result_payload_bytes"],
+                MAX_QUICK_LOOT_RESULT_BYTES
+            );
+        }
         assert_eq!(decode_quick_loot_result(&encoded), Ok(result));
         Ok(())
     }

@@ -322,6 +322,28 @@ fn scenario(case: Case) -> TestResult {
             .await?;
             assert_eq!(resumed, paused.1.map(|remaining| at + remaining));
             assert_eq!(remaining, None);
+        } else if case == Case::Wire {
+            use crate::gameplay_transport::connection::ControlLossResult;
+
+            check_legacy_session_fence(pool, session).await?;
+            assert_eq!(
+                owner.lose_control(deps.admitted, std::time::Duration::ZERO, None).await,
+                ControlLossResult::Recorded
+            );
+            let (state, has_transport, outcome): (i16, bool, i16) = sqlx::query_as(
+                "SELECT s.session_state, s.current_transport_ref IS NOT NULL,
+                    game_torch_use(encode($1,'hex')::uuid, s.game_session_id, 2, decode('01','hex'),
+                        s.scope_ownership_generation, s.current_generation, NULL, NULL, NULL, NULL)
+                 FROM game_durability_reconnect_sessions s
+                 WHERE s.game_session_id=encode($2,'hex')::uuid",
+            )
+            .bind(id(TORCH).as_slice())
+            .bind(session.as_bytes().as_slice())
+            .fetch_one(pool)
+            .await?;
+            assert_eq!((state, has_transport, outcome), (1, false, 2));
+            assert_eq!(read(pool).await?, ("oteryn:item.tibia.i2921".into(), 1));
+            assert_eq!(timer(pool).await?, (deadline, None));
         }
         eprintln!("POSTGRES_CASE_COMPLETED {name}");
         drop(owner);
@@ -434,4 +456,51 @@ fn fixture_map(
         },
     )
     .map_err(debug)
+}
+
+
+async fn check_legacy_session_fence(
+    pool: &sqlx::PgPool,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    // Exercise the pre-fresh session encoding against real torch custody and
+    // character guards. Roll back the fixture rewrite and the torch transition.
+    let mut tx = pool.begin().await?;
+    sqlx::query(
+        "UPDATE game_durability_reconnect_sessions
+         SET fresh_replay_key=NULL, initial_fresh_replay_key=NULL, session_state=1,
+             control_loss_epoch=1, original_grace_deadline=0, predecessor_generation=current_generation
+         WHERE game_session_id=encode($1,'hex')::uuid",
+    )
+    .bind(session.as_bytes().as_slice())
+    .execute(&mut *tx)
+    .await?;
+    let use_torch = "SELECT game_torch_use(encode($1,'hex')::uuid, s.game_session_id,
+            $3::int, decode('01','hex'), s.scope_ownership_generation, s.current_generation,
+            NULL, NULL, NULL, NULL)
+        FROM game_durability_reconnect_sessions s
+        WHERE s.game_session_id=encode($2,'hex')::uuid";
+    let outcome: i16 = sqlx::query_scalar(use_torch)
+        .bind(id(TORCH).as_slice())
+        .bind(session.as_bytes().as_slice())
+        .bind(2_i32)
+        .fetch_one(&mut *tx)
+        .await?;
+    assert_eq!(outcome, 1, "active legacy session can extinguish its lit torch");
+    sqlx::query(
+        "UPDATE game_durability_reconnect_sessions SET session_state=2, current_transport_ref=NULL
+         WHERE game_session_id=encode($1,'hex')::uuid",
+    )
+    .bind(session.as_bytes().as_slice())
+    .execute(&mut *tx)
+    .await?;
+    let outcome: i16 = sqlx::query_scalar(use_torch)
+        .bind(id(TORCH).as_slice())
+        .bind(session.as_bytes().as_slice())
+        .bind(3_i32)
+        .fetch_one(&mut *tx)
+        .await?;
+    assert_eq!(outcome, 2, "reconnectable legacy session cannot relight the torch");
+    tx.rollback().await?;
+    Ok(())
 }

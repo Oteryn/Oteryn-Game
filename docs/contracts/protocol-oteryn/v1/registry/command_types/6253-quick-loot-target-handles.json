@@ -1,0 +1,10 @@
+{
+  "id": 6253,
+  "name": "QUICK_LOOT_TARGET_HANDLES",
+  "owner_decision": "QUICKLOOT-1 target encoding compatibility",
+  "capability": 516,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/quick_loot_v1.proto#QuickLootHandleRequestV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/quick_loot_v1.proto#QuickLootResultV1",
+  "max_payload_bytes": 64,
+  "max_result_payload_bytes": 32768
+}

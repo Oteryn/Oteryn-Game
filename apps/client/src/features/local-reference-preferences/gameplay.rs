@@ -64,7 +64,7 @@ impl PlayView {
         if self.gameplay_input_blocked(link) || self.cursor_spell.is_some() {
             return false;
         }
-        {
+        let handles_selected = {
             let mailbox = crate::play::mailbox::lock(&link.mailbox);
             if mailbox.world_context.targeting.is_some()
                 || mailbox.use_with_pending
@@ -73,7 +73,8 @@ impl PlayView {
             {
                 return false;
             }
-        }
+            mailbox.discovery.loot.handles_selected
+        };
         let Some(entity) = self.entities.iter().rev().find(|row| {
             row.position.x == tile.x && row.position.y == tile.y && row.position.floor == self.floor
         }) else {
@@ -82,9 +83,15 @@ impl PlayView {
         if entity.kind != oteryn_session::EntityKind::Corpse {
             return false;
         }
-        link.quick_loot_action(oteryn_client_ui::quick_loot::Action::Corpse(
-            entity.entity.identity,
-        ));
+        use oteryn_client_ui::quick_loot::Action;
+        use oteryn_session::EntityDetail;
+        let action = match (&entity.detail, handles_selected) {
+            (EntityDetail::Object { item_handle: Some(handle), .. }
+            | EntityDetail::ObjectWithAppearance { item_handle: Some(handle), .. }, true) =>
+                Action::CorpseHandle(*handle),
+            _ => Action::Corpse(entity.entity.identity),
+        };
+        link.quick_loot_action(action);
         true
     }
     /// A configured secondary click is consumed even when the server refuses looting.

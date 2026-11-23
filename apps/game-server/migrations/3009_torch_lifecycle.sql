@@ -125,7 +125,11 @@ BEGIN
   AND EXISTS(SELECT 1 FROM game_torch_stage(i0.definition_production_key))
   FOR UPDATE;
  IF NOT FOUND THEN RETURN 0; END IF;
- IF i.lifecycle<>1 OR i.quantity<>1 OR s.session_state<>2 OR s.runtime_scope_kind<>1
+ IF i.lifecycle<>1 OR i.quantity<>1
+  OR s.current_transport_ref IS NULL
+  OR s.session_state <> CASE WHEN COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) IS NOT NULL
+                            THEN 2 ELSE 1 END
+  OR s.runtime_scope_kind<>1
   OR i.world_id IS DISTINCT FROM s.runtime_scope_world_id
   OR s.scope_ownership_generation IS DISTINCT FROM p_generation OR s.current_generation IS DISTINCT FROM p_connection
   OR NOT EXISTS(SELECT 1 FROM game_durability_admission_character_guards g WHERE g.character_id=s.character_id

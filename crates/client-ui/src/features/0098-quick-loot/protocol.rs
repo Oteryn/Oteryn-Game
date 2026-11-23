@@ -1,4 +1,5 @@
 use super::*;
+use oteryn_client_runtime::inventory::ItemHandle;
 use oteryn_client_runtime::server_mechanic::{
     CommandStatus, ServerMechanicCommand, ServerMechanicResponse,
 };
@@ -6,6 +7,7 @@ use oteryn_client_runtime::server_mechanic::{
 pub enum Action {
     LootAll,
     Corpse([u8; 16]),
+    CorpseHandle(ItemHandle),
     Add {
         mode: QuickLootFilterMode,
         definition: u32,
@@ -43,6 +45,13 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
             wire.action = QuickLootAction::Click;
             wire.corpse = Some(*id);
         }
+        Action::CorpseHandle(handle) => {
+            if !panel.handles_selected {
+                return None;
+            }
+            wire.action = QuickLootAction::Click;
+            wire.corpse = Some(encode_target_handle(*handle));
+        }
         Action::Add { mode, definition } | Action::Remove { mode, definition } => {
             wire.action = if matches!(action, Action::Add { .. }) {
                 QuickLootAction::FilterAdd
@@ -73,8 +82,17 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
             wire.fallback_to_main = *fallback;
         }
     }
-    let payload = match encode_quick_loot_request(&wire) {
-        Ok(payload) => payload,
+    let command = if matches!(action, Action::CorpseHandle(_)) {
+        crate::quick_loot_target_handles::request(&wire)
+    } else {
+        encode_quick_loot_request(&wire).map(|payload| ServerMechanicCommand {
+            capability: CAPABILITY_QUICK_LOOT_V1,
+            command_type: COMMAND_TYPE_QUICK_LOOT,
+            payload,
+        })
+    };
+    let command = match command {
+        Ok(command) => command,
         Err(_) => {
             panel.feedback = tr!("Choose valid loot details").into();
             return None;
@@ -82,11 +100,7 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
     };
     panel.pending = Some(action);
     panel.feedback = tr!("Waiting for the server").into();
-    Some(ServerMechanicCommand {
-        capability: 98,
-        command_type: 114,
-        payload,
-    })
+    Some(command)
 }
 /// Apply a server answer. Returns whether it confirmed a loot run (loot all or one corpse),
 /// whose result line belongs in the Loot tab.
@@ -99,8 +113,11 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) && let Ok(result) = decode_quick_loot_result(&response.payload)
     {
-        let looted = matches!(action, Action::LootAll | Action::Corpse(_));
-        if !matches!(action, Action::LootAll | Action::Corpse(_)) {
+        let looted = matches!(
+            action,
+            Action::LootAll | Action::Corpse(_) | Action::CorpseHandle(_)
+        );
+        if !looted {
             if panel.confirmed.len() == 100 {
                 panel.confirmed.remove(0);
             }
@@ -145,4 +162,35 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
     }
     panel.feedback = tr!("Loot request refused or invalid reply; try again").into();
     false
+}
+
+#[cfg(test)]
+#[test]
+fn target_encoding_follows_the_selected_command() -> Result<(), Box<dyn std::error::Error>> {
+    let mut panel = Panel {
+        selected: true,
+        ..Panel::default()
+    };
+    let handle = ItemHandle::new(42).ok_or("item handle")?;
+    assert!(request(&mut panel, Action::CorpseHandle(handle)).is_none());
+
+    panel.handles_selected = true;
+    let encoded = request(&mut panel, Action::CorpseHandle(handle)).ok_or("handle command")?;
+    assert_eq!(encoded.capability, CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1);
+    assert_eq!(encoded.command_type, COMMAND_TYPE_QUICK_LOOT_TARGET_HANDLES);
+    assert_eq!(
+        decode_quick_loot_request(&encoded.payload).map(|decoded| decoded.corpse),
+        Ok(Some(encode_target_handle(handle))),
+    );
+
+    panel.pending = None;
+    let uuid = [7; 16];
+    let legacy = request(&mut panel, Action::Corpse(uuid)).ok_or("legacy command")?;
+    assert_eq!(legacy.capability, CAPABILITY_QUICK_LOOT_V1);
+    assert_eq!(legacy.command_type, COMMAND_TYPE_QUICK_LOOT);
+    assert_eq!(
+        decode_quick_loot_request(&legacy.payload).map(|decoded| decoded.corpse),
+        Ok(Some(uuid)),
+    );
+    Ok(())
 }

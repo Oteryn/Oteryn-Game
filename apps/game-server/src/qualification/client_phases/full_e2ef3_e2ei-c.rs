@@ -573,15 +573,30 @@ async fn quick(
     client: &mut DevClientSession,
     request: loot::QuickLootRequest,
 ) -> TestResult<(CommandStatus, loot::QuickLootResult)> {
+    quick_with_encoding(client, request, false).await
+}
+
+async fn quick_with_encoding(
+    client: &mut DevClientSession,
+    request: loot::QuickLootRequest,
+    target_handles: bool,
+) -> TestResult<(CommandStatus, loot::QuickLootResult)> {
     let payload = loot::encode_quick_loot_request(&request)
         .map_err(|error| format!("quick loot encode: {error:?}"))?;
-    let response = client
-        .session_mut()
-        .gated_command(
+    let (capability, command) = if target_handles {
+        (
+            loot::CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1,
+            loot::COMMAND_TYPE_QUICK_LOOT_TARGET_HANDLES,
+        )
+    } else {
+        (
             loot::CAPABILITY_QUICK_LOOT_V1,
             loot::COMMAND_TYPE_QUICK_LOOT,
-            &payload,
         )
+    };
+    let response = client
+        .session_mut()
+        .gated_command(capability, command, &payload)
         .await?;
     let result = loot::decode_quick_loot_result(&response.payload)
         .map_err(|error| format!("quick loot decode: {error:?}"))?;
@@ -762,12 +777,21 @@ async fn loot_policy(
         .await?;
     *step = "manual-click";
     let before = quantities(live)?;
-    let (status, reply) = quick(
+    let target_handles = live
+        .selected_capabilities()
+        .contains(&loot::CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1);
+    let target = if target_handles {
+        loot::encode_target_handle(corpse.handle)
+    } else {
+        corpse.entity.entity.identity
+    };
+    let (status, reply) = quick_with_encoding(
         live,
         loot::QuickLootRequest {
-            corpse: Some(corpse.entity.entity.identity),
+            corpse: Some(target),
             ..request(Action::Click)
         },
+        target_handles,
     )
     .await?;
     let refreshed = live.use_item(corpse.handle).await?;

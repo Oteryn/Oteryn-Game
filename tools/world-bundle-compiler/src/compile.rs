@@ -67,12 +67,25 @@ pub trait KeyResolver: Sync {
         false
     }
 }
-fn identity_for_palette(
+fn identity_for_bundle(
     identity: &Identity,
     palette: &[PaletteEntry],
     resolver: &dyn KeyResolver,
+    spawns: &spawn::Table,
 ) -> Identity {
     let mut identity = identity.clone();
+    if spawns.has_weighted_points()
+        && identity
+            .min_runtime_version
+            .bytes()
+            .all(|byte| byte.is_ascii_digit())
+        && identity
+            .min_runtime_version
+            .parse::<u32>()
+            .is_ok_and(|version| version < bundle::WEIGHTED_SPAWN_RUNTIME_VERSION)
+    {
+        identity.min_runtime_version = bundle::WEIGHTED_SPAWN_RUNTIME_VERSION.to_string();
+    }
     let required = "source-static-surfaces-v1";
     if palette
         .iter()
@@ -1187,7 +1200,7 @@ fn assemble(
         projection_class: "server".into(),
         compiler_version: bundle::compiler_version(),
         build_class: input.build_class,
-        identity: identity_for_palette(&input.identity, &palette, state.resolver),
+        identity: identity_for_bundle(&input.identity, &palette, state.resolver, &spawns),
         world: input.world.clone(),
         palette,
         draft_areas: BTreeSet::from_iter(input.draft_areas.iter().cloned())
@@ -1360,7 +1373,7 @@ fn prove(
         projection_class: "server".into(),
         compiler_version: bundle::compiler_version(),
         build_class: input.build_class,
-        identity: identity_for_palette(&input.identity, &palette, resolver),
+        identity: identity_for_bundle(&input.identity, &palette, resolver, &spawns),
         world: input.world.clone(),
         palette,
         draft_areas: BTreeSet::from_iter(input.draft_areas.iter().cloned())

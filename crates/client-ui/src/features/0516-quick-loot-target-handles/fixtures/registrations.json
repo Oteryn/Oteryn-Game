@@ -1,0 +1,20 @@
+[
+  {
+    "mechanic": "0516-quick-loot-target-handles",
+    "kind": "handlers",
+    "id": "0516-quick-loot-target-handles-command",
+    "status": "supported",
+    "commands": [
+      6253
+    ],
+    "direction": "client_to_server",
+    "capability": 516,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "state": "The Quick Loot panel retains the selection and pending request.",
+      "view": "The existing Quick Loot UI owns the view.",
+      "input": "The existing spatial corpse click supplies the visible handle.",
+      "settings": "Target encoding follows session negotiation."
+    }
+  }
+]

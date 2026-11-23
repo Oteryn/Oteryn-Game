@@ -1,0 +1,15 @@
+{
+  "id": 516,
+  "name": "QUICK_LOOT_TARGET_HANDLES_V1",
+  "constant": "quick_loot::CAPABILITY_QUICK_LOOT_TARGET_HANDLES_V1",
+  "requires": [4, 98],
+  "acceptance_requires": true,
+  "commands": [6253],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": true,
+    "bundle_world": true
+  }
+}
