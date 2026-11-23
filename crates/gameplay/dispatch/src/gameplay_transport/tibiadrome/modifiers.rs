@@ -39,6 +39,10 @@ impl ModifierOwner {
         self.hazards.clear();
         self.state.begin_wave(wave, now, admission).is_ok()
     }
+    pub(super) fn room(&self) -> &[MovementLocalPosition] {
+        self.state.room()
+    }
+
     pub(super) fn settled(&self) -> bool {
         self.pending.is_empty()
     }

@@ -13,6 +13,7 @@ pub(super) enum Physical {
     Exploding,
     Grace,
     Source,
+    MissingProfiles,
     DelayedObservation,
     PendingCorpseEffects,
     ThreeWaveCommandCatchup,
@@ -338,6 +339,19 @@ pub(super) fn physical_context(
             .tibiadrome
             .mechanics_test_hazards
             .store(large_hazards, std::sync::atomic::Ordering::Release);
+        if mechanics_test_context && !matches!(case, Physical::MissingProfiles) {
+            // Keep the existing combat fixtures explicit and out of the native Drome draw.
+            let keys = std::array::from_fn(|index| {
+                let name = crate::durability::arena_match::donor::OPPONENTS[0][index];
+                format!("oteryn:creature.{name}")
+            });
+            owner
+                .states
+                .tibiadrome
+                .mechanics_test_opponents
+                .set(keys)
+                .map_err(|_| "Drome mechanics fixture opponents already installed")?;
+        }
         let refusal_before = if !mechanics_test_context {
             let physical = {
                 let runtime = deps.runtime.lock().await;
@@ -456,6 +470,27 @@ pub(super) fn physical_context(
                 &mut runtime,
                 std::time::Instant::now() + std::time::Duration::from_secs(9),
             );
+        }
+        if matches!(case, Physical::MissingProfiles) {
+            let status = drome_exchange(
+                &owner,
+                &mut admitted,
+                oteryn_protocol_oteryn::arena::DromeAction::Status,
+            )
+            .await?;
+            assert_eq!((status.phase, status.level), (0, 0));
+            let record = persisted_drome_record(&harness).await?;
+            assert!(!record.active);
+            assert_eq!(record.completed, 0);
+            let runtime = deps.runtime.lock().await;
+            assert!(!runtime.is_tibiadrome(deps.actor));
+            assert!(
+                runtime.visible_entities().creatures.iter().all(|creature| {
+                    !runtime.is_tibiadrome(creature.actor)
+                }),
+                "missing native profiles must leave no substitute opponents"
+            );
+            return Ok(());
         }
         if large_hazards {
             return super::srx3_drome_hazards_fixtures::large_hazards_receipt(

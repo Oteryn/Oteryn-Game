@@ -7,6 +7,9 @@ use crate::durability::tibiadrome::{self as rules, Record};
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
+use oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::{
+    DromeCreatureRole, drome_wave_opponent,
+};
 use oteryn_protocol_oteryn::arena::{self as wire, DromeAction as A};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -20,6 +23,8 @@ pub(super) struct Drome {
     pub(super) mechanics_test_context: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(super) mechanics_test_hazards: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) mechanics_test_opponents: std::sync::OnceLock<[String; 5]>,
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, Live>>,
 }
@@ -589,6 +594,111 @@ fn battle_cells(
     cells
 }
 
+fn qualified_pool(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+) -> Option<()> {
+    use crate::content::ProjectV2AuthoringProfileData::Behavior;
+
+    let native = owner.active_generation?.native_gameplay()?;
+    if native.source_digest() != runtime.content_pin().server_artifact_digest() {
+        return None;
+    }
+    // Preflight the entire pool, even if a particular wave would not draw one of its roles.
+    for role in DromeCreatureRole::POOL {
+        let key = role.definition_key();
+        let policy = runtime.companion_policy(key).ok()?;
+        if policy.definition_key != key
+            || policy.is_familiar
+            || u64::try_from(policy.maximum_health).ok() != Some(role.base_health())
+            || policy.outfit_look_type != role.outfit_look_type()
+            || policy.object_look_type.is_some()
+        {
+            return None;
+        }
+        let mut profiles = native.creature_profiles().records.iter().filter(|record| {
+            record.profile.target.key == key
+                && record.profile.target.revision == policy.definition_revision
+        });
+        let profile = profiles.next()?;
+        let Behavior(behavior) = &profile.behavior.as_ref()?.data else {
+            return None;
+        };
+        let attacks = &profile.attack_definitions.as_ref()?.profiles;
+        if profiles.next().is_some()
+            || behavior.attacks.is_empty()
+            || behavior
+                .attacks
+                .iter()
+                .any(|attack| !attacks.iter().any(|body| body.target == attack.ability))
+        {
+            return None;
+        }
+    }
+    Some(())
+}
+
+fn spawn_wave(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    battle: &mut Battle,
+    run: [u8; 16],
+    players: usize,
+) -> Option<()> {
+    let fixtures: Option<&[String; 5]> = {
+        #[cfg(test)]
+        {
+            owner.states.tibiadrome.mechanics_test_opponents.get()
+        }
+        #[cfg(not(test))]
+        {
+            None
+        }
+    };
+    let modifiers = battle.modifiers.as_mut()?;
+    let count = rules::monster_count(players)?;
+    if fixtures.is_none() {
+        qualified_pool(owner, runtime)?;
+    }
+
+    let fixture_cells = fixtures.map(|_| battle_cells(owner, runtime, battle.center));
+    let placements: Vec<_> = fixture_cells
+        .as_deref()
+        .unwrap_or_else(|| modifiers.room())
+        .iter()
+        .copied()
+        .filter(|at| runtime.native_summon_cell_free(*at))
+        .take(count)
+        .collect();
+    let now = owner.owner_now().get();
+    if placements.len() != count || !modifiers.begin_wave(battle.wave, now, players) {
+        return None;
+    }
+
+    for (index, at) in placements.into_iter().enumerate() {
+        let key = match fixtures {
+            Some(pool) => pool[index % pool.len()].as_str(),
+            None => drome_wave_opponent(run, battle.wave, index as u64)?.definition_key(),
+        };
+        let target = runtime
+            .spawn_arena_opponent(key, at, |r, p| {
+                Some(walkable(owner, r, p) && r.native_summon_cell_free(p))
+            })
+            .ok()?;
+        battle.opponents.push(target);
+        runtime
+            .scale_tibiadrome_opponent(target, battle.wave)
+            .ok()?;
+        runtime
+            .bind_tibiadrome_modifiers(target, run, modifiers.selected())
+            .ok()?;
+        if !runtime.begin_drome_native_wave(target, now).ok()? && fixtures.is_none() {
+            return None;
+        }
+    }
+    Some(())
+}
+
 pub(super) fn tick(owner: &ComposedFreshAdmission<'_, '_, '_>, runtime: &mut ChannelRuntimeV1) {
     tick_at(owner, runtime, Instant::now());
 }
@@ -694,60 +804,12 @@ pub(in crate::gameplay_transport) fn tick_at(
             battle.deadline = now + Duration::from_secs(u64::from(rules::PREPARATION_SECONDS));
         }
         if battle.preparing && now >= battle.deadline {
-            // STOPPED W17 content: these legacy arena profiles do not qualify as
-            // the five Drome monsters or the nine accepted modifier consumers.
-            // Exact native identities/speeds/attack clocks remain source-pending.
-            let count = rules::monster_count(players).unwrap_or(0);
-            let placements: Vec<_> = battle_cells(owner, runtime, battle.center)
-                .into_iter()
-                .filter(|at| runtime.native_summon_cell_free(*at))
-                .take(count)
-                .collect();
-            for (index, at) in placements.into_iter().enumerate() {
-                let key = format!(
-                    "oteryn:creature.{}",
-                    crate::durability::arena_match::donor::OPPONENTS[0][index % 5]
-                );
-                if let Ok(target) = runtime.spawn_arena_opponent(&key, at, |r, p| {
-                    Some(walkable(owner, r, p) && r.native_summon_cell_free(p))
-                }) {
-                    if runtime
-                        .scale_tibiadrome_opponent(target, battle.wave)
-                        .is_err()
-                    {
-                        let _ = runtime.remove_arena_opponent(target);
-                        break;
-                    }
-                    if let Some(modifiers) = &battle.modifiers
-                        && runtime
-                            .bind_tibiadrome_modifiers(target, current.run, modifiers.selected())
-                            .is_err()
-                    {
-                        let _ = runtime.remove_arena_opponent(target);
-                        break;
-                    }
-                    battle.opponents.push(target);
-                }
-            }
-            if battle.opponents.len() != count {
+            if spawn_wave(owner, runtime, &mut battle, current.run, players).is_none() {
                 for target in battle.opponents.drain(..) {
                     let _ = runtime.remove_arena_opponent(target);
                 }
                 battle.ended = true;
             } else {
-                let wave = battle.wave;
-                if let Some(modifiers) = &mut battle.modifiers
-                    && !modifiers.begin_wave(wave, owner.owner_now().get(), players)
-                {
-                    battle.ended = true;
-                }
-                if battle.opponents.iter().any(|actor| {
-                    runtime
-                        .begin_drome_native_wave(*actor, owner.owner_now().get())
-                        .is_err()
-                }) {
-                    battle.ended = true;
-                }
                 battle.preparing = false;
                 battle.deadline = now + Duration::from_secs(u64::from(rules::WAVE_SECONDS));
                 // The projection's ms clock is the same runtime clock_origin;

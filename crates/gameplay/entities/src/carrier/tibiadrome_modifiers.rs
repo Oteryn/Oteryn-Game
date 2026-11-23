@@ -19,7 +19,7 @@ mod familiar;
 mod roles;
 mod runtime;
 use draw::bounded_draw;
-pub use draw::drome_rotation_modifiers;
+pub use draw::{drome_rotation_modifiers, drome_wave_opponent};
 pub use roles::DromeCreatureRole;
 pub use runtime::DromeActorModifiers;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,6 +126,10 @@ impl DromeModifierState {
         self.selected = selected;
         self.begin_wave(self.wave, self.started, self.group_size)
     }
+    pub fn room(&self) -> &[MovementLocalPosition] {
+        &self.room
+    }
+
     pub fn selected(&self) -> [DromeModifier; 2] {
         self.selected
     }

@@ -9,6 +9,35 @@ pub enum DromeCreatureRole {
     Murmillion,
 }
 impl DromeCreatureRole {
+    pub const POOL: [Self; 5] = [
+        Self::Domestikion,
+        Self::Hoodinion,
+        Self::Mearidion,
+        Self::Scissorion,
+        Self::Murmillion,
+    ];
+
+    pub const fn definition_key(self) -> &'static str {
+        match self {
+            Self::Domestikion => "oteryn:creature.domestikion",
+            Self::Hoodinion => "oteryn:creature.hoodinion",
+            Self::Mearidion => "oteryn:creature.mearidion",
+            Self::Scissorion => "oteryn:creature.scissorion",
+            Self::Murmillion => "oteryn:creature.murmillion",
+        }
+    }
+
+    /// Retained 15.30 outfit records and the named sprite comparison in PR #3459.
+    pub const fn outfit_look_type(self) -> u32 {
+        match self {
+            Self::Domestikion => 1426,
+            Self::Hoodinion => 1424,
+            Self::Mearidion => 1425,
+            Self::Scissorion => 1423,
+            Self::Murmillion => 1422,
+        }
+    }
+
     pub const fn base_health(self) -> u64 {
         match self {
             Self::Domestikion => 750,
@@ -35,14 +64,9 @@ impl DromeCreatureRole {
         }
     }
     pub(in crate::carrier) fn from_key(key: &str) -> Option<Self> {
-        Some(match key {
-            "oteryn:creature.domestikion" => Self::Domestikion,
-            "oteryn:creature.hoodinion" => Self::Hoodinion,
-            "oteryn:creature.mearidion" => Self::Mearidion,
-            "oteryn:creature.scissorion" => Self::Scissorion,
-            "oteryn:creature.murmillion" => Self::Murmillion,
-            _ => return None,
-        })
+        Self::POOL
+            .into_iter()
+            .find(|role| role.definition_key() == key)
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]

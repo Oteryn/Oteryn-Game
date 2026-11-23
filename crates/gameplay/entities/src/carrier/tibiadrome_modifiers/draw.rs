@@ -15,6 +15,19 @@ pub fn drome_rotation_modifiers(ordinal: u32) -> [DromeModifier; 2] {
         ALL[if second >= first { second + 1 } else { second }],
     ]
 }
+/// ARENA1 A4: each slot draws independently from the five species (with replacement).
+pub fn drome_wave_opponent(run: [u8; 16], wave: u32, slot: u64) -> Option<DromeCreatureRole> {
+    let mut seed = [0; 32];
+    seed[..16].copy_from_slice(&run);
+    seed[16..20].copy_from_slice(&wave.to_be_bytes());
+    // Keep opponent draws distinct from the hazard pulse draws on the same stream.
+    seed[28..].copy_from_slice(b"pool");
+    let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(seed);
+    let occurrence = oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(run);
+    let pool = DromeCreatureRole::POOL;
+    bounded_draw(&root, occurrence, "drome_wave", slot, pool.len()).map(|index| pool[index])
+}
+
 const ALL: [DromeModifier; 9] = [
     DromeModifier::Somersault,
     DromeModifier::GoingDownWithMe,
