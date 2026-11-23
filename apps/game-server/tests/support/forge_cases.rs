@@ -48,20 +48,17 @@ fn run_case(tag: &str, body: impl AsyncFnOnce(&mut PgConnection) -> TestResult) 
                 return Err("canonical target is PostgreSQL 18.6".into());
             }
             eprintln!("CANONICAL PostgreSQL 18.6 private tier case: {tag}");
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)?
-                .as_nanos();
-            let name = format!("forge_tier_{tag}_{}_{nonce}", std::process::id());
-            sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
-                .execute(&mut admin)
-                .await?;
+            let name = oteryn_test_support::postgres::database_name(&format!("forge_tier_{tag}"));
+            oteryn_test_support::postgres::create_migrated_database(
+                &mut admin,
+                &admin_url,
+                &name,
+                &oteryn_gameplay_durability::GAME_MIGRATOR,
+            )
+            .await?;
             let result = async {
                 let prefix = admin_url.strip_suffix("/postgres").ok_or("invalid route")?;
                 let mut connection = PgConnection::connect(&format!("{prefix}/{name}")).await?;
-                // The actual native migration chain supplies both items and tiers.
-                oteryn_gameplay_durability::GAME_MIGRATOR
-                    .run(&mut connection)
-                    .await?;
                 let installed: bool =
                     sqlx::query_scalar("SELECT success FROM _sqlx_migrations WHERE version=$1")
                         .bind(FORGE_TIER_MIGRATION_VERSION)

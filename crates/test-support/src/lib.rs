@@ -1,5 +1,7 @@
 //! Deterministic, test-owned helpers for Oteryn technical contracts.
 
+#[cfg(feature = "postgres")]
+pub mod postgres;
 pub mod property;
 
 use oteryn_diagnostics::{

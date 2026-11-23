@@ -1,5 +1,7 @@
 //! Isolated PostgreSQL 18.6 database, following the game-server harness's
 //! localhost-only test-admin URL and explicit database cleanup conventions.
+include!(concat!(env!("OUT_DIR"), "/postgres_read_cases_mounts.rs"));
+
 use super::*;
 use crate::store::{IdempotencyStore, NonceStore, PostgresStore};
 use sqlx::{
@@ -16,15 +18,25 @@ fn postgres_ledger_nonce_and_idempotency() -> Result<(), WireError> {
         }
         return Ok(());
     }
-    let thread = std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?
-            .block_on(run())
-    })?;
+    run_on_thread(cases)
+}
+
+fn run_on_thread(
+    cases: impl AsyncFnOnce(&sqlx::PgPool) -> Result<(), WireError> + Send + 'static,
+) -> Result<(), WireError> {
+    let thread = std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?
+                .block_on(run(cases))
+        })?;
     thread.join().map_err(|_| "PG thread failed")?
 }
-async fn run() -> Result<(), WireError> {
+async fn run(
+    cases: impl AsyncFnOnce(&sqlx::PgPool) -> Result<(), WireError>,
+) -> Result<(), WireError> {
     let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
     let options = PgConnectOptions::from_str(&url)?;
     if !url.starts_with("postgresql://oteryn_test_admin:")
@@ -64,11 +76,7 @@ async fn run() -> Result<(), WireError> {
             "DROP DATABASE {db}"
         ))))
         .await?;
-    result?;
-    eprintln!(
-        "ADMIN_PG_EXECUTED: PostgreSQL 18.6; isolated DB; real nonce, ledger, idempotency and role checks"
-    );
-    Ok(())
+    result
 }
 async fn cases(pool: &sqlx::PgPool) -> Result<(), WireError> {
     pool.execute("DO $$ BEGIN IF NOT EXISTS(SELECT FROM pg_roles WHERE rolname='oteryn_game_control') THEN CREATE ROLE oteryn_game_control NOLOGIN; END IF; END $$").await?;
@@ -174,6 +182,9 @@ async fn cases(pool: &sqlx::PgPool) -> Result<(), WireError> {
     sqlx::query("RESET ROLE").execute(&mut *conn).await?;
     drop(conn);
     restricted_role_store(pool).await?;
+    eprintln!(
+        "ADMIN_PG_EXECUTED: PostgreSQL 18.6; isolated DB; real nonce, ledger, idempotency and role checks"
+    );
     Ok(())
 }
 fn code(e: ErrorCode) -> String {

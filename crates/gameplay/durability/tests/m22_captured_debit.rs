@@ -1,5 +1,5 @@
 use sqlx::{Connection, Executor};
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::Instant;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -19,11 +19,7 @@ fn m22_captured_ingredient_debit_rejects_partial_and_unknown_snapshots_postgres(
     {
         return Err("test database must use the local routed PostgreSQL".into());
     }
-    let database = format!(
-        "questpc3_m22_debit_{}_{}",
-        std::process::id(),
-        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
-    );
+    let database = oteryn_test_support::postgres::database_name("questpc3_m22_debit");
     let database_url = format!("{prefix}/{database}");
     let started = Instant::now();
     let result = tokio::runtime::Builder::new_current_thread()
@@ -31,24 +27,23 @@ fn m22_captured_ingredient_debit_rejects_partial_and_unknown_snapshots_postgres(
         .build()?
         .block_on(async {
             let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
-            admin
-                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                    "CREATE DATABASE {database}"
-                ))))
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&mut admin)
                 .await?;
+            assert_eq!(
+                version,
+                oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
+            );
+            oteryn_test_support::postgres::create_migrated_database(
+                &mut admin,
+                &admin_url,
+                &database,
+                &oteryn_gameplay_durability::GAME_MIGRATOR,
+            )
+            .await?;
             let exercised: TestResult = async {
                 let mut connection = sqlx::PgConnection::connect(&database_url).await?;
-                let version: String = sqlx::query_scalar("SHOW server_version_num")
-                    .fetch_one(&mut connection)
-                    .await?;
-                assert_eq!(
-                    version,
-                    oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM
-                );
                 eprintln!("M22_DEBIT POSTGRES_CONNECTED version={version}");
-                oteryn_gameplay_durability::GAME_MIGRATOR
-                    .run(&mut connection)
-                    .await?;
                 let cases = [
                     (true, serde_json::json!({"quantity":7}), 7, true),
                     (true, serde_json::json!({"quantity":7}), 1, true),

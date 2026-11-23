@@ -145,16 +145,29 @@ pub(super) async fn exercise_open_pvp(
     let frames = support::events(
         owner,
         admitted,
-        &[(1, wire::COMMAND_TYPE_HOTKEY_EQUIP, payload)],
+        &[
+            (1, wire::COMMAND_TYPE_HOTKEY_EQUIP, payload),
+            (2, wire::COMMAND_TYPE_HOTKEY_EQUIP, Vec::new()),
+        ],
     )
     .await?;
     let mut moved = false;
+    let mut rejected = false;
     let mut published = false;
     for frame in frames {
         let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
         match envelope.message_type() {
             protocol::MessageType::CommandResult => {
                 let result = protocol::decode_command_result(envelope.payload()).map_err(debug)?;
+                if result.command_id == 2 {
+                    assert_eq!(result.status, protocol::CommandStatus::Accepted);
+                    assert_eq!(
+                        wire::decode_reply(result.payload).map_err(debug)?,
+                        ItemMoveOutcome::Rejected
+                    );
+                    rejected = true;
+                    continue;
+                }
                 assert_eq!(result.command_id, 1);
                 assert_eq!(result.status, protocol::CommandStatus::Accepted);
                 assert_eq!(
@@ -183,6 +196,7 @@ pub(super) async fn exercise_open_pvp(
         }
     }
     assert!(moved, "command 348 returned Moved");
+    assert!(rejected, "malformed hotkey returned a typed rejection");
     assert!(
         published,
         "the inventory delta transferred the axe to equipment"

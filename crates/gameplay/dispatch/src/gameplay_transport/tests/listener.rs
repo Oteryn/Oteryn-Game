@@ -709,22 +709,17 @@ async fn holder_listener_fifo_scenario() -> Result<(), Box<dyn Error>> {
     use sqlx::Connection;
     let admin_url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
     let options: sqlx::postgres::PgConnectOptions = admin_url.parse()?;
-    let name = format!(
-        "holder_listener_{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos()
-    );
+    let name = oteryn_test_support::postgres::database_name("holder_listener");
     let mut admin = sqlx::PgConnection::connect_with(&options).await?;
-    sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
-        .execute(&mut admin)
-        .await?;
+    oteryn_test_support::postgres::create_migrated_database(
+        &mut admin,
+        &admin_url,
+        &name,
+        &oteryn_gameplay_durability::GAME_MIGRATOR,
+    )
+    .await?;
     let database_options = options.database(&name);
     let database_url = sqlx::ConnectOptions::to_url_lossy(&database_options);
-    crate::durability::MigrationExecutor::connect_migration(database_url.as_str())
-        .await?
-        .apply_embedded_ledger()
-        .await?;
     let root = DurabilityRoot::connect_test_runtime(database_url.as_str())?;
     assert!(root.maintain_ready_once().await?);
     let held = root.try_acquire_ready()?;

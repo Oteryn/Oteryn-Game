@@ -514,7 +514,7 @@ fn arbaziloth_replacement_retries_refused_placement() {
             damage: health,
         };
         let result = runtime
-            .borrow_exact_actor_commit()
+            .borrow_exact_actor_commit_at(0)
             .commit_damage(boss, command)
             .unwrap();
         assert_eq!(result.health_after, health - 20);

@@ -82,49 +82,31 @@ impl Database {
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }
-        let suffix = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos();
-        let name = format!("bp_{name}_{suffix}");
+        let name = oteryn_test_support::postgres::database_name(&format!("bp_{name}"));
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}"
-            ))))
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut admin)
             .await?;
+        if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
+            return Err("canonical target is PostgreSQL 18.6".into());
+        }
+        oteryn_test_support::postgres::create_migrated_database(
+            &mut admin,
+            &admin_url,
+            &name,
+            &oteryn_gameplay_durability::GAME_MIGRATOR,
+        )
+        .await?;
         admin.close().await?;
         let prefix = admin_url
             .strip_suffix("/postgres")
             .ok_or("invalid admin URL")?;
         let url = format!("{prefix}/{name}");
-        let migration_url = url.clone();
-        let migrated: TestResult = async move {
-            let mut connection = sqlx::PgConnection::connect(&migration_url).await?;
-            let version: String = sqlx::query_scalar("SHOW server_version_num")
-                .fetch_one(&mut connection)
-                .await?;
-            if version != oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM {
-                return Err("canonical target is PostgreSQL 18.6".into());
-            }
-            oteryn_gameplay_durability::GAME_MIGRATOR
-                .run(&mut connection)
-                .await?;
-            connection.close().await?;
-            Ok(())
-        }
-        .await;
-        let database = Self {
+        Ok(Self {
             admin_url,
             name,
             url,
-        };
-        match migrated {
-            Ok(()) => Ok(database),
-            failure => {
-                database.cleanup().await?;
-                Err(format!("PostgreSQL migration setup failed: {failure:?}").into())
-            }
-        }
+        })
     }
 
     async fn cleanup(self) -> TestResult {

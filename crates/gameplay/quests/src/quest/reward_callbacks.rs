@@ -6,6 +6,7 @@ use super::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::OnceLock;
 
 #[cfg(test)]
 mod capture_tests;
@@ -601,7 +602,11 @@ pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback
 }
 
 pub fn load() -> Result<Vec<RewardCallback>, String> {
-    embedded_document().map(|document| document.callbacks)
+    // The embedded sources do not change between quest receipts.
+    static CALLBACKS: OnceLock<Result<Vec<RewardCallback>, String>> = OnceLock::new();
+    CALLBACKS
+        .get_or_init(|| embedded_document().map(|document| document.callbacks))
+        .clone()
 }
 
 fn embedded_document() -> Result<Document, String> {
@@ -1819,6 +1824,64 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn fiend_programme_requires_the_forgemaster_reward_at_every_stage() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let catalogue = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let claimed = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .world_claim
+                    .as_ref()
+                    .is_some_and(|claim| claim.key == "oteryn:reward-claim.nrwicked-forgemaster")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(claimed.len(), 11);
+        for (stage, addons) in [
+            ("commission", None),
+            ("first-token", Some(0)),
+            ("second-token", Some(1)),
+            ("complete", Some(3)),
+        ] {
+            let callback = callbacks
+                .iter()
+                .find(|c| c.key == format!("oteryn:quest-reward/questpc7-fiend-{stage}"))
+                .ok_or("Fiend programme stage")?;
+            let requirements = callback.requirements.as_ref().ok_or("Fiend requirements")?;
+            assert_eq!(
+                requirements
+                    .owned_cosmetics
+                    .first()
+                    .map(|outfit| outfit.addons),
+                addons,
+                "{stage}"
+            );
+            assert_eq!(
+                requirements.owned_cosmetics.len(),
+                usize::from(addons.is_some()),
+                "{stage}"
+            );
+            assert!(requirements.premium);
+            assert_eq!(requirements.min_level, 250);
+            assert!(requirements.completed_quests.is_empty(), "{stage}");
+            let [gate] = callback.requires.as_slice() else {
+                return Err(format!("{stage} needs one Forgemaster claim predicate"));
+            };
+            assert!(!gate.holds(catalogue.catalogue(), &std::collections::BTreeMap::new()));
+            for reward in &claimed {
+                let [write] = reward.storage.as_slice() else {
+                    return Err("expected one Forgemaster reward write".into());
+                };
+                assert_eq!(write.track, gate.track);
+                let tracks = std::collections::BTreeMap::from([(write.track.clone(), write.set)]);
+                assert!(gate.holds(catalogue.catalogue(), &tracks), "{stage}");
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
         let mut callback = super::parse(include_str!(

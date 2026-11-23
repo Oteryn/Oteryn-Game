@@ -72,8 +72,8 @@ class CorpseQualification(unittest.TestCase):
             25815, 27714, 27718, 30272, 31453, 31599, 31611, 33821, 50029})
         self.assertEqual(len(self.plan.records), 144)
         for number, duration, target in [(6017, 10000, 4301), (4301, 300000, 4302),
-                                         (4302, 300000, 4303), (50029, 300000, 50028),
-                                         (50028, 300000, 50027)]:
+                                         (4302, 300000, 4303), (50029, 60000, 50028),
+                                         (50028, 60000, 50027)]:
             row = self.plan.records[f'oteryn:item.tibia.i{number}']
             temporal = row['semantics']['temporal']['value']
             self.assertEqual(temporal['duration'], corpse.grizzly.source.K(duration))
@@ -97,7 +97,7 @@ class CorpseQualification(unittest.TestCase):
                          corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(20)}))
         for number in (50029, 50028):
             self.assertEqual(self.plan.records[f'oteryn:item.tibia.i{number}']['semantics']['container'],
-                             corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(15)}))
+                             corpse.grizzly.source.K({'capacity': corpse.grizzly.source.K(8)}))
         self.assertEqual(self.plan.records['oteryn:item.tibia.i50027']['semantics']['container'],
                          corpse.grizzly.source.NA)
 

@@ -100,6 +100,9 @@ impl Pixels {
 pub(crate) struct CaptureObservations {
     tracked_loot: u64,
     pub(in crate::play) tracker: [u64; 3],
+    pub(in crate::play) personal_boss_events: bool,
+    boss_revision: u64,
+    pending_boss_defeats: u64,
     credited_kills: u64,
     kill_feed: bool,
     low_health: u64,
@@ -122,6 +125,18 @@ impl crate::play::mailbox::Mailbox {
             }
         };
         match event {
+            SessionEvent::ServerMessage(delta)
+                if matches!(delta.value, oteryn_session::ServerMessage::BossDefeated(_)) =>
+            {
+                let observed = &mut self.capture_observations;
+                if oteryn_client_ui::boss_defeated::advanced(
+                    delta.new_revision,
+                    observed.boss_revision,
+                ) {
+                    observed.boss_revision = delta.new_revision;
+                    observed.pending_boss_defeats = observed.pending_boss_defeats.saturating_add(1);
+                }
+            }
             SessionEvent::AnalyserFacts(delta) => delta.value.iter().for_each(&mut observe),
             SessionEvent::AnalyserAttributedFacts(delta) => {
                 delta.value.iter().for_each(|row| observe(&row.fact))
@@ -141,6 +156,19 @@ impl crate::play::mailbox::Mailbox {
     }
 }
 impl crate::play::PlayLink {
+    fn take_boss_defeat(&self, enabled: bool, capture_pending: bool) -> bool {
+        let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let count = &mut mailbox.capture_observations.pending_boss_defeats;
+        if !enabled {
+            *count = 0;
+        }
+        if *count == 0 || capture_pending {
+            return false;
+        }
+        *count -= 1;
+        true
+    }
+
     fn capture_observations(&self) -> CaptureObservations {
         let mailbox = crate::play::mailbox::lock(&self.mailbox);
         CaptureObservations {

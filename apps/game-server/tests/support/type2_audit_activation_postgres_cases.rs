@@ -105,16 +105,30 @@ impl Database {
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }
-        let suffix = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos();
-        let name = format!("t2act_{tag}_{suffix}");
+        let name = oteryn_test_support::postgres::database_name(&format!("t2act_{tag}"));
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
-        admin
-            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}"
-            ))))
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut admin)
             .await?;
+        assert!(
+            version.starts_with("18"),
+            "PostgreSQL 18 required: {version}"
+        );
+        if upto.is_some() {
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {name}"
+                ))))
+                .await?;
+        } else {
+            oteryn_test_support::postgres::create_migrated_database(
+                &mut admin,
+                &admin_url,
+                &name,
+                &oteryn_gameplay_durability::GAME_MIGRATOR,
+            )
+            .await?;
+        }
         admin.close().await?;
         let prefix = admin_url
             .strip_suffix("/postgres")
@@ -125,7 +139,9 @@ impl Database {
             name,
             url,
         };
-        database.migrate(upto).await?;
+        if upto.is_some() {
+            database.migrate(upto).await?;
+        }
         Ok(database)
     }
 
@@ -138,10 +154,10 @@ impl Database {
             version.starts_with("18"),
             "PostgreSQL 18 required: {version}"
         );
-        let migrator = &oteryn_gameplay_durability::GAME_MIGRATOR;
-        match upto {
-            Some(version) => migrator.run_to(version, &mut connection).await?,
-            None => migrator.run(&mut connection).await?,
+        if let Some(version) = upto {
+            oteryn_gameplay_durability::GAME_MIGRATOR
+                .run_to(version, &mut connection)
+                .await?;
         }
         connection.close().await?;
         Ok(())
