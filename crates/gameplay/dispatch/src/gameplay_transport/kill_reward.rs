@@ -3395,8 +3395,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 struct BossAchievementSettlement {
     boss: BossDeathAchievements,
     recipients: Vec<BossDeathAchievementRecipient>,
-    /// An award retry only repeats the grant after the other death owners finish.
-    rewards: OnceLock<SettleReport>,
 }
 
 /// Crystal's killingLibrary event reads Player IDs from the physical damage map.
@@ -3406,17 +3404,12 @@ fn capture_boss_achievements(
     creature: &str,
 ) -> Option<Arc<BossAchievementSettlement>> {
     let boss = BossDeathAchievements::for_creature(creature)?;
-    let census = runtime.positioned_actor_census().ok()?;
     let recipients: Vec<_> = runtime
         .all_source_player_damage_shares(target)
         .ok()?
         .into_iter()
         .filter_map(|share| {
-            let session = census
-                .iter()
-                .find(|(actor, _, _)| *actor == share.actor)
-                .and_then(|(_, _, session)| *session)?;
-            let lease = runtime.bound_attacker_lease(share.actor, session).ok()?;
+            let (session, lease) = runtime.present_player_lease(share.actor).ok()?;
             if share.total == 0 || lease.character_id() != share.character {
                 return None;
             }
@@ -3428,13 +3421,7 @@ fn capture_boss_achievements(
             })
         })
         .collect();
-    (!recipients.is_empty()).then(|| {
-        Arc::new(BossAchievementSettlement {
-            boss,
-            recipients,
-            rewards: OnceLock::new(),
-        })
-    })
+    (!recipients.is_empty()).then(|| Arc::new(BossAchievementSettlement { boss, recipients }))
 }
 
 /// Copied Soul War onDeath settles XP before the ordinary drain can take the
@@ -3463,48 +3450,41 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
         if entry.soulpit_experience.is_some() {
             return self.settle_soulpit(entry).await;
         }
-        let mut report = if let Some(report) = entry
-            .boss_achievements
-            .as_ref()
-            .and_then(|settlement| settlement.rewards.get())
-        {
-            *report
-        } else {
-            if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
-                return SettleReport {
-                    verdict: SettleVerdict::Retry,
-                    no_progression: false,
-                };
-            }
-            super::grizzly_kills::settle(
-                self.admission,
-                entry,
-                Box::pin(self.settle_durably(entry, inflight_before)),
-            )
-            .await
-        };
-        // Award only after the preceding quest, XP and loot owners have resolved
-        // this death. A committed award never depends on recovery of those stages.
-        if report.verdict == SettleVerdict::Final
-            && let Some(settlement) = &entry.boss_achievements
-        {
-            let _ = settlement.rewards.set(report);
-            if self
-                .admission
-                .root
-                .grant_boss_death_achievements(
-                    self.admission.character,
-                    self.admission.holder,
-                    settlement.recipients.clone(),
-                    entry.facts.death,
-                    settlement.boss,
-                )
-                .await
-                .is_err()
-            {
-                report.verdict = SettleVerdict::Retry;
-            }
+        if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
         }
+        let report = super::grizzly_kills::settle(
+            self.admission,
+            entry,
+            Box::pin(async {
+                // Quest prerequisites settle first. Commit the grant before the XP and
+                // loot transactions so their durable rewards cannot outlive the roster.
+                if let Some(settlement) = &entry.boss_achievements
+                    && self
+                        .admission
+                        .root
+                        .grant_boss_death_achievements(
+                            self.admission.character,
+                            self.admission.holder,
+                            settlement.recipients.clone(),
+                            entry.facts.death,
+                            settlement.boss,
+                        )
+                        .await
+                        .is_err()
+                {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                }
+                self.settle_durably(entry, inflight_before).await
+            }),
+        )
+        .await;
         self.admission
             .refresh_native_objective_recipients(entry)
             .await;

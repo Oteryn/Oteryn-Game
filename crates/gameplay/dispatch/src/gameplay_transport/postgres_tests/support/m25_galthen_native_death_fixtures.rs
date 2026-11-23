@@ -34,6 +34,13 @@ async fn death(
 ) -> TestResult {
     let target =
         super::qengine_kill_stories_fixtures::death_actor(owner, admitted, creature, command).await?;
+    retire_death_actor(owner, target).await
+}
+
+async fn retire_death_actor(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    target: crate::foundation::ExactActorRef,
+) -> TestResult {
     let mut runtime = owner.runtime.lock().await;
     assert_eq!(
         runtime
@@ -172,7 +179,11 @@ pub(super) async fn exercise(
     {
         let command = 60000 + u64::try_from(index)? * 10;
         assert_eq!(value(h, gate).await?, 0);
-        death(owner, admitted, creature, command).await?;
+        if stage == "s8" {
+            assert_mitmah_reward_grant_boundary(owner, admitted, h, creature, command).await?;
+        } else {
+            death(owner, admitted, creature, command).await?;
+        }
         super::m25_corpse_chain::assert_native_corpse_chain(&h.pool, creature).await?;
         assert_eq!(
             value(h, stage).await?,
@@ -229,4 +240,55 @@ pub(super) async fn exercise(
         assert_eq!(museum_goer, i64::from(stage == "s8"));
     }
     Ok(())
+}
+
+async fn assert_mitmah_reward_grant_boundary(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    creature: &str,
+    command: u64,
+) -> TestResult {
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+
+    let rewards = async || -> TestResult<(i64, i64)> {
+        Ok(sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_party_kill_xp_receipts WHERE creature_key=$1),
+                    (SELECT count(*) FROM game_item_mint_receipts
+                     WHERE loot_purpose_key='CORPSE_MATERIALIZATION' AND materialized_at IS NOT NULL)",
+        )
+        .bind(creature)
+        .fetch_one(&h.pool)
+        .await?)
+    };
+    let before = rewards().await?;
+    sqlx::raw_sql(
+        "CREATE FUNCTION reject_mitmah_award() RETURNS trigger LANGUAGE plpgsql AS $$
+         BEGIN
+             IF NEW.achievement_key = 'oteryn:achievement/museum_goer' THEN
+                 RAISE EXCEPTION 'injected Mitmah achievement failure';
+             END IF;
+             RETURN NEW;
+         END $$;
+         CREATE TRIGGER reject_mitmah_award BEFORE INSERT ON game_account_achievement_grant_requests
+             FOR EACH ROW EXECUTE FUNCTION reject_mitmah_award()",
+    )
+    .execute(&h.pool)
+    .await?;
+    let target =
+        super::qengine_kill_stories_fixtures::queue_death(owner, admitted, creature, command).await?;
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        DrainOutcome::Deferred
+    );
+    assert_eq!(
+        rewards().await?,
+        before,
+        "XP and corpse receipts must not survive a failed achievement grant"
+    );
+    sqlx::query("DROP TRIGGER reject_mitmah_award ON game_account_achievement_grant_requests")
+        .execute(&h.pool)
+        .await?;
+    super::qengine_kill_stories_fixtures::drain_deaths(owner, admitted, &[]).await?;
+    retire_death_actor(owner, target).await
 }

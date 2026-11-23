@@ -110,7 +110,10 @@ BEGIN
                     AND 'sha256:'||encode(v.content_generation,'hex')=NEW.outputs->0->'ground'->>'content_revision'
                     AND encode(uuid_send(t.channel_id),'hex')=NEW.outputs->0->'ground'->>'channel'
                 ))
-            OR (NEW.recipe='oteryn:sculpture.carried' AND NEW.ingredient_location ? 'spatial_position')
+            OR (NEW.recipe='oteryn:sculpture.carried' AND (
+                NEW.ingredient_before_item->>'definition_production_key'='oteryn:item.tibia.i10426'
+                OR (NEW.ingredient_location ? 'spatial_position') IS TRUE
+            ))
         )
     ) THEN RAISE EXCEPTION 'unqualified Ground sculpture output' USING ERRCODE='23514'; END IF;
 $arm$;

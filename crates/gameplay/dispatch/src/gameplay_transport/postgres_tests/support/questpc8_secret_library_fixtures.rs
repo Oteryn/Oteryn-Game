@@ -234,7 +234,20 @@ pub(super) async fn exercise(
         let admit = super::boss_rewards_fixtures::privacy::admit_gameplay_peer;
         let peer = admit(h, peers, 1).await?;
         let departing = admit(h, peers, 2).await?;
-        oberon_peer_damage(owner, admitted, target, command, creature, peer).await?;
+        let peer_actor = oberon_peer_damage(owner, admitted, target, command, creature, peer).await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .record_control_loss(
+                peer_actor,
+                peer,
+                crate::foundation::ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: i64::try_from(owner.owner_now().get())? + 30_000,
+                },
+            )
+            .map_err(debug)?;
         oberon_peer_damage(owner, admitted, target, command, creature, departing).await?;
         // Fail the first write for a different recipient. The first recipient's
         // two requests must be invisible until the entire roster commits.
@@ -257,6 +270,12 @@ pub(super) async fn exercise(
             owner, admitted, target, creature, command, 1,
         )
         .await?;
+        owner
+            .runtime
+            .lock()
+            .await
+            .restore_control(peer_actor, peer, 1)
+            .map_err(debug)?;
         assert_eq!(
             owner.drain_kill_rewards(admitted.game_session_id).await,
             DrainOutcome::Deferred
@@ -331,7 +350,7 @@ pub(super) async fn exercise(
                 oberon_achievements(h, 101).await?.as_slice()
             ),
             (expected.as_slice(), expected.as_slice()),
-            "principal has a completed objective and peer has no quest progress"
+            "principal has a completed objective and peer in reconnect grace at death has no quest progress"
         );
     } else {
         assert_eq!(principal, expected);
@@ -383,7 +402,7 @@ async fn oberon_peer_damage(
     command: u64,
     creature: &str,
     session: crate::foundation::GameSessionId,
-) -> TestResult {
+) -> TestResult<crate::foundation::ExactActorRef> {
     use crate::foundation::{
         CharacterId, CharacterLease, CommandId, CommandRef, OwnerDamageCommand,
     };
@@ -426,7 +445,7 @@ async fn oberon_peer_damage(
             },
         )
         .map_err(debug)?;
-    Ok(())
+    Ok(peer)
 }
 
 async fn terminalize_oberon_peer(

@@ -362,6 +362,7 @@ enum SculptureSetup {
     Base,
     Carried,
     NestedMaterial,
+    FullBackpackNestedMaterial,
     NestedTool,
     Dropped,
     FullBackpack,
@@ -372,6 +373,16 @@ enum SculptureSetup {
 #[test]
 fn review_nested_sculpture_material_commits() -> TestResult {
     run_gathering_at(5908, 10426, None, Some(10429), true, false, SculptureSetup::NestedMaterial)
+}
+
+#[test]
+fn review_full_backpack_nested_marble_drops_figurine() -> TestResult {
+    for tool in [5908, 5942] {
+        run_gathering_at(
+            tool, 10426, None, Some(10429), true, false, SculptureSetup::FullBackpackNestedMaterial,
+        )?;
+    }
+    Ok(())
 }
 
 #[test]
@@ -448,9 +459,11 @@ fn gathering_scenario(
     in_sewers: bool,
     setup: SculptureSetup,
 ) -> TestResult {
-    let carried = matches!(setup, SculptureSetup::Carried | SculptureSetup::NestedMaterial | SculptureSetup::NestedTool | SculptureSetup::Offered);
+    let full_nested = setup == SculptureSetup::FullBackpackNestedMaterial;
+    let nested = full_nested || matches!(setup, SculptureSetup::NestedMaterial | SculptureSetup::NestedTool);
+    let carried = nested || matches!(setup, SculptureSetup::Carried | SculptureSetup::Offered);
     let item_target = carried || setup == SculptureSetup::Dropped;
-    let fallback = matches!(setup, SculptureSetup::FullBackpack | SculptureSetup::Overweight);
+    let fallback = full_nested || matches!(setup, SculptureSetup::FullBackpack | SculptureSetup::Overweight);
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "m09_gathering", true, false).await?;
@@ -616,20 +629,30 @@ fn gathering_scenario(
         let supplies = if item_target { (water, 1) } else { (bait_key, 3) };
         let mut entries = vec![(rod, 1), supplies];
         match setup {
+            SculptureSetup::FullBackpackNestedMaterial => {
+                entries.push((bag, 1));
+                // Nesting the marble removes one of these from the main backpack.
+                entries.resize(21, ("oteryn:item.tibia.i3031", 1));
+            }
             SculptureSetup::FullBackpack => entries.resize(20, ("oteryn:item.tibia.i3031", 1)),
             SculptureSetup::Overweight => entries.resize(10, ("oteryn:item.tibia.i3578", 100)),
             SculptureSetup::NestedMaterial | SculptureSetup::NestedTool => entries.push((bag, 1)),
             _ => {}
         }
-        let source_handle = if fallback { u64::try_from(entries.len())? + 1 } else { 3 };
+        let source_handle = if fallback && !carried { u64::try_from(entries.len())? + 1 } else { 3 };
         super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
-        if matches!(setup, SculptureSetup::NestedMaterial | SculptureSetup::NestedTool) {
+        if nested {
             let item = if setup == SculptureSetup::NestedTool { 71 } else { 72 };
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
             sqlx::query("WITH moved AS (DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid RETURNING *) INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,world_id,encode($2,'hex')::uuid,1,placed_transaction_id FROM moved")
                 .bind(id(item).as_slice()).bind(id(73).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
+        }
+        if full_nested {
+            let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(occupied, 20);
         }
         super::achievement_granters::seed_gathering(&harness).await?;
         let sculpture = match target_id {
@@ -814,10 +837,7 @@ fn gathering_scenario(
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
         admitted.continuity.item_view.handle_counter = counter;
         let command_id = 1;
-        let (next, result, actual) = if matches!(
-            setup,
-            SculptureSetup::NestedMaterial | SculptureSetup::NestedTool | SculptureSetup::Dropped | SculptureSetup::Offered
-        ) {
+        let (next, result, actual) = if nested || matches!(setup, SculptureSetup::Dropped | SculptureSetup::Offered) {
             use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey};
             if setup == SculptureSetup::Offered {
                 let binding = owner.runtime.lock().await.binding();
@@ -901,9 +921,14 @@ fn gathering_scenario(
                 )));
         }
         let inventory_output = yield_item.or(if carried { after } else { None });
-        let inventory_yield: Option<i64> = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+        let live_yield: Option<i64> = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
             .bind(format!("oteryn:item.tibia.i{}", inventory_output.unwrap_or(5878))).fetch_one(&harness.pool).await?;
-        assert_eq!(inventory_yield, inventory_output.map(|_| 1));
+        assert_eq!(live_yield, inventory_output.map(|_| 1));
+        if full_nested {
+            let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(remaining, 0);
+        }
         if fallback {
             let ground_outputs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key=$1 AND g.spatial_position=$2")
                 .bind(format!("oteryn:item.tibia.i{}", yield_item.ok_or("fallback figurine")?))

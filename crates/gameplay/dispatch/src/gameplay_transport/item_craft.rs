@@ -461,9 +461,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .station
             .as_ref()
             .and_then(|s| item_id(&s.production_key));
+        let tool_id = tool.and_then(|entry| item_id(&entry.item.definition.production_key));
         if let Some((MapEntryKey::Base(key), revision, invalid, _)) = map_target
-            && let (Some(tool), Some(target_id)) = (tool, target_id)
-            && let Some(tool_id) = item_id(&tool.item.definition.production_key)
+            && let (Some(tool), Some(tool_id), Some(target_id)) = (tool, tool_id, target_id)
             && let Some(attempt) = oteryn_gameplay_items::event_planting::planting_attempt(
                 tool_id, target_id,
             )
@@ -543,14 +543,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 attempt,
             });
         }
-        if request
+        let terrain_marble_yield = request
             .gathering
             .as_ref()
-            .is_some_and(|g| g.mutation.before == 10426 && g.attempt.yield_item.is_some())
-        {
-            let placement = sculpture_tile(self, actor).await?;
-            sculpture_ground = Some(GroundSculpture {
-                actor: placement,
+            .is_some_and(|g| g.mutation.before == 10426 && g.attempt.yield_item.is_some());
+        let carried_marble_yield = sculpture_ground.is_none()
+            && request.ingredient.is_some()
+            && target_id == Some(10426)
+            && tool_id.is_some_and(|tool| {
+                gathering_roll(
+                    native.source_digest(),
+                    command.game_session_id,
+                    command.command_id,
+                    &request.intent,
+                )
+                .and_then(|roll| {
+                    oteryn_gameplay_items::fishing::gathering_attempt(tool, 10426, 10, 1, roll)
+                })
+                .is_some_and(|attempt| attempt.yield_item.is_some())
+            });
+        if terrain_marble_yield || carried_marble_yield {
+            let placement = sculpture_tile(self, actor).await;
+            if terrain_marble_yield && placement.is_none() {
+                return None;
+            }
+            sculpture_ground = placement.map(|actor| GroundSculpture {
+                actor,
                 target: None,
             });
         }
