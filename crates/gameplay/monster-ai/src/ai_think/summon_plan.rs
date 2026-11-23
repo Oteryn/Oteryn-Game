@@ -645,6 +645,9 @@ impl CreatureAiTable {
                 entry.sequence = sequence;
                 entry.due_us = (!report.idle)
                     .then_some(now_us.saturating_add(CREATURE_THINK_INTERVAL_MILLIS * 1000));
+                if report.idle && !report.over_budget {
+                    runtime.clear_source_player_damage(actor);
+                }
                 self.record_native_attack_positions(actor, runtime);
                 consume(runtime, self, actor, &report, reader);
                 self.run_think_hook(actor, position.position(), now_us, &report);
