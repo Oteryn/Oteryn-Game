@@ -1478,7 +1478,13 @@ fn scenario_case(
             tx.commit().await?;
         }
 
-        let world = if name.starts_with("qengine-rewards-l2-djinn-") {
+        let world = if name == "questpc7-outfits-fiend" {
+            super::super::quest_container_chests_fixtures::forgemaster::production_chests(
+                generation
+                    .native_gameplay()
+                    .ok_or("Forgemaster native gameplay")?,
+            )?
+        } else if name.starts_with("qengine-rewards-l2-djinn-") {
             super::super::questl2_djinn_world::world()?
         } else if name == "qengine-rewards-l2-white-raven" {
             super::super::questl2_white_raven_world::world(

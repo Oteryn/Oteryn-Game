@@ -43,6 +43,9 @@ LOOT_RECORDS_MAX = 4096
 APPEARANCES = ROOT / ('content/assets/files/appearances-'
                       '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat')
 MARKET_CATEGORY_CREATURE_PRODUCTS = 24
+# These canonical stack facts preserve the independent rolls of Arbaziloth and its hard mode.
+ARBAZILOTH_STACK_YIELDS = {f'oteryn:item.tibia.i{item}' for item in
+                          (3043, 7642, 23373, 7643, 23375, 23374, 3041, 3037)}
 
 
 def digest(raw: bytes) -> str:
@@ -479,6 +482,7 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
                 'container_capacity': capacity['value'] if capacity.get('state') == 'KNOWN' else None}
             if charge_count.get('state') == 'KNOWN' and charge_count['value'] > 0:
                 facts[definition['identity']['key']]['charges'] = charge_count['value']
+            if 'charges' in facts[definition['identity']['key']] or definition['identity']['key'] in ARBAZILOTH_STACK_YIELDS:
                 stack = definition.get('semantics', {}).get('stack', {})
                 stackable = stack.get('value', {}).get('stackable', {}) if stack.get('state') == 'KNOWN' else {}
                 if stackable.get('state') == 'KNOWN' and type(stackable.get('value')) is bool:

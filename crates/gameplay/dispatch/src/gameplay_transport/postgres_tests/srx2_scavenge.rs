@@ -1233,7 +1233,7 @@ async fn exercise_rabbit(
         use_with_map_item: Some(MapUseTarget::Item(body_handle)),
         ..intent.clone()
     };
-    for _ in 0..2 {
+    for phase in ["fresh", "retry after losing feedback"] {
         assert_eq!(
             crate::gameplay_transport::item_craft::dispatch(
                 owner, actor, command, nested_use.clone(), Some(&view)
@@ -1244,13 +1244,18 @@ async fn exercise_rabbit(
             UseDisposition::Committed,
             "Crystal's kitchen knife action can skin a mature rabbit"
         );
+        assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
+        // Drain and discard the first delivery to simulate losing it before the retry.
+        let lines = owner.states.chat.drain(session);
+        assert!(
+            matches!(
+                lines.as_slice(),
+                [ChatLine::Private { text, .. }]
+                    if text == "You successfully gathered two rabbit's feet in excellent condition."
+            ),
+            "{phase}: {lines:?}"
+        );
     }
-    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
-    assert!(matches!(
-        owner.states.chat.drain(session).as_slice(),
-        [ChatLine::Private { text, .. }]
-            if text == "You successfully gathered two rabbit's feet in excellent condition."
-    ));
     let retry = UseCommand {
         command_id: command_id + 1,
         ..command
@@ -1369,26 +1374,28 @@ async fn exercise_rabbit(
         use_with_map_item: Some(MapUseTarget::Item(handle)),
         ..intent
     };
-    assert_eq!(
-        crate::gameplay_transport::mining::dispatch_map_use(
-            owner,
-            actor,
-            failure,
-            hotkey,
-            Some(&view)
-        )
-        .await
-        .ok_or("Lucky Loop rabbit hotkey USE")?
-        .disposition,
-        UseDisposition::Committed,
-        "a failed hotkey roll spends the corpse without minting feet"
-    );
-    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
-    assert!(matches!(
-        owner.states.chat.drain(session).as_slice(),
-        [ChatLine::Private { text, .. }]
-            if text.starts_with("Your attempt to skin the rabbit failed.")
-    ));
+    for _ in 0..2 {
+        assert_eq!(
+            crate::gameplay_transport::mining::dispatch_map_use(
+                owner,
+                actor,
+                failure,
+                hotkey.clone(),
+                Some(&view)
+            )
+            .await
+            .ok_or("Lucky Loop rabbit hotkey USE")?
+            .disposition,
+            UseDisposition::Committed,
+            "a failed hotkey roll spends the corpse without minting feet"
+        );
+        assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
+        assert!(matches!(
+            owner.states.chat.drain(session).as_slice(),
+            [ChatLine::Private { text, .. }]
+                if text.starts_with("Your attempt to skin the rabbit failed.")
+        ));
+    }
     assert_eq!(feet_count().await?, feet);
 
     let corpse = mint_corpse(owner, h, native, 6017, Some(race), 902).await?;
@@ -1404,19 +1411,21 @@ async fn exercise_rabbit(
         )?,
         ..command
     };
-    assert_eq!(
-        attempt(corpse, single_foot, obsidian_knife)
-            .await
-            .ok_or("one-foot rabbit USE")?
-            .disposition,
-        UseDisposition::Committed
-    );
-    assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
-    assert!(matches!(
-        owner.states.chat.drain(session).as_slice(),
-        [ChatLine::Private { text, .. }]
-            if text == "You successfully gathered a rabbit's foot in excellent condition."
-    ));
+    for _ in 0..2 {
+        assert_eq!(
+            attempt(corpse, single_foot, obsidian_knife)
+                .await
+                .ok_or("one-foot rabbit USE")?
+                .disposition,
+            UseDisposition::Committed
+        );
+        assert_eq!(body(corpse).await?, "oteryn:item.tibia.i4302");
+        assert!(matches!(
+            owner.states.chat.drain(session).as_slice(),
+            [ChatLine::Private { text, .. }]
+                if text == "You successfully gathered a rabbit's foot in excellent condition."
+        ));
+    }
     assert_eq!(feet_count().await?, feet + 1);
     let (retained_knives, nested_receipts): (i64, i64) = sqlx::query_as(
         "SELECT
