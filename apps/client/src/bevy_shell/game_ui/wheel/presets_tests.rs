@@ -148,3 +148,45 @@ fn review_import_validates_source_budget_before_adapting_points() -> TestResult 
     assert_eq!(panel(&app)?.points[14], 5);
     Ok(())
 }
+
+#[test]
+fn official_version_one_planner_allocations_import_through_preset_controls() -> TestResult {
+    let mut p = model();
+    let reply = p.diagram.reply.as_mut().ok_or("diagram")?;
+    reply.available = 4000;
+    reply.vocation = "Monk".into();
+    let (mut app, mut commands, outbox) = fixture(p)?;
+    preset_field(&mut app, 1, "M1OzEtJWXaiWkp3t4pQMLIyDsFQkJEToBl_-MAAA");
+    preset_action(&mut app, 5)?;
+    assert_eq!(
+        panel(&app)?.points,
+        oteryn_client_ui::wheel_allocation::SLOT_CAPACITIES
+    );
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("expected imported allocation preview".into());
+    };
+    let mut refreshed = panel(&app)?;
+    let mut reply = refreshed.diagram.reply.clone().ok_or("preview metadata")?;
+    reply.request = wire::Request::decode(&command.payload).ok_or("preview request")?;
+    assert_eq!(reply.request.points, refreshed.points);
+    oteryn_client_ui::wheel_allocation::diagram::apply(
+        &mut refreshed,
+        &command,
+        &oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+            payload: reply.encode().ok_or("preview response")?,
+        },
+    );
+    publish(&outbox, refreshed);
+    app.update();
+    preset_field(&mut app, 1, "M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA");
+    preset_action(&mut app, 5)?;
+    assert!(panel(&app)?.preset_feedback.contains("gem identities"));
+    assert_eq!(
+        panel(&app)?.points,
+        oteryn_client_ui::wheel_allocation::SLOT_CAPACITIES
+    );
+    Ok(())
+}

@@ -53,13 +53,16 @@ pub(super) fn export(panel: &WheelPanel) -> Result<String, &'static str> {
 
 pub(super) fn import(panel: &mut WheelPanel, code: &str) -> Result<(), &'static str> {
     let (prefix, budget) = metadata(panel)?;
-    let body = code
-        .trim()
-        .strip_prefix(prefix)
+    let code = code.trim();
+    let (version, body) = code
+        .strip_prefix(&prefix[..1])
+        .and_then(|code| code.split_at_checked(1))
+        .filter(|(version, _)| matches!(*version, "0" | "1"))
         .ok_or("Code does not match this vocation")?;
     let stripped = body.trim_end_matches('=');
-    if body.len() > 56
-        || stripped.len() > 56
+    // A 60-byte planner record plus DEFLATE framing fits in 128 encoded bytes.
+    let max_length = if version == "1" { 128 } else { 56 };
+    if body.len() > max_length
         || stripped.len() % 4 == 1
         || (stripped.len() != body.len() && body.len() != stripped.len().next_multiple_of(4))
     {
@@ -89,17 +92,23 @@ pub(super) fn import(panel: &mut WheelPanel, code: &str) -> Result<(), &'static 
     if bits != 0 || decoded.len() < 2 {
         return Err("Invalid Wheel code");
     }
-    if decoded
-        .get(38..)
-        .is_some_and(|gems| gems.iter().any(|g| *g != 255))
-    {
-        return Err("This build contains Tibia gem identities unavailable on this server");
-    }
-    let maximum = u32::from(u16::from_le_bytes([decoded[0], decoded[1]]));
-    let allocations = &decoded[2..decoded.len().min(38)];
-    if allocations.iter().copied().map(u32::from).sum::<u32>() > maximum {
-        return Err("Invalid Wheel point budget");
-    }
+    let allocations = if version == "1" {
+        let slots = oteryn_client_assets::wheel_planner::decode_allocation(&decoded)?;
+        ORDER.map(|slot| slots[slot - 1]).to_vec()
+    } else {
+        if decoded
+            .get(38..)
+            .is_some_and(|gems| gems.iter().any(|g| *g != 255))
+        {
+            return Err("This build contains Tibia gem identities unavailable on this server");
+        }
+        let maximum = u32::from(u16::from_le_bytes([decoded[0], decoded[1]]));
+        let allocations = &decoded[2..decoded.len().min(38)];
+        if allocations.iter().copied().map(u32::from).sum::<u32>() > maximum {
+            return Err("Invalid Wheel point budget");
+        }
+        allocations.to_vec()
+    };
     let mut points = [0; 36];
     let mut remaining = budget;
     for (value, slot) in allocations.iter().zip(ORDER) {
@@ -112,5 +121,9 @@ pub(super) fn import(panel: &mut WheelPanel, code: &str) -> Result<(), &'static 
     }
     let mut draft = panel.clone();
     draft.points = points;
-    panel.import_build(&draft.build_code())
+    panel.import_build(&draft.build_code())?;
+    if version == "1" {
+        panel.feedback = Some("Wheel allocation imported");
+    }
+    Ok(())
 }
