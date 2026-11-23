@@ -168,6 +168,13 @@ struct Placement {
     pickup: Result<u32, pickup::Ineligible>,
 }
 
+#[derive(Clone, Copy, Debug)]
+struct PlacedDoorEntry {
+    key: u64,
+    tracked: bool,
+    requirement: door::DoorEntryRequirement,
+}
+
 /// The production map facts of one bundle World.
 #[derive(Debug, Default)]
 pub struct BundleFacts {
@@ -188,6 +195,7 @@ pub struct BundleFacts {
     houses: Vec<(TilePos, u32)>,
     house_doors: Vec<(TilePos, u32, u8)>,
     doors: DoorBook,
+    door_entry: BTreeMap<TilePos, Vec<PlacedDoorEntry>>,
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
     callbacks: Arc<Mutex<Arc<CallbackStates>>>,
@@ -305,6 +313,12 @@ impl BundleFacts {
                 .copied()
                 .collect(),
             doors: self.doors.activity_copy(inside),
+            door_entry: self
+                .door_entry
+                .iter()
+                .filter(|(pos, _)| inside(**pos))
+                .map(|(pos, requirements)| (*pos, requirements.clone()))
+                .collect(),
             rotations: Mutex::new(Arc::new(BTreeMap::new())),
             callbacks: Arc::new(Mutex::new(Arc::new(CallbackStates::default()))),
             monster_steps: Mutex::new(VecDeque::new()),
@@ -346,6 +360,12 @@ impl BundleFacts {
                 .copied()
                 .collect(),
             doors: self.doors.activity_region(inside),
+            door_entry: self
+                .door_entry
+                .iter()
+                .filter(|(pos, _)| inside(**pos))
+                .map(|(pos, requirements)| (*pos, requirements.clone()))
+                .collect(),
             ..Self::default()
         }
     }
@@ -420,6 +440,7 @@ impl BundleFacts {
             houses: Vec::new(),
             house_doors: Vec::new(),
             doors: DoorBook::default(),
+            door_entry: BTreeMap::new(),
             rotations: Mutex::default(),
             callbacks: Arc::default(),
             monster_steps: Mutex::default(),
@@ -508,15 +529,12 @@ impl BundleFacts {
                     );
                 }
                 let door = palette.map_or(PaletteDoor::No, |entry| entry.door);
-                let (level, quest, open_level) = palette.map_or((None, None, false), |entry| {
+                let (level, quest, authored_open) = palette.map_or((None, None, false), |entry| {
                     let appearance = u32::from(entry.facts.appearance_id);
                     let closed = super::door_registry::closed_of(appearance).unwrap_or(appearance);
                     let level = super::door_registry::level_door_of(closed);
-                    (
-                        level,
-                        super::door_registry::quest_door_of(closed),
-                        level == Some(appearance),
-                    )
+                    let quest = super::door_registry::quest_door_of(closed);
+                    (level, quest, level.or(quest) == Some(appearance))
                 });
                 let action = item.attrs.action.filter(|action| *action > 0);
                 let required_level = level
@@ -562,13 +580,29 @@ impl BundleFacts {
                 };
                 let closed_solid = self.blocks(item.palette);
                 blocks |= closed_solid && door == PaletteDoor::No;
-                // The source STEP_IN action refuses open level doors with no action ID.
-                blocks |= !dropped && open_level && action.is_none();
                 let Some(key) = key else {
                     // A door beyond the ordinal reach cannot be named, so it blocks as a wall.
                     blocks |= closed_solid;
                     continue;
                 };
+                let tracked = matches!(door, PaletteDoor::Pair { .. });
+                if !dropped && (tracked || authored_open) {
+                    use door::DoorEntryRequirement::{Level, MissingAction, Storage};
+                    let requirement = required_level
+                        .map(Level)
+                        .or_else(|| required_storage.map(Storage))
+                        .or_else(|| missing_predicate.then_some(MissingAction));
+                    if let Some(requirement) = requirement {
+                        self.door_entry
+                            .entry(pos)
+                            .or_default()
+                            .push(PlacedDoorEntry {
+                                key,
+                                tracked,
+                                requirement,
+                            });
+                    }
+                }
                 match door {
                     PaletteDoor::Pair {
                         open,
@@ -667,6 +701,26 @@ impl BundleFacts {
         self.house_doors.sort_unstable();
         self.house_doors.shrink_to_fit();
         self.doors.finish();
+    }
+
+    pub(super) fn blocks_player_entry(
+        &self,
+        pos: TilePos,
+        admits: impl Fn(door::DoorEntryRequirement) -> bool,
+    ) -> bool {
+        self.door_entry.get(&pos).is_some_and(|doors| {
+            doors.iter().any(
+                |&PlacedDoorEntry {
+                     key,
+                     tracked,
+                     requirement,
+                 }| {
+                    (!tracked || self.doors.open_at(key))
+                        && !self.base_hidden(key)
+                        && !admits(requirement)
+                },
+            )
+        })
     }
 
     /// Source house identities in the checked active map, for public catalogue qualification.

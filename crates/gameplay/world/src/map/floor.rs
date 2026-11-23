@@ -261,6 +261,11 @@ pub type Cell = (i32, i32, i32);
 /// per step.
 pub trait CellBlocker: Sync {
     fn blocks(&self, cell: LogicalCell) -> bool;
+    /// Player door predicates default to fail-closed without admitted Character facts.
+    fn admits_door_entry(&self, _requirement: super::door::DoorEntryRequirement) -> bool {
+        false
+    }
+
     /// An exact, unambiguous conditional callback owns this native portal's landing.
     /// Default movement retains the bundle teleport. Rechecked with the sealed proof.
     fn suppresses_native_teleport(&self, _cell: LogicalCell) -> bool {
@@ -766,13 +771,20 @@ fn destination(
     // A closed door blocks the entered tile and every tile a floor change resolves onto
     // before any teleport on it applies (WORLD-INTERACTION-0 §6.6); `landable` guards the
     // teleport destination.
+    let player_entry_blocked = |(x, y, z)| {
+        matches!(cells.index(), NativeMovementCollisionIndex::Bundle(index)
+        if pos(x, y, z).is_some_and(|tile| index.map().facts.blocks_player_entry(
+            tile, |requirement| closed.admits_door_entry(requirement),
+        )))
+    };
     let ground = ground_of(cells);
     let ground = |cell: Cell| {
         if closed.blocks(LogicalCell {
             x: cell.0,
             y: cell.1,
             z: cell.2,
-        }) || (!doomforge_open && is_doomforge_portal(cells, cell))
+        }) || player_entry_blocked(cell)
+            || (!doomforge_open && is_doomforge_portal(cells, cell))
         {
             Ground::Blocked
         } else {

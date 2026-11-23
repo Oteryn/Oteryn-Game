@@ -2855,6 +2855,134 @@ pub mod tests {
     }
 
     #[test]
+    fn crystal_open_predicate_doors_require_each_player_to_qualify() -> Result<(), Box<dyn Error>> {
+        use crate::map::floor::{BundleDoors, prepare_bundle_step};
+        use crate::map::view::placement_key;
+        for (closed, open, action) in [(30037, 30039, 1035), (1642, 1643, 7001)] {
+            let closed_key = format!("oteryn:item.tibia.i{closed}");
+            let open_key = format!("oteryn:item.tibia.i{open}");
+            let (bytes, mut load) = bundle_with_items(&closed_key, "item:coin");
+            let mut authored = bundle::read(&bytes)?;
+            let door = authored
+                .sectors
+                .iter_mut()
+                .flat_map(|sector| &mut sector.tiles)
+                .find(|tile| tile.x == 6)
+                .and_then(|tile| tile.items.get_mut(1))
+                .ok_or("fixture closed door")?;
+            door.attrs.action = Some(action);
+            let bytes = oteryn_world_bundle::writer::write(
+                &authored.manifest,
+                &authored.sectors,
+                &authored.spawns,
+            )?;
+            load.digest = bundle::read(&bytes)?.digest;
+            let world_id = WorldId::decode(&id(1))?;
+            let channel = ChannelId::decode(&id(2))?;
+            let world = boot(&bytes, &pins(load, 2), world_id, channel, |key| {
+                if key != closed_key && key != open_key {
+                    return items(key);
+                }
+                let solid = key == closed_key;
+                Some(ItemDefinition {
+                    reference: std::num::NonZeroU32::new(if solid { 1 } else { open })?,
+                    solid: Some(solid),
+                    blocks_projectile: solid,
+                    pickupable: false,
+                    door: true,
+                })
+            })?;
+            let room = crate::content::qualify_native_entry_room(world_id)?;
+            let cells = world.movement_cells(room.movement_cells())?;
+            let pin = ChannelContentPin::from_activation(
+                world_id,
+                1,
+                room.compiled().server_digest(),
+                room.compiled().client_digest(),
+                world.frame_binding_digest(world_id),
+                world.map_revision_digest(),
+                (7, 0, 7),
+            );
+            let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                world_id,
+                channel,
+                NodeId::decode(&id(3))?,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                2,
+                pin,
+            )?;
+            let session = GameSessionId::decode(&id(4))?;
+            let reserved = runtime.reserve_fresh_session(session)?;
+            let actor = runtime.commit_fresh_session(reserved)?;
+            runtime.initialize_first_entry_position(actor)?;
+            let expected = runtime.read_actor_position(actor)?;
+            let key = placement_key(DOOR_AT, 1).ok_or("door placement")?;
+            assert!(matches!(
+                world.facts().doors().toggle(key, 0, false, 35, true),
+                Some(crate::map::door::DoorUse::Toggled { open: true, .. })
+            ));
+            assert!(
+                matches!(
+                    prepare_bundle_step(
+                        &runtime,
+                        &cells,
+                        actor,
+                        session,
+                        expected,
+                        CardinalStep::West,
+                        false,
+                        &BundleDoors(world.facts()),
+                    ),
+                    Err(MovementError::Blocked)
+                ),
+                "open door {open} lets an unqualified player enter"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_open_level_doors_without_actions_are_walkable_for_monsters()
+    -> Result<(), Box<dyn Error>> {
+        for (appearance, house) in [(30039, 0), (12034, 1)] {
+            let key = format!("oteryn:item.tibia.i{appearance}");
+            let (bytes, load) = bundle_with_house(&key, 0, "item:coin", 1, house);
+            let world_id = WorldId::decode(&id(1))?;
+            let world = boot(
+                &bytes,
+                &pins(load, 2),
+                world_id,
+                ChannelId::decode(&id(2))?,
+                |wanted| {
+                    if wanted != key {
+                        return items(wanted);
+                    }
+                    Some(ItemDefinition {
+                        reference: std::num::NonZeroU32::MIN,
+                        solid: Some(false),
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: true,
+                    })
+                },
+            )?;
+            let room = crate::content::qualify_native_entry_room(world_id)?;
+            let cells = world.movement_cells(room.movement_cells())?;
+            assert_eq!(
+                cells
+                    .index()
+                    .lookup(cells.scope(), LogicalCell { x: 6, y: 0, z: 7 }),
+                Ok(CollisionClass::Walkable),
+                "authored open appearance {appearance}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn map_door_plain_gate_preserves_authored_collision() -> Result<(), Box<dyn Error>> {
         use crate::map::door::{AuthoredClosedDoor, DoorUse};
         use crate::map::view::MapFacts;

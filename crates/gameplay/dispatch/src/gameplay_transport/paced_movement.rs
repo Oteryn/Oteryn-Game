@@ -231,7 +231,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map: self.bundle_map(),
             callbacks: self.callback_content(),
         };
-        let blocking: &dyn crate::map::floor::CellBlocker = &callback_portals;
+        let storage = |action| {
+            self.states
+                .quest_sessions
+                .lock()
+                .ok()
+                .is_some_and(|sessions| {
+                    sessions
+                        .get(&session)
+                        .and_then(|quest| quest.copy.as_ref())
+                        .is_some_and(|copy| copy.meets_door_storage(action))
+                })
+        };
+        let door_access = PlayerDoorAccess {
+            inner: &callback_portals,
+            level: states
+                .get(&runtime, actor, session)
+                .map(|state| state.character_facts().level),
+            storage: &storage,
+        };
+        let blocking: &dyn crate::map::floor::CellBlocker = &door_access;
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
@@ -539,4 +558,31 @@ fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), 
     assert_eq!(body.matches("StepOutcome::rejected()").count(), 11);
     assert_eq!(body.matches("operator_event(").count(), 11);
     Ok(())
+}
+
+struct PlayerDoorAccess<'a> {
+    inner: &'a dyn crate::map::floor::CellBlocker,
+    level: Option<u32>,
+    storage: &'a (dyn Fn(u16) -> bool + Sync),
+}
+
+impl crate::map::floor::CellBlocker for PlayerDoorAccess<'_> {
+    fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
+        self.inner.blocks(cell)
+    }
+
+    fn admits_door_entry(&self, requirement: crate::map::door::DoorEntryRequirement) -> bool {
+        use crate::map::door::DoorEntryRequirement;
+        match requirement {
+            DoorEntryRequirement::MissingAction => false,
+            DoorEntryRequirement::Level(required) => {
+                self.level.is_some_and(|level| level >= required)
+            }
+            DoorEntryRequirement::Storage(action) => (self.storage)(action),
+        }
+    }
+
+    fn suppresses_native_teleport(&self, cell: crate::content::LogicalCell) -> bool {
+        self.inner.suppresses_native_teleport(cell)
+    }
 }

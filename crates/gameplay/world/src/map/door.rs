@@ -50,6 +50,14 @@ pub enum PaletteDoor {
     },
 }
 
+/// A per-player prerequisite supplied by an open source door.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DoorEntryRequirement {
+    MissingAction,
+    Level(u32),
+    Storage(u16),
+}
+
 #[derive(Debug)]
 struct Door {
     /// The bundle placement key of the closed door entry.
@@ -325,6 +333,11 @@ impl DoorBook {
             }
             _ => entry,
         }
+    }
+
+    pub(super) fn open_at(&self, key: u64) -> bool {
+        self.state(key, None)
+            .is_some_and(|(_, state)| state & 3 == 1)
     }
 
     /// Whether a door entry of `pos` is solid in its current state.
