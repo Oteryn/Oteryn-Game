@@ -637,9 +637,13 @@ async fn two_player_encounter(
         assert_eq!(changed.rows_affected(), 1);
         tx.commit().await?;
     }
+    let rod = oteryn_gameplay_items::fishing::FISHING_ROD;
+    if matches!(case, Scenario::HardWin) {
+        super::item_look_fixtures::seed_main_backpack(h, &[(rod, 1)]).await?;
+    }
     let queue = owner.states.attack.lock().await.kills().clone();
     let mut runtime = owner.runtime.lock().await;
-    let states = owner.states.spell_states.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
     for (actor, _) in players {
         assert_eq!(runtime.read_actor_position(actor).map_err(debug)?.position(), ARENA_ENTRY);
     }
@@ -691,7 +695,9 @@ async fn two_player_encounter(
             .filter_map(|(at, entry)| (entry.facts.appearance_id == 49362).then_some(at))
             .collect::<Vec<_>>()
     };
+    let mut rod_command_id = 100;
     for phase in 0..4 {
+        let raised_at = owner.owner_ms() * 1_000;
         let health = runtime.companion_snapshot(boss).map_err(debug)?.health;
         let occurrence = format!("nrwicked-party-{phase}");
         let binding = format!("{occurrence}\0damage");
@@ -707,7 +713,15 @@ async fn two_player_encounter(
                 },
             )
             .map_err(debug)?;
-        encounter_phases::tick(&mut runtime, &states, 100_000);
+        encounter_phases::tick(&mut runtime, &states, raised_at);
+        assert!(
+            purple_fire().is_empty(),
+            "the first tick only schedules fire"
+        );
+        encounter_phases::tick(&mut runtime, &states, raised_at + 1_499_000);
+        assert!(purple_fire().is_empty(), "fire waits for the source delay");
+        let fire_at = raised_at + 1_500_000;
+        encounter_phases::tick(&mut runtime, &states, fire_at);
         let [fire]: [TilePos; 1] = purple_fire()
             .try_into()
             .map_err(|_| "expected exactly one production purple fire per shield")?;
@@ -774,21 +788,87 @@ async fn two_player_encounter(
                 },
             )
             .map_err(debug)?;
-        encounter_phases::tick(&mut runtime, &states, 100_000);
-        assert!(purple_fire().is_empty(), "boss crossing consumes purple fire");
+        encounter_phases::tick(&mut runtime, &states, fire_at);
         assert!(
-            runtime
-                .arbaziloth_shields_mut(boss)
-                .ok_or("bound shields")?
-                .use_rod(100, 100)
+            purple_fire().is_empty(),
+            "boss crossing consumes purple fire"
         );
+
+        // Keep the boss within far-USE range of the player at the arena entry.
+        let before = runtime.read_actor_position(boss).map_err(debug)?;
+        runtime
+            .borrow_movement_position()
+            .commit_creature_relocation(
+                boss,
+                before,
+                MovementLocalPosition {
+                    y: ARENA_ENTRY.y - 2,
+                    ..ARENA_ENTRY
+                },
+            )
+            .map_err(debug)?;
+        let visible = runtime
+            .visible_entities()
+            .creatures
+            .into_iter()
+            .find(|entry| entry.actor == boss)
+            .ok_or("visible Arbaziloth")?;
+        let intent = oteryn_protocol_oteryn::world_object::UseIntent {
+            target: oteryn_protocol_oteryn::world_object::UseTarget::Item(
+                std::num::NonZeroU64::new(2).ok_or("rod handle")?,
+            ),
+            use_with: Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                identity: boss.placement_identity(),
+                generation: visible.generation,
+            }),
+            use_with_map_item: None,
+            use_with_position: None,
+        };
+        drop(states);
+        drop(runtime);
+        owner.clock_origin -= std::time::Duration::from_millis(1_500);
+        let mut cracked = false;
+        for _ in 0..16 {
+            rod_command_id += 1;
+            let outcome = owner
+                .use_soul_war_source_items(
+                    first,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: rod_command_id,
+                        item_fence: Some(fence.item_fence()),
+                    },
+                    intent.clone(),
+                    Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
+                        71,
+                    ))),
+                    None,
+                )
+                .await
+                .map_err(|()| "rod use authority")?
+                .ok_or("carried fishing rod use")?;
+            match outcome.disposition {
+                UseDisposition::Committed => {
+                    cracked = true;
+                    break;
+                }
+                UseDisposition::NotPossible => {
+                    // The source 50% roll may refuse; advance the real item-use gate.
+                    owner.clock_origin -= std::time::Duration::from_secs(1);
+                }
+                other => return Err(format!("rod use returned {other:?}").into()),
+            }
+        }
+        assert!(cracked, "the carried fishing rod lowers the cracked shield");
+        runtime = owner.runtime.lock().await;
+        states = owner.states.spell_states.lock().await;
         let before = runtime.read_actor_position(boss).map_err(debug)?;
         runtime
             .borrow_movement_position()
             .commit_creature_relocation(boss, before, boss_home)
             .map_err(debug)?;
     }
-    encounter_phases::tick(&mut runtime, &states, 3_100_000);
+    encounter_phases::tick(&mut runtime, &states, owner.owner_now().get() + 3_000_000);
     let enraged = runtime
         .positioned_actor_census()
         .map_err(debug)?

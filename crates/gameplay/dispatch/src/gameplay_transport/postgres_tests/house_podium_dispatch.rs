@@ -45,6 +45,7 @@ enum Case {
     CancelWalk,
     Malformed,
     Unavailable,
+    GuardBusy,
     NoPath,
 }
 
@@ -100,6 +101,11 @@ fn house_podium_dispatch_unavailable_target_sends_no_result() -> TestResult {
 }
 
 #[test]
+fn house_podium_dispatch_busy_guard_sends_no_result() -> TestResult {
+    postgres_case("house_podium_guard_busy", Case::GuardBusy)
+}
+
+#[test]
 fn house_podium_dispatch_valid_query_without_path_rejects() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -116,10 +122,16 @@ fn postgres_case(name: &'static str, case: Case) -> TestResult {
         .stack_size(256 << 20)
         .spawn(move || {
             run(async |admin| {
+                let started = std::time::Instant::now();
                 let h = Harness::create_with_admission_seed(admin, name, true, false).await?;
                 let result = scenario(&h, case).await;
                 h.cleanup().await?;
-                result
+                result?;
+                eprintln!(
+                    "POSTGRES_CASE_COMPLETED {name} elapsed={:?}",
+                    started.elapsed()
+                );
+                Ok::<_, Box<dyn std::error::Error>>(())
             })
             .map_err(|error| error.to_string())
         })?
@@ -364,6 +376,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         wire::COMMAND_QUERY,
         payload,
         matches!(case, Case::CancelWalk),
+        matches!(case, Case::GuardBusy).then_some(h),
     )
     .await?;
     match case {
@@ -379,7 +392,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             assert!(result.replies.is_empty());
             return Ok(());
         }
-        Case::Unavailable => {
+        Case::Unavailable | Case::GuardBusy => {
             assert!(matches!(
                 result.end,
                 ConnectionEnd::AdmittedThenDisconnected(_)
@@ -522,13 +535,19 @@ async fn exchange(
     command_type: u32,
     payload: &[u8],
 ) -> TestResult<Option<(CommandStatus, Vec<u8>)>> {
-    Ok(
-        conversation(owner, admitted, command_id, command_type, payload, false)
-            .await?
-            .replies
-            .pop()
-            .map(|(_, status, payload)| (status, payload)),
+    Ok(conversation(
+        owner,
+        admitted,
+        command_id,
+        command_type,
+        payload,
+        false,
+        None,
     )
+    .await?
+    .replies
+    .pop()
+    .map(|(_, status, payload)| (status, payload)))
 }
 
 #[derive(Debug)]
@@ -547,6 +566,7 @@ async fn conversation(
     command_type: u32,
     payload: &[u8],
     interrupt: bool,
+    guard_fixture: Option<&Harness>,
 ) -> TestResult<Conversation> {
     let generation = admitted.continuity.connection_generation;
     let frame = encode_client_command(
@@ -559,8 +579,12 @@ async fn conversation(
     )
     .map_err(debug)?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    write_frame(&mut client, &frame).await?;
+    if guard_fixture.is_none() {
+        write_frame(&mut client, &frame).await?;
+    }
     let receive = async move {
+        let mut guard_fixture = guard_fixture;
+        let mut guard_lock = None;
         let mut replies = Vec::new();
         let mut steps = 0;
         let mut protocol_error = false;
@@ -574,6 +598,19 @@ async fn conversation(
             };
             let envelope = decode_wire_envelope(&raw).map_err(debug)?;
             match envelope.message_type() {
+                MessageType::SnapshotCommit if guard_fixture.is_some() => {
+                    let h = guard_fixture.take().ok_or("guard fixture")?;
+                    // The House must finish admission before the command guard
+                    // encounters contention on the same durable relation.
+                    let mut tx = h.pool.begin().await?;
+                    sqlx::query(
+                        "LOCK TABLE game_durability_admission_lifecycle_receipts IN ROW SHARE MODE",
+                    )
+                    .execute(&mut *tx)
+                    .await?;
+                    guard_lock = Some(tx);
+                    write_frame(&mut client, &frame).await?;
+                }
                 MessageType::LivenessProbe => {
                     let probe = oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())
                         .map_err(debug)?;
@@ -623,6 +660,13 @@ async fn conversation(
                 }
                 _ => {}
             }
+        }
+        assert!(
+            guard_fixture.is_none(),
+            "the House must finish its initial snapshot"
+        );
+        if let Some(tx) = guard_lock {
+            tx.rollback().await?;
         }
         Ok::<_, Box<dyn std::error::Error>>((replies, steps, protocol_error, post_move_probe))
     };

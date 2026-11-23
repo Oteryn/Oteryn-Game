@@ -27,6 +27,7 @@ pub(super) struct ActivePhase {
     frozen: Option<(ExactActorRef, Vec<super::quest_kills::Recipient>)>,
     cells: crate::content::NativeEntryMovementCells,
     fire: Option<crate::map::overlay::TilePos>,
+    fire_due_ms: Option<u64>,
     arbaziloth_deadline: Option<u64>,
 }
 
@@ -279,6 +280,7 @@ pub(super) fn bind(
             frozen: None,
             cells,
             fire: None,
+            fire_due_ms: None,
             arbaziloth_deadline: Some(
                 now_us
                     .checked_add(ARBAZILOTH_ATTEMPT_US)
@@ -332,6 +334,7 @@ pub(super) fn bind(
             frozen: None,
             cells,
             fire: None,
+            fire_due_ms: None,
             arbaziloth_deadline: None,
         });
     }
@@ -393,6 +396,7 @@ pub(super) fn bind(
         frozen: None,
         cells,
         fire: None,
+        fire_due_ms: None,
         arbaziloth_deadline: None,
     })
 }
@@ -534,6 +538,7 @@ impl ActivePhase {
             return false;
         }
         self.fire = None;
+        self.fire_due_ms = None;
         true
     }
 
@@ -566,6 +571,14 @@ impl ActivePhase {
             {
                 shields.step_on_fire();
             }
+            return Ok(());
+        }
+
+        // Crystal 201189f8 arbaziloth_fight.lua schedules spawnFire after 1.5 s.
+        let due = self
+            .fire_due_ms
+            .get_or_insert_with(|| now_ms.saturating_add(1_500));
+        if now_ms < *due {
             return Ok(());
         }
 

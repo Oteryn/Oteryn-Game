@@ -336,9 +336,13 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             } else {
                 authority.enter_input(admitted.game_session_id).await
             };
-            if permit.is_some() && !super::command::guards(authority, admitted, command).await? {
+            let guard_deferred =
+                permit.is_some() && !super::command::guards(authority, admitted, command).await?;
+            if guard_deferred {
                 drop(permit.take());
             }
+            let podium_query = command.command_type == COMMAND_QUERY
+                && selected.command_selected(command.command_type);
             let activity_at = authority.gameplay_idle_now();
             let gameplay_activity = permit.is_some()
                 && selected.command_selected(command.command_type)
@@ -378,7 +382,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     Some(Dispatch::Reply(status, payload)) => (None, payload, status),
                     _ => return Err(ServeEnd::Disconnected),
                 }
-            } else if permit.is_some() {
+            } else if permit.is_some() || (guard_deferred && podium_query) {
                 let dispatch = if command.command_type == COMMAND_TYPE_LOGOUT_INTENT
                     && selected.command_selected(command.command_type)
                 {
@@ -409,9 +413,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         }
                         route::StepAction::Dispatch(dispatch) => dispatch,
                     }
-                } else if command.command_type == COMMAND_QUERY
-                    && selected.command_selected(command.command_type)
-                {
+                } else if podium_query {
                     let Some(item) = decode_item(command.payload) else {
                         drop(permit.take());
                         return Err(close(
@@ -421,7 +423,12 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         )
                         .await);
                     };
-                    match authority.house_podium_approach(admitted, item).await {
+                    let approach = if guard_deferred {
+                        Approach::Unavailable
+                    } else {
+                        authority.house_podium_approach(admitted, item).await
+                    };
+                    match approach {
                         Approach::Ready => services
                             .route(authority, &mut admitted, command)
                             .await
