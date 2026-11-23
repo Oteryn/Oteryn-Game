@@ -1042,14 +1042,12 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             unknown_speed.insert(record.production_definition.production_key.clone());
         }
         let equipment = snapshot(&content, &record.production_definition.production_key, 10);
-        // I05 keeps these three timed rings' equipment effects unhosted. E12
-        // adds their physical Trader custody without granting equip admission;
-        // the raw source attributes are still checked independently above.
-        let expected = match record.production_definition.production_key.as_str() {
-            "oteryn:item.tibia.i3049" | "oteryn:item.tibia.i3052" | "oteryn:item.tibia.i3098" => {
-                None
-            }
-            _ => Some(0),
+        // The healing ring is admitted for Trader custody only. Worn stealth and
+        // life rings contribute zero speed.
+        let expected = if record.production_definition.production_key == "oteryn:item.tibia.i3098" {
+            None
+        } else {
+            Some(0)
         };
         assert_eq!(
             speed_term(&equipment, &content),

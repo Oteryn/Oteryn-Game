@@ -506,8 +506,15 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 return false;
             };
+            let Some(regeneration) =
+                super::equipment_move::equipment_effects_owner::equipped_regeneration(
+                    &equipment, native,
+                )
+            else {
+                return false;
+            };
             active_mana_shield = active;
-            retired_effects = Some(effects);
+            retired_effects = Some((effects, regeneration));
             proficiency_equipment = equipment;
         }
         let Some(invisible) = super::equipment_move::equipment_effects_owner::equipped_invisibility(
@@ -531,7 +538,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         {
             state.install_equipped_mana_shield(active_mana_shield);
             state.install_equipped_invisibility(invisible);
-            if let Some(effects) = retired_effects {
+            if let Some((effects, regeneration)) = retired_effects {
+                state.install_equipped_regeneration(regeneration);
                 super::equipment_move::equipment_effects_owner::install_suppressions(
                     state, effects,
                 );
