@@ -1,0 +1,105 @@
+{
+  "canonical_signed_utf8": "{\"actor\":{\"admin_id\":\"a-17\",\"ip_hash\":\"test-hash\",\"mfa_at\":\"2026-11-05T11:59:00Z\",\"permission\":\"game.analytics.read\",\"roles\":[\"fixture\"],\"session_ref\":\"test-session\",\"step_up_at\":null},\"admin_operation_id\":\"019a5620-0000-7000-8000-000000000007\",\"approvals\":[],\"contract\":\"oteryn.admin-control.v1\",\"dry_run\":false,\"expires_at\":\"2026-11-05T12:01:00Z\",\"issued_at\":\"2026-11-05T12:00:00Z\",\"kind\":\"query\",\"nonce\":\"BwcHBwcHBwcHBwcHBwcHBw\",\"operation\":\"analytics.query\",\"operation_version\":1,\"params\":{\"from\":\"2026-11-05T11:00:00Z\",\"grain\":\"hour\",\"params\":{\"item_type_id\":3031},\"query_id\":\"item_supply_by_type\",\"to\":\"2026-11-05T12:00:00Z\"},\"reason\":null,\"request_id\":\"019a5620-0000-7000-8000-000000000007\",\"risk_class\":\"R0\",\"signer_key_id\":\"platform-admin-signer-1\",\"target\":{\"account_ref\":null,\"character_id\":null,\"node_id\":null,\"world_id\":\"w-antica\"}}",
+  "clock": 1793880000,
+  "expected_error": null,
+  "expected_result_valid": true,
+  "nonce_seen": false,
+  "policy": {
+    "operations": [
+      {
+        "allowed_permissions": [
+          "game.analytics.read"
+        ],
+        "min_risk_class": "R0",
+        "operation": "analytics.query",
+        "worlds": [
+          "w-antica"
+        ]
+      }
+    ]
+  },
+  "precondition_error": null,
+  "preview_digest": null,
+  "prior_params_digest": null,
+  "prior_result": null,
+  "request": {
+    "actor": {
+      "admin_id": "a-17",
+      "ip_hash": "test-hash",
+      "mfa_at": "2026-11-05T11:59:00Z",
+      "permission": "game.analytics.read",
+      "roles": [
+        "fixture"
+      ],
+      "session_ref": "test-session",
+      "step_up_at": null
+    },
+    "admin_operation_id": "019a5620-0000-7000-8000-000000000007",
+    "approvals": [],
+    "contract": "oteryn.admin-control.v1",
+    "dry_run": false,
+    "expires_at": "2026-11-05T12:01:00Z",
+    "issued_at": "2026-11-05T12:00:00Z",
+    "kind": "query",
+    "nonce": "BwcHBwcHBwcHBwcHBwcHBw",
+    "operation": "analytics.query",
+    "operation_version": 1,
+    "params": {
+      "from": "2026-11-05T11:00:00Z",
+      "grain": "hour",
+      "params": {
+        "item_type_id": 3031
+      },
+      "query_id": "item_supply_by_type",
+      "to": "2026-11-05T12:00:00Z"
+    },
+    "reason": null,
+    "request_id": "019a5620-0000-7000-8000-000000000007",
+    "risk_class": "R0",
+    "signature": "1fIErRU9ncRVWRHhJoRYEBbHK10ntE7C_ZCRwBSjBMgbtASnsa2_xiHgjxEk6O-q7_WBwcDEN972Gg_6V5osBA",
+    "signer_key_id": "platform-admin-signer-1",
+    "target": {
+      "account_ref": null,
+      "character_id": null,
+      "node_id": null,
+      "world_id": "w-antica"
+    }
+  },
+  "result": {
+    "completeness": "PROVEN_COMPLETE_FOR_DECLARED_DURABLE_SCOPE",
+    "context": {
+      "active_characters": "50",
+      "content_revision": "content-8",
+      "ruleset_revision": "ruleset-3",
+      "world_age_days": 90,
+      "world_id": "w-antica"
+    },
+    "filters": {
+      "from": "2026-11-05T11:00:00Z",
+      "grain": "hour",
+      "params": {
+        "item_type_id": 3031
+      },
+      "query_id": "item_supply_by_type",
+      "to": "2026-11-05T12:00:00Z"
+    },
+    "metric_revision": "1",
+    "query_id": "item_supply_by_type",
+    "rows": [
+      {
+        "bucket_start": "2026-11-05T11:00:00Z",
+        "item_type_id": 3031,
+        "quantity": "32"
+      }
+    ],
+    "watermark": "2026-11-05T12:00:00Z"
+  },
+  "trusted_signers": [
+    {
+      "key_id": "platform-admin-signer-1",
+      "not_after": "2027-01-01T00:00:00Z",
+      "not_before": "2026-01-01T00:00:00Z",
+      "public_key": "6kpsY-KcUgq-9VB7Ey7F-ZVHdq6-vnuSQh7qaRRG0iw"
+    }
+  ]
+}
