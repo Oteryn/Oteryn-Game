@@ -156,7 +156,18 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             .fixture_quest_topic(session)?,
         sale.topic
     );
-    talk(&mut owner, &deps.admitted, petros, 3, "yes").await?;
+    talk(&mut owner, &deps.admitted, petros, 3, "no").await?;
+    talk(&mut owner, &deps.admitted, petros, 4, "yes").await?;
+    let (purchased, balance): (bool, i64) = sqlx::query_as(
+        "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE track_key=$1 AND value>0),(SELECT balance FROM game_account_bank_balances)"
+    ).bind(TRACK).fetch_one(&h.pool).await?;
+    assert_eq!(
+        (purchased, balance),
+        (false, 2000),
+        "declined ticket must stay cancelled"
+    );
+    talk(&mut owner, &deps.admitted, petros, 5, "ticket").await?;
+    talk(&mut owner, &deps.admitted, petros, 6, "yes").await?;
     let (stamp, balance): (i64, i64) = sqlx::query_as(
         "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),(SELECT balance FROM game_account_bank_balances)"
     ).bind(TRACK).fetch_one(&h.pool).await?;

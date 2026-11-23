@@ -461,4 +461,4 @@ pub(super) const TERRAIN: &[(u16, u8)] = &[
 pub(super) const ITEM: &[(u16, u8)] = &[(166, 1), (167, 1)];
 
 /// Source-qualified collision fallback for fixed Items on these traversal routes.
-pub(super) const WALKABLE_TRAVERSAL_FIXTURES: &[u16] = &[775, 1894, 1951];
+pub(super) const WALKABLE_TRAVERSAL_FIXTURES: &[u16] = &[775, 1894, 1951, 5022];

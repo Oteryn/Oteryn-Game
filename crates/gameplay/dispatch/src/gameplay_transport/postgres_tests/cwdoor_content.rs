@@ -122,6 +122,66 @@ fn cwdoor_citizenship_portals_load_donor_uniques() -> TestResult {
 }
 
 #[test]
+fn cwdoor_gray_beach_citizenship_portal_is_enterable() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("cwdoor-gray-beach", || {
+        use crate::map::{overlay::TilePos, view::placement_key};
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let capture: Startup = serde_json::from_slice(&std::fs::read(
+            root.join("tools/world-bundle-compiler/data/crystal-startup-bindings.json"),
+        )?)?;
+        let portal = capture
+            .bindings
+            .iter()
+            .find(|row| row.category == "citizen" && row.item == 5022)
+            .ok_or("Gray Beach startup binding")?;
+        let [x, y, z] = portal.position;
+        let pos = TilePos {
+            x,
+            y,
+            floor: -i8::try_from(z)?,
+        };
+        let (compiled, pins) = compiled_regions(&root, &[(x / 256, y / 256)])?;
+        let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let channel = crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?;
+        let (controller, _) =
+            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+                world_id,
+                "content-1",
+            )?;
+        let active = controller.active().ok_or("active content")?;
+        let native = active.native_gameplay().ok_or("native content")?;
+        let base = crate::map::load(&compiled.bytes, &pins).map_err(debug)?;
+        let world = crate::map::boot::boot(
+            &compiled.bytes,
+            &crate::map::boot::BootPins {
+                map_revision: crate::map::overlay::map_revision(&base),
+                bundle: pins,
+                start: pos,
+            },
+            world_id,
+            channel,
+            |key| crate::map::boot::native_item_definition(Some(native), key),
+        )
+        .map_err(debug)?;
+        assert!(world.enterable(pos));
+        assert!(
+            (0..=u8::MAX)
+                .filter_map(|ordinal| placement_key(pos, ordinal))
+                .any(|key| {
+                    world.facts().quest_callback_matches(
+                        key,
+                        Some(portal.value),
+                        None,
+                        Some(portal.item),
+                    )
+                })
+        );
+        Ok(())
+    })
+}
+
+#[test]
 fn cwdoor_rookgaard_loads_donor_unique() -> TestResult {
     loaded_bindings("rookgaard", 1)
 }

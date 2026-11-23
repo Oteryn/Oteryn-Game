@@ -12,7 +12,7 @@ SOURCE = {
 # The coffins keep their canonical Item ownership (data/items/items.xml:218-228).
 ITEM_FLOOR_CHANGES = {166: "down", 167: "down"}
 # Existing fixed Items on the restored routes whose native profiles omit solidity.
-WALKABLE_ITEM_FIXTURES = (775, 1894, 1951)
+WALKABLE_ITEM_FIXTURES = (775, 1894, 1951, 5022)
 # data/items/items.xml:86051-86053, 87338-87344, 89703-89711.
 ATTRIBUTES = {
     50564: {"type": "ladder"},

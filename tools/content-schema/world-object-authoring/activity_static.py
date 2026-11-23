@@ -352,7 +352,7 @@ def compose_placement_palette(placement, activity_registry, soulpit_rows, root=R
 
 
 def compose_terrain_notes(notes):
-    """Both source publishers use the same two exact, idempotent suffixes."""
+    """Use one canonical order for the terrain publication notes."""
     import soulpit_static
 
     notes = re.sub(
@@ -360,7 +360,13 @@ def compose_terrain_notes(notes):
         "",
         notes,
     )
-    return notes.replace(soulpit_static.NOTE, "") + NOTE + soulpit_static.NOTE
+    traversal = TRAVERSAL_NOTES["Terrain"]
+    return (
+        notes.replace(soulpit_static.NOTE, "").replace(traversal, "")
+        + NOTE
+        + soulpit_static.NOTE
+        + traversal
+    )
 
 
 def preserved_restore_item_pointer(root=ROOT):
@@ -667,18 +673,19 @@ def outputs(root=ROOT):
     for family, directory in [("Terrain", "terrain"), ("WorldObject", "objects")]:
         name = f"content/world/{directory}/index.json"
         marker = json.loads((root / name).read_bytes())
-        marker["notes"] = (
-            re.sub(
-                r" Additionally SRX-3 pinned activity static geometry: [0-9]+ Terrain and [0-9]+ WorldObject records; no Item aliases\.",
-                "",
-                marker["notes"],
-            )
-            + NOTE
-        )
         if family == "Terrain":
             marker["notes"] = compose_terrain_notes(marker["notes"])
-        note = TRAVERSAL_NOTES[family]
-        marker["notes"] = marker["notes"].replace(note, "") + note
+        else:
+            note = TRAVERSAL_NOTES[family]
+            marker["notes"] = (
+                re.sub(
+                    r" Additionally SRX-3 pinned activity static geometry: [0-9]+ Terrain and [0-9]+ WorldObject records; no Item aliases\.",
+                    "",
+                    marker["notes"],
+                ).replace(note, "")
+                + NOTE
+                + note
+            )
         files[name] = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
     return files
 

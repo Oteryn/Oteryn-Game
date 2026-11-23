@@ -489,7 +489,6 @@ def outputs(
         index = json.loads(files[index_path])
         index["notes"] += engnpc2_ram_world.NOTE
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
-        index["notes"] += activity_static.TRAVERSAL_NOTES["Terrain"]
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
