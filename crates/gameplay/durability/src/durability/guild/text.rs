@@ -6,7 +6,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        text: GuildTextRequest,
+        mut text: GuildTextRequest,
     ) -> Result<GuildOutcome> {
         let mut digest = Sha256::new();
         digest.update(b"oteryn:guild-text-proposal:v1");
@@ -14,6 +14,10 @@ impl DurabilityRoot {
         digest.update(text.expected_revision.to_be_bytes());
         digest.update(text.text.as_bytes());
         let binding = digest.finalize().to_vec();
+        // Bind the original title bytes as before. Store the trimmed title on new writes.
+        if matches!(text.common.operation, GuildCommand::SetTitle(_)) {
+            text.text = text.text.trim().to_owned();
+        }
         self.commit_guild_operation(
             authority,
             node,

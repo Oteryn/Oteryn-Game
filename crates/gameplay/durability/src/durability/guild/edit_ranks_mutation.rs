@@ -19,6 +19,8 @@ impl LockedGuild<'_> {
         // Do not lock the actor first and then acquire smaller CharacterIds out of order.
         let refusal = if acting.as_ref().is_none_or(|m| m.rank != 1) {
             Some(GuildResult::NotAllowed)
+        } else if edit.rename_level.is_some() && edit.expected_revision > previous {
+            return Err(GuildError::InvalidInput);
         } else if edit.expected_revision != previous {
             Some(GuildResult::StaleRevision)
         } else {
@@ -35,6 +37,27 @@ impl LockedGuild<'_> {
                 None,
             )
             .await;
+        }
+        if let Some(level) = edit.rename_level {
+            // The Guild row stays locked from revision and membership checks through the write.
+            // The native executor has already resolved any retained receipt.
+            let current: Vec<(i16, String)> = sqlx::query_as(
+                "SELECT level,left(name,129) FROM game_guild_ranks
+                 WHERE guild_id=encode($1,'hex')::uuid ORDER BY level",
+            )
+            .bind(request.guild_id.as_bytes().as_slice())
+            .fetch_all(&mut **tx)
+            .await?;
+            if current.len() != edit.names.len()
+                || current.iter().zip(&edit.names).enumerate().any(
+                    |(index, ((current_level, old), new))| {
+                        usize::try_from(*current_level).ok() != Some(index + 1)
+                            || (index + 1 != usize::from(level) && old != new)
+                    },
+                )
+            {
+                return Err(GuildError::InvalidInput);
+            }
         }
         let unique: i64 = sqlx::query_scalar("SELECT count(DISTINCT game_character_name_key(name)) FROM unnest($1::text[]) AS proposed(name)")
             .bind(&edit.names).fetch_one(&mut **tx).await?;

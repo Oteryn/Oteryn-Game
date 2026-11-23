@@ -120,11 +120,11 @@ impl GuildTextRequest {
             return Err(GuildError::InvalidInput);
         }
         let text = match common.operation {
-            // GUILD0 specifies only the 29-scalar title bound, not the 0022 name grammar.
-            // Empty title is bounded DATA; no empty-message/clear exception is introduced.
-            GuildCommand::SetTitle(_)
-                if received.chars().count() <= 29 && !received.contains('\0') =>
-            {
+            GuildCommand::SetTitle(_) if received.is_empty() => String::new(),
+            GuildCommand::SetTitle(_) if received.chars().count() <= 29 => {
+                crate::durability::chat_text::ChatText::parse(received)
+                    .map_err(|_| GuildError::InvalidInput)?;
+                // Keep the proposal bytes for matching immutable receipts from older writers.
                 received.to_owned()
             }
             GuildCommand::SetMessage => crate::durability::chat_text::ChatText::parse(received)
@@ -204,7 +204,23 @@ impl GuildEditRanksRequest {
             common,
             expected_revision,
             names,
+            rename_level: None,
         })
+    }
+
+    /// A single-slot wire rename. Its wire digest already binds the selected level.
+    pub fn rename(
+        common: GuildRequest,
+        expected_revision: u64,
+        level: u8,
+        names: Vec<String>,
+    ) -> Result<Self> {
+        if !(1..=3).contains(&level) || common.identity.wire_digest.is_none() {
+            return Err(GuildError::InvalidInput);
+        }
+        let mut edit = Self::new(common, expected_revision, names)?;
+        edit.rename_level = Some(level);
+        Ok(edit)
     }
 }
 pub fn edit_ranks_binding(

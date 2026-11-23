@@ -182,18 +182,12 @@ pub fn decode_guild_text_intent(bytes: &[u8]) -> Result<GuildTextIntent, GuildWi
         return Err(Malformed);
     }
     let edit = match tag {
-        1 => {
-            let message = guild_edit_text(body, 255)?;
-            if message.trim().is_empty() || message.chars().any(char::is_control) {
-                return Err(Malformed);
-            }
-            GuildTextEdit::Message(message.to_owned())
-        }
+        1 => GuildTextEdit::Message(guild_chat_text(body, 255, false)?.to_owned()),
         2 => {
             let (target, title) = body.split_first_chunk::<16>().ok_or(Malformed)?;
             GuildTextEdit::Title {
                 character: crate::decode_uuid_v7(target).map_err(|_| Malformed)?,
-                title: guild_edit_text(title, 15)?.to_owned(),
+                title: guild_chat_text(title, 15, true)?.to_owned(),
             }
         }
         3 => {
@@ -230,6 +224,17 @@ pub fn decode_guild_text_intent(bytes: &[u8]) -> Result<GuildTextIntent, GuildWi
         expected_revision,
         edit,
     })
+}
+
+fn guild_chat_text(bytes: &[u8], max: usize, allow_clear: bool) -> Result<&str, GuildWireError> {
+    let text = guild_edit_text(bytes, max)?;
+    if text.chars().any(char::is_control)
+        || (text.trim().is_empty() && !(allow_clear && text.is_empty()))
+    {
+        return Err(GuildWireError::Malformed);
+    }
+    // The durable writer trims the value. Keep the wire spelling for receipt binding.
+    Ok(text)
 }
 
 fn guild_edit_text(bytes: &[u8], max: usize) -> Result<&str, GuildWireError> {

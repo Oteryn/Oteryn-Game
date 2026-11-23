@@ -12,7 +12,7 @@ remaining bytes depend on the edit kind.
 | Kind | Body |
 | --- | --- |
 | 1, MOTD | UTF-8 text, up to 255 bytes. The native Guild writer applies its chat-text rules, including trimming, and requires nonempty text. |
-| 2, member title | A 16-byte member Character UUIDv7 followed by up to 15 bytes of UTF-8 title. Empty title clears the member's title. |
+| 2, member title | A 16-byte member Character UUIDv7 followed by up to 15 bytes of UTF-8 title. CHAT-0 trims the title and rejects control characters. A zero-length field clears the title. |
 | 3, rank name | A one-byte native rank level (1 through 3), followed by 3–20 names in native rank order. Each name starts with a one-byte UTF-8 length. The selected name is 1–20 bytes. Other names are 1–128 bytes and must match the names at the expected revision. |
 
 Read the current revision and ordered rank list with Guild Query (41), replace
@@ -31,5 +31,8 @@ Uses [GuildIntentResult](guild_v1.proto). A native decision uses the existing
 Guild codes, including OK (1), NOT_ALLOWED (2), NAME_TAKEN (9), and
 STALE_REVISION (13). A malformed request, a missing capability, or a failed
 rank layout precondition returns the Foundation rejection with no payload.
-The committed revision, immutable receipt and audit event come from the
-existing Guild transaction. Guild Query provides readback after reconnect.
+Missing, unreadable, and closed Guilds use NOT_ALLOWED without a revision.
+Other authorization refusals use the same public reply. A busy durability
+holder leaves the command unresolved while the server waits to consult the
+receipt. The committed revision, immutable receipt and audit event come from
+the existing Guild transaction. Guild Query provides readback after reconnect.

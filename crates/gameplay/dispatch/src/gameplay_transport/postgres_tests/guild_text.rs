@@ -8,32 +8,66 @@ use crate::gameplay_transport::{
     ComposedFreshAdmission,
     capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities},
     connection::{AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority},
-    guild_intent::offer_guild_text,
+    guild_intent::{GuildReply, offer_guild_text},
     item_fence_of,
 };
 use oteryn_protocol_oteryn::{CommandStatus, guild as wire};
 
 const EDIT: u32 = 6411;
 const TEXT: u32 = 638;
+const RANKS: &[u8] = b"\x03\x06Leader\x0bVice Leader\x06Ranger\x07Visitor";
+
+#[derive(Clone, Copy, Debug)]
+enum Case {
+    Main,
+    DisbandedReplay,
+    BusyReplay,
+    PrivateRefusals,
+    TitleText,
+}
+
+#[test]
+fn guild_text_postgres_replays_rank_after_disband() -> TestResult {
+    run_case(Case::DisbandedReplay)
+}
+
+#[test]
+fn guild_text_postgres_waits_for_busy_receipt_lookup() -> TestResult {
+    run_case(Case::BusyReplay)
+}
+
+#[test]
+fn guild_text_postgres_hides_unreadable_guilds() -> TestResult {
+    run_case(Case::PrivateRefusals)
+}
+
+#[test]
+fn guild_text_postgres_applies_chat_rules_to_titles() -> TestResult {
+    run_case(Case::TitleText)
+}
 
 #[test]
 fn guild_text_postgres_real_dispatch() -> TestResult {
+    run_case(Case::Main)
+}
+
+fn run_case(case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| {
+        .spawn(move || {
             run(async |admin| {
                 reset();
                 let start = std::time::Instant::now();
                 let harness =
                     Harness::create_with_admission_seed(admin, "guild_text_dispatch", true, false)
                         .await?;
-                let result = scenario(&harness).await;
+                let result = scenario(&harness, case).await;
                 harness.cleanup().await?;
                 eprintln!(
-                    "S03_GUILD_TEXT_POSTGRES_CASE_EXECUTED duration={:?} passed={}",
+                    "S03_GUILD_TEXT_POSTGRES_CASE_EXECUTED case={case:?} duration={:?} passed={}",
                     start.elapsed(),
                     result.is_ok()
                 );
@@ -71,7 +105,7 @@ async fn edit(
     Ok(bytes)
 }
 
-async fn scenario(h: &Harness) -> TestResult {
+async fn scenario(h: &Harness, case: Case) -> TestResult {
     prepare_current_session(h).await?;
     seed::prepare(&h.pool).await?;
     let guild = GuildId::from_bytes(seed::sid(80, 3)).map_err(debug)?;
@@ -93,6 +127,20 @@ async fn scenario(h: &Harness) -> TestResult {
         seed::historical_character(&h.pool, n, character, account, id(42), name).await?;
         seed::initial_member(&h.pool, guild, character, account, rank).await?;
         guests.push(seed::historical_session(&h.pool, n, guest_base).await?);
+    }
+    if matches!(case, Case::PrivateRefusals) {
+        for (guild, world, state) in [(81, id(44), 2_i16), (82, id(42), 3)] {
+            sqlx::query(
+                "INSERT INTO game_guilds
+                 (guild_id,world_id,name,state,formation_deadline,revision,created_at)
+                 VALUES ($1::uuid,$2::uuid,'Unrelated Guild',$3,9999999999999,17,1)",
+            )
+            .bind(seed::uuid(seed::sid(guild, 3)))
+            .bind(seed::uuid(world))
+            .bind(state)
+            .execute(&h.pool)
+            .await?;
+        }
     }
     seed::guard(&h.pool).await?;
 
@@ -134,6 +182,16 @@ async fn scenario(h: &Harness) -> TestResult {
     leader.continuity.selected_capabilities =
         SelectedCapabilities::select(&offered, &[wire::CAPABILITY_GUILD_V1])
             .ok_or("legacy guild selection")?;
+    if !matches!(case, Case::Main) {
+        leader.continuity.selected_capabilities = selected;
+        return match case {
+            Case::DisbandedReplay => disbanded_replay(&deps, h, &owner, leader, guild).await,
+            Case::BusyReplay => busy_replay(&owner, leader, guild).await,
+            Case::PrivateRefusals => private_refusals(&owner, leader).await,
+            Case::TitleText => title_text(h, &owner, leader, guild).await,
+            Case::Main => Ok(()),
+        };
+    }
     let motd = request(1, guild, 1, b"Meet at the guildhall.");
     let legacy_id = leader.continuity.next_command_id;
     let (status, bytes) = exchange(&owner, &mut leader, legacy_id, EDIT, &motd).await?;
@@ -179,7 +237,7 @@ async fn scenario(h: &Harness) -> TestResult {
     }
     let mut vice = sessions[0];
     let mut member = sessions[1];
-    edit(&owner, &mut member, &motd, (2, Some(1))).await?;
+    edit(&owner, &mut member, &motd, (2, None)).await?;
     edit(&owner, &mut vice, &motd, (1, Some(2))).await?;
 
     edit(&owner, &mut vice, &motd, (13, Some(2))).await?;
@@ -187,7 +245,7 @@ async fn scenario(h: &Harness) -> TestResult {
     let mut title_body = seed::sid(91, 1).to_vec();
     title_body.extend_from_slice(b"Trail Scout");
     let title = request(2, guild, 2, &title_body);
-    edit(&owner, &mut vice, &title, (2, Some(2))).await?;
+    edit(&owner, &mut vice, &title, (2, None)).await?;
     let title_id = leader.continuity.next_command_id;
     let receipt = edit(&owner, &mut leader, &title, (1, Some(3))).await?;
 
@@ -198,9 +256,9 @@ async fn scenario(h: &Harness) -> TestResult {
     );
     edit(&owner, &mut leader, &title, (13, Some(3))).await?;
 
-    let ranks_body = b"\x03\x06Leader\x0bVice Leader\x06Ranger\x07Visitor";
+    let ranks_body = RANKS;
     let ranks = request(3, guild, 3, ranks_body);
-    edit(&owner, &mut vice, &ranks, (2, Some(3))).await?;
+    edit(&owner, &mut vice, &ranks, (2, None)).await?;
     for attempted in [
         request(3, guild, 3, b"\x03\x06Leader\x0bVice Leader\x06Ranger"),
         request(
@@ -286,5 +344,155 @@ async fn scenario(h: &Harness) -> TestResult {
         summary.ranks,
         ["Leader", "Vice Leader", "Ranger", "Visitor"]
     );
+    Ok(())
+}
+
+async fn disbanded_replay(
+    deps: &Dependencies,
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut leader: AdmittedSession,
+    guild: GuildId,
+) -> TestResult {
+    let mut retry = leader;
+    let ranks = request(3, guild, 1, RANKS);
+    let receipt = edit(owner, &mut leader, &ranks, (1, Some(2))).await?;
+
+    // Install the terminal Guild snapshot left by the disband job. The user's
+    // actor/session and the immutable command and audit tables stay live.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    for sql in [
+        "DELETE FROM game_account_guild_leadership WHERE guild_id=$1::uuid",
+        "DELETE FROM game_guild_members WHERE guild_id=$1::uuid",
+        "DELETE FROM game_guild_ranks WHERE guild_id=$1::uuid",
+        "UPDATE game_guilds SET state=4,revision=5 WHERE guild_id=$1::uuid",
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(sql))
+            .bind(seed::uuid(*guild.as_bytes()))
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+
+    let restarted = deps.owner(h, owner.character);
+    deps.initialize(&restarted).await;
+    assert_eq!(
+        edit(&restarted, &mut retry, &ranks, (1, Some(2))).await?,
+        receipt
+    );
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_guild_event_outbox")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(count, 1);
+    Ok(())
+}
+
+async fn busy_replay(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut leader: AdmittedSession,
+    guild: GuildId,
+) -> TestResult {
+    let mut title = id(41).to_vec();
+    title.extend_from_slice(b"Scout");
+    for (payload, revision) in [
+        (request(1, guild, 1, b"Meet at the guildhall."), 2),
+        (request(2, guild, 2, &title), 3),
+        (request(3, guild, 3, RANKS), 4),
+    ] {
+        let command = leader.continuity.next_command_id;
+        let expected = edit(owner, &mut leader, &payload, (1, Some(revision))).await?;
+        let holder = owner.root.try_issue_background_semantic_pass()?;
+        let retry = crate::durability::DurabilityRoot::with_holder_owner(
+            owner.guild_command(leader, command, EDIT, &payload),
+        );
+        let mut retry = std::pin::pin!(retry);
+        let busy = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(std::future::Future::poll(retry.as_mut(), cx))
+        })
+        .await;
+        assert!(
+            busy.is_pending(),
+            "busy holder resolved the retry: {busy:?}"
+        );
+        holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        let GuildReply::Payload(actual) = retry.await else {
+            return Err("busy retry lost the committed receipt".into());
+        };
+        assert_eq!(actual, expected);
+    }
+    Ok(())
+}
+
+async fn private_refusals(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut leader: AdmittedSession,
+) -> TestResult {
+    for (kind, body) in [
+        (1, &b"Private MOTD"[..]),
+        (2, id(41).as_slice()),
+        (3, RANKS),
+    ] {
+        for n in [83, 81, 82] {
+            let guild = GuildId::from_bytes(seed::sid(n, 3)).map_err(debug)?;
+            edit(
+                owner,
+                &mut leader,
+                &request(kind, guild, 17, body),
+                (2, None),
+            )
+            .await?;
+        }
+    }
+    Ok(())
+}
+
+async fn title_text(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut leader: AdmittedSession,
+    guild: GuildId,
+) -> TestResult {
+    let mut body = id(41).to_vec();
+    body.extend_from_slice(b"Trail\nScout");
+    let command = leader.continuity.next_command_id;
+    assert_eq!(
+        exchange(
+            owner,
+            &mut leader,
+            command,
+            EDIT,
+            &request(2, guild, 1, &body)
+        )
+        .await?,
+        (CommandStatus::Rejected, Vec::new())
+    );
+    let mut body = id(41).to_vec();
+    body.extend_from_slice(b"  Trail Scout  ");
+    edit(
+        owner,
+        &mut leader,
+        &request(2, guild, 1, &body),
+        (1, Some(2)),
+    )
+    .await?;
+    let title = || {
+        sqlx::query_scalar::<_, String>(
+            "SELECT title FROM game_guild_members WHERE character_id=$1::uuid",
+        )
+        .bind(seed::uuid(id(41)))
+        .fetch_one(&h.pool)
+    };
+    assert_eq!(title().await?, "Trail Scout");
+    edit(
+        owner,
+        &mut leader,
+        &request(2, guild, 2, &id(41)),
+        (1, Some(3)),
+    )
+    .await?;
+    assert_eq!(title().await?, "");
     Ok(())
 }
