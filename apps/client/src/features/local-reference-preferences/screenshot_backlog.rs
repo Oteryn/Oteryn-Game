@@ -274,12 +274,17 @@ impl SettingsState {
                 runtime.last_pvp_query = None;
                 runtime.last_pvp_observation = None;
             }
-            let (boss_baseline, boss_advanced) = link.boss_capture(
-                !signals.events.personal_boss_events
-                    && !preferences.automatic_disabled
-                    && preferences.on_boss_defeat,
-                now,
-            );
+            let (boss_baseline, boss_advanced) = if signals.events.personal_boss_events {
+                (
+                    true,
+                    link.take_boss_defeat(enabled[2], runtime.automatic_pending[2]),
+                )
+            } else {
+                link.boss_capture(
+                    !preferences.automatic_disabled && preferences.on_boss_defeat,
+                    now,
+                )
+            };
             runtime.automatic_pending[2] |= enabled[2] && boss_advanced;
             let full = signals.bestiary.is_some();
             if !preferences.automatic_disabled
@@ -309,12 +314,7 @@ impl SettingsState {
                     ),
                     (
                         2,
-                        oteryn_client_ui::boss_defeated::advanced(
-                            signals.events.boss_revision,
-                            previous.events.boss_revision,
-                        ) || (!signals.events.personal_boss_events
-                            && !boss_baseline
-                            && signals.events.tracker[2] > previous.events.tracker[2]),
+                        !boss_baseline && signals.events.tracker[2] > previous.events.tracker[2],
                     ),
                     (
                         6,

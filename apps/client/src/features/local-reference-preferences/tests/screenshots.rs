@@ -633,6 +633,9 @@ fn ending_session_preserves_impact_record_earned_after_explicit_reset()
 fn personal_boss_defeat_wire_requests_screenshot() -> Result<(), Box<dyn std::error::Error>> {
     let folder = tempfile::tempdir()?;
     let (link, _, outbox) = crate::play::play_channel();
+    crate::play::mailbox::lock(&link.mailbox)
+        .capture_observations
+        .personal_boss_events = true;
     let mut settings = SettingsState::new(None);
     settings.preferences.screenshots.on_boss_defeat = true;
     settings.preferences.screenshots.directory = folder.path().to_string_lossy().into_owned();
@@ -658,5 +661,40 @@ fn personal_boss_defeat_wire_requests_screenshot() -> Result<(), Box<dyn std::er
             .len(),
         1
     );
+    Ok(())
+}
+
+#[test]
+fn each_personal_defeat_before_the_first_frame_requests_one_capture()
+-> Result<(), Box<dyn std::error::Error>> {
+    let folder = tempfile::tempdir()?;
+    let (link, _, outbox) = crate::play::play_channel();
+    crate::play::mailbox::lock(&link.mailbox)
+        .capture_observations
+        .personal_boss_events = true;
+    let mut settings = SettingsState::new(None);
+    settings.preferences.screenshots.on_boss_defeat = true;
+    settings.preferences.screenshots.directory = folder.path().to_string_lossy().into_owned();
+    let value = oteryn_protocol_oteryn::zones_nologout::decode_server_message(b"\x2a\x04boss")
+        .map_err(|error| format!("{error:?}"))?;
+    for revision in [2, 8, 8] {
+        outbox.push(vec![oteryn_session::SessionEvent::ServerMessage(
+            oteryn_session::AppliedDelta {
+                base_revision: revision - 1,
+                new_revision: revision,
+                server_sequence: revision,
+                value: value.clone(),
+            },
+        )]);
+    }
+    let now = std::time::Instant::now();
+    for expected in [1, 1, 0] {
+        assert_eq!(
+            settings
+                .process_screenshots(now, Some(&link), &mut Source(vec![]))?
+                .len(),
+            expected
+        );
+    }
     Ok(())
 }
