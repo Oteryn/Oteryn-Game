@@ -268,13 +268,20 @@ impl RangedLoadout {
                 launcher_attack,
                 elemental_attack,
                 ..
-            } => Some((
-                player_distance_formula(),
-                attack
-                    .checked_add(launcher_attack)?
-                    .checked_add(elemental_attack)?,
-                "formula:player-distance",
-            )),
+            } => {
+                // Launcher ammo contributes its elemental attack to the roll.
+                // A throwing weapon uses those points only to split that roll.
+                let ammunition = self.projectile.as_ref().is_some_and(|projectile| {
+                    projectile.item_instance_id != self.weapon.item_instance_id
+                });
+                Some((
+                    player_distance_formula(),
+                    attack
+                        .checked_add(launcher_attack)?
+                        .checked_add(if ammunition { elemental_attack } else { 0 })?,
+                    "formula:player-distance",
+                ))
+            }
             RangedDamage::Magic { min, max, .. } => Some((
                 wand_formula(u32::from(min), u32::from(max))?,
                 0,
@@ -1116,6 +1123,10 @@ mod tests {
         let throwing = loadout(&native, &equipment, &[])
             .flatten()
             .ok_or("leaf star loadout")?;
+        let RangedDamage::Distance { attack, .. } = throwing.damage else {
+            return Err("throwing loadout".into());
+        };
+        assert_eq!(throwing.formula().map(|(_, value, _)| value), Some(attack));
         assert_eq!(throwing.split(99), Some((95, 3, Element::Earth)));
         Ok(())
     }

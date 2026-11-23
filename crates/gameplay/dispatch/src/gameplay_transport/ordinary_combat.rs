@@ -655,7 +655,7 @@ fn lower(
     };
     if let Some(owner) = magnitude.as_mut() {
         if let Some(weapon) = owned.intrinsic_weapon_for_spell(spell, content) {
-            owner.bind_intrinsic_weapon(weapon);
+            owner.bind_intrinsic_weapon_damage(weapon);
         }
         owner
             .bind_native_health_observations(runtime, owned.native_health_observations())

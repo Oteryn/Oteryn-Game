@@ -270,7 +270,7 @@ pub struct PreparedMagnitudeOwner {
     now_ms: u64,
     /// The physical actor condition owner is independently re-read before HP publication.
     canonical_hex: Vec<(ExactActorRef, ConditionBuffDelta)>,
-    intrinsic_weapon: Option<oteryn_gameplay_combat_rules::resolution::SwingWeapon>,
+    intrinsic_weapon: Option<IntrinsicWeaponDamage>,
     plan: NativeCombatPlan,
     targets: Vec<Target>,
     shared_extensions: Option<(Option<i64>, bool)>,
@@ -456,15 +456,48 @@ struct DamageFinish {
     side_percent: Option<u32>,
 }
 
-/// Crystal combat.cpp:909-923: Prey and Talisman add the truncated
-/// contribution to each signed damage component, in that order.
+/// PREY-0 §7 rounds each damage contribution up. The Talisman
+/// contribution that follows it truncates independently.
 pub fn boost_creature_damage(amount: i64, prey: u8, talisman: u16) -> i64 {
     if amount <= 0 {
         return amount;
     }
-    let prey_damage = i128::from(amount) * (100 + i128::from(prey)) / 100;
+    let amount = i128::from(amount);
+    let prey_damage = amount + (amount * i128::from(prey) + 99) / 100;
     let damage = prey_damage * (10_000 + i128::from(talisman)) / 10_000;
     i64::try_from(damage).unwrap_or(i64::MAX)
+}
+
+/// Attack points used to divide a skill callback's roll into damage components.
+#[derive(Debug, Clone, Copy)]
+pub struct IntrinsicWeaponDamage {
+    pub physical_attack: u32,
+    pub elemental_attack: u32,
+    pub element: oteryn_gameplay_content::content::ProjectV2RangedElement,
+}
+
+impl IntrinsicWeaponDamage {
+    pub(crate) fn from_melee(
+        weapon: oteryn_gameplay_combat_rules::resolution::SwingWeapon,
+    ) -> Option<Self> {
+        let oteryn_gameplay_combat_rules::resolution::SwingWeapon::Melee {
+            attack,
+            elemental: Some((elemental_attack, element)),
+            ..
+        } = weapon
+        else {
+            return None;
+        };
+        Some(Self {
+            physical_attack: attack,
+            elemental_attack,
+            element,
+        })
+    }
+
+    pub fn total_attack(self) -> u32 {
+        self.physical_attack.saturating_add(self.elemental_attack)
+    }
 }
 
 impl PreparedMagnitudeOwner {
@@ -1327,9 +1360,16 @@ impl PreparedMagnitudeOwner {
         &mut self,
         weapon: oteryn_gameplay_combat_rules::resolution::SwingWeapon,
     ) {
-        if matches!(&self.plan, NativeCombatPlan::Combat(combat) if combat.element == Element::Physical)
+        if let Some(damage) = IntrinsicWeaponDamage::from_melee(weapon) {
+            self.bind_intrinsic_weapon_damage(damage);
+        }
+    }
+
+    pub fn bind_intrinsic_weapon_damage(&mut self, damage: IntrinsicWeaponDamage) {
+        if damage.elemental_attack > 0
+            && matches!(&self.plan, NativeCombatPlan::Combat(combat) if combat.element == Element::Physical)
         {
-            self.intrinsic_weapon = Some(weapon);
+            self.intrinsic_weapon = Some(damage);
         }
     }
 
@@ -1454,31 +1494,26 @@ impl PreparedMagnitudeOwner {
         let a = &self.resolved_attributes;
         let raw = signed_truncate(hit.magnitude as f64)?;
         // Crystal splits the callback roll by attack points and rounds each component.
-        let (raw, secondary) =
-            if let Some(oteryn_gameplay_combat_rules::resolution::SwingWeapon::Melee {
-                attack,
-                elemental: Some((points, secondary)),
-                ..
-            }) = self.intrinsic_weapon
-            {
-                use oteryn_gameplay_content::content::ProjectV2RangedElement as Ranged;
-                let secondary = match secondary {
-                    Ranged::Physical => Element::Physical,
-                    Ranged::Energy => Element::Energy,
-                    Ranged::Fire => Element::Fire,
-                    Ranged::Death => Element::Death,
-                    Ranged::Ice => Element::Ice,
-                    Ranged::Earth => Element::Earth,
-                };
-                let factor = f64::from(points) / (f64::from(attack) + f64::from(points));
-                let secondary_value = signed_round(raw as f64 * factor)?;
-                (
-                    signed_round(raw as f64 * (1.0 - factor))?,
-                    Some((secondary, secondary_value)),
-                )
-            } else {
-                (raw, None)
+        let (raw, secondary) = if let Some(damage) = self.intrinsic_weapon {
+            use oteryn_gameplay_content::content::ProjectV2RangedElement as Ranged;
+            let secondary = match damage.element {
+                Ranged::Physical => Element::Physical,
+                Ranged::Energy => Element::Energy,
+                Ranged::Fire => Element::Fire,
+                Ranged::Death => Element::Death,
+                Ranged::Ice => Element::Ice,
+                Ranged::Earth => Element::Earth,
             };
+            let factor = f64::from(damage.elemental_attack)
+                / (f64::from(damage.physical_attack) + f64::from(damage.elemental_attack));
+            let secondary_value = signed_round(raw as f64 * factor)?;
+            (
+                signed_round(raw as f64 * (1.0 - factor))?,
+                Some((secondary, secondary_value)),
+            )
+        } else {
+            (raw, None)
+        };
         let critical_bonus = if critical {
             Some(
                 self.critical_extra()?

@@ -371,6 +371,36 @@ fn crystal_equipment_weapon_skill_hit_uses_intrinsic_element_response() {
 }
 
 #[test]
+fn crystal_equipment_spell_damage_prey_rounds_post_block_component_up() {
+    let mut f = fixture();
+    f.state = PlayerSpellState::new(FACTS, 0, 0).expect("unbuffed caster");
+    f.attributes.binding.player_revision = f.state.revision();
+    f.attributes.wheel_flat_damage = Some(0);
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        unreachable!();
+    };
+    combat.element = Element::Physical;
+    combat.block_armor = false;
+    combat.hits.truncate(1);
+    let hit = &mut combat.hits[0];
+    hit.magnitude = 6;
+    hit.side_percent = None;
+    hit.bonus_percent = 0;
+    let hit = hit.clone();
+    let target = &f.bindings[1];
+    let mut owner = qualify(&f, &p).expect("qualified numerical owner");
+    let (damage, healing) = owner
+        .finish_with_damage_healing(&p, &hit, target, &mut |_, high| high)
+        .expect("post-block damage");
+    assert_eq!((damage, healing), (5, 0));
+    assert_eq!(
+        owner.apply_creature_damage_modifiers(&mut 0, target.actor, 0, damage, (25, 0, false)),
+        Ok(Some((7, 5)))
+    );
+}
+
+#[test]
 fn crystal_equipment_spell_wheel_flat_applies_to_each_surviving_weapon_component() {
     use crate::content::native_gameplay::{NativeGameplayInput, compile_native_gameplay, decode};
     use oteryn_gameplay_combat_rules::resolution::swing_weapon;
@@ -680,7 +710,9 @@ fn spell_reflection(capped: bool, split: bool, elite: bool) {
     if elite {
         use crate::durability::task_board::BountyTalismanSnapshot;
         use crate::gameplay_transport::actor_spell::PlayerBatchPreflight;
-        use oteryn_gameplay_quests::quest::task_board::full::{BountyStatus, BountyTask, TaskBoardData};
+        use oteryn_gameplay_quests::quest::task_board::full::{
+            BountyStatus, BountyTask, TaskBoardData,
+        };
         use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
         let mut board = TaskBoardData::default();
@@ -712,10 +744,13 @@ fn spell_reflection(capped: bool, split: bool, elite: bool) {
             DecisionOccurrenceId::from_bytes([42; 16]),
         )
         .expect("qualified bounty");
-        assert!(matches!(
-            lowered.batch.effects[0].change,
-            OwnerCombatChange::Damage { magnitude, .. } if magnitude == physical / 2 + fire / 2
-        ), "elite halves physical {physical} and fire {fire} independently");
+        assert!(
+            matches!(
+                lowered.batch.effects[0].change,
+                OwnerCombatChange::Damage { magnitude, .. } if magnitude == physical / 2 + fire / 2
+            ),
+            "elite halves physical {physical} and fire {fire} independently"
+        );
         states.open_analyser_for_test(f.caster, f.session);
         expected_elite = Some([physical / 2, fire / 2]);
     }
@@ -736,7 +771,9 @@ fn spell_reflection(capped: bool, split: bool, elite: bool) {
         .expect("actual combat commit");
     assert!(receipt.applied);
     if let Some(expected) = expected_elite {
-        use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact, decode_analyser_facts};
+        use oteryn_protocol_oteryn::analyser::{
+            AnalyserFact, AnalyserImpact, decode_analyser_facts,
+        };
         use oteryn_protocol_oteryn::damage_element::DamageElement;
 
         let facts = decode_analyser_facts(
@@ -746,11 +783,17 @@ fn spell_reflection(capped: bool, split: bool, elite: bool) {
         )
         .expect("typed damage facts");
         let actual = [DamageElement::Physical, DamageElement::Fire].map(|kind| {
-            facts.iter().filter_map(|fact| match fact {
-                AnalyserFact::Impact(AnalyserImpact::Damage { value, element })
-                    if *element == kind => Some(i64::from(value.get())),
-                _ => None,
-            }).sum::<i64>()
+            facts
+                .iter()
+                .filter_map(|fact| match fact {
+                    AnalyserFact::Impact(AnalyserImpact::Damage { value, element })
+                        if *element == kind =>
+                    {
+                        Some(i64::from(value.get()))
+                    }
+                    _ => None,
+                })
+                .sum::<i64>()
         });
         assert_eq!(actual, expected);
     }

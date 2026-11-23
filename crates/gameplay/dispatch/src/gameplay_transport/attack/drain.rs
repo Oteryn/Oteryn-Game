@@ -2606,7 +2606,7 @@ mod tests {
     fn t174_converted_melee_analyser_uses_final_scaled_components() {
         let boosted = super::boost_attack_components([50, 50], 20, 2500);
         assert_eq!(boosted, [75, 75]);
-        assert_eq!(super::boost_attack_components([50, 50], 25, 0), [62, 62]);
+        assert_eq!(super::boost_attack_components([50, 50], 25, 0), [63, 63]);
         assert_eq!(super::reported_primary(boosted[0], 150), 75);
         // Lethal clipping uses all of the available primary before spending secondary.
         assert_eq!(super::reported_primary(boosted[0], 120), 75);
