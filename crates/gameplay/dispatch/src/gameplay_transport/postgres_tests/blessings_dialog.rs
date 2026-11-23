@@ -161,7 +161,7 @@ fn scenario() -> TestResult {
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_character_blessings (character_id, blessing_key, provenance)
-                     VALUES (encode($1,'hex')::uuid, 'oteryn:blessing.spiritual_shielding', 'fixture')")
+                     VALUES (encode($1,'hex')::uuid, 'oteryn:blessing.the_spiritual_shielding', 'fixture')")
             .bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
         sqlx::query("INSERT INTO game_character_store_blessing_copies (character_id, blessing_key, copies)
@@ -177,7 +177,7 @@ fn scenario() -> TestResult {
         assert_eq!(status, CommandStatus::Accepted);
         let holdings = decode_holdings(&bytes).ok_or("holdings codec")?;
         assert_eq!(holdings.len(), 8);
-        let active = holdings.iter().find(|row| row.key == "oteryn:blessing.spiritual_shielding").ok_or("active holding")?;
+        let active = holdings.iter().find(|row| row.key == "oteryn:blessing.the_spiritual_shielding").ok_or("active holding")?;
         assert_eq!((active.held, active.store_copies), (true, 0));
         let store = holdings.iter().find(|row| row.key == "oteryn:blessing.twist_of_fate").ok_or("Store holding")?;
         assert_eq!((store.held, store.store_copies), (false, 2));

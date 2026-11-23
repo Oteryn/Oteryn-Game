@@ -2,6 +2,7 @@
 mod actions;
 mod model;
 mod submission;
+mod tracker;
 mod widgets;
 use super::modal::ModalGuard;
 use super::{
@@ -40,6 +41,11 @@ enum Kind {
     Cast,
     Castable,
     Close,
+    ClearTracker,
+    CleanTracker,
+    HideQuest,
+    Pin,
+    ShowHidden,
     Completed,
     Refresh,
     Search,
@@ -51,6 +57,7 @@ enum Kind {
     Previous,
     Next,
     Vocation,
+    MyVocation,
     Premium,
     Group,
     Assign(usize),
@@ -74,8 +81,17 @@ struct Status;
 struct Tracker;
 #[derive(Component)]
 struct FilterCaption(Kind);
+type QuestFilters = (usize, bool, oteryn_client_ui::localization::Language);
+
+#[derive(Default)]
+struct QuestCache {
+    panel: oteryn_client_ui::quest_log::QuestPanel,
+    projection: Option<(QuestFilters, model::Projection)>,
+}
+
 #[derive(Resource, Default)]
 struct State {
+    displayed_quest: Option<u32>,
     key: Option<Key>,
     tab: Tab,
     widgets: Option<widgets::Widgets>,
@@ -108,6 +124,7 @@ pub(super) fn open_spells(owner: &mut HostOwner) {
     }
 }
 pub(super) fn install(app: &mut App) {
+    tracker::install(app);
     app.init_resource::<State>()
         .add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, (keyboard, project, refresh_labels).chain())
@@ -142,6 +159,7 @@ fn project(
     owner: NonSend<HostOwner>,
     skin: Res<Skins>,
     mut state: ResMut<State>,
+    mut quest_cache: Local<QuestCache>,
     mut overlays: Query<(Entity, &mut Node), With<Overlay>>,
     mut text: Query<JournalText>,
     mut focus: ResMut<InputFocus>,
@@ -167,10 +185,16 @@ fn project(
         );
         return;
     }
-    let quests = play.link.quest_panel();
+    let QuestCache {
+        panel: quests,
+        projection: cached_quests,
+    } = &mut *quest_cache;
+    if play.link.update_quest_snapshot(quests) {
+        *cached_quests = None;
+    }
     let book = play.link.spellbook_state();
     let catalogue = play.link.spell_catalog_panel();
-    let q = quests.open || quests.tracker_open;
+    let q = quests.open;
     let s = book.open || catalogue.open || catalogue.archive_open;
     if !q && !s {
         hide(
@@ -216,7 +240,7 @@ fn project(
             &skin,
             overlay,
             key,
-            &quests,
+            quests,
             &book,
             &catalogue,
         );
@@ -231,23 +255,39 @@ fn project(
     let Some(widgets) = state.widgets else {
         return;
     };
+    let spells;
     let projection = if tab == Tab::Quests {
-        model::quests(&quests, state.quest_page, state.hide_completed)
+        let filters = (
+            state.quest_page,
+            state.hide_completed,
+            oteryn_client_ui::localization::current(),
+        );
+        if cached_quests
+            .as_ref()
+            .is_some_and(|(old, _)| *old != filters)
+        {
+            *cached_quests = None;
+        }
+        &cached_quests
+            .get_or_insert_with(|| (filters, model::quests(quests, filters.0, filters.1)))
+            .1
     } else {
-        model::project(
+        spells = model::project(
             tab,
-            &quests,
+            quests,
             &book,
             &catalogue,
             state.selected_spell,
             state.quest_page,
-        )
+        );
+        &spells
     };
+    state.displayed_quest = quests.journal_line().map(|line| line.quest_index);
     state.selected_spell = projection.selected_spell;
     if state.rows != projection.rows {
         commands.entity(widgets.rows).despawn_children();
         widgets::rows(&mut commands, &skin, widgets.rows, key, &projection.rows);
-        state.rows = projection.rows;
+        state.rows.clone_from(&projection.rows);
     }
     if state.missions != projection.missions {
         commands.entity(widgets.missions).despawn_children();
@@ -258,7 +298,7 @@ fn project(
             key,
             &projection.missions,
         );
-        state.missions = projection.missions;
+        state.missions.clone_from(&projection.missions);
     }
     for (mut text, detail, status, tracker) in &mut text {
         let value = if detail {
@@ -370,7 +410,7 @@ fn refresh_labels(
     let Some(play) = &owner.play else {
         return;
     };
-    let quest = play.link.quest_panel();
+    let sort = play.link.quest_sort_selection();
     let book = play.link.spellbook_state();
     let catalogue = play.link.spell_catalog_panel();
     for (label, mut text) in &mut labels {
@@ -381,10 +421,9 @@ fn refresh_labels(
                 "Show completed: on"
             }
             .into(),
-            Kind::Sort => {
-                oteryn_client_ui::quest_log::QUEST_SORT_LABELS[quest.list_sort.selection()].into()
-            }
+            Kind::Sort => oteryn_client_ui::quest_log::QUEST_SORT_LABELS[sort].into(),
             Kind::Castable => "Only castable level".into(),
+            Kind::MyVocation => "My vocation".into(),
             Kind::Vocation if !book.selected => catalogue
                 .vocation
                 .clone()
@@ -482,7 +521,7 @@ fn fallback_controls(commands: &mut Commands, skin: &Skins, parent: Entity, key:
         })
         .id();
     commands.entity(parent).add_child(row);
-    for kind in [Kind::Vocation, Kind::Group, Kind::Premium] {
+    for kind in [Kind::MyVocation, Kind::Vocation, Kind::Group, Kind::Premium] {
         let button = commands
             .spawn((
                 source::button(skin.buttons.clone(), 220.),

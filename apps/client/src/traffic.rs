@@ -10,10 +10,19 @@ use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 /// Shared by the counting stream and whoever displays it.
 #[derive(Debug, Default)]
 pub struct Traffic {
+    #[cfg(bevy_shell)]
+    last_read: std::sync::Mutex<Option<std::time::Instant>>,
     sent: AtomicU64,
     received: AtomicU64,
 }
 impl Traffic {
+    #[cfg(bevy_shell)]
+    pub(crate) fn last_read(&self) -> Option<std::time::Instant> {
+        *self
+            .last_read
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
     /// `(sent, received)` bytes, TLS records excluded: what the session wrote and read.
     #[must_use]
     pub fn bytes(&self) -> (u64, u64) {
@@ -43,6 +52,15 @@ impl<S: AsyncRead + Unpin> AsyncRead for Counting<S> {
         let result = Pin::new(&mut self.inner).poll_read(cx, buf);
         if let Poll::Ready(Ok(())) = result {
             let read = buf.filled().len().saturating_sub(before);
+            #[cfg(bevy_shell)]
+            if read != 0 {
+                *self
+                    .traffic
+                    .last_read
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner) =
+                    Some(std::time::Instant::now());
+            }
             self.traffic.received.fetch_add(read as u64, Relaxed);
         }
         result

@@ -27,7 +27,9 @@ pub fn request(
         } else {
             None
         };
-        house::query(panel.world, &panel.town, cursor)?
+        let command = house::query(panel.world, &panel.town, cursor)?;
+        panel.pending_after = cursor.map(str::to_owned);
+        command
     };
     panel.pending_acl_read = false;
     panel.pending_acl = matches!(

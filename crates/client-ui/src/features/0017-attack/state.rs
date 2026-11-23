@@ -7,6 +7,8 @@ pub struct BattlePanel {
     pub pending_command: Option<CombatCommand>,
     pub native_running: bool,
     pub shutdown: bool,
+    /// Visible actors in arrival order, including non-attackable NPCs.
+    pub visible_actors: Vec<WorldSpatialEntity>,
     pub rows: Vec<WorldSpatialEntity>,
     pub combat: Option<ActorCombatState>,
     pub feedback: Option<&'static str>,

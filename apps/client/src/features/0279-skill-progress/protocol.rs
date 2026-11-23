@@ -45,14 +45,26 @@ impl PlayLink {
     }
     pub(in crate::play) fn refresh_skill_progress_if_due(&self) {
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.shared_frontend
-            && mailbox.skill_progress.selected
+        if !mailbox.shared_frontend {
+            return;
+        }
+        self.poll_locked(&mut mailbox, std::time::Duration::from_secs(5));
+    }
+    pub(crate) fn poll_skill_progress(&self, interval: std::time::Duration) {
+        self.poll_locked(&mut lock(&self.mailbox), interval);
+    }
+    fn poll_locked(
+        &self,
+        mailbox: &mut crate::play::mailbox::Mailbox,
+        interval: std::time::Duration,
+    ) {
+        if mailbox.skill_progress.selected
             && !mailbox.skill_progress.pending
             && mailbox
                 .skill_progress_last_request
-                .is_none_or(|last| last.elapsed() >= std::time::Duration::from_secs(5))
+                .is_none_or(|last| last.elapsed() >= interval)
         {
-            self.enqueue_skill_progress(&mut mailbox);
+            self.enqueue_skill_progress(mailbox);
         }
     }
 

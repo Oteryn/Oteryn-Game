@@ -131,7 +131,7 @@ impl DurabilityRoot {
             }
             let keys: Vec<_> = catalogue.blessings.into_iter().map(|blessing| blessing.storage_key).collect();
             let rows: Vec<(String, bool, i16)> = sqlx::query_as(
-                "SELECT known.key, held.blessing_key IS NOT NULL, COALESCE(store.copies, 0)::smallint
+                "SELECT known.key, held.blessing_key IS NOT NULL, LEAST(COALESCE(store.copies, 0), 255)::smallint
                    FROM unnest($2::text[]) AS known(key)
               LEFT JOIN game_character_blessings held
                      ON held.character_id=encode($1,'hex')::uuid AND held.blessing_key=known.key

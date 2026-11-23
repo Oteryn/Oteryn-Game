@@ -380,6 +380,11 @@ fn proficiency_advancement_is_detected_from_real_play_results()
         .ok_or("page")?,
     });
     assert!(native_controls::display(&link.weapon_proficiency_panel()).contains("Advancement"));
+    #[cfg(bevy_shell)]
+    assert_eq!(
+        link.take_achievement_banners().front().map(String::as_str),
+        Some("Weapon proficiency improved: Sword")
+    );
     link.weapon_proficiency_open_track(true);
     let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
         return Err("notification open".into());

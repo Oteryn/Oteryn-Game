@@ -137,6 +137,8 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 /// Admission inputs shared across activity scopes on this connection.
 #[derive(Debug, Default)]
 pub(super) struct ConnectionInputs {
+    #[cfg(bevy_shell)]
+    session_task: Option<tokio::task::AbortHandle>,
     pub(super) channel_character: String,
     pub(super) channel_current: Option<[u8; 16]>,
     pub(super) channel_rows: Vec<oteryn_client_ui::channel_switch::ChannelRow>,
@@ -146,11 +148,22 @@ pub(super) struct ConnectionInputs {
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) capture_attackers: std::collections::BTreeSet<Option<oteryn_session::EntityRef>>,
+    pub(super) capture_boss_tracker:
+        Option<oteryn_client_runtime::cyclopedia_tracker::TrackerSnapshot>,
+    pub(super) combat_capture: crate::screenshots::CombatCaptureFacts,
     pub(super) connection: ConnectionInputs,
+    #[cfg(bevy_shell)]
+    pub(super) screen_loot: super::feature_local_text_messages::view::LootMessage,
     #[cfg(bevy_shell)]
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     #[cfg(bevy_shell)]
     pub(super) look_receipt: u64,
+    pub(super) boss_capture: super::screenshot::BossCapture,
+    pub(super) capture_observations: super::screenshot::CaptureObservations,
+    #[cfg(bevy_shell)]
+    pub(super) window_notices:
+        std::collections::VecDeque<super::feature_local_text_messages::view::WindowNotice>,
     pub(super) shared_frontend: bool,
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
     /// The admitted session's byte counters; `None` before admission.
@@ -241,6 +254,7 @@ pub(super) struct Mailbox {
     pub(super) store: oteryn_client_ui::store::StorePanel,
     pub(super) premium_game: crate::premium::game::Panel,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
+    pub(super) vip_membership_revision: Option<u64>,
     pub(super) vip_presence_confirmed_at: Option<tokio::time::Instant>,
     /// chsw (capability 513): VIP login, logout and Channel-change notices naming the Channel,
     /// numbered so each is shown once.
@@ -292,6 +306,7 @@ pub(super) struct Mailbox {
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
     /// The latest refused logout not yet polled.
+    logout_requested: Option<std::time::Instant>,
     logout_refused: Option<Option<LogoutResult>>,
     ended: Option<PlayEvent>,
     pub(super) task_board: oteryn_client_ui::task_board::TaskBoardPanel,
@@ -334,6 +349,7 @@ pub(super) struct Mailbox {
     pub(super) player_typing_shutdown: bool,
     // CL26s3
     pub(super) daily_reward: oteryn_client_ui::daily_reward::DailyRewardPanel,
+    pub(super) reward_reset: Option<(u64, std::time::Instant)>,
     pub(super) daily_reward_shutdown: bool,
     // CL26s4
     pub(super) boss_rewards: oteryn_client_ui::boss_rewards::BossRewardsPanel,
@@ -355,6 +371,8 @@ impl Mailbox {
     }
 
     pub(super) fn reset_server_message_namespace(&mut self) {
+        #[cfg(bevy_shell)]
+        self.window_notices.clear();
         self.before.server_messages = ServerMessageInbox::default();
         self.pushed.server_messages = ServerMessageInbox::default();
         self.pushed.scope_changed = true;

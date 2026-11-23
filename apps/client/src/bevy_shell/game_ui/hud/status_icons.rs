@@ -5,11 +5,12 @@ use bevy::prelude::*;
 use oteryn_client_ui::condition_status::icon_key;
 use std::time::Duration;
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 struct Icon {
     key: String,
     label: String,
     count: usize,
+    hidden_on_bar: bool,
 }
 impl Icon {
     fn new(key: &str, label: &str, count: usize) -> Self {
@@ -17,6 +18,7 @@ impl Icon {
             key: key.into(),
             label: label.into(),
             count,
+            hidden_on_bar: false,
         }
     }
 }
@@ -24,6 +26,9 @@ impl Icon {
 // Only the rendered labels/counts are retained, never an independent gameplay state.
 #[derive(Component, Default)]
 pub(super) struct StatusRow(Vec<Icon>);
+
+#[derive(Component)]
+pub(super) struct HudConditions;
 
 /// The size of one condition icon.
 const ICON: f32 = 9.;
@@ -71,7 +76,7 @@ fn slot_key(key: &str) -> String {
     format!("condition-{}", slug.trim_matches('-'))
 }
 
-pub(super) fn setup(commands: &mut Commands, vitals: Entity) {
+pub(super) fn setup(commands: &mut Commands, vitals: Entity, world: Entity) {
     let row = commands
         .spawn((
             Name::new("Status icons"),
@@ -91,6 +96,24 @@ pub(super) fn setup(commands: &mut Commands, vitals: Entity) {
         ))
         .id();
     commands.entity(vitals).add_child(row);
+    let hud = commands
+        .spawn((
+            Name::new("HUD condition icons"),
+            StatusRow::default(),
+            HudConditions,
+            Node {
+                position_type: PositionType::Absolute,
+                left: percent(50.),
+                top: percent(50.),
+                margin: UiRect::left(px(-50.)),
+                flex_direction: FlexDirection::Column,
+                display: Display::None,
+                ..default()
+            },
+            Pickable::IGNORE,
+        ))
+        .id();
+    commands.entity(world).add_child(hud);
 }
 
 pub(super) fn project(
@@ -99,7 +122,7 @@ pub(super) fn project(
     skins: Res<Skins>,
     time: Res<Time<Real>>,
     mut refreshed: Local<Option<(u64, Duration)>>,
-    mut rows: Query<(Entity, &mut StatusRow, &mut Node)>,
+    mut rows: Query<(Entity, &mut StatusRow, &mut Node, Has<HudConditions>)>,
 ) {
     let mut next = Vec::new();
     if let Some(play) = &owner.play {
@@ -139,9 +162,11 @@ pub(super) fn project(
                             && (condition.remaining_ms == -1 || condition.remaining_ms > 0)
                     })
                     .count();
-                if count > 0 && !conditions.hidden.contains(&id) {
+                if count > 0 {
                     let label = icon_key(id);
-                    next.push(Icon::new(label, label, count));
+                    let mut icon = Icon::new(label, label, count);
+                    icon.hidden_on_bar = conditions.hidden.contains(&id);
+                    next.push(icon);
                 }
             }
         }
@@ -209,8 +234,6 @@ pub(super) fn project(
                 next.push(Icon::new(&timer.key, label, 1));
             }
         }
-        // The status bar honours the HUD page's Status Bar column; the HUD column belongs to
-        // the Conditions HUD pane (`PlayView::hud_conditions_text`).
         let prefs = play.view.preferences();
         if !prefs.special_condition_order.is_empty() || !prefs.condition_order.is_empty() {
             let order = prefs.ordered_condition_keys();
@@ -221,29 +244,51 @@ pub(super) fn project(
                     .unwrap_or(usize::MAX)
             });
         }
-        next.retain(|icon| {
-            !play
-                .view
-                .preferences()
-                .condition_status_hidden
-                .contains(&icon.key)
-        });
     } else {
         *refreshed = None;
     }
-    let Ok((entity, mut shown, mut node)) = rows.single_mut() else {
-        return;
-    };
-    if shown.0 == next {
-        return;
+    for (entity, mut shown, mut node, hud) in &mut rows {
+        let visible: Vec<_> = next
+            .iter()
+            .filter(|icon| {
+                owner.play.as_ref().is_some_and(|play| {
+                    let prefs = play.view.preferences();
+                    if hud {
+                        prefs.player_hud_enabled
+                            && prefs.conditions_hud_enabled
+                            && prefs.resource_hud.conditions
+                            && !prefs.condition_hud_hidden.contains(&icon.key)
+                    } else {
+                        !icon.hidden_on_bar
+                            && prefs.conditions_bar_enabled
+                            && !prefs.condition_status_hidden.contains(&icon.key)
+                    }
+                })
+            })
+            .cloned()
+            .collect();
+        if shown.0 == visible {
+            continue;
+        }
+        render_icons(&mut commands, &skins, entity, &mut node, &visible, hud);
+        shown.0 = visible;
     }
+}
+fn render_icons(
+    commands: &mut Commands,
+    skins: &Skins,
+    entity: Entity,
+    node: &mut Node,
+    next: &[Icon],
+    hud: bool,
+) {
     commands.entity(entity).despawn_children();
     node.display = if next.is_empty() {
         Display::None
     } else {
         Display::Flex
     };
-    for icon in &next {
+    for icon in next {
         let container = commands
             .spawn((
                 Name::new(icon.key.clone()),
@@ -257,7 +302,7 @@ pub(super) fn project(
             .id();
         let fallback: String = icon.label.chars().take(2).collect();
         let slot = super::super::art::spawn(
-            &mut commands,
+            commands,
             &skins.font,
             slot_key(&icon.key),
             &fallback,
@@ -267,7 +312,11 @@ pub(super) fn project(
         if icon.count > 1 {
             let badge = commands
                 .spawn((
-                    Name::new("Status count"),
+                    Name::new(if hud {
+                        "HUD condition count"
+                    } else {
+                        "Status count"
+                    }),
                     source::text(
                         icon.count.to_string(),
                         source::font(skins.font.clone(), true),
@@ -283,7 +332,6 @@ pub(super) fn project(
         }
         commands.entity(entity).add_child(container);
     }
-    shown.0 = next;
 }
 
 #[cfg(test)]

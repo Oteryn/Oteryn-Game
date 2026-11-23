@@ -46,7 +46,11 @@ pub(super) async fn execute(
     if !recent && native.is_none() {
         return None;
     }
-    let mut catalogues = vec![CATALOGUE.as_ref()?, COSMETIC_CATALOGUE.as_ref()?];
+    let mut catalogues = vec![
+        CATALOGUE.as_ref()?,
+        COSMETIC_CATALOGUE.as_ref()?,
+        BLESSING_CATALOGUE.as_ref()?,
+    ];
     if admitted.continuity.selected_capabilities.contains(250) {
         catalogues.push(HIRELING_CATALOGUE.as_ref()?);
     }

@@ -12,6 +12,7 @@
 //!    and no mana/state cost.
 //! 5. Log the target out, freshly admit it with a different game session, list the
 //!    durable setting, and re-cast to prove denial and no-cost refusal survived.
+use super::full_row_c01::admission_error;
 use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::exiva;
@@ -32,7 +33,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         "SEAM_EVIDENCE e2e_all scenario=C05.full status={} seconds={:.3} evidence={}",
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64(),
-        if result.is_ok() { "observed-all-required-actions" } else { "observed-runtime-failure-see-C05_GAP" },
+        result.as_ref().err().map_or_else(
+            || "observed-all-required-actions".to_owned(),
+            |error| super::full_row_c04::evidence_token(&error.to_string()),
+        ),
     ));
 }
 
@@ -78,14 +82,26 @@ async fn cast(client: &mut DevClientSession, target: &str) -> TestResult<(oteryn
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut caster = connect_character(clients, 0xc5, 0).await?;
-    let mut target = connect_character(clients, 0xc6, 1).await?;
+    let mut caster = connect_character(clients, 0xc5, 0)
+        .await
+        .map_err(|error| admission_error("caster-admission", error))?;
+    let mut target = connect_character(clients, 0xc6, 1)
+        .await
+        .map_err(|error| admission_error("target-admission", error))?;
     let target_name = own_name(&target)?;
     if setting(&mut target, &[0, 1]).await? != [1] { return Err("allow step missing committed [1] reply".into()); }
     let list = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?).ok_or("allow step invalid settings list")?;
     if list.modes != 1 { return Err(format!("allow step observed modes={}", list.modes).into()); }
     evidence(&format!("C05_CHECK {} PASS accepted-settings-reply", ACTIONS[0]));
 
+    let catalog = caster.session_mut().gated_snapshot(
+        oteryn_protocol_oteryn::actor_spell_catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG,
+    ).ok_or("step=locate-eligibility observed=no-served-spell-catalog")?;
+    let entries = oteryn_protocol_oteryn::actor_spell_catalog::decode_catalog(&catalog.payload)
+        .map_err(|error| format!("step=locate-eligibility observed=invalid-catalog:{error:?}"))?;
+    if let Some(gap) = locate_eligibility(&entries) {
+        return Err(gap.into());
+    }
     let before = caster.actor_vitals().copied().ok_or("locate step missing vitals")?;
     let (reply, messages) = cast(&mut caster, &target_name).await?;
     let after = caster.actor_vitals().copied().ok_or("locate step missing post-cast vitals")?;
@@ -97,6 +113,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     if setting(&mut target, &[0, 0]).await? != [1] { return Err("deny step missing committed [1] reply".into()); }
     evidence(&format!("C05_CHECK {} PASS accepted-settings-reply", ACTIONS[2]));
+    // Exiva starts its spell and support cooldowns on success. A refusal
+    // during that interval would not exercise the target's privacy gate.
+    let ready_at = tokio::time::Instant::now() + Duration::from_secs(2);
+    while tokio::time::Instant::now() < ready_at {
+        caster.service_liveness(Duration::from_millis(25)).await?;
+        target.service_liveness(Duration::from_millis(25)).await?;
+    }
     let before_refusal = caster.actor_vitals().copied().ok_or("refusal step missing vitals")?;
     let (refused, messages) = cast(&mut caster, &target_name).await?;
     let after_refusal = caster.actor_vitals().copied().ok_or("refusal step missing post-cast vitals")?;
@@ -109,7 +132,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let old_session = target.join_snapshot().game_session_id;
     if target.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) { return Err("fresh-admission step logout refused".into()); }
     drop(target);
-    let mut target = connect_character(clients, 0xc7, 1).await?;
+    let mut target = connect_character(clients, 0xc7, 1)
+        .await
+        .map_err(|error| admission_error("target-readmission", error))?;
     if target.join_snapshot().game_session_id == old_session { return Err("fresh-admission step reused game session".into()); }
     let list = exiva::PlayerList::decode(&setting(&mut target, &[5]).await?).ok_or("fresh-admission step invalid settings list")?;
     if list.modes != 0 { return Err(format!("fresh-admission step observed modes={}", list.modes).into()); }
@@ -122,4 +147,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let _ = caster.session_mut().logout().await;
     let _ = target.session_mut().logout().await;
     Ok(())
+}
+
+fn locate_eligibility(entries: &[oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry]) -> Option<String> {
+    match entries.iter().find(|entry| entry.words.eq_ignore_ascii_case("exiva")) {
+        Some(entry) if entry.available => None,
+        Some(entry) => Some(format!("step=locate-eligibility observed=exiva-unavailable required-level={} learned={} need=player-earned-exiva-eligibility", entry.level, entry.learned)),
+        None => Some("step=locate-eligibility observed=exiva-absent-from-vocation-catalogue need=served-exiva-for-admitted-vocation".into()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_exiva_is_distinct_from_a_cast_refusal() {
+        assert_eq!(locate_eligibility(&[]).as_deref(), Some("step=locate-eligibility observed=exiva-absent-from-vocation-catalogue need=served-exiva-for-admitted-vocation"));
+    }
 }

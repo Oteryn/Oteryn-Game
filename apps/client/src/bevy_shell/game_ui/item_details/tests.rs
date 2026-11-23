@@ -94,7 +94,16 @@ fn inspect_multi_item_list() -> TestResult {
 
 #[test]
 fn inspect_player_window() -> TestResult {
-    let (mut app, link, mut commands, _outbox) = app(true)?;
+    inspect_player_outfit(true)
+}
+
+#[test]
+fn inspection_without_appearance_catalogue_draws_the_visible_outfit() -> TestResult {
+    inspect_player_outfit(false)
+}
+
+fn inspect_player_outfit(with_palette: bool) -> TestResult {
+    let (mut app, link, mut commands, outbox) = app(true)?;
     inspect(
         &link,
         &mut commands,
@@ -121,6 +130,112 @@ fn inspect_player_window() -> TestResult {
             .count(),
         1
     );
+    let toggle = |app: &mut App| -> TestResult {
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &Control)>()
+            .iter(app.world())
+            .find_map(|(entity, control)| (control.kind == Kind::ToggleOutfit).then_some(entity))
+            .ok_or("outfit switch")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        Ok(())
+    };
+    toggle(&mut app)?;
+    assert!(!visible(&mut app).contains("Slot 1: Player helmet"));
+    assert!(visible(&mut app).contains("Outfit unavailable"));
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    app.world_mut().resource_mut::<portrait::Cache>().artwork =
+        Some(super::super::outfit::preview::Assets::load(&root)?);
+    use oteryn_client_runtime::appearance::{Catalogue, Context};
+    outbox.bevy_outfit_test_panel(oteryn_client_ui::appearance::Panel {
+        catalogue: with_palette.then_some(Catalogue {
+            context: Context {
+                content_generation: [1; 32],
+                cosmetics_digest: [2; 32],
+            },
+            root_revision: 1,
+            selected: None,
+            palette: vec![[255, 128, 0]],
+            outfits: vec![],
+            mounts: vec![],
+        }),
+        ..default()
+    });
+    let play = &mut app.world_mut().non_send_mut::<HostOwner>().play;
+    play.as_mut().ok_or("play")?.view.set_presentations(vec![
+        oteryn_session::VisibleAppearance {
+            entity: oteryn_session::WorldSpatialEntity {
+                motion: None,
+                display_name: None,
+                entity: oteryn_session::EntityRef {
+                    identity: [7; 16],
+                    generation: 1,
+                },
+                kind: oteryn_session::EntityKind::Player,
+                position: oteryn_session::ActorPosition {
+                    x: 101,
+                    y: 100,
+                    floor: 7,
+                },
+                detail: oteryn_session::EntityDetail::Actor {
+                    direction: oteryn_session::StepDirection::South,
+                    appearance_ref: 1,
+                    health_percent: 100,
+                },
+            },
+            look: Some(oteryn_session::Look::Outfit {
+                look_type: 128,
+                addons: 0,
+                colours: [0; 4],
+            }),
+            light: None,
+            forge_stacks: None,
+        },
+    ])?;
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        app.update();
+        let nodes = app
+            .world_mut()
+            .query_filtered::<&ImageNode, With<portrait::Portrait>>()
+            .single(app.world())?;
+        if app
+            .world()
+            .resource::<Assets<Image>>()
+            .get(&nodes.image)
+            .is_some()
+            && nodes.color != Color::NONE
+        {
+            break;
+        }
+        if std::time::Instant::now() >= deadline {
+            return Err("inspected portrait did not render".into());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    let rendered = app
+        .world_mut()
+        .query_filtered::<&ImageNode, With<portrait::Portrait>>()
+        .single(app.world())?;
+    let image = app
+        .world()
+        .resource::<Assets<Image>>()
+        .get(&rendered.image)
+        .ok_or("rendered inspected outfit")?;
+    assert!(
+        image
+            .data
+            .as_ref()
+            .ok_or("pixels")?
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .any(|pixel| pixel[..3] != [32, 32, 32])
+    );
+
+    toggle(&mut app)?;
+    assert!(visible(&mut app).contains("Slot 1: Player helmet"));
     Ok(())
 }
 type Fixture = (

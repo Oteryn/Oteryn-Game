@@ -897,3 +897,23 @@ fn dismissed_oldest_line_preserves_remaining_receipt_metadata_after_publish() {
     assert_eq!(metadata.prefix(display, 0), "[00:00:02 UTC] ");
     assert_eq!(metadata.prefix(display, 1), "[00:00:04 UTC] ");
 }
+
+#[test]
+fn disabled_private_tabs_consume_sequences_without_replaying_them() {
+    let mut panel = ChatPanel::default();
+    panel.lines.push(ChatLine::Private {
+        speaker_name: "Bryn".into(),
+        text: "hello".into(),
+    });
+    let extras = ChatExtras {
+        sequences: Some(vec![Some(1)]),
+        recipients: Some(vec![None]),
+        ..Default::default()
+    };
+    panel.console.filters.auto_private_tabs = false;
+    panel.apply_extras("", None, extras.clone());
+    assert!(panel.console.channels.is_empty());
+    panel.console.filters.auto_private_tabs = true;
+    panel.apply_extras("", None, extras);
+    assert!(panel.console.channels.is_empty());
+}

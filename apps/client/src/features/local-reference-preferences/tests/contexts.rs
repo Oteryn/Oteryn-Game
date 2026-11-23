@@ -198,7 +198,11 @@ fn docked_chat_mode_controls_the_real_wasd_route() -> Result<(), Box<dyn std::er
     assert_eq!(first(&mut settings), Some(KeyCode::ARROW_UP));
     link.chat_auto_focus(true);
     assert!(link.preference_chat_open());
-    assert_eq!(first(&mut settings), Some(code), "a clicked Auto input types W");
+    assert_eq!(
+        first(&mut settings),
+        Some(code),
+        "a clicked Auto input types W"
+    );
     link.chat_auto_focus(false);
     assert_eq!(first(&mut settings), Some(KeyCode::ARROW_UP));
     link.chat_console_mode();
@@ -264,5 +268,277 @@ fn chosen_chat_mode_persists_per_character_and_restores_next_session()
     assert_eq!(next.chat_panel().console.mode, ComposerMode::Auto);
     assert!(!next.chat_panel().console.can_send());
     let _ = std::fs::remove_file(&path);
+    Ok(())
+}
+
+#[test]
+fn opened_local_chat_channels_restore_after_restart() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::{ChannelEntry, ChannelTab};
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("channels.json");
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    let (link, _, _) = play_channel();
+    settings.sync_chat_context(&link);
+    for tab in [ChannelTab::Loot, ChannelTab::ServerLog, ChannelTab::Npc] {
+        link.chat_open_entry(&ChannelEntry::Local(tab));
+    }
+    link.chat_close_current();
+    settings.sync_chat_context(&link);
+    let mut restored = crate::play::SettingsState::new(Some(path));
+    let (next, _, _) = play_channel();
+    restored.sync_chat_context(&next);
+    assert_eq!(
+        next.chat_panel().console.channels,
+        vec![ChannelTab::Loot, ChannelTab::ServerLog]
+    );
+    Ok(())
+}
+
+#[test]
+fn saved_channels_request_public_membership_and_restore_conversations()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::ChannelTab;
+    use oteryn_session::{ChatIntent, ChatRoom, ChatRoomSet};
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("channels.json");
+    let (link, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    settings.sync_chat_context(&link);
+    let mut rooms = ChatRoomSet::default();
+    rooms.insert(ChatRoom::Help);
+    outbox.chat_public_state(rooms, vec![]);
+    link.chat_open_conversation("Ada");
+    settings.sync_chat_context(&link);
+    let mut restored = crate::play::SettingsState::new(Some(path));
+    let (next, mut commands, next_outbox) = play_channel();
+    next_outbox.chat_initialize(true);
+    restored.sync_chat_context(&next);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::ChatPublic(ChatIntent::OpenRoom(ChatRoom::Help))
+    ));
+    let channels = next.chat_panel().console.channels;
+    assert!(channels.contains(&ChannelTab::Conversation("Ada".into())));
+    assert!(!channels.contains(&ChannelTab::Room(ChatRoom::Help)));
+    let open = ChatIntent::OpenRoom(ChatRoom::Help);
+    next_outbox.chat_public_result(
+        &open,
+        &oteryn_session::ChatOutcome {
+            command_id: 1,
+            status: oteryn_session::CommandStatus::Rejected,
+            disposition: oteryn_session::ChatDisposition::Rejected,
+            wait_seconds: 0,
+            result_server_sequence: 1,
+        },
+    );
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(8);
+    loop {
+        restored.sync_chat_context(&next);
+        if let Ok(crate::combat_input::PlayCommand::ChatPublic(intent)) = commands.try_recv() {
+            assert_eq!(intent, open);
+            break;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "refused saved room never retried"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(15));
+    }
+    next_outbox.chat_public_result(
+        &open,
+        &oteryn_session::ChatOutcome {
+            command_id: 2,
+            status: oteryn_session::CommandStatus::Accepted,
+            disposition: oteryn_session::ChatDisposition::Ok,
+            wait_seconds: 0,
+            result_server_sequence: 2,
+        },
+    );
+    next_outbox.chat_public_state(rooms, vec![]);
+    restored.sync_chat_context(&next);
+    restored.reset_defaults()?;
+    restored.sync_chat_context(&next);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::ChatPublic(ChatIntent::CloseRoom(ChatRoom::Help))
+    ));
+    restored.sync_chat_context(&next);
+    assert_eq!(restored.preferences.console.public_rooms, [false; 8]);
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+#[test]
+fn character_channel_restore_waits_for_background_preferences()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::SettingsState;
+    use oteryn_client_ui::chat::{ChannelEntry, ChannelTab};
+    use std::time::{Duration, Instant};
+    bevy_tasks::IoTaskPool::get_or_init(|| {
+        bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
+    });
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("prefs.json");
+    let mut saved = SettingsState::new(Some(path.clone()));
+    saved.select_character(Some([7; 16]));
+    let (old, _, _) = play_channel();
+    saved.sync_chat_context(&old);
+    old.chat_open_entry(&ChannelEntry::Local(ChannelTab::Loot));
+    saved.sync_chat_context(&old);
+    let (new, _, _) = play_channel();
+    let mut settings = SettingsState::new(Some(path));
+    settings.use_background_preferences();
+    settings.select_character(Some([7; 16]));
+    settings.sync_chat_context(&new);
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !settings.poll_background_save().replaced {
+        if Instant::now() >= deadline {
+            return Err("character load timed out".into());
+        }
+        std::thread::yield_now();
+    }
+    settings.sync_chat_context(&new);
+    assert!(
+        new.chat_panel()
+            .console
+            .channels
+            .contains(&ChannelTab::Loot)
+    );
+    Ok(())
+}
+
+#[test]
+fn picker_sort_set_in_game_survives_restarting_at_login() -> Result<(), Box<dyn std::error::Error>>
+{
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("settings.json");
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    settings.select_character(Some([9; 16]));
+    let mut preferences = settings.preferences.clone();
+    preferences.miscellaneous.character_sort_column = 2;
+    preferences.miscellaneous.character_sort_descending = true;
+    settings.apply(preferences);
+    let login = crate::play::SettingsState::new(Some(path)).preferences;
+    assert_eq!(login.miscellaneous.character_sort_column, 2);
+    assert!(login.miscellaneous.character_sort_descending);
+    Ok(())
+}
+
+#[test]
+fn saved_public_channel_survives_a_session_without_its_capability()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{ChatIntent, ChatRoom, ChatRoomSet};
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("prefs.json");
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    let (first, _, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    let mut rooms = ChatRoomSet::default();
+    rooms.insert(ChatRoom::Tutor);
+    outbox.chat_public_initialize(true, Some((rooms, vec![])));
+    settings.sync_chat_context(&first);
+    let (second, mut commands, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    settings.sync_chat_context(&second);
+    assert!(commands.try_recv().is_err());
+    let mut restarted = crate::play::SettingsState::new(Some(path));
+    let (third, mut commands, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    outbox.chat_public_initialize(true, None);
+    restarted.sync_chat_context(&third);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::ChatPublic(ChatIntent::OpenRoom(ChatRoom::Tutor))
+    ));
+    Ok(())
+}
+
+#[test]
+fn guild_channel_restore_requires_confirmed_membership() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::{ChannelEntry, ChannelTab};
+    let dir = tempfile::tempdir()?;
+    let path = dir.path().join("prefs.json");
+    let mut settings = crate::play::SettingsState::new(Some(path.clone()));
+    let member = |link: &crate::play::PlayLink| {
+        let mut m = crate::play::mailbox::lock(&link.mailbox);
+        m.chat.selected = true;
+        m.chat.guild_selected = true;
+        m.chat.guild = oteryn_session::GuildRoomState::Member {
+            guild_id: [1; 16],
+            rank: 1,
+            motd: String::new(),
+        };
+    };
+    let (link, _, _) = play_channel();
+    member(&link);
+    settings.sync_chat_context(&link);
+    link.chat_open_entry(&ChannelEntry::Local(ChannelTab::Guild));
+    settings.sync_chat_context(&link);
+    let (next, _, _) = play_channel();
+    settings.sync_chat_context(&next);
+    assert!(
+        !next
+            .chat_panel()
+            .console
+            .channels
+            .contains(&ChannelTab::Guild)
+    );
+    member(&next);
+    settings.sync_chat_context(&next);
+    assert!(
+        next.chat_panel()
+            .console
+            .channels
+            .contains(&ChannelTab::Guild)
+    );
+    Ok(())
+}
+
+#[test]
+fn replacing_preferences_restores_tabs_before_recording_the_open_console()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::chat::ChannelTab;
+    let folder = tempfile::tempdir()?;
+    let profile = folder.path().join("profile.json");
+    let transfer = folder.path().join("transfer.json");
+    let mut settings = crate::play::SettingsState::new(Some(profile));
+    let (link, _commands, outbox) = play_channel();
+    let mut imported = settings.preferences.clone();
+    imported.console.local_channels = [false, false, true];
+    imported.console.conversations = vec!["Ada".into()];
+    let mut exported = crate::play::SettingsState::new(None);
+    exported.apply(imported);
+    exported.export_to(&transfer)?;
+    settings.sync_chat_context(&link);
+    link.chat_open_conversation("Bryn");
+    settings.sync_chat_context(&link);
+    settings.import_from(&transfer)?;
+    let verify = |settings: &mut crate::play::SettingsState| {
+        settings.sync_chat_context(&link);
+        assert_eq!(
+            settings.preferences.console.local_channels,
+            [false, false, true]
+        );
+        assert_eq!(settings.preferences.console.conversations, ["Ada"]);
+        let console = link.chat_panel().console;
+        assert!(console.channels.contains(&ChannelTab::Npc));
+        assert!(!console.channels.contains(&ChannelTab::Loot));
+        assert!(!console.channels.contains(&ChannelTab::ServerLog));
+        assert!(
+            console
+                .current
+                .as_ref()
+                .is_none_or(|tab| console.channels.contains(tab))
+        );
+    };
+    verify(&mut settings);
+    settings.reset_defaults()?;
+    settings.sync_chat_context(&link);
+    assert!(settings.preferences.console.conversations.is_empty());
+    settings.restore_backup()?;
+    verify(&mut settings);
+    outbox.screenshot_activity_handoff()?;
+    verify(&mut settings);
     Ok(())
 }

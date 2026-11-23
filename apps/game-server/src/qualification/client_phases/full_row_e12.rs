@@ -260,6 +260,40 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
         }
     };
 
+    let mut colors = owned.colors;
+    colors[0] = u8::from(colors[0] == 0);
+    let (status, outfit) = management_command(
+        &mut client,
+        management::Request::Outfit {
+            hireling: owned.hireling,
+            look_type: owned.look_type,
+            colors,
+        },
+    )
+    .await?;
+    if status != CommandStatus::Accepted || outfit != Some(management::Reply::Committed) {
+        return Err(StepFailure {
+            step: 3,
+            observed: format!("outfit-status-{status:?}-reply-{outfit:?}"),
+            need: "owned-hireling-outfit-update",
+            source: None,
+        });
+    }
+    let (status, state) = management_command(&mut client, management::Request::List).await?;
+    if status != CommandStatus::Accepted
+        || !matches!(state, Some(management::Reply::State(ref entries)) if entries.iter().any(|entry| {
+            entry.hireling == owned.hireling && entry.look_type == owned.look_type
+                && entry.colors == colors && entry.position.is_some()
+        }))
+    {
+        return Err(StepFailure {
+            step: 3,
+            observed: format!("outfit-readback-{state:?}"),
+            need: "exact-active-hireling-outfit-and-placement",
+            source: None,
+        });
+    }
+
     for word in ["hi", "food", "specific", "carrot pie"] {
         let conversation = talk(&mut client, npc, word).await?;
         if conversation.open.map(|(actor, _)| actor) != Some(npc) || conversation.lines.is_empty() {
@@ -301,7 +335,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
     Err(StepFailure {
         step: 4,
         observed: "food-delivered-awaiting-player-inbox-use".into(),
-        need: "native-inbox-item-use-route-in-e12-journey",
+        need: "retrieve-and-use-delivered-food-and-fresh-admission-house-outfit-readback",
         source: None,
     })
 }
@@ -314,14 +348,22 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             "e2e_all scenario=E12.full status=PASS seconds={:.3}",
             started.elapsed().as_secs_f64()
         )),
-        Ok(Err(error)) => evidence(&format!(
-            "e2e_all scenario=E12.full status=FAIL seconds={:.3} evidence={error}",
-            started.elapsed().as_secs_f64()
-        )),
-        Err(_) => evidence(&format!(
-            "e2e_all scenario=E12.full status=FAIL seconds={:.3} evidence=step=runtime;observed=timeout;need=responsive-hireling-owner",
-            started.elapsed().as_secs_f64()
-        )),
+        Ok(Err(error)) => {
+            evidence(&format!(
+                "E12_GAP {error} source:crates/gameplay/dispatch/src/gameplay_transport/hireling_management.rs:22"
+            ));
+            evidence(&format!(
+                "e2e_all scenario=E12.full status=FAIL seconds={:.3} evidence={error}",
+                started.elapsed().as_secs_f64()
+            ));
+        }
+        Err(_) => {
+            evidence("E12_GAP step=runtime;observed=timeout;need=responsive-hireling-owner");
+            evidence(&format!(
+                "e2e_all scenario=E12.full status=FAIL seconds={:.3} evidence=step=runtime;observed=timeout;need=responsive-hireling-owner",
+                started.elapsed().as_secs_f64()
+            ));
+        }
     }
 }
 

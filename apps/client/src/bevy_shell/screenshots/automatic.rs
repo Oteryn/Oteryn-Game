@@ -11,6 +11,8 @@ pub(in crate::bevy_shell) struct State {
 pub(super) struct Completed {
     generation: u64,
     game_only: bool,
+    readback_epoch: u64,
+    activity: Option<u64>,
     at: Instant,
     result: AutomaticResult,
     manual: bool,
@@ -23,7 +25,8 @@ enum AutomaticResult {
 
 impl Completed {
     pub(super) fn apply(self, owner: &mut HostOwner) {
-        let current = current(owner, self.generation, self.game_only);
+        let current = current(owner, self.generation, self.game_only, self.readback_epoch)
+            && activity(owner) == self.activity;
         if owner.generation() != self.generation || (!self.manual && !current) {
             return;
         }
@@ -47,8 +50,16 @@ impl Completed {
     }
 }
 
-fn current(owner: &HostOwner, generation: u64, game_only: bool) -> bool {
+fn activity(owner: &HostOwner) -> Option<u64> {
+    owner
+        .play
+        .as_ref()
+        .map(|play| play.link.activity_generation())
+}
+
+fn current(owner: &HostOwner, generation: u64, game_only: bool, readback_epoch: u64) -> bool {
     owner.generation() == generation
+        && owner.settings.screenshot_readback_epoch() == readback_epoch
         && owner.play.is_some()
         && owner.settings.preferences.screenshots.effective().game_only == game_only
 }
@@ -90,6 +101,9 @@ pub(in crate::bevy_shell) fn observe(
         return None;
     }
     let game_only = owner.settings.preferences.screenshots.effective().game_only;
+    let captured_activity = activity(owner);
+    let readback_epoch = owner.settings.screenshot_readback_epoch();
+    let triggers = owner.settings.pending_screenshot_triggers();
     let crop = game_only.then_some(viewport);
     let directory = manual.map(|request| request.directory.clone());
     if directory.is_some() {
@@ -102,18 +116,28 @@ pub(in crate::bevy_shell) fn observe(
                   mut owner: NonSendMut<HostOwner>,
                   mut writes: NonSendMut<Writes>,
                   clock: Res<Time<Real>>| {
-                if owner.generation() != generation {
+                if owner.generation() != generation || activity(&owner) != captured_activity {
                     return;
                 }
                 let manual = directory.is_some();
-                let same_crop = current(&owner, generation, game_only);
+                let same_crop = current(&owner, generation, game_only, readback_epoch);
                 if writes.is_full() {
                     if manual {
                         owner.status = "Screenshot failed: write queue is full".into();
                     }
                     return;
                 }
-                if !manual && !same_crop {
+                if !manual
+                    && (!same_crop
+                        || (matches!(action, CaptureAction::Save)
+                            && !triggers
+                                .into_iter()
+                                .zip(owner.settings.pending_screenshot_triggers())
+                                .any(|(original, current)| {
+                                    original.is_some() && original == current
+                                })
+                            && !owner.settings.manual_capture_requested()))
+                {
                     return;
                 }
                 let at = clock.last_update().unwrap_or(clock.startup());
@@ -156,6 +180,8 @@ pub(in crate::bevy_shell) fn observe(
                     Completion::Automatic(Completed {
                         generation,
                         game_only,
+                        activity: captured_activity,
+                        readback_epoch,
                         at,
                         result,
                         manual,

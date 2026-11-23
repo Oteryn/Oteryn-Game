@@ -317,3 +317,84 @@ fn transient_output_failure_retries_after_backoff_and_restores_ambient() -> Test
     assert!(rendered(&log)?.1.is_empty());
     Ok(())
 }
+
+#[test]
+fn rv3404_game_audio_opens_off_the_frame() -> TestResult {
+    use super::super::owner::{ActivePlay, HostOwner, Phase};
+    use bevy::{prelude::*, window::PrimaryWindow};
+    let play = Play::new()?;
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(ActivePlay {
+        view: play.view,
+        link: play.link,
+    });
+    owner.phase = Phase::Playing;
+    let mut app = App::new();
+    app.insert_non_send(owner);
+    super::install(&mut app);
+    app.world_mut().spawn((
+        Window {
+            focused: true,
+            ..default()
+        },
+        PrimaryWindow,
+    ));
+    crate::play::check_audio_frame(|| app.update());
+    Ok(())
+}
+
+#[test]
+fn running_game_stream_reports_device_loss_and_reopens_with_ambient() -> TestResult {
+    use std::{
+        sync::mpsc,
+        time::{Duration, Instant},
+    };
+    struct Stream(mpsc::Sender<(std::thread::ThreadId, Vec<SoundCue>)>);
+    impl Output for Stream {
+        fn update(&mut self, _: AudioSettings, cues: Vec<SoundCue>, _: Vec<UiSound>) {
+            assert!(self.0.send((std::thread::current().id(), cues)).is_ok());
+        }
+        fn stop(&mut self) {}
+    }
+    let mut play = Play::new()?;
+    play.events(vec![
+        PresentationEventKind::AmbientSound { cue_id: 7 },
+        sound(41),
+    ])?;
+    let (renders, rendered) = mpsc::channel();
+    let (callbacks, callback) = mpsc::channel();
+    let mut player = Player::default();
+    let open = |device: &str| {
+        let renders = renders.clone();
+        let callbacks = callbacks.clone();
+        super::worker::WorkerOutput::start(device.to_owned(), move |_, errors| {
+            assert!(
+                callbacks
+                    .send(crate::play::AudioOutput::device_error_callback(errors))
+                    .is_ok()
+            );
+            Ok(Stream(renders))
+        })
+    };
+    let now = Instant::now();
+    player.poll_at(Some((1, &mut play.view)), true, open, now);
+    let timeout = Duration::from_secs(5);
+    let (thread, cues) = rendered.recv_timeout(timeout)?;
+    assert_ne!(thread, std::thread::current().id());
+    assert_eq!(cues.len(), 2);
+    let failure = rodio::cpal::StreamError::DeviceNotAvailable;
+    let message = failure.to_string();
+    callback.recv_timeout(timeout)?(failure);
+    player.poll_at(Some((1, &mut play.view)), true, open, now);
+    assert_eq!(player.status(), Some(message.as_str()));
+    player.poll_at(
+        Some((1, &mut play.view)),
+        true,
+        open,
+        now + Duration::from_secs(1),
+    );
+    let (_, cues) = rendered.recv_timeout(timeout)?;
+    assert_eq!(cues.len(), 1);
+    assert!(cues[0].ambient && cues[0].id == 7);
+    Ok(())
+}

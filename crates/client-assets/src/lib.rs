@@ -12,6 +12,7 @@ mod effects;
 mod error;
 pub use effects::EffectCatalog;
 mod sheets;
+pub mod sound;
 mod store;
 /// Tibia's game font and creature HUD flags from the official graphics bundle.
 pub mod tibia_graphics;
@@ -30,3 +31,4 @@ pub use store::{
     AssetStore, MAX_APPEARANCES_BYTES, MAX_CATALOG_BYTES, MAX_COMPRESSED_SHEET_BYTES,
     MAX_DECOMPRESSED_SHEET_BYTES, MAX_MANIFEST_BYTES, text_sha256,
 };
+pub mod wheel_planner;

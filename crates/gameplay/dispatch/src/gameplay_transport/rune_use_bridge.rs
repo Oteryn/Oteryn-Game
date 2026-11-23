@@ -168,6 +168,10 @@ fn target(
     let census = runtime
         .positioned_actor_census()
         .map_err(|_| UseDisposition::Rejected)?;
+    let intense_healing = matches!(
+        spell.carrier,
+        crate::spell::Carrier::Rune { item: 3152, .. }
+    );
     let entity = |a: ExactActorRef| {
         entities
             .creatures
@@ -178,16 +182,16 @@ fn target(
                 generation: c.generation,
             })
             .or_else(|| {
-                matches!(
+                (matches!(
                     spell.carrier,
                     crate::spell::Carrier::Rune { item: 3165, .. }
-                )
-                .then(|| entities.players.iter().find(|p| p.actor == a))
-                .flatten()
-                .map(|p| EntityRef {
-                    identity: a.placement_identity(),
-                    generation: p.generation,
-                })
+                ) || (intense_healing && a == actor))
+                    .then(|| entities.players.iter().find(|p| p.actor == a))
+                    .flatten()
+                    .map(|p| EntityRef {
+                        identity: a.placement_identity(),
+                        generation: p.generation,
+                    })
             })
     };
     let creature = if let Some(wanted) = original.use_with {
@@ -216,6 +220,9 @@ fn target(
     } else {
         None
     };
+    if intense_healing && creature.is_none() {
+        return Err(UseDisposition::NoTarget);
+    }
     let mapped = if spell.needs_target && creature.is_some() {
         SpellTarget::AttackTarget
     } else {
@@ -373,7 +380,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !matches!(
                     spell.carrier,
                     crate::spell::Carrier::Rune {
-                        item: 3165 | 3174 | 3177 | 3178 | 3188 | 3197 | 17512,
+                        item: 3152 | 3165 | 3174 | 3177 | 3178 | 3188 | 3197 | 17512,
                         ..
                     }
                 )

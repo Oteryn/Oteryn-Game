@@ -33,6 +33,13 @@ pub(in crate::play) fn submit(
     }
 }
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn seed_container_sort_recursive(&self, recursive: bool) {
+        // The outgoing command owns its encoded fields. Reopening seeds the next request
+        // even while the previous command is awaiting its acknowledgement.
+        lock(&self.mailbox).properties.container_sort.fields[3] = u8::from(recursive).to_string();
+    }
+
     pub fn container_sort_edit(&self, field: usize, value: String) {
         edit(
             &mut lock(&self.mailbox).properties.container_sort,
