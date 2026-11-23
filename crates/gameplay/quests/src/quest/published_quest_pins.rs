@@ -189,10 +189,11 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
     (
         "oteryn:quest.the_ice_islands_quest",
-        hash(b"825a74759b817bb6d3bf39bfb339748ef62a5e30d96d5d0e2b93022734a71a6f"),
-        &[hash(
-            b"299b92c459921a7f30b4128518dc869fc7e7f6de3d50dbcf3be09ee05dcb44c0",
-        )],
+        hash(b"b31bab1af5526262b5b0590cf13b3b99947d18fe0d40ff1fbbbf24189199fdea"),
+        &[
+            hash(b"825a74759b817bb6d3bf39bfb339748ef62a5e30d96d5d0e2b93022734a71a6f"),
+            hash(b"299b92c459921a7f30b4128518dc869fc7e7f6de3d50dbcf3be09ee05dcb44c0"),
+        ],
     ),
     (
         "oteryn:quest.the_secret_library_quest",
@@ -203,7 +204,7 @@ const GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash])] = &[
     ),
 ];
 
-pub const DRAGON_CORPSE_PREDECESSOR: (&str, DefinitionHash) = (
+pub(super) const DRAGON_CORPSE_PREDECESSOR: (&str, DefinitionHash) = (
     "oteryn:quest.dragon_corpse_quest",
     hash(b"ba645250c7b9827e710e57059c40e56ba56c1950c76433932125927c670b2f06"),
 );

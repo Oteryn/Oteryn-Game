@@ -1787,11 +1787,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(magic) = &callback.effects.magic {
             let position = tile(magic.position);
             map.facts.emit_movement_effect(position, magic.effect);
-            if let Some(delay) = callback.effects.repeat_magic_after_ms
+            if fresh_effects
+                && let Some(delay) = callback.effects.magic_repeat_after_ms
                 && let Some(due) = self.owner_now().get().checked_add(u64::from(delay) * 1_000)
+                && map
+                    .facts
+                    .schedule_movement_effect(due, position, magic.effect)
             {
-                map.facts
-                    .schedule_movement_effect(due, position, magic.effect);
                 states.owner_wake.notify_one();
             }
         }

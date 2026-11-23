@@ -76,8 +76,6 @@ pub mod npc_magic;
 pub mod npc_rules;
 pub mod planegazer_finale;
 mod published_quest_pins;
-#[cfg(feature = "test-support")]
-pub use published_quest_pins::DRAGON_CORPSE_PREDECESSOR;
 mod quests_2_focus;
 pub mod reward_callbacks;
 pub mod rotten_blood;

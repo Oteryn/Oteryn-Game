@@ -912,8 +912,7 @@ async fn corpse(
     step(owner, admitted, StepDirection::West).await?;
     assert_eq!(at(owner, admitted).await?, p(32145, 32207, 8));
     if route == "corpse-predecessor" {
-        let (quest, hash) = oteryn_gameplay_quests::quest::DRAGON_CORPSE_PREDECESSOR;
-        assert_eq!(quest, QUEST);
+        let hash = oteryn_gameplay_quests::quest::npc_rules::fixture_dragon_corpse_predecessor();
         let mut save = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica")
             .execute(&mut *save)

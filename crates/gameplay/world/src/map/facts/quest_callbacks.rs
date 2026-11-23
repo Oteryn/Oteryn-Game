@@ -170,7 +170,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
-    delayed_movement_effects: BTreeSet<(u64, TilePos, u16)>,
+    delayed_movement_effects: Vec<(u64, TilePos, u16)>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     merchant_barricades: BTreeMap<u64, (TilePos, EntryId)>,
@@ -180,27 +180,6 @@ pub(super) struct CallbackStates {
 }
 
 impl CallbackStates {
-    fn emit_movement_effect(
-        &mut self,
-        scope: Option<EffectScope>,
-        pos: TilePos,
-        effect: u16,
-    ) -> bool {
-        let Some(sequence) = self.movement_sequence.checked_add(1) else {
-            return false;
-        };
-        if !self.has_capacity(usize::from(self.movement_effects.len() < 512)) {
-            return false;
-        }
-        self.movement_sequence = sequence;
-        if self.movement_effects.len() == 512 {
-            self.movement_effects.pop_front();
-        }
-        self.movement_effects
-            .push_back((sequence, scope, pos, effect));
-        true
-    }
-
     fn key_reserved(&self, key: u64) -> bool {
         self.reserved.contains(&key)
             || view::placement_of(key)
@@ -610,6 +589,22 @@ impl CallbackStates {
         self.presences.retain(|_, (p, _)| !cleared(p));
     }
 
+    fn emit_effect(&mut self, scope: Option<EffectScope>, pos: TilePos, effect: u16) -> bool {
+        let Some(sequence) = self.movement_sequence.checked_add(1) else {
+            return false;
+        };
+        if !self.has_capacity(usize::from(self.movement_effects.len() < 512)) {
+            return false;
+        }
+        self.movement_sequence = sequence;
+        if self.movement_effects.len() == 512 {
+            self.movement_effects.pop_front();
+        }
+        self.movement_effects
+            .push_back((sequence, scope, pos, effect));
+        true
+    }
+
     pub(super) fn has_capacity(&self, additional: usize) -> bool {
         let used = self.feroxa_phase.as_ref().map_or(0, |p| p.footprint())
             + self.naginata_picks.len()
@@ -975,7 +970,7 @@ impl BundleFacts {
             .chain(
                 states
                     .delayed_movement_effects
-                    .first()
+                    .iter()
                     .map(|(due, _, _)| *due),
             )
             .min()
@@ -1035,12 +1030,12 @@ impl BundleFacts {
                 changed += 1;
             }
         }
-        while let Some(&(due, pos, effect)) = states.delayed_movement_effects.first() {
-            if due > now {
-                break;
-            }
-            states.delayed_movement_effects.pop_first();
-            states.emit_movement_effect(None, pos, effect);
+        let effects: Vec<_> = states
+            .delayed_movement_effects
+            .extract_if(.., |(due, _, _)| *due <= now)
+            .collect();
+        for (_, position, effect) in effects {
+            changed += usize::from(states.emit_effect(None, position, effect));
         }
         changed
     }
@@ -1295,17 +1290,6 @@ impl BundleFacts {
         self.emit_effect_in_scope(None, pos, effect)
     }
 
-    /// Queue a public cue on the Channel clock, regardless of later object revisions.
-    pub fn schedule_movement_effect(&self, due: u64, pos: TilePos, effect: u16) {
-        if let Ok(mut states) = self.callbacks.lock()
-            && states.has_capacity(1)
-        {
-            Arc::make_mut(&mut states)
-                .delayed_movement_effects
-                .insert((due, pos, effect));
-        }
-    }
-
     /// A private owner uses the same bounded map outbox and sequence. This is
     /// presentation data only; the caller must prove current scope custody.
     pub fn emit_scoped_movement_effect(
@@ -1325,8 +1309,23 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
-        Arc::make_mut(&mut states).emit_movement_effect(scope, pos, effect)
+        Arc::make_mut(&mut states).emit_effect(scope, pos, effect)
     }
+
+    /// Queue a Channel-local magic cue on the map owner's existing timer.
+    pub fn schedule_movement_effect(&self, due: u64, position: TilePos, effect: u16) -> bool {
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if states.delayed_movement_effects.len() >= 512 || !states.has_capacity(1) {
+            return false;
+        }
+        Arc::make_mut(&mut states)
+            .delayed_movement_effects
+            .push((due, position, effect));
+        true
+    }
+
     /// Crystal trap.lua:39-42. Reserve the map projection before consuming the wolf.
     /// The caller holds the exclusive runtime owner through the physical removal.
     /// Effect zero creates a silent source object, such as the Devil Helmet sewer.

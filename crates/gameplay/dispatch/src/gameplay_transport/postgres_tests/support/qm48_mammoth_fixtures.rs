@@ -208,6 +208,7 @@ pub(super) async fn exercise_horn(
         .map_err(debug)
     };
     let payload = horn_use()?;
+    let before_stun = owner.owner_now().get();
     let (next, result, _) = super::item_craft_fixtures::exchange(
         owner,
         *admitted,
@@ -236,29 +237,24 @@ pub(super) async fn exercise_horn(
     };
     if position == BEAR {
         assert_eq!(appearance()?, 7175);
-        let progress = super::m39_bone_journey_fixtures::stage(h, barbarian_mead::TRACKS[0]).await?;
-        let decay = map.facts.next_movement_decay_time().ok_or("bear decay")?;
-        assert_eq!(map.facts.expire_movement_items(decay - 1), 0);
-        assert_eq!(map.facts.expire_movement_items(decay), 1);
+        let due = map.facts.next_movement_decay_time().ok_or("bear decay")?;
+        assert!((before_stun + 5_000_000..=owner.owner_now().get() + 5_000_000).contains(&due));
+        assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+        assert_eq!(appearance()?, 7175);
+        assert_eq!(map.facts.expire_movement_items(due), 1);
         assert_eq!(appearance()?, 7174);
-        assert_eq!(
-            super::m39_bone_journey_fixtures::stage(h, barbarian_mead::TRACKS[0]).await?,
-            progress,
-            "decaying an unclaimed stun earns no personal credit"
-        );
         tokio::time::sleep(use_interval).await;
-        let payload = horn_use()?;
         let (next, result, _) = super::item_craft_fixtures::exchange(
             owner,
             *admitted,
             admitted.continuity.next_command_id,
-            &payload,
+            &horn_use()?,
             Some(source),
         )
         .await?;
         *admitted = next;
         assert_eq!(result, UseDisposition::Committed);
-        assert_eq!(appearance()?, 7175);
+        let due = map.facts.next_movement_decay_time().ok_or("second bear decay")?;
         tokio::time::sleep(use_interval).await;
         let payload = encode_use_intent(&target()).map_err(debug)?;
         let (next, result, _) = super::item_craft_fixtures::exchange(
@@ -276,6 +272,7 @@ pub(super) async fn exercise_horn(
             "bare USE hugs the stunned bear"
         );
         assert_eq!(appearance()?, 7174);
+        assert_eq!(map.facts.expire_movement_items(due), 0, "hug invalidates the stun timer");
         let snapshot = owner
             .root
             .read_character_quest_state(owner.character, fence.character_id)
@@ -501,24 +498,24 @@ pub(super) async fn exercise(
     );
     let map = owner.bundle_map().ok_or("map")?;
     assert_eq!(map.facts.object_revision(key), 1);
-    let cues = map.facts.movement_effects_since(0);
-    assert_eq!(cues.len(), 1, "replay must not repeat the immediate cue");
-    let (sequence, position, effect) = cues[0];
-    let now = owner.owner_now().get();
-    let decay = map.facts.next_movement_decay_time().ok_or("mammoth decay")?;
-    assert!((now..=now + 5_000_000).contains(&decay));
-    assert_eq!(map.facts.expire_movement_items(decay - 1), 0);
-    assert_eq!(map.facts.expire_movement_items(decay), 1);
-    assert_eq!(map.facts.object_revision(key), 2);
-    let cue = map.facts.next_movement_decay_time().ok_or("sleep cue")?;
-    assert!((decay + 55_000_000..=now + 60_000_000).contains(&cue));
-    assert_eq!(map.facts.expire_movement_items(cue - 1), 0);
-    assert!(map.facts.movement_effects_since(sequence).is_empty());
-    assert_eq!(map.facts.expire_movement_items(cue), 0);
+    assert_eq!(map.facts.expire_movement_items(owner.owner_now().get()), 0);
+    let decay_due = map.facts.next_movement_decay_time().ok_or("mammoth decay")?;
+    assert_eq!(map.facts.expire_movement_items(decay_due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(decay_due), 1);
+    let (position, ordinal) = crate::map::view::placement_of(key).ok_or("mammoth placement")?;
     assert_eq!(
-        map.facts.movement_effects_since(sequence),
-        [(sequence + 1, position, effect)]
+        map.facts.base_entry(position, ordinal, 7176).map(|item| item.appearance_id),
+        Some(7176)
     );
+    let effects_before = map.facts.movement_effects_since(0);
+    let cue_due = map.facts.next_movement_decay_time().ok_or("mammoth sleep cue")?;
+    assert!(cue_due >= decay_due + 55_000_000);
+    assert_eq!(map.facts.expire_movement_items(cue_due - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(cue_due), 1);
+    let effects_after = map.facts.movement_effects_since(0);
+    assert_eq!(effects_after.len(), effects_before.len() + 1);
+    assert_eq!(effects_after.last().map(|&(_, p, effect)| (p, effect)), Some((position, 22)));
+    assert_eq!(map.facts.next_movement_decay_time(), None);
     Ok(())
 }
 

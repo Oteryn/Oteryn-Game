@@ -579,6 +579,10 @@ mod tests {
             "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission06"
         );
         assert_eq!(start.requires[0].minimum, 5);
+        assert!(
+            !start.requires[0].holds(state.catalogue(), &Default::default()),
+            "PARTIAL: Curos must refuse until New Frontier mission 6 is earned"
+        );
         assert_eq!(start.storage[0].minimum, 0);
         assert_eq!(start.storage[0].set, 1);
         let report = find("report-rebel")?;
@@ -603,6 +607,51 @@ mod tests {
                 .transition(&finish.key)
                 .ok_or("finale")?
                 .completes
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn zalamon_accepts_topic_two_and_requires_an_earned_phantom_army_report() -> Result<(), String>
+    {
+        use super::super::reward_callbacks;
+        let state = embedded();
+        let catalogue = state.catalogue();
+        let callbacks = reward_callbacks::offered_for(catalogue)?;
+        let accept = callbacks
+            .iter()
+            .find(|c| c.key.ends_with("/l2-zalamon-accept"))
+            .ok_or("Zalamon confirmation")?;
+        assert_eq!(accept.topic, 2);
+        assert!(accept.requires.is_empty());
+        let transition = catalogue
+            .transition(&accept.key)
+            .ok_or("confirmation transition")?;
+        assert!(
+            catalogue
+                .evaluate(transition, &Default::default(), 0)
+                .is_ok()
+        );
+
+        let finish = catalogue
+            .transition("oteryn:quest-reward/l2-zalamon-finish")
+            .ok_or("Phantom Army report transition")?;
+        let before_arena_clear = BTreeMap::from([
+            (
+                "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/questline".into(),
+                19,
+            ),
+            (
+                "oteryn:quest-progress/quest/u8_54/children_of_the_revolution/mission05".into(),
+                1,
+            ),
+        ]);
+        assert!(
+            matches!(
+                catalogue.evaluate(finish, &before_arena_clear, 0),
+                Err(QuestRefusal::StageMismatch)
+            ),
+            "PARTIAL: the donor Phantom Army arena clear is required"
         );
         Ok(())
     }
