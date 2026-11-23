@@ -2,11 +2,11 @@
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "orc-sam-backpack-raid-r1",
-  "content_lock_digest": "6688fbd76531d15ca488581c44feda35391b39c8b600424c19d63e74cde47ee1",
+  "content_lock_digest": "2395fba2af211280eda71eabf261e6c787e779e5a0d63159aaf21270776d4aa2",
   "min_runtime_version": "4",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:orc-sam-backpack-raid-r1/c94d6dd78e9a090305040dec09aff64279a14354d2d52ae5e78661fec2230a02"
+  "provenance_summary": "lock:orc-sam-backpack-raid-r1/535dcd52eba5d458fa6ec8dae0dea84a6cf9e69b86a4f8fc17ed0196e1ce1326"
 }

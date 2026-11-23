@@ -43,7 +43,7 @@ fn p20_lapsed_free_hometown_character_on_premium_tile_enters_free_temple() -> Te
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_large_stack(admin, EntitlementState::Expired)
+    on_large_stack(admin, Some(EntitlementState::Expired))
 }
 
 #[test]
@@ -51,10 +51,18 @@ fn p20_premium_character_keeps_same_saved_tile() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    on_large_stack(admin, EntitlementState::Active)
+    on_large_stack(admin, Some(EntitlementState::Active))
 }
 
-fn on_large_stack(admin: String, state: EntitlementState) -> TestResult {
+#[test]
+fn p20_premium_saved_tile_waits_for_entitlement_evidence() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_large_stack(admin, None)
+}
+
+fn on_large_stack(admin: String, state: Option<EntitlementState>) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || {
@@ -71,12 +79,12 @@ fn on_large_stack(admin: String, state: EntitlementState) -> TestResult {
     Ok(())
 }
 
-async fn scenario(admin: String, state: EntitlementState) -> TestResult {
+async fn scenario(admin: String, state: Option<EntitlementState>) -> TestResult {
     reset();
-    let tag = if state == EntitlementState::Expired {
-        "p20_tile_expired"
-    } else {
-        "p20_tile_current"
+    let tag = match state {
+        Some(EntitlementState::Expired) => "p20_tile_expired",
+        Some(_) => "p20_tile_current",
+        None => "p20_tile_unavailable",
     };
     let h = Harness::create_with_admission_seed(admin, tag, false, false).await?;
     let request = prepare_current_session(&h).await?;
@@ -138,8 +146,8 @@ async fn scenario(admin: String, state: EntitlementState) -> TestResult {
 
     let account = id(40);
     let (consumer, clock, activation, mut proof) = purchase_fixture::current(account);
-    if state == EntitlementState::Expired {
-        proof.state = state;
+    if state == Some(EntitlementState::Expired) {
+        proof.state = EntitlementState::Expired;
         proof.authority_revision += 1;
         consumer.prove_for_test(proof);
     }
@@ -161,7 +169,7 @@ async fn scenario(admin: String, state: EntitlementState) -> TestResult {
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
     owner.movement_cells = (&cells).into();
-    owner.premium_coordinator = Some(&coordinator);
+    owner.premium_coordinator = state.map(|_| &coordinator);
 
     let mut admitted = deps.admitted;
     let session = admitted.game_session_id;
@@ -216,8 +224,21 @@ async fn scenario(admin: String, state: EntitlementState) -> TestResult {
         deps.actor,
     ))
     .await;
+    if state.is_none() {
+        assert_eq!(outcome, FirstEntryOutcome::RefusedUnavailable);
+        assert!(item_fence.is_none());
+        assert_ne!(
+            deps.runtime.lock().await.read_actor_position(deps.actor).ok()
+                .map(|snapshot| snapshot.position()),
+            Some(position(SAVED)),
+        );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
     assert_eq!(outcome, FirstEntryOutcome::Positioned);
-    let expected = if state == EntitlementState::Expired {
+    let expected = if state == Some(EntitlementState::Expired) {
         THAIS
     } else {
         SAVED
@@ -249,7 +270,7 @@ async fn scenario(admin: String, state: EntitlementState) -> TestResult {
         )
     );
     assert_eq!(owner.home_town(session, None).await, Some(8));
-    if state == EntitlementState::Expired {
+    if state == Some(EntitlementState::Expired) {
         assert!(
             !owner.states.chat.knows(session),
             "CHAT starts with the login snapshot"

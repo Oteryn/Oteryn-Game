@@ -12,6 +12,11 @@ use std::sync::Arc;
 
 pub(in crate::gameplay_transport) mod teleport;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static LOSE_SKJAAR_ACK: std::cell::Cell<bool>;
+}
+
 type Context = (u64, u64, String);
 #[derive(Clone, PartialEq, Eq)]
 pub(super) struct Conversation {
@@ -758,6 +763,8 @@ pub(super) async fn apply(
         || request.npc == "oteryn:npc.tereban"
             && (request.transition_key.ends_with("-deliver")
                 || request.transition_key.ends_with("/mission-complete"));
+    #[cfg(test)]
+    let skjaar = request.npc == oteryn_gameplay_quests::quest::npc_rules::SKJAAR_NPC;
     let outcome = slot
         .commit_npc_program(
             admission.root,
@@ -785,6 +792,15 @@ pub(super) async fn apply(
         .await;
     drop(slot);
     drop(item_permit);
+    #[cfg(test)]
+    if skjaar
+        && outcome
+            .as_ref()
+            .is_ok_and(|commit| matches!(commit.transition, QuestTransitionOutcome::Committed(_)))
+        && LOSE_SKJAAR_ACK.try_with(|lose| lose.replace(false)) == Ok(true)
+    {
+        return unknown();
+    }
     match outcome {
         Ok(commit)
             if commit.read_only
@@ -924,6 +940,7 @@ pub(in crate::gameplay_transport) async fn resume(
             Some(true) => {}
         }
     }
+    let skjaar = request.npc == oteryn_gameplay_quests::quest::npc_rules::SKJAAR_NPC;
     let moves_items = (request.npc == "oteryn:npc.pemaret"
         && request.transition_key.ends_with("/deliver"))
         || request.npc == "oteryn:npc.tereban"
@@ -954,9 +971,11 @@ pub(in crate::gameplay_transport) async fn resume(
                         ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
                     });
                 }
-                admission
-                    .refresh_quest_session(command.game_session_id, false)
-                    .await;
+                if !skjaar {
+                    admission
+                        .refresh_quest_session(command.game_session_id, false)
+                        .await;
+                }
                 let mut response = response(
                     admission,
                     command.game_session_id,
@@ -989,6 +1008,113 @@ pub(in crate::gameplay_transport) async fn resume(
             },
         },
     )
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Resolve the paid quiz or key receipt before reopening the retained stream.
+    pub(in crate::gameplay_transport) async fn prepare_skjaar_npc_resume(
+        &self,
+        admitted: &crate::gameplay_transport::connection::AdmittedSession,
+    ) -> bool {
+        let session = admitted.game_session_id;
+        let original = match self.states.npc_conversations.sessions.lock() {
+            Ok(sessions) => match sessions
+                .get(&session)
+                .and_then(|state| state.catalogue.as_ref())
+            {
+                Some(Pending::Commit { request, .. })
+                    if request.npc == oteryn_gameplay_quests::quest::npc_rules::SKJAAR_NPC =>
+                {
+                    request.command
+                }
+                _ => return true,
+            },
+            Err(_) => return false,
+        };
+        if original.game_session_id() != session
+            || !self.states.command_ingress.reconcilable(original)
+        {
+            return false;
+        }
+        let Some(outcome) = resume(
+            self,
+            UseCommand {
+                game_session_id: session,
+                command_id: original.command_id().get(),
+                item_fence: admitted.item_fence,
+            },
+        )
+        .await
+        else {
+            return false;
+        };
+        if outcome.unknown
+            || self
+                .states
+                .command_ingress
+                .complete_npc(original, outcome.disposition)
+                .is_none()
+        {
+            return false;
+        }
+        if let Some(conversation) = outcome.conversation {
+            let Ok(mut sessions) = self.states.npc_conversations.sessions.lock() else {
+                return false;
+            };
+            let Some(state) = sessions.get_mut(&session) else {
+                return false;
+            };
+            state.recovered_catalogue = Some(conversation);
+        }
+        true
+    }
+}
+
+impl NpcConversations {
+    pub(in crate::gameplay_transport) fn restore_skjaar_topic(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+    ) {
+        let topic = self.sessions.lock().ok().and_then(|sessions| {
+            let state = sessions.get(&session)?;
+            state.recovered_catalogue.as_ref()?;
+            match state.catalogue.as_ref()? {
+                Pending::Topic(topic) => Some(topic.clone()),
+                _ => None,
+            }
+        });
+        let Some(topic) = topic else { return };
+        let Some(npc) = service_context::live_npc(runtime, topic.actor, session, topic.npc)
+            .filter(|npc| npc.actor == topic.npc_actor && npc.key == topic.context.2)
+        else {
+            return;
+        };
+        if chat
+            .converse(session, |engaged| *engaged = Some(npc.actor))
+            .is_none()
+        {
+            return;
+        }
+        let intent = NpcTalkIntent {
+            npc_actor: topic.npc,
+            text: String::new(),
+        };
+        let current = self
+            .current_npc(chat, runtime, topic.actor, session, &intent)
+            .filter(|context| context.0 == topic.context.0);
+        let Some(context) = current else {
+            chat.end_engagement(session, npc.actor);
+            return;
+        };
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(state) = sessions.get_mut(&session)
+            && matches!(state.catalogue.as_ref(), Some(Pending::Topic(current)) if *current == topic)
+        {
+            state.catalogue = Some(Pending::Topic(Conversation { context, ..topic }));
+        }
+    }
 }
 
 pub(super) struct DelayedEnd {

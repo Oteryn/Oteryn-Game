@@ -17,6 +17,10 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
+fn advances_revision(previous: u64, base: u64, next: u64) -> bool {
+    base == previous && next > previous
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x96).await?;
     if !client.selected_capabilities().contains(&CAPABILITY_WORLD_LIGHT_V1) {
@@ -42,7 +46,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .await
         .map_err(|_| format!("step=delta{step} timeout"))??;
         let clock = decode_world_clock(&delta.payload).map_err(|error| format!("step=delta{step} decode {error:?}"))?;
-        if delta.base_revision != previous || delta.new_revision == previous || clock.light_color != 215 || clock.tibian_minute >= 1_440 {
+        if !advances_revision(previous, delta.base_revision, delta.new_revision) || clock.light_color != 215 || clock.tibian_minute >= 1_440 {
             return Err(format!("step=delta{step} base={} new={} clock={clock:?}", delta.base_revision, delta.new_revision).into());
         }
         capture(&format!("w20a-delta{step}.bin"), &delta.payload);
@@ -55,7 +59,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture("w20a-snapshot.bin", &snapshot_payload);
     capture("w20a-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={logout:?} need=Accepted").into());
+    }
     Ok(format!("minute={}..{} light={}", first.tibian_minute, last.tibian_minute, last.light_level))
 }
 
@@ -67,5 +74,19 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=W20a.client status=FAIL evidence=timeout"),
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn journey_regression_rejects_reversed_capture_revisions() {
+        assert!(advances_revision(7, 7, 8));
+        assert!(!advances_revision(7, 6, 8));
+        assert!(!advances_revision(7, 7, 7));
+        assert!(!advances_revision(7, 7, 6));
     }
 }

@@ -222,6 +222,23 @@ pub fn open_conversation(chat: &mut ChatPanel, name: &str) -> bool {
     true
 }
 
+pub fn close_room(
+    chat: &mut ChatPanel,
+    public: &mut ChatPanel,
+    room: ChatRoom,
+) -> Option<ChatIntent> {
+    let command = room_request(
+        chat,
+        public,
+        crate::chat_public_channels::Intent::Close(room),
+        room,
+    );
+    if command.is_none() {
+        chat.feedback = public.feedback.clone();
+    }
+    command
+}
+
 /// CloseCurrentChannel: leave or close the selected channel tab. Fixed tabs stay.
 pub fn close_current(
     chat: &mut ChatPanel,
@@ -232,16 +249,7 @@ pub fn close_current(
     match chat.console.current.clone()? {
         ChannelTab::Room(room) => {
             // The tab disappears when the server reports the room closed.
-            let command = room_request(
-                chat,
-                public,
-                crate::chat_public_channels::Intent::Close(room),
-                room,
-            );
-            if command.is_none() {
-                chat.feedback = public.feedback.clone();
-            }
-            command
+            close_room(chat, public, room)
         }
         ChannelTab::Private(id) => {
             private.channel = Some(id);
@@ -314,7 +322,5 @@ pub fn console_request(panel: &mut super::ChatPanel) -> Option<Vec<u8>> {
         .cloned()
         .collect();
     panel.console.metadata.next_names = start + names.len();
-    let payload = oteryn_client_runtime::chat::console::encode_names(&names)?;
-    panel.console.metadata.pending = Some(names);
-    Some(payload)
+    panel.console.metadata.begin_query(names)
 }

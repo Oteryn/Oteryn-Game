@@ -48,6 +48,7 @@ fn depot_search_deadline_with_committed_withdrawal_replays_retrieved() -> TestRe
 fn scenario(change_request: bool, lost_ack: Option<DurabilityError>) -> TestResult {
     world_scenario!(
         "depot_search_stash_replay",
+        super::house_transfer_fixtures::prepare_owned_session_request,
         |h,
          _request,
          seal,
@@ -64,6 +65,14 @@ fn scenario(change_request: bool, lost_ack: Option<DurabilityError>) -> TestResu
          owner,
          fence,
          admitted| {
+            let recovery = if lost_ack.is_some() {
+                Some(super::house_transfer_fixtures::RecoverySource::start(&h).await?)
+            } else {
+                None
+            };
+            if let Some(recovery) = &recovery {
+                owner.evidence = &recovery.evidence;
+            }
             while position(&owner, actor).await?.x > LOCKER_CELL.x {
                 step_west(&mut owner, actor, session).await?;
             }
@@ -161,14 +170,15 @@ async fn reconcile_wire_withdrawal(
     mut admitted: crate::gameplay_transport::connection::AdmittedSession,
     lost_ack: DurabilityError,
 ) -> TestResult {
-    use super::wave2_replay_wire::exchange;
+    use super::wave2_replay_wire::{exchange, reconnect};
     use crate::foundation::CommandStatus;
     use crate::gameplay_transport::capabilities::SelectedCapabilities;
-    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     use oteryn_protocol_oteryn::depot_search as wire;
 
+    let supported = [4, 6, 18, 37, 62, 153];
+    use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37, 62, 153])
+        SelectedCapabilities::select(owner.offered_capabilities(), &supported)
             .filter(|selected| selected.contains(wire::CAPABILITY_DEPOT_SEARCH_V1))
             .ok_or("depot search capability")?;
     let payload = wire::encode_request(Request::Retrieve {
@@ -188,8 +198,7 @@ async fn reconcile_wire_withdrawal(
         lost.command_result.is_none(),
         "an unknown retrieval sent a terminal reply"
     );
-    let mut resumed = lost.retained;
-    assert!(owner.prepare_quest_callback_resume(&mut resumed).await);
+    let resumed = reconnect(owner, lost.retained, &supported).await?;
     assert!(owner.states.command_ingress.resumable(&resumed));
     let replay = exchange(owner, resumed, command, kind, &payload, None).await?;
     let (status, reply) = replay.command_result.ok_or("replayed depot retrieval")?;

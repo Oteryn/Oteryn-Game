@@ -230,9 +230,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.recover_pending_soul_war_source_use(actor, lost.game_session_id)
                 .await
                 && self.prepare_grizzly_npc_resume(&lost).await
+                && self.prepare_skjaar_npc_resume(&lost).await
                 && self
                     .reconcile_quest_callback_receipts(lost.game_session_id)
                     .await
+                && self.reconcile_stamina_extension(actor, &lost).await
+                && super::depot_search::reconcile(self, lost, true).await
         })
         .await
         .unwrap_or(false)

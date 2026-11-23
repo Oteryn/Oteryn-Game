@@ -111,6 +111,7 @@ struct SessionNpc {
     cake: Option<cake::Pending>,
     quest_dialogue: quest_dialogue::State,
     catalogue: Option<catalogue::Pending>,
+    recovered_catalogue: Option<NpcConversation>,
     delayed_end: Option<catalogue::DelayedEnd>,
     endgame: Option<endgame::Pending>,
     classic: Option<classic_quests::Pending>,
@@ -317,6 +318,23 @@ impl NpcConversations {
         });
         let farewells = chat.take_walked_away(session);
         let window = self.close_window(session, current.map(|npc| npc.identity));
+        if let Some(mut conversation) = self
+            .sessions
+            .lock()
+            .ok()
+            .and_then(|mut sessions| sessions.get_mut(&session)?.recovered_catalogue.take())
+        {
+            if conversation.open.map(|(npc, _)| npc) != current {
+                conversation.open = None;
+            }
+            let room = oteryn_protocol_oteryn::npc_service::MAX_REPLY_LINES
+                .saturating_sub(conversation.lines.len());
+            conversation.lines.extend(farewells.into_iter().take(room));
+            return Some(NpcUpdate {
+                conversation: Some(conversation),
+                window,
+            });
+        }
         NpcUpdate::follow(current, shown, farewells, window)
     }
 

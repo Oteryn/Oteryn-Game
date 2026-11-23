@@ -441,6 +441,32 @@ fn shape_from_code(code: i16) -> std::result::Result<ItemUseShape, DurabilityErr
 }
 
 impl DurabilityRoot {
+    /// Read the exact retained use after the original connection lost authority.
+    /// The loss transaction fences the original writer before this read.
+    pub async fn read_stamina_extension_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        request: ItemUseRequest,
+    ) -> Result<Option<ItemUseOutcome>> {
+        if !matches!(request.kind, ItemUseKind::StaminaExtension { .. }) {
+            return Err(ItemUseError::InvalidInput);
+        }
+        request.validate()?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemUseError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| Box::pin(async move {
+                let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                let receipt = replay(&mut tx, &fence, &request).await;
+                tx.rollback().await?;
+                Ok(receipt)
+            }))
+            .await?
+    }
+
     /// Commit one item use under its holder's current item fence (see the module
     /// documentation). An exact replay of a committed CommandRef returns its result without
     /// reacquiring authority; every refusal writes nothing.

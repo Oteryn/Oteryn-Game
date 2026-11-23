@@ -25,7 +25,7 @@ path = "src/bin/oteryn-client-bevy.rs"
 required-features = ["bevy-shell"]
 
 [features]
-bevy-shell = ["dep:bevy", "dep:bevy_tasks", "dep:oteryn-client-ui-bevy", "dep:rodio", "oteryn-input-platform/native-winit"]
+bevy-shell = ["dep:bevy", "dep:bevy_tasks", "dep:oteryn-client-ui-bevy", "dep:rodio", "dep:winit", "oteryn-input-platform/native-winit"]
 
 [dependencies]
 bevy = { version = "=0.20.1", optional = true, default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11", "system_clipboard", "bevy_log", "default_font"] }
@@ -57,7 +57,8 @@ tokio = { workspace = true, features = ["macros"] }
 fs2 = "=0.4.3"
 tempfile = "=3.27.0"
 url = "=2.5.9"
-zip = { version = "=9.5.1", default-features = false, features = ["deflate"] }
+winit = { workspace = true, optional = true }
+zip = { version = "=9.8.0", default-features = false, features = ["deflate"] }
 
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true, features = ["process"] }

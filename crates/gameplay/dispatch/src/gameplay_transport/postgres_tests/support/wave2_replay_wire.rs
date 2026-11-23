@@ -2,7 +2,8 @@ use super::{TestResult, fixture::debug};
 use crate::foundation::{CommandStatus, MessageType, decode_wire_envelope};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, ConnectionEnd, IDLE_LIVENESS, serve_admitted,
+    AdmittedSession, ConnectionEnd, ControlLossResult, FreshAdmissionAuthority, IDLE_LIVENESS,
+    ResumeAttempt, serve_admitted,
 };
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
 use oteryn_protocol_oteryn::{
@@ -18,6 +19,31 @@ pub(super) struct Exchange {
     pub retained: AdmittedSession,
     pub command_result: Option<(CommandStatus, Vec<u8>)>,
     pub handle: Option<NonZeroU64>,
+}
+
+/// Take the ordinary loss and authenticated reconnect route before reopening the wire.
+pub(super) async fn reconnect(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    lost: AdmittedSession,
+    supported: &[u32],
+) -> TestResult<AdmittedSession> {
+    use super::house_transfer_fixtures::RecoverySource;
+    use crate::foundation::AuthenticatedTransportRefV1;
+    let nonce = u8::try_from(lost.continuity.connection_generation + 120)?;
+    let token = RecoverySource::token(nonce)?;
+    assert_eq!(
+        owner.lose_control(lost, Duration::ZERO, None).await,
+        ControlLossResult::Recorded,
+    );
+    let resumed = owner.resume(ResumeAttempt {
+        game_session_id: lost.game_session_id,
+        recovery_material: token.as_bytes(),
+        transport: AuthenticatedTransportRefV1::decode(&[nonce; 16]).map_err(debug)?,
+        last_applied_server_sequence: lost.continuity.server_sequence,
+        supported_capabilities: supported,
+    }).await.map_err(debug)?;
+    assert_eq!(resumed.continuity.connection_generation, lost.continuity.connection_generation + 1);
+    Ok(resumed)
 }
 
 pub(super) async fn exchange(

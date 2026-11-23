@@ -25,7 +25,11 @@ pub struct SettingsState {
         Vec<std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>>,
     pending_chat_mode: Option<bool>,
     /// The play session (by its mailbox) whose chat mode was restored, and the mode last seen.
-    chat_mode_seen: Option<(usize, oteryn_client_ui::chat::ComposerMode)>,
+    chat_mode_seen: Option<((usize, u64), oteryn_client_ui::chat::ComposerMode)>,
+    room_retry: [Option<std::time::Instant>; 8],
+    unconfirmed_rooms: [Option<bool>; 8],
+    restore_closed_rooms: bool,
+    restore_guild_channel: bool,
     chat_context: Option<bool>,
     pub custom_choices: Vec<(String, super::CustomAction)>,
     pub(super) custom_choices_refreshed: Option<std::time::Instant>,

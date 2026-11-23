@@ -4,7 +4,9 @@
 //! 46-53, `trap.lua` lines 1-8, 23-44 and 59-69, `yellow_pillow.lua` lines 3-10,
 //! `bath_tub.lua` lines 3-17,25-33 and `snow.lua` lines 3-23 at `201189f8`.
 use crate::content::ReferenceResistanceKind;
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
+};
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::map::boot::BundleMap;
 use crate::map::overlay::TilePos;
@@ -728,19 +730,21 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
-        origin: MovementLocalPosition,
-        movement_revision: u64,
+        origin: MovementPositionSnapshot,
+        departure: MovementPositionSnapshot,
     ) {
         use crate::durability::item_decay_retire::{DoorGroundItem, DoorGroundRetirement};
-        use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey, loop_move};
-        use crate::map::door::{
-            DoorStepOut, DoorTileItem, door_step_out, door_step_out_destination,
+        use crate::durability::item_loop_move::LoopMoveRefusal;
+        use crate::gameplay_transport::{
+            connection::UseCommand, item_move::LoopMoveResult, item_view::ItemKey, loop_move,
         };
+        use crate::map::door::{DoorStepOut, door_step_out, door_step_out_candidates};
         use crate::map::overlay::AddedItem;
-        let (Some(map), Some(position)) = (self.bundle_map(), tile_position(origin)) else {
+        let (Some(map), Some(position)) = (self.bundle_map(), tile_position(origin.position()))
+        else {
             return;
         };
-        let Some(entries) = tile_entries(map, origin) else {
+        let Some(entries) = tile_entries(map, origin.position()) else {
             return;
         };
         let doors: Vec<_> = entries
@@ -758,7 +762,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         if doors.is_empty() {
             return;
         }
-        let (index, destination) = {
+        let (index, destinations, content_digest) = {
             let runtime = self.runtime.lock().await;
             if !runtime
                 .player_control_facts(actor, session)
@@ -769,6 +773,9 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             let Ok(at) = runtime.read_actor_position(actor) else {
                 return;
             };
+            if at != departure || at.last_translation_revision() <= origin.revision() {
+                return;
+            }
             let Some(at) = tile_position(at.position()) else {
                 return;
             };
@@ -776,36 +783,39 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             {
                 return;
             }
-            let destination = door_step_out_destination(position, |tile| {
-                // Crystal probes with the departing creature, including when it
-                // has just arrived on this candidate tile.
-                let cell = MovementLocalPosition {
-                    x: i32::from(tile.x),
-                    y: i32::from(tile.y),
-                    floor: -i16::from(tile.floor),
-                };
-                self.movement_cells()
-                    .index()
-                    .lookup(
-                        self.movement_cells().scope(),
-                        crate::content::LogicalCell {
-                            x: cell.x,
-                            y: cell.y,
-                            z: i32::from(cell.floor),
-                        },
-                    )
-                    .ok()
-                    == Some(crate::content::CollisionClass::Walkable)
-                    && !map.facts.doors().blocks(tile)
-                    && runtime.position_occupied_by_other(actor, cell) == Ok(false)
-                    && runtime.reserved_into_by_own_pending(actor, cell) == Ok(false)
-            });
+            let destinations: Vec<_> = door_step_out_candidates(position)
+                .filter(|&tile| {
+                    // Crystal probes with the departing creature, including when it
+                    // has just arrived on this candidate tile.
+                    let cell = MovementLocalPosition {
+                        x: i32::from(tile.x),
+                        y: i32::from(tile.y),
+                        floor: -i16::from(tile.floor),
+                    };
+                    self.movement_cells()
+                        .index()
+                        .lookup(
+                            self.movement_cells().scope(),
+                            crate::content::LogicalCell {
+                                x: cell.x,
+                                y: cell.y,
+                                z: i32::from(cell.floor),
+                            },
+                        )
+                        .ok()
+                        == Some(crate::content::CollisionClass::Walkable)
+                        && !map.facts.doors().blocks(tile)
+                        && runtime.position_occupied_by_other(actor, cell) == Ok(false)
+                        && runtime.reserved_into_by_own_pending(actor, cell) == Ok(false)
+                })
+                .collect();
             (
                 crate::gameplay_transport::item_ref_admission::pinned_index(
                     &runtime,
                     self.active_generation,
                 ),
-                destination,
+                destinations,
+                runtime.content_pin().server_artifact_digest(),
             )
         };
         let Some(index) = index else {
@@ -840,10 +850,6 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             if map.facts.doors().contains(*key) || !movable(facts) {
                 continue;
             }
-            // The retirement path must preserve authored objects bound to this placement.
-            if destination.is_none() && facts.bound {
-                continue;
-            }
             let Some((_, ordinal)) = crate::map::view::placement_of(*key) else {
                 return;
             };
@@ -854,127 +860,144 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             {
                 continue;
             }
-            items.push(DoorTileItem {
-                item: ItemKey::MapBase {
+            items.push((
+                ItemKey::MapBase {
                     bundle_digest: map.overlay.base().digest(),
                     placement_key: *key,
                     reset_epoch: self.reset_epoch,
                 },
-                movable: true,
-                corpse: false,
-            });
+                true,
+                !facts.bound,
+            ));
         }
         if let Some(tile) = ground.overlay().tile(position) {
             for entry in tile.added() {
                 let AddedItem::Ground(item) = entry.item() else {
                     continue;
                 };
-                // Corpses have a separate runtime/custody owner and never enter this loop-drop
-                // projection. Temporal fields are immovable and are left on their own lane.
+                // Corpses have a separate custody owner. Temporal fields are immovable.
                 let Some(facts) = ground.facts(&map.facts).added_entry(entry.item()) else {
                     return;
                 };
-                items.push(DoorTileItem {
-                    item: ItemKey::Instance(item.item_instance_id),
-                    movable: movable(&facts) && (destination.is_none() || facts.pickupable),
-                    corpse: false,
-                });
+                if movable(&facts) {
+                    items.push((
+                        ItemKey::Instance(item.item_instance_id),
+                        facts.pickupable,
+                        true,
+                    ));
+                }
             }
         }
-        for (key, facts) in doors {
+        for (key, _) in doors {
             let revision = map.facts.doors().revision(key);
-            let DoorStepOut::Close {
-                item_moves,
-                item_retirements,
-                closed_id: _,
-            } = door_step_out(facts.appearance_id, false, destination, &items)
-            else {
-                continue;
-            };
-            let fence = if item_moves.is_empty() && item_retirements.is_empty() {
+            let mut retirements = Vec::new();
+            let fence = if items.is_empty() {
                 None
             } else {
                 match self.current_quest_fence(session).await {
                     Ok(Some(fence)) => Some(fence.item_fence()),
-                    _ if item_moves.is_empty() => None,
+                    _ if destinations.is_empty() => None,
                     _ => return,
                 }
             };
-            if let Some(fence) = fence
-                && !item_retirements.is_empty()
-            {
-                let retirements = item_retirements
-                    .into_iter()
-                    .map(|item| match item {
-                        ItemKey::Instance(id) => Some(DoorGroundItem::Instance(id)),
-                        ItemKey::MapBase { placement_key, .. } => {
-                            Some(DoorGroundItem::Authored(placement_key))
+            if let Some(fence) = fence {
+                'item: for &(item, can_move, can_retire) in &items {
+                    let mut hasher = Sha256::new()
+                        .chain_update(b"oteryn:door-step-out:v1")
+                        .chain_update(actor.placement_identity())
+                        .chain_update(self.reset_epoch.to_be_bytes())
+                        .chain_update(departure.revision().to_be_bytes())
+                        .chain_update(key.to_be_bytes());
+                    let retirement = match item {
+                        ItemKey::Instance(id) => {
+                            hasher.update(id);
+                            DoorGroundItem::Instance(id)
                         }
-                        _ => None,
-                    })
-                    .collect::<Option<Vec<_>>>();
-                let Some(retirements) = retirements else {
-                    return;
-                };
-                let request = DoorGroundRetirement {
-                    door_key: key,
-                    bundle_digest: map.overlay.base().digest(),
-                    content_digest: native.source_digest(),
-                    reset_epoch: self.reset_epoch,
-                    items: retirements,
-                };
-                let result = self
-                    .root
-                    .retire_door_ground(permit, self.character, self.holder, fence, request.clone())
-                    .await;
-                if matches!(
-                    result,
-                    Err(crate::durability::DurabilityError::CommitOutcomeUnknown
-                        | crate::durability::DurabilityError::RootUnavailable)
-                ) {
-                    // The same receipt or tombstone resolves a lost commit reply.
-                    let _ = self
-                        .root
-                        .retire_door_ground(permit, self.character, self.holder, fence, request)
-                        .await;
-                }
-                // A storage refusal retains existing custody. Still seal the
-                // protected doorway, subject to the normal live census below.
-                self.states.loop_ground.invalidate();
-            }
-            for (item, to) in item_moves {
-                let mut hasher = Sha256::new()
-                    .chain_update(b"oteryn:door-step-out:v1")
-                    .chain_update(actor.placement_identity())
-                    .chain_update(self.reset_epoch.to_be_bytes())
-                    .chain_update(movement_revision.to_be_bytes())
-                    .chain_update(key.to_be_bytes());
-                match item {
-                    ItemKey::Instance(id) => hasher.update(id),
-                    ItemKey::MapBase {
-                        bundle_digest,
-                        placement_key,
-                        ..
-                    } => {
-                        hasher.update(bundle_digest);
-                        hasher.update(placement_key.to_be_bytes());
+                        ItemKey::MapBase {
+                            bundle_digest,
+                            placement_key,
+                            ..
+                        } => {
+                            hasher.update(bundle_digest);
+                            hasher.update(placement_key.to_be_bytes());
+                            DoorGroundItem::Authored(placement_key)
+                        }
+                        _ => return,
+                    };
+                    let digest = hasher.finalize();
+                    let mut id = [0; 8];
+                    id.copy_from_slice(&digest[..8]);
+                    let command = UseCommand {
+                        game_session_id: session,
+                        command_id: u64::from_be_bytes(id).max(1),
+                        item_fence: Some(fence),
+                    };
+                    let Some(current_ground) =
+                        loop_move::loop_ground(self, map.overlay.base(), Some(index)).await
+                    else {
+                        return;
+                    };
+                    for &to in &destinations {
+                        // Authored sources must not mint at the doorway for an already-full
+                        // destination. The actual relocation also checks capacity under lock.
+                        if !door_destination_has_room(current_ground.overlay(), to) {
+                            continue;
+                        }
+                        if !can_move {
+                            continue 'item;
+                        }
+                        match loop_move::relocate_source_item(
+                            self, permit, actor, command, item, position, to,
+                        )
+                        .await
+                        {
+                            LoopMoveResult::Committed => continue 'item,
+                            LoopMoveResult::Refused(
+                                LoopMoveRefusal::NoRoom | LoopMoveRefusal::Blocked,
+                            ) => {}
+                            // No alternative write can follow an indeterminate move.
+                            _ => return,
+                        }
                     }
-                    _ => return,
+                    if can_retire {
+                        retirements.push(retirement);
+                    }
                 }
-                let digest = hasher.finalize();
-                let mut id = [0; 8];
-                id.copy_from_slice(&digest[..8]);
-                let command = UseCommand {
-                    game_session_id: session,
-                    command_id: u64::from_be_bytes(id).max(1),
-                    item_fence: fence,
-                };
-                let result = loop_move::relocate_source_item(
-                    self, permit, actor, command, item, position, to,
-                )
-                .await;
-                if result != crate::gameplay_transport::item_move::LoopMoveResult::Committed {
-                    return;
+                if !retirements.is_empty() {
+                    let request = DoorGroundRetirement {
+                        door_key: key,
+                        bundle_digest: map.overlay.base().digest(),
+                        content_digest,
+                        reset_epoch: self.reset_epoch,
+                        origin: origin.position(),
+                        destination: departure.position(),
+                        origin_revision: origin.revision(),
+                        departure_revision: departure.revision(),
+                        items: retirements,
+                    };
+                    let result = self
+                        .root
+                        .retire_door_ground(
+                            permit,
+                            self.character,
+                            self.holder,
+                            fence,
+                            request.clone(),
+                        )
+                        .await;
+                    if matches!(
+                        result,
+                        Err(crate::durability::DurabilityError::CommitOutcomeUnknown
+                            | crate::durability::DurabilityError::RootUnavailable)
+                    ) {
+                        // The same receipt or tombstone resolves a lost commit reply.
+                        let _ = self
+                            .root
+                            .retire_door_ground(permit, self.character, self.holder, fence, request)
+                            .await;
+                    }
+                    // Close against the live census. A storage refusal retains existing custody.
+                    self.states.loop_ground.invalidate();
                 }
             }
             let runtime = self.runtime.lock().await;
@@ -1006,6 +1029,20 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             items.clear();
         }
     }
+}
+
+fn door_destination_has_room(overlay: &crate::map::overlay::ChannelOverlay, to: TilePos) -> bool {
+    use crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT;
+    use crate::map::overlay::AddedItem;
+
+    overlay.tile(to).is_none_or(|tile| {
+        tile.added()
+            .iter()
+            .filter(|entry| matches!(entry.item(), AddedItem::Ground(_)))
+            .take(GROUND_CELL_ROOT_LIMIT)
+            .count()
+            < GROUND_CELL_ROOT_LIMIT
+    })
 }
 
 #[cfg(test)]

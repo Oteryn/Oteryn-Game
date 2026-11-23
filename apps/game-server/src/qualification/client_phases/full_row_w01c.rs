@@ -11,10 +11,14 @@
 //! 4. Escape by ordinary STEP commands, then retry LOGOUT until its reply is `Accepted`; freshly
 //!    admit the same character and require a new game session plus the exact server-saved position,
 //!    current/max health, mana and soul observed immediately before logout.
+//! 5. Return to the poison spider, observe lethal damage and the granted respawn,
+//!    and verify the new durable death receipt before logging out.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::logout::LogoutResult;
 use std::collections::BTreeSet;
+
+const LETHAL_ACTION: &str = "lethal-attack-and-respawn";
 
 const ACTIONS: &[&str] = &[
     "admitted-and-walked-to-spawn",
@@ -22,6 +26,7 @@ const ACTIONS: &[&str] = &[
     "in-fight-logout-refused",
     "escaped-and-logout-accepted",
     "fresh-admission-retains-state",
+    LETHAL_ACTION,
 ];
 
 struct Row {
@@ -49,6 +54,10 @@ impl Row {
         ));
     }
 
+    fn is_complete(&self) -> bool {
+        !self.invalid && ACTIONS.iter().all(|action| self.passed.contains(action))
+    }
+
     fn finish(self, result: TestResult) {
         for action in ACTIONS {
             if !self.passed.contains(action) {
@@ -58,9 +67,7 @@ impl Row {
         if let Err(error) = &result {
             evidence(&format!("W01C_GAP step={} observed={error}", self.passed.len() + 1));
         }
-        let pass = result.is_ok()
-            && !self.invalid
-            && ACTIONS.iter().all(|action| self.passed.contains(action));
+        let pass = result.is_ok() && self.is_complete();
         evidence(&format!(
             "e2e_all scenario=W01c.full status={} seconds={:.3}{}",
             if pass { "PASS" } else { "FAIL" },
@@ -72,7 +79,7 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(&mut row, clients))).await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("journey timeout after real player commands; server supplied no required next frame".into()),
@@ -143,10 +150,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     row.pass("fresh-admission-retains-state", (saved_position, observed));
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(LogoutResult::Accepted) {
-        return Err(format!("step 5: final logout refused: {logout:?}").into());
+    verdict::Harness::global().progress(LETHAL_ACTION);
+    if !client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
+    {
+        return Err("step=lethal-attack-and-respawn observed=no-world-map-capability source=apps/game-server/src/qualification/client_phases/death.rs:7".into());
     }
+    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.poison_spider")
+        .await?;
+    verdict::Harness::global().bounded_wait(
+        tokio::time::Instant::now() + Duration::from_secs(180),
+        LETHAL_ACTION,
+    );
+    client_death::death(&mut client, clients).await?;
+    row.pass(LETHAL_ACTION, client.world_spatial().actor_position);
+    wait_for_logout(&mut client).await?;
     Ok(())
 }
 
@@ -196,6 +215,17 @@ async fn wait_for_logout(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn surviving_an_attack_does_not_qualify_lethal_attack_and_respawn() {
+        let mut row = Row::new();
+        for action in ACTIONS.iter().copied().filter(|action| *action != LETHAL_ACTION) {
+            row.pass(action, ());
+        }
+        assert!(!row.is_complete());
+        row.pass(LETHAL_ACTION, ());
+        assert!(row.is_complete());
+    }
 
     #[test]
     fn row_requires_every_lifecycle_action_once() {

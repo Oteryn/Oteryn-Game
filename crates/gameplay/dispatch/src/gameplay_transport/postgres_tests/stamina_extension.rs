@@ -73,7 +73,15 @@ fn on_big_stack(admin: String, before: u16, after: u16, case: Case) -> TestResul
 
 async fn scenario(admin: String, before: u16, after: u16, case: Case) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "stamina_extension", true, false).await?;
-    prepare_current_session(&h).await?;
+    let pending = matches!(case, Case::PendingDefinition | Case::PendingHandle);
+    let recovery = if pending {
+        let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+        Some(source)
+    } else {
+        prepare_current_session(&h).await?;
+        None
+    };
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -91,6 +99,9 @@ async fn scenario(admin: String, before: u16, after: u16, case: Case) -> TestRes
         crate::spell::cast::v1_spell_book().map_err(debug)?,
     )?;
     let mut owner = deps.owner(&h, &authority);
+    if let Some(recovery) = &recovery {
+        owner.evidence = &recovery.evidence;
+    }
     owner.active_generation = Some(generation);
     deps.initialize(&owner).await;
     let actor = deps.actor;
@@ -284,7 +295,7 @@ async fn wire_case(
             first.command_result.is_none(),
             "an unknown commit sent a terminal reply"
         );
-        assert!(crate::gameplay_transport::connection::FreshAdmissionAuthority::prepare_quest_callback_resume(owner, &mut resumed).await);
+        resumed = super::wave2_replay_wire::reconnect(owner, resumed, &selected).await?;
         assert!(owner.states.command_ingress.resumable(&resumed));
         CommandStatus::DuplicateReplay
     } else {

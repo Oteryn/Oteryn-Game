@@ -3,10 +3,10 @@ use super::*;
 use crate::durability::{
     character_progression::assert_item_only_fence,
     item_transfer::CurrentCharacterItemFence,
-    map_item_mint::{MapItemPlacement, lock_placement},
-    map_item_mint_audit::map_revision_of,
+    map_item_mint::MapItemPlacement,
     spell_item_transaction::assert_spell_item_scope_with_recovery,
 };
+use crate::foundation::MovementLocalPosition;
 
 #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DoorGroundItem {
@@ -22,6 +22,10 @@ pub struct DoorGroundRetirement {
     pub bundle_digest: [u8; 32],
     pub content_digest: [u8; 32],
     pub reset_epoch: u64,
+    pub origin: MovementLocalPosition,
+    pub destination: MovementLocalPosition,
+    pub origin_revision: u64,
+    pub departure_revision: u64,
     pub items: Vec<DoorGroundItem>,
 }
 
@@ -40,6 +44,13 @@ impl DurabilityRoot {
         if request.items.len() > 500
             || request.bundle_digest == [0; 32]
             || request.content_digest == [0; 32]
+            || request.origin != (MovementLocalPosition {
+                x: i32::from(door.x),
+                y: i32::from(door.y),
+                floor: -i16::from(door.floor),
+            })
+            || request.origin == request.destination
+            || request.origin_revision >= request.departure_revision
             || request.items.iter().any(|item| match item {
                 DoorGroundItem::Instance(_) => false,
                 DoorGroundItem::Authored(key) => {
@@ -71,77 +82,52 @@ impl DurabilityRoot {
                 )
                 .await
                 .map_err(|_| DurabilityError::CommitRejected)?;
-                let world = *scope.world_id().as_bytes();
-                let current_epoch: bool = sqlx::query_scalar("SELECT game_world_reset_map_epoch_current(encode($1,'hex')::uuid,$2::text::numeric)")
-                    .bind(world.as_slice()).bind(request.reset_epoch.to_string())
-                    .fetch_one(&mut *tx).await?;
-                if !current_epoch {
-                    return Err(DurabilityError::CommitRejected);
-                }
-                let mut position = Vec::with_capacity(10);
-                position.extend_from_slice(&i32::from(door.x).to_be_bytes());
-                position.extend_from_slice(&i32::from(door.y).to_be_bytes());
-                let mut native_position = position.clone();
-                position.extend_from_slice(&i16::from(door.floor).to_be_bytes());
-                native_position.extend_from_slice(&(-i16::from(door.floor)).to_be_bytes());
-                let map_revision = map_revision_of(&request.bundle_digest);
-                let native_map_revision = map_revision_of(&Sha256::digest(map_revision.as_bytes()));
-                let content_revision = map_revision_of(&request.content_digest);
-                let channel = scope.channel_id().map(|id| *id.as_bytes());
-                let instance = scope.instance_id();
+                let fact = node.fact();
+                let proof = serde_json::json!({
+                    "session": hex(fence.game_session_id.as_bytes()),
+                    "character": hex(fence.character_id.as_bytes()),
+                    "connection": fence.connection_generation.get(),
+                    "lease": fence.character_lease_generation,
+                    "world": hex(scope.world_id().as_bytes()),
+                    "channel": scope.channel_id().map(|id| hex(id.as_bytes())),
+                    "instance": scope.instance_id().map(|id| hex(&id)),
+                    "ownership": fence.scope_ownership_generation.get(),
+                    "node": hex(fact.node_id().as_bytes()),
+                    "registration": fact.registration_revision(),
+                    "epoch": request.reset_epoch,
+                    "bundle": hex(&request.bundle_digest),
+                    "content": hex(&request.content_digest),
+                    "door": request.door_key,
+                    "origin": [request.origin.x, request.origin.y, i32::from(request.origin.floor)],
+                    "destination": [request.destination.x, request.destination.y, i32::from(request.destination.floor)],
+                    "origin_revision": request.origin_revision,
+                    "departure_revision": request.departure_revision,
+                });
                 for item in &request.items {
-                    match item {
-                        DoorGroundItem::Instance(item) => {
-                            let retired: bool = sqlx::query_scalar(
-                                "SELECT game_retire_door_ground(encode($1,'hex')::uuid,encode($2,'hex')::uuid,
-                                 encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,
-                                 $6::text::numeric,$7,$8,$9,$10,$11)",
-                            )
-                            .bind(item.as_slice())
-                            .bind(fence.game_session_id.as_bytes().as_slice())
-                            .bind(world.as_slice())
-                            .bind(channel.as_ref().map(|id| id.as_slice()))
-                            .bind(instance.as_ref().map(|id| id.as_slice()))
-                            .bind(fence.scope_ownership_generation.get().to_string())
-                            .bind(&position)
-                            .bind(&map_revision)
-                            .bind(&content_revision)
-                            .bind(&native_position)
-                            .bind(&native_map_revision)
-                            .fetch_one(&mut *tx).await?;
-                            if !retired {
-                                return Err(DurabilityError::CommitRejected);
-                            }
-                        }
-                        DoorGroundItem::Authored(key) => {
-                            let channel = channel.ok_or(DurabilityError::CommitRejected)?;
-                            let mut placement = request.bundle_digest.to_vec();
-                            placement.extend_from_slice(&key.to_be_bytes());
-                            lock_placement(&mut tx, &world, &channel, &placement, request.reset_epoch).await?;
-                            sqlx::query(
-                                "INSERT INTO game_door_authored_retirements
-                                    (world_id,channel_id,base_bundle_digest,placement_key,reset_epoch,door_key,game_session_id)
-                                 SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4::text::numeric,
-                                        $5::text::numeric,$6::text::numeric,encode($7,'hex')::uuid
-                                 WHERE NOT EXISTS (SELECT 1 FROM game_map_item_mint_receipts
-                                     WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
-                                       AND base_bundle_digest=$3 AND placement_key=$4::text::numeric
-                                       AND reset_epoch=$5::text::numeric)
-                                 ON CONFLICT DO NOTHING",
-                            )
-                            .bind(world.as_slice())
-                            .bind(channel.as_slice())
-                            .bind(request.bundle_digest.as_slice())
-                            .bind(key.to_string())
-                            .bind(request.reset_epoch.to_string())
-                            .bind(request.door_key.to_string())
-                            .bind(fence.game_session_id.as_bytes().as_slice())
-                            .execute(&mut *tx).await?;
-                        }
+                    let (instance, authored) = match item {
+                        DoorGroundItem::Instance(item) => (Some(item.as_slice()), None),
+                        DoorGroundItem::Authored(key) => (
+                            None, Some(i64::try_from(*key).map_err(|_| DurabilityError::CommitRejected)?),
+                        ),
+                    };
+                    let retired: bool = sqlx::query_scalar(
+                        "SELECT game_retire_door_ground(encode($1,'hex')::uuid,$2,$3,$4)",
+                    )
+                    .bind(instance)
+                    .bind(authored)
+                    .bind(&proof)
+                    .bind(node.sql_possession_secret())
+                    .fetch_one(&mut *tx).await?;
+                    if !retired {
+                        return Err(DurabilityError::CommitRejected);
                     }
                 }
                 commit_semantic_transaction(tx, deadline).await
             })
         }).await
     }
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }

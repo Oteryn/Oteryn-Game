@@ -8,7 +8,8 @@
 //!    authoritative initial position is the selected town's temple (durable home-town state).
 //! 3. Walk, using native STEP commands, to the shipped Svargrond citizen tile (unique 9066).
 //! 4. Step onto that tile without Barbarian Test progress; expect a moved STEP reply and spatial
-//!    delta followed by the exact Game refusal, with the actor returned to the approach tile.
+//!    delta followed by the exact Game refusal and a teleport to the Svargrond temple
+//!    (Crystal 201189f8 citizen.lua:39-43).
 
 use super::*;
 use oteryn_dev_client::{ChatLine, DevClientSession, SessionEvent};
@@ -83,18 +84,38 @@ fn citizen_tiles(bytes: &[u8]) -> TestResult<Vec<CitizenTile>> {
     Ok(found)
 }
 
+fn enters_citizen_tile(
+    from: TilePos,
+    direction: StepDirection,
+    trigger: TilePos,
+    landing: Option<TilePos>,
+) -> bool {
+    let (dx, dy) = direction.delta();
+    landing.is_some()
+        && from.floor == trigger.floor
+        && i32::from(from.x) + dx == i32::from(trigger.x)
+        && i32::from(from.y) + dy == i32::from(trigger.y)
+}
+
 fn approach(
     world: &BundleWorld,
     from: TilePos,
     target: TilePos,
 ) -> Option<(Vec<StepDirection>, StepDirection)> {
-    for direction in [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West] {
-        let path = route(world, from, |at| destination(world, at, direction) == Some(target));
-        if let Some(path) = path {
-            return Some((path, direction));
-        }
-    }
-    None
+    shortest_approach(|direction| {
+        route(world, from, |at| {
+            enters_citizen_tile(at, direction, target, destination(world, at, direction))
+        })
+    })
+}
+
+fn shortest_approach(
+    mut route_for: impl FnMut(StepDirection) -> Option<Vec<StepDirection>>,
+) -> Option<(Vec<StepDirection>, StepDirection)> {
+    [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
+        .into_iter()
+        .filter_map(|direction| route_for(direction).map(|path| (path, direction)))
+        .min_by_key(|(path, _)| path.len())
 }
 
 async fn messages_until(
@@ -130,6 +151,12 @@ async fn step_onto(
     Ok(outcome)
 }
 
+async fn home_town(database: &mut sqlx::PgConnection, character: &[u8; 16]) -> TestResult<Option<i32>> {
+    Ok(sqlx::query_scalar(
+        "SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(character.as_slice()).fetch_optional(database).await?)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -142,12 +169,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let tiles = citizen_tiles(&bytes)?;
     let mut client = connect_world(clients, 0xd8).await?;
 
+    use sqlx::Connection as _;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let previous_home = home_town(&mut database, &clients.characters[1]).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let (selected, path, direction) = tiles.iter()
-        .filter(|entry| entry.unique != SVARGROND_UNIQUE)
+        .filter(|entry| entry.unique != SVARGROND_UNIQUE && previous_home.and_then(|town| u32::try_from(town).ok()) != Some(entry.town))
         .filter_map(|entry| approach(world, from, entry.at).map(|(path, direction)| (*entry, path, direction)))
         .min_by_key(|(_, path, _)| path.len())
-        .ok_or("step=citizenship-route observed=no-walking-route need=reachable-shipped-citizen-tile")?;
+        .ok_or("step=citizenship-route observed=no-walking-route need=reachable-shipped-citizen-tile-for-different-home-town")?;
     walk(&mut client, world, &path).await?;
     client.take_events();
     let outcome = step_onto(&mut client, direction).await?;
@@ -171,7 +201,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if fresh.world_spatial().actor_position != expected_position {
         return Err(format!("step=fresh-admission observed={:?} need=durable-home-temple-{expected_position:?}", fresh.world_spatial().actor_position).into());
     }
-    evidence(&format!("W23_CHECK persistence PASS fresh={expected_position:?}"));
+    let home = home_town(&mut database, &clients.characters[1]).await?;
+    if home != Some(i32::try_from(selected.town)?) {
+        return Err(format!("step=fresh-admission-home-town observed={home:?} need={}", selected.town).into());
+    }
+    evidence(&format!("W23_CHECK persistence PASS town={} fresh={expected_position:?}", selected.town));
 
     let svargrond = tiles.iter().find(|entry| entry.unique == SVARGROND_UNIQUE)
         .ok_or("step=svargrond-content observed=unique-9066-absent need=shipped-citizen-tile")?;
@@ -179,19 +213,50 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let (path, direction) = approach(world, from, svargrond.at)
         .ok_or("step=svargrond-route observed=no-walking-route need=legitimate-player-route-to-unique-9066")?;
     walk(&mut fresh, world, &path).await?;
-    let before = fresh.world_spatial().actor_position;
+    let temple = world.base().subareas.town(svargrond.town).and_then(|area| area.temple)
+        .ok_or("step=svargrond-refusal observed=temple-absent need=Svargrond-temple")?;
+    let temple = ActorPosition {
+        x: i32::from(temple.x),
+        y: i32::from(temple.y),
+        floor: -i16::from(temple.floor),
+    };
     fresh.take_events();
     let outcome = step_onto(&mut fresh, direction).await?;
     messages_until(&mut fresh, REFUSAL).await?;
-    if fresh.world_spatial().actor_position != before {
-        return Err(format!("step=svargrond-refusal observed=position-{:?} need=rollback-to-{before:?}", fresh.world_spatial().actor_position).into());
+    if fresh.world_spatial().actor_position != temple {
+        return Err(format!("step=svargrond-refusal observed=position-{:?} need=temple-{temple:?}", fresh.world_spatial().actor_position).into());
     }
-    evidence(&format!("W23_CHECK refusal PASS reply={outcome:?} position={before:?}"));
+    evidence(&format!("W23_CHECK refusal PASS reply={outcome:?} position={temple:?}"));
+    let logout = fresh.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=final-logout observed={logout:?} need=accepted").into());
+    }
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn journey_regression_uses_citizen_trigger_even_when_step_lands_at_temple() {
+        let from = super::TilePos { x: 10, y: 10, floor: -7 };
+        let trigger = super::TilePos { x: 11, ..from };
+        let temple = super::TilePos { x: 20, ..from };
+        assert!(super::enters_citizen_tile(from, super::StepDirection::East, trigger, Some(temple)));
+        assert!(!super::enters_citizen_tile(from, super::StepDirection::East, trigger, None));
+        assert!(!super::enters_citizen_tile(from, super::StepDirection::North, trigger, Some(temple)));
+    }
+
+    #[test]
+    fn journey_regression_uses_the_shortest_citizen_tile_approach() {
+        use super::StepDirection::{East, North};
+        let picked = super::shortest_approach(|direction| match direction {
+            North => Some(vec![North, North]),
+            East => Some(vec![East]),
+            _ => None,
+        });
+        assert_eq!(picked, Some((vec![East], East)));
+    }
+
     #[test]
     fn evidence_is_one_report_token() {
         assert_eq!(super::evidence_token("step=x observed=a b"), "step-x-observed-a-b");

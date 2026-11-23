@@ -25,6 +25,8 @@ pub struct WheelPanel {
     /// Gem Vessel slots.
     pub atelier_v2: bool,
     /// The Gem Vessel facts of the last confirmed v2 reply.
+    /// Named preset targets for individually confirmed v2 vessel changes.
+    pub preset_vessels: Option<Vec<Option<[u8; 16]>>>,
     pub vessel_board: Option<crate::gem_atelier::VesselBoard>,
     pub open: bool,
     pub synchronized: bool,
@@ -59,6 +61,7 @@ impl Default for WheelPanel {
             preset_feedback: String::new(),
             selected: false,
             atelier_v2: false,
+            preset_vessels: None,
             vessel_board: None,
             open: false,
             synchronized: false,

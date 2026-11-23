@@ -29,7 +29,7 @@ fn m06_quest_door_step_out_moves_item_south_when_east_is_blocked() -> TestResult
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_case(admin, StepDirection::West, false)
+    run_case(admin, StepDirection::West, false, false)
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn m06_quest_door_step_out_closes_when_player_steps_south() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_case(admin, StepDirection::South, false)
+    run_case(admin, StepDirection::South, false, false)
 }
 
 #[test]
@@ -45,10 +45,39 @@ fn m06_quest_door_step_out_retires_item_when_both_exits_are_blocked() -> TestRes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run_case(admin, StepDirection::West, true)
+    run_case(admin, StepDirection::West, true, false)
 }
 
-fn run_case(admin: String, direction: StepDirection, south_blocked: bool) -> TestResult {
+#[test]
+fn m06_quest_door_step_out_skips_a_walkable_east_tile_with_full_ground() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_case(admin.clone(), StepDirection::West, false, true)?;
+    run_case(admin, StepDirection::West, true, true)
+}
+
+#[test]
+fn m06_runtime_role_has_no_unfenced_door_retirement_privilege() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::fixture::run(async move |_| {
+        let h = Harness::create_with_admission_seed(admin, "door_retirement_privileges", false, false).await?;
+        let (insert, update, legacy): (bool, bool, bool) = sqlx::query_as(
+            "SELECT has_table_privilege('oteryn_game_runtime','game_door_authored_retirements','INSERT'),
+                    has_table_privilege('oteryn_game_runtime','game_door_authored_retirements','UPDATE'),
+                    COALESCE(has_function_privilege('oteryn_game_runtime',to_regprocedure(
+                       'game_retire_door_ground(uuid,uuid,uuid,uuid,uuid,numeric,bytea,text,text,bytea,text)'
+                    ),'EXECUTE'),false)",
+        )
+        .fetch_one(&h.pool).await?;
+        assert_eq!((insert, update, legacy), (false, false, false));
+        h.cleanup().await
+    })
+}
+
+fn run_case(admin: String, direction: StepDirection, south_blocked: bool, east_full: bool) -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -57,7 +86,7 @@ fn run_case(admin: String, direction: StepDirection, south_blocked: bool) -> Tes
                 .enable_all()
                 .build()
                 .map_err(|error| error.to_string())?
-                .block_on(Box::pin(scenario(admin, direction, south_blocked)))
+                .block_on(Box::pin(scenario(admin, direction, south_blocked, east_full)))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -69,7 +98,7 @@ fn run_case(admin: String, direction: StepDirection, south_blocked: bool) -> Tes
     Ok(())
 }
 
-async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) -> TestResult {
+async fn scenario(admin: String, direction: StepDirection, south_blocked: bool, east_full: bool) -> TestResult {
     let harness = Harness::create_with_admission_seed(admin, "door_step_out", true, false).await?;
     prepare_current_session(&harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -112,7 +141,9 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
         .ok_or("east tile")?;
     let authored_coin = east.items.pop().ok_or("authored coin")?;
     east.items.truncate(1);
-    east.items.push(wall);
+    if !east_full {
+        east.items.push(wall);
+    }
     // Queen of the Banshees quest door, the same action as the placed M06Q fixture.
     let doorway = tiles
         .iter_mut()
@@ -175,7 +206,7 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
         })
     );
     assert!(map.enterable(DOORWAY));
-    assert!(!map.enterable(EAST));
+    assert_eq!(map.enterable(EAST), east_full);
     assert_eq!(map.enterable(SOUTH), !south_blocked);
     let cells = map
         .movement_cells(deps.room.movement_cells())
@@ -201,6 +232,7 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
         revision,
         (i32::from(WEST.x), i32::from(WEST.y), 7),
     );
+    let content_digest = content_pin.server_artifact_digest();
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         world,
         channel,
@@ -278,26 +310,37 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
     assert_eq!(before.len(), 1);
     assert_eq!(before[0].item.item_instance_id, item);
     assert_eq!(before[0].item.ground.spatial_position, cell(DOORWAY));
+    if east_full {
+        seed_full_east_ground(&harness.pool, item).await?;
+        owner.states.loop_ground.invalidate();
+    }
+    let origin = owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?;
 
     let (step, _) = owner
         .ordinary_paced_step(deps.actor, session, direction, None, None)
         .await;
     assert_eq!(step.disposition, StepDisposition::Moved);
-    assert_eq!(
-        owner
+    let departure = owner
             .runtime
             .lock()
             .await
             .read_actor_position(deps.actor)
-            .map_err(debug)?
-            .position(),
+            .map_err(debug)?;
+    assert_eq!(
+        departure.position(),
         local(if direction == StepDirection::South {
             SOUTH
         } else {
             WEST
         })
     );
-    let after = owner.root.read_item_loop_ground(world, channel).await?;
+    let mut after = owner.root.read_item_loop_ground(world, channel).await?;
+    if east_full {
+        let east = cell(EAST);
+        let before_filter = after.len();
+        after.retain(|entry| entry.item.ground.spatial_position != east);
+        assert_eq!(before_filter - after.len(), crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT);
+    }
     let moves: (i64, i64) = sqlx::query_as("SELECT count(*), COALESCE(sum(quantity_after),0)::bigint FROM game_item_loop_move_lines WHERE item_instance_id=encode($1,'hex')::uuid AND from_kind=3 AND to_kind=3")
         .bind(item.as_slice()).fetch_one(&harness.pool).await?;
     if south_blocked {
@@ -320,8 +363,12 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
                     DoorGroundRetirement {
                         door_key: door,
                         bundle_digest: map.base().digest(),
-                        content_digest: native.source_digest(),
+                        content_digest,
                         reset_epoch: 0,
+                        origin: origin.position(),
+                        destination: departure.position(),
+                        origin_revision: origin.revision(),
+                        departure_revision: departure.revision(),
                         items: vec![
                             DoorGroundItem::Instance(item),
                             DoorGroundItem::Authored(authored),
@@ -367,6 +414,39 @@ async fn scenario(admin: String, direction: StepDirection, south_blocked: bool) 
     drop(authority);
     drop(seal);
     harness.cleanup().await
+}
+
+async fn seed_full_east_ground(pool: &sqlx::PgPool, template: [u8; 16]) -> TestResult {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query(
+        "WITH template AS (
+            SELECT * FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid
+         ), copies AS (
+            INSERT INTO game_item_instances (item_instance_id, world_id, definition_family,
+                definition_production_key, definition_revision_ref, quantity, lifecycle, minted_transaction_id)
+            SELECT game_character_uuid_v7(),world_id,definition_family,definition_production_key,
+                definition_revision_ref,quantity,lifecycle,game_character_uuid_v7()
+            FROM template CROSS JOIN generate_series(1,$3::int)
+            RETURNING item_instance_id, minted_transaction_id
+         )
+         INSERT INTO game_item_ground_locations
+            (item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,
+             spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,scope_kind,
+             stack_ordinal)
+         SELECT c.item_instance_id,g.world_id,g.channel_id,g.runtime_scope_ownership_generation,
+                $2,substring(g.corpse_ref FROM 1 FOR octet_length(g.corpse_ref)-16)||uuid_send(c.minted_transaction_id),
+                g.map_revision,g.content_revision,g.native_room_placement_context,g.scope_kind,
+                nextval('game_item_ground_stack_ordinal_seq')
+         FROM copies c CROSS JOIN game_item_ground_locations g
+         WHERE g.item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(template.as_slice())
+    .bind(cell(EAST))
+    .bind(i32::try_from(crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT)?)
+    .execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
 }
 
 fn local(pos: TilePos) -> MovementLocalPosition {

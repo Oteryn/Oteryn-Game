@@ -400,14 +400,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     super::operator_event("snowbunny_step_transaction_rolled_back");
                 }
                 if let Some(origin) = origin {
-                    self.close_departed_door(
-                        &permit,
-                        actor,
-                        session,
-                        origin.position(),
-                        snapshot.revision(),
-                    )
-                    .await;
+                    self.close_departed_door(&permit, actor, session, origin, snapshot)
+                        .await;
                 }
                 let snapshot = match origin {
                     Some(origin) => {

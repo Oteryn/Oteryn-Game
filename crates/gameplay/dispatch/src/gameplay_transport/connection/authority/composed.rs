@@ -1538,7 +1538,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             {
                 return false;
             }
-            depot_search::reconcile(self, *admitted).await
+            depot_search::reconcile(self, *admitted, false).await
         })
         .await
         .unwrap_or(false)

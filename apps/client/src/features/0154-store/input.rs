@@ -24,6 +24,63 @@ impl PlayLink {
         }
     }
 
+    pub fn store_open_xp_boost(&self) {
+        self.store_open_products();
+    }
+
+    pub fn store_open_products(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.store.open = true;
+        if let Err(message) = self.open_product_offers(&mut mailbox.store, "") {
+            mailbox.store.feedback = Some(message.into());
+        }
+    }
+
+    pub(in crate::play) fn open_product_offers(
+        &self,
+        store: &mut oteryn_client_ui::store::StorePanel,
+        search: &str,
+    ) -> Result<(), &'static str> {
+        if !store.selected {
+            return Err(tr!("Store unavailable in this session"));
+        }
+        if store.pending || store.confirmed_purchase.is_some() {
+            return Err(tr!("Waiting for the server"));
+        }
+        let command = oteryn_client_ui::store::browse(store, "featured", search, 0, 0)
+            .ok_or(tr!("Store unavailable in this session"))?;
+        if self
+            .commands
+            .send(PlayCommand::ServerMechanic(command))
+            .is_err()
+        {
+            store.pending = false;
+            return Err(tr!("The session has ended"));
+        }
+        store.open = true;
+        store.page = oteryn_client_ui::store::StorePage::Catalogue;
+        store.product_navigation = store.product_navigation.wrapping_add(1);
+        Ok(())
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn store_open_premium_time(&self) {
+        {
+            let mut mailbox = lock(&self.mailbox);
+            if !mailbox.store.selected
+                || mailbox.store.pending
+                || mailbox.store.confirmed_purchase.is_some()
+                || mailbox.store.gift.confirmed.is_some()
+                || mailbox.store.gift.pending.is_some()
+            {
+                return;
+            }
+            mailbox.store.open = true;
+            mailbox.store.page = oteryn_client_ui::store::StorePage::Catalogue;
+        }
+        self.store_browse("premium-time", "", 0, 0);
+    }
+
     pub fn store_select_product(&self, index: usize) -> bool {
         oteryn_client_ui::store::select_product(&mut lock(&self.mailbox).store, index)
     }
@@ -62,14 +119,24 @@ impl PlayLink {
 
     pub fn store_request(&self, command_type: u32, payload: Vec<u8>) {
         let mut mailbox = lock(&self.mailbox);
-        if matches!(command_type, 6187 | 6188) && !mailbox.store.token_supported { return; }
+        if matches!(command_type, 6187 | 6188) && !mailbox.store.token_supported {
+            return;
+        }
         let Some(command) = oteryn_client_ui::store::command(command_type, payload) else {
             return;
         };
         let requested = if matches!(command_type, 6187 | 6188) {
-            oteryn_client_ui::store_cosmetic_tokens::request(&mut mailbox.store, command_type, command.payload)
-        } else { oteryn_client_ui::store::request(&mut mailbox.store, command) };
-        if requested.is_some() && command_type == 6187 { mailbox.store.token_balance_refresh = false; }
+            oteryn_client_ui::store_cosmetic_tokens::request(
+                &mut mailbox.store,
+                command_type,
+                command.payload,
+            )
+        } else {
+            oteryn_client_ui::store::request(&mut mailbox.store, command)
+        };
+        if requested.is_some() && command_type == 6187 {
+            mailbox.store.token_balance_refresh = false;
+        }
         if let Some(command) = requested
             && self
                 .commands

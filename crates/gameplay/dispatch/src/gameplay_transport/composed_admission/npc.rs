@@ -8,6 +8,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         self.states.npc_conversations.cancel_bank(session);
         self.states.chat.set_npc_service(session);
+        let runtime = self.runtime.lock().await;
+        self.states
+            .npc_conversations
+            .restore_skjaar_topic(&self.states.chat, &runtime, session);
     }
 
     pub(in crate::gameplay_transport) async fn follow_npc_session(

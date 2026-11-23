@@ -46,7 +46,7 @@ fn noble_armor_postgres_skjaar_quiz_earns_key_and_opens_both_claims() -> TestRes
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run("noble-armor-earned", || scenario(false))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("noble-armor-earned", || scenario(false, false))
 }
 
 #[test]
@@ -55,15 +55,72 @@ fn noble_armor_postgres_wrong_answer_capacity_and_replay_preserve_payment() -> T
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run("noble-armor-refusals", || scenario(true))
+    super::kill_reward_e2e_fixtures::scenario_thread::run("noble-armor-refusals", || scenario(true, false))
 }
 
-fn scenario(refusals: bool) -> TestResult {
+#[test]
+fn noble_armor_skjaar_reconnect_recovers_donation_and_key_acknowledgements() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("noble-armor-reconnect", || scenario(false, true))
+}
+
+const RESUME_CAPABILITIES: &[u32] = &[3, 4, 6, 11, 15, 18];
+
+async fn recover_skjaar_ack(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    expected_reply: &str,
+) -> TestResult<u64> {
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::npc_command::catalogue::LOSE_SKJAAR_ACK;
+    use crate::gameplay_transport::session_ingress::{CommandAction, SessionCommandStream};
+    use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
+
+    let actor = admitted.runtime_actor.ok_or("live actor")?;
+    let session = admitted.game_session_id;
+    let id = admitted.continuity.next_command_id;
+    let commands = &owner.states.command_ingress;
+    let command = CommandRef::new(session, CommandId::new(id).map_err(debug)?);
+    let mut stream = SessionCommandStream::open(Some(commands), admitted).ok_or("original stream")?;
+    assert!(matches!(
+        stream.begin(id, admitted.continuity.connection_generation, admitted.continuity.server_sequence, false),
+        Ok(CommandAction::Execute)
+    ));
+    let outcome = LOSE_SKJAAR_ACK.scope(std::cell::Cell::new(true), owner.npc_talk(
+        actor,
+        UseCommand { game_session_id: session, command_id: id, item_fence: admitted.item_fence },
+        NpcTalkIntent { npc_actor: npc, text: "yes".into() },
+    )).await;
+    assert!(outcome.unknown, "the committed reply must be held");
+    admitted.continuity.next_command_id = stream.next_command_id();
+    drop(stream);
+    assert!(commands.reconcilable(command));
+
+    *admitted = super::wave2_replay_wire::reconnect(owner, *admitted, RESUME_CAPABILITIES).await?;
+    assert!(commands.original_terminalized(command));
+    owner.npc_session_open(session).await;
+    let update = owner.npc_follow(actor, session, None).await.ok_or("recovered NPC update")?;
+    let reply = update.conversation.ok_or("recovered NPC conversation")?;
+    assert!(reply.lines.iter().any(|line| line.contains(expected_reply)), "{reply:?}");
+    Ok(id)
+}
+
+fn scenario(refusals: bool, reconnect: bool) -> TestResult {
     run(async |admin| {
         super::reset();
         let h =
             Harness::create_with_admission_seed(admin, "noble_armor_earned", false, false).await?;
-        prepare_current_session(&h).await?;
+        let recovery = if reconnect {
+            let source = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+            super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+            Some(source)
+        } else {
+            prepare_current_session(&h).await?;
+            None
+        };
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -158,6 +215,10 @@ fn scenario(refusals: bool) -> TestResult {
             seed_wallet(&h).await?;
         }
         let mut owner = deps.owner(&h, &authority);
+        if let Some(recovery) = &recovery {
+            owner.evidence = &recovery.evidence;
+            super::track(&owner, &deps)?;
+        }
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
         owner.quest_catalogue = Some(Arc::new(
@@ -169,7 +230,7 @@ fn scenario(refusals: bool) -> TestResult {
         admitted.continuity.selected_capabilities =
             crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                 owner.offered_capabilities(),
-                &[4, 6, 11, 15, 18],
+                if reconnect { RESUME_CAPABILITIES } else { &[4, 6, 11, 15, 18] },
             )
             .ok_or("item USE capabilities")?;
         owner.admit_progression_session(&mut admitted).await;
@@ -217,10 +278,14 @@ fn scenario(refusals: bool) -> TestResult {
             say(&mut owner, "key", "Would you like me to test you?").await?;
             say(&mut owner, "yes", "Are you willing to pay 1000 gold coins").await?;
         }
-        say(&mut owner, "yes", "Dago's favourite pet").await?;
+        let pay_id = if reconnect {
+            recover_skjaar_ack(&owner, &mut admitted, npc, "Dago's favourite pet").await?
+        } else {
+            say(&mut owner, "yes", "Dago's favourite pet").await?;
+            command
+        };
         let paid = if refusals { (1, 1, 0) } else { (1, 0, 50) };
         assert_eq!(payment(&h).await?, paid);
-        let pay_id = command;
         let atomic_donation: bool = sqlx::query_scalar(
             "SELECT q.created_xact_id=f.created_xact_id
                     AND q.committed_character_revision=f.committed_character_revision
@@ -236,7 +301,8 @@ fn scenario(refusals: bool) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert!(atomic_donation, "the quiz response requires an atomic paid receipt");
-        let answer = talk(&mut owner, &admitted, npc, pay_id + 1, "spider").await?;
+        let dialogue_id = pay_id + if reconnect { 1000 } else { 0 };
+        let answer = talk(&mut owner, &admitted, npc, dialogue_id + 1, "spider").await?;
         assert!(answer.iter().all(|line| !line.contains("how many fingers")));
         assert_eq!(
             super::npc_program_inventory_fixtures::topic(&owner, &admitted),
@@ -247,20 +313,25 @@ fn scenario(refusals: bool) -> TestResult {
             (3, "7", "colour of the deamons"),
             (4, "black", "Do you want the key"),
         ] {
-            let lines = talk(&mut owner, &admitted, npc, pay_id + offset, input).await?;
+            let lines = talk(&mut owner, &admitted, npc, dialogue_id + offset, input).await?;
             assert!(
                 lines.iter().any(|line| line.contains(expected)),
                 "{lines:?}"
             );
         }
-        let grant_id = pay_id + 5;
-        let lines = talk(&mut owner, &admitted, npc, grant_id, "yes").await?;
-        if refusals {
-            assert!(lines.iter().all(|line| line != "Here you are"));
+        let grant_id = if reconnect {
+            recover_skjaar_ack(&owner, &mut admitted, npc, "Here you are").await?
         } else {
-            assert!(lines.iter().any(|line| line == "Here you are"));
-        }
-        let _ = talk(&mut owner, &admitted, npc, grant_id + 1, "yes").await?;
+            let grant_id = dialogue_id + 5;
+            let lines = talk(&mut owner, &admitted, npc, grant_id, "yes").await?;
+            if refusals {
+                assert!(lines.iter().all(|line| line != "Here you are"));
+            } else {
+                assert!(lines.iter().any(|line| line == "Here you are"));
+            }
+            grant_id
+        };
+        let _ = talk(&mut owner, &admitted, npc, dialogue_id + 6, "yes").await?;
         for (id, topic, rule, expected) in [
             (pay_id, 2, "oteryn:quest-reward/skjaar-donation", true),
             (

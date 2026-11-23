@@ -12,10 +12,36 @@ impl Outbox {
             };
     }
     pub(in crate::play) fn weapon_proficiency_result(&self, result: &GatedCommandResult) {
-        oteryn_client_ui::weapon_proficiency::apply_result(
-            &mut lock(&self.0).weapon_proficiency,
-            result,
-        );
+        let mut mailbox = lock(&self.0);
+        let panel = &mut mailbox.weapon_proficiency;
+        #[cfg(bevy_shell)]
+        let before: std::collections::BTreeMap<_, _> = panel
+            .catalogue
+            .iter()
+            .flat_map(|p| &p.entries)
+            .map(|entry| {
+                (
+                    entry.definition,
+                    oteryn_client_ui::weapon_proficiency::progress_level(entry),
+                )
+            })
+            .collect();
+        oteryn_client_ui::weapon_proficiency::apply_result(panel, result);
+        #[cfg(bevy_shell)]
+        {
+            let notices: Vec<_> = panel
+                .catalogue
+                .iter()
+                .flat_map(|p| &p.entries)
+                .filter(|entry| {
+                    before.get(&entry.definition).is_some_and(|old| {
+                        oteryn_client_ui::weapon_proficiency::progress_level(entry) > *old
+                    })
+                })
+                .map(|entry| format!("Weapon proficiency improved: {}", entry.name))
+                .collect();
+            mailbox.achievement_banners.extend(notices);
+        }
     }
 }
 

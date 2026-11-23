@@ -37,6 +37,7 @@ pub struct TaskBoardPanel {
     pub fights: fights::FightPanel,
     pub selected: bool,
     pub open: bool,
+    pub open_weekly: bool,
     pub soulseals_open: bool,
     pub weekly_results_selected: bool,
     pub weekly_checked: bool,

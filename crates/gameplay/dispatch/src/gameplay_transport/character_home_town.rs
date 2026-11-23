@@ -1,4 +1,5 @@
 //! C20d-W23: the pinned hometown catalogue and citizen step ingress.
+use super::spell_premium_coordinator::EntryEntitlement;
 use super::*;
 use crate::foundation::{MovementLocalPosition, MovementPositionSnapshot};
 
@@ -113,36 +114,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         account: [u8; 16],
         session: GameSessionId,
     ) -> Option<MovementLocalPosition> {
-        self.premium_ended_entry_temple(account, session, false)
+        self.premium_ended_entry_temple(Some(account), session, false)
             .await
+            .ok()
+            .flatten()
     }
 
     /// P20 selects Thais for an ended entitlement on a special tile or with a Premium hometown.
     pub(super) async fn premium_ended_entry_temple(
         &self,
-        account: [u8; 16],
+        account: Option<[u8; 16]>,
         session: GameSessionId,
         on_premium_tile: bool,
-    ) -> Option<MovementLocalPosition> {
-        let coordinator = self.premium_coordinator?;
-        let table = &self.bundle_map()?.overlay.base().subareas;
-        let temple = table.town(FREE_ACCOUNT_DEFAULT_TOWN)?.temple?;
-        if !on_premium_tile && premium_area_town(self.home_town(session, None).await?) != Some(true)
+    ) -> Result<Option<MovementLocalPosition>, ()> {
+        let unavailable = if on_premium_tile { Err(()) } else { Ok(None) };
+        let (Some(account), Some(coordinator)) = (account, self.premium_coordinator) else {
+            return unavailable;
+        };
+        if !on_premium_tile
+            && self
+                .home_town(session, None)
+                .await
+                .and_then(premium_area_town)
+                != Some(true)
         {
-            return None;
+            return Ok(None);
         }
         // Settle delivery, then load the durable fence: this account's pulls start only after
         // admission, and an ended entitlement is a restrictive durable fact.
         let _ = coordinator.premium_gate(account).await;
-        let _ = coordinator.consumer().load(self.root, account).await;
-        if !coordinator.premium_entitlement_ended(account) {
-            return None;
+        if coordinator
+            .consumer()
+            .load(self.root, account)
+            .await
+            .is_err()
+        {
+            return unavailable;
         }
-        Some(MovementLocalPosition {
+        match coordinator.entry_entitlement(account) {
+            EntryEntitlement::Current => return Ok(None),
+            EntryEntitlement::Unavailable => return unavailable,
+            EntryEntitlement::Ended => {}
+        }
+        let table = &self.bundle_map().ok_or(())?.overlay.base().subareas;
+        let temple = table
+            .town(FREE_ACCOUNT_DEFAULT_TOWN)
+            .and_then(|town| town.temple)
+            .ok_or(())?;
+        Ok(Some(MovementLocalPosition {
             x: i32::from(temple.x),
             y: i32::from(temple.y),
             floor: i16::from(-temple.floor),
-        })
+        }))
     }
 
     /// Persist the actual P20 placement and consume its obligation before changing citizenship.

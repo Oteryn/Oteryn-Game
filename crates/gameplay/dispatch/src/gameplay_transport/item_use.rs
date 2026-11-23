@@ -1219,23 +1219,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_ok()
     }
 
+    pub(super) async fn reconcile_stamina_extension(
+        &self,
+        actor: ExactActorRef,
+        admitted: &super::connection::AdmittedSession,
+    ) -> bool {
+        let session = admitted.game_session_id;
+        let pending = {
+            let states = self.states.spell_states.lock().await;
+            states
+                .item_uses
+                .0
+                .iter()
+                .find(|(held, owner, _)| *held == actor && *owner == session)
+                .and_then(|(_, _, gate)| gate.stamina_pending.clone())
+        };
+        let Some(request) = pending else {
+            return true;
+        };
+        let Some(fence) = admitted.item_fence else {
+            return false;
+        };
+        let Ok(command) = crate::foundation::CommandId::new(request.command_id) else {
+            return false;
+        };
+        let reference = crate::foundation::CommandRef::new(session, command);
+        if !self.states.command_ingress.reconcilable(reference) {
+            return false;
+        }
+        let receipt = self
+            .root
+            .read_stamina_extension_receipt(self.character, fence, (*request).clone())
+            .await;
+        let disposition = match receipt {
+            Ok(Some(_)) => UseDisposition::Committed,
+            Ok(None) => UseDisposition::Rejected,
+            Err(_) => return false,
+        };
+        self.publish_stamina_extension_result(actor, session, &request, disposition)
+            .await
+            .is_ok()
+    }
+
     async fn finish_stamina_extension(
         &self,
         actor: ExactActorRef,
         fence: CurrentCharacterItemFence,
         request: ItemUseRequest,
     ) -> Result<UseDisposition, UseDisposition> {
-        let ItemUseKind::StaminaExtension { minutes_before, .. } = request.kind else {
+        let ItemUseKind::StaminaExtension { .. } = request.kind else {
             return Err(UseDisposition::Rejected);
         };
-        let session = fence.game_session_id;
-        let id = request.command_id;
-        let source = request.source_item_instance_id;
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         slot.observe_loop_training();
         let commit = self
             .root
-            .commit_item_use(self.character, self.holder, fence, request);
+            .commit_item_use(self.character, self.holder, fence, request.clone());
         let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
         let result = tokio::time::timeout(bound, commit).await;
         #[cfg(test)]
@@ -1255,6 +1294,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(Err(ItemUseError::Unavailable(_))) | Err(_) => return Err(UseDisposition::Rejected),
             Ok(Err(_)) => UseDisposition::Rejected,
         };
+        self.publish_stamina_extension_result(actor, fence.game_session_id, &request, disposition)
+            .await
+    }
+
+    async fn publish_stamina_extension_result(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        request: &ItemUseRequest,
+        disposition: UseDisposition,
+    ) -> Result<UseDisposition, UseDisposition> {
+        let ItemUseKind::StaminaExtension { minutes_before, .. } = request.kind else {
+            return Err(UseDisposition::Rejected);
+        };
+        let id = request.command_id;
+        let source = request.source_item_instance_id;
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
@@ -1285,6 +1340,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     stamina_extension_after(minutes_before),
                 );
             }
+        } else {
+            return Err(UseDisposition::Rejected);
         }
         Ok(disposition)
     }

@@ -338,7 +338,7 @@ jobs:
       contents: read
     steps:
       - name: Review dependency changes in exact queue candidate
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           fail-on-severity: high
           base-ref: ${{ needs.candidate.outputs.base_sha }}
@@ -1134,7 +1134,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
-          echo "ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9  tools/ci/plan_pg_partitions.py" | sha256sum -c -
+          echo "0e3cdf32579feec5d270659382d23bbe9de29b9d10d59ce994b34bcb1d4f8188  tools/ci/plan_pg_partitions.py" | sha256sum -c -
           python3 tools/ci/pg_archive_affinity.py verify "$RUNNER_TEMP" mq \
             "$PG_ARCHIVES" "$SELECTED_ARCHIVE" "$EXPECTED_SHA" "$GITHUB_WORKSPACE" tools/ci/plan_pg_partitions.py
 
@@ -1155,7 +1155,7 @@ jobs:
           JOB_INDEX="${ARCHIVE_INDEX:?missing archive worker index}"
           JOB_TOTAL="${ARCHIVE_TOTAL:?missing archive worker count}"
           # Verify the reviewed planner before it chooses which tests to run.
-          echo "ae799f44591c0b5f73fa16c177e71c523da9a53923c4791ebb88c99521537ee9  tools/ci/plan_pg_partitions.py" | sha256sum -c -
+          echo "0e3cdf32579feec5d270659382d23bbe9de29b9d10d59ce994b34bcb1d4f8188  tools/ci/plan_pg_partitions.py" | sha256sum -c -
           python3 tools/ci/plan_pg_partitions.py "$plan" "$JOB_INDEX" "$JOB_TOTAL" \
             tools/ci/pg_test_durations.json --optional-archives
 
@@ -1326,8 +1326,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          cargo +1.100.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
           cargo +1.100.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+          cargo +1.100.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
           $client = ".\target\x86_64-pc-windows-msvc\release\oteryn-client.exe"
           if (-not (Test-Path -LiteralPath $client -PathType Leaf)) {
             throw "release client artifact missing: $client"

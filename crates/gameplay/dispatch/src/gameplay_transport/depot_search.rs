@@ -91,6 +91,7 @@ fn retrieval_reply(result: Result<DepotSearchRetrieval, LoopMoveRefusal>) -> Rep
 pub(super) async fn reconcile(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
+    reconnectable: bool,
 ) -> bool {
     let commands = &owner.states.command_ingress;
     let Some((command, request @ Request::Retrieve { client_id, all })) =
@@ -109,6 +110,7 @@ pub(super) async fn reconcile(
     ).await;
     let reply = match receipt {
         Ok(Some(result)) => Some(retrieval_reply(result)),
+        Ok(None) if reconnectable => Some(rejected_reply()),
         Ok(None) => execute(owner, actor, admitted, command.command_id().get(), request).await,
         Err(_) => None,
     };

@@ -18,12 +18,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         388,
-        "6688fbd76531d15ca488581c44feda35391b39c8b600424c19d63e74cde47ee1",
+        "2395fba2af211280eda71eabf261e6c787e779e5a0d63159aaf21270776d4aa2",
     ),
     (
         "definitions/declarations.json",
-        27_763_197,
-        "2dd9120ec7070d036c78be38670a6ee3682d152390094b004f7c9a75890cd86e",
+        27_763_323,
+        "d70c0b5d4da4d4c368db7ea3d5c3926183f51237bcee3a57c80eb57dd4b363f0",
     ),
     (
         "definitions/reference.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1947,
-        "ead4b5529aee658ff5f38829f0a9c99a1de3a3fd69b5f1c61e8e416ce245f20a",
+        "dbc37cef200a69ad1816522488868a3021f5b5564de729936deda64cdbfdc613",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         398,
-        "ed579c159f2ae174e42af629e578faa29a99145883a803f674cc1a61f159f39a",
+        "723221214b2c3c348398827b6bfa28e94c32c8713f129b0aee576ea5bec5cc6d",
     ),
     (
         "provenance/imports.json",
         6_775_215,
-        "ea2e3733e17f6c1af8aa5f226d3370f303af6e07c0c40e684d52f7ed06603d6e",
+        "d1d8b05ca69cb80de239aee2b9e619a993d03760dfec19e23b018c8769d724cc",
     ),
     (
         "provenance/sources.json",
@@ -143,7 +143,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "bcceb84c85b9c4601f440ab68b9cffb623755e7e2752c6074baf106e52137d9d";
+const TREE_SHA256: &str = "13948acd57b341583bd445ddcf95df3f06b628b7c6d0594c6a46162cf45440ac";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.

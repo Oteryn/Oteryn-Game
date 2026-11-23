@@ -12,11 +12,20 @@ use oteryn_session::{AppliedDelta, SessionEvent, analyser_transport::AnalyserFac
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn app() -> Result<(App, crate::play::Outbox), Box<dyn std::error::Error>> {
+    app_at(None)
+}
+fn app_at(
+    path: Option<std::path::PathBuf>,
+) -> Result<(App, crate::play::Outbox), Box<dyn std::error::Error>> {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, AssetPlugin::default()))
         .init_asset::<Image>()
         .init_asset::<Font>();
-    let mut host = HostOwner::new(None)?;
+    let scoped = path.is_some();
+    let mut host = HostOwner::new(path)?;
+    if scoped {
+        host.enter_character(Some([9; 16]));
+    }
     let (link, commands, outbox) = play_channel();
     app.insert_non_send(commands);
     link.use_shared_frontend();
@@ -543,3 +552,5 @@ fn boss_tracker_query_controls_reach_retained_owner() -> TestResult {
 }
 
 include!("catalogue_tests.rs");
+
+include!("parity_tests.rs");

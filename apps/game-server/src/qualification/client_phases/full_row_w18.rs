@@ -167,6 +167,10 @@ async fn exchange(
         .await?)
 }
 
+fn auction_is_open(ends_ms: Option<u64>, now_ms: u64) -> bool {
+    ends_ms.is_some_and(|deadline| deadline > now_ms)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0xc8, 1).await?;
     if !client
@@ -246,9 +250,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let Some(auction) = page.rows.iter().find(|row| row.auction_ends_ms.is_some()) else {
+    let now_ms = u64::try_from(
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_millis(),
+    )?;
+    let Some(auction) = page.rows.iter().find(|row| auction_is_open(row.auction_ends_ms, now_ms)) else {
         return Err(format!(
-            "step-1 HOUSE QUERY observed Accepted/Ok with {} rows and 0 owned/open-auction houses; server needs an ordinary auction or harness-provisioned ownership",
+            "step-1 HOUSE QUERY observed Accepted/Ok with {} rows and 0 owned/open-auction houses; server needs an open auction or a house already won by the player",
             page.rows.len()
         )
         .into());
@@ -275,7 +282,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         auction.key, disposition
     ));
     Err(format!(
-        "step-1 HOUSE BID house={} maximum=1 observed status=Accepted disposition={} revision={revision}; character still has no owned house/podium, server needs sufficient legitimately earned funds and a settled auction or harness-provisioned ownership",
+        "step-1 HOUSE BID house={} maximum=1 observed status=Accepted disposition={} revision={revision}; character still has no owned house/podium, server needs sufficient legitimately earned funds and a settled auction",
         auction.key, disposition
     )
     .into())
@@ -290,10 +297,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         Err(_) => Some("step-1 journey timeout after a real house command attempt".into()),
     };
     if let Some(error) = failure {
-        evidence(&format!("W18_FAIL observed={error}"));
+        evidence(&format!("W18_GAP observed={error}"));
         evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=W18.full status=FAIL seconds={:.3} evidence=step:prerequisite-or-mechanic-refused",
-            started.elapsed().as_secs_f64()
+            "SEAM_EVIDENCE e2e_all scenario=W18.full status=FAIL seconds={:.3} evidence={}",
+            started.elapsed().as_secs_f64(),
+            error.replace(char::is_whitespace, "_")
         ));
     } else {
         evidence(&format!(
@@ -306,6 +314,14 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn journey_regression_rejects_ended_housing_auctions() {
+        assert!(auction_is_open(Some(101), 100));
+        assert!(!auction_is_open(Some(100), 100));
+        assert!(!auction_is_open(Some(99), 100));
+        assert!(!auction_is_open(None, 100));
+    }
 
     #[test]
     fn house_query_and_bid_use_protocol_canonical_wire() -> TestResult {

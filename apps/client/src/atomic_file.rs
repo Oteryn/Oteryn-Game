@@ -103,7 +103,7 @@ pub(crate) fn try_lock(path: &Path) -> io::Result<File> {
     Ok(file)
 }
 
-fn open_lock(path: &Path) -> io::Result<File> {
+pub(crate) fn open_lock(path: &Path) -> io::Result<File> {
     if let Some(parent) = path
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())

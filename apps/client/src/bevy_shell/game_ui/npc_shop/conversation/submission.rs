@@ -16,7 +16,12 @@ pub(super) fn request(
     field: Entity,
     actor: EntityRef,
 ) {
-    if state.conversation.pending.is_some() {
+    if state.conversation.pending.is_some()
+        || owner
+            .play
+            .as_ref()
+            .is_none_or(|p| p.link.npc_chat_mode() == oteryn_client_ui::chat::ComposerMode::Off)
+    {
         return;
     }
     let Some(panel) = current(owner, owner.generation(), actor) else {
@@ -72,6 +77,9 @@ pub(super) fn finish(
     let Some(play) = &owner.play else {
         return;
     };
+    if play.link.npc_chat_mode() == oteryn_client_ui::chat::ComposerMode::Off {
+        return;
+    }
     if play
         .link
         .npc_dialogue_reply(pending.actor, &pending.lines, &editor.value().to_string())

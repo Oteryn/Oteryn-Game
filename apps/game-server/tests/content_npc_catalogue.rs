@@ -27,7 +27,7 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     assert_eq!(catalogue.project_revision(), "orc-sam-backpack-raid-r1");
     assert_eq!(
         catalogue.source_tree_digest(),
-        "bcceb84c85b9c4601f440ab68b9cffb623755e7e2752c6074baf106e52137d9d"
+        "13948acd57b341583bd445ddcf95df3f06b628b7c6d0594c6a46162cf45440ac"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);

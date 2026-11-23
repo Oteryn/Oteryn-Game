@@ -499,18 +499,17 @@ pub fn door_step_out_destination(
     position: TilePos,
     mut enterable: impl FnMut(TilePos) -> bool,
 ) -> Option<TilePos> {
-    position
-        .x
-        .checked_add(1)
-        .map(|x| TilePos { x, ..position })
-        .filter(|&tile| enterable(tile))
-        .or_else(|| {
-            position
-                .y
-                .checked_add(1)
-                .map(|y| TilePos { y, ..position })
-                .filter(|&tile| enterable(tile))
-        })
+    door_step_out_candidates(position).find(|&tile| enterable(tile))
+}
+
+/// Candidate destinations in the source script's priority order.
+pub fn door_step_out_candidates(position: TilePos) -> impl Iterator<Item = TilePos> {
+    [
+        position.x.checked_add(1).map(|x| TilePos { x, ..position }),
+        position.y.checked_add(1).map(|y| TilePos { y, ..position }),
+    ]
+    .into_iter()
+    .flatten()
 }
 
 /// Clear movable non-corpses from a vacant doorway before closing it. A

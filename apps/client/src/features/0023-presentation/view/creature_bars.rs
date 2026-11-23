@@ -7,6 +7,8 @@ pub(crate) struct CreatureHealthBar {
     pub at: [f32; 2],
     pub width: f32,
     pub health: u8,
+    pub own: bool,
+    pub covered: bool,
 }
 
 impl PlayView {
@@ -14,7 +16,7 @@ impl PlayView {
         let mut bars = Vec::new();
         let view = self.scene.view();
         let scale = f32::from(self.preferences().interface_scale) / 100.;
-        let mut push = |tile: TileCoord, health: u8, offset: [f32; 2]| {
+        let mut push = |tile: TileCoord, health: u8, offset: [f32; 2], own: bool| {
             if view.contains(tile) {
                 let [x, y] = view.tile_to_screen(tile);
                 bars.push(CreatureHealthBar {
@@ -24,6 +26,8 @@ impl PlayView {
                     ],
                     width: (view.tile_px() as f32 - 4. * scale).max(1.),
                     health: health.min(100),
+                    own,
+                    covered: self.scene.actor_covered(tile),
                 });
             }
         };
@@ -51,7 +55,7 @@ impl PlayView {
             };
             let is_own = own_identity == Some(entity.entity.identity);
             if is_own {
-                push(self.own, health_percent, [0.; 2]);
+                push(self.own, health_percent, [0.; 2], true);
                 own_shown = true;
             } else if entity.position.floor == self.floor {
                 push(
@@ -64,6 +68,7 @@ impl PlayView {
                             .unwrap_or([0.; 2]);
                         [dx + cx, dy + cy]
                     },
+                    false,
                 );
             }
         }
@@ -73,6 +78,7 @@ impl PlayView {
                 (u64::from(vitals.health.min(vitals.max_health)) * 100
                     / u64::from(vitals.max_health)) as u8,
                 [0.; 2],
+                true,
             );
         }
         bars

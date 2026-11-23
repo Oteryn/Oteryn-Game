@@ -574,3 +574,195 @@ fn taskboard_talisman_tab_buys_and_upgrades_through_owner_and_shows_reply()
     );
     Ok(())
 }
+
+#[test]
+fn taskshop_requires_confirmation_at_displayed_price() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, mut commands, _) = extra_fixture(panel())?;
+    extra_click(&mut app, |k| matches!(k, Kind::Tab(Tab::Shop)))?;
+    extra_click(&mut app, |k| matches!(k, Kind::Buy(7)))?;
+    assert!(commands.try_recv().is_err());
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("5 points?"))
+    );
+    extra_click(&mut app, |k| matches!(k, Kind::ConfirmShop(7)))?;
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("purchase".into());
+    };
+    let request = decode_request(&command.payload).map_err(|_| "invalid request")?;
+    assert_eq!((request.action, request.selection), (16, 7));
+    Ok(())
+}
+
+#[test]
+fn preference_search_filters_choices_after_submission() -> Result<(), Box<dyn std::error::Error>> {
+    let mut p = panel();
+    p.weekly.as_mut().ok_or("reply")?.bounty.lists = vec![ListSlot {
+        unlocked: true,
+        preferred: String::new(),
+        unwanted: String::new(),
+    }];
+    let (mut app, _, _) = extra_fixture(p)?;
+    extra_click(&mut app, |k| matches!(k, Kind::Tab(Tab::Preferences)))?;
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<SearchField>>()
+        .single(app.world())?;
+    app.world_mut()
+        .entity_mut(entity)
+        .insert(bevy::text::EditableText::new("RAT"));
+    extra_click(&mut app, |k| matches!(k, Kind::Search))?;
+    let rows: Vec<_> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|t| t.0.clone())
+        .collect();
+    assert!(rows.iter().any(|r| r == "Preferred: rat"));
+    assert!(!rows.iter().any(|r| r.contains("monster0")));
+    Ok(())
+}
+
+#[test]
+fn task_store_opens_filtered_catalogue() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, mut commands, outbox) = extra_fixture(panel())?;
+    outbox.bevy_store_initialize();
+    extra_click(&mut app, |kind| matches!(kind, Kind::Store))?;
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    assert!(link.store_panel().open);
+    assert!(!link.task_board_panel().open);
+    assert_eq!(link.store_panel().browser.search, "Task");
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::ServerMechanic(_)
+    ));
+    Ok(())
+}
+
+#[test]
+fn soulseal_filters_combine_name_and_difficulty() -> Result<(), Box<dyn std::error::Error>> {
+    use model::task_board::soulpit as wire;
+    let mut p = panel();
+    p.fights.reply = Some(wire::Reply {
+        status: wire::Status::Catalogue,
+        balance: Some(100),
+        authorization: Some([1; 16]),
+        next: None,
+        total: 2,
+        rules: wire::EntryRules {
+            required_level: 8,
+            time_limit_seconds: 600,
+            authorization_ms: 10000,
+        },
+        entries: vec![
+            wire::Fight {
+                race: 1,
+                name: "Dragon".into(),
+                stars: 3,
+                cost: 40,
+            },
+            wire::Fight {
+                race: 2,
+                name: "Rat".into(),
+                stars: 0,
+                cost: 10,
+            },
+        ],
+        reason: String::new(),
+    });
+    let (mut app, _, outbox) = extra_fixture(p.clone())?;
+    extra_click(&mut app, |k| matches!(k, Kind::Tab(Tab::Soulseals)))?;
+    outbox.bevy_task_board_fixture(p);
+    app.update();
+    let field = app
+        .world_mut()
+        .query_filtered::<Entity, With<SearchField>>()
+        .single(app.world())?;
+    app.world_mut()
+        .entity_mut(field)
+        .insert(bevy::text::EditableText::new("DRAG"));
+    extra_click(&mut app, |k| matches!(k, Kind::Search))?;
+    let fights = |app: &mut App| {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .filter(|t| t.0.contains(" stars ·"))
+            .map(|t| t.0.clone())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(fights(&mut app), ["Dragon · 3 stars · 40 Soulseals"]);
+    extra_click(&mut app, |k| matches!(k, Kind::Category))?;
+    assert!(fights(&mut app).is_empty());
+    Ok(())
+}
+
+#[test]
+fn soulseal_search_follows_the_server_cursor_past_nonmatching_entries()
+-> Result<(), Box<dyn std::error::Error>> {
+    use model::task_board::soulpit as wire;
+    let mut p = panel();
+    p.fights.reply = Some(wire::Reply {
+        status: wire::Status::Catalogue,
+        balance: Some(100),
+        authorization: Some([1; 16]),
+        next: Some(1),
+        total: 2,
+        rules: wire::EntryRules {
+            required_level: 8,
+            time_limit_seconds: 600,
+            authorization_ms: 10000,
+        },
+        entries: vec![wire::Fight {
+            race: 1,
+            name: "Rat".into(),
+            stars: 0,
+            cost: 10,
+        }],
+        reason: String::new(),
+    });
+    let (mut app, mut commands, outbox) = extra_fixture(p.clone())?;
+    extra_click(&mut app, |k| matches!(k, Kind::Tab(Tab::Soulseals)))?;
+    let _first = commands.try_recv()?;
+    outbox.bevy_task_board_fixture(p.clone());
+    app.update();
+    let field = app
+        .world_mut()
+        .query_filtered::<Entity, With<SearchField>>()
+        .single(app.world())?;
+    app.world_mut()
+        .entity_mut(field)
+        .insert(bevy::text::EditableText::new("Dragon"));
+    extra_click(&mut app, |k| matches!(k, Kind::Search))?;
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("missing next page".into());
+    };
+    assert_eq!(
+        wire::Request::decode(&command.payload).map_err(|_| "request")?,
+        wire::Request::Catalogue { after: 1 }
+    );
+    let reply = p.fights.reply.as_mut().ok_or("reply")?;
+    reply.entries = vec![wire::Fight {
+        race: 2,
+        name: "Dragon".into(),
+        stars: 3,
+        cost: 40,
+    }];
+    reply.next = None;
+    outbox.bevy_task_board_fixture(p);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("Dragon · 3 stars"))
+    );
+    Ok(())
+}
