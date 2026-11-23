@@ -402,16 +402,15 @@ impl Journey<'_, '_, '_, '_> {
 
     async fn say(&mut self, text: &str) -> TestResult<u64> {
         self.relocate(START).await?;
-        assert_eq!(
-            self.talk(self.next(), "hi").await?,
-            NpcIntentDisposition::Ok
-        );
-        let command = self.next();
-        assert_eq!(
-            self.talk(command, text).await?,
-            NpcIntentDisposition::Ok,
-            "{text}"
-        );
+        let first = self.next();
+        let command = first.checked_add(1).ok_or("talk command id")?;
+        super::grizzly_npc_fixtures::wire::talk(
+            self.owner,
+            self.admitted,
+            self.npc,
+            &[(first, "hi"), (command, text)],
+        )
+        .await?;
         Ok(command)
     }
 

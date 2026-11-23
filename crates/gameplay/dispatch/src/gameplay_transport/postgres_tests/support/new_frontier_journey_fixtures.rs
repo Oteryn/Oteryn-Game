@@ -216,15 +216,14 @@ pub(super) async fn exercise(
             .is_some()
     );
     let mut selected = a.continuity.selected_capabilities.as_slice().to_vec();
-    selected.extend([3, 4, 6, 11, 13, 15, 16, 17, 18, 25]);
+    // This fixture checks the durable Warmaster grant without opening an
+    // appearance projection for its gameplay-only player.
+    selected.extend([3, 4, 6, 11, 13, 15, 16, 17, 18]);
     selected.sort_unstable();
     selected.dedup();
-    let offered = crate::gameplay_transport::appearance_change::offer::offered(
-        owner.offered_capabilities(),
-        owner.appearance_available(),
-    );
+    let offered = owner.offered_capabilities();
     a.continuity.selected_capabilities =
-        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(offered, &selected)
             .ok_or("Frontier capabilities")?;
 
     let names = CONTACTS.map(|(name, _, _)| format!("oteryn:npc.{name}"));

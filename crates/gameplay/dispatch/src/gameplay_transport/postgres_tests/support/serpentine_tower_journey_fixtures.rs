@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, id, run};
 use super::quest_callbacks_fixtures::wire_use_targets_retained;
 use super::{AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult};
+use crate::content::NativeEntryStart;
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
@@ -77,21 +78,27 @@ async fn play(h: &Harness) -> TestResult {
         START,
         native,
     )?;
-    let cells = world
-        .movement_cells(deps.room.movement_cells())
-        .map_err(debug)?;
+    let entry = activation.qualified_room();
+    let cells = world.movement_cells(entry.movement_cells()).map_err(debug)?;
+    let frame = activation.frame_binding().digest();
+    let start = NativeEntryStart {
+        x: START.x.into(),
+        y: START.y.into(),
+        floor: i16::from(-START.floor),
+    };
+    deps.combat_room = Some(
+        entry
+            .bundle_view(cells.clone(), frame, world.map_revision_digest(), start)
+            .ok_or("Serpentine Tower bundle combat room")?,
+    );
     let pin = ChannelContentPin::from_activation(
         deps.admitted.world_id,
         1,
         generation.identity().server_artifact_digest(),
         generation.identity().client_artifact_digest(),
-        activation.frame_binding().digest(),
+        frame,
         world.map_revision_digest(),
-        (
-            i32::from(START.x),
-            i32::from(START.y),
-            -i16::from(START.floor),
-        ),
+        (start.x, start.y, start.floor),
     );
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         deps.admitted.world_id,

@@ -1,6 +1,6 @@
 use super::fixture::{Harness, debug, id, run};
 use super::m39_bone_journey_fixtures::{carried, stage};
-use super::quest_world_callbacks_fixtures::{input_item, local, wire};
+use super::quest_world_callbacks_fixtures::{input_item, local, wire, wire_conversation};
 use super::questpc8_authored_programmes_fixtures::step;
 use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
@@ -217,9 +217,18 @@ fn journey(web_already_burned: bool) -> TestResult {
             reconnected.quest_log_content = Some(log_lines);
             deps.initialize(&reconnected).await;
             admit(&mut reconnected, &mut admitted, talk_book).await?;
-            assert_eq!(speak(&mut reconnected, &mut admitted, npc, "hi").await?, NpcIntentDisposition::Ok);
-            speak(&mut reconnected, &mut admitted, npc, "mission").await?;
-            assert_eq!(speak(&mut reconnected, &mut admitted, npc, "yes").await?, NpcIntentDisposition::Rejected);
+            wire_conversation(&reconnected, &mut admitted, async |conversation| {
+                assert_eq!(
+                    decode_npc_intent_result(&conversation.talk(speech(npc, "hi")?).await?).map_err(debug)?,
+                    NpcIntentDisposition::Ok,
+                );
+                conversation.talk(speech(npc, "mission")?).await?;
+                assert_eq!(
+                    decode_npc_intent_result(&conversation.talk(speech(npc, "yes")?).await?).map_err(debug)?,
+                    NpcIntentDisposition::Rejected,
+                );
+                Ok(())
+            }).await?;
             checkpoint(&h, Some(5), 0, 1, 1000).await?;
             assert_eq!(finish_receipts(&h).await?, 1);
             assert_eq!(quest_xp(&h).await?, (1, 3000), "reconnect preserves the single XP reward");
@@ -329,17 +338,17 @@ async fn exercise(
 ) -> TestResult {
     checkpoint(h, None, 0, 0, 0).await?;
     assert_eq!(stage(h, DOOR_TRACK).await?, None);
-    for word in ["hi", "mission"] {
-        assert_eq!(
-            speak(owner, admitted, npc, word).await?,
-            NpcIntentDisposition::Ok
-        );
-        checkpoint(h, None, 0, 0, 0).await?;
-    }
-    assert_eq!(
-        speak(owner, admitted, npc, "yes").await?,
-        NpcIntentDisposition::Ok
-    );
+    owner.clock_origin -= Duration::from_secs(2);
+    wire_conversation(owner, admitted, async |conversation| {
+        for word in ["hi", "mission"] {
+            let reply = conversation.talk(speech(npc, word)?).await?;
+            assert_eq!(decode_npc_intent_result(&reply).map_err(debug)?, NpcIntentDisposition::Ok);
+            checkpoint(h, None, 0, 0, 0).await?;
+        }
+        let reply = conversation.talk(speech(npc, "yes")?).await?;
+        assert_eq!(decode_npc_intent_result(&reply).map_err(debug)?, NpcIntentDisposition::Ok);
+        Ok(())
+    }).await?;
     checkpoint(h, Some(1), 0, 0, 0).await?;
     assert_eq!(stage(h, DOOR_TRACK).await?, Some(0));
 
@@ -440,17 +449,18 @@ async fn exercise(
     checkpoint(h, Some(4), 1, 0, 0).await?;
 
     arrive(owner, admitted, START).await?;
-    for word in ["hi", "mission"] {
-        assert_eq!(
-            speak(owner, admitted, npc, word).await?,
-            NpcIntentDisposition::Ok
-        );
-        checkpoint(h, Some(4), 1, 0, 0).await?;
-    }
-    let command = admitted.continuity.next_command_id;
+    owner.clock_origin -= Duration::from_secs(2);
     let confirmation = speech(npc, "yes")?;
-    assert_eq!(quest_xp(h).await?, (0, 0));
-    let reward = wire(owner, admitted, command, 7, confirmation.clone()).await?;
+    let (command, reward) = wire_conversation(owner, admitted, async |conversation| {
+        for word in ["hi", "mission"] {
+            let reply = conversation.talk(speech(npc, word)?).await?;
+            assert_eq!(decode_npc_intent_result(&reply).map_err(debug)?, NpcIntentDisposition::Ok);
+            checkpoint(h, Some(4), 1, 0, 0).await?;
+        }
+        let command = conversation.next();
+        assert_eq!(quest_xp(h).await?, (0, 0));
+        Ok((command, conversation.talk(confirmation.clone()).await?))
+    }).await?;
     assert_eq!(
         decode_npc_intent_result(&reward).map_err(debug)?,
         NpcIntentDisposition::Ok
@@ -575,18 +585,6 @@ fn speech(npc_actor: EntityRef, text: &str) -> TestResult<Vec<u8>> {
         text: text.into(),
     })
     .map_err(debug)
-}
-
-async fn speak(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &mut AdmittedSession,
-    npc: EntityRef,
-    text: &str,
-) -> TestResult<NpcIntentDisposition> {
-    owner.clock_origin -= Duration::from_secs(2);
-    let command = admitted.continuity.next_command_id;
-    decode_npc_intent_result(&wire(owner, admitted, command, 7, speech(npc, text)?).await?)
-        .map_err(debug)
 }
 
 async fn log(

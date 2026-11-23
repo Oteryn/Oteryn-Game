@@ -6,7 +6,7 @@ use super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
 };
 use crate::content::channel_content_pin::ChannelContentPin;
-use crate::content::{CollisionClass, LogicalCell};
+use crate::content::{CollisionClass, LogicalCell, NativeEntryStart};
 use crate::durability::{fresh_admission::FreshAdmissionStore, item_mint::TypedDefinitionRef};
 use crate::foundation::ChannelRuntimeV1;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -122,12 +122,21 @@ async fn journey(admin: String) -> TestResult {
         world.base().as_ref(),
         &|_| true,
     )?;
-    let cells = world
-        .movement_cells(deps.room.movement_cells())
-        .map_err(debug)?;
+    let entry = activated.qualified_room();
+    let cells = world.movement_cells(entry.movement_cells()).map_err(debug)?;
     let server_digest = generation.identity().server_artifact_digest();
     let client_digest = generation.identity().client_artifact_digest();
     let frame = activated.frame_binding().digest();
+    let start = NativeEntryStart {
+        x: START.x.into(),
+        y: START.y.into(),
+        floor: i16::from(-START.floor),
+    };
+    deps.combat_room = Some(
+        entry
+            .bundle_view(cells.clone(), frame, world.map_revision_digest(), start)
+            .ok_or("Outlaw Camp bundle combat room")?,
+    );
     let pin = ChannelContentPin::from_activation(
         admitted.world_id,
         1,
@@ -135,11 +144,7 @@ async fn journey(admin: String) -> TestResult {
         client_digest,
         frame,
         world.map_revision_digest(),
-        (
-            i32::from(START.x),
-            i32::from(START.y),
-            -i16::from(START.floor),
-        ),
+        (start.x, start.y, start.floor),
     );
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
         admitted.world_id,

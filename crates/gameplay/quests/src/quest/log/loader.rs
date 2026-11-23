@@ -111,6 +111,12 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
         };
         if lowered.catalogue().definition_hash(&key).is_none()
             || (quest.start.is_some() && start.is_none())
+            // The Lighthouse binding tracks the script's progress and rewards.
+            // The source supplies no journal, even now that its state is admitted.
+            || (key == "oteryn:quest.thais_lighthouse_quest"
+                && kind == QuestLogKind::ScriptOnly
+                && start.is_none()
+                && quest.missions.is_empty())
         {
             exclusions.push(QuestLogExclusion {
                 quest: key,

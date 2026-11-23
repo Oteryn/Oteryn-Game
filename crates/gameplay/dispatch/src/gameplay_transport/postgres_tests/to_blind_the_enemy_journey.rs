@@ -35,6 +35,9 @@ const PLATINUM: u16 = 3035;
 const AMULET: u16 = 3082;
 const TOOLS: [u16; 3] = [3003, 3457, 3148];
 const START: Position = at(32664, 31682, 6);
+const FORTRESS_HOLE: Position = at(32579, 31679, 7);
+const FORTRESS_ROPE_SPOT: Position = at(32579, 31679, 8);
+const DEPOT_LADDER: Position = at(32656, 31674, 7);
 const TOWER: Position = at(32593, 31644, 2);
 const BALL: Position = at(32592, 31645, 2);
 
@@ -447,8 +450,15 @@ async fn journey(
     );
     checkpoint(pool, character, 1, &bag).await?;
 
-    // The ladder is a native USE target. The other floor changes resolve
-    // through ordinary paced STEP on the compiled source region.
+    // The fortress approach crosses the donor's covered hole (593 -> 594).
+    // It is the entrance marked on the To Blind the Enemy Quest spoiler.
+    walk(owner, member, at(32579, 31680, 7)).await?;
+    assert_eq!(
+        tool_use(owner, member, TOOLS[1], target(owner, FORTRESS_HOLE, 0)?).await?,
+        UseDisposition::Committed
+    );
+    super::desert_earned_route_fixtures::step(owner, member, StepDirection::North).await?;
+
     walk(owner, member, at(32593, 31644, 5)).await?;
     assert_eq!(
         use_target(owner, member, &target(owner, at(32593, 31643, 5), 1)?).await?,
@@ -521,6 +531,16 @@ async fn journey(
         }
         checkpoint(pool, character, 3, &bag).await?;
     }
+    walk(owner, member, FORTRESS_ROPE_SPOT).await?;
+    assert_eq!(
+        tool_use(owner, member, TOOLS[0], target(owner, FORTRESS_ROPE_SPOT, 0)?).await?,
+        UseDisposition::Committed
+    );
+    walk(owner, member, at(32656, 31675, 7)).await?;
+    assert_eq!(
+        use_target(owner, member, &target(owner, DEPOT_LADDER, 1)?).await?,
+        UseDisposition::Committed
+    );
     walk(owner, member, START).await?;
     let (outcome, _, command) =
         wire_conversation(owner, member, npc, report, false, vec!["hi", "mission"]).await?;
@@ -724,6 +744,10 @@ async fn walk(
         (CardinalStep::East, StepDirection::East),
         (CardinalStep::South, StepDirection::South),
         (CardinalStep::West, StepDirection::West),
+        (CardinalStep::NorthEast, StepDirection::NorthEast),
+        (CardinalStep::SouthEast, StepDirection::SouthEast),
+        (CardinalStep::SouthWest, StepDirection::SouthWest),
+        (CardinalStep::NorthWest, StepDirection::NorthWest),
     ];
     let mut pending = VecDeque::from([start]);
     let mut previous = BTreeMap::new();

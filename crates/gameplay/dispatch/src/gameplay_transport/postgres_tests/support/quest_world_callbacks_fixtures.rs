@@ -1,7 +1,7 @@
 use crate::content::channel_content_pin::ChannelContentPin;
 use super::fixture::{Harness, debug, id, run};
 
-use super::{Dependencies, TestResult, prepare_current_session};
+use super::{ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session};
 
 use crate::foundation::{
     ChannelRuntimeV1, MessageType, MovementLocalPosition, decode_wire_envelope,
@@ -1178,6 +1178,87 @@ pub(super) async fn wire(
         end
     {
         *admitted = a;
+    }
+    result
+}
+
+pub(super) struct WireConversation {
+    client: tokio::io::DuplexStream,
+    generation: u64,
+    next: u64,
+}
+
+impl WireConversation {
+    pub(super) fn next(&self) -> u64 {
+        self.next
+    }
+
+    pub(super) async fn talk(&mut self, payload: Vec<u8>) -> TestResult<Vec<u8>> {
+        use tokio::io::AsyncWriteExt;
+
+        let command = self.next;
+        let frame = oteryn_protocol_oteryn::encode_client_command(
+            self.generation,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id: command,
+                command_type: oteryn_protocol_oteryn::npc_service::COMMAND_TYPE_NPC_TALK_INTENT,
+                payload: &payload,
+            },
+        )
+        .map_err(debug)?;
+        self.client
+            .write_all(&u32::try_from(frame.len())?.to_be_bytes())
+            .await?;
+        self.client.write_all(&frame).await?;
+        loop {
+            let raw = crate::gameplay_transport::tcp_tls::read_frame(&mut self.client).await?;
+            let envelope = decode_wire_envelope(&raw).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                    .map_err(debug)?;
+                assert_eq!(result.command_id, command);
+                self.next = command.checked_add(1).ok_or("command id overflow")?;
+                return Ok(result.payload.to_vec());
+            }
+        }
+    }
+}
+
+/// Keep dependent utterances on the same transport. A fresh snapshot ends NPC focus.
+pub(super) async fn wire_conversation<T>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    drive: impl AsyncFnOnce(&mut WireConversation) -> TestResult<T>,
+) -> TestResult<T> {
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use tokio::io::AsyncWriteExt;
+
+    let (mut server, client) = tokio::io::duplex(1 << 20);
+    let initial = *admitted;
+    let serving = async {
+        let end = serve_admitted(&mut server, initial, owner, IDLE_LIVENESS).await;
+        drop(server);
+        end
+    };
+    let mut conversation = WireConversation {
+        client,
+        generation: initial.continuity.connection_generation,
+        next: initial.continuity.next_command_id,
+    };
+    let driving = async {
+        let result = drive(&mut conversation).await;
+        conversation.client.shutdown().await?;
+        result
+    };
+    let (end, result) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::fixture::join_two(serving, driving),
+    )
+    .await?;
+    if let ConnectionEnd::AdmittedThenDisconnected(current) = end {
+        *admitted = current;
+    } else {
+        return Err(format!("NPC conversation transport ended {end:?}").into());
     }
     result
 }

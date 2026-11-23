@@ -331,6 +331,19 @@ fn placements(bytes: &[u8]) -> TestResult<NpcPlacementTable> {
     })
 }
 
+async fn speak(
+    connection: &mut super::quest_world_callbacks_fixtures::WireConversation,
+    npc: EntityRef,
+    text: &str,
+) -> TestResult<NpcIntentDisposition> {
+    let payload = encode_npc_talk_intent(&NpcTalkIntent {
+        npc_actor: npc,
+        text: text.into(),
+    })
+    .map_err(debug)?;
+    decode_npc_intent_result(&connection.talk(payload).await?).map_err(debug)
+}
+
 struct Journey<'a, 'b, 'f, 's> {
     owner: &'a mut ComposedFreshAdmission<'b, 'f, 's>,
     admitted: &'a mut AdmittedSession,
@@ -439,7 +452,7 @@ impl Journey<'_, '_, '_, '_> {
             .await?;
         assert_eq!(self.completions().await?, 0);
         let raymond = self.contact("raymond_striker").await?;
-        let terminal = self.admitted.continuity.next_command_id;
+        let terminal = self.admitted.continuity.next_command_id.checked_add(1).ok_or("talk command id")?;
         let original = self.talk(raymond, "mission").await?;
         assert_eq!(original, NpcIntentDisposition::Ok);
         self.terminal().await?;
@@ -532,17 +545,22 @@ impl Journey<'_, '_, '_, '_> {
             identity: actor.actor.placement_identity(),
             generation: actor.generation,
         };
-        assert_eq!(
-            self.talk(npc, "hi").await?,
-            NpcIntentDisposition::Ok,
-            "greet {name}"
-        );
         Ok(npc)
     }
 
     async fn talk(&mut self, npc: EntityRef, text: &str) -> TestResult<NpcIntentDisposition> {
-        self.talk_id(npc, text, self.admitted.continuity.next_command_id)
-            .await
+        self.advance_clock()?;
+        super::quest_world_callbacks_fixtures::wire_conversation(
+            self.owner,
+            self.admitted,
+            async |connection| {
+                assert_eq!(
+                    speak(connection, npc, "hi").await?,
+                    NpcIntentDisposition::Ok
+                );
+                speak(connection, npc, text).await
+            },
+        ).await
     }
 
     async fn talk_id(
@@ -614,15 +632,26 @@ impl Journey<'_, '_, '_, '_> {
         self.wait_for_passage().await?;
         let jack = self.contact("jack_fate").await?;
         assert!(self.owner.states.newhaven_travel.set_jack_fate_test_roll(true));
-        assert_eq!(self.talk(jack, "thais").await?, NpcIntentDisposition::Ok);
-        let before = super::full_world_support::position(
-            self.owner,
-            self.admitted.runtime_actor.ok_or("actor")?,
-        )
-        .await?;
-        assert_eq!(self.talk(jack, "yes").await?, NpcIntentDisposition::Ok);
-        self.arrived((before.x, before.y, before.floor)).await?;
-        assert_eq!(self.talk(jack, "yes").await?, NpcIntentDisposition::Ok);
+        self.advance_clock()?;
+        let owner = &*self.owner;
+        let actor = self.admitted.runtime_actor.ok_or("actor")?;
+        super::quest_world_callbacks_fixtures::wire_conversation(
+            owner,
+            self.admitted,
+            async |connection| {
+                for word in ["hi", "thais"] {
+                    assert_eq!(speak(connection, jack, word).await?, NpcIntentDisposition::Ok);
+                }
+                let before = super::full_world_support::position(owner, actor).await?;
+                assert_eq!(speak(connection, jack, "yes").await?, NpcIntentDisposition::Ok);
+                assert_eq!(
+                    super::full_world_support::position(owner, actor).await?,
+                    before
+                );
+                assert_eq!(speak(connection, jack, "yes").await?, NpcIntentDisposition::Ok);
+                Ok(())
+            },
+        ).await?;
         if expect_wreck {
             self.arrived_at_goroma().await?;
         } else {
@@ -640,8 +669,17 @@ impl Journey<'_, '_, '_, '_> {
     ) -> TestResult {
         self.wait_for_passage().await?;
         let npc = self.contact(npc).await?;
-        assert_eq!(self.talk(npc, keyword).await?, NpcIntentDisposition::Ok);
-        assert_eq!(self.talk(npc, "yes").await?, NpcIntentDisposition::Ok);
+        self.advance_clock()?;
+        super::quest_world_callbacks_fixtures::wire_conversation(
+            self.owner,
+            self.admitted,
+            async |connection| {
+                for word in ["hi", keyword, "yes"] {
+                    assert_eq!(speak(connection, npc, word).await?, NpcIntentDisposition::Ok);
+                }
+                Ok(())
+            },
+        ).await?;
         if keyword == "goroma" {
             self.arrived_at_goroma().await
         } else {

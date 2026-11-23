@@ -165,37 +165,31 @@ fn allow_next_action(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResu
     Ok(())
 }
 
-async fn talk(
+async fn dialogue(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     session: &mut AdmittedSession,
     npc: EntityRef,
-    words: &str,
-) -> TestResult<NpcIntentDisposition> {
+    drive: impl AsyncFnOnce(
+        &mut super::quest_world_callbacks_fixtures::WireConversation,
+    ) -> TestResult,
+) -> TestResult {
     allow_next_action(owner)?;
-    let reply = wire(
-        owner,
-        session,
-        session.continuity.next_command_id,
-        7,
-        talk_payload(npc, words)?,
-    )
-    .await?;
-    decode_npc_intent_result(&reply).map_err(debug)
+    super::quest_world_callbacks_fixtures::wire_conversation(owner, session, async |connection| {
+        assert_talk(connection, npc, "hi", NpcIntentDisposition::Ok).await?;
+        drive(connection).await
+    })
+    .await
 }
 
-async fn focus(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    session: &mut AdmittedSession,
-    key: &str,
-    standing: Position,
-) -> TestResult<EntityRef> {
-    relocate(owner, session, standing).await?;
-    let actor = npc(owner, key).await?;
-    assert_eq!(
-        talk(owner, session, actor, "hi").await?,
-        NpcIntentDisposition::Ok
-    );
-    Ok(actor)
+async fn assert_talk(
+    connection: &mut super::quest_world_callbacks_fixtures::WireConversation,
+    npc: EntityRef,
+    words: &str,
+    expected: NpcIntentDisposition,
+) -> TestResult {
+    let reply = connection.talk(talk_payload(npc, words)?).await?;
+    assert_eq!(decode_npc_intent_result(&reply).map_err(debug)?, expected, "{words}");
+    Ok(())
 }
 
 async fn step(
@@ -516,8 +510,12 @@ pub(super) async fn exercise(
     .map_err(debug)?
     .service_model_for_project()
     .map_err(debug)?;
+    let authored = oteryn_gameplay_quests::quest::authored_bindings::native_dialogue_npcs()?;
+    let native_npcs: Vec<_> = authored.iter().map(String::as_str).collect();
     owner.states.chat.install_npc_talk(Arc::new(
-        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model(&model),
+        crate::gameplay_transport::npc_talk::NpcTalkBook::from_model_with_native_quests(
+            &model, &native_npcs,
+        ),
     ));
     owner
         .states
@@ -548,15 +546,13 @@ pub(super) async fn exercise(
     let uzgod = npc(owner, "oteryn:npc.uzgod").await?;
     state(h, 0, None, &[]).await?;
     step(owner, session, StepDirection::West, angus_side).await?;
-    assert_eq!(
-        talk(owner, session, angus, "hi").await?,
-        NpcIntentDisposition::Ok
-    );
-
     let premium = owner.premium_coordinator.take().ok_or("Premium coordinator")?;
-    let result = talk(owner, session, angus, "join").await;
+    let result = dialogue(owner, session, angus, async |connection| {
+        assert_talk(connection, angus, "join", NpcIntentDisposition::Rejected).await
+    })
+    .await;
     owner.premium_coordinator = Some(premium);
-    assert_eq!(result?, NpcIntentDisposition::Rejected);
+    result?;
     state(h, 0, None, &[]).await?;
 
     let joining = "joining_the_explorers";
@@ -566,17 +562,19 @@ pub(super) async fn exercise(
     let urn = "the_lizard_urn";
     let poetry = "the_elven_poetry";
 
-    assert_eq!(
-        talk(owner, session, angus, "join").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 1, Some((joining, 1)), &[]).await?;
-    focus(owner, session, "oteryn:npc.uzgod", uzgod_side).await?;
-    assert_eq!(
-        talk(owner, session, uzgod, "pickaxe").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 2, Some((joining, 2)), &[]).await?;
+    dialogue(owner, session, angus, async |connection| {
+        assert_talk(connection, angus, "join", NpcIntentDisposition::Ok).await?;
+        state(h, 1, Some((joining, 1)), &[]).await?;
+        Ok(())
+    })
+    .await?;
+    relocate(owner, session, uzgod_side).await?;
+    dialogue(owner, session, uzgod, async |connection| {
+        assert_talk(connection, uzgod, "pickaxe", NpcIntentDisposition::Ok).await?;
+        state(h, 2, Some((joining, 2)), &[]).await?;
+        Ok(())
+    })
+    .await?;
     relocate(owner, session, position(32598, 31932, -15)).await?;
     door(
         owner,
@@ -590,23 +588,22 @@ pub(super) async fn exercise(
         UseDisposition::Committed
     );
     state(h, 3, Some((joining, 3)), &[4834]).await?;
-    focus(owner, session, "oteryn:npc.uzgod", uzgod_side).await?;
-    assert_eq!(
-        talk(owner, session, uzgod, "brooch").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 4, Some((joining, 4)), &[4845]).await?;
-    focus(owner, session, "oteryn:npc.angus", angus_side).await?;
-    assert_eq!(
-        talk(owner, session, angus, "pickaxe").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 5, Some((joining, 5)), &[]).await?;
-    assert_eq!(
-        talk(owner, session, angus, "ice delivery").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 6, Some((ice, 6)), &[4872]).await?;
+    relocate(owner, session, uzgod_side).await?;
+    dialogue(owner, session, uzgod, async |connection| {
+        assert_talk(connection, uzgod, "brooch", NpcIntentDisposition::Ok).await?;
+        state(h, 4, Some((joining, 4)), &[4845]).await?;
+        Ok(())
+    })
+    .await?;
+    relocate(owner, session, angus_side).await?;
+    dialogue(owner, session, angus, async |connection| {
+        assert_talk(connection, angus, "pickaxe", NpcIntentDisposition::Ok).await?;
+        state(h, 5, Some((joining, 5)), &[]).await?;
+        assert_talk(connection, angus, "ice delivery", NpcIntentDisposition::Ok).await?;
+        state(h, 6, Some((ice, 6)), &[4872]).await?;
+        Ok(())
+    })
+    .await?;
     for site in [position(32132, 31688, -9), position(32133, 31689, -9), ICE] {
         if relocate(owner, session, site).await.is_ok() {
             break;
@@ -620,17 +617,15 @@ pub(super) async fn exercise(
     state(h, 7, Some((ice, 7)), &[4837, 4872]).await?;
     let timed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_states t JOIN game_item_instances i USING (item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i4837'").fetch_one(&h.pool).await?;
     assert_eq!(timed, 0, "selected course icicle must have no decay clock");
-    focus(owner, session, "oteryn:npc.angus", angus_side).await?;
-    assert_eq!(
-        talk(owner, session, angus, "ice delivery").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 8, Some((ice, 8)), &[4872]).await?;
-    assert_eq!(
-        talk(owner, session, angus, "butterfly hunt").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 9, Some((butterfly, 9)), &[4863, 4872]).await?;
+    relocate(owner, session, angus_side).await?;
+    dialogue(owner, session, angus, async |connection| {
+        assert_talk(connection, angus, "ice delivery", NpcIntentDisposition::Ok).await?;
+        state(h, 8, Some((ice, 8)), &[4872]).await?;
+        assert_talk(connection, angus, "butterfly hunt", NpcIntentDisposition::Ok).await?;
+        state(h, 9, Some((butterfly, 9)), &[4863, 4872]).await?;
+        Ok(())
+    })
+    .await?;
     relocate(
         owner,
         session,
@@ -647,31 +642,27 @@ pub(super) async fn exercise(
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(samples, 1);
-    focus(owner, session, "oteryn:npc.angus", angus_side).await?;
-    assert_eq!(
-        talk(owner, session, angus, "butterfly hunt").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 11, Some((butterfly, 17)), &[4872]).await?;
-    assert_eq!(
-        talk(owner, session, angus, "plant collection").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 12, Some((plant, 18)), &[4867, 4872]).await?;
+    relocate(owner, session, angus_side).await?;
+    dialogue(owner, session, angus, async |connection| {
+        assert_talk(connection, angus, "butterfly hunt", NpcIntentDisposition::Ok).await?;
+        state(h, 11, Some((butterfly, 17)), &[4872]).await?;
+        assert_talk(connection, angus, "plant collection", NpcIntentDisposition::Ok).await?;
+        state(h, 12, Some((plant, 18)), &[4867, 4872]).await?;
+        Ok(())
+    })
+    .await?;
     relocate(owner, session, position(BELLS.x - 1, BELLS.y, BELLS.floor)).await?;
     tool_use(owner, session, 4867, Some(BELLS)).await?;
     state(h, 13, Some((plant, 19)), &[4868, 4872]).await?;
-    focus(owner, session, "oteryn:npc.angus", angus_side).await?;
-    assert_eq!(
-        talk(owner, session, angus, "plant collection").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 14, Some((plant, 26)), &[4872]).await?;
-    assert_eq!(
-        talk(owner, session, angus, "lizard urn").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 15, Some((urn, 27)), &[4872]).await?;
+    relocate(owner, session, angus_side).await?;
+    dialogue(owner, session, angus, async |connection| {
+        assert_talk(connection, angus, "plant collection", NpcIntentDisposition::Ok).await?;
+        state(h, 14, Some((plant, 26)), &[4872]).await?;
+        assert_talk(connection, angus, "lizard urn", NpcIntentDisposition::Ok).await?;
+        state(h, 15, Some((urn, 27)), &[4872]).await?;
+        Ok(())
+    })
+    .await?;
     relocate(owner, session, position(32957, 32836, -8)).await?;
     door(
         owner,
@@ -685,17 +676,15 @@ pub(super) async fn exercise(
         UseDisposition::Committed
     );
     state(h, 16, Some((urn, 28)), &[4847, 4872]).await?;
-    focus(owner, session, "oteryn:npc.angus", angus_side).await?;
-    assert_eq!(
-        talk(owner, session, angus, "lizard urn").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 17, Some((urn, 29)), &[4872]).await?;
-    assert_eq!(
-        talk(owner, session, angus, "elven poetry").await?,
-        NpcIntentDisposition::Ok
-    );
-    state(h, 18, Some((poetry, 36)), &[4872]).await?;
+    relocate(owner, session, angus_side).await?;
+    dialogue(owner, session, angus, async |connection| {
+        assert_talk(connection, angus, "lizard urn", NpcIntentDisposition::Ok).await?;
+        state(h, 17, Some((urn, 29)), &[4872]).await?;
+        assert_talk(connection, angus, "elven poetry", NpcIntentDisposition::Ok).await?;
+        state(h, 18, Some((poetry, 36)), &[4872]).await?;
+        Ok(())
+    })
+    .await?;
     relocate(owner, session, position(32702, 31605, -14)).await?;
     door(
         owner,
@@ -710,12 +699,13 @@ pub(super) async fn exercise(
     );
     state(h, 19, Some((poetry, 37)), &[4844, 4872]).await?;
 
-    focus(owner, session, "oteryn:npc.angus", angus_side).await?;
-    let terminal = session.continuity.next_command_id;
-    assert_eq!(
-        talk(owner, session, angus, "elven book").await?,
-        NpcIntentDisposition::Ok
-    );
+    relocate(owner, session, angus_side).await?;
+    let terminal = session.continuity.next_command_id.checked_add(1).ok_or("talk command id")?;
+    dialogue(owner, session, angus, async |connection| {
+        assert_talk(connection, angus, "elven book", NpcIntentDisposition::Ok).await?;
+        Ok(())
+    })
+    .await?;
     state(h, 20, Some((poetry, 38)), &[4872, 9605]).await?;
     // Each wire helper closes its socket after reading the result. A newly
     // served connection replays the exact command before a new submission.
@@ -731,10 +721,11 @@ pub(super) async fn exercise(
         decode_npc_intent_result(&replay).map_err(debug)?,
         NpcIntentDisposition::Ok
     );
-    assert_eq!(
-        talk(owner, session, angus, "elven book").await?,
-        NpcIntentDisposition::Rejected
-    );
+    dialogue(owner, session, angus, async |connection| {
+        assert_talk(connection, angus, "elven book", NpcIntentDisposition::Rejected).await?;
+        Ok(())
+    })
+    .await?;
     state(h, 20, Some((poetry, 38)), &[4872, 9605]).await?;
     let completions: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes",
@@ -749,15 +740,14 @@ pub(super) async fn exercise(
     // receipt supplies the route's admission fact.
     let mut funding = 90002;
     super::qengine_voucher_stories_fixtures::mint(owner, session, 3035, 2, &mut funding).await?;
-    let captain = focus(owner, session, "oteryn:npc.captain_max", max_side).await?;
-    assert_eq!(
-        talk(owner, session, captain, "calassa").await?,
-        NpcIntentDisposition::Ok
-    );
-    assert_eq!(
-        talk(owner, session, captain, "yes").await?,
-        NpcIntentDisposition::Ok
-    );
+    relocate(owner, session, max_side).await?;
+    let captain = npc(owner, "oteryn:npc.captain_max").await?;
+    dialogue(owner, session, captain, async |connection| {
+        assert_talk(connection, captain, "calassa", NpcIntentDisposition::Ok).await?;
+        assert_talk(connection, captain, "yes", NpcIntentDisposition::Ok).await?;
+        Ok(())
+    })
+    .await?;
     let arrived: MovementLocalPosition = owner
         .runtime
         .lock()
