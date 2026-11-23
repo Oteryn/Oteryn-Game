@@ -149,12 +149,40 @@ fn final_path(file: &File) -> io::Result<PathBuf> {
     }
 }
 
+fn directory_id(file: &File) -> io::Result<(u32, u32, u32)> {
+    // SAFETY: the handle is live and the output structure is writable.
+    unsafe {
+        let mut info: BY_HANDLE_FILE_INFORMATION = zeroed();
+        if GetFileInformationByHandle(file.as_raw_handle(), &mut info) == 0 {
+            return Err(io::Error::last_os_error());
+        }
+        Ok((
+            info.dwVolumeSerialNumber,
+            info.nFileIndexHigh,
+            info.nFileIndexLow,
+        ))
+    }
+}
+
+fn verify_parent(file: &File, guarded: &File) -> io::Result<()> {
+    let actual = final_path(file)?;
+    let parent = actual.parent().ok_or(io::ErrorKind::PermissionDenied)?;
+    let opened = File::options()
+        .access_mode(FILE_READ_ATTRIBUTES)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+        .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+        .open(parent)?;
+    // Every spelling of the export's parent must identify the pinned directory.
+    if directory_id(&opened)? != directory_id(guarded)? {
+        return Err(io::ErrorKind::PermissionDenied.into());
+    }
+    Ok(())
+}
+
 fn open_with_descriptor(path: &Path, append: bool, descriptor: &str) -> io::Result<File> {
     let path = std::path::absolute(path)?;
     let parents = guard_parents(&path)?;
-    let root = path.ancestors().last().ok_or(io::ErrorKind::InvalidInput)?;
-    let expected = final_path(parents.first().ok_or(io::ErrorKind::InvalidInput)?)?
-        .join(path.strip_prefix(root).map_err(io::Error::other)?);
+    let guarded_parent = parents.last().ok_or(io::ErrorKind::InvalidInput)?;
     let mut path: Vec<u16> = path.as_os_str().encode_wide().collect();
     if path.contains(&0) {
         return Err(io::ErrorKind::InvalidInput.into());
@@ -208,9 +236,9 @@ fn open_with_descriptor(path: &Path, append: bool, descriptor: &str) -> io::Resu
             }
         }
         let file = File::from_raw_handle(handle);
-        match final_path(&file) {
-            Ok(actual) if actual == expected => Ok(file),
-            result => {
+        match verify_parent(&file, guarded_parent) {
+            Ok(()) => Ok(file),
+            Err(error) => {
                 // Delete only our own newly created file, through its open handle.
                 if created {
                     let disposition = FILE_DISPOSITION_INFO { DeleteFile: true };
@@ -224,9 +252,7 @@ fn open_with_descriptor(path: &Path, append: bool, descriptor: &str) -> io::Resu
                         return Err(io::Error::last_os_error());
                     }
                 }
-                Err(result
-                    .err()
-                    .unwrap_or_else(|| io::ErrorKind::PermissionDenied.into()))
+                Err(error)
             }
         }
     }
@@ -326,4 +352,32 @@ fn checked_parent_denies_rename_until_create_finishes() -> io::Result<()> {
     );
     drop(guards);
     std::fs::rename(parent, moved)
+}
+
+#[cfg(test)]
+#[test]
+fn windows_export_accepts_short_parent_name() -> io::Result<()> {
+    use windows_sys::Win32::Storage::FileSystem::GetShortPathNameW;
+    let root = tempfile::tempdir()?;
+    let parent = root.path().join("chat export directory");
+    std::fs::create_dir(&parent)?;
+    let long: Vec<_> = parent.as_os_str().encode_wide().chain([0]).collect();
+    // SAFETY: long is terminated and the second call uses the requested capacity.
+    let short = unsafe {
+        let size = GetShortPathNameW(long.as_ptr(), null_mut(), 0);
+        let mut buffer = vec![0; size as usize];
+        let len = GetShortPathNameW(long.as_ptr(), buffer.as_mut_ptr(), size);
+        if len == 0 || len >= size {
+            return Err(io::Error::last_os_error());
+        }
+        PathBuf::from(std::ffi::OsString::from_wide(&buffer[..len as usize]))
+    };
+    assert_ne!(
+        short.file_name(),
+        parent.file_name(),
+        "requires 8.3 aliases"
+    );
+    open(&short.join("chat.log"), false)?;
+    assert!(parent.join("chat.log").is_file());
+    Ok(())
 }

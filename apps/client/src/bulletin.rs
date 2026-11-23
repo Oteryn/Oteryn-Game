@@ -43,6 +43,32 @@ impl Browser {
     pub fn news(&self) -> String {
         self.feed.news_text()
     }
+    pub fn admission_news(&self, now: std::time::SystemTime) -> String {
+        let mut body = self.news();
+        for (offset, heading) in [(0, "Today"), (1, "Tomorrow")] {
+            let date = utc_date(now, offset);
+            body.push_str(&format!(
+                "\n\n{heading} ({:04}-{:02}-{:02} UTC)",
+                date.0, date.1, date.2
+            ));
+            let mut events = self
+                .feed
+                .events
+                .iter()
+                .filter(|event| (event.year, event.month, event.day) == date)
+                .peekable();
+            if events.peek().is_none() {
+                body.push_str("\nNo events published.");
+            }
+            for event in events {
+                body.push_str(&format!(
+                    "\n{} — {}",
+                    event.article.title, event.article.body
+                ));
+            }
+        }
+        body
+    }
     pub fn month(&self) -> String {
         self.feed.month_text(self.year, self.month)
     }
@@ -63,29 +89,39 @@ impl Browser {
         }
     }
 }
+fn utc_date(now: std::time::SystemTime, offset: u64) -> (u16, u8, u8) {
+    let mut days = now
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+        / 86400
+        + offset;
+    let mut year = 1970u16;
+    let mut month = 1u8;
+    // Bounded for system clocks outside the supported calendar range.
+    while year < 9999 || month < 12 {
+        let length = u64::from(days_in_month(year, month));
+        if days < length {
+            break;
+        }
+        days -= length;
+        if month == 12 {
+            year += 1;
+            month = 1;
+        } else {
+            month += 1;
+        }
+    }
+    (
+        year,
+        month,
+        (days.min(u64::from(days_in_month(year, month) - 1)) + 1) as u8,
+    )
+}
+
 impl Default for Browser {
     fn default() -> Self {
-        let mut days = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs()
-            / 86400;
-        let mut year = 1970u16;
-        let mut month = 1u8;
-        // Bounded for system clocks outside the supported calendar range.
-        while year < 9999 || month < 12 {
-            let length = u64::from(days_in_month(year, month));
-            if days < length {
-                break;
-            }
-            days -= length;
-            if month == 12 {
-                year += 1;
-                month = 1;
-            } else {
-                month += 1;
-            }
-        }
+        let (year, month, _) = utc_date(std::time::SystemTime::now(), 0);
         Self { year, month, feed: Bulletin {
             news: vec![Article { title: lfmt!("Oteryn {}", crate::RELEASE_ID), body: tr!("Sign in through your browser. Use the calendar to browse operator-published events. This calendar has no published events.").into() }],
             events: Vec::new(),

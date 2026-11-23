@@ -71,10 +71,11 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
         );
         click_named(&mut app, "account.retry")?;
         let retried = wait(&mut app, Some(pending))?;
+        authority.lock().map_err(|_| "authority")?.pending_first = false;
         click_named(&mut app, "account.status")?;
         let resolved = wait(&mut app, Some(retried))?;
         {
-            let mut state = authority.lock().map_err(|_| "authority")?;
+            let state = authority.lock().map_err(|_| "authority")?;
             let (bid, _) = state.commands.get(&id).ok_or("same bid")?;
             assert!(
                 matches!(&bid.command, BazaarCommand::Bid { auction_id, coins: 17, .. } if auction_id == AUCTION)
@@ -93,7 +94,6 @@ fn bazaar_page_keeps_auction_details_during_bid_retry_and_status_recovery() -> T
             assert!(state.requests.iter().any(|request| {
                 request.starts_with(&format!("GET /api/v1/native-account/bazaar/commands/{id} "))
             }));
-            state.pending_first = false;
         }
         click_named(&mut app, &format!("account.receipt.{id}"))?;
         let receipt = wait(&mut app, Some(resolved))?;
