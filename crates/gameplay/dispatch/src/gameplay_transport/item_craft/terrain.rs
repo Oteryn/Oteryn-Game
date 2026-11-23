@@ -153,6 +153,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
+        let agent_tool = super::rope::secret_agent_rope(&definition.production_key);
+        // Resolve a dropped item's live position before examining the authored terrain.
+        let ground = if agent_tool && matches!(target, Some(ItemKey::Instance(_))) {
+            let map = self.bundle_map().ok_or(())?;
+            Some(
+                super::super::loop_move::loop_ground(self, map.overlay.base(), Some(index))
+                    .await
+                    .ok_or(())?,
+            )
+        } else {
+            None
+        };
         let mutation = {
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
@@ -172,27 +184,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
+            use super::super::world_map::{
+                MapHandleTarget, MapViewSource, resolve_map_handle, resolve_map_target,
+            };
             let facts = at.map.facts.pinned();
-            let map = super::super::world_map::MapViewSource {
-                overlay: &at.map.overlay,
+            let map = MapViewSource {
+                overlay: ground
+                    .as_ref()
+                    .map_or(&at.map.overlay, |ground| ground.overlay()),
                 facts: &facts,
                 content_generation: at.content_generation,
                 reset_epoch: self.reset_epoch,
             };
             let resolved = match &intent.use_with_map_item {
                 Some(MapUseTarget::Object(object)) => {
-                    super::super::world_map::resolve_map_target(&map, object, |_| None::<()>)
+                    resolve_map_target(&map, object, |_| None::<()>)
                         .ok()
-                        .map(|t| (t.pos, t.placement_key))
+                        .map(|t| (t.pos, Some(t.placement_key)))
                 }
                 Some(MapUseTarget::Item(_)) => target
-                    .and_then(|key| super::super::world_map::resolve_map_handle(&map, key).ok())
+                    .and_then(|key| resolve_map_handle(&map, key).ok())
                     .and_then(|t| match t {
-                        super::super::world_map::MapHandleTarget::Base {
-                            pos,
-                            placement_key,
-                            ..
-                        } => Some((pos, placement_key)),
+                        MapHandleTarget::Base {
+                            pos, placement_key, ..
+                        } => Some((pos, Some(placement_key))),
+                        MapHandleTarget::Added { pos, .. }
+                        | MapHandleTarget::Ground { pos, .. }
+                            if agent_tool =>
+                        {
+                            Some((pos, None))
+                        }
                         _ => None,
                     }),
                 None => None,
@@ -207,7 +228,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(outcome(UseDisposition::TooFar)));
             }
             // Crystal rolls after action reach admission and before the tool effect.
-            let agent_tool = super::rope::secret_agent_rope(&definition.production_key);
             if agent_tool
                 && oteryn_gameplay_items::secret_agent::jams(
                     *command.game_session_id.as_bytes(),
@@ -256,6 +276,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if agent_tool && crate::map::floor::is_bundle_rope_spot(&tile) {
                 return Ok(None);
             }
+            let Some(key) = key else {
+                return Ok(Some(outcome(UseDisposition::NothingToUse)));
+            };
             let before = tile
                 .entries
                 .iter()

@@ -494,12 +494,13 @@ pub(super) fn closed_collision(id: u32) -> (bool, bool) {
 pub(super) fn closed_of(open_id: u32) -> Option<u32> {
     level_door_pair(open_id, true)
         .or_else(|| quest_door_pair(open_id, true))
-        .or_else(|| plain_closed_of(open_id))
+        // The key action owns its open pose even when a legacy plain pair lists it.
         .or_else(|| {
             KEY_DOORS
                 .iter()
                 .find_map(|&(_, closed, open)| (open == open_id).then_some(closed))
         })
+        .or_else(|| plain_closed_of(open_id))
 }
 
 #[cfg(test)]

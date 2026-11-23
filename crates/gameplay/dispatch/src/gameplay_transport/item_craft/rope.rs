@@ -195,7 +195,11 @@ fn rope_in_channel(
         Some(MapUseTarget::Item(_)) => match target.and_then(|key| {
             crate::gameplay_transport::world_map::resolve_map_handle(&map, key).ok()
         }) {
-            Some(crate::gameplay_transport::world_map::MapHandleTarget::Base { pos, .. }) => pos,
+            Some(
+                crate::gameplay_transport::world_map::MapHandleTarget::Base { pos, .. }
+                | crate::gameplay_transport::world_map::MapHandleTarget::Added { pos, .. }
+                | crate::gameplay_transport::world_map::MapHandleTarget::Ground { pos, .. },
+            ) => pos,
             _ => return UseDisposition::StaleState,
         },
         None => return UseDisposition::NothingToUse,

@@ -1326,7 +1326,7 @@ fn palette_door(
     let starts_open = authored != closed;
     // A shared ordinary pose loses the original variant once opened. Preserve
     // the placed appearance at revision zero and resolve the donor's first pair on close.
-    let closes_to = if door::open_of(closed) == Some(open) {
+    let closes_to = if key_door.is_none() && door::open_of(closed) == Some(open) {
         super::door_registry::plain_closed_of(open).unwrap_or(closed)
     } else {
         closed
