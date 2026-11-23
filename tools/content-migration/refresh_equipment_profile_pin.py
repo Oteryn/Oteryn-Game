@@ -46,7 +46,9 @@ SRX3_SOURCES = (
 
 
 def registered_source_document(root, document):
-    """Replay the later guarded House stage, retaining only this owner's keys."""
+    """Replay the later House and client weight owners on this source cohort."""
+    from import_cyclopedia_global import apply_profile_weights
+
     proven = keys(document)
     generated = {"profiles": json.dumps(document).encode(),
                  "manifest": b'{"item_profiles":{}}'}
@@ -60,6 +62,7 @@ def registered_source_document(root, document):
                           if row["production_definition"]["production_key"] in proven]}
     if keys(result) != proven:
         raise ValueError("source registration changed the qualified identity set")
+    apply_profile_weights(result["records"], root)
     return result
 
 
@@ -194,6 +197,8 @@ def boss_yield_prior_record(root):
 
 def source_cohorts(root):
     """Re-use each closed source authority before counting its independent keys."""
+    from ranged_item_profiles import annotate_native_records
+
     taxonomy = {
         row["target"]["key"]: row["source_taxonomy"]
         for row in json.loads((root / "content/items/taxonomy/items.json").read_bytes())["records"]
@@ -217,6 +222,7 @@ def source_cohorts(root):
                 row["authoring"]["taxonomy"] = copy.deepcopy(taxonomy[key])
         previous = {f"oteryn:item.tibia.i{item}" for item in previous_ids}
         result.append((name, registered_source_document(root, document), previous))
+    annotate_native_records(root, (row for _, doc, _ in result for row in doc["records"]))
     return result
 
 

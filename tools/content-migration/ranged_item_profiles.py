@@ -156,8 +156,8 @@ def resolved_profile(profile, authoring):
     return profile
 
 
-def apply_native(root, generated):
-    """Annotate existing admitted policies; never expand native admission."""
+def annotate_native_records(root, policies):
+    """Apply the qualified ranged data to the supplied native records."""
     raw = (root / RANGED_PROFILES).read_bytes()
     if raw != outputs(root)[RANGED_PROFILES]:
         raise ValueError("RANGED_PROFILE_SOURCE_DRIFT")
@@ -172,13 +172,18 @@ def apply_native(root, generated):
     for key, record in profiles.items():
         if key not in rows or record["item"] != rows[key]["definition"]["identity"]:
             raise ValueError("RANGED_PROFILE_TARGET")
-    document = json.loads(generated[PROFILES])
-    for record in document["records"]:
+    for record in policies:
         key = record["production_binding"]["target"]["key"]
         if key in profiles:
             row = rows[key]
             owner = row.get("authoring", {})
             record["authoring"]["ranged"] = resolved_profile(profiles[key]["profile"], owner)
+
+
+def apply_native(root, generated):
+    """Annotate existing admitted policies; never expand native admission."""
+    document = json.loads(generated[PROFILES])
+    annotate_native_records(root, document["records"])
     # Match the active provider's compact serialization within its existing 8 MiB bound.
     generated[PROFILES] = encode(document)
     manifest = json.loads(generated[MANIFEST])
