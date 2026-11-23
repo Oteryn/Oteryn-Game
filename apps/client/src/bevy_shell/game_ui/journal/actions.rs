@@ -41,7 +41,7 @@ pub(super) fn perform(
     let book = link.spellbook_state();
     let catalogue = link.spell_catalog_panel();
     let visible = match action.key.tab {
-        Tab::Quests => quest.open || quest.tracker_open,
+        Tab::Quests => quest.open,
         Tab::Spells => book.open || catalogue.open || catalogue.archive_open,
     };
     if !visible {
@@ -171,6 +171,20 @@ pub(super) fn perform(
     }
     if action.key.tab == Tab::Quests {
         match action.kind {
+            Kind::ClearTracker | Kind::CleanTracker => {
+                return link.quest_clean_tracker(matches!(action.kind, Kind::CleanTracker));
+            }
+            Kind::Pin | Kind::HideQuest => {
+                if !link.quest_toggle_mark(state.displayed_quest, matches!(action.kind, Kind::Pin))
+                {
+                    return false;
+                }
+                state.quest_page = 0;
+            }
+            Kind::ShowHidden => {
+                link.quest_toggle_hidden_filter();
+                state.quest_page = 0;
+            }
             Kind::Completed => {
                 state.hide_completed = !state.hide_completed;
                 state.quest_page = 0;
@@ -182,7 +196,10 @@ pub(super) fn perform(
                     return false;
                 }
                 let sort = if matches!(action.kind, Kind::Sort) {
-                    QuestSort::from_selection(((quest.list_sort.selection() + 1) % 4) as isize)
+                    QuestSort::from_selection(
+                        ((quest.list_sort.selection() + 1) % quest_log::QUEST_SORT_LABELS.len())
+                            as isize,
+                    )
                 } else {
                     quest.list_sort
                 };
@@ -193,17 +210,47 @@ pub(super) fn perform(
         }
         return true;
     }
+    let own_vocation = if matches!(action.kind, Kind::MyVocation) {
+        let panel = link.cyclopedia_character_panel();
+        if !panel.selected || !panel.extensions.vocation {
+            state.feedback = "Character vocation is unavailable in this session.".into();
+            return false;
+        }
+        let Some(id) = panel.own_vocation_id else {
+            link.cyclopedia_character_request(
+                oteryn_client_ui::cyclopedia_character::Intent::OwnVocation,
+            );
+            state.feedback =
+                "Waiting for character vocation. Try again after character stats arrive.".into();
+            return false;
+        };
+        Some(id)
+    } else {
+        None
+    };
     if !book.selected {
         if !matches!(
             action.kind,
-            Kind::Search | Kind::Refresh | Kind::Vocation | Kind::Group | Kind::Premium
+            Kind::Search
+                | Kind::Refresh
+                | Kind::MyVocation
+                | Kind::Vocation
+                | Kind::Group
+                | Kind::Premium
         ) {
             return false;
         }
         let mut vocation = catalogue.vocation.clone();
         let mut group = catalogue.group;
         let mut learned = catalogue.learned_only;
-        if matches!(action.kind, Kind::Vocation) {
+        if let Some(id) = own_vocation {
+            let Some(name) = id.checked_sub(1).and_then(|index| {
+                oteryn_client_ui::spell_catalog::VOCATIONS.get(usize::from(index))
+            }) else {
+                return false;
+            };
+            vocation = (vocation.as_deref() != Some(*name)).then(|| (*name).to_owned());
+        } else if matches!(action.kind, Kind::Vocation) {
             let choices = oteryn_client_ui::spell_catalog::VOCATIONS;
             vocation = match vocation
                 .as_deref()
@@ -261,6 +308,16 @@ pub(super) fn perform(
                 0
             } else {
                 level
+            };
+        }
+        Kind::MyVocation => {
+            let Some(vocation) = own_vocation else {
+                return false;
+            };
+            filter.vocation = if filter.vocation == vocation {
+                0
+            } else {
+                vocation
             };
         }
         Kind::Vocation => {

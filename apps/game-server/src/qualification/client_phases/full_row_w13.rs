@@ -20,7 +20,7 @@ use oteryn_dev_client::client_runtime::raw_feature;
 use oteryn_dev_client::client_ui::daily_boost::{self, DailyBoostPanel, Intent};
 use oteryn_protocol_oteryn::daily_boost as wire;
 
-async fn query(
+pub(super) async fn query(
     client: &mut oteryn_dev_client::DevClientSession,
     step: u8,
 ) -> TestResult<wire::DailyBoostView> {

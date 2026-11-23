@@ -68,6 +68,9 @@ pub fn set_item_price(panel: &mut super::Panel, item: &str, price: &str) -> bool
         return false;
     }
     prices.insert(item, price);
+    if panel.tool != super::Tool::Supply {
+        panel.loot_sources.insert(item, super::PriceSource::Own);
+    }
     panel.party.clear();
     panel.party_revision = panel.party_revision.saturating_add(1);
     panel.party_feedback = Some(tr!("Prices changed; refresh party accounting"));

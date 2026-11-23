@@ -1557,6 +1557,14 @@ impl<'r> AdmissionRetryBudget<'r> {
         })
     }
 
+    /// The post-placement owners have their own recovery window after first entry,
+    /// which may itself have waited for a Familiar restore.
+    fn for_post_entry(mut self) -> Self {
+        drop(self.waiter.take());
+        self.deadline = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+        self
+    }
+
     /// Whether a step that ended on `refusal` is retried. Only an unavailable outcome (such
     /// as a busy durability holder) is transient: it waits at most one backoff, unless the
     /// retry would start past the window, which fails closed at once. With a root, the attempt

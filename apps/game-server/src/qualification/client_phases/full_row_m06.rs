@@ -77,13 +77,41 @@ fn target(world: &BundleWorld, door: Door, revision: u64) -> TestResult<WorldObj
     })
 }
 
-async fn approach(client: &mut DevClientSession, world: &BundleWorld, door: Door) -> TestResult {
-    let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| {
+fn door_in_route_window(from: TilePos, door: TilePos) -> bool {
+    from.floor.abs_diff(door.floor) <= 2
+        && from.x.abs_diff(door.x) <= 161
+        && from.y.abs_diff(door.y) <= 161
+}
+
+fn approach_path(world: &BundleWorld, from: TilePos, door: Door) -> Option<Vec<StepDirection>> {
+    if !door_in_route_window(from, door.at) {
+        return None;
+    }
+    route(world, from, |at| {
         at.floor == door.at.floor && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
     })
-    .ok_or_else(|| format!("M06 no walking route to door {:?}", door.at))?;
+}
+
+async fn approach(client: &mut DevClientSession, world: &BundleWorld, door: Door) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = approach_path(world, from, door)
+        .ok_or_else(|| format!("M06 no walking route to door {:?}", door.at))?;
     walk(client, world, &path).await
+}
+
+async fn reach_door(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    doors: impl Iterator<Item = Door>,
+    missing: &'static str,
+) -> TestResult<Door> {
+    let from = tile(client.world_spatial().actor_position)?;
+    let (door, path) = doors
+        .filter_map(|door| approach_path(world, from, door).map(|path| (door, path)))
+        .min_by_key(|(_, path)| path.len())
+        .ok_or(missing)?;
+    walk(client, world, &path).await?;
+    Ok(door)
 }
 
 async fn use_door(
@@ -132,24 +160,12 @@ fn overlay_revision(client: &DevClientSession, placement: &[u8]) -> u64 {
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -> TestResult {
     let authored = doors(bytes, world)?;
-    let level = authored
-        .iter()
-        .copied()
-        .find(|door| door.action > 1000)
-        .ok_or("step-3 observed=no-authored-level-door")?;
-    let key = authored
-        .iter()
-        .copied()
-        .find(|door| door.appearance == 1628)
-        .ok_or("step-1 observed=no-authored-locked-key-door")?;
-    let quest = authored
-        .iter()
-        .copied()
-        .find(|door| door.action <= 1000 && door.appearance != 1628)
-        .ok_or("step-4 observed=no-authored-quest-predicate-candidate")?;
     let mut client = connect_world(clients, 0xb6).await?;
-
-    approach(&mut client, world, key).await?;
+    let key = reach_door(
+        &mut client, world,
+        authored.iter().copied().filter(|door| door.appearance == 1628),
+        "step=locked-door-route missing=reachable-authored-locked-key-door owner=crates/gameplay/dispatch/src/gameplay_transport/map_door.rs:230",
+    ).await?;
     let before = client.world_spatial().actor_position;
     let direct = use_door(&mut client, world, key).await?;
     evidence(&format!("M06_CHECK step=1 action=USE observed={direct:?}"));
@@ -163,14 +179,22 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, bytes: &[u8]) -
         "M06_CHECK step=2 action=USE-WITH observed={keyed:?} revision={key_revision_before}->{key_revision_after}"
     ));
 
-    approach(&mut client, world, level).await?;
+    let level = reach_door(
+        &mut client, world,
+        authored.iter().copied().filter(|door| door.action > 1000),
+        "step=level-door-route missing=reachable-authored-level-predicate",
+    ).await?;
     let level_reply = use_door(&mut client, world, level).await?;
     evidence(&format!(
         "M06_CHECK step=3 action=USE-before-progression level_required={} observed={level_reply:?}",
         level.action.saturating_sub(1000)
     ));
 
-    approach(&mut client, world, quest).await?;
+    let quest = reach_door(
+        &mut client, world,
+        authored.iter().copied().filter(|door| door.action <= 1000 && door.appearance != 1628),
+        "step=quest-door-route missing=reachable-authored-quest-predicate",
+    ).await?;
     let quest_reply = use_door(&mut client, world, quest).await?;
     evidence(&format!(
         "M06_CHECK step=4 action=USE-before-transition storage_action={} observed={quest_reply:?}",
@@ -246,6 +270,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[test]
+    fn route_window_includes_doors_adjacent_to_its_edge() {
+        let from = TilePos { x: 100, y: 100, floor: -7 };
+        assert!(door_in_route_window(from, TilePos { x: 261, ..from }));
+        assert!(!door_in_route_window(from, TilePos { x: 262, ..from }));
+        assert!(!door_in_route_window(from, TilePos { floor: -10, ..from }));
+    }
+
     #[test]
     fn level_action_threshold_matches_server_owner() {
         assert_eq!(1001_u16.saturating_sub(1000), 1);

@@ -96,6 +96,99 @@ impl PlayView {
     }
 }
 
+fn spoken_slot<'a>(
+    action: &'a BarAction,
+    entries: &'a [oteryn_session::spell_catalog::SpellCatalogEntry],
+) -> Option<(
+    &'a oteryn_session::spell_catalog::SpellCatalogEntry,
+    Option<&'a str>,
+)> {
+    let BarAction::Text {
+        text,
+        send_automatically: true,
+    } = action
+    else {
+        return None;
+    };
+    let text = text.trim_matches(' ');
+    let spell = entries
+        .iter()
+        .filter(|entry| {
+            !entry.words.is_empty()
+                && text
+                    .as_bytes()
+                    .get(..entry.words.len())
+                    .is_some_and(|prefix| prefix.eq_ignore_ascii_case(entry.words.as_bytes()))
+        })
+        .max_by_key(|entry| entry.words.len())?;
+    if text.len() == spell.words.len() {
+        return Some((spell, None));
+    }
+    const PARAMETER_WORDS: &[&str] = include!(concat!(env!("OUT_DIR"), "/spell_parameters.rs"));
+    if !PARAMETER_WORDS
+        .iter()
+        .any(|words| words.eq_ignore_ascii_case(&spell.words))
+    {
+        return None;
+    }
+    let rest = text
+        .get(spell.words.len()..)?
+        .strip_prefix(' ')?
+        .trim_matches(' ');
+    let parameter = if let Some((_, quoted)) = rest.split_once('"') {
+        let value = quoted.strip_suffix('"').unwrap_or(quoted);
+        (!value.contains('"')).then_some(value)?
+    } else {
+        (!rest.contains([' ', '"'])).then_some(rest)?
+    };
+    (!parameter.is_empty()).then_some((spell, Some(parameter)))
+}
+
+fn slot_timer<'a>(
+    mailbox: &crate::play::mailbox::Mailbox,
+    slot: usize,
+    icons: &'a [oteryn_client_ui::spell_action_bar::CooldownIcon],
+) -> Option<&'a oteryn_client_ui::spell_action_bar::CooldownIcon> {
+    use crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings;
+    let entries = mailbox.spell_catalog.catalog.entries();
+    let (id, groups) = match mailbox.bar_actions.saved.0.get(&slot) {
+        Some(BarAction::Spell { name, words, .. }) => {
+            let entry = ArchiveBindings::matching_spell(name, words, entries)?;
+            (entry.cast_index, entry.cooldown_groups.as_slice())
+        }
+        Some(BarAction::Use { definition, .. }) => {
+            let entry = entries
+                .iter()
+                .find(|entry| entry.rune_item == Some(definition.get()))?;
+            (entry.cast_index, entry.cooldown_groups.as_slice())
+        }
+        Some(action @ BarAction::Text { .. }) => {
+            let (entry, _) = spoken_slot(action, entries)?;
+            (entry.cast_index, entry.cooldown_groups.as_slice())
+        }
+        Some(_) => return None,
+        None => {
+            let index = std::num::NonZeroU32::new(u32::try_from(slot + 1).ok()?)?;
+            let id = mailbox.spell_bar.bar.spell(index)?.get();
+            let groups = entries
+                .iter()
+                .find(|entry| entry.cast_index == id)
+                .map_or(&[][..], |entry| entry.cooldown_groups.as_slice());
+            (id, groups)
+        }
+    };
+    icons
+        .iter()
+        .filter(|icon| {
+            icon.remaining_ms > 0
+                && if icon.group {
+                    groups.contains(&icon.id)
+                } else {
+                    icon.id == id
+                }
+        })
+        .max_by_key(|icon| icon.remaining_ms)
+}
 
 impl crate::play::PlayLink {
     pub fn assign_spell_slot(&self, slot: usize, cast_index: Option<u32>) -> bool {
@@ -126,6 +219,20 @@ impl crate::play::PlayLink {
             .local_preferences
             .action_bar
             .grid()
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn slot_cooldown_fills(&self) -> Vec<u16> {
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let icons = oteryn_client_ui::spell_action_bar::cooldown_icons(
+            &mailbox.spell_bar,
+            &mailbox.spell_catalog.catalog,
+        );
+        if !icons.iter().any(|icon| icon.remaining_ms > 0) {
+            return Vec::new();
+        }
+        (0..oteryn_client_runtime::spell::ACTION_BAR_SLOTS)
+            .map(|slot| slot_timer(&mailbox, slot, &icons).map_or(0, |icon| icon.overlay_per_mille))
+            .collect()
     }
     pub fn spell_slot_labels(&self) -> Vec<String> {
         let mut mailbox = crate::play::mailbox::lock(&self.mailbox);
@@ -191,6 +298,17 @@ impl crate::play::PlayLink {
                 ));
             }
         }
+        let prefs = mailbox.local_preferences.action_bar;
+        let timers =
+            if prefs.cooldowns && prefs.cooldown_numbers && !mailbox.bar_actions.saved.0.is_empty()
+            {
+                oteryn_client_ui::spell_action_bar::cooldown_icons(
+                    &mailbox.spell_bar,
+                    &mailbox.spell_catalog.catalog,
+                )
+            } else {
+                Vec::new()
+            };
         for (slot, action) in &mailbox.bar_actions.saved.0 {
             if let Some(label) = labels.get_mut(*slot) {
                 *label = format!(
@@ -198,6 +316,20 @@ impl crate::play::PlayLink {
                     slot + 1,
                     assignments::slot_label(&mailbox, *slot, action)
                 );
+                if let Some((spell, Some(parameter))) =
+                    spoken_slot(action, mailbox.spell_catalog.catalog.entries())
+                {
+                    *label = format!("{}: {}", slot + 1, spell.name);
+                    if mailbox.local_preferences.action_bar.show_spell_parameters {
+                        label.push('\n');
+                        label.push_str(parameter);
+                    }
+                }
+                if !timers.is_empty()
+                    && let Some(timer) = slot_timer(&mailbox, *slot, &timers)
+                {
+                    label.push_str(&format!("\n{} ms", timer.remaining_ms));
+                }
                 if !mailbox.local_preferences.action_bar.amounts {
                     *label = label
                         .lines()
@@ -208,7 +340,9 @@ impl crate::play::PlayLink {
             }
         }
         for (slot, key) in &mailbox.bar_actions.keys.0 {
-            if let Some(label) = labels.get_mut(*slot) {
+            if mailbox.local_preferences.action_bar.show_hotkey
+                && let Some(label) = labels.get_mut(*slot)
+            {
                 label.push_str(&format!("\n{key}"));
             }
         }

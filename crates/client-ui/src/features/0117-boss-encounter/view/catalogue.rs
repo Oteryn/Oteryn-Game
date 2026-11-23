@@ -8,8 +8,11 @@ pub fn catalogue_cards(panel: &BossEncounterPanel) -> Vec<&Entry> {
         .iter()
         .flat_map(|p| &p.entries)
         .filter(|e| {
-            (panel.browser_category.server_filter() == 0
-                || panel.browser_category.server_filter() == e.category)
+            let stage = if e.kills == 0 { 0 } else { 1 + e.stage() };
+            panel.hidden_stages & (1 << stage) == 0
+                && panel.hidden_rarities & (1 << e.category) == 0
+                && (panel.browser_category.server_filter() == 0
+                    || panel.browser_category.server_filter() == e.category)
                 && e.name.to_lowercase().contains(&search)
                 && match panel.browser_category {
                     BossCategory::Progress => e.kills > 0,

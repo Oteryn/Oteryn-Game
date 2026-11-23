@@ -65,6 +65,7 @@ pub(super) fn render(
     key: Key,
     panel: &WheelPanel,
     fields: &[String; 2],
+    level: Option<u32>,
 ) {
     if let Some(content) = widgets.content.take() {
         commands.entity(content).despawn();
@@ -92,6 +93,27 @@ pub(super) fn render(
     );
     let metadata = diagram::metadata(panel);
     if let Some(reply) = metadata {
+        let ring = level
+            .map(|v| v.saturating_sub(50))
+            .filter(|points| *points <= reply.unlock_points)
+            .map_or_else(
+                || format!("Level, achievements and scrolls: {}", reply.unlock_points),
+                |points| {
+                    format!(
+                        "Level points: {points}   Achievements and scrolls: {}",
+                        reply.unlock_points - points
+                    )
+                },
+            );
+        label(
+            commands,
+            skins,
+            content,
+            format!(
+                "{ring}   Gem grade bonuses: {}",
+                reply.available.saturating_sub(reply.unlock_points)
+            ),
+        );
         let spent: u32 = panel.points.iter().map(|p| u32::from(*p)).sum();
         label(
             commands,
@@ -280,8 +302,72 @@ pub(super) fn render(
         );
     }
     presets::render(commands, skins, presets, key, panel, fields, ready);
+    if let Some(reply) = metadata {
+        label(commands, skins, content, diagram::view::text(panel));
+        let controls = row(commands, content);
+        for (kind, caption) in [
+            (Kind::Fill, "Fill selected slice"),
+            (Kind::Empty, "Empty selected slice"),
+        ] {
+            button(
+                commands,
+                skins,
+                controls,
+                Control { key, kind },
+                caption,
+                ready,
+            );
+        }
+        for slice_row in reply.nodes.chunks(4).enumerate() {
+            let controls = row(commands, content);
+            for (column, node) in slice_row.1.iter().enumerate() {
+                button(
+                    commands,
+                    skins,
+                    controls,
+                    Control {
+                        key,
+                        kind: Kind::Inspect(slice_row.0 * 4 + column),
+                    },
+                    &format!("Inspect {}", node.name),
+                    true,
+                );
+            }
+        }
+    }
+    if let Some(board) = panel.vessel_board.as_ref().filter(|_| panel.atelier_v2) {
+        for line in oteryn_client_ui::gem_atelier::vessel_lines(board, |id| {
+            panel
+                .confirmed_atelier
+                .as_ref()
+                .and_then(|a| a.gems.iter().find(|g| g.id == id))
+                .map_or_else(
+                    || "Installed gem".into(),
+                    oteryn_client_ui::wheel_allocation::gem_label,
+                )
+        }) {
+            label(commands, skins, content, line);
+        }
+        if let Some(targets) = &panel.preset_vessels {
+            for (slot, (v, target)) in board.slots.iter().zip(targets).enumerate() {
+                if v.open && v.gem != *target {
+                    button(
+                        commands,
+                        skins,
+                        content,
+                        Control {
+                            key,
+                            kind: Kind::PresetVessel(slot as u8),
+                        },
+                        &format!("Apply preset to vessel {}", slot + 1),
+                        ready && !panel.dirty(),
+                    );
+                }
+            }
+        }
+    }
+    atelier::entry(commands, skins, content, key, panel);
     let buttons = row(commands, content);
-    atelier::entry(commands, skins, buttons, key, panel);
     for (kind, caption, enabled) in [
         (
             Kind::Save,

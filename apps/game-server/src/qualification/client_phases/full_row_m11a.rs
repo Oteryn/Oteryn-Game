@@ -213,6 +213,17 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn level_gap(
+    player_level: u32,
+    required: u32,
+    up: ChatDisposition,
+    down: ChatDisposition,
+) -> Option<String> {
+    (player_level < required).then(|| format!(
+        "step=levitate-eligibility observed=level-{player_level}-required-{required} up={up:?} down={down:?} missing=earned-level-before-successful-cast owner=crates/gameplay/dispatch/src/gameplay_transport/parameter_cast.rs:570"
+    ))
+}
+
 fn validate_success(
     up: &Observation,
     down: &Observation,
@@ -227,6 +238,9 @@ fn validate_success(
             levitate.level, levitate.available
         )
         .into());
+    }
+    if let Some(gap) = level_gap(player_level, levitate.level, up.disposition, down.disposition) {
+        return Err(gap.into());
     }
     for (step, observed) in [("2-up", up), ("3-down", down)] {
         let paid = observed.before.mana.checked_sub(50) == Some(observed.after.mana)
@@ -249,11 +263,7 @@ fn validate_success(
         && up.after_position.y == up.before_position.y)
         || (up.after_position.y.abs_diff(up.before_position.y) == 1
             && up.after_position.x == up.before_position.x);
-    if player_level < levitate.level
-        || !levitate.available
-        || !one_floor
-        || !one_tile
-    {
+    if !levitate.available || !one_floor || !one_tile {
         return Err(format!(
             "step=2-up command={} observed={up:?} player_level={player_level} required_level={} catalog_available={} server-needed=eligible-cast-moving-exactly-one-floor-and-one-forward-tile",
             up.command, levitate.level, levitate.available
@@ -292,6 +302,17 @@ fn validate_success(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn levitate_eligibility_gap_names_both_observed_replies() {
+        let refused = ChatDisposition::Rejected;
+        assert!(
+            level_gap(8, 12, refused, refused).is_some_and(|gap|
+                gap.contains("level-8-required-12 up=Rejected down=Rejected")
+            )
+        );
+        assert_eq!(level_gap(12, 12, refused, refused), None);
+    }
 
     #[test]
     fn scenario_commands_are_exact_and_distinct() {

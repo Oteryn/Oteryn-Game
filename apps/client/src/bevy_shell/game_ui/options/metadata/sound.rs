@@ -1,5 +1,6 @@
 use super::*;
-pub(super) const MAIN: [Row; 7] = [
+pub(super) const MAIN: [Row; 8] = [
+    check!("sound.anthem", "Play the Anthem", audio.anthem),
     Row {
         id: "sound.enabled",
         label: "Enable Sound",
@@ -57,7 +58,37 @@ pub(super) const MAIN: [Row; 7] = [
         audio.channel_volumes[3]
     ),
 ];
-pub(super) const BATTLE: [Row; 12] = [
+pub(super) const BATTLE: [Row; 18] = [
+    check!(
+        "battle_sound.creature_death",
+        "Creature Death Sounds",
+        audio.creature_death
+    ),
+    check!(
+        "battle_sound.creature_noises",
+        "Creature Noises",
+        audio.creature_noises
+    ),
+    check!(
+        "battle_sound.other_spells",
+        "Other Players’ Spell Sounds",
+        audio.other_spells
+    ),
+    check!(
+        "battle_sound.other_weapons",
+        "Other Players’ Weapon Sounds",
+        audio.other_weapons
+    ),
+    check!(
+        "battle_sound.own_spells",
+        "Own Spell Sounds",
+        audio.own_spells
+    ),
+    check!(
+        "battle_sound.own_weapons",
+        "Own Weapon Sounds",
+        audio.own_weapons
+    ),
     number!(
         "battle_sound.own_volume",
         "Own Sounds Volume (%)",
@@ -128,13 +159,39 @@ pub(super) const BATTLE: [Row; 12] = [
         audio.battle_filters[2][2]
     ),
 ];
-pub(super) const UI: [Row; 4] = [
+pub(super) const UI: [Row; 14] = [
+    check!("ui_sound.eating", "Eating Sounds", audio.eating),
+    check!("ui_sound.global", "Global Messages", audio.global),
+    check!("ui_sound.guild", "Guild Messages", audio.guild),
+    check!(
+        "ui_sound.move_item",
+        "Item Movement Sounds",
+        audio.move_item
+    ),
+    check!("ui_sound.npc", "NPC Messages", audio.npc),
+    check!(
+        "ui_sound.party_messages",
+        "Party Messages",
+        audio.party_messages
+    ),
+    check!("ui_sound.private", "Private Messages", audio.private),
+    check!(
+        "ui_sound.private_without_tab",
+        "Private Messages Without a Tab",
+        audio.private_without_tab
+    ),
+    check!("ui_sound.raid", "Raid Announcements", audio.raid),
+    check!("ui_sound.system", "System Messages", audio.system),
     check!(
         "ui_sound.interaction",
         "Interaction Sounds",
         audio.ui_sounds[0]
     ),
-    check!("ui_sound.party", "Party Sounds", audio.ui_sounds[1]),
+    check!(
+        "ui_sound.party",
+        "Join/Leave Party Sounds",
+        audio.ui_sounds[1]
+    ),
     check!("ui_sound.vip", "VIP Sounds", audio.ui_sounds[2]),
     check!("ui_sound.chat", "Chat Sounds", audio.ui_sounds[3]),
 ];
