@@ -6,6 +6,105 @@ use oteryn_gameplay_content::content::{
 };
 
 impl ChannelRuntimeV1 {
+    fn activity_herald_slot(&self) -> Option<usize> {
+        self.carrier.occupied.iter().find_map(|&index| {
+            let index = index as usize;
+            matches!(&self.carrier.slots[index], Slot::CreatureOccupied { spell_combat, .. }
+                 if spell_combat.herald_fire_field_map.is_some())
+            .then_some(index)
+        })
+    }
+
+    pub fn activity_herald_is_alive(&self) -> bool {
+        self.activity_herald_slot().is_some_and(|index| {
+            matches!(&self.carrier.slots[index], Slot::CreatureOccupied { health, .. } if *health > 0)
+        })
+    }
+
+    /// Retain the lethal receipt and its original transition time across a retry.
+    pub fn prepare_uncredited_herald_defeat(
+        &mut self,
+        owner_now_ms: u64,
+        unix_now_ms: i64,
+    ) -> Result<Option<(CreatureDeathOccurrenceKey, i64)>, CarrierError> {
+        self.owner_fence()?;
+        let Some(index) = self.activity_herald_slot() else {
+            return Ok(None);
+        };
+        let Slot::CreatureOccupied {
+            generation,
+            health: 0,
+            spell_combat,
+            committed,
+            ..
+        } = &self.carrier.slots[index]
+        else {
+            return Ok(None);
+        };
+        // Earlier player damage does not make a later environment hit a player command.
+        if spell_combat.herald_uncredited_defeat_settled
+            || committed
+                .lethal()
+                .is_none_or(|hit| hit.origin.is_some() || hit.reflection.is_some())
+        {
+            return Ok(None);
+        }
+        let actor = ActorRef::from_scoped_owner_parts(
+            self.binding.runtime_scope,
+            self.binding.scope_generation,
+            ActorLocalId(
+                u32::try_from(index + 1).map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
+            ),
+            ActorLocalGeneration(*generation),
+        );
+        let receipt = self
+            .carrier
+            .committed_lethal_receipt_inner(&self.continuity, actor)?;
+        let death = receipt.projection.occurrence().death_key()?;
+        let elapsed = receipt
+            .projection
+            .death_at_ms
+            .map_or(0, |then| owner_now_ms.saturating_sub(then));
+        let estimate = unix_now_ms.saturating_sub(i64::try_from(elapsed).unwrap_or(i64::MAX));
+        let Slot::CreatureOccupied { spell_combat, .. } = &mut self.carrier.slots[index] else {
+            return Err(CarrierError::NotCreature);
+        };
+        let at = *spell_combat
+            .herald_uncredited_death_at
+            .get_or_insert(estimate);
+        Ok(Some((death, at)))
+    }
+
+    pub fn acknowledge_uncredited_herald_defeat(
+        &mut self,
+        death: CreatureDeathOccurrenceKey,
+        at: i64,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        let index = self
+            .activity_herald_slot()
+            .ok_or(CarrierError::NotCreature)?;
+        let Slot::CreatureOccupied {
+            generation,
+            health: 0,
+            spell_combat,
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if death.runtime_scope() != self.binding.runtime_scope
+            || death.scope_ownership_generation() != self.binding.scope_generation
+            || usize::try_from(death.actor_local_id()).ok() != Some(index + 1)
+            || death.actor_local_generation() != *generation
+            || spell_combat.herald_uncredited_death_at != Some(at)
+        {
+            return Err(CarrierError::CorpseProjectionConflict);
+        }
+        spell_combat.herald_uncredited_defeat_settled = true;
+        Ok(())
+    }
+
     /// Bind only the freshly realized Herald to the current Instance's map.
     pub fn bind_herald_fire_field_map(
         &mut self,

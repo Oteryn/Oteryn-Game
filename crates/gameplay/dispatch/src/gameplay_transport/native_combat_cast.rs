@@ -333,6 +333,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
+            super::super::loop_move::refresh_herald_rune_fields(self).await?;
             Some(permit)
         })
     }

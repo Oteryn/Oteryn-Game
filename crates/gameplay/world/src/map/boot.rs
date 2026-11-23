@@ -448,6 +448,7 @@ impl CheckedBundle {
                     facts,
                     floors,
                     spell_tiles,
+                    herald_rune_fields: Default::default(),
                 }
                 .bind_phase_owner()?,
             ),
@@ -824,9 +825,28 @@ pub struct BundleMap {
     pub floors: FloorTable,
     /// The spell tile facts of the bundle (BUNDLE-TILES-1).
     pub spell_tiles: Arc<BundleSpellTiles>,
+    herald_rune_fields: std::sync::RwLock<BTreeSet<TilePos>>,
 }
 
 impl BundleMap {
+    /// The current Instance's spell lane replaces this with qualified durable Ground.
+    pub fn replace_herald_rune_fields(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+        fields: BTreeSet<TilePos>,
+    ) -> bool {
+        if self.overlay.runtime_scope() != scope
+            || !matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
+        {
+            return false;
+        }
+        let Ok(mut current) = self.herald_rune_fields.write() else {
+            return false;
+        };
+        *current = fields;
+        true
+    }
+
     fn bind_phase_owner(self) -> Result<Self, BootRefusal> {
         if !self
             .spell_tiles
@@ -973,7 +993,8 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
         Some(
             tile.entries
                 .iter()
-                .any(|entry| matches!(entry.facts.appearance_id, 2118..=2120)),
+                .any(|entry| matches!(entry.facts.appearance_id, 2118..=2120))
+                || self.map.herald_rune_fields.read().ok()?.contains(&pos),
         )
     }
 
@@ -1061,6 +1082,7 @@ impl BundleCollisionData {
                     None => self.map.floors.activity_region(bounds),
                 },
                 spell_tiles,
+                herald_rune_fields: Default::default(),
             }
             .bind_phase_owner()
             .ok()?,
@@ -1141,6 +1163,7 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
                 facts: source.map.facts.activity_copy(bounds),
                 floors: source.map.floors.clone(),
                 spell_tiles: Arc::new(source.map.spell_tiles.fork_without_phases()),
+                herald_rune_fields: Default::default(),
             }
             .bind_phase_owner()
             .ok()?,

@@ -150,7 +150,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         #[cfg(test)]
         trace.set("ai_uncredited");
-        if self.drain_uncredited_source_corpse(&permit).await {
+        if self.drain_uncredited_herald_defeat().await
+            || self.drain_uncredited_source_corpse(&permit).await
+        {
             return;
         }
         #[cfg(test)]

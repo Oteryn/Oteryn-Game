@@ -363,43 +363,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("activity_defeat_deferred reason=scope_or_content_fenced");
             return false;
         }
-        let owner =
-            crate::durability::activity_handoff::ActivityHandoffOwner::new(admission.root.clone());
-        use crate::durability::activity_handoff::boss_room::BossRoomDefeatDecision;
-        match owner
-            .record_boss_defeat(
-                admission.character,
-                admission.holder,
-                entry.facts.death.runtime_scope(),
-                entry.facts.death.scope_ownership_generation(),
-                crate::durability::activity_handoff::boss_room::BossDefeatOccurrence {
-                    boss_key: &captured.creature,
-                    death: personal_death_id(entry.facts.death),
-                    minted_unix_ms: captured.died_at_unix_ms,
-                },
-            )
-            .await
-        {
-            Ok(BossRoomDefeatDecision::Recorded)
-                if captured.creature == "oteryn:creature.herald_of_fire" =>
-            {
-                admission
-                    .publish_source_death_portal(&captured.creature)
-                    .await
-            }
-            Ok(
-                BossRoomDefeatDecision::Recorded
-                | BossRoomDefeatDecision::Unrelated
-                | BossRoomDefeatDecision::Late,
-            ) => true,
-            result => {
-                operator_event(&format!(
-                    "activity_defeat_deferred creature={} result={result:?}",
-                    captured.creature
-                ));
-                false
-            }
-        }
+        self.record_activity_boss_defeat(
+            &captured.creature,
+            entry.facts.death,
+            captured.died_at_unix_ms,
+        )
+        .await
     }
 
     /// No current recipient lease is needed to issue an earned entitlement. This call is

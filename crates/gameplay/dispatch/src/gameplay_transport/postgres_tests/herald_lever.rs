@@ -34,7 +34,7 @@ fn herald_source_lever_boots_and_enters_fresh_instance() -> TestResult {
         return Ok(());
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("herald-source-lever", || {
-        scenario(false, false)
+        scenario(false, false, CallbackCase::Original)
     })
 }
 
@@ -44,14 +44,43 @@ fn herald_lever_refuses_wrong_pad_and_replays_once() -> TestResult {
         return Ok(());
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("herald-source-lever-replay", || {
-        scenario(true, false)?;
-        scenario(false, true)
+        scenario(true, false, CallbackCase::Original)?;
+        scenario(false, true, CallbackCase::Original)
     })
 }
 
-fn scenario(wrong_pad: bool, replay: bool) -> TestResult {
+#[derive(Clone, Copy, Debug)]
+enum CallbackCase {
+    Original,
+    DurableField,
+    UncreditedDeath,
+}
+
+#[test]
+fn herald_is_immune_on_durable_rune_field() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("herald-durable-field", || {
+        scenario(false, false, CallbackCase::DurableField)
+    })
+}
+
+#[test]
+fn herald_uncredited_death_opens_exit() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("herald-uncredited-death", || {
+        scenario(false, false, CallbackCase::UncreditedDeath)
+    })
+}
+
+fn scenario(wrong_pad: bool, replay: bool, case: CallbackCase) -> TestResult {
     let started = std::time::Instant::now();
-    eprintln!("POSTGRES_CASE_EXECUTED herald_lever wrong_pad={wrong_pad} replay={replay}");
+    eprintln!(
+        "POSTGRES_CASE_EXECUTED herald_lever wrong_pad={wrong_pad} replay={replay} case={case:?}"
+    );
     let result = run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "herald_lever", false, false).await?;
@@ -126,7 +155,11 @@ fn scenario(wrong_pad: bool, replay: bool) -> TestResult {
                 &h, &owner, &mut admitted, 12, "knight", fresh.operation(),
             ).await.map_err(|error| format!("prepare level-12 Herald participant: {error}"))?;
             let fence = admitted.item_fence.ok_or("live item fence")?;
-            super::item_look_fixtures::seed_main_backpack(&h, &[]).await?;
+            let items: &[(&str, i64)] = match case {
+                CallbackCase::DurableField => &[("oteryn:item.tibia.i2118", 1)],
+                _ => &[],
+            };
+            super::item_look_fixtures::seed_main_backpack(&h, items).await?;
             owner.register_current_runtime().await.map_err(|_| "register Channel runtime")?;
             owner.activity_runtimes.remember(admitted).map_err(|_| "register admitted session")?;
             owner.activity_runtimes.register_template(template).map_err(|_| "register template")?;
@@ -165,7 +198,14 @@ fn scenario(wrong_pad: bool, replay: bool) -> TestResult {
                     .map_err(|_| "finish source scope switch")?;
                 let mut destination = owner.resolve_runtime_view(switch.destination).await
                     .map_err(|_| "resolve Herald Instance")?.ok_or("current Herald Instance")?;
-                assert_herald_callbacks(&mut destination, switch.destination).await?;
+                match case {
+                    CallbackCase::Original => assert_herald_callbacks(&mut destination, switch.destination).await?,
+                    CallbackCase::DurableField => {
+                        assert_durable_field_immunity(&destination, switch.destination).await?;
+                        return Ok(());
+                    }
+                    CallbackCase::UncreditedDeath => assert_uncredited_exit(&destination, switch.destination).await?,
+                }
                 let deadlines: (i64, Option<i64>) = sqlx::query_as(
                     "SELECT deadline, exit_deadline FROM game_boss_room_activities WHERE boss_key=$1",
                 ).bind(BOSS).fetch_one(&h.pool).await?;
@@ -183,12 +223,12 @@ fn scenario(wrong_pad: bool, replay: bool) -> TestResult {
     });
     if result.is_ok() {
         eprintln!(
-            "POSTGRES_CASE_COMPLETED herald_lever wrong_pad={wrong_pad} replay={replay} elapsed={:?}",
+            "POSTGRES_CASE_COMPLETED herald_lever wrong_pad={wrong_pad} replay={replay} case={case:?} elapsed={:?}",
             started.elapsed()
         );
     } else {
         eprintln!(
-            "POSTGRES_CASE_FAILED herald_lever wrong_pad={wrong_pad} replay={replay} elapsed={:?}",
+            "POSTGRES_CASE_FAILED herald_lever wrong_pad={wrong_pad} replay={replay} case={case:?} elapsed={:?}",
             started.elapsed()
         );
     }
@@ -380,5 +420,295 @@ async fn assert_herald_callbacks(
         .map_err(debug)?
         .position();
     assert_eq!((after.x, after.y, after.floor), (32418, 32686, 13));
+    Ok(())
+}
+
+async fn assert_durable_field_immunity(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use crate::durability::item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest};
+    use crate::foundation::{CommandId, CommandRef};
+
+    let fence = admitted.item_fence.ok_or("Instance fence")?;
+    let (boss, ground, digest) = {
+        let runtime = owner.runtime.lock().await;
+        let boss = runtime
+            .visible_entities()
+            .creatures
+            .first()
+            .ok_or("Herald")?
+            .actor;
+        let at = runtime.read_actor_position(boss).map_err(debug)?.position();
+        let pin = runtime.content_pin();
+        let revision = |digest: [u8; 32]| {
+            format!(
+                "sha256:{}",
+                digest
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>()
+            )
+        };
+        (
+            boss,
+            LoopGround {
+                spatial_position: [
+                    at.x.to_be_bytes().as_slice(),
+                    at.y.to_be_bytes().as_slice(),
+                    at.floor.to_be_bytes().as_slice(),
+                ]
+                .concat(),
+                map_revision: revision(pin.map_revision_digest()),
+                content_revision: revision(pin.server_artifact_digest()),
+                placement_context: pin.frame_binding_digest().to_vec(),
+            },
+            pin.server_artifact_digest(),
+        )
+    };
+
+    // Seed the donor's fire-field Item, then use the real scoped Ground writer.
+    // The callback depends on live Item identity at the cell, independent of origin.
+    let field = fixture::id(71);
+    {
+        let permit = owner.spell_lane_permit().await.ok_or("field lane")?;
+        let receipt = owner
+            .root
+            .commit_item_loop_move(
+                &permit,
+                owner.character,
+                owner.holder,
+                &fence,
+                CommandRef::new(admitted.game_session_id, CommandId::new(93).map_err(debug)?),
+                &HeraldFieldFixture(digest),
+                LoopMoveRequest {
+                    item: field,
+                    count: None,
+                    pickup_cell: None,
+                    destination: LoopDestination::Ground(ground.clone()),
+                },
+            )
+            .await?
+            .map_err(debug)?;
+        assert_eq!(receipt.operation, 4);
+    }
+    assert!(
+        owner
+            .root
+            .read_item_loop_ground_for_scope(fence.runtime_scope)
+            .await?
+            .iter()
+            .any(|row| row.item.item_instance_id == field
+                && row.item.definition.production_key == "oteryn:item.tibia.i2118"
+                && row.item.ground.spatial_position == ground.spatial_position)
+    );
+    assert_eq!(
+        commit_fixture_hit(owner, admitted, boss, 94, 250).await?,
+        (900, 900)
+    );
+    {
+        let permit = owner.spell_lane_permit().await.ok_or("field pickup lane")?;
+        let receipt = owner
+            .root
+            .commit_item_loop_move(
+                &permit,
+                owner.character,
+                owner.holder,
+                &fence,
+                CommandRef::new(admitted.game_session_id, CommandId::new(95).map_err(debug)?),
+                &HeraldFieldFixture(digest),
+                LoopMoveRequest {
+                    item: field,
+                    count: None,
+                    pickup_cell: Some(ground.spatial_position),
+                    destination: LoopDestination::MainBackpack,
+                },
+            )
+            .await?
+            .map_err(debug)?;
+        assert_eq!(receipt.operation, 5);
+    }
+    assert_eq!(
+        commit_fixture_hit(owner, admitted, boss, 96, 250).await?,
+        (900, 650)
+    );
+    Ok(())
+}
+
+async fn commit_fixture_hit(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    boss: crate::foundation::ExactActorRef,
+    sequence: u64,
+    magnitude: i64,
+) -> TestResult<(i64, i64)> {
+    use crate::foundation::{CharacterId, CommandId, CommandRef};
+    let fence = admitted.item_fence.ok_or("Instance fence")?;
+    let player = admitted.runtime_actor.ok_or("Instance participant")?;
+    let _permit = owner
+        .spell_lane_permit()
+        .await
+        .ok_or("Herald combat lane")?;
+    let now = owner.owner_now();
+    let mut runtime = owner.runtime.lock().await;
+    let batch = OwnerCombatBatch {
+        caster: player,
+        attacker: CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+        current_lease_generation: fence.character_lease_generation,
+        command: CommandRef::new(
+            admitted.game_session_id,
+            CommandId::new(sequence).map_err(debug)?,
+        ),
+        occurrence: SpellOccurrenceBinding {
+            id: format!("m9:herald-hit:{sequence}"),
+            revisions: ["r1"; 5].map(str::to_owned),
+        },
+        binding: format!("m9:herald-hit:{sequence}").into_bytes(),
+        anchor: None,
+        now_us: Some(now),
+        now_ms: now.get() / 1000,
+        effects: vec![OwnerCombatEffect {
+            target: boss,
+            sub_ordinal: 0,
+            change: OwnerCombatChange::Damage {
+                target_atom: runtime.creature_spell_target_atom(boss).map_err(debug)?,
+                magnitude,
+            },
+        }],
+        deferred: None,
+    };
+    let staged = runtime.stage_spell_batch(&batch).map_err(debug)?;
+    let hit = runtime.commit_spell_batch(staged).map_err(debug)?;
+    let health = hit
+        .effects
+        .first()
+        .and_then(|effect| effect.health)
+        .ok_or("damage receipt")?;
+    Ok((health.health_before, health.health_after))
+}
+
+struct HeraldFieldFixture([u8; 32]);
+
+impl crate::durability::item_transfer::ItemWeightLookup for HeraldFieldFixture {
+    fn generation_digest(&self) -> [u8; 32] {
+        self.0
+    }
+    fn weight_of(
+        &self,
+        _: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        Ok(1)
+    }
+}
+
+impl crate::durability::item_loop_move::ItemLoopContent for HeraldFieldFixture {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        self.0
+    }
+
+    fn loop_facts(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Option<crate::durability::item_transfer::ItemDefinitionFacts> {
+        use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
+        if definition.family != "Item" || definition.revision_ref != "definition-r1" {
+            return None;
+        }
+        let container = match definition.production_key.as_str() {
+            "oteryn:item.tibia.i2854" => true,
+            "oteryn:item.tibia.i2118" => false,
+            _ => return None,
+        };
+        Some(ItemDefinitionFacts {
+            definition: definition.clone(),
+            weight: Some(1),
+            stack: ItemStackClass::NonStackable,
+            container_capacity: container.then_some(20),
+            container_slot_equip_pattern: container,
+        })
+    }
+}
+
+async fn assert_uncredited_exit(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
+) -> TestResult {
+    use crate::foundation::condition::{ConditionDefinition, TickFacts};
+    use crate::map::view::MapFacts;
+    use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
+    use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry;
+    use oteryn_simulation_determinism::DecisionOccurrenceId;
+
+    let map = owner.bundle_map().ok_or("Herald Instance map")?;
+    let portal = TilePos {
+        x: 32496,
+        y: 32661,
+        floor: -15,
+    };
+    let count_portals = || {
+        map.facts
+            .movement_items(portal)
+            .iter()
+            .filter(|item| item.facts.appearance_id == 25051)
+            .count()
+    };
+    assert_eq!(count_portals(), 0);
+    let boss = owner
+        .runtime
+        .lock()
+        .await
+        .visible_entities()
+        .creatures
+        .first()
+        .ok_or("Herald")?
+        .actor;
+    assert_eq!(
+        commit_fixture_hit(owner, admitted, boss, 94, 125).await?,
+        (900, 775)
+    );
+    let now = owner.owner_now();
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let field = CreatureFieldEntry {
+            definition: ConditionDefinition::new(
+                "fixture.herald.environment",
+                1,
+                ConditionValues::DamageOverTime {
+                    element: DotElement::Energy,
+                    total_min: 2000,
+                    total_max: 2000,
+                    per_tick: 2000,
+                    interval_ms: 1000,
+                    delayed: false,
+                },
+            )
+            .ok_or("uncredited field condition")?,
+            source: None,
+            lineage: None,
+            occurrence: DecisionOccurrenceId::from_bytes([13; 16]),
+        };
+        runtime
+            .commit_creature_field_entry(boss, now.get(), Some(&field))
+            .map_err(debug)?;
+        let stage = runtime
+            .stage_creature_periodic_turn(
+                boss,
+                now.get(),
+                TickFacts {
+                    in_protection_zone: false,
+                    standing_on_field: Some(DotElement::Energy),
+                },
+            )
+            .map_err(debug)?;
+        let hit = runtime
+            .commit_creature_periodic_turn(stage)
+            .map_err(debug)?;
+        assert_eq!(hit.health_after, 0);
+        assert!(hit.impacts.iter().all(|impact| impact.source.is_none()));
+    }
+    owner.drain_monster_melee().await;
+    assert_eq!(count_portals(), 1);
+    owner.drain_monster_melee().await;
+    assert_eq!(count_portals(), 1);
     Ok(())
 }

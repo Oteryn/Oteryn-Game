@@ -619,6 +619,94 @@ where
     .flatten()
 }
 
+/// Refresh the isolated Herald room's durable fire cells within the spell lane.
+pub(super) async fn refresh_herald_rune_fields(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+) -> Option<()> {
+    let Some(map) = owner.bundle_map() else {
+        return Some(());
+    };
+    let scope = map.overlay.runtime_scope();
+    if !matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
+        return Some(());
+    }
+    let (generation, content, revision, frame) = {
+        let runtime = owner.runtime.lock().await;
+        if !runtime.activity_herald_is_alive() {
+            return Some(());
+        }
+        runtime.owner_fence().ok()?;
+        if runtime.binding().runtime_scope() != scope {
+            return None;
+        }
+        let pin = runtime.content_pin();
+        (
+            runtime.binding().scope_generation(),
+            pin.server_artifact_digest(),
+            pin.map_revision_digest(),
+            pin.frame_binding_digest(),
+        )
+    };
+    let content_revision = sha256_revision(content);
+    let native_revision = sha256_revision(revision);
+    let loop_revision = map_revision(map.overlay.base());
+    let native = owner.active_generation?.native_gameplay()?;
+    if native.source_digest() != content {
+        return None;
+    }
+    let rows = projection_read(
+        || owner.root.read_item_loop_ground_for_scope(scope),
+        |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
+    )
+    .await?;
+    let cells = rows
+        .iter()
+        .filter_map(|row| {
+            let item = &row.item;
+            if item.runtime_scope != scope
+                || item.runtime_scope_ownership_generation != generation.get()
+                || item.ground.content_revision != content_revision
+                || item.ground.native_room_placement_context.as_slice() != frame
+                || item.definition.family != "Item"
+                || native
+                    .item_policy(
+                        &item.definition.production_key,
+                        &item.definition.revision_ref,
+                    )
+                    .is_none()
+                || !matches!(
+                    item.definition.production_key.as_str(),
+                    "oteryn:item.tibia.i2118"
+                        | "oteryn:item.tibia.i2119"
+                        | "oteryn:item.tibia.i2120"
+                )
+            {
+                return None;
+            }
+            let mut cell = crate::durability::native_world_items::decode_ground_cell(
+                &item.ground.spatial_position,
+            )
+            .ok()?;
+            if item.ground.map_revision == loop_revision {
+                cell.z = cell.z.checked_neg()?;
+            } else if item.ground.map_revision != native_revision {
+                return None;
+            }
+            crate::content::bundle_spell_tiles::tile_pos(cell)
+        })
+        .collect();
+    let runtime = owner.runtime.lock().await;
+    let owner_fence = runtime.owner_fence().ok()?;
+    if !owner_fence.is_current_for_scope(scope, generation)
+        || runtime.content_pin().server_artifact_digest() != content
+        || runtime.content_pin().frame_binding_digest() != frame
+        || runtime.map_revision_digest() != revision
+    {
+        return None;
+    }
+    map.replace_herald_rune_fields(scope, cells).then_some(())
+}
+
 /// The Channel's loop Ground overlay over the bundle `base`; `None` without a pinned index or
 /// when the item owner cannot be read.
 pub async fn loop_ground(

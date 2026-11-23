@@ -87,6 +87,89 @@ impl SourceBossExitProof {
     }
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn record_activity_boss_defeat(
+        &self,
+        creature: &str,
+        death: crate::foundation::CreatureDeathOccurrenceKey,
+        at: i64,
+    ) -> bool {
+        use super::kill_reward::personal_death_id;
+        use super::operator_event;
+        let owner =
+            crate::durability::activity_handoff::ActivityHandoffOwner::new(self.root.clone());
+        use crate::durability::activity_handoff::boss_room::BossRoomDefeatDecision;
+        match owner
+            .record_boss_defeat(
+                self.character,
+                self.holder,
+                death.runtime_scope(),
+                death.scope_ownership_generation(),
+                crate::durability::activity_handoff::boss_room::BossDefeatOccurrence {
+                    boss_key: creature,
+                    death: personal_death_id(death),
+                    minted_unix_ms: at,
+                },
+            )
+            .await
+        {
+            Ok(BossRoomDefeatDecision::Recorded)
+                if creature == "oteryn:creature.herald_of_fire" =>
+            {
+                self.publish_source_death_portal(creature).await
+            }
+            Ok(
+                BossRoomDefeatDecision::Recorded
+                | BossRoomDefeatDecision::Unrelated
+                | BossRoomDefeatDecision::Late,
+            ) => true,
+            result => {
+                operator_event(&format!(
+                    "activity_defeat_deferred creature={creature} result={result:?}"
+                ));
+                false
+            }
+        }
+    }
+
+    /// Only a bound Herald's actual zero-HP receipt can take the uncredited exit path.
+    pub(super) async fn drain_uncredited_herald_defeat(&self) -> bool {
+        if !self.bundle_map().is_some_and(|map| {
+            matches!(
+                map.overlay.runtime_scope(),
+                RuntimeScopeRefV1::Instance { .. }
+            )
+        }) {
+            return false;
+        }
+        let captured = self.runtime.lock().await.prepare_uncredited_herald_defeat(
+            self.owner_now().get() / 1_000,
+            super::npc_trade_command::unix_ms_now(),
+        );
+        let (death, at) = match captured {
+            Ok(Some(defeat)) => defeat,
+            Ok(None) => return false,
+            Err(error) => {
+                super::operator_event(&format!(
+                    "herald_uncredited_defeat_read_deferred error={error:?}"
+                ));
+                return true;
+            }
+        };
+        if self
+            .record_activity_boss_defeat("oteryn:creature.herald_of_fire", death, at)
+            .await
+            && self
+                .runtime
+                .lock()
+                .await
+                .acknowledge_uncredited_herald_defeat(death, at)
+                .is_err()
+        {
+            super::operator_event("herald_uncredited_defeat_ack_deferred");
+        }
+        true
+    }
+
     /// The durable death receipt precedes the Instance-local portal projection.
     pub(super) async fn publish_source_death_portal(&self, creature: &str) -> bool {
         let runtime = self.runtime.lock().await;
