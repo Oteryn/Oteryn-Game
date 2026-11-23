@@ -1,14 +1,27 @@
 """Replay qualified Item Details facts after native profile admission."""
 
-from collections import Counter
 import json
+from collections import Counter
 
 from import_cyclopedia_global import apply_stats, item_id, load_capture, load_weights
 
-
-WEIGHT_IDS = (43501, 43502, 43503, 43504, 43899, 43900, 43946, 43947, 44048, 44727, 44728)
+WEIGHT_IDS = (
+    43501,
+    43502,
+    43503,
+    43504,
+    43899,
+    43900,
+    43946,
+    43947,
+    44048,
+    44727,
+    44728,
+)
 WEIGHT_FACTS = "tools/content-schema/native-gameplay/item-detail-weight-facts.json"
-GLOBAL_MODIFIER_PROMOTIONS = "docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json"
+GLOBAL_MODIFIER_PROMOTIONS = (
+    "docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json"
+)
 
 
 def item_key(identifier):
@@ -20,8 +33,8 @@ def known(value):
 
 
 def selected_modifier_vectors(root):
-    from lower_mantra_bond_modifier_packet import whole_vector
     from lower_elemental_magic_modifier_packet import native_order
+    from lower_mantra_bond_modifier_packet import whole_vector
 
     # The existing Global promotion supplies the whole vectors for sanguine
     # trousers and ethereal coned hat. Crystal has 10 for the hat, Global has 12.
@@ -44,7 +57,9 @@ def selected_modifier_vectors(root):
     ):
         vector = whole_vector(fields, order)
         if vector is None:
-            raise ValueError(f"ITEM_DETAILS_INVALID_CRYSTAL_MODIFIER_VECTOR:{identifier}")
+            raise ValueError(
+                f"ITEM_DETAILS_INVALID_CRYSTAL_MODIFIER_VECTOR:{identifier}"
+            )
         vectors[item_key(identifier)] = vector["value"]
     return vectors
 
@@ -59,7 +74,9 @@ def load_weight_facts(root, generated):
     if raw is None:
         raw = (root / WEIGHT_FACTS).read_bytes()
     weights = qualified_weights(root)
-    if json.loads(raw) != {str(identifier): value for identifier, value in weights.items()}:
+    if json.loads(raw) != {
+        str(identifier): value for identifier, value in weights.items()
+    }:
         raise ValueError("ITEM_DETAILS_WEIGHT_FACTS_DRIFT")
     return weights
 
@@ -85,7 +102,10 @@ def apply_capture_stats(profiles, capture):
 
 
 def apply(root, profiles, weights):
-    records = {row["production_definition"]["production_key"]: row for row in profiles["records"]}
+    records = {
+        row["production_definition"]["production_key"]: row
+        for row in profiles["records"]
+    }
     for identifier in weights:
         apply_weight(records[item_key(identifier)], identifier, weights)
 
