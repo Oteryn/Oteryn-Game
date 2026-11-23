@@ -353,7 +353,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     // Both peers are independently admitted durable Characters in this Channel.
     // Member one damages the boss; member two only stands nearby.
     let mut overlord_peers = Vec::new();
-    let peer_source = if rule.creature.ends_with("_overlord") {
+    let mut lesser_contributor = None;
+    let peer_source = if rule.creature.ends_with("_overlord") || rule.top_damage_only {
         Some(super::house_transfer_fixtures::RecoverySource::start(h).await?)
     } else {
         None
@@ -362,7 +363,9 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         use crate::gameplay_transport::connection::{
             AdmittedSession, FirstEntryOutcome, SessionContinuity,
         };
-        let peer_count = if mode == "overlordcr_seventeen" {
+        let peer_count = if rule.top_damage_only {
+            1
+        } else if mode == "overlordcr_seventeen" {
             17u8
         } else {
             2
@@ -447,7 +450,18 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 );
                 owner.refresh_quest_session(peer_session, false).await;
             }
-            overlord_peers.push((peer_actor, peer_session, *fence.character_id.as_bytes()));
+            let peer_character = *fence.character_id.as_bytes();
+            if rule.top_damage_only {
+                // This actor contributes to durable XP settlement but cannot earn Herald credit.
+                lesser_contributor = Some((
+                    peer_actor,
+                    peer_session,
+                    peer_character,
+                    fence.character_lease_generation,
+                ));
+            } else {
+                overlord_peers.push((peer_actor, peer_session, peer_character));
+            }
         }
     }
     if mode == "overlordcr_old_pin" {
@@ -496,38 +510,6 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     };
     let actor = deps.actor;
     let queue = owner.states.attack.lock().await.kills().clone();
-    // This second current native actor really deals damage. It remains an invalid
-    // Herald recipient even with the same admitted mission snapshot as the winner.
-    let lesser_contributor = if rule.top_damage_only {
-        let mut runtime = owner.runtime.lock().await;
-        let session = crate::foundation::GameSessionId::decode(&id(77)).map_err(debug)?;
-        let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
-        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        runtime
-            .initialize_pinned_test_position(
-                actor,
-                MovementLocalPosition {
-                    x: position[0] - 1,
-                    y: position[1],
-                    floor: i16::try_from(-position[2])?,
-                },
-            )
-            .map_err(debug)?;
-        runtime
-            .bind_attacker_lease(
-                actor,
-                session,
-                crate::foundation::CharacterLease::new(
-                    crate::foundation::CharacterId::decode(&id(78)).map_err(debug)?,
-                    1,
-                )
-                .map_err(debug)?,
-            )
-            .map_err(debug)?;
-        Some((actor, session, id(78), 1))
-    } else {
-        None
-    };
     let kills = if rule.creature == "oteryn:creature.cake_golem" {
         20usize
     } else {

@@ -128,6 +128,17 @@ def admit(root, generated, path, manifest_path, order, canonical):
             item, node, objects[item], physical[item], targets, None
         )
         complete_source_top_order(record, objects[item])
+        # Keep the capacity of a body already materializable in the canonical
+        # Item tree. This overlay contributes its source physics and decay.
+        definition_row = definitions[identity["key"]]
+        canonical_container = definition_row.get("semantics", {}).get("container", {})
+        canonical_capacity = canonical_container.get("value", {}).get("capacity", {})
+        if (
+            definition_row["materializable"]
+            and canonical_container.get("state") == "KNOWN"
+            and canonical_capacity.get("state") == "KNOWN"
+        ):
+            record["semantics"]["container"] = canonical_container
         if (
             item not in mandatory_yields
             and record["admission"]["stack_class"] != "NonStackable"

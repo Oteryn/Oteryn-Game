@@ -382,32 +382,7 @@ async fn hunt_with_decay(
             let corpse = corpse.ok_or("hunted native corpse")?;
             // COMBAT01 admits 64 live corpses per scope. Drive the real stage
             // and retirement owners between these accelerated fixture kills.
-            let mut tx = h.pool.begin().await?;
-            super::super::corpse_decay_fixtures::age_past_corpse_retirement(&mut tx, corpse).await?;
-            tx.commit().await?;
-            owner
-                .states
-                .spell_states
-                .lock()
-                .await
-                .next_item_deadline_pass_us = 0;
-            owner.drain_source_item_deadlines().await;
-            // The scoped owner retires one due corpse per pass. An earlier
-            // boss corpse can become due while this hunt is in progress.
-            let mut retired = false;
-            for _ in 0..crate::durability::item_decay_retire::COMBAT01_CORPSES_PER_SCOPE {
-                owner.drain_corpse_deadlines().await;
-                retired = sqlx::query_scalar(
-                    "SELECT lifecycle=2 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
-                )
-                .bind(corpse.as_slice())
-                .fetch_one(&h.pool)
-                .await?;
-                if retired {
-                    break;
-                }
-            }
-            assert!(retired, "the real decay owner must retire the hunted corpse");
+            super::super::corpse_decay_fixtures::retire_hunted_corpse(owner, h, corpse).await?;
         }
     }
     Ok(())

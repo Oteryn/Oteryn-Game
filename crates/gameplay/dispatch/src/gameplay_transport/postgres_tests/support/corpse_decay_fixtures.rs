@@ -202,6 +202,40 @@ pub(super) async fn qualify(
     Ok(())
 }
 
+pub(super) async fn retire_hunted_corpse(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    corpse: [u8; 16],
+) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    age_past_corpse_retirement(&mut tx, corpse).await?;
+    tx.commit().await?;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .next_item_deadline_pass_us = 0;
+    owner.drain_source_item_deadlines().await;
+    // The scoped owner retires one due corpse per pass. An earlier
+    // boss corpse can become due while this hunt is in progress.
+    let mut retired = false;
+    for _ in 0..crate::durability::item_decay_retire::COMBAT01_CORPSES_PER_SCOPE {
+        owner.drain_corpse_deadlines().await;
+        retired = sqlx::query_scalar(
+            "SELECT lifecycle=2 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(corpse.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        if retired {
+            break;
+        }
+    }
+    assert!(retired, "the real decay owner must retire the hunted corpse");
+    Ok(())
+}
+
 /// Shift the fixture's MINT anchor and stage deadlines by the same amount.
 /// The authored durations, stage proofs and retirement guards stay in force.
 pub(super) async fn age_past_corpse_retirement(

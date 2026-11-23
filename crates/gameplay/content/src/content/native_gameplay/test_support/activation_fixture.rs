@@ -586,6 +586,12 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
+    for creature in ["oteryn:creature.crocodile", "oteryn:creature.the_snapper"] {
+        assert_eq!(
+            source.reward_table().row(creature).err(),
+            Some(NoSettlementReason::CorpseItemInadmissible)
+        );
+    }
     admitted.sort_unstable();
     assert_eq!(
         missing + inadmissible + inadmissible_loot + admitted.len(),
@@ -593,7 +599,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (42, 19, 196, 132)
+        (42, 20, 196, 131)
     );
     assert_eq!(
         admitted,
@@ -719,7 +725,6 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_plasmother",
             "oteryn:creature.the_primal_menace",
             "oteryn:creature.the_scion_of_havoc",
-            "oteryn:creature.the_snapper",
             "oteryn:creature.the_spellstealer",
             "oteryn:creature.the_voice_of_ruin",
             "oteryn:creature.thul",

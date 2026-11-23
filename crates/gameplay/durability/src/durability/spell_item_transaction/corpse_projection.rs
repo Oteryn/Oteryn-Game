@@ -86,20 +86,14 @@ fn qualified_flags(
     ))
 }
 
-pub(super) fn project_current_corpse_flags(
-    row: &sqlx::postgres::PgRow,
-    ownership_generation: u64,
+fn pinned_item_source(
     target: &SpellGroundTarget,
-    flags: &mut [Option<bool>; 5],
-) -> Result<()> {
-    let Some(wire) = row.try_get::<Option<Vec<u8>>, _>("corpse_mint_envelope")? else {
-        return Ok(()); // The unchanged decoder rejects missing ordinary Item flags.
-    };
+) -> Result<&crate::content::native_gameplay::NativeItemProfileSource> {
     let source = target
         .item_profile_source
         .as_ref()
         .ok_or(SpellItemError::Rejected(
-            "corpse read lacks qualified Item source",
+            "tile read lacks qualified Item source",
         ))?;
     let digest = source.source_digest();
     let content = format!(
@@ -111,9 +105,62 @@ pub(super) fn project_current_corpse_flags(
     );
     if digest == [0; 32] || target.content_revision != content {
         return Err(SpellItemError::Rejected(
-            "corpse Item source Content pin mismatch",
+            "tile Item source Content pin mismatch",
         ));
     }
+    Ok(source)
+}
+
+// Native map receipts describe the item's initial placement. A loop drop can
+// have the same pinned Item in a new location, such as after a drawbridge moves it.
+pub(super) fn project_loop_drop_flags(
+    row: &sqlx::postgres::PgRow,
+    target: &SpellGroundTarget,
+    flags: &mut [Option<bool>],
+) -> Result<()> {
+    let definition = decoded_definition(row)?;
+    let source = pinned_item_source(target)?;
+    let policy = source
+        .item_policy(&definition.production_key, &definition.revision_ref)
+        .ok_or(SpellItemError::Rejected("loop drop Item profile missing"))?;
+    let record = policy.record();
+    let item = QualifiedItemDefinition::from_native_policy(policy)
+        .map_err(SpellItemError::Rejected)?;
+    if definition != item.definition
+        || item.content_generation_digest != source.source_digest()
+        || !item.materializable
+        || !item.ground_destination
+        || record.production_binding.disposition
+            != crate::content::ProjectV2SourceIdentityDisposition::Exact
+        || record.production_binding.target.key != definition.production_key
+        || record.production_binding.target.revision != definition.revision_ref
+    {
+        return Err(SpellItemError::Rejected("loop drop Item qualification mismatch"));
+    }
+    let qualified = [
+        record.attributes.blocks_movement,
+        record.attributes.blocks_projectile,
+        record.attributes.immovable_block_solid,
+    ];
+    for (current, qualified) in flags.iter_mut().zip(qualified) {
+        if current.is_some() && *current != qualified {
+            return Err(SpellItemError::Rejected("loop drop collision proof conflicts with current source"));
+        }
+        *current = qualified;
+    }
+    Ok(())
+}
+
+pub(super) fn project_current_corpse_flags(
+    row: &sqlx::postgres::PgRow,
+    ownership_generation: u64,
+    target: &SpellGroundTarget,
+    flags: &mut [Option<bool>],
+) -> Result<()> {
+    let Some(wire) = row.try_get::<Option<Vec<u8>>, _>("corpse_mint_envelope")? else {
+        return Ok(());
+    };
+    let source = pinned_item_source(target)?;
     let (_, mint) = super::super::item_mint_audit::decode_envelope(&wire)
         .map_err(|_| SpellItemError::Rejected("corpse MINT envelope qualification"))?;
     let after = mint

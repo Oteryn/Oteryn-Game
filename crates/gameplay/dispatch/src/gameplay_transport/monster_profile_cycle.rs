@@ -100,6 +100,13 @@ pub(super) async fn with_native_ai_seed<T>(
 }
 
 #[cfg(test)]
+pub(super) fn native_ai_seed_for_test(default: [u8; 32]) -> [u8; 32] {
+    NATIVE_PROFILE_TEST_SEED
+        .try_with(|seed| *seed)
+        .unwrap_or(default)
+}
+
+#[cfg(test)]
 pub(super) async fn with_main_native_ai_seed<T>(turn: impl std::future::Future<Output = T>) -> T {
     // Replay the native think sequence from main 294cc0a4.
     const SEED: [u8; 32] = [
@@ -408,7 +415,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let seed = native.source_digest();
                 #[cfg(test)]
-                let seed = NATIVE_PROFILE_TEST_SEED.try_with(|seed| *seed).unwrap_or(seed);
+                let seed = native_ai_seed_for_test(seed);
                 let root = GameplayDecisionRoot::from_bytes(seed);
                 let bloodjaw_players = if wave_enabled {
                     bloodjaw_targeting::current_players(runtime, states)
