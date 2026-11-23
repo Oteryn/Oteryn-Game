@@ -143,9 +143,11 @@ fn independent_tracker_opens_the_clicked_mission_and_adds_a_window() -> Result {
     app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
         .init_asset::<Image>()
         .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
         .insert_non_send(host)
         .add_systems(Startup, crate::bevy_shell::ui::setup);
-    tracker::install(&mut app);
+    install(&mut app);
     app.update();
     let click = |app: &mut App, kind: tracker::Control| -> Result {
         let entity = app
@@ -193,6 +195,13 @@ fn independent_tracker_opens_the_clicked_mission_and_adds_a_window() -> Result {
         .ok_or("play")?
         .link
         .quest_panel();
+    assert_eq!(
+        app.world_mut()
+            .query_filtered::<&Text, With<Detail>>()
+            .single(app.world())?
+            .0,
+        "Find the guide\n\nReturn to the island guide."
+    );
     assert!(panel.open && panel.tracker_open);
     assert_eq!(panel.mission, Some(1));
     assert_eq!(

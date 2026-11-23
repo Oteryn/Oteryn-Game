@@ -1,4 +1,4 @@
-use super::{QuestListEntry, QuestLogQuery, QuestLogView, QuestPanel};
+use super::{QuestListEntry, QuestLogQuery, QuestPanel};
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum QuestSort {
     #[default]
@@ -42,10 +42,7 @@ impl QuestSort {
 /// Search and sort only confirmed list facts; the server cursor and tracker are unchanged.
 pub fn quest_rows(panel: &QuestPanel) -> Vec<&QuestListEntry> {
     let search = panel.list_search.trim().to_lowercase();
-    let visible = match &panel.state.log.view {
-        Some(QuestLogView::Line(line)) => Some(line),
-        _ => None,
-    };
+    let visible = panel.journal_line();
     let known: Vec<_> = panel
         .state
         .log
