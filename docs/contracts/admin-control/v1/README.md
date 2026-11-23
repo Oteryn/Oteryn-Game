@@ -30,8 +30,41 @@ and next trusted keys are accepted within their validity windows.
 ADM-01 leaves read fields and pagination unspecified. This implementation fixes
 those fields in the exported schemas: list calls require a limit of 1–100 and
 an optional opaque cursor, search requires a filter, and inventory is flattened
-with location and parent ids. No executor besides `admin.policy.get` is enabled.
-The other read executors and their data-source bounds belong to ADM-G3.
+with location and parent ids. ADM-G3 implements the Phase-1 reads below.
+`admin.agent.list` and `analytics.catalog` are outside that slice.
+
+| Operation | Game source and unavailable fields |
+|---|---|
+| `ops.overview.get` | Agent ownership config, scope assignments, durable node and session presence, and read DB connectivity. Agent fleet and backup telemetry are unavailable (empty agents, null backup age). A missing read connection sets `db_available=false` and adds an alert. |
+| `world.list`, `world.get` | Configured owned World IDs and current Channel assignments. Registry name, admission state, and World-wide revisions are unavailable (empty strings and state `unavailable`). |
+| `node.list`, `node.get` | Current node registrations, scope assignments, and matching readiness generations. Uptime measures time since registration. Host, build, and resource telemetry are unavailable (empty strings and zero CPU). |
+| `db.status` | PostgreSQL catalog and statistics, including the largest 50 tables. Bloat is unavailable. Lag is replica replay age when available. Oldest transaction age covers activity visible to the read role. |
+| `db.migrations.list` | SQLx migration history compared with the Game migrations embedded in the agent build. |
+| `player.search` | Character roots and progression with matching durable session presence. IP hash lookup is unavailable. |
+| `player.character.get` | Offline Character root, progression, build, last saved position, account premium and bank projections, guild, house, sanctions, and retained online interval starts. Skill progress percentages are unavailable (zero). Missing saved position or a nonterminal session returns `ADM_TARGET_UNAVAILABLE`. |
+| `player.inventory.get` | Offline durable equipment, backpack, depot, and inbox custody trees. Stash balances have no instance IDs and are omitted. Item definitions without a numeric type ID use zero. Characters with a nonterminal session return `ADM_TARGET_UNAVAILABLE`. |
+| `sanction.list` | Game staff mute history and the Game projection of Platform sanction decisions. Account-only records require account targeting and global scope. |
+| `admin.ledger.query` | Existing Game ledger, restricted to the result fields. Time ranges are half-open and at most 31 days. |
+| `admin.policy.get` | Pinned local policy. |
+
+Read executors use short read-only PostgreSQL snapshots and never acquire a
+Character writer lease. Offline access requires no nonterminal session or
+outstanding Character or account presence holder in the same snapshot as the
+data. The existing channel still records its nonce, idempotency and audit
+evidence. Retained ADM-G3 results bind the replay digest to the signed operation,
+actor and target and the effective ownership policy.
+
+Set the optional `read_db_url_env_name` to the name of a separately provisioned
+connection to the same Game database. Provision a dedicated SELECT-only login
+for the named source relations with no gameplay writer or control membership.
+Grant access only to the columns used by the executors, plus EXECUTE on
+`game_account_closure_detached(uuid)`. In particular, ledger reads require only
+the fields listed in its result schema and never select canonical requests.
+The existing audit connection and role stay dedicated to ADM transport
+bookkeeping. An omitted read connection leaves the world roster and overview
+fallback available, returns an empty node page, and returns
+`ADM_TARGET_UNAVAILABLE` for other database-backed reads. Enable each
+operation explicitly in the pinned policy.
 
 The pure verifier accepts immutable nonce/idempotency/precondition snapshots.
 The driver authenticates first, atomically claims the PostgreSQL nonce, runs

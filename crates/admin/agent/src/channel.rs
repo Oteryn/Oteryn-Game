@@ -82,22 +82,20 @@ impl Transport for HttpsTransport {
         parse_json(&bytes).map_err(|_| E::AdmInvalidParams)
     }
 }
-/// Only implemented executors are advertised. G3 adds the other read executors.
+/// Only implemented executors are advertised.
 pub fn advertised() -> BTreeSet<String> {
-    BTreeSet::from([Operation::AdminPolicyGet.name().into()])
-}
-pub fn execute(operation: &str, policy: &Policy) -> Result<OperationResult, E> {
-    if operation == Operation::AdminPolicyGet.name() {
-        Ok(OperationResult::AdminPolicyGet(policy.view()))
-    } else {
-        Err(E::AdmUnknownOperation)
-    }
+    Operation::ALL
+        .into_iter()
+        .filter(|op| crate::read::implemented(*op))
+        .map(|op| op.name().into())
+        .collect()
 }
 
 pub struct Agent<T, S, C> {
     pub config: Config,
     pub policy: Policy,
     pub transport: T,
+    pub read_pool: Option<sqlx::PgPool>,
     pub store: S,
     pub clock: C,
     pub signing_key: SigningKey,
@@ -173,9 +171,31 @@ impl<T: Transport + Clone, S: NonceStore + IdempotencyStore, C: Clock + Clone> A
             ..Evidence::default()
         };
         let params_digest = verifier::authorize(r, &self.policy, op, &evidence, now)?;
+        // A targeted read's result belongs to its signed operation and scope.
+        // Keep policy-only records from previous agents readable.
+        let replay_digest = if op == Operation::AdminPolicyGet {
+            params_digest
+        } else {
+            let rule = self
+                .policy
+                .operations
+                .get(op.name())
+                .ok_or(E::AdmForbidden)?;
+            digest(&(
+                &r.operation,
+                r.operation_version,
+                &r.target,
+                &r.actor.admin_id,
+                &rule.worlds,
+                &self.config.worlds,
+                &self.config.nodes,
+                params_digest,
+            ))
+            .map_err(|_| E::AdmInternal)?
+        };
         // Steps 5–8 succeeded before touching idempotency state.
         let prior = self.store.lookup(&r.admin_operation_id).await?;
-        match verifier::idempotency(&params_digest, prior.as_ref())? {
+        match verifier::idempotency(&replay_digest, prior.as_ref())? {
             Decision::Recorded(response) => Ok(*response),
             Decision::Execute { params_digest } => {
                 // Store I/O may have consumed the remaining lifetime.
@@ -184,7 +204,15 @@ impl<T: Transport + Clone, S: NonceStore + IdempotencyStore, C: Clock + Clone> A
                 {
                     return Err(E::AdmExpired);
                 }
-                let response = self.response(r, execute(&r.operation, &self.policy))?;
+                let result = crate::read::execute(
+                    op,
+                    r,
+                    &self.config,
+                    &self.policy,
+                    self.read_pool.as_ref(),
+                )
+                .await;
+                let response = self.response(r, result)?;
                 self.store.finish(r, &params_digest, &response, now).await
             }
         }
