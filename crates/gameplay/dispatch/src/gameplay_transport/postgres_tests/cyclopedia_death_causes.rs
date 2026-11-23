@@ -170,9 +170,9 @@ fn recent_deaths_pre_2780_preserves_pvp_name_order_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    pvp_cause_in_both_layouts(
+    causes_in_both_layouts(
         "recent_deaths_pre_2780_preserves_pvp_name_order_postgres",
-        None,
+        CauseCase::Pvp(None),
     )
 }
 
@@ -181,13 +181,41 @@ fn recent_deaths_current_preserves_pvp_name_order_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    pvp_cause_in_both_layouts(
+    causes_in_both_layouts(
         "recent_deaths_current_preserves_pvp_name_order_postgres",
-        Some(1),
+        CauseCase::Pvp(Some(1)),
     )
 }
 
-fn pvp_cause_in_both_layouts(case: &'static str, most_damage_ordinal: Option<i16>) -> TestResult {
+#[test]
+fn recent_deaths_bounds_cause_at_whole_names_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    causes_in_both_layouts(
+        "recent_deaths_bounds_cause_at_whole_names_postgres",
+        CauseCase::Bounded,
+    )
+}
+
+#[test]
+fn recent_deaths_adds_missing_captured_sources_by_identity_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    causes_in_both_layouts(
+        "recent_deaths_adds_missing_captured_sources_by_identity_postgres",
+        CauseCase::Mixed,
+    )
+}
+
+enum CauseCase {
+    Pvp(Option<i16>),
+    Bounded,
+    Mixed,
+}
+
+fn causes_in_both_layouts(case: &'static str, scenario: CauseCase) -> TestResult {
     scenario_thread::run_async(async move |admin| {
         reset();
         let h =
@@ -201,54 +229,12 @@ fn pvp_cause_in_both_layouts(case: &'static str, most_damage_ordinal: Option<i16
             .await
             .map_err(debug)?;
 
-        // Store the final blow first and, for current deaths, the most damage second.
-        // The PvP ledger still contains every contributor and the cause uses name order.
-        let seeds: &[u8] = if most_damage_ordinal.is_some() {
-            &[62, 61, 60]
-        } else {
-            &[61, 60]
-        };
-        for &seed in seeds {
-            pvp_source_death_fixture::seed_root(&h.pool, 41, seed, 42).await?;
-        }
-        let contributors: Vec<_> = seeds.iter().map(|&seed| id(seed).to_vec()).collect();
         let at = unix_now_ms();
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role = replica")
-            .execute(&mut *tx)
-            .await?;
-        seed_death_receipts(&mut tx, &[id(90).to_vec()], at - 1).await?;
-        sqlx::query(
-            "INSERT INTO game_public_death_killers
-                (death_occurrence_id,ordinal,kind,character_id,name)
-             SELECT encode($1,'hex')::uuid, roster.position-1, 'player', root.character_id, root.name
-             FROM unnest($2::bytea[]) WITH ORDINALITY AS roster(source,position)
-             JOIN game_character_roots root ON root.character_id=encode(roster.source,'hex')::uuid",
-        )
-        .bind(id(90).as_slice())
-        .bind(&contributors)
-        .execute(&mut *tx).await?;
-        sqlx::query(
-            "INSERT INTO game_public_death_classifications
-                (death_occurrence_id,pvp,killer_key,most_damage_ordinal)
-             VALUES (encode($1,'hex')::uuid,true,'player',$2)",
-        )
-        .bind(id(90).as_slice())
-        .bind(most_damage_ordinal)
-        .execute(&mut *tx)
-        .await?;
-        sqlx::query(
-            "INSERT INTO game_character_unjustified_points
-                (character_id,death_occurrence_id,victim_character_id,points_milli)
-             SELECT encode(source,'hex')::uuid, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1000
-             FROM unnest($3::bytea[]) AS roster(source)",
-        )
-        .bind(id(90).as_slice())
-        .bind(id(41).as_slice())
-        .bind(&contributors)
-        .execute(&mut *tx)
-        .await?;
-        tx.commit().await?;
+        let (view, extension) = match scenario {
+            CauseCase::Pvp(ordinal) => seed_pvp_history(&h, at, ordinal).await?,
+            CauseCase::Bounded => seed_long_causes(&h, at).await?,
+            CauseCase::Mixed => seed_mixed_causes(&h, at).await?,
+        };
 
         let deps = Dependencies::new()?;
         let owner = deps.owner(&h, &authority);
@@ -275,7 +261,7 @@ fn pvp_cause_in_both_layouts(case: &'static str, most_damage_ordinal: Option<i16
             },
         ];
         let tab = COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB;
-        let request = [CharacterTab::RecentDeaths as u8, 0, 0, 1];
+        let request = [CharacterTab::RecentDeaths as u8, 0, 0, 2];
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[CAPABILITY_CYCLOPEDIA_CHARACTER_V1])
                 .ok_or("cyclopedia character capability")?;
@@ -294,25 +280,6 @@ fn pvp_cause_in_both_layouts(case: &'static str, most_damage_ordinal: Option<i16
         drop(seal);
         h.cleanup().await?;
 
-        let (cause, final_blow, most_damage) = if most_damage_ordinal.is_some() {
-            (
-                "Died at Level 20 by Pvpci and Pvpcj and Pvpck",
-                "Pvpck",
-                "Pvpcj",
-            )
-        } else {
-            ("Died at Level 20 by Pvpci and Pvpcj", "Pvpcj", "")
-        };
-        let view = TabView::RecentDeaths(vec![(at, cause.into())]);
-        let extension = TabExtension {
-            vocation_id: None,
-            deaths: Some(vec![DeathDetails {
-                level: 20,
-                killer: final_blow.into(),
-                most_damage: most_damage.into(),
-                unjustified: true,
-            }]),
-        };
         assert_eq!(
             (plain, detailed),
             (
@@ -326,4 +293,235 @@ fn pvp_cause_in_both_layouts(case: &'static str, most_damage_ordinal: Option<i16
         );
         Ok(())
     })
+}
+
+async fn seed_pvp_history(
+    h: &Harness,
+    at: i64,
+    most_damage_ordinal: Option<i16>,
+) -> TestResult<(TabView, TabExtension)> {
+    // Store the final blow first and, for current deaths, the most damage second.
+    // The PvP ledger still contains every contributor and the cause uses name order.
+    let seeds: &[u8] = if most_damage_ordinal.is_some() {
+        &[62, 61, 60]
+    } else {
+        &[61, 60]
+    };
+    for &seed in seeds {
+        pvp_source_death_fixture::seed_root(&h.pool, 41, seed, 42).await?;
+    }
+    let contributors: Vec<_> = seeds.iter().map(|&seed| id(seed).to_vec()).collect();
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    seed_death_receipts(&mut tx, &[id(90).to_vec()], at - 1).await?;
+    sqlx::query(
+        "INSERT INTO game_public_death_killers
+            (death_occurrence_id,ordinal,kind,character_id,name)
+         SELECT encode($1,'hex')::uuid, roster.position-1, 'player', root.character_id, root.name
+         FROM unnest($2::bytea[]) WITH ORDINALITY AS roster(source,position)
+         JOIN game_character_roots root ON root.character_id=encode(roster.source,'hex')::uuid",
+    )
+    .bind(id(90).as_slice())
+    .bind(&contributors)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_public_death_classifications
+            (death_occurrence_id,pvp,killer_key,most_damage_ordinal)
+         VALUES (encode($1,'hex')::uuid,true,'player',$2)",
+    )
+    .bind(id(90).as_slice())
+    .bind(most_damage_ordinal)
+    .execute(&mut *tx)
+    .await?;
+    seed_unjustified_points(&mut tx, 90, &contributors).await?;
+    tx.commit().await?;
+
+    let (cause, final_blow, most_damage) = if most_damage_ordinal.is_some() {
+        (
+            "Died at Level 20 by Pvpci and Pvpcj and Pvpck",
+            "Pvpck",
+            "Pvpcj",
+        )
+    } else {
+        ("Died at Level 20 by Pvpci and Pvpcj", "Pvpcj", "")
+    };
+    let view = TabView::RecentDeaths(vec![(at, cause.into())]);
+    let extension = TabExtension {
+        vocation_id: None,
+        deaths: Some(vec![DeathDetails {
+            level: 20,
+            killer: final_blow.into(),
+            most_damage: most_damage.into(),
+            unjustified: true,
+        }]),
+    };
+    Ok((view, extension))
+}
+
+async fn seed_unjustified_points(
+    tx: &mut Transaction<'_, Postgres>,
+    occurrence: u8,
+    contributors: &[Vec<u8>],
+) -> TestResult {
+    sqlx::query(
+        "INSERT INTO game_character_unjustified_points
+            (character_id,death_occurrence_id,victim_character_id,points_milli)
+         SELECT encode(source,'hex')::uuid, encode($1,'hex')::uuid, encode($2,'hex')::uuid,
+            1000 / cardinality($3::bytea[])
+         FROM unnest($3::bytea[]) AS roster(source)",
+    )
+    .bind(id(occurrence).as_slice())
+    .bind(id(41).as_slice())
+    .bind(contributors)
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
+async fn seed_long_causes(h: &Harness, at: i64) -> TestResult<(TabView, TabExtension)> {
+    let seeds = 60..68;
+    for seed in seeds.clone() {
+        pvp_source_death_fixture::seed_root(&h.pool, 41, seed, 42).await?;
+    }
+    let contributors: Vec<_> = seeds.map(|seed| id(seed).to_vec()).collect();
+    let names: Vec<_> = (b'A'..=b'H')
+        .map(|letter| format!("{}{}", char::from(letter), "x".repeat(28)))
+        .collect();
+    let multibyte_name = "é".repeat(16);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "UPDATE game_character_roots root SET name=roster.name
+         FROM unnest($1::bytea[], $2::text[]) AS roster(source,name)
+         WHERE root.character_id=encode(roster.source,'hex')::uuid",
+    )
+    .bind(&contributors)
+    .bind(&names)
+    .execute(&mut *tx)
+    .await?;
+    seed_death_receipts(&mut tx, &[id(90).to_vec(), id(91).to_vec()], at - 2).await?;
+    seed_unjustified_points(&mut tx, 90, &contributors).await?;
+    seed_unjustified_points(&mut tx, 91, &contributors[..6]).await?;
+    // Six 29-byte names leave 36 bytes. The separator and this UTF-8 name need 37.
+    sqlx::query(
+        "INSERT INTO game_public_death_killers
+            (death_occurrence_id,ordinal,kind,creature_key,name)
+         VALUES (encode($1,'hex')::uuid,0,'creature','oteryn:creature.rat',$2)",
+    )
+    .bind(id(91).as_slice())
+    .bind(&multibyte_name)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_public_death_classifications
+            (death_occurrence_id,pvp,killer_key,most_damage_ordinal)
+         VALUES (encode($1,'hex')::uuid,true,'oteryn:creature.rat',0)",
+    )
+    .bind(id(91).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+
+    let view = TabView::RecentDeaths(vec![
+        (
+            at,
+            format!("Died at Level 20 by {}", names[..6].join(" and ")),
+        ),
+        (
+            at - 1,
+            format!("Died at Level 20 by {}", names[..7].join(" and ")),
+        ),
+    ]);
+    let extension = TabExtension {
+        vocation_id: None,
+        deaths: Some(vec![
+            DeathDetails {
+                level: 20,
+                killer: multibyte_name.clone(),
+                most_damage: multibyte_name,
+                unjustified: true,
+            },
+            DeathDetails {
+                level: 20,
+                unjustified: true,
+                ..DeathDetails::default()
+            },
+        ]),
+    };
+    Ok((view, extension))
+}
+
+async fn seed_mixed_causes(h: &Harness, at: i64) -> TestResult<(TabView, TabExtension)> {
+    for seed in [60, 61, 62] {
+        pvp_source_death_fixture::seed_root(&h.pool, 41, seed, 42).await?;
+    }
+    let contributors = [id(60).to_vec(), id(61).to_vec()];
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    // The renamed player and creature share a display name but are different sources.
+    sqlx::query(
+        "UPDATE game_character_roots SET name='Rat' WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(60).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    seed_death_receipts(&mut tx, &[id(90).to_vec(), id(91).to_vec()], at - 2).await?;
+    seed_unjustified_points(&mut tx, 90, &contributors).await?;
+    seed_unjustified_points(&mut tx, 91, &contributors).await?;
+    sqlx::query(
+        "INSERT INTO game_public_death_killers
+            (death_occurrence_id,ordinal,kind,character_id,creature_key,name)
+         VALUES
+            (encode($1,'hex')::uuid,0,'player',encode($3,'hex')::uuid,NULL,'Pvpci'),
+            (encode($1,'hex')::uuid,1,'player',encode($4,'hex')::uuid,NULL,'Pvpck'),
+            (encode($2,'hex')::uuid,0,'creature',NULL,'oteryn:creature.rat','Rat'),
+            (encode($2,'hex')::uuid,1,'player',encode($4,'hex')::uuid,NULL,'Pvpck')",
+    )
+    .bind(id(90).as_slice())
+    .bind(id(91).as_slice())
+    .bind(id(60).as_slice())
+    .bind(id(62).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_public_death_classifications
+            (death_occurrence_id,pvp,killer_key,most_damage_ordinal)
+         VALUES (encode($1,'hex')::uuid,true,'player',1),
+                (encode($2,'hex')::uuid,true,'oteryn:creature.rat',1)",
+    )
+    .bind(id(90).as_slice())
+    .bind(id(91).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+
+    let view = TabView::RecentDeaths(vec![
+        (
+            at,
+            "Died at Level 20 by Pvpcj and Rat and Rat and Pvpck".into(),
+        ),
+        (at - 1, "Died at Level 20 by Pvpcj and Rat and Pvpck".into()),
+    ]);
+    let extension = TabExtension {
+        vocation_id: None,
+        deaths: Some(
+            ["Rat", "Pvpci"]
+                .into_iter()
+                .map(|killer| DeathDetails {
+                    level: 20,
+                    killer: killer.into(),
+                    most_damage: "Pvpck".into(),
+                    unjustified: true,
+                })
+                .collect(),
+        ),
+    };
+    Ok((view, extension))
 }

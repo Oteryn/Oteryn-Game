@@ -42,15 +42,23 @@ const GENERAL_STATS_SQL: &str = "SELECT p.level,p.total_experience,b.magic_level
 /// dealer. Unjustified points and guild war frags supply the name-ordered PvP cause list.
 const DEATHS_SQL: &str = "SELECT d.committed_at,d.level_before, \
  COALESCE(k.name,'') AS killer, COALESCE(m.name,'') AS most_damage, \
- COALESCE(k.ordinal=m.ordinal,false) AS same_source, \
- EXISTS(SELECT 1 FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id) AS unjustified, \
- ARRAY(SELECT r.name FROM (SELECT u.character_id AS killer FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id \
-   UNION SELECT f.killer_character_id FROM game_guild_war_frags f WHERE f.death_occurrence_id=d.death_occurrence_id) k JOIN game_character_roots r ON r.character_id=k.killer ORDER BY r.name) AS killers \
+ COALESCE(k.ordinal=m.ordinal OR k.character_id=m.character_id,false) AS same_source, \
+ COALESCE(ledger.killers,ARRAY[]::text[]) AS killers, \
+ COALESCE(ledger.has_killer,false) AS killer_in_ledger, \
+ COALESCE(ledger.has_most_damage,false) AS most_damage_in_ledger, \
+ EXISTS(SELECT 1 FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id) AS unjustified \
  FROM game_character_death_receipts d \
  LEFT JOIN game_public_death_classifications c ON c.death_occurrence_id=d.death_occurrence_id \
  LEFT JOIN game_public_death_killers k ON k.death_occurrence_id=c.death_occurrence_id AND k.ordinal=0 \
    AND ((k.kind='creature' AND c.killer_key=k.creature_key) OR (k.kind='player' AND c.killer_key='player')) \
  LEFT JOIN game_public_death_killers m ON m.death_occurrence_id=c.death_occurrence_id AND m.ordinal=c.most_damage_ordinal \
+ LEFT JOIN LATERAL ( \
+   SELECT array_agg(r.name ORDER BY r.name) AS killers, bool_or(r.character_id=k.character_id) AS has_killer, \
+     bool_or(r.character_id=m.character_id) AS has_most_damage \
+   FROM (SELECT u.character_id FROM game_character_unjustified_points u WHERE u.death_occurrence_id=d.death_occurrence_id \
+     UNION SELECT f.killer_character_id FROM game_guild_war_frags f WHERE f.death_occurrence_id=d.death_occurrence_id) p \
+   JOIN game_character_roots r ON r.character_id=p.character_id \
+ ) ledger ON true \
  WHERE d.character_id=encode($1,'hex')::uuid AND d.committed_at BETWEEN $2 AND $3 ORDER BY d.committed_at DESC,d.death_occurrence_id DESC OFFSET $4 LIMIT $5";
 
 /// PvP kills in the history window, newest first. A guild war frag wins over unjustified
@@ -77,6 +85,21 @@ const INSPECTION_SQL: &str = "SELECT s.slot,i.definition_production_key,i.quanti
 
 fn narrow<T: TryFrom<i64>>(value: i64) -> Result<T, sqlx::Error> {
     T::try_from(value).map_err(|_| sqlx::Error::Decode("cyclopedia value out of range".into()))
+}
+
+fn bounded_death_cause(level: u64, killers: &[String]) -> String {
+    let mut cause = death_cause(level, &[]);
+    let mut separator = " by ";
+    for killer in killers {
+        // Both reply layouts store the cause length as a u8 byte count.
+        if cause.len() + separator.len() + killer.len() > usize::from(u8::MAX) {
+            break;
+        }
+        cause.push_str(separator);
+        cause.push_str(killer);
+        separator = " and ";
+    }
+    cause
 }
 
 impl DurabilityRoot {
@@ -184,15 +207,14 @@ impl DurabilityRoot {
                             unjustified: row.try_get("unjustified")?,
                         });
                         let mut killers: Vec<String> = row.try_get("killers")?;
-                        if killers.is_empty() {
-                            if !killer.is_empty() {
-                                killers.push(killer);
-                            }
-                            if !most_damage.is_empty() && !row.try_get::<bool, _>("same_source")? {
-                                killers.push(most_damage);
-                            }
+                        let same_source = !killer.is_empty() && row.try_get("same_source")?;
+                        if !killer.is_empty() && !row.try_get::<bool, _>("killer_in_ledger")? {
+                            killers.push(killer);
                         }
-                        entries.push((row.try_get("committed_at")?, death_cause(narrow(level)?, &killers)));
+                        if !most_damage.is_empty() && !same_source && !row.try_get::<bool, _>("most_damage_in_ledger")? {
+                            killers.push(most_damage);
+                        }
+                        entries.push((row.try_get("committed_at")?, bounded_death_cause(narrow(level)?, &killers)));
                     }
                     extension.deaths = Some(details);
                     TabView::RecentDeaths(entries)
