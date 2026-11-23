@@ -60,7 +60,8 @@ BEGIN
     WHEN 'game_equipment_slot_proven' THEN
       arm:=$arm$IF TG_OP='DELETE' THEN
         IF EXISTS (SELECT 1 FROM game_npc_trade_equipment_burns e JOIN game_npc_trades t USING(transaction_id)
-          JOIN game_npc_trade_lines l USING(transaction_id,item_instance_id)
+          JOIN game_npc_trade_lines l ON l.transaction_id=e.transaction_id
+            AND l.item_instance_id=e.item_instance_id
           WHERE e.created_xact_id=pg_current_xact_id() AND t.created_xact_id=e.created_xact_id
           AND e.item_instance_id=OLD.item_instance_id AND e.slot=OLD.slot
           AND t.character_id=OLD.character_id AND t.world_id=OLD.world_id

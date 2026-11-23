@@ -5,34 +5,65 @@ use sqlx::PgConnection;
 
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-/// A House case's own database: the stub case's `house_interior_<nanos>`
-/// (unless `harness_only`) or the native harness's `it_<tag>_<nanos>` for a
-/// `house_interior_*` or `house_loader_*` tag, as the canonical test admin on 18.6.
+/// Match the case database names issued by `oteryn_test_support::postgres::database_name`.
+fn is_house_case_database(database: &str, harness_only: bool) -> bool {
+    let prefix = format!("oteryn_case_{:x}_", std::process::id());
+    let Some((sequence, tag)) = database
+        .strip_prefix(&prefix)
+        .and_then(|suffix| suffix.split_once('_'))
+    else {
+        return false;
+    };
+    if !u64::from_str_radix(sequence, 16).is_ok_and(|number| sequence == format!("{number:x}")) {
+        return false;
+    }
+    let harness_tag = |prefix: &str| {
+        tag.strip_prefix(prefix).is_some_and(|suffix| {
+            !suffix.is_empty()
+                && suffix
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+        })
+    };
+    (!harness_only && tag == "house_interior")
+        || harness_tag("it_house_interior_")
+        || harness_tag("it_house_loader_")
+}
+
+/// A House case's own database as the canonical test admin on PostgreSQL 18.6.
 async fn dedicated_database(connection: &mut PgConnection, harness_only: bool) -> TestResult<bool> {
     let (database, actor, version): (String, String, String) = sqlx::query_as(
         "SELECT current_database(), session_user::text, current_setting('server_version_num')",
     )
     .fetch_one(&mut *connection)
     .await?;
-    let Some((stem, nanos)) = database.rsplit_once('_') else {
-        return Ok(false);
-    };
-    let harness_tag = |prefix: &str| {
-        stem.strip_prefix(prefix).is_some_and(|tag| {
-            !tag.is_empty()
-                && tag
-                    .bytes()
-                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
-        })
-    };
-    let named = !nanos.is_empty()
-        && nanos.bytes().all(|b| b.is_ascii_digit())
-        && ((!harness_only && stem == "house_interior")
-            || harness_tag("it_house_interior_")
-            || harness_tag("it_house_loader_"));
-    Ok(named
+    Ok(is_house_case_database(&database, harness_only)
         && actor == "oteryn_test_admin"
         && version == oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM)
+}
+
+#[test]
+fn house_fixture_only_accepts_its_own_case_databases() {
+    use oteryn_test_support::postgres::database_name;
+
+    let stub = database_name("house_interior");
+    assert!(is_house_case_database(&stub, false));
+    assert!(!is_house_case_database(&stub, true));
+    for tag in ["it_house_interior_capacity", "it_house_loader_current"] {
+        assert!(is_house_case_database(&database_name(tag), true));
+    }
+
+    let process = std::process::id();
+    for name in [
+        "postgres".to_owned(),
+        "oteryn_tpl_1234567890abcdef".to_owned(),
+        database_name("it_ordinary_transfer"),
+        database_name("it_house_interior_"),
+        format!("oteryn_case_{process:x}_nothex_house_interior"),
+        format!("oteryn_case_{:x}_0_it_house_loader_current", process ^ 1),
+    ] {
+        assert!(!is_house_case_database(&name, false), "{name}");
+    }
 }
 
 pub async fn install(connection: &mut PgConnection) -> TestResult {

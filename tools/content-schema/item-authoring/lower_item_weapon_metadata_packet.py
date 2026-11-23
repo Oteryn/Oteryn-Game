@@ -22,7 +22,9 @@ FORGE_PACKET = "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.js
 FORGE_PACKET_SHA = "69bf44d0e7aea723e634f2fba199bdd39b2e5c80a3a64a3d74597d68aafe95aa"
 # Protected main 5aad10531 adds and updates map shards without taking any of the
 # 103 weapon Items into World ownership. Preserve the original proof as well.
-WORLD_OWNER_SUCCESSOR_SHA = "9fa595b089d5be84ba72b48031607fedd8afcfa2cc9069be631f47ed0134320b"
+WORLD_OWNER_SUCCESSOR_SHA = (
+    "9fa595b089d5be84ba72b48031607fedd8afcfa2cc9069be631f47ed0134320b"
+)
 ALIASES = (
     "tools/content-schema/item-authoring/fandom-weapon-metadata-alias-supplement.json"
 )
@@ -175,9 +177,13 @@ def check_parent_receipt(root, proof):
             raise ValueError("current parent authoring sibling drift")
     if forge_owners:
         forge_packet = json.loads(base.checked(root, FORGE_PACKET, FORGE_PACKET_SHA))
-        qualified_forge = {row["item"]["key"]: row for row in forge_packet["promotions"]}
+        qualified_forge = {
+            row["item"]["key"]: row for row in forge_packet["promotions"]
+        }
         if not same(forge_owners, qualified_forge):
-            raise ValueError("unexpected source authoring owner outside the pinned Forge set")
+            raise ValueError(
+                "unexpected source authoring owner outside the pinned Forge set"
+            )
     if (
         not set(parents).issubset(seen)
         or len(parents) != receipt["parent_authoring_count"]
@@ -356,7 +362,9 @@ def build(root=ROOT):
                 for r in json.loads(path.read_text()).get("records", [])
                 if r.get("provenance", {}).get("item_pointer")
             )
-    map_digest = base.sha(json.dumps(maps, sort_keys=True, separators=(",", ":")).encode())
+    map_digest = base.sha(
+        json.dumps(maps, sort_keys=True, separators=(",", ":")).encode()
+    )
     if maps != proof["world_owner_inputs"] and map_digest != WORLD_OWNER_SUCCESSOR_SHA:
         raise ValueError("current World owner inputs drift")
     rows, seen = [], set()
