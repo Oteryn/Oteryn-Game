@@ -181,14 +181,12 @@ impl DurabilityRoot {
         request: ConsumeTransformRequest,
         native: &NativeGameplayState,
         content: &C,
-    ) -> Result<Option<UseDisposition>, DurabilityError> {
-        Ok(self
-            .consume_transform_inner(
-                permit, recovery, node, fence, request, native, content, false,
-                None, ActionContext::SecretAgentJam,
-            )
-            .await?
-            .map(|result| result.disposition))
+    ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
+        self.consume_transform_inner(
+            permit, recovery, node, fence, request, native, content, false,
+            None, ActionContext::SecretAgentJam,
+        )
+        .await
     }
 
     /// Probe or commit an action. Replay precedes live handle and custody resolution;
@@ -946,6 +944,16 @@ async fn persist_action(
             250,
             oteryn_gameplay_progression::achievement_granters::TRANSFORM_SOURCE_KIND,
             event.as_bytes(),
+        )
+        .await?;
+    } else if plan.recipe == SECRET_AGENT_JAM {
+        super::account_achievement::add_progress(
+            tx,
+            fence.character_id,
+            "oteryn:achievement/bad_timing",
+            10,
+            oteryn_gameplay_progression::achievement_granters::TRANSFORM_SOURCE_KIND,
+            &super::item_mint::uuid_text(&event)?,
         )
         .await?;
     }

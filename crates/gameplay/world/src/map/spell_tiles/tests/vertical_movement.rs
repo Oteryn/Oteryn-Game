@@ -2,10 +2,15 @@
 use super::*;
 
 pub fn world(world: WorldId, channel: ChannelId) -> BundleWorld {
-    world_with_rope_spot(world, channel, 386)
+    world_with_rope_spot(world, channel, 386, false)
 }
 
-pub fn world_with_rope_spot(world: WorldId, channel: ChannelId, appearance: u32) -> BundleWorld {
+pub fn world_with_rope_spot(
+    world: WorldId,
+    channel: ChannelId,
+    appearance: u32,
+    distant_target: bool,
+) -> BundleWorld {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{Extent, Sector};
     let sector = |floor, positions: &[(u16, u16, u32)]| Sector {
@@ -28,10 +33,20 @@ pub fn world_with_rope_spot(world: WorldId, channel: ChannelId, appearance: u32)
             })
             .collect(),
     };
+    let mut lower = sector(-8, &[(10, 10, 4)]);
+    if distant_target {
+        let mut distant = sector(-8, &[(12, 10, 0)]);
+        distant.tiles[0].items.push(Item {
+            palette: 5,
+            depth: 0,
+            attrs: Attrs::default(),
+        });
+        lower.tiles.append(&mut distant.tiles);
+    }
     let spot = format!("oteryn:item.tibia.i{appearance}");
     let (bytes, bundle) = super::bundle_with_projectiles(
         Some(vec![
-            sector(-8, &[(10, 10, 4)]),
+            lower,
             sector(-7, &[(10, 9, 0), (10, 11, 0)]),
             sector(-6, &[(10, 10, 0)]),
             sector(-5, &[(10, 9, 0)]),

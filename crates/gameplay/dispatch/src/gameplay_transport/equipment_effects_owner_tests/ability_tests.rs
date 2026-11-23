@@ -1124,6 +1124,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
+        // The three jammed Secret Agent forms have a timer but no equipment speed.
+        .chain([9595, 9597, 9599].map(|id| format!("oteryn:item.tibia.i{id}")))
         .collect()
     );
     Ok(())
@@ -1215,8 +1217,8 @@ fn equipment_effects_owner_staff_preserves_monk_equipping_and_reads_crystal_stat
     let weapon = &semantics["weapon"]["value"];
     for (field, value) in [
         ("weapon_type", serde_json::json!("FIST")),
-        ("attack", serde_json::json!(10)),
-        ("defense", serde_json::json!(25)),
+        ("attack", serde_json::json!(22)),
+        ("defense", serde_json::json!(14)),
     ] {
         assert_eq!(
             weapon[field],

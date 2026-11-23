@@ -12,9 +12,42 @@ fn crystal_agent_tools_and_elvenhair_rope_ascend_through_live_dispatch() -> Test
                 for (id, spot) in [(9594, 386), (9596, 21967), (9598, 386), (646, 386)] {
                     let key = format!("oteryn:item.tibia.i{id}");
                     super::vertical_move_fixtures::physical_rope(admin.clone(), &key, spot).await?;
-                    if id != 646 {
-                        super::vertical_move_fixtures::jammed_rope(admin.clone(), &key, spot).await?;
-                    }
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Crystal rope dispatch panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn secret_agent_jams_require_object_reach() -> TestResult {
+    agent_jams(super::vertical_move_fixtures::RopeUse::DistantObject)
+}
+
+#[test]
+fn secret_agent_jams_require_map_handle_reach() -> TestResult {
+    agent_jams(super::vertical_move_fixtures::RopeUse::DistantHandle)
+}
+
+#[test]
+fn secret_agent_jams_award_bad_timing_and_send_feedback() -> TestResult {
+    agent_jams(super::vertical_move_fixtures::RopeUse::Jam)
+}
+
+fn agent_jams(action: super::vertical_move_fixtures::RopeUse) -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(128 << 20)
+        .spawn(move || {
+            super::fixture::run(async |admin| {
+                for (id, spot) in [(9594, 386), (9596, 21967), (9598, 386)] {
+                    let key = format!("oteryn:item.tibia.i{id}");
+                    super::vertical_move_fixtures::agent_rope(admin.clone(), &key, spot, action).await?;
                 }
                 Ok(())
             })
