@@ -23,3 +23,12 @@ impl crate::play::Outbox {
         lock(&self.0).properties.appearance = panel;
     }
 }
+
+#[cfg(all(test, bevy_shell))]
+impl crate::play::Outbox {
+    pub(crate) fn outfit_preview_fixture(&self, title: oteryn_client_runtime::character_info_panel::CharacterTitle, page: oteryn_client_runtime::cyclopedia_character::gallery::Page) {
+        let mut mailbox = lock(&self.0);
+        mailbox.properties.character_info.own_titles = Some(oteryn_client_ui::character_info::OwnTitles { earned: vec![title], selected: Some(title) });
+        mailbox.cyclopedia_character.gallery.page = Some(page);
+    }
+}

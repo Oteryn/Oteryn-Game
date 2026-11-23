@@ -1,7 +1,7 @@
 //! Custom actions use the same live session callers as inventory, chat and cooldown panels.
 use super::{CustomAction, ObjectTarget};
 use crate::combat_input::PlayCommand;
-use crate::play::feature_local_spell_action_bar::view::{item_source, item_target, visible_items};
+use crate::play::feature_local_spell_action_bar::view::{carried_items, item_source, item_target, visible_items};
 use crate::play::{PlayLink, PlayView, mailbox::lock};
 use oteryn_client_runtime::world_interaction::{Action, Command, Selection, Target};
 
@@ -156,6 +156,8 @@ impl PlayLink {
             return false;
         }
         match action {
+            CustomAction::Unassigned => false,
+            CustomAction::Special { action } => action.execute(&mut lock(&self.mailbox), &self.commands),
             CustomAction::PassiveStatus { ability } => {
                 let mut mailbox = lock(&self.mailbox);
                 if mailbox.quest_shutdown || mailbox.custom_hotkeys_ended {
@@ -272,7 +274,14 @@ impl PlayLink {
                 let Some(definition_id) = std::num::NonZeroU32::new(*definition) else {
                     return false;
                 };
-                let Some(item) = item_source(&mailbox, definition_id, Some(*sub_type)) else {
+                let item = if *target == ObjectTarget::CursorPosition {
+                    carried_items(&mailbox).into_iter()
+                        .filter(|item| item.item_definition_ref == definition_id && item.sub_type == *sub_type)
+                        .min_by_key(|item| (item.count, item.handle))
+                } else {
+                    item_source(&mailbox, definition_id, Some(*sub_type))
+                };
+                let Some(item) = item else {
                     mailbox.custom_hotkey_feedback =
                         Some("Custom hotkey: item is no longer visible in inventory or an open container".into());
                     return false;
@@ -294,6 +303,15 @@ impl PlayLink {
                 };
                 let target = match &target_mode {
                     ObjectTarget::Use => Target::Item(item.handle),
+                    ObjectTarget::CursorPosition => {
+                        let Some((target, cursor)) = mailbox.bar_actions.cursor.clone() else {
+                            mailbox.custom_hotkey_feedback =
+                                Some("Cursor is outside the game window or battle list".into());
+                            return false;
+                        };
+                        selection = Some(cursor);
+                        target
+                    }
                     ObjectTarget::Cursor => {
                         let rune = mailbox
                             .spell_catalog

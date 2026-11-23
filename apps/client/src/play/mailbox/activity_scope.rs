@@ -37,6 +37,7 @@ impl Mailbox {
         self.boss_encounter.slots = None;
         self.boss_encounter.pending_kind = 0;
         self.chat_public.pending = Default::default();
+        self.reward_reset = None;
         self.daily_reward.pending = Default::default();
         self.containers.pending = Default::default();
         self.depot.pending = Default::default();
