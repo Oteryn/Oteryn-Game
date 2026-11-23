@@ -7,6 +7,44 @@ use oteryn_client_ui::boss_encounter::{BossCategory, BossEncounterPanel, Intent,
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    #[cfg(bevy_shell)]
+    pub(crate) fn tracked_boss_open(&self, key: &str) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.boss_encounter;
+        if !panel.selected || panel.pending {
+            return false;
+        }
+        let mut candidate = panel.clone();
+        candidate.hidden_stages = 0;
+        candidate.hidden_rarities = 0;
+        let known = panel
+            .boss_names
+            .get(key)
+            .filter(|name| name.len() <= 48)
+            .cloned()
+            .unwrap_or_default();
+        browse(&mut candidate, &known, BossCategory::All, false);
+        enqueue_panel(&mut candidate, &self.commands, Intent::Catalogue);
+        if !candidate.pending {
+            panel.feedback = candidate.feedback;
+            panel.tracker_target = None;
+            return false;
+        }
+        candidate.tracker_target = Some(key.to_owned());
+        *panel = candidate;
+        true
+    }
+    #[cfg(bevy_shell)]
+    pub(crate) fn tracked_boss_continue(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.boss_encounter;
+        if panel.tracker_target.is_some() && !panel.pending {
+            enqueue_panel(panel, &self.commands, Intent::CatalogueNext);
+            if !panel.pending {
+                panel.tracker_target = None;
+            }
+        }
+    }
     pub fn boss_encounter_browse(&self, search: &str, category: BossCategory, previous: bool) {
         browse(
             &mut lock(&self.mailbox).boss_encounter,
@@ -16,6 +54,23 @@ impl PlayLink {
         );
     }
 
+    pub fn boss_visibility_toggle(&self, rarity: bool, bit: u8) {
+        let panel = &mut lock(&self.mailbox).boss_encounter;
+        if panel.pending || !panel.selected || bit > 4 {
+            return;
+        }
+        if rarity {
+            panel.hidden_rarities ^= 1 << bit;
+        } else {
+            panel.hidden_stages ^= 1 << bit;
+        }
+        if !oteryn_client_ui::boss_encounter::catalogue_cards(panel)
+            .iter()
+            .any(|e| e.key == panel.fields[0])
+        {
+            panel.select_boss(false);
+        }
+    }
     pub fn boss_slot_select_boss(&self, previous: bool) {
         lock(&self.mailbox)
             .boss_encounter
@@ -57,7 +112,14 @@ pub(in crate::play) fn enqueue(
     commands: &UnboundedSender<PlayCommand>,
     intent: Intent,
 ) {
-    let panel = &mut mailbox.boss_encounter;
+    enqueue_panel(&mut mailbox.boss_encounter, commands, intent);
+}
+
+fn enqueue_panel(
+    panel: &mut BossEncounterPanel,
+    commands: &UnboundedSender<PlayCommand>,
+    intent: Intent,
+) {
     if panel
         .fields
         .iter()
@@ -79,8 +141,8 @@ pub(in crate::play) fn enqueue(
     if let Some(command) = request(panel, intent)
         && commands.send(PlayCommand::Feature(command)).is_err()
     {
-        mailbox.boss_encounter.pending = false;
-        mailbox.boss_encounter.feedback = Some(tr!("The session has ended"));
+        panel.pending = false;
+        panel.feedback = Some(tr!("The session has ended"));
     }
 }
 
@@ -106,6 +168,7 @@ pub(in crate::play) fn browse(
     if !panel.selected || panel.pending || search.len() > 512 || search.contains('\0') {
         return;
     }
+    panel.tracker_target = None;
     panel.boss_search = search.to_owned();
     panel.browser_search = search.to_owned();
     panel.browser_category = category;

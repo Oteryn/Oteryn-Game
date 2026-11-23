@@ -13,7 +13,9 @@ USE_COUNTS = {
     "client_row_m06": 1, "client_row_m07": 1, "client_row_m08": 1,
     "client_row_m09": 1, "client_row_w19a": 1,
     "full_row_g08": 1, "full_row_g09": 1, "full_row_g36": 1,
-    "full_row_i10": 1, "full_row_i11": 2, "full_row_i14": 1,
+    "full_row_i10": 1,
+    "full_row_i11": 4,  # Millstone, mixing helper, baking, and oven refusal.
+    "full_row_i14": 2,  # Missing-variant hotkey and keg refill.
     "full_row_m06": 1, "full_row_m08": 2, "full_row_m09": 1,
     "full_row_w07": 1, "full_row_w09": 1, "full_row_w19a": 1,
     "full_row_w19b": 1, "full_row_w19d": 1, "full_row_w19e": 1,
@@ -21,8 +23,8 @@ USE_COUNTS = {
 
 
 class RowCommandRoutes(unittest.TestCase):
-    def test_all_27_reviewed_use_calls_use_the_core_session_owner(self):
-        self.assertEqual(sum(USE_COUNTS.values()), 27)
+    def test_all_reviewed_use_calls_use_the_core_session_owner(self):
+        self.assertEqual(sum(USE_COUNTS.values()), 30)
         for name, count in USE_COUNTS.items():
             with self.subTest(row=name):
                 source = (PHASES / f"{name}.rs").read_text()
@@ -49,11 +51,29 @@ class RowCommandRoutes(unittest.TestCase):
         for name in ("client_row_w05a", "full_row_w05a"):
             with self.subTest(row=name):
                 source = (PHASES / f"{name}.rs").read_text()
-                self.assertNotRegex(source, r"gated_command\([^)]*CAPABILITY_SERVER_SAVE_COUNTDOWN_V1[^)]*\)\s*\.await\?")
-                self.assertIn("SessionError::CapabilityNotSelected", source)
-                self.assertIn("next_command_id()", source)
-                self.assertIn("last_server_sequence()", source)
-                self.assertIn("service_liveness(Duration::from_secs(7))", source)
+                probe = (
+                    r"\.gated_command\((?:wire::)?CAPABILITY_SERVER_SAVE_COUNTDOWN_V1, 1, &\[\]\)"
+                    r"\s*\.await"
+                )
+                self.assertRegex(source, r"let refusal =[^;]+" + probe + r";")
+                self.assertNotRegex(
+                    source,
+                    r"gated_command\([^)]*CAPABILITY_SERVER_SAVE_COUNTDOWN_V1[^)]*\)\s*\.await\?",
+                )
+                self.assertRegex(source, r"matches!\(refusal, Err\([^)]*SessionError::CapabilityNotSelected")
+                self.assertIn("client.next_command_id() != next_command", source)
+                self.assertIn("client.last_server_sequence() != sequence", source)
+                self.assertIn("client.world_spatial().actor_position != position", source)
+                self.assertIn("!= countdown_before", source)
+
+        capture = (PHASES / "client_row_w05a.rs").read_text()
+        self.assertIn("service_liveness(Duration::from_secs(7))", capture)
+        full = (PHASES / "full_row_w05a.rs").read_text()
+        self.assertIn("first_notice_deadline.saturating_duration_since", full)
+        self.assertIn("service_liveness(remaining.min(Duration::from_millis(250)))", full)
+        self.assertIn("service_liveness(remaining.min(Duration::from_secs(1)))", full)
+        self.assertIn('Ok(Ok(Outcome::ResetNotScheduled)) => "FAIL"', full)
+        self.assertIn("!proves_reset(initial_epoch, prior.ending_epoch, admitted_epoch)", full)
 
     def test_p11_capture_does_not_present_local_refusal_as_a_wire_status(self):
         capture = (PHASES / "client_row_p11.rs").read_text()

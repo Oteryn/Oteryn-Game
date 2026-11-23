@@ -1,5 +1,29 @@
 // Bounded, lazy, hash-verified effect frames in the scene's existing atlas.
 impl PresentationCache {
+    #[cfg(bevy_shell)]
+    pub(super) fn smart_item_action(
+        &self,
+        id: u16,
+    ) -> Option<oteryn_client_ui::world_interaction::menu::Action> {
+        use oteryn_client_ui::world_interaction::menu::Action;
+        let assets = self
+            .assets
+            .as_ref()?
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let item = assets.index.get(u32::from(id))?;
+        if item.container {
+            Some(Action::Open)
+        } else if item.multi_use {
+            Some(Action::UseWith)
+        } else if item.usable {
+            Some(Action::Use)
+        } else if item.unpassable {
+            Some(Action::Look)
+        } else {
+            None
+        }
+    }
     pub(super) fn item_multi_use(&self, id: u16) -> bool {
         self.assets.as_ref().is_some_and(|assets| assets.lock().unwrap_or_else(PoisonError::into_inner).index.get(u32::from(id)).is_some_and(|a| a.multi_use))
     }

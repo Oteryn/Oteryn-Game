@@ -124,19 +124,35 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
-async fn kill_and_open(client: &mut DevClientSession) -> TestResult<Vec<ItemEntry>> {
+fn shows_damage(detail: EntityDetail) -> bool {
+    matches!(detail,
+        EntityDetail::Actor { health_percent, .. } | EntityDetail::ActorWithIcons { health_percent, .. }
+        if health_percent < 100
+    )
+}
+
+pub(super) async fn kill_and_open(
+    client: &mut DevClientSession,
+    name: &str,
+) -> TestResult<Vec<ItemEntry>> {
     let position = client.world_spatial().actor_position;
     let target = client
         .world_entities()
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
+                    && entry.display_name.is_some_and(|label| label.as_str().is_ok_and(|shown| shown.eq_ignore_ascii_case(name)))
                     && entry.position.floor == position.floor
                     && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y)) <= 1
             })
         })
         .copied()
-        .ok_or("step-2-no-adjacent-rat-after-walk")?;
+        .ok_or_else(|| format!("step-2-no-adjacent-creature-after-walk need={name}"))?;
+    let old_corpses: BTreeSet<_> = client.world_entities().into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entry| entry.kind == EntityKind::Corpse)
+        .map(|entry| entry.entity)
+        .collect();
     let reply = client.session_mut().attack_target(Some(&target.entity)).await?;
     if reply.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("step-2-attack-refused-observed={reply:?}").into());
@@ -154,14 +170,14 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<Vec<ItemEntr
                 }
                 damaged |= delta.value.update.iter().any(|entry| {
                     entry.entity == target.entity
-                        && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100)
+                        && shows_damage(entry.detail)
                 });
             }
         }
         if let Some(corpse) = client.world_entities().and_then(|entities| {
             entities
                 .iter()
-                .find(|entry| entry.kind == EntityKind::Corpse && entry.position == last_position)
+                .find(|entry| entry.kind == EntityKind::Corpse && entry.position == last_position && !old_corpses.contains(&entry.entity))
         }) {
             break *corpse;
         }
@@ -172,7 +188,7 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<Vec<ItemEntr
     if !damaged || client.world_entities().is_some_and(|entities| entities.get(&target.entity).is_some()) {
         return Err("step-2-observed-missing-damage-or-target-removal-delta".into());
     }
-    let EntityDetail::Object { item_handle: Some(handle), .. } = corpse.detail else {
+    let (EntityDetail::Object { item_handle: Some(handle), .. } | EntityDetail::ObjectWithAppearance { item_handle: Some(handle), .. }) = corpse.detail else {
         return Err("step-2-observed-corpse-without-item-handle".into());
     };
     let used = client.use_item(handle).await?;
@@ -194,6 +210,94 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<Vec<ItemEntr
     }
 }
 
+pub(super) async fn travel_to_named_spawn(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+    name: &str,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let points: Vec<_> = spawns
+        .sources
+        .iter()
+        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
+        .filter(|(_, point)| {
+            spawns
+                .creatures
+                .get(point.creature as usize)
+                .is_some_and(|entry| entry.key == creature)
+        })
+        .collect();
+    let path = route(world, from, |at| {
+        !world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_none_or(|tile| tile.protection_zone())
+            && points.iter().any(|(floor, point)| {
+                at.floor == *floor && at.x.abs_diff(point.x) <= 1 && at.y.abs_diff(point.y) <= 1
+            })
+    })
+    .ok_or_else(|| format!("no reachable {creature} spawn within town route budget"))?;
+    walk(client, world, &path).await?;
+    for _ in 0..32 {
+        let here = client.world_spatial().actor_position;
+        let target = client
+            .world_entities()
+            .and_then(|entities| {
+                entities
+                    .iter()
+                    .filter(|entry| {
+                        entry.kind == oteryn_dev_client::EntityKind::Creature
+                            && entry.position.floor == here.floor
+                            && entry.display_name.is_some_and(|label| label.as_str().is_ok_and(|shown| shown.eq_ignore_ascii_case(name)))
+                    })
+                    .min_by_key(|entry| {
+                        entry
+                            .position
+                            .x
+                            .abs_diff(here.x)
+                            .max(entry.position.y.abs_diff(here.y))
+                    })
+            })
+            .copied()
+            .ok_or_else(|| format!("spawn route has no visible {name}"))?;
+        let target = tile(target.position)?;
+        let path = route(world, tile(here)?, |at| {
+            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+        })
+        .ok_or("visible creature unreachable")?;
+        let Some(direction) = path.first() else {
+            return Ok(());
+        };
+        walk(client, world, &[*direction]).await?;
+    }
+    Err("could not approach a live creature within the route budget".into())
+}
+
+pub(super) async fn move_loot(client: &mut DevClientSession, entries: &[oteryn_protocol_oteryn::item_view::ItemEntry]) -> TestResult {
+    for entry in entries {
+        let definition = entry.item_definition_ref.get();
+        let expected = quantity(client, definition)? + u64::from(entry.count.get());
+        let moved = client.move_item(&oteryn_dev_client::ItemMoveIntent {
+            source: entry.handle,
+            destination: ItemMoveDestination::MainBackpack,
+        }).await?;
+        if moved.outcome != ItemMoveOutcome::Moved {
+            return Err(format!("corpse-to-backpack move refused: {moved:?}").into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        while quantity(client, definition)? != expected {
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("corpse-to-backpack custody missing: definition={definition} expected={expected}").into());
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+            client.take_events();
+        }
+    }
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -205,10 +309,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xb2).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    travel_to_named_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat", "Rat").await?;
     row.pass("walk-to-rat", "STEP replies moved to authored rat spawn");
     let mut attempts = 1_u8;
-    let mut entries = kill_and_open(&mut client).await?;
+    let mut entries = kill_and_open(&mut client, "Rat").await?;
     row.pass(
         "attack-and-death",
         "ATTACK accepted and damage/removal/corpse frames received",
@@ -218,11 +322,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         loop {
             client.service_liveness(Duration::from_millis(250)).await?;
             client.take_events();
-            if travel_to_spawn(
+            if travel_to_named_spawn(
                 &mut client,
                 world,
                 &metadata.spawns,
                 "oteryn:creature.rat",
+                "Rat",
             )
             .await
             .is_ok()
@@ -237,7 +342,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             }
         }
         attempts += 1;
-        entries = kill_and_open(&mut client).await?;
+        entries = kill_and_open(&mut client, "Rat").await?;
     }
     if entries.is_empty() {
         return Err(format!("step-3-empty-chance-roll-observed-after-attempts={attempts}").into());
@@ -318,6 +423,16 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn journey_regression_recognizes_damage_in_actor_icons_projection() {
+        assert!(shows_damage(EntityDetail::ActorWithIcons {
+            direction: StepDirection::North,
+            appearance_ref: 1,
+            health_percent: 50,
+            icons: Default::default(),
+        }));
+    }
 
     #[test]
     fn evidence_is_one_report_safe_token() {

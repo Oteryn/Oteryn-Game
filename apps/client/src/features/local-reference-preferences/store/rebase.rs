@@ -13,6 +13,16 @@ impl ReferencePreferences {
             serde_json::to_value(after)?,
         );
         let mut merged: Self = serde_json::from_value(target)?;
+        merged.impact_records =
+            std::array::from_fn(
+                |i| match after.impact_records[i].cmp(&before.impact_records[i]) {
+                    std::cmp::Ordering::Equal => self.impact_records[i],
+                    std::cmp::Ordering::Greater => {
+                        self.impact_records[i].max(after.impact_records[i])
+                    }
+                    std::cmp::Ordering::Less => after.impact_records[i],
+                },
+            );
         merged.miscellaneous = miscellaneous;
         merged.validate().map_err(io::Error::other)?;
         merged.reconcile_controls(Some(self));

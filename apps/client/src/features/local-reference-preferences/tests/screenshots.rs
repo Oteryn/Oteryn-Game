@@ -595,3 +595,34 @@ impl crate::play::Outbox {
         Ok(())
     }
 }
+
+#[test]
+fn ending_session_preserves_impact_record_earned_after_explicit_reset()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::analyser_transport::{AnalyserFact, AnalyserImpact};
+    let folder = tempfile::tempdir()?;
+    let path = folder.path().join("settings.json");
+    let mut settings = SettingsState::new(Some(path.clone()));
+    settings.select_character(Some([1; 16]));
+    let (link, _commands, outbox) = crate::play::play_channel();
+    outbox.analyser_initialize(true);
+    let now = std::time::Instant::now();
+    settings.prepare_screenshots(now, Some(&link));
+    link.analyser_reset_high();
+    outbox.push(vec![oteryn_session::SessionEvent::AnalyserFacts(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: vec![AnalyserFact::Impact(AnalyserImpact::Healing(75u32.try_into()?))],
+        },
+    )]);
+    settings.prepare_screenshots(now, Some(&link));
+    assert_eq!(settings.preferences.impact_records, [0, 75]);
+    outbox.logged_out();
+    settings.prepare_screenshots(now, Some(&link));
+    let mut reopened = SettingsState::new(Some(path));
+    reopened.select_character(Some([1; 16]));
+    assert_eq!(reopened.preferences.impact_records, [0, 75]);
+    Ok(())
+}

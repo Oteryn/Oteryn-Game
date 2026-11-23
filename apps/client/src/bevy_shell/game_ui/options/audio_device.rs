@@ -6,8 +6,7 @@ use bevy::ui_widgets::Activate;
 pub(super) struct Device(pub(super) String);
 
 /// The system default, then the host's devices; a saved device that is missing stays listed.
-fn choices(saved: &str) -> Vec<String> {
-    let mut names = crate::play::audio_device_names();
+fn choices(saved: &str, mut names: Vec<String>) -> Vec<String> {
     if !saved.is_empty() && !names.iter().any(|name| name == saved) {
         names.push(saved.to_owned());
     }
@@ -22,7 +21,44 @@ pub(super) fn build(
 ) {
     section::label(commands, parent, skins, "Audio Output Device");
     let bar = section::bar(commands, parent);
-    for name in choices(&draft.audio_device) {
+    add_choices(commands, bar, skins, &draft.audio_device, vec![]);
+    let task = bevy_tasks::IoTaskPool::get().spawn(async { crate::play::audio_device_names() });
+    commands.entity(bar).insert(DeviceList {
+        task,
+        saved: draft.audio_device.clone(),
+    });
+}
+
+#[derive(Component)]
+pub(super) struct DeviceList {
+    task: bevy_tasks::Task<Vec<String>>,
+    saved: String,
+}
+
+pub(super) fn finish(
+    mut commands: Commands,
+    skins: Res<Skins>,
+    mut lists: Query<(Entity, &mut DeviceList)>,
+) {
+    for (bar, mut list) in &mut lists {
+        if let Some(names) = bevy_tasks::futures::check_ready(&mut list.task) {
+            commands
+                .entity(bar)
+                .despawn_children()
+                .remove::<DeviceList>();
+            add_choices(&mut commands, bar, &skins, &list.saved, names);
+        }
+    }
+}
+
+fn add_choices(
+    commands: &mut Commands,
+    bar: Entity,
+    skins: &Skins,
+    saved: &str,
+    names: Vec<String>,
+) {
+    for name in choices(saved, names) {
         let caption = if name.is_empty() {
             "System default"
         } else {
@@ -35,7 +71,7 @@ pub(super) fn build(
             caption,
             300.,
             &format!("sound.device.{caption}"),
-            name == draft.audio_device,
+            name == saved,
         );
         commands.entity(button).insert(Device(name)).observe(select);
     }
@@ -70,8 +106,15 @@ mod tests {
         let path = fixture.path().join("bevy-options-device.json");
         let result = (|| -> TestResult {
             let mut app = super::super::tests::app(Page::Sound, Some(path.clone()))?;
-            assert_eq!(choices("Headset").first().map(String::as_str), Some(""));
-            assert!(choices("Headset").iter().any(|name| name == "Headset"));
+            assert_eq!(
+                choices("Headset", vec![]).first().map(String::as_str),
+                Some("")
+            );
+            assert!(
+                choices("Headset", vec![])
+                    .iter()
+                    .any(|name| name == "Headset")
+            );
             let button = app
                 .world_mut()
                 .spawn(Device("Headset".into()))
@@ -100,4 +143,19 @@ mod tests {
         fixture.close()?;
         result
     }
+}
+
+#[cfg(test)]
+#[test]
+fn rv3404_device_list_never_enumerates_on_the_frame() {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup)
+        .add_systems(Update, |mut commands: Commands, skins: Res<Skins>| {
+            let parent = commands.spawn_empty().id();
+            build(&mut commands, parent, &skins, &Default::default());
+        });
+    crate::play::check_audio_frame(|| app.update());
 }

@@ -291,6 +291,7 @@ impl PlayView {
                     && !pushed.motion_reset
                     && !pushed.scope_changed
                 {
+                    self.face_confirmed_step(before.0);
                     self.walk = oteryn_client_simulation::walk::Glide::new(
                         before.0,
                         self.own,

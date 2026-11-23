@@ -61,6 +61,16 @@ pub(super) fn build(
         },
         skin.font.clone(),
     );
+    if key.tab == Tab::Spells {
+        use crate::bevy_shell::game_ui::cyclopedia_navigation::{Subject, bar};
+        bar(
+            commands,
+            skin,
+            root,
+            key.generation,
+            Subject::MagicalArchive,
+        );
+    }
     let tabs = row(commands, root);
     action(commands, skin, tabs, key, Kind::Quests, "Quest Log", 100.);
     action(commands, skin, tabs, key, Kind::Spells, "Spells", 100.);
@@ -113,6 +123,15 @@ pub(super) fn build(
         .id();
     commands.entity(left).add_child(title);
     if key.tab == Tab::Spells && book.selected {
+        action(
+            commands,
+            skin,
+            left,
+            key,
+            Kind::MyVocation,
+            "My vocation",
+            320.,
+        );
         for kind in [Kind::Vocation, Kind::Premium, Kind::Group, Kind::Castable] {
             let button = action(commands, skin, left, key, kind, "", 320.);
             let caption = commands
@@ -208,6 +227,15 @@ pub(super) fn build(
                 ))
                 .id();
             commands.entity(button).add_child(label);
+        }
+        for (kind, label) in [
+            (Kind::Pin, "Pin / unpin selected quest"),
+            (Kind::HideQuest, "Hide / restore selected quest"),
+            (Kind::ShowHidden, "Toggle hidden quests"),
+            (Kind::CleanTracker, "Remove completed tracked quests"),
+            (Kind::ClearTracker, "Clear tracker"),
+        ] {
+            action(commands, skin, left, key, kind, label, 320.);
         }
         let hint = commands
             .spawn(source::text(

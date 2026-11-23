@@ -25,13 +25,18 @@ pub(in crate::play) async fn send<S: SessionStream>(
 impl Outbox {
     pub(in crate::play) fn quest_initialize(&self, state: QuestState) {
         let mut mailbox = crate::play::mailbox::lock(&self.0);
+        let panel = &mut mailbox.quest;
+        panel.pinned.clear();
+        panel.hidden.clear();
+        panel.show_hidden = false;
+        panel.tracker_selection = None;
         if matches!(
             &state.log.view,
             Some(oteryn_client_runtime::quest_log::QuestLogView::List(_))
         ) {
-            mailbox.quest.tracker.observe(&state.list);
+            panel.tracker.observe(&state.list);
         }
-        mailbox.quest.state = state;
+        panel.state = state;
     }
 
     pub(in crate::play) fn quest_result(&self, result: &oteryn_session::GatedCommandResult) {
@@ -157,10 +162,19 @@ pub(in crate::play) fn reduce(
             panel.tracker.observe(&panel.state.list);
         }
         panel.tracker.confirm(&panel.state.log.tracked);
-        let missions = match &panel.state.log.view {
-            Some(oteryn_client_runtime::quest_log::QuestLogView::Line(line)) => &line.missions[..],
-            _ => &[],
-        };
+        if panel.tracker_selection.is_some_and(|id| {
+            !panel
+                .state
+                .log
+                .tracked
+                .iter()
+                .any(|line| line.quest_index == id)
+        }) {
+            panel.tracker_selection = None;
+        }
+        let missions = panel
+            .journal_line()
+            .map_or(&[][..], |line| line.missions.as_slice());
         if !missions
             .iter()
             .any(|m| Some(m.mission_index) == panel.mission)

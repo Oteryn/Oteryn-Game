@@ -14,26 +14,35 @@ pub struct ScreenshotPreferences {
     pub directory: String,
     pub folder: String,
     pub backlog_frames: u8,
-    pub automatic_disabled: bool,
+    #[serde(alias = "bestiary_unlock")]
     pub on_bestiary_unlock: bool,
+    #[serde(alias = "bestiary_complete")]
     pub on_bestiary_complete: bool,
+    #[serde(alias = "boss_defeat")]
     pub on_boss_defeat: bool,
+    #[serde(alias = "pvp_attack")]
     pub on_player_attacking: bool,
+    #[serde(alias = "damage_record")]
     pub on_record_damage: bool,
+    #[serde(alias = "healing_record")]
     pub on_record_healing: bool,
+    #[serde(alias = "tracked_loot")]
     pub on_valuable_loot: bool,
+    #[serde(alias = "low_health")]
     pub on_low_health: bool,
     pub on_skill: bool,
     pub game_only: bool,
     pub backlog_seconds: u8,
     pub on_level: bool,
     pub on_death: bool,
+    pub automatic_disabled: bool,
+    pub reward_chest: bool,
     pub on_achievement: bool,
 }
 impl ScreenshotPreferences {
-    pub(crate) fn triggers(&self) -> [bool; 12] {
+    pub(crate) fn triggers(&self) -> [bool; 13] {
         if self.automatic_disabled {
-            return [false; 12];
+            return [false; 13];
         }
         [
             self.on_bestiary_unlock,
@@ -48,6 +57,7 @@ impl ScreenshotPreferences {
             self.on_level,
             self.on_death,
             self.on_achievement,
+            self.reward_chest,
         ]
     }
     pub fn reconciled(mut self, previous: &Self) -> Self {

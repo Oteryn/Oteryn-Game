@@ -145,6 +145,9 @@ impl Metadata {
                 .any(|line| speaker(line) == Some(name.as_str()))
         });
     }
+    pub(super) fn skip_receipts(&mut self, count: usize) {
+        self.receipts.drain(..count.min(self.receipts.len()));
+    }
     pub fn prefix(&self, display: ConsoleDisplay, index: usize) -> String {
         if !display.time {
             return String::new();

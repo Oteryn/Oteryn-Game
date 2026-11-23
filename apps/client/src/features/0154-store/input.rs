@@ -63,6 +63,24 @@ impl PlayLink {
         Ok(())
     }
 
+    #[cfg(bevy_shell)]
+    pub(crate) fn store_open_premium_time(&self) {
+        {
+            let mut mailbox = lock(&self.mailbox);
+            if !mailbox.store.selected
+                || mailbox.store.pending
+                || mailbox.store.confirmed_purchase.is_some()
+                || mailbox.store.gift.confirmed.is_some()
+                || mailbox.store.gift.pending.is_some()
+            {
+                return;
+            }
+            mailbox.store.open = true;
+            mailbox.store.page = oteryn_client_ui::store::StorePage::Catalogue;
+        }
+        self.store_browse("premium-time", "", 0, 0);
+    }
+
     pub fn store_select_product(&self, index: usize) -> bool {
         oteryn_client_ui::store::select_product(&mut lock(&self.mailbox).store, index)
     }

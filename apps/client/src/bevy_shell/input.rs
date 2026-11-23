@@ -45,6 +45,9 @@ pub(super) fn route(
             &NormalizedInputEvent::DeviceLost,
             false,
         );
+        if let Some(play) = &mut owner.play {
+            play.view.cancel_touch_controls();
+        }
         owner.route_input(&reset, true);
         input.generation = Some(owner.generation());
         input.physical_pointer = None;
@@ -55,7 +58,54 @@ pub(super) fn route(
     let composer = focus
         .get()
         .is_some_and(|entity| editors.get(entity).is_ok_and(|marker| marker.is_some()));
+    if (modal || owner.modal_active() || !input.adapter.focused())
+        && let Some(play) = &mut owner.play
+    {
+        play.view.cancel_touch_controls();
+    }
     for event in raw.read() {
+        if let winit::event::WindowEvent::Touch(touch) = &event.event {
+            if !modal
+                && !owner.modal_active()
+                && input.adapter.focused()
+                && let Some(play) = &mut owner.play
+            {
+                use winit::event::TouchPhase;
+                let point = Vec2::new(touch.location.x as f32, touch.location.y as f32);
+                let (width, height) = play.view.scene().view().viewport_px();
+                let size = UVec2::new(width, height);
+                if touch.phase == TouchPhase::Started
+                    && (ui.viewport.scene_point(point, size).is_none()
+                        || !ui.hits.allows_pointer_start(
+                            bevy::picking::pointer::PointerId::Touch(touch.id),
+                            ui.regions.world,
+                            point,
+                        ))
+                {
+                    continue;
+                }
+                let phase = match touch.phase {
+                    TouchPhase::Started => crate::play::TouchPhase::Started,
+                    TouchPhase::Moved => crate::play::TouchPhase::Moved,
+                    TouchPhase::Ended => crate::play::TouchPhase::Ended,
+                    TouchPhase::Cancelled => crate::play::TouchPhase::Cancelled,
+                };
+                let local = point - ui.viewport.origin.as_vec2() - ui.viewport.scene_offset(size);
+                if play
+                    .view
+                    .touch_input(&play.link, touch.id, phase, local.as_dvec2().to_array())
+                    .is_err()
+                {
+                    play.view.cancel_touch_controls();
+                }
+            }
+            continue;
+        }
+        if matches!(event.event, winit::event::WindowEvent::Focused(false))
+            && let Some(play) = &mut owner.play
+        {
+            play.view.cancel_touch_controls();
+        }
         let events = match input.adapter.process_window_event(&event.event) {
             Ok(events) => events,
             Err(_) => input.adapter.notify_device_lost(),
@@ -155,6 +205,16 @@ pub(super) fn route_keyboard(
     editor: Option<bool>,
 ) {
     use oteryn_input_actions::Modifier;
+    if !blocked
+        && editor != Some(false)
+        && owner.play.is_some()
+        && !owner.modal_active()
+        && matches!(&event, NormalizedInputEvent::Key { code, modifiers, state: oteryn_input_actions::ButtonState::Pressed, repeat: false }
+            if code.get() == 55 && *modifiers == oteryn_input_actions::Modifiers::one(Modifier::Control))
+    {
+        owner.view_mode.cycle();
+        return;
+    }
     let shortcut = matches!(&event, NormalizedInputEvent::Key { code, modifiers, .. }
         if !matches!(code.get(), 79..=82)
             && ((modifiers.contains(Modifier::Control)

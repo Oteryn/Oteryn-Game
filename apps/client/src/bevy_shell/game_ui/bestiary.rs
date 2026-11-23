@@ -13,6 +13,8 @@ use super::{
 use bevy::{input_focus::InputFocus, prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::charm_progression::{Intent, Panel};
 
+#[derive(Component)]
+struct CreatureSearch;
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
 struct Control {
     generation: u64,
@@ -21,6 +23,8 @@ struct Control {
 }
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
+    EndSearch,
+    Search(bool),
     Catalogue(usize),
     Select(u16),
     Progress,
@@ -154,6 +158,16 @@ fn project(
             state.load_charms = false;
         }
     }
+    if panel
+        .catalogue
+        .search
+        .as_ref()
+        .is_some_and(|search| search.next.is_some())
+        && !panel.pending
+    {
+        play.link.bestiary_catalogue_request(10);
+        panel = play.link.charm_progression_panel();
+    }
     if state.snapshot.as_ref() != Some(&panel) {
         state.confirm = None;
     } else if let Some((intent, shown)) = state.confirm {
@@ -185,7 +199,7 @@ fn project(
     state.snapshot = Some(panel);
     state.shown = state.confirm;
 }
-fn perform(owner: &HostOwner, state: &mut State, control: Control) {
+fn perform(owner: &HostOwner, state: &mut State, control: Control, search: Option<String>) {
     if owner.phase != Phase::Playing
         || owner.modal_active()
         || owner.generation() != control.generation
@@ -208,13 +222,18 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
         return;
     }
     match control.kind {
+        Kind::Search(targets) => {
+            if let Some(value) = search {
+                play.link.bestiary_search(&value, targets);
+            }
+        }
+        Kind::EndSearch => play.link.bestiary_catalogue_request(11),
         Kind::Catalogue(action) => play.link.bestiary_catalogue_request(action),
         Kind::Progress => play.link.charm_progression_request(Intent::Query),
         Kind::Select(race)
             if panel
                 .catalogue
-                .page
-                .cards
+                .visible_cards()
                 .iter()
                 .any(|card| card.race == race) =>
         {
@@ -226,6 +245,14 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
                 reply.charms.charms.iter().any(|c| c.charm.get() == charm)
             }) =>
         {
+            if panel
+                .catalogue
+                .search
+                .as_ref()
+                .is_some_and(|s| s.eligible.is_some())
+            {
+                play.link.bestiary_catalogue_request(11);
+            }
             play.link.charm_progression_edit(0, charm.to_string());
         }
         Kind::CharmAction(intent @ (Intent::Remove | Intent::ResetAll)) => {
@@ -237,13 +264,13 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
             state.confirm = Some((intent, fee));
         }
         Kind::CharmAction(intent @ (Intent::Unlock | Intent::Assign)) => {
-            play.link.charm_progression_request(intent);
+            state.confirm = Some((intent, None));
         }
         Kind::Confirm(intent)
             if state.shown == state.confirm
                 && state.confirm.is_some_and(|(pending, shown)| {
                     pending == intent
-                        && shown.is_some()
+                        && (shown.is_some() || matches!(intent, Intent::Unlock | Intent::Assign))
                         && shown == current_fee(play, &panel, intent)
                 }) =>
         {
@@ -261,6 +288,7 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
 fn activate(
     event: On<Activate>,
     controls: Query<&Control>,
+    search: Query<&bevy::text::EditableText, With<CreatureSearch>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -268,7 +296,12 @@ fn activate(
     if guard.allows(event.entity)
         && let Ok(control) = controls.get(event.entity)
     {
-        perform(&owner, &mut state, *control);
+        perform(
+            &owner,
+            &mut state,
+            *control,
+            search.single().ok().map(|field| field.value().to_string()),
+        );
     }
 }
 fn keyboard(
@@ -288,7 +321,7 @@ fn keyboard(
                 serial: state.serial,
                 kind: Kind::Close,
             };
-            perform(&owner, &mut state, control);
+            perform(&owner, &mut state, control, None);
         }
     }
 }

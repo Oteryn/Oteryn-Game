@@ -13,7 +13,7 @@ impl PlayLink {
         let mut mailbox = lock(&self.mailbox);
         mailbox.quest.open = open;
         if !open {
-            mailbox.quest.tracker_open = false;
+            mailbox.quest.tracker_selection = None;
         }
     }
     /// Mission selection is accepted only against the currently confirmed quest line.
@@ -21,9 +21,13 @@ impl PlayLink {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.quest;
         if !panel.state.selected
-            || !matches!(&panel.state.log.view,
-            Some(oteryn_client_ui::quest_log::QuestLogView::Line(line))
-                if line.quest_index == quest_index && line.missions.iter().any(|mission| mission.mission_index == mission_index))
+            || !panel.journal_line().is_some_and(|line| {
+                line.quest_index == quest_index
+                    && line
+                        .missions
+                        .iter()
+                        .any(|m| m.mission_index == mission_index)
+            })
         {
             return false;
         }
@@ -49,13 +53,39 @@ impl PlayLink {
     /// A consistent projection for the native feature window and recorded-frame tests.
     #[must_use]
     pub fn quest_panel(&self) -> QuestPanel {
-        lock(&self.mailbox).quest.clone()
+        let mut panel = lock(&self.mailbox).quest.clone();
+        if let Some(line) = panel
+            .tracker_selection
+            .and_then(|id| panel.state.log.tracked.iter().find(|l| l.quest_index == id))
+        {
+            panel.state.log.view = Some(oteryn_client_ui::quest_log::QuestLogView::Line(
+                line.clone(),
+            ));
+        }
+        panel
     }
 }
 
-
-
 impl PlayLink {
+    pub fn quest_tracker_visible(&self) -> bool {
+        lock(&self.mailbox).quest.tracker_open
+    }
+    pub fn quest_close_tracker(&self) {
+        lock(&self.mailbox).quest.tracker_open = false;
+    }
+    pub fn quest_open_tracked_mission(&self, quest: u32, mission: u32) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.quest;
+        if panel.tracker_open
+            && panel.state.log.tracked.iter().any(|l| {
+                l.quest_index == quest && l.missions.iter().any(|m| m.mission_index == mission)
+            })
+        {
+            panel.tracker_selection = Some(quest);
+            panel.mission = Some(mission);
+            panel.open = true;
+        }
+    }
     pub fn open_quest_tracker(&self) {
         self.quest_request(&oteryn_client_ui::quest_log::QuestLogQuery::ListOnly);
         lock(&self.mailbox).quest.tracker_open = true;

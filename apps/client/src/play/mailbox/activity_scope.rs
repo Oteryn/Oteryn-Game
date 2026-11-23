@@ -9,6 +9,7 @@ impl Mailbox {
             cancel.cancel();
             self.channel_probe_refreshed = None;
         }
+        self.logout_requested = None;
         self.reset_wire_frame();
         self.chat.scope = self.chat.scope.wrapping_add(1);
         // Every queued command belonged to the source namespace, including panel queries.
@@ -43,6 +44,8 @@ impl Mailbox {
         self.containers.pending = Default::default();
         self.depot.pending = Default::default();
         self.cyclopedia_character.pending = Default::default();
+        self.cyclopedia_character.own_vocation_pending = false;
+        self.cyclopedia_character.own_vocation_id = None;
         self.cyclopedia_character.augments = Default::default();
         let blessing_details = self.cyclopedia_character.blessings.details_selected;
         self.cyclopedia_character.blessings = Default::default();
@@ -86,6 +89,8 @@ impl Mailbox {
         self.task_board.soulseals_open = false;
         self.npc_shop.pending = Default::default();
         self.npc_shop.live.pending = false;
+        self.npc_shop.live.weight_pending = None;
+        self.npc_shop.live.weights.clear();
         self.dialogue.pending = false;
         self.prey.pending = Default::default();
         self.imbue.invalidate_item_scope();
@@ -97,6 +102,10 @@ impl Mailbox {
         self.hireling_management.pending = Default::default();
         self.market.pending = Default::default();
         self.market.details = Default::default();
+        self.market.hand_pending = None;
+        self.market.hand_positions.clear();
+        self.market.funds_pending = false;
+        self.market.funds = None;
         self.chat_private.pending = Default::default();
         self.boss_rewards.pending = Default::default();
         self.discovery.loot.pending = Default::default();
@@ -218,6 +227,23 @@ mod tests {
         mailbox.battle.pending_command = Some(crate::combat_input::CombatCommand::Stop);
         mailbox.spellbook_details.pending = Some(Default::default());
         mailbox.chat.pending = true;
+        mailbox.market.hand_pending = Some(42);
+        mailbox.market.funds_pending = true;
+        mailbox.market.funds = Some((10, 20));
+        mailbox.market.hand_positions.insert(42, Some(2));
+        mailbox.npc_shop.live.weight_pending = Some(oteryn_client_ui::npc_shop::Quote {
+            npc: oteryn_session::EntityRef {
+                identity: [9; 16],
+                generation: 2,
+            },
+            revision: 7,
+            offer_index: 0,
+            item: 42,
+            side: oteryn_client_ui::npc_shop::NpcTradeSide::Buy,
+            count: 1,
+            price: 12,
+        });
+        mailbox.npc_shop.live.weights.insert(42, Some(100));
         let read = || ItemCooldownRead {
             slot: std::num::NonZeroU32::MIN,
             action: BarAction::Passive {
@@ -236,6 +262,12 @@ mod tests {
         assert!(mailbox.battle.pending_command.is_none());
         assert!(mailbox.spellbook_details.pending.is_none());
         assert!(!mailbox.chat.pending);
+        assert!(mailbox.market.hand_pending.is_none());
+        assert!(!mailbox.market.funds_pending);
+        assert!(mailbox.market.funds.is_none());
+        assert!(mailbox.market.hand_positions.is_empty());
+        assert!(mailbox.npc_shop.live.weight_pending.is_none());
+        assert!(mailbox.npc_shop.live.weights.is_empty());
         drop(mailbox);
         assert!(!link.bar_activation_pending());
     }
@@ -295,4 +327,37 @@ fn handoff_releases_hud_stamina_query_without_deselecting_it()
     destination.sync_resource_hud(&link);
     assert_eq!(commands.try_recv()?, PlayCommand::HudStamina);
     Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn logout_can_be_requested_after_handoff_discards_the_queued_command() {
+    let (link, mut commands, outbox) = super::play_channel();
+    lock(&outbox.0).activity_reset_commands = true;
+    link.request_logout();
+    assert!(outbox.death_command(&mut commands).is_err());
+    link.request_logout();
+    assert!(matches!(
+        outbox.death_command(&mut commands),
+        Ok(crate::combat_input::PlayCommand::Logout)
+    ));
+}
+
+#[cfg(test)]
+#[test]
+fn pending_scope_presentation_does_not_accept_a_logout_it_will_discard() {
+    let (link, mut commands, outbox) = super::play_channel();
+    {
+        let mut mailbox = lock(&outbox.0);
+        mailbox.scope_pending = true;
+        mailbox.scope_session = Some([1; 16]);
+    }
+    link.request_logout();
+    assert!(commands.try_recv().is_err());
+    link.scope_presented([1; 16]);
+    link.request_logout();
+    assert!(matches!(
+        commands.try_recv(),
+        Ok(crate::combat_input::PlayCommand::Logout)
+    ));
 }

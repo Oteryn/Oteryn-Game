@@ -37,13 +37,44 @@ impl PlayLink {
             mailbox: self.mailbox.clone(),
         }
     }
+    #[cfg(bevy_shell)]
+    pub(crate) fn item_catalogue_projected_text(
+        &self,
+        panel: &oteryn_client_ui::inspection::Panel,
+    ) -> String {
+        projected_text(&lock(&self.mailbox), panel)
+    }
     pub fn item_catalogue_text(&self) -> String {
         text(&lock(&self.mailbox))
     }
 }
 fn text(mailbox: &Mailbox) -> String {
-    let panel = &mailbox.discovery.inspection;
+    projected_text(mailbox, &mailbox.discovery.inspection)
+}
+fn projected_text(mailbox: &Mailbox, panel: &oteryn_client_ui::inspection::Panel) -> String {
     let mut text = oteryn_client_ui::inspection::catalogue_text(panel);
+    if let Ok(definition) = panel.catalogue_definition.parse::<u32>()
+        && panel.catalogue.contains_key(&definition)
+    {
+        use std::fmt::Write;
+        for quote in mailbox
+            .npc_shop
+            .live
+            .quotes()
+            .into_iter()
+            .filter(|q| q.item == definition)
+        {
+            let verb = match quote.side {
+                oteryn_client_ui::npc_shop::NpcTradeSide::Sell => "buys",
+                oteryn_client_ui::npc_shop::NpcTradeSide::Buy => "sells",
+            };
+            let _ = write!(
+                text,
+                "\r\nCurrent merchant {verb} {} for {} gold",
+                quote.count, quote.price
+            );
+        }
+    }
     if panel.catalogue_market == Some(mailbox.market.definition)
         && panel.catalogue_definition == mailbox.market.definition.to_string()
     {

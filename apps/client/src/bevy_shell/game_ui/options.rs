@@ -40,7 +40,6 @@ pub(in crate::bevy_shell) struct Installed;
 
 #[derive(Resource, Default)]
 struct OptionsState {
-    opening_folder: Option<std::thread::JoinHandle<()>>,
     page: Page,
     advanced: bool,
     choice: Option<&'static str>,
@@ -48,6 +47,7 @@ struct OptionsState {
     /// Bumped by a page section's edit so the page is rebuilt from the edited draft.
     revision: u64,
     /// The key binding selected on the General Hotkeys page.
+    search: String,
     binding: Option<&'static str>,
     /// The help topic shown on the Misc page.
     help_topic: Option<crate::play::help::Topic>,
@@ -92,10 +92,18 @@ enum Control {
 pub(super) fn install(app: &mut App) {
     app.insert_resource(Installed)
         .init_resource::<OptionsState>()
+        .init_resource::<screenshots::FolderLaunch>()
         .add_systems(Startup, widgets::setup.after(super::super::ui::setup))
         .add_systems(
             Update,
-            (keyboard, projection::project, screenshots::project).chain(),
+            (
+                keyboard,
+                projection::project,
+                keys::filter,
+                audio_device::finish,
+                screenshots::project,
+            )
+                .chain(),
         )
         .add_systems(Update, audio_feedback::project.after(projection::project));
 }

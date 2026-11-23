@@ -18,6 +18,10 @@ pub struct Quote {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct LiveShop {
     pub options: ShopOptions,
+    pub weights: std::collections::BTreeMap<u32, Option<u32>>,
+    pub weight_pending: Option<Quote>,
+    pub inspection_selected: bool,
+    pub free_capacity: Option<u32>,
     pub selected: bool,
     pub resources_selected: bool,
     pub balances: Option<resources::ResourceBalances>,
@@ -30,6 +34,9 @@ pub struct LiveShop {
 }
 impl LiveShop {
     pub fn apply_window(&mut self, window: npc_service::NpcTradeWindow) {
+        if self.window != window {
+            self.weights.clear();
+        }
         self.window = window;
         self.pending = false;
     }
