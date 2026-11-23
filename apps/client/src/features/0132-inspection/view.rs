@@ -45,3 +45,37 @@ fn text(mailbox: &Mailbox) -> String {
     }
     text
 }
+
+impl crate::play::PlayView {
+    #[cfg(bevy_shell)]
+    pub(crate) fn inspection_preview(
+        &self,
+        link: &crate::play::PlayLink,
+        entity: oteryn_session::EntityRef,
+    ) -> Option<oteryn_client_ui::appearance::Preview> {
+        let visible = self
+            .appearances
+            .iter()
+            .find(|entry| entry.entity.entity == entity)?;
+        let oteryn_session::Look::Outfit {
+            look_type,
+            addons,
+            colours,
+        } = visible.look.as_ref()?
+        else {
+            return None;
+        };
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
+        let palette = &mailbox.properties.appearance.catalogue.as_ref()?.palette;
+        let [Some(head), Some(body), Some(legs), Some(feet)] =
+            colours.map(|index| palette.get(usize::from(index)).copied())
+        else {
+            return None;
+        };
+        Some(oteryn_client_ui::appearance::Preview {
+            look_type: *look_type,
+            addons: *addons,
+            colours: [head, body, legs, feet],
+        })
+    }
+}

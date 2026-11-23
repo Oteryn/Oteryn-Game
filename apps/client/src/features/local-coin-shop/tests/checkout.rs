@@ -298,13 +298,23 @@ fn refreshed_tracked_order_reconciles_paid_and_validates_immutable_binding() -> 
 #[test]
 fn overlapping_purchases_send_one_post_until_response() -> TestResult {
     test_thread(|| {
+        let _entry = crate::account_services::test_server::COMMERCE_ENTRY
+            .lock()
+            .map_err(|_| "commerce entry lock")?;
         let mock = MockPlatform::start()?;
         let client = mock.client()?;
         let token = mock.token(&client)?;
         let other = mock.token(&client)?;
         let browser: Browser = Arc::new(|_| true);
         let cancel = CancellationToken::new();
-        let mut first = View::new(Some(CHARACTER.into()));
+        let folder = tempfile::tempdir()?;
+        let session = || {
+            crate::device_login::DeviceLogin::test_fixture(folder.path().into())
+                .commerce_session("platform", "client", Some(CHARACTER.into()))
+                .coin
+        };
+        let mut first = session();
+        let mut second = session();
         let purchase = Action::Purchase {
             package_id: PACKAGE.into(),
             confirmed: true,
@@ -325,7 +335,16 @@ fn overlapping_purchases_send_one_post_until_response() -> TestResult {
                 cancel.clone(),
             )
             .await;
-            let mut second = first.clone();
+            controller::execute(
+                &mut second,
+                Action::Refresh,
+                &client,
+                &other,
+                &browser,
+                cancel.clone(),
+            )
+            .await;
+            assert!(second.can_purchase(PACKAGE));
             let submit = controller::execute(
                 &mut first,
                 purchase.clone(),
@@ -335,7 +354,7 @@ fn overlapping_purchases_send_one_post_until_response() -> TestResult {
                 cancel.clone(),
             );
             let overlap = async {
-                received.await?;
+                tokio::time::timeout(std::time::Duration::from_secs(5), received).await??;
                 controller::execute(
                     &mut second,
                     purchase.clone(),

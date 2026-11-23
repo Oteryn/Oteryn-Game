@@ -180,30 +180,18 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         Page::Diagnostics => &diagnostics::ROWS,
         Page::Screenshots => &[
             check!(
-                "screenshots.game-only",
-                "Capture game area only",
-                screenshots.game_only
-            ),
-            check!(
-                "screenshots.death",
-                "Capture on death",
-                screenshots.on_death
-            ),
-            check!(
-                "screenshots.level",
-                "Capture on level up",
-                screenshots.on_level
-            ),
-            check!(
-                "screenshots.skill",
-                "Capture on skill up",
-                screenshots.on_skill
-            ),
-            check!(
                 "screenshots.achievement",
                 "Capture on achievement",
                 screenshots.on_achievement
             ),
+            Row {
+                id: "screenshots.automatic",
+                label: "Enable automatic screenshots",
+                editor: Editor::Check {
+                    read: |p| !p.screenshots.automatic_disabled,
+                    write: |p, v| p.screenshots.automatic_disabled = !v,
+                },
+            },
             Row {
                 id: "screenshots.backlog",
                 label: "Screenshot backlog (seconds, 0 disables)",
@@ -217,6 +205,66 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
                     max: 10,
                 },
             },
+            check!(
+                "screenshots.bestiary-complete",
+                "Capture on bestiary entry completed",
+                screenshots.on_bestiary_complete
+            ),
+            check!(
+                "screenshots.bestiary-unlock",
+                "Capture on bestiary entry unlocked",
+                screenshots.on_bestiary_unlock
+            ),
+            check!(
+                "screenshots.boss",
+                "Capture on boss defeated",
+                screenshots.on_boss_defeat
+            ),
+            check!(
+                "screenshots.death",
+                "Capture on death",
+                screenshots.on_death
+            ),
+            check!(
+                "screenshots.game-only",
+                "Capture game area only",
+                screenshots.game_only
+            ),
+            check!(
+                "screenshots.level",
+                "Capture on level up",
+                screenshots.on_level
+            ),
+            check!(
+                "screenshots.low-health",
+                "Capture on low health",
+                screenshots.on_low_health
+            ),
+            check!(
+                "screenshots.player-attacking",
+                "Capture when a player attacks you",
+                screenshots.on_player_attacking
+            ),
+            check!(
+                "screenshots.record-damage",
+                "Capture on highest damage dealt",
+                screenshots.on_record_damage
+            ),
+            check!(
+                "screenshots.record-healing",
+                "Capture on highest healing done",
+                screenshots.on_record_healing
+            ),
+            check!(
+                "screenshots.skill",
+                "Capture on skill up",
+                screenshots.on_skill
+            ),
+            check!(
+                "screenshots.valuable-loot",
+                "Capture on tracked loot",
+                screenshots.on_valuable_loot
+            ),
         ],
     }
 }

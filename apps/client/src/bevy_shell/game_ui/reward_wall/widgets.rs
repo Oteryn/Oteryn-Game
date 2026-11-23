@@ -71,6 +71,13 @@ pub(super) fn build(
             ),
         );
     }
+    let clock = commands
+        .spawn((
+            ResetClock,
+            source::text("", source::font(skin.font.clone(), false)),
+        ))
+        .id();
+    commands.entity(window).add_child(clock);
     let tabs = row(commands, window);
     for (kind, text) in [
         (Kind::Wall, "Rewards"),
@@ -215,6 +222,22 @@ pub(super) fn build(
         "Refresh",
         panel.selected && !panel.pending,
     );
+    for (label, search) in [
+        ("Premium offers", "Premium"),
+        ("Instant reward offers", "Instant Reward"),
+    ] {
+        button(
+            commands,
+            skin,
+            actions,
+            Control {
+                kind: Kind::Offers(search),
+                ..control
+            },
+            label,
+            panel.selected,
+        );
+    }
     button(commands, skin, actions, control, "Close", true);
     root
 }
