@@ -127,39 +127,7 @@ fn roll(
             state.ordinal += validate_tree(&entry.details.children, 0)? as u32;
             continue;
         }
-        let quantity = if entry.details.container_capacity.is_some() || !entry.details.stackable {
-            1
-        } else {
-            match entry.details.charges {
-                Some(charges) if entry.details.stackable => charges,
-                Some(_) => 1,
-                None => quantity_in_range(chance, entry.min_count, entry.max_count),
-            }
-        };
-        if quantity == 0 {
-            return Err(LootPlanError::InvalidQuantityRange);
-        }
-        let purpose_key = entry.item.production_key.clone();
-        state.bytes = charge_plan_bytes(
-            state.bytes,
-            entry_footprint_bytes(&entry.item, &purpose_key),
-        )?;
-        if state.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
-            return Err(LootPlanError::TooManyPlanItems);
-        }
-        placement_ordinal += 1;
-        state.entries.push(LootPlanEntry {
-            item: entry.item.clone(),
-            quantity,
-            draw_ordinal,
-            purpose_key,
-            parent,
-            placement_ordinal,
-            subtype: entry.details.subtype,
-            charges: entry.details.charges,
-            unique: entry.details.unique,
-            stackable: entry.details.stackable,
-        });
+        state.push_instances(entry, chance, draw_ordinal, parent, &mut placement_ordinal)?;
         if entry.details.unique {
             state.unique.insert(entry.item.production_key.clone());
         }
