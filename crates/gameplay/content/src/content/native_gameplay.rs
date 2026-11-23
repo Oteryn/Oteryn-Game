@@ -1366,7 +1366,9 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         m25_corpse_items::admit_exact_bindings(&mut admitted, &m25_items)?;
         source_reward_items.extend(m25_items);
         source_reward_items.extend(galthen_furniture::qualified_records()?);
-        source_reward_items.extend(galthen_loot::qualified_records()?);
+        let galthen_source = galthen_loot::qualified_records()?;
+        let galthen_global = galthen_loot::qualified_global_records(&galthen_source)?;
+        source_reward_items.extend(galthen_source);
         let item_detail_weights: BTreeMap<String, u32> = serde_json::from_slice(include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/item-detail-weight-facts.json"
         ))
@@ -1401,7 +1403,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 .iter()
                 .find(|expected| expected.production_binding.external_id == binding.external_id)
             {
-                if record != expected {
+                if record != expected && galthen_global.get(&binding.external_id) != Some(record) {
                     // Accept the verified Global weight in addition to the historical
                     // donor record. Compare the entire profile in both cases.
                     use super::ReferenceItemField as F;
@@ -3817,6 +3819,83 @@ mod tests {
         invalid_section.progression = Some(pinned(b"{}"));
         assert!(compile_native_gameplay(baseline.compiled(), &invalid_section).is_err());
     }
+
+    #[test]
+    fn itemglob3_loaded_item_stats() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        let armor = native
+            .item_policy("oteryn:item.tibia.i3361", "definition-r1")
+            .unwrap();
+        let forge = armor.record().authoring.forge.unwrap();
+        assert_eq!((forge.classification, forge.max_tier), (1, 1));
+        assert!(matches!(
+            &armor.record().semantics.protection,
+            crate::content::ReferenceItemField::Known(protection)
+                if protection.armor == crate::content::ReferenceItemField::Known(crate::content::ReferenceSignedPoints(4))
+        ));
+        for (id, pointer, value) in [
+            (
+                8063,
+                "/imbuement/value/slot_count/value",
+                serde_json::json!(1),
+            ),
+            (
+                8063,
+                "/skill_modifiers/value/modifiers/value/0/parameter/value/value",
+                serde_json::json!(2),
+            ),
+            (8078, "/weapon/value/defense/value", serde_json::json!(47)),
+            (
+                34088,
+                "/protection/value/resistances/value/0/kind",
+                serde_json::json!("HOLY"),
+            ),
+            (
+                34088,
+                "/equipment/value/patterns/value/0/level/value",
+                serde_json::json!(400),
+            ),
+            (
+                761,
+                "/use_requirements/value/min_level/value",
+                serde_json::json!(20),
+            ),
+        ] {
+            let policy = native
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap();
+            let semantics = serde_json::to_value(&policy.record().semantics).unwrap();
+            assert_eq!(
+                semantics.pointer(pointer),
+                Some(&value),
+                "Item {id} {pointer}"
+            );
+        }
+    }
+
+    #[test]
+    fn itemglob3_loaded_launcher_combat_values() {
+        let world = test_source(1).unwrap().world_id;
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller.active().unwrap().native_gameplay().unwrap();
+        for (id, expected_range, expected_hit) in [(7438, 6, 3), (22866, 6, 3), (22867, 5, 3)] {
+            let launcher = native
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap();
+            assert!(
+                matches!(
+                    launcher.record().authoring.ranged,
+                    Some(crate::content::ProjectV2RangedWeapon::Distance { range_cells, hit_chance, .. })
+                        if (range_cells, hit_chance) == (expected_range, expected_hit)
+                ),
+                "launcher {id}: {:?}",
+                launcher.record().authoring.ranged
+            );
+        }
+    }
+
     #[test]
     fn production_manifest_activates_with_the_rat_reward_row() {
         let world = test_source(1).unwrap().world_id;

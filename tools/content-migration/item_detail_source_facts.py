@@ -1,8 +1,9 @@
 """Replay qualified Item Details facts after native profile admission."""
 
+from collections import Counter
 import json
 
-from import_cyclopedia_global import load_weights
+from import_cyclopedia_global import apply_stats, item_id, load_capture, load_weights
 
 
 WEIGHT_IDS = (43501, 43502, 43503, 43504, 43899, 43900, 43946, 43947, 44048, 44727, 44728)
@@ -73,6 +74,16 @@ def apply_weight(record, identifier, weights):
     physical["weight"] = known(value)
 
 
+def apply_capture_stats(profiles, capture):
+    counts = Counter()
+    for record in profiles["records"]:
+        identity = record["production_binding"]["target"]
+        if identity["key"] != record["production_definition"]["production_key"]:
+            raise ValueError("ITEM_DETAILS_PRODUCTION_IDENTITY")
+        if row := capture.get(item_id(identity)):
+            apply_stats(record, row["basic"], counts)
+
+
 def apply(root, profiles, weights):
     records = {row["production_definition"]["production_key"]: row for row in profiles["records"]}
     for identifier in weights:
@@ -84,3 +95,5 @@ def apply(root, profiles, weights):
         if semantics["skill_modifiers"] not in ({"state": "UNKNOWN"}, selected):
             raise ValueError(f"ITEM_DETAILS_MODIFIER_SOURCE_CONFLICT:{key}")
         semantics["skill_modifiers"] = selected
+
+    apply_capture_stats(profiles, load_capture(root))

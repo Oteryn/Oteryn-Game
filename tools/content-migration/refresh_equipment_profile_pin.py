@@ -694,6 +694,16 @@ def main():
     documents = [json.loads((ROOT / p).read_text()) for p in paths]
     documents[2], documents[3] = registered_engine_npc_documents(
         ROOT, documents[2], documents[3])
+    # Compare the independently generated source rows after replaying the same
+    # qualified Global facts that supersede them in the final native provider.
+    from forge_item_profiles import owners, project
+    from import_cyclopedia_global import load_capture
+    from item_detail_source_facts import apply_capture_stats
+    capture = load_capture(ROOT)
+    forge_owners = owners(ROOT)
+    for _, document, _ in srx3:
+        apply_capture_stats(document, capture)
+        project(document, forge_owners)
     generated, count = regenerate(
         register(source), *documents, srx3=srx3,
         coowners=source_coowners(ROOT), engine_npc_shared=("oteryn:item.tibia.i27654",),

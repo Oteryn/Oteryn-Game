@@ -265,6 +265,28 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     questpc2_rotten_loot_items.apply_admissions(definitions, root)
 
 
+def item_projection_tables(item_records, authoring):
+    """Derive catalogue taxonomy and capability relations from effective Item facts."""
+    definitions = {target_id(row["identity"]): row for row in item_records}
+    assignments = load(FIELD_CENSUS)["family_assignments"]
+    taxonomy = build_taxonomy(definitions, authoring, assignments, *taxonomy_inputs(ROOT))
+    relations = []
+    for key, definition in sorted(definitions.items()):
+        if rules := capability_relations(definition, authoring.get(key)):
+            relations.append({"source": definition["identity"], "relations": rules})
+    return {
+        "content/items/taxonomy/items.json": {
+            "schema": "OTERYN_ITEM_TAXONOMY/v1",
+            "family_profile_contract": "tools/content-schema/item-authoring/profile-catalog.json",
+            "legacy_family_profile_contract": "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json#family_assignments",
+            "records": taxonomy,
+        },
+        "content/items/relations/items.json": {
+            "schema": "OTERYN_ITEM_RELATIONS/v1", "records": relations,
+        },
+    }
+
+
 def materialize_item_tree(reference, declarations, editor, sources):
     """Write the complete Item cohort through the normal admission owners."""
     authoring_by_target = {target_id(row["item"]): row for row in declarations.get("item_authoring", [])}
@@ -306,9 +328,14 @@ def materialize_item_tree(reference, declarations, editor, sources):
     apply_tainted_talisman(item_records, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items
     apply_engclaim_items(item_records, ROOT)
-    # Captured Global client weights win over the legacy package (ITEMGLOB).
-    from import_cyclopedia_global import apply_admissions as apply_client_weights
-    apply_client_weights(item_records, ROOT)
+    # Replay the captured Global details over the sealed legacy admission.
+    from import_cyclopedia_global import apply_admissions as apply_client, load_capture, project_item_authoring
+    capture = load_capture(ROOT)
+    apply_client(item_records, ROOT, rows=capture)
+    authoring_by_target = project_item_authoring(
+        ROOT, {target_id(row["identity"]): row for row in item_records}, authoring_by_target,
+        rows=capture,
+    )
     # Global healing potion facts win over the legacy package (HEALPAR).
     from healing_global_overrides import apply_definitions as apply_global_potions
     apply_global_potions(item_records)
@@ -350,7 +377,9 @@ def materialize_item_tree(reference, declarations, editor, sources):
     (ROOT / RANGED_PROFILES).write_bytes(ranged_generated[RANGED_PROFILES])
 
     item_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Item"]
-    write("content/items/index.json", {
+    index_path = "content/items/index.json"
+    prior_index = load(ROOT / index_path) if (ROOT / index_path).is_file() else {}
+    index = {
         "schema": "OTERYN_FAMILY_INDEX/v1",
         "family": "Item",
         **item_index_fields(ROOT, item_shards),
@@ -364,13 +393,28 @@ def materialize_item_tree(reference, declarations, editor, sources):
         "attached_editor_entries": sum(row["target"]["family"] == "Item" for row in editor["entries"]),
         "attached_source_bindings": len(item_bindings),
         "attached_authoring_entries": len(authoring_by_target),
-    })
-    return item_records, item_shards, authoring_by_target, editors, bindings
+    }
+    if "spell_imports" in prior_index:
+        index["spell_imports"] = prior_index["spell_imports"]
+    write(index_path, index)
+    tables = item_projection_tables(item_records, authoring_by_target)
+    for relative, table in tables.items():
+        write(relative, table)
+    lock_path = "content/content.lock.json"
+    if (ROOT / lock_path).is_file():
+        lock = load(ROOT / lock_path)
+        lock["item_authoring_counts"] = {
+            "authoring": len(authoring_by_target),
+            "taxonomy": len(tables["content/items/taxonomy/items.json"]["records"]),
+            "relation_sources": len(tables["content/items/relations/items.json"]["records"]),
+        }
+        write_registry(lock_path, lock)
+    return item_records, item_shards, authoring_by_target, editors, bindings, tables
 
 
 def main(*, items_only: bool = False) -> int:
     if items_only:
-        records, shards, _, _, _ = materialize_item_tree(
+        records, shards, _, _, _, _ = materialize_item_tree(
             load(LEGACY / "definitions/reference.json"),
             load(LEGACY / "definitions/declarations.json"),
             load(LEGACY / "editor/author.json"),
@@ -399,10 +443,9 @@ def main(*, items_only: bool = False) -> int:
     sources = load(LEGACY / "provenance" / "sources.json")
     imports = load(LEGACY / "provenance" / "imports.json")
 
-    family_assignments = load(FIELD_CENSUS)["family_assignments"]
     wave1 = load(WAVE1_STAGED)
     item_aliases = item_alias_targets()
-    item_records, item_shards, authoring_by_target, editors, bindings = materialize_item_tree(
+    item_records, item_shards, authoring_by_target, editors, bindings, tables = materialize_item_tree(
         reference, declarations, editor, sources)
     from ranged_item_profiles import RANGED_PROFILES
 
@@ -431,17 +474,8 @@ def main(*, items_only: bool = False) -> int:
         "records": mount_rows,
     })
 
-    definitions_by_target = {target_id(row["identity"]): row for row in reference["records"]}
-    taxonomy_rows = build_taxonomy(
-        definitions_by_target, authoring_by_target, family_assignments, *taxonomy_inputs(ROOT)
-    )
-    relation_rows = []
-    for key, definition in sorted(definitions_by_target.items()):
-        if key[0] != "Item":
-            continue
-        relations = capability_relations(definition, authoring_by_target.get(key))
-        if relations:
-            relation_rows.append({"source": definition["identity"], "relations": relations})
+    taxonomy_rows = tables["content/items/taxonomy/items.json"]["records"]
+    relation_rows = tables["content/items/relations/items.json"]["records"]
     wave1_facts = [
         {
             "target": canonical_item_target(item["target"], item_aliases),
@@ -539,16 +573,6 @@ def main(*, items_only: bool = False) -> int:
             "batch_id": wave1["batch_id"],
             "snapshot_sha256": wave1["source"]["snapshot_sha256"],
             "records": wave1_facts,
-        },
-        "content/items/taxonomy/items.json": {
-            "schema": "OTERYN_ITEM_TAXONOMY/v1",
-            "family_profile_contract": "tools/content-schema/item-authoring/profile-catalog.json",
-            "legacy_family_profile_contract": "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json#family_assignments",
-            "records": taxonomy_rows,
-        },
-        "content/items/relations/items.json": {
-            "schema": "OTERYN_ITEM_RELATIONS/v1",
-            "records": relation_rows,
         },
     }
     for relative, value in outputs.items():

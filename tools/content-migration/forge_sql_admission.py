@@ -119,7 +119,7 @@ def current_migration():
 def checked_projection(migration=None):
     migration = current_migration() if migration is None else migration
     text = (migration.read_text() if migration.is_file() else
-            '-- Forward-only Forge admission for newly source-qualified quest Items.\n' + BEGIN + END)
+            '-- Forward-only Forge admission for newly source-qualified Items.\n' + BEGIN + END)
     start = text.index(BEGIN)
     end = text.index(END, start) + len(END)
     return text, text[:start] + generated() + text[end:]

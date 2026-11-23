@@ -11,8 +11,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from item_taxonomy import build_taxonomy, legacy_profile, taxonomy_inputs
-from world_project_v2_to_tree import apply_encounter_corpse_admissions, apply_primal_item_admissions, apply_summer_item_admissions, capability_relations
+from item_taxonomy import legacy_profile
+from world_project_v2_to_tree import apply_encounter_corpse_admissions, apply_primal_item_admissions, apply_summer_item_admissions, capability_relations, item_projection_tables
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -338,7 +338,7 @@ def source_loot_stack_promotions(root: Path) -> dict[str, int]:
 
 
 def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, batches: list[Any],
-                             migrated_authoring: dict[tuple[str, str, str], dict[str, Any]]) -> tuple[int, int, int, int]:
+                             migrated_authoring: dict[tuple[str, str, str], dict[str, Any]], effective_items: list[Any]) -> tuple[int, int, int, int]:
     """Round-trip Item authoring/taxonomy/relations and prove per-fact provenance."""
     from quest_reward_item_semantics import load_admissions
     reward_admissions = load_admissions(ROOT)
@@ -366,10 +366,13 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
     facts = load(ROOT / "imports/tibiawiki/facts/items-wave1.json")
     definitions = {target_id(row["identity"]): row for row in reference["records"]}
 
+    from import_cyclopedia_global import project_item_authoring
+    effective = {target_id(row["identity"]): row for row in effective_items}
+    effective_authoring = project_item_authoring(ROOT, effective, legacy_authoring)
+    tables = item_projection_tables(effective_items, effective_authoring)
+    require(taxonomy == tables["content/items/taxonomy/items.json"], "TAXONOMY_SOURCE_COVERAGE")
+    require(relations == tables["content/items/relations/items.json"], "RELATION_DERIVATION_DISAGREES")
     rebuilt = {key: dict(value) for key, value in migrated_authoring.items()}
-    require(taxonomy["records"] == build_taxonomy(
-        definitions, legacy_authoring, assignments, *taxonomy_inputs(ROOT)
-    ), "TAXONOMY_SOURCE_COVERAGE")
     for row in taxonomy["records"]:
         key = target_id(row["target"])
         require(key in definitions, "TAXONOMY_TARGET_UNRESOLVED")
@@ -379,12 +382,11 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         require(row["family_profile"] is None or row["family_profile"] in set(assignments.values()), "TAXONOMY_PROFILE_UNKNOWN")
         rebuilt.setdefault(key, {"item": row["target"]})["taxonomy"] = row["source_taxonomy"]
     # Ranged profiles have their own owner; sealed authoring still round-trips exactly.
-    require(canonical_sorted(list(rebuilt.values())) == canonical_sorted(list(legacy_authoring.values())), "ITEM_AUTHORING_ROUNDTRIP")
+    require(canonical_sorted(list(rebuilt.values())) == canonical_sorted(list(effective_authoring.values())), "ITEM_AUTHORING_ROUNDTRIP")
 
     aliases = item_alias_targets()
     staged_items = {staged_item_target(item["target"], aliases): item for item in staged["items"]}
     validate_item_authoring_targets(legacy_authoring, staged_items)
-    relation_count = 0
     use_relation_count = 0
     forge_relation_count = 0
     forge_target = target_id(closed_forge_owner()["item"])
@@ -404,12 +406,15 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         key: capability_relations(definition, legacy_authoring.get(key))
         for key, definition in definitions.items() if key[0] == "Item"
     }
-    for row in relations["records"]:
+    # Validate the historical ownership receipts against the sealed facts.
+    # The exact effective projections above separately prove capture supersession.
+    historical_relations = [{"source": definitions[key]["identity"], "relations": rules}
+                            for key, rules in sorted(expected_relations.items()) if rules]
+    for row in historical_relations:
         key = target_id(row["source"])
         require(key in definitions and key not in seen_sources, "RELATION_SOURCE_UNRESOLVED")
         seen_sources.add(key)
         rulesets = sorted(relation["ruleset"] for relation in row["relations"])
-        require(row["relations"] == expected_relations[key], "RELATION_DERIVATION_DISAGREES")
         if key in forge289_relations:
             validate_forge289_relation(row, definitions[key], forge289_relations[key], forge289_sources[key])
             forge289_relation_count += 1
@@ -431,10 +436,9 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
             main_only_relation_count += 1
         for ruleset in rulesets:
             require((ROOT / ruleset / "index.json").is_file(), f"RELATION_RULESET_UNRESOLVED:{ruleset}")
-        relation_count += len(rulesets)
     require(use_relation_count == 55 and forge_relation_count == 1 and weapon_relation_count == 47 and forge289_relation_count == 289
             and sum(bool(item["capability_relations"]) for item in staged["items"]) + use_relation_count + forge_relation_count + weapon_relation_count + forge289_relation_count + main_only_relation_count == len(seen_sources), "RELATION_COVERAGE")
-    require(canonical_sorted([row for row in relations["records"] if target_id(row["source"]) in prior_relations])
+    require(canonical_sorted([row for row in historical_relations if target_id(row["source"]) in prior_relations])
             == canonical_sorted(list(prior_relations.values())), "WEAPON_PARENT_RELATIONS_CHANGED")
     require({key for key, values in expected_relations.items() if values} == seen_sources, "RELATION_COVERAGE")
 
@@ -474,7 +478,8 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         else:
             require(known.get("equipment.patterns") == equipment, "EQUIPMENT_WITHOUT_QUALIFIED_WIKI_PATTERN")
     require(fact_count == staged["counts"]["definition_facts"] + staged["counts"]["authoring_facts"], "PROVENANCE_FACT_COUNT")
-    return len(legacy_authoring), len(taxonomy["records"]), relation_count, fact_count
+    return (len(effective_authoring), len(taxonomy["records"]),
+            sum(len(row["relations"]) for row in relations["records"]), fact_count)
 
 
 def creature_family_counts(reference: Any) -> dict[str, int]:
@@ -847,13 +852,14 @@ def _main() -> int:
     apply_tainted_talisman(legacy_items, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items
     apply_engclaim_items(legacy_items, ROOT)
-    # ITEMGLOB: replay the producer's captured Global client weights.
+    # Replay Global supersession on a copy, retaining the historical receipt inputs.
+    effective_items = copy.deepcopy(legacy_items)
     from import_cyclopedia_global import apply_admissions as apply_client_weights
-    apply_client_weights(legacy_items, ROOT)
+    apply_client_weights(effective_items, ROOT)
     # HEALPAR: replay the producer's Global healing potion facts.
     from healing_global_overrides import apply_definitions as apply_global_potions
-    apply_global_potions(legacy_items)
-    require(migrated_items == legacy_items and expected_start == expected_item_count, "ITEM_DEFINITION_ROUNDTRIP")
+    apply_global_potions(effective_items)
+    require(migrated_items == effective_items and expected_start == expected_item_count, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
     mount_payload = load(ROOT / mount_index["shards"][0])
@@ -895,7 +901,7 @@ def _main() -> int:
     require(load(ROOT / "imports/tibiawiki/bindings/mounts.json")["bindings"] == legacy_mount_bindings, "IMPORT_MOUNT_BINDINGS")
 
     authoring_count, taxonomy_count, relation_count, fact_count = validate_item_enrichment(
-        reference, declarations, sources, imports_batches(), migrated_authoring)
+        reference, declarations, sources, imports_batches(), migrated_authoring, effective_items)
     creature_records, creature_profiles, creature_bindings = validate_creature_families(reference, declarations, sources)
     npc_records, npc_bindings, service_records = validate_npc_services(declarations, sources)
     document_records = validate_documents(declarations, sources)

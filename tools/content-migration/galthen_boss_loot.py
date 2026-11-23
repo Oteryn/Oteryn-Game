@@ -11,6 +11,7 @@ import m25_corpse_items
 
 ROOT = base.ROOT
 PATH = 'tools/content-schema/native-gameplay/galthen-boss-loot.json'
+GLOBAL_DETAILS = 'tools/content-schema/native-gameplay/galthen-global-item-details.json'
 PIN_PATH = 'tools/content-schema/native-gameplay/galthen-boss-loot-pin.json'
 RUST_PIN = 'crates/gameplay/content/src/content/native_gameplay/galthen_loot_pin.rs'
 IDS = (40527, 40528, 40529, 40535, 40578, 44438, 44439, 44619, 44620,
@@ -161,6 +162,27 @@ def admit(root, generated, destination, manifest_path, order, canonical):
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(generated[destination]).hexdigest()
     generated[manifest_path] = canonical(manifest)
+    generated[GLOBAL_DETAILS] = canonical(global_details(root, packet['records']))
+
+
+def global_details(root, source):
+    from forge_item_profiles import owners, project
+    from import_cyclopedia_global import load_capture
+
+    records = copy.deepcopy(source)
+    document = {'records': records}
+    item_details.apply_capture_stats(document, load_capture(root))
+    project(document, owners(root))
+    details = {}
+    for donor, active in zip(source, records, strict=True):
+        fields = {}
+        if donor['semantics'] != active['semantics']:
+            fields['semantics'] = active['semantics']
+        if donor['authoring'].get('forge') != active['authoring'].get('forge'):
+            fields['forge'] = active['authoring']['forge']
+        if fields:
+            details[donor['production_binding']['external_id']] = fields
+    return details
 
 
 def main():

@@ -262,13 +262,17 @@ def attack_fields(text):
         if element:
             result['elemental'] = [{'element': element.upper(), 'points': known(int(extra or first))}]
         return result
-    # Ranged launchers put the flat attack modifier on a separate authoring path.
-    clauses = text.split(', ')
-    ranges = [part for part in clauses if re.fullmatch(r'\d+ fields', part)]
-    if len(ranges) != 1 or any(not re.fullmatch(r'attack [+-]\d+|chance to hit [+-]\d+%|\d+ fields', part)
-                               for part in clauses):
-        raise ValueError(f'Unrecognized Cyclopedia Attack: {text}')
+    launcher_fields(text)
     return {}
+
+
+def launcher_fields(text):
+    """Decode the client launcher line as flat attack, hit bonus and range."""
+    match = re.fullmatch(r'(?:attack ([+-]\d+), )?(?:chance to hit ([+-]\d+)%, )?(\d+) fields', text)
+    if match is None:
+        raise ValueError(f'Unrecognized Cyclopedia Attack: {text}')
+    bonus, hit, distance = match.groups()
+    return {'attack': int(bonus or 0), 'hit_chance': int(hit or 0), 'range_cells': int(distance)}
 
 
 def skill_boosts(text, existing, counts):
@@ -384,6 +388,28 @@ def apply_stats(definition, basic, counts):
 OFFER_FIELDS = ('item', 'direction', 'unit_price', 'currency', 'count', 'sub_type', 'parity_pending')
 TRADE_PREFIX = 'oteryn:service.trade.'
 TRADE_DIRECTIONS = {'npc_buy_from': 'SellToPlayer', 'npc_sell_to': 'BuyFromPlayer'}
+FLUID_CONTAINERS = {2874, 2875, 2877, 2880, 2901, 5552, 9232}
+EXERCISE_WRAPS = {50293, 50294, 50295}
+
+
+def qualified_wraps(service, rows):
+    counts = {}
+    for field in service.get('fields', []):
+        if not field['field_path'].startswith('oteryn:source.npc.held_offer_'):
+            continue
+        hold = json.loads(field['value']['value'])
+        offer = hold.get('old_native_offer', {})
+        if not offer:
+            continue
+        identifier = item_id(offer['item'])
+        if (identifier in EXERCISE_WRAPS and identifier in rows
+                and hold.get('reason') == 'VARIANT_SAME_TUPLE_TWO_WIKI_NOT_PROVEN'
+                and hold.get('quote_item_variant_qualification')
+                == 'CURRENT_NATIVE_ITEM_KNOWN_CHARGES_EXACT_AND_TWO_WIKI_PRICE_CHARGE_COMPONENTS'
+                and hold.get('service') == service['identity']['key']
+                and offer.get('sub_type') == int(rows[identifier]['basic']['Total Charges'])):
+            counts[identifier, offer['direction']] = offer['sub_type']
+    return counts
 
 
 def npc_name(name):
@@ -424,15 +450,27 @@ def apply_trades(declarations, rows, identities, counts):
                     captures[shop][identifier, direction][currency, offer['price']] += 1
 
     for shop, service in services.items():
+        wrap_subtypes = qualified_wraps(service, rows)
         by_row = defaultdict(list)
         for offer in service['offers']:
             by_row[item_id(offer['item']), offer['direction']].append(offer)
         changed = False
         for (identifier, direction), captured in captures[shop].items():
+            if identifier in FLUID_CONTAINERS:
+                # The client trade rows supply Item identity and price without
+                # variant evidence. Keep the independently qualified offers.
+                counts['trade_fluid_quotes_without_subtype'] += sum(captured.values())
+                continue
+            wrap_subtype = wrap_subtypes.get((identifier, direction))
+            if identifier in EXERCISE_WRAPS and wrap_subtype is None:
+                continue
             by_currency = defaultdict(list)
             for (currency, price), occurrences in captured.items():
                 by_currency[currency].append((price, occurrences))
             current = by_row[identifier, direction]
+            if wrap_subtype is not None:
+                current = [offer for offer in current
+                           if offer.get('sub_type', offer.get('count')) in (None, wrap_subtype)]
             for currency, prices in by_currency.items():
                 if len(prices) != 1:
                     counts['trade_conflicting_location_prices'] += sum(n for _, n in prices)
@@ -450,6 +488,8 @@ def apply_trades(declarations, rows, identities, counts):
                 for offer in matching:
                     before = dict(offer)
                     offer['unit_price'] = price
+                    if wrap_subtype is not None:
+                        offer.update(count=1, sub_type=wrap_subtype)
                     offer.pop('parity_pending', None)
                     if ref:
                         offer['currency'] = ref
@@ -488,44 +528,38 @@ def captured_authoring_fields(basic, tiers):
         fields['forge'] = {'classification': classification, 'max_tier': tiers[classification]}
     attack = basic.get('Attack')
     if attack and not attack_fields(attack):
-        modifier = re.search(r'(?:^|, )attack ([+-]\d+)(?:,|$)', attack)
-        fields['weapon_attack_modifier_points'] = int(modifier[1]) if modifier else 0
+        fields['weapon_attack_modifier_points'] = launcher_fields(attack)['attack']
     return fields
 
 
-def apply_authoring(root, rows, identities, counts):
-    # WorldProject/v2 is the converter's input for Item authoring and NPC Services.
+def project_item_authoring(root, definitions, legacy_authoring, *, rows=None):
+    """Overlay the capture on the sealed legacy authoring rows without mutating them."""
+    rows = load_capture(root) if rows is None else rows
     tiers = forge_tiers(root)
+    effective = {key: dict(row) for key, row in legacy_authoring.items()}
+    for key, definition in definitions.items():
+        identity = definition['identity']
+        captured = rows.get(item_id(identity))
+        if captured and (fields := captured_authoring_fields(captured['basic'], tiers)):
+            profile = effective.setdefault(key, {'item': identity})
+            profile.update(fields)
+    return effective
+
+
+def apply_trade_source(root, rows, identities, counts):
     path = root / 'content/world/definitions/declarations.json'
     raw = path.read_bytes()
     document = json.loads(raw)
-    authoring = {row['item']['key']: dict(row) for row in document['item_authoring']}
-    for identifier, row in rows.items():
-        basic = row['basic']
-        if identifier not in identities:
-            counts['capture_items_without_definition'] += 1
-            continue
-        fields = captured_authoring_fields(basic, tiers)
-        if not fields:
-            continue
-        identity = identities[identifier]
-        profile = authoring.setdefault(identity['key'], {'item': identity})
-        for field, desired in fields.items():
-            label = 'classification' if field == 'forge' else 'launcher_attack'
-            counts[label + ('_matched' if profile.get(field) == desired else '_changed')] += 1
-            profile[field] = desired
     apply_trades(document['records'], rows, identities, counts)
     updated = (json.dumps(document, ensure_ascii=False, separators=(',', ':')) + '\n').encode()
     if updated != raw:
         path.write_bytes(updated)
-    # The historical WorldProject Item admission inventory is sealed independently.
-    # The tree's Item authoring projection incorporates this new capture cohort.
-    return {**document, 'item_authoring': list(authoring.values())}
+    return document
 
 
-def apply_admissions(item_records, root):
+def apply_admissions(item_records, root, *, rows=None):
     """Replay verified client semantics during legacy-to-tree generation."""
-    rows = load_capture(root)
+    rows = load_capture(root) if rows is None else rows
     weights = capture_weights(rows)
     for definition in item_records:
         apply_weight(definition, weights)
@@ -543,25 +577,11 @@ def materialize_details(root, reference, declarations):
         raise ValueError('Details regeneration requires its repository checkout')
     questpc7_world_seal.refresh(root)
     repin_rust_inventory()
-    item_index_path = 'content/items/index.json'
-    spell_imports = tree.load(root / item_index_path).get('spell_imports')
-    _, _, authoring, _, _ = tree.materialize_item_tree(
+    tree.materialize_item_tree(
         reference, declarations,
         tree.load(tree.LEGACY / 'editor/author.json'),
         tree.load(tree.LEGACY / 'provenance/sources.json'),
     )
-    if spell_imports is not None:
-        index = tree.load(root / item_index_path)
-        index['spell_imports'] = spell_imports
-        tree.write(item_index_path, index)
-    definitions = {tree.target_id(row['identity']): row for row in reference['records']}
-    relations = []
-    for key, definition in sorted(definitions.items()):
-        if key[0] == 'Item' and (rules := tree.capability_relations(definition, authoring.get(key))):
-            relations.append({'source': definition['identity'], 'relations': rules})
-    tree.write('content/items/relations/items.json', {
-        'schema': 'OTERYN_ITEM_RELATIONS/v1', 'records': relations,
-    })
 
     trades = {row['identity']['key']: row for row in declarations['records']
               if row['kind'] == 'Service' and row['identity']['key'].startswith(TRADE_PREFIX)}
@@ -586,8 +606,6 @@ def materialize_details(root, reference, declarations):
     lock_path = 'content/content.lock.json'
     lock = tree.load(root / lock_path)
     lock['legacy_blobs']['declarations'] = blob
-    lock['item_authoring_counts']['authoring'] = len(authoring)
-    lock['item_authoring_counts']['relation_sources'] = len(relations)
     tree.write_registry(lock_path, lock)
 
 
@@ -706,7 +724,7 @@ def main():
         identities = {item_id(record['identity']): record['identity']
                       for record in reference['records'] if record['identity']['family'] == 'Item'
                       and item_id(record['identity']) is not None}
-        declarations = apply_authoring(root, rows, identities, counts)
+        declarations = apply_trade_source(root, rows, identities, counts)
         materialize_details(root, reference, declarations)
         print(json.dumps(counts, sort_keys=True, indent=2))
         return

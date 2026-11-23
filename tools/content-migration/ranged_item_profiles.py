@@ -126,9 +126,11 @@ def item_rows(root):
             for row in json.loads(path.read_bytes())["records"]]
 
 
-def profile_record(row, profile):
+def profile_record(row, profile, captured=None):
     """Keep sealed authoring owners intact; the separate profile only owns new facts."""
     profile = copy.deepcopy(profile)
+    if captured is not None and profile["kind"] in {"DISTANCE", "THROWING"}:
+        profile.update(captured)
     authoring = row.get("authoring", {})
     if "weapon_attack_modifier_points" in authoring:
         del profile["attack"]
@@ -187,7 +189,10 @@ def apply_native(root, generated):
 
 
 def outputs(root=ROOT):
+    from import_cyclopedia_global import attack_fields, launcher_fields, load_capture
+
     profiles, held, counts = source_profiles(root)
+    capture = load_capture(root)
     result, defined, records = {}, set(), []
     for path in sorted((root / "content/items/definitions").glob("items-*.json")):
         document = json.loads(path.read_bytes())
@@ -200,7 +205,9 @@ def outputs(root=ROOT):
             if "authoring" in row and not authoring:
                 del row["authoring"]
             if item_id in profiles:
-                records.append(profile_record(row, profiles[item_id]))
+                attack = capture.get(item_id, {}).get("basic", {}).get("Attack")
+                captured = launcher_fields(attack) if attack and not attack_fields(attack) else None
+                records.append(profile_record(row, profiles[item_id], captured))
         result[path.relative_to(root).as_posix()] = encode(document)
     result[RANGED_PROFILES] = encode({
         "schema": "OTERYN_RANGED_ITEM_PROFILES/v1",

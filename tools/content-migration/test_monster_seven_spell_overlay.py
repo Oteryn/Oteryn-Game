@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 import elephant_corpse_profiles
+import galthen_boss_loot
 import import_spell_families as producer
 import item_detail_source_facts as item_details
 import monster_seven_spell_overlay as overlay
@@ -78,6 +79,7 @@ class AcceptedOverlayTests(unittest.TestCase):
             "tools/content-schema/native-gameplay/questpc7-hot-corpse-profiles.json",
             "tools/content-schema/native-gameplay/questpc7-hot-fishburger-profile.json",
             item_details.WEIGHT_FACTS,
+            galthen_boss_loot.GLOBAL_DETAILS,
         }
         # source-qualified reward Item proof alongside the SEASON and quest constructor outputs.
         merged_outputs = {
@@ -111,6 +113,8 @@ class AcceptedOverlayTests(unittest.TestCase):
         self.assertIn(qengine.PROOF,actual)
         self.assertEqual(json.loads(actual[item_details.WEIGHT_FACTS]),
                          {str(item): weight for item, weight in item_details.qualified_weights(ROOT).items()})
+        self.assertEqual(actual[galthen_boss_loot.GLOBAL_DETAILS],
+                         (ROOT / galthen_boss_loot.GLOBAL_DETAILS).read_bytes())
         # Independently rebuild the packet from the producer's closed source IDs; a count
         # alone cannot authorize a missing, duplicate or substituted reward.
         expected_packet=qengine.capture(ROOT)

@@ -45,6 +45,9 @@ class GalthenBossLootTests(unittest.TestCase):
         packet = json.loads((ROOT / producer.PATH).read_bytes())
         native = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
         actual = {row['production_definition']['production_key']: row for row in native['records']}
+        robe = actual['oteryn:item.tibia.i44619']
+        self.assertEqual(robe['authoring']['forge'], {'classification': 4, 'max_tier': 10})
+        self.assertEqual(robe['semantics']['imbuement']['value']['slot_count']['value'], 1)
         weights = json.loads((ROOT / WEIGHT_FACTS).read_bytes())
         self.assertEqual(len(packet['records']), 19)
         for row in packet['records']:
@@ -53,6 +56,14 @@ class GalthenBossLootTests(unittest.TestCase):
                 physical = row['semantics']['physical']['value']
                 self.assertEqual(physical['weight'], {'state': 'KNOWN', 'value': 0})
                 physical['weight'] = {'state': 'KNOWN', 'value': weights[identifier]}
+        details = json.loads((ROOT / producer.GLOBAL_DETAILS).read_bytes())
+        self.assertEqual(details, producer.global_details(ROOT, packet['records']))
+        for row in packet['records']:
+            detail = details.get(row['production_binding']['external_id'], {})
+            if 'forge' in detail:
+                row['authoring']['forge'] = detail['forge']
+            if 'semantics' in detail:
+                row['semantics'] = detail['semantics']
             self.assertEqual(actual.get(row['production_definition']['production_key']), row)
 
     def test_known_policy_is_never_replaced(self):

@@ -98,5 +98,38 @@ class ClientWeightAdmission(unittest.TestCase):
                           'movable': {'state': 'KNOWN', 'value': True}})
 
 
+class SharedDetailsGeneration(unittest.TestCase):
+    def test_shared_item_rebuild_replays_authoring_and_relations(self):
+        from unittest.mock import patch
+        import world_project_v2_to_tree as tree
+
+        with (patch.object(tree, 'write') as write, patch.object(tree, 'write_registry'),
+              patch.object(Path, 'write_bytes'), patch.object(Path, 'unlink')):
+            self.assertEqual(tree.main(items_only=True), 0)
+        outputs = {call.args[0]: call.args[1] for call in write.call_args_list}
+        armor = next(row for shard in outputs['content/items/index.json']['shards']
+                     for row in outputs[shard]['records']
+                     if row['definition']['identity']['key'] == 'oteryn:item.tibia.i3361')
+        self.assertEqual(armor['authoring']['forge'], {'classification': 1, 'max_tier': 1})
+        for name in ('taxonomy', 'relations'):
+            relative = f'content/items/{name}/items.json'
+            self.assertEqual(outputs[relative], json.loads((ROOT / relative).read_bytes()))
+
+    def test_no_unqualified_fluid_quotes_in_trade_projection(self):
+        trade = json.loads((ROOT / 'content/services/trade/trade-00000-00323.json').read_bytes())
+        ahmet = next(row['declaration'] for row in trade['records']
+                     if row['declaration']['identity']['key'] == 'oteryn:service.trade.ahmet')
+        self.assertFalse(any(row['item']['key'] == 'oteryn:item.tibia.i2874'
+                             and row.get('sub_type') is None for row in ahmet['offers']))
+
+    def test_baltim_wrap_quote_has_exact_full_charge_evidence(self):
+        trade = json.loads((ROOT / 'content/services/trade/trade-00000-00323.json').read_bytes())
+        baltim = next(row['declaration'] for row in trade['records']
+                      if row['declaration']['identity']['key'] == 'oteryn:service.trade.baltim')
+        wraps = [row for row in baltim['offers'] if row['item']['key'] == 'oteryn:item.tibia.i50293']
+        self.assertEqual([(r.get('count'), r.get('sub_type'), r['unit_price']) for r in wraps],
+                         [(1, 500, 434028)])
+
+
 if __name__ == '__main__':
     unittest.main()
