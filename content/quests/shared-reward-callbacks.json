@@ -670,6 +670,10 @@
       "requires_completed_quests": [
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.wayfarer"
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/wayfarer_outfit_1",
@@ -716,6 +720,10 @@
       ],
       "requires_completed_quests": [
         "oteryn:quest.the_spirit_will_get_you_quest"
+      ],
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.wayfarer"
       ],
       "requires": [
         {
@@ -769,6 +777,10 @@
       "requires_completed_quests": [
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.wayfarer"
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/wayfarer_outfit",
@@ -815,6 +827,10 @@
       ],
       "requires_completed_quests": [
         "oteryn:quest.the_spirit_will_get_you_quest"
+      ],
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.wayfarer"
       ],
       "requires": [
         {

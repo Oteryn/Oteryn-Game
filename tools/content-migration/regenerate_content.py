@@ -119,6 +119,11 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    [
+        "python3",
+        "tools/content-schema/world-authoring/quest_access_bindings.py",
+        "--check",
+    ],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/spirit_will_pickups.py", "--check"],
@@ -817,6 +822,7 @@ def main() -> int:
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_access_bindings.py"])
     run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/quest-authoring/native_scene_callbacks.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available"])

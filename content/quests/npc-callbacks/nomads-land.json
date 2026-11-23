@@ -166,6 +166,50 @@
           "value": 1
         }
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/nomads-land-arito-referral",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.arito",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you thousand times! Well, I think I start telling you what I think they are after...",
+        "You have to know, I was one of them before I opened that shop here. Sure they fear about their hideout being revealed by me. Please go to the north, there is a small cave in the mountains with a rock in the middle. ...",
+        "If you stand in front of it, place a scimitar - which is the weapon of the nomads - left of you and make a sacrifice to the earth by pouring some water on the floor to your right. ...",
+        "The entrance to their hideout will be revealed in front of you. I don't know who is in charge there right now but please tell him that I won't spoil their secret...",
+        "... well, I just told you but anyway .... I won't tell it to anybody else. Now hurry up before they get here!!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/arito.lua:71-96:sha256:72036db5c28bae5fabb54a43657cb83f57a550665def3fc01b33357a652d79f1"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i7533",
+          "count": 1
+        }
+      ]
     }
   ],
   "tracks": [

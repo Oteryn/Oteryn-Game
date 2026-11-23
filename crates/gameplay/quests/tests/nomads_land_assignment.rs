@@ -3,6 +3,52 @@ use oteryn_gameplay_quests::quest::{loader::load_embedded_quest_state, reward_ca
 use std::collections::BTreeMap;
 
 #[test]
+fn arito_referral_unlocks_muhad_assignment_from_initial_progress() -> Result<(), String> {
+    const TASK: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task";
+    const START: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start";
+    let loaded =
+        load_embedded_quest_state("nomads-referral").map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = reward_callbacks::offered_for(catalogue)?;
+    let referral = callbacks
+        .iter()
+        .find(|row| row.key == "oteryn:quest-reward/nomads-land-arito-referral")
+        .ok_or("Arito has no published referral from fresh progress")?;
+    assert_eq!(referral.npc, "oteryn:npc.arito");
+    let [death_list] = referral.present.as_slice() else {
+        return Err("Arito must require exactly one item of evidence".into());
+    };
+    assert_eq!(death_list.item, "oteryn:item.tibia.i7533");
+    assert_eq!(death_list.count, 1);
+    assert!(referral.take.is_empty());
+
+    let mut tracks = BTreeMap::new();
+    let transition = catalogue
+        .transition(&referral.key)
+        .ok_or("referral transition")?;
+    let writes = catalogue
+        .evaluate(transition, &tracks, 0)
+        .map_err(|error| format!("{error:?}"))?;
+    tracks.extend(writes.into_iter().map(|write| (write.track, write.after)));
+    assert_eq!(tracks.get(TASK), Some(&1));
+    assert_eq!(tracks.get(START), Some(&1));
+    assert!(catalogue.evaluate(transition, &tracks, 0).is_err());
+
+    let assignment = catalogue
+        .transition("oteryn:quest-reward/nomads-land-assignment")
+        .ok_or("Muhad assignment transition")?;
+    let writes = catalogue
+        .evaluate(assignment, &tracks, 0)
+        .map_err(|error| format!("{error:?}"))?;
+    assert!(
+        writes
+            .iter()
+            .any(|write| write.track == TASK && write.after == 2)
+    );
+    Ok(())
+}
+
+#[test]
 fn muhad_assignment_requires_aritos_referral_and_grants_hideout_access() -> Result<(), String> {
     const TASK: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task";
     const DOOR: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task_door";

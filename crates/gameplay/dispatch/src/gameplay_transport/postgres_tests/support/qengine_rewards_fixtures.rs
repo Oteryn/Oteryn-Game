@@ -1447,6 +1447,42 @@ pub(super) async fn exercise(
         into_bag(owner, admitted, *item.as_bytes(), *bag.as_bytes(), 8200).await?;
         held_evidence.push(item);
     }
+    if key.starts_with("l1-wayfarer-") {
+        let before = counts(h).await?;
+        let (refused, _, _) = wire_reward(owner, admitted, npc, &callback, false).await?;
+        assert_eq!(refused, NpcIntentDisposition::Rejected);
+        assert_eq!(counts(h).await?, before, "Spirit alone cannot award the base outfit");
+
+        // Arrange the entitlement awarded by Wrath for the positive addon case.
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        let base = callback.outfit.as_ref().ok_or("Wayfarer addon")?.grant_key(0);
+        let occurrence = sqlx::types::Uuid::from_bytes([
+            0x91, 0x91, 0x91, 0x91, 0x91, 0x91, 0x81, 0x91,
+            0x91, 0x91, 0x91, 0x91, 0x91, 0x91, 0x91, 0x92,
+        ]);
+        sqlx::query(
+            "WITH receipt AS (
+                INSERT INTO game_account_appearance_unlock_receipts
+                    (grant_occurrence_id,account_id,unlock_key,content_revision,
+                     granting_character_id,source_kind,source_event_id)
+                SELECT $1,account_id,$2,'wayfarer-test',character_id,'quest',$3
+                FROM game_character_roots WHERE character_id=encode($4,'hex')::uuid
+                RETURNING account_id,unlock_key,grant_occurrence_id
+             )
+             INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id)
+             SELECT account_id,unlock_key,grant_occurrence_id FROM receipt",
+        )
+        .bind(occurrence)
+        .bind(base)
+        .bind(b"wayfarer-wardrobe".as_slice())
+        .bind(fence.character_id.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+    }
     let original = counts(h).await?;
     let (disposition, catalogues, committed_command) =
         wire_grant(owner, admitted, npc, &callback).await?;
@@ -1678,6 +1714,11 @@ pub(super) async fn exercise(
             .into_iter()
             .find(|callback| callback.key.ends_with(complement))
             .ok_or("complementary addon")?;
+        if key.starts_with("l1-wayfarer-") {
+            let (refused, _, _) = wire_reward(owner, admitted, npc, &complement, false).await?;
+            assert_eq!(refused, NpcIntentDisposition::Rejected);
+            assert_eq!(counts(h).await?, after, "the addon still needs its hand-in item");
+        }
         let input = complement.take.first().ok_or("complementary trade item")?;
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
@@ -1696,6 +1737,14 @@ pub(super) async fn exercise(
             true,
         )
         .await?;
+        if key.starts_with("l1-wayfarer-") {
+            let premium = owner.premium_coordinator.take();
+            let (refused, _, _) = wire_reward(owner, admitted, npc, &complement, false).await?;
+            owner.premium_coordinator = premium;
+            assert_eq!(refused, NpcIntentDisposition::Rejected);
+            assert_eq!(counts(h).await?, after, "the hand-in needs current Premium");
+            assert_eq!(earned().await?, 0);
+        }
         let (disposition, catalogues, _) = wire_grant(owner, admitted, npc, &complement).await?;
         assert_eq!(disposition, NpcIntentDisposition::Ok);
         assert_eq!(earned().await?, 1, "the second addon completes the outfit");

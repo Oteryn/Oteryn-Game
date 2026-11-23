@@ -1711,6 +1711,7 @@ fn scenario_case(
             || (name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium"))
             || name.starts_with("questpc7-outfits-")
             || name.starts_with("qengine-rewards-qb-")
+            || name.starts_with("qengine-rewards-l1-wayfarer")
         {
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,

@@ -103,7 +103,7 @@ def donor_inputs():
               'data-global/scripts/actions/other/others/quest_system2.lua',
               'data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua']
     paths += [f'data-global/npc/{name}.lua' for name in (
-        'dermot', 'marina', 'gamon', 'quentin', 'tibra', 'maealil', 'yberius',
+        'arito', 'dermot', 'marina', 'gamon', 'quentin', 'tibra', 'maealil', 'yberius',
         'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias', 'rafzan',
         'jorge', 'the_forgemaster', 'henricus', 'yana', 'ivalisse', 'a_strange_chalice')]
     paths += ['data/XML/imbuements.xml',
@@ -377,6 +377,41 @@ def build():
     for word,topic,next_topic in [('flou',0,1),('explain',1,2),('yes',2,3),('no',3,4),('yes',4,5),('yes',5,6),('yes',6,7),('helmet',7,8)]:
         offers.append({'npc':'oteryn:npc.navigator','keywords':[word],'topic':topic,'next_topic':next_topic,
             'reply':['Listen carefully.'],'storage':[storage('oteryn:quest-progress/navigator',-1,4,0)]})
+    # The death list is evidence for Arito's referral and stays in carried custody.
+    arito_path = "data-global/npc/arito.lua"
+    arito_lines = inputs[arito_path].decode().splitlines()
+    arito_offer = arito_lines[72:81]
+    arito_referral = arito_lines[82:96]
+    death_list = int(re.search(r"player:getItemCount\((\d+)\)", "\n".join(arito_offer))[1])
+    task = prefix + "u8_1/tibia_tales/aritos_task"
+    start = prefix + "u8_1/tibia_tales/default_start"
+    add(
+        "nomads-land-arito-referral",
+        "tibia_tales",
+        "arito",
+        [re.search(r'MsgContains\(message, "(\w+)"\)', arito_referral[0])[1]],
+        [storage(task, 0, 1), storage(start, 0, 1, 1)],
+        topic=1,
+        present=[(death_list, 1)],
+    )
+    callbacks[-1]["reply"] = [
+        line.strip()[1:-2] for line in arito_referral if line.strip().startswith('"')
+    ]
+    callbacks[-1]["sources"] = [
+        f"crystal:{PIN}:{arito_path}:71-96:sha256:{sha(inputs[arito_path])}"
+    ]
+    arito_callback = callbacks.pop()
+    arito_prompt = {
+        "npc": "oteryn:npc.arito",
+        "keywords": [re.search(r'MsgContains\(message, "(\w+)"\)', arito_offer[1])[1]],
+        "topic": 0,
+        "next_topic": 1,
+        "storage": [storage(task, 0, 0, preserve=True)],
+        "inventory": [
+            {"item": f"oteryn:item.tibia.i{death_list}", "minimum": 1, "maximum": 4294967295}
+        ],
+        "reply": [line.strip()[1:-2] for line in arito_offer if line.strip().startswith('"')],
+    }
     # L1: keep parent QuestState ownership for shared prerequisite tracks.
     frontier = prefix + 'u8_54/the_new_frontier/'
     yalahar = prefix + 'u8_4/in_service_of_yalahar/'
@@ -409,6 +444,8 @@ def build():
         add('l1-wayfarer-'+name,'wayfarer_outfits_quest','cranky_lizard_crone',['yes'],
             [storage(track,-1,1,0)],take=[(item,1)],outfit=('wayfarer',bit),topic=bit)
         callbacks[-1]['requires_completed_quests'] = ['oteryn:quest.the_spirit_will_get_you_quest']
+        callbacks[-1]["requires_premium"] = True
+        callbacks[-1]["requires_outfits"] = ["oteryn:outfit.wayfarer"]
         offers.append({'npc':'oteryn:npc.cranky_lizard_crone','keywords':words,
             'topic':0,'next_topic':bit,'storage':callbacks[-1]['storage'],
             'requires':[{'track':'oteryn:quest-progress/l6/spirit/stage','minimum':2,'maximum':2}],
@@ -1174,7 +1211,19 @@ def build():
         'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
-    greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks, inputs)
+    for kind, field, row, identity in (
+        ("callbacks", "callbacks", arito_callback, "key"),
+        ("offers", "offers", arito_prompt, "npc"),
+    ):
+        path = f"content/quests/npc-{kind}/nomads-land.json"
+        document = json.loads((ROOT / path).read_bytes())
+        document[field] = [
+            existing for existing in document[field] if existing[identity] != row[identity]
+        ] + [row]
+        if field == "callbacks":
+            validate_callbacks(document)
+        generated[path] = encoded(document)
+    greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks + [arito_callback], inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})
     generated['content/quests/questl2-djinn-world.json']=encoded(questl2_ready.djinn.world_callbacks(inputs,PIN))

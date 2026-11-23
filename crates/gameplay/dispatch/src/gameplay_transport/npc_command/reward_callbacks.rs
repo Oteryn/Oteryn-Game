@@ -38,6 +38,8 @@ pub(super) struct Offer {
     #[serde(default)]
     minimum_level: Option<u32>,
     #[serde(default)]
+    inventory: Vec<reward_callbacks::InventoryRequirement>,
+    #[serde(default)]
     failure_reply: Vec<String>,
 }
 
@@ -199,7 +201,12 @@ pub(super) fn prepare(
                 .iter()
                 .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
             {
-                if !meets_level(offer.minimum_level) {
+                if !meets_level(offer.minimum_level)
+                    || !offer
+                        .inventory
+                        .iter()
+                        .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+                {
                     return refusal(&offer.failure_reply);
                 }
                 return Some(Choice {
