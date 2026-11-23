@@ -16,8 +16,48 @@ import hashlib
 import re
 from pathlib import Path
 
+# The reviewed spawn map revisions preserve the bound quest placements.
+QUEST_PLAN_PLACEMENT_RELOCATIONS = {
+    (
+        "content/world/placements/index.json",
+        "42215599a78bde380c790ee79b9369756d0af55a7226a40ad2535c4974f877bd",
+    ): (
+        "content/world/placements/index.json",
+        "239c85419e3ed9386fd7ad55dbe1e7ce3518a6143679bb46cffd952eff0536f3",
+    ),
+    (
+        "content/world/placements/region-z07-x130-y127.b3",
+        "dda5c6165990fc024b707fc6dcaca826b830a2d2b083ce98d19d0df470d3e127",
+    ): (
+        "content/world/placements/region-z07-x130-y127.b3",
+        "b56bb3d6843ff73501174ded54acf8db9811fb25aa3eec672b9afb9cf99cf204",
+    ),
+    (
+        "content/world/placements/region-z08-x128-y128.b3",
+        "7a978007d1735d8cf8143f9ade1f641f96d50c78549175f4fc29f84bec6107dc",
+    ): (
+        "content/world/placements/region-z08-x128-y128.b3",
+        "c316ad12e8e55faddc6a8051633564a346b01ddf07da8e58c054b8cf680ac039",
+    ),
+    (
+        "content/world/placements/region-z09-x130-y125.b3",
+        "2a259538a67532773231f989e72cca0bd84424524c39679e56b8c181e91216d9",
+    ): (
+        "content/world/placements/region-z09-x130-y125.b3",
+        "b30ac2211f8d1e3ec679d513be4e67acb35f3e5160a204be612cacdcc7f31433",
+    ),
+    (
+        "content/world/placements/region-z11-x129-y126.b3",
+        "1481abb99b49aa0df46fed1c06c739a30eba7587355f90c6f13aee902c8d1591",
+    ): (
+        "content/world/placements/region-z11-x129-y126.b3",
+        "9be7e5ff0eb3b7cb2ade55a3754b44483032e6276a8258f24485c170aea67332",
+    ),
+}
+
 # (pinned path, pinned sha256) -> (current path, current sha256)
 RELOCATIONS = {
+    **QUEST_PLAN_PLACEMENT_RELOCATIONS,
     # The source-qualified Anomaly ground retains its pre-existing Item route;
     # the complete terrain row otherwise remains byte-identical.
     (
@@ -304,6 +344,26 @@ def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
         return None
     data = target.read_bytes()
     return data if digest(data) == current_digest else None
+
+
+def retain_quest_plan_citations(rows: list[dict]) -> list[dict]:
+    """Preserve published plan identities for exact, reviewed placement changes."""
+    historical_citations = {
+        f"{current_path}:1:sha256:{current}": f"{path}:1:sha256:{historical}"
+        for (path, historical), (
+            current_path,
+            current,
+        ) in QUEST_PLAN_PLACEMENT_RELOCATIONS.items()
+    }
+    return [
+        {
+            **row,
+            "sources": [
+                historical_citations.get(source, source) for source in row["sources"]
+            ],
+        }
+        for row in rows
+    ]
 
 
 def refresh_current(paths: list[str]) -> None:
