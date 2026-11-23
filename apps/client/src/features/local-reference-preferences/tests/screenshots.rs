@@ -464,3 +464,32 @@ fn untracked_boss_kill_uses_confirmed_bosstiary_progress() -> Result<(), Box<dyn
     }
     Ok(())
 }
+
+#[cfg(windows)]
+#[test]
+fn capture_directory_has_only_an_inheritable_owner_ace() -> std::io::Result<()> {
+    let fixture = tempfile::tempdir()?;
+    let path = fixture.path().join("screenshots");
+    crate::play::screenshot::ensure_screenshot_directory(&path)?;
+    let output = std::process::Command::new("powershell.exe")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            r#"
+            $ErrorActionPreference = 'Stop'
+            $acl = Get-Acl -LiteralPath $env:CAPTURE_TEST_DIRECTORY
+            $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+            $rules = $acl.GetAccessRules($true, $true, $sid.GetType())
+            if (!$acl.AreAccessRulesProtected -or $rules.Count -ne 1) { exit 1 }
+            $rule = $rules[0]
+            if ($rule.IdentityReference -ne $sid -or $rule.IsInherited -or
+                $rule.AccessControlType -ne 'Allow' -or [int]$rule.InheritanceFlags -ne 3 -or
+                $rule.FileSystemRights -ne 'FullControl') { exit 2 }
+        "#,
+        ])
+        .env("CAPTURE_TEST_DIRECTORY", path)
+        .output()?;
+    assert!(output.status.success(), "{output:?}");
+    Ok(())
+}

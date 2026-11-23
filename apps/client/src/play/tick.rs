@@ -110,7 +110,7 @@ impl PlayView {
             .battle
             .combat
             .and_then(|combat| combat.target);
-        self.party_summons = super::mailbox::lock(&link.mailbox).party_summons();
+        self.party_summons = super::mailbox::lock(&link.mailbox).party_summons.clone();
         self.sync_spell_words(link);
         self.project_presentation(std::time::Instant::now())
             .map_err(|_| UNAVAILABLE)?;

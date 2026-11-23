@@ -9,7 +9,7 @@ pub(super) use backlog::ScreenshotRuntime;
 #[cfg(bevy_shell)]
 pub(crate) use backlog::{CaptureAction, ScreenshotBatch};
 use std::{
-    fs::{DirBuilder, File},
+    fs::File,
     io::{self, BufWriter, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
@@ -200,9 +200,19 @@ pub(crate) fn retry_capture_name<T>(mut attempt: impl FnMut() -> io::Result<T>) 
     attempt()
 }
 
+#[cfg(windows)]
+#[path = "screenshot_windows.rs"]
+mod windows;
+
 /// Newly created screenshot directories have the same privacy whether opened or saved into.
+#[cfg(windows)]
 pub(crate) fn ensure_screenshot_directory(path: &Path) -> io::Result<()> {
-    let mut directory = DirBuilder::new();
+    windows::create_private_directory(path)
+}
+
+#[cfg(not(windows))]
+pub(crate) fn ensure_screenshot_directory(path: &Path) -> io::Result<()> {
+    let mut directory = std::fs::DirBuilder::new();
     directory.recursive(true);
     #[cfg(unix)]
     {
