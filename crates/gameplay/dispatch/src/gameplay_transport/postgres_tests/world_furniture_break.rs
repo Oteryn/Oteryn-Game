@@ -1,6 +1,6 @@
 use super::fixture::{Harness, debug, id, run};
 use super::item_look_fixtures::seed_main_backpack;
-use super::rust_lottery_fixtures::exchange;
+use super::rust_lottery_fixtures::{exchange, expect_map_resync};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{
     ChannelContentPin, ChannelRuntimeV1, GameSessionId, MovementLocalPosition,
@@ -65,11 +65,146 @@ fn world_wooden_bars_restore_transparent_but_solid_postgres() -> TestResult {
     run_case("restored_sight", || scenario(2295, Case::Sight))
 }
 
+#[test]
+fn world_wooden_bars_break_with_equipped_hotkey_postgres() -> TestResult {
+    run_case("equipped_hotkeys", || {
+        scenario(
+            2295,
+            Case::EquippedHotkey {
+                carried_copy: false,
+            },
+        )?;
+        scenario(2295, Case::EquippedHotkey { carried_copy: true })
+    })
+}
+
+#[test]
+fn world_wooden_bars_use_global_destroy_odds_postgres() -> TestResult {
+    run_case("global_odds", || {
+        for (weapon, roll, breaks) in [
+            (3289, 11, false),
+            (10389, 28, true),
+            (10391, 41, true),
+            (14250, 44, true),
+            (17828, 40, true),
+        ] {
+            scenario(
+                2295,
+                Case::Odds {
+                    weapon,
+                    roll,
+                    breaks,
+                },
+            )?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn world_wooden_bars_preserve_map_target_refusals_postgres() -> TestResult {
+    run_case("map_refusals", || scenario(2295, Case::MapRefusals))
+}
+
+#[test]
+fn world_wooden_bars_compiler_collision_matches_restored_state() -> TestResult {
+    use crate::map::boot::BundleCollisionIndexExt;
+
+    let deps = Dependencies::new()?;
+    let (controller, _) = crate::content::native_gameplay::test_support::activated_with_loot_tables(
+        deps.admitted.world_id,
+        None,
+    );
+    let native = controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native gameplay")?;
+    let pos = TilePos {
+        x: 33214,
+        y: 31489,
+        floor: -7,
+    };
+    let start = TilePos {
+        x: pos.x - 1,
+        ..pos
+    };
+    let world = super::source_world_crop::compiled_region(start, pos, start, native)?;
+    let cells = world
+        .movement_cells(deps.room.movement_cells())
+        .map_err(debug)?;
+    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+        cells.index()
+    else {
+        return Err("bundle cells".into());
+    };
+    let map = index.map();
+    let cell = crate::content::LogicalCell {
+        x: i32::from(pos.x),
+        y: i32::from(pos.y),
+        z: 7,
+    };
+    let before = compose_tile(world.overlay(), &world.facts().pinned(), pos)
+        .map_err(debug)?
+        .ok_or("compiled bars tile")?;
+    let bar = before
+        .entries
+        .iter()
+        .find(|entry| entry.facts.appearance_id == 2295)
+        .ok_or("compiled wooden bars")?;
+    let crate::map::view::MapEntryKey::Base(key) = bar.source.key() else {
+        return Err("base wooden bars".into());
+    };
+    let lookup = || {
+        cells
+            .spell_tiles()
+            .lookup(cells.scope(), cell)
+            .map_err(debug)
+    };
+    let boot_flags = lookup()?.flags();
+    assert!(
+        !bar.facts.blocks_projectile,
+        "pinned sight flag of the published bars"
+    );
+    let boot_look_through = RoofFacts::of(Some(&before)).look_through;
+    assert!(!world.enterable(pos));
+    let debris = native
+        .item_index()
+        .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i3145", "definition-r1"))
+        .ok_or("debris definition")?;
+    let mut broken = bar.facts;
+    broken.appearance_id = 3145;
+    broken.definition = oteryn_protocol_oteryn::world_map::MapDefinition::Item(debris);
+    assert!(map.install_wooden_bar_state(key, 1, broken));
+    assert_eq!(lookup()?.top_source_ids(), &[3145]);
+    assert!(!lookup()?.flags().block_solid);
+    assert!(map.install_wooden_bar_state(key, 2, bar.facts));
+    let restored = compose_tile(world.overlay(), &world.facts().pinned(), pos)
+        .map_err(debug)?
+        .ok_or("restored bars tile")?;
+    assert_eq!(
+        boot_flags,
+        lookup()?.flags(),
+        "boot and durable restoration must agree"
+    );
+    assert_eq!(
+        boot_look_through,
+        RoofFacts::of(Some(&restored)).look_through
+    );
+    assert!(!boot_flags.block_projectile);
+    assert!(boot_flags.block_solid);
+    assert!(boot_look_through);
+    assert!(!world.enterable(pos));
+    Ok(())
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     Replay,
     Refusals,
     Equipped,
+    EquippedHotkey { carried_copy: bool },
+    Odds { weapon: u16, roll: u8, breaks: bool },
+    MapRefusals,
     SpellTile,
     Sight,
 }
@@ -105,6 +240,10 @@ async fn exercise(admin: String, bar_id: u16, case: Case) -> TestResult {
 
 async fn exercise_with_harness(harness: &Harness, bar_id: u16, case: Case) -> TestResult {
     let refusals = case == Case::Refusals;
+    let weapon_key = match case {
+        Case::Odds { weapon, .. } => format!("oteryn:item.tibia.i{weapon}"),
+        _ => WEAPON.to_owned(),
+    };
     prepare_current_session(harness).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
@@ -163,6 +302,10 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, case: Case) -> Te
         deps.admitted.game_session_id,
         refusals,
         matches!(bar_id, 2291 | 2292),
+        match case {
+            Case::Odds { roll, .. } => Some(roll),
+            _ => None,
+        },
     )?;
     pins.digest = digest;
     let base = crate::map::load(&bytes, &pins).map_err(debug)?;
@@ -246,8 +389,12 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, case: Case) -> Te
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice())
         .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-    seed_main_backpack(harness, &[(WEAPON, 1)]).await?;
-    if case == Case::Equipped {
+    if matches!(case, Case::EquippedHotkey { carried_copy: true }) {
+        seed_main_backpack(harness, &[(&weapon_key, 1), (&weapon_key, 1)]).await?;
+    } else {
+        seed_main_backpack(harness, &[(&weapon_key, 1)]).await?;
+    }
+    if matches!(case, Case::Equipped | Case::EquippedHotkey { .. }) {
         let mut tx = harness.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica")
             .execute(&mut *tx)
@@ -257,7 +404,54 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, case: Case) -> Te
         tx.commit().await?;
     }
 
-    let weapon = reference(WEAPON).ok_or("weapon definition")?;
+    let weapon = reference(&weapon_key).ok_or("weapon definition")?;
+
+    if case == Case::MapRefusals {
+        let (key, intact) = target(&base, BAR_POS)?;
+        let mut wrong_map = intact.clone();
+        wrong_map.placement[0] ^= 1;
+        let mut stale = intact.clone();
+        stale.expected_revision = 1;
+        let (_, absent) = target(&base, TilePos { y: 1, ..BAR_POS })?;
+        let wrong_map = payload(wrong_map)?;
+        let (next, _, _) = expect_map_resync(&owner, admitted, 1, &wrong_map, weapon).await?;
+        assert_eq!(next.continuity.next_command_id, 2);
+        assert_eq!(
+            next.continuity.server_sequence,
+            admitted.continuity.server_sequence
+        );
+        let (next, _, _) = expect_map_resync(&owner, next, 1, &wrong_map, weapon).await?;
+        assert_eq!(next.continuity.next_command_id, 2);
+        assert_eq!(
+            next.continuity.server_sequence,
+            admitted.continuity.server_sequence
+        );
+        let (mut next, result, _) =
+            exchange(&owner, next, 2, &payload(stale)?, Some(weapon), None).await?;
+        assert_eq!(result, UseDisposition::StaleState);
+        let bar_facts = map
+            .facts()
+            .pinned()
+            .base_entry(BAR_POS, 1, bar_reference.get() - 1)
+            .ok_or("intact bar facts")?;
+        assert!(
+            map.facts()
+                .apply_quest_callback(key, 0, bar_facts, &[key], &[], false, None)
+        );
+        for (id, target) in [(3, absent), (4, intact)] {
+            let (admitted, result, _) =
+                exchange(&owner, next, id, &payload(target)?, Some(weapon), None).await?;
+            assert_eq!(result, UseDisposition::NothingToUse);
+            next = admitted;
+        }
+        let transforms: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_terrain_tool_transforms")
+                .fetch_one(&harness.pool)
+                .await?;
+        assert_eq!(transforms, 0);
+        assert_eq!(receipts(harness).await?, 0);
+        return Ok(());
+    }
 
     if refusals {
         for (pos, expected) in [
@@ -303,20 +497,43 @@ async fn exercise_with_harness(harness: &Harness, bar_id: u16, case: Case) -> Te
                 .block_solid
         );
     }
-    let (_, result, wire_payload) = exchange(
-        &owner,
-        admitted,
-        1,
-        &payload(initial_target)?,
-        Some(weapon),
-        None,
-    )
-    .await?;
+    let (input, source) = if matches!(case, Case::EquippedHotkey { .. }) {
+        (
+            map_use(UseTarget::ItemByDefinition(weapon), initial_target)?,
+            None,
+        )
+    } else {
+        (payload(initial_target)?, Some(weapon))
+    };
+    let (_, result, wire_payload) = exchange(&owner, admitted, 1, &input, source, None).await?;
     assert_eq!(
         result,
         UseDisposition::Committed,
         "eligible bars must break on a successful draw"
     );
+    if let Case::Odds {
+        weapon,
+        roll,
+        breaks,
+    } = case
+    {
+        assert_eq!(
+            receipts(harness).await?,
+            i64::from(breaks),
+            "weapon {weapon}, donor roll {roll}"
+        );
+        assert_eq!(
+            map.enterable(BAR_POS),
+            breaks,
+            "weapon {weapon}, donor roll {roll}"
+        );
+        return Ok(());
+    }
+    if matches!(case, Case::EquippedHotkey { .. }) {
+        assert_eq!(receipts(harness).await?, 1);
+        assert!(map.enterable(BAR_POS));
+        return Ok(());
+    }
     if case == Case::SpellTile {
         let tile = cells
             .spell_tiles()
@@ -462,8 +679,15 @@ fn target(base: &crate::map::WorldBase, pos: TilePos) -> TestResult<(u64, WorldO
 }
 
 fn payload(target: WorldObjectTarget) -> TestResult<Vec<u8>> {
+    map_use(
+        UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("source handle")?),
+        target,
+    )
+}
+
+fn map_use(source: UseTarget, target: WorldObjectTarget) -> TestResult<Vec<u8>> {
     encode_item_use_intent(&UseIntent {
-        target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("source handle")?),
+        target: source,
         use_with: None,
         use_with_map_item: Some(MapUseTarget::Object(target)),
         use_with_position: None,
@@ -477,6 +701,7 @@ fn fixture_bundle(
     session: GameSessionId,
     refusals: bool,
     rebreak: bool,
+    exact_roll: Option<u8>,
 ) -> TestResult<(Vec<u8>, [u8; 32])> {
     let write = |data: &oteryn_world_bundle::bundle::Bundle| -> TestResult<_> {
         let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
@@ -497,13 +722,20 @@ fn fixture_bundle(
     let grass = data.sectors[0].tiles.first().ok_or("grass tile")?.clone();
     data.sectors[0].tiles.push(grass);
     let key = placement_key(BAR_POS, 1).ok_or("bar placement")?;
+    let maximum_x = if exact_roll.is_some() { 31 } else { 4 };
     for y in 1..32 {
-        for x in 1..=4 {
+        for x in 1..=maximum_x {
             let extra = data.sectors[0].tiles.last_mut().ok_or("extra grass tile")?;
             (extra.x, extra.y) = (x, y);
             let (bytes, digest) = write(&data)?;
             let mut placement = digest.to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
+            if let Some(expected) = exact_roll {
+                if roll(root, session, 1, &placement)? == expected {
+                    return Ok((bytes, digest));
+                }
+                continue;
+            }
             if hits(root, session, 1, &placement)?
                 && !hits(root, session, 2, &placement)?
                 && (!rebreak || hits(root, session, 3, &placement)?)
@@ -521,6 +753,16 @@ fn hits(
     command_id: u64,
     placement: &[u8],
 ) -> TestResult<bool> {
+    // Pinned Global fire sword attack.
+    Ok(roll(root, session, command_id, placement)? <= 24)
+}
+
+fn roll(
+    root: [u8; 32],
+    session: GameSessionId,
+    command_id: u64,
+    placement: &[u8],
+) -> TestResult<u8> {
     let hash = Sha256::new()
         .chain_update(b"oteryn.world.furniture.destroy.v1")
         .chain_update(session.as_bytes())
@@ -535,9 +777,8 @@ fn hits(
         0,
     )
     .map_err(debug)?;
-    // The fire sword's pinned attack is 24. Exclude any first draw that would be resampled.
     assert!(draw < u64::MAX - u64::MAX % 80);
-    Ok(draw % 80 < 24)
+    Ok(u8::try_from(draw % 80 + 1)?)
 }
 
 fn appearance(map: &crate::map::boot::BundleWorld, base: std::num::NonZeroU32) -> TestResult<u16> {

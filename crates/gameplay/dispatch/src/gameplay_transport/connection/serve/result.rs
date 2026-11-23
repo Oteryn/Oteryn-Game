@@ -85,6 +85,13 @@ pub(super) fn encode(
                 RefusalDetail::of_step(outcome.disposition),
             ),
         ),
+        Dispatch::MapResyncRequired => {
+            return crate::gameplay_transport::session_ingress::encode_map_resync(
+                session.generation,
+                command.command_id,
+            )
+            .map_err(|_| ServeEnd::Disconnected);
+        }
         Dispatch::Use(outcome) => {
             let (disposition, gate_message_id) = negotiated_use_disposition(
                 UseCapabilities {

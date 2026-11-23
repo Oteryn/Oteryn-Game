@@ -5,10 +5,25 @@ use crate::durability::item_decay_retire::CorpseDecayFence;
 use crate::durability::terrain_tool::{
     TerrainMutation, TerrainScope, WOODEN_BAR_DECAY_MS, wooden_bar_remains,
 };
-use crate::gameplay_transport::house_furnishing::{destroy_roll_succeeds, is_destroy_weapon};
+use crate::gameplay_transport::house_furnishing::destroy_roll_succeeds;
+use crate::gameplay_transport::world_map::{
+    MapHandleTarget, MapTargetRefusal, resolve_map_handle, resolve_map_target,
+};
 use crate::map::facts::wooden_bar_collision;
 use crate::map::view::MapFacts;
+use oteryn_gameplay_items::hotkey_search::HotkeyRefusal;
 use oteryn_gameplay_world::terrain_tools;
+
+pub(super) enum TerrainUseError {
+    Unavailable,
+    MapResyncRequired,
+}
+
+impl From<()> for TerrainUseError {
+    fn from((): ()) -> Self {
+        Self::Unavailable
+    }
+}
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {
     UseOutcome {
@@ -21,17 +36,7 @@ fn world_destroy_attack(
     native: &NativeGameplayState,
     definition: &TypedDefinitionRef,
 ) -> Option<i32> {
-    let item = u32::from(item_id(&definition.production_key)?);
-    // Crystal 201189f8, data-global/scripts/actions/other/destroy.lua:7-267.
-    // The Global machete action also falls through to onDestroyItem.
-    let global_weapon = match item {
-        3308 | 34155 | 34253 | 34254 | 35514 | 43864..=43875 => true,
-        7452 | 50163..=50165 | 50168 => false,
-        _ => is_destroy_weapon(item),
-    };
-    if !global_weapon {
-        return None;
-    }
+    let item = item_id(&definition.production_key)?;
     let policy = native.item_policy(&definition.production_key, &definition.revision_ref)?;
     let ReferenceItemField::Known(weapon) = &policy.record().semantics.weapon else {
         return None;
@@ -39,7 +44,89 @@ fn world_destroy_attack(
     let ReferenceItemField::Known(attack) = weapon.attack else {
         return None;
     };
-    (0..=65535).contains(&attack.0).then_some(attack.0)
+    if !(0..=65535).contains(&attack.0) {
+        return None;
+    }
+    crystal_global_destroy_threshold(item)
+}
+
+/// Crystal Global 201189f8 destroy.lua's weaponIds, plus the machete action's
+/// onDestroyItem fallback. register_actions.lua rolls against max(10, getAttack()).
+/// The thresholds come from data/items/items.xml (SHA-256
+/// 8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509).
+fn crystal_global_destroy_threshold(item: u16) -> Option<i32> {
+    Some(match item {
+        3267
+        | 3268
+        | 3270
+        | 3272
+        | 3289..=3292
+        | 3336
+        | 9387
+        | 12673
+        | 17784
+        | 27651
+        | 28464
+        | 28724
+        | 29421
+        | 29422
+        | 30283
+        | 30395
+        | 30396
+        | 31580
+        | 31614
+        | 32093
+        | 32616
+        | 34155
+        | 34253
+        | 34254
+        | 43864..=43875 => 10,
+        3294 | 28725 | 29419 => 11,
+        3273 | 3274 | 3308 | 3337 | 6101 => 12,
+        3338 => 13,
+        3264 | 3325 | 17109 => 14,
+        3276 | 3283 => 15,
+        3286 | 3299 | 3300 | 9373 | 9375 | 9385 => 16,
+        3285 | 3329 | 9386 | 9396 | 17824 => 17,
+        860 | 3297 | 3310 | 9376 | 27523 => 18,
+        3327 | 7773 | 7774 => 21,
+        3316 => 23,
+        3271 | 3280 | 3305 | 12510 | 27525 => 24,
+        3266 | 3282 | 3298 | 3348 | 22760 => 25,
+        3301 | 22759 => 26,
+        3320 | 17812 | 17813 => 27,
+        3311 | 3317 | 3346 | 7385 | 10389 => 28,
+        3265 | 7381 | 7425 => 30,
+        3323 | 7432 | 17859 => 31,
+        3322 | 7408 | 10392 => 32,
+        3318 | 21172 => 33,
+        3313 | 7387 | 21177 => 34,
+        3269 | 3275 | 3344 | 7379 | 7430 | 7449 | 12683 => 35,
+        3295 | 3324 => 36,
+        3326 | 7437 | 10406 => 37,
+        3333 | 3339 => 38,
+        3314 | 3321 | 3328 | 7451 | 7456 | 21178..=21180 | 22172 => 39,
+        3343 | 7404 | 7407 | 7419 | 7424 | 7454 | 17828 | 21174 => 40,
+        3312 | 3334 | 7412 | 10391 => 41,
+        3284 | 7380 | 7383 | 7392 | 7406 | 7409 | 7411 | 12731 | 14040 => 42,
+        7386 | 7388 | 7410 | 7413 | 7416 | 7426 | 10390 | 13987 => 43,
+        7384 | 7389 | 7402 | 7415 | 7427 | 7436 | 14250 | 21171 => 44,
+        3279 | 3335 | 7391 | 7417 | 7421 | 7433 | 22171 => 45,
+        3281 | 3315 | 7418 | 7420 | 7422 | 7428 | 14043 | 21176 | 28829..=28832 => 46,
+        3302 | 7382 | 7390 | 7414 | 7429 | 7434 | 10388 | 11657 | 16160 | 21173 => 47,
+        3288 | 3332 | 3342 | 7403 | 7431 | 7455 | 11692 | 11693 | 20076 | 22727 => 48,
+        3309 | 3331 | 3340 | 7405 | 7435 | 8102 | 13991 | 14001 | 16175 | 20070 | 21219 => 49,
+        3319 | 3341 | 6553 | 8100 | 8103 | 16162 | 20065 | 20077 | 27449 | 27453 => 50,
+        7423 | 7453 | 8096 | 8099 | 8101 | 8104 | 16161 | 20067 | 20071 | 20073 | 20079 | 22762
+        | 27451 => 51,
+        7450 | 8097 | 20066 | 20068 | 20074 | 20078 | 27450 | 27452 | 30398 | 35514 => 52,
+        3296 | 8098 | 20072 | 20080 | 27454 => 53,
+        20069 | 20075 => 54,
+        3278 | 20081 => 55,
+        28723 => 56,
+        6528 => 72,
+        _ => return None,
+    })
 }
 
 fn world_destroy_roll(root: [u8; 32], command: UseCommand, placement: &[u8]) -> Result<u8, ()> {
@@ -85,7 +172,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         source: Option<ItemKey>,
         target: Option<ItemKey>,
-    ) -> Result<Option<UseOutcome>, ()> {
+    ) -> Result<Option<UseOutcome>, TerrainUseError> {
         let Some(scope) = self.terrain_scope() else {
             return Ok(None);
         };
@@ -166,16 +253,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             UseTarget::ItemByDefinition(wanted) => {
                 index.definition_at(wanted).and_then(|(key, revision)| {
-                    inventory
-                        .first_unreserved(
-                            &TypedDefinitionRef {
-                                family: "Item".into(),
-                                production_key: key.into(),
-                                revision_ref: revision.into(),
-                            },
-                            &[],
-                        )
-                        .ok()
+                    let wanted = TypedDefinitionRef {
+                        family: "Item".into(),
+                        production_key: key.into(),
+                        revision_ref: revision.into(),
+                    };
+                    match inventory.first_unreserved(&wanted, &[]) {
+                        Ok(tool) => Some(tool),
+                        // The bounded search already selected equipment in display order.
+                        // Only the non-consuming bar plan can use this custody.
+                        Err(HotkeyRefusal::EquipmentSource)
+                            if intent.use_with_map_item.is_some()
+                                && world_destroy_attack(native, &wanted).is_some() =>
+                        {
+                            inventory
+                                .equipment
+                                .iter()
+                                .find(|item| item.definition == wanted)
+                                .map(|item| item.item_instance_id)
+                        }
+                        Err(_) => None,
+                    }
                 })
             }
             _ => None,
@@ -247,26 +345,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content_generation: at.content_generation,
                 reset_epoch: self.reset_epoch,
             };
+            let nothing = MapTargetRefusal::Use(UseDisposition::NothingToUse);
             let resolved = match &intent.use_with_map_item {
                 Some(MapUseTarget::Object(object)) => {
-                    super::super::world_map::resolve_map_target(&map, object, |_| None::<()>)
-                        .ok()
-                        .map(|t| (t.pos, t.placement_key))
+                    resolve_map_target(&map, object, |_| None::<()>)
+                        .map(|target| (target.pos, target.placement_key))
                 }
                 Some(MapUseTarget::Item(_)) => target
-                    .and_then(|key| super::super::world_map::resolve_map_handle(&map, key).ok())
-                    .and_then(|t| match t {
-                        super::super::world_map::MapHandleTarget::Base {
-                            pos,
-                            placement_key,
-                            ..
-                        } => Some((pos, placement_key)),
-                        _ => None,
+                    .ok_or(MapTargetRefusal::Use(UseDisposition::StaleState))
+                    .and_then(|key| resolve_map_handle(&map, key).map_err(MapTargetRefusal::Use))
+                    .and_then(|target| match target {
+                        MapHandleTarget::Base {
+                            pos, placement_key, ..
+                        } => Ok((pos, placement_key)),
+                        MapHandleTarget::Added { .. } | MapHandleTarget::Ground { .. } => {
+                            Err(nothing)
+                        }
                     }),
-                None => None,
+                None => Err(nothing),
             };
-            let Some((pos, key)) = resolved else {
-                return Ok(Some(outcome(UseDisposition::StaleState)));
+            let (pos, key) = match resolved {
+                Ok(placement) => placement,
+                Err(MapTargetRefusal::Use(disposition)) => return Ok(Some(outcome(disposition))),
+                Err(MapTargetRefusal::StateRevisionMismatch) => {
+                    return Err(TerrainUseError::MapResyncRequired);
+                }
             };
             let too_far = i16::from(pos.floor) != at.at.floor
                 || at.at.x.abs_diff(i32::from(pos.x)) > 1

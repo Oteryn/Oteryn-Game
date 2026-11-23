@@ -23,13 +23,13 @@ mod rope;
 mod skinning;
 mod terrain;
 
-pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
+pub(super) async fn dispatch_map_result<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
     command: UseCommand,
     intent: UseIntent,
     view: Option<&SessionItemView>,
-) -> Option<UseOutcome> {
+) -> Result<Option<UseOutcome>, MapResyncRequired> {
     let source = match intent.target {
         UseTarget::Item(handle) => view.and_then(|v| v.resolve(handle)),
         _ => None,
@@ -39,8 +39,27 @@ pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
         _ => None,
     };
     authority
-        .use_craft(actor, command, intent, source, target)
+        .use_craft_map_result(actor, command, intent, source, target)
         .await
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct MapResyncRequired;
+
+#[cfg(test)]
+pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: UseIntent,
+    view: Option<&SessionItemView>,
+) -> Option<UseOutcome> {
+    let result = dispatch_map_result(authority, actor, command, intent, view).await;
+    assert!(
+        result.is_ok(),
+        "craft fixture must use the active map revision"
+    );
+    result.ok().flatten()
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -51,6 +70,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: UseIntent,
         source: Option<ItemKey>,
         target: Option<ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_cooking_conversion_inner(actor, command, intent, source, target, &mut None)
+            .await
+    }
+
+    pub(super) async fn use_cooking_conversion_map_result(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: UseIntent,
+        source: Option<ItemKey>,
+        target: Option<ItemKey>,
+    ) -> Result<Option<UseOutcome>, MapResyncRequired> {
+        let mut resync = None;
+        let outcome = self
+            .use_cooking_conversion_inner(actor, command, intent, source, target, &mut resync)
+            .await;
+        resync.map_or(Ok(outcome), Err)
+    }
+
+    async fn use_cooking_conversion_inner(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: UseIntent,
+        source: Option<ItemKey>,
+        target: Option<ItemKey>,
+        map_refusal: &mut Option<MapResyncRequired>,
     ) -> Option<UseOutcome> {
         if matches!(
             intent.use_with_map_item.as_ref(),
@@ -131,7 +178,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(Some(outcome)) => return Some(outcome),
             Ok(None) => {}
-            Err(()) => return None,
+            Err(terrain::TerrainUseError::Unavailable) => return None,
+            Err(terrain::TerrainUseError::MapResyncRequired) => {
+                *map_refusal = Some(MapResyncRequired);
+                return None;
+            }
         }
         match self
             .use_rope_tool(actor, command, &intent, source, target)

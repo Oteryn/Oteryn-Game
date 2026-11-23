@@ -37,6 +37,7 @@ mod wooden_bars;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
+pub(crate) use wooden_bars::qualified_bar_tile_collision;
 pub use wooden_bars::{WoodenBarCollision, wooden_bar_collision};
 
 #[cfg(test)]
@@ -1205,6 +1206,11 @@ fn palette_facts(
             .solid
             .unwrap_or_else(|| !walkable_floor_change(&entry.key) && !terrain_floor(entry));
         door = palette_door(&entry.key, item);
+    }
+    if let Some(bar) = qualified_bar_tile_collision(&entry.key) {
+        facts.terrain_kind = bar.terrain_kind;
+        facts.blocks_projectile = bar.blocks_projectile;
+        solid = bar.block_solid;
     }
     Ok(PaletteFacts {
         static_surface: static_surface.is_some(),

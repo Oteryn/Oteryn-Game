@@ -18,6 +18,7 @@ pub(super) enum Dispatch {
     /// STEP-PACE-WIRE-1: the step and its `step_wait_ms` pacing receipt (0: none).
     Step(StepOutcome, u32),
     Use(UseOutcome),
+    MapResyncRequired,
     Spell(SpellCastOutcome),
     Achievements(AccountAchievementsReply),
     CharacterInfo(crate::gameplay_transport::character_info::CharacterInfoReply),

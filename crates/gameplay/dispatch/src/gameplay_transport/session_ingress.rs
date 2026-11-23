@@ -371,10 +371,23 @@ impl SessionCommands {
     }
 }
 
+pub(super) fn encode_map_resync(
+    generation: u64,
+    command_id: u64,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    oteryn_protocol_oteryn::encode_command_protocol_error(
+        FoundationProtocolError::StateRevisionMismatch,
+        generation,
+        command_id,
+        0,
+    )
+}
+
 pub(super) enum CommandAction {
     Execute,
     Pending,
     Replay(Vec<u8>),
+    ReplayControl(Vec<u8>),
 }
 
 /// The connection borrows its session's stream; cancellation releases the active claim
@@ -482,10 +495,17 @@ impl SessionCommandStream {
                 });
             }
             DuplicateDisposition::ReplayRetainedOutcome(_) => {
+                let retained = state.retained.as_deref().ok_or(unavailable)?;
+                let envelope = oteryn_protocol_oteryn::decode_wire_envelope(retained)
+                    .map_err(|_| unavailable)?;
+                if envelope.message_type() == oteryn_protocol_oteryn::MessageType::ProtocolError {
+                    let frame = encode_map_resync(generation, command).map_err(|_| unavailable)?;
+                    return Ok(CommandAction::ReplayControl(frame));
+                }
                 let frame = encode_duplicate_replay(
                     generation,
                     sequence.checked_add(1).ok_or(unavailable)?,
-                    state.retained.as_deref().ok_or(unavailable)?,
+                    retained,
                 )
                 .map_err(|_| unavailable)?;
                 state.result_sequence_floor = sequence + 1;
@@ -587,15 +607,52 @@ impl SessionCommandStream {
         result: &[u8],
         effect: impl FnOnce(),
     ) -> Option<()> {
+        self.terminalize_at(command, result, None, effect)
+    }
+
+    /// A correlated map resync consumes the CommandId and leaves the wire sequence unchanged.
+    pub(super) fn terminalize_map_resync(
+        &mut self,
+        command: u64,
+        result: &[u8],
+        server_sequence: u64,
+        effect: impl FnOnce(),
+    ) -> Option<()> {
+        self.terminalize_at(command, result, Some(server_sequence), effect)
+    }
+
+    fn terminalize_at(
+        &mut self,
+        command: u64,
+        result: &[u8],
+        map_resync_sequence: Option<u64>,
+        effect: impl FnOnce(),
+    ) -> Option<()> {
         if let Some(state) = &self.state {
             if result.len() > MAX_RETAINED_RESULT_BYTES {
                 return None;
             }
             let envelope = oteryn_protocol_oteryn::decode_wire_envelope(result).ok()?;
+            let (disposition, sequence) = match (envelope.message_type(), map_resync_sequence) {
+                (oteryn_protocol_oteryn::MessageType::CommandResult, None) => {
+                    ("command-result", envelope.server_sequence())
+                }
+                (oteryn_protocol_oteryn::MessageType::ProtocolError, Some(sequence)) => {
+                    let error =
+                        oteryn_protocol_oteryn::decode_protocol_error(envelope.payload()).ok()?;
+                    if error.error_code != FoundationProtocolError::StateRevisionMismatch.code()
+                        || error.related_command_id != command
+                        || error.disposition
+                            != oteryn_protocol_oteryn::ProtocolDisposition::ResyncRequired
+                    {
+                        return None;
+                    }
+                    ("map-resync", sequence)
+                }
+                _ => return None,
+            };
             let digest = base64::engine::general_purpose::STANDARD.encode(Sha256::digest(result));
-            let outcome =
-                TerminalSemanticOutcome::new("command-result", &digest, envelope.server_sequence())
-                    .ok()?;
+            let outcome = TerminalSemanticOutcome::new(disposition, &digest, sequence).ok()?;
             let mut state = state.lock().ok()?;
             let SessionIngress {
                 ingress,
@@ -607,7 +664,7 @@ impl SessionCommandStream {
                 .terminalize(CommandId::new(command).ok()?, outcome, || {
                     effect();
                     *retained = Some(result.to_vec());
-                    *result_sequence_floor = envelope.server_sequence();
+                    *result_sequence_floor = sequence;
                 })
                 .ok()?;
             state.pending_delivery = None;

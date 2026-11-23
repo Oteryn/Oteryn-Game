@@ -329,6 +329,12 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                         .map_err(|_| ServeEnd::Disconnected)?;
                     continue;
                 }
+                crate::gameplay_transport::session_ingress::CommandAction::ReplayControl(frame) => {
+                    write_frame(stream, &frame)
+                        .await
+                        .map_err(|_| ServeEnd::Disconnected)?;
+                    continue;
+                }
                 crate::gameplay_transport::session_ingress::CommandAction::Execute => {}
             }
             let mut permit = if limited {
