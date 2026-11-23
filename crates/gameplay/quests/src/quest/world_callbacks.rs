@@ -3559,7 +3559,17 @@ fn ape_city_amphoras_and_dread_lord_benefits_are_admitted() -> Result<(), String
         if uid == 3047 {
             assert_eq!(benefit.trigger, Trigger::Use);
             assert_eq!(benefit.offerings.len(), 1);
-            assert!(benefit.item_reward().is_some());
+            assert!(benefit.item_reward().is_none());
+            let scene = benefit
+                .effects
+                .scene
+                .as_ref()
+                .ok_or("Crystal offering output")?;
+            let [created] = scene.open.as_slice() else {
+                return Err("expected one offering output".into());
+            };
+            assert_eq!(created.position, benefit.offerings[0].position);
+            assert_eq!(created.create, Some(7845));
             assert_eq!(benefit.effects.reset_after_ms, Some(4000));
         } else {
             assert_eq!(benefit.trigger, Trigger::StepIn);

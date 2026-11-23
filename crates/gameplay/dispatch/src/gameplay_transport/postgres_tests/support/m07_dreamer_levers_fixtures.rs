@@ -122,17 +122,17 @@ pub(super) async fn exercise_dread_lord(
     let [offering] = callback.offerings.as_slice() else { return Err("diamond offering".into()) };
     let [rank, _claim] = callback.storage.as_slice() else { return Err("rank and claim guards".into()) };
     let [resting_lever, _active_lever] = callback.lever.ok_or("source lever")?;
-    let reward = callback.item_reward().as_ref().ok_or("officer document")?;
-    let carried = || {
-        sqlx::query_scalar::<_, i64>(
-            "SELECT coalesce(sum(i.quantity),0)::bigint FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON c.item=i.item_instance_id WHERE i.definition_production_key=$3",
-        )
-        .bind(fence.character_id.as_bytes().to_vec())
-        .bind(super::fixture::id(42).to_vec())
-        .bind(&reward.item)
-        .fetch_one(&harness.pool)
+    let ground_outputs = |owner: &ComposedFreshAdmission<'_, '_, '_>| -> TestResult<usize> {
+        let map = owner.bundle_map().ok_or("map")?;
+        Ok(map.facts.movement_item_entries().iter().filter(|(position, entry)| {
+            (position.x, position.y, position.floor) ==
+                (offering.position.x, offering.position.y, offering.position.floor)
+                && entry.facts.appearance_id == 7845
+                && !entry.facts.pickupable
+        }).count())
     };
-    let before_reward = carried().await?;
+    let before_mints: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources")
+        .fetch_one(&harness.pool).await?;
     let before = counts(harness).await?;
     super::quest_world_callbacks_fixtures::offering(owner, fence, offering, 90001).await?;
     async fn pull(
@@ -148,9 +148,10 @@ pub(super) async fn exercise_dread_lord(
     }
     assert_eq!(pull(owner, admitted, resting_lever).await?, UseDisposition::Rejected);
     assert_eq!(counts(harness).await?, before);
+    assert_eq!(ground_outputs(owner)?, 0);
 
     // A returning Dread Lord supplies the rank prerequisite. USE, offering
-    // consumption, claim and item mint all go through their real owners.
+    // consumption, claim and ground placement go through their real owners.
     let transition = "oteryn:quest-transition/fixture/dread-lord-rank";
     let catalogue = owner.quest_catalogue.as_deref().ok_or("quest catalogue")?.clone()
         .with_fixture_transition(QuestTransition {
@@ -174,12 +175,15 @@ pub(super) async fn exercise_dread_lord(
     let due = map.facts.next_movement_decay_time().ok_or("lever deadline")?;
     assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     assert_eq!(map.facts.expire_movement_items(due), 1);
-    assert_eq!(carried().await?, before_reward + i64::from(reward.count));
+    assert_eq!(ground_outputs(owner)?, 1);
     let after = counts(harness).await?;
     assert_eq!(after.1, before.1 + 1);
     assert_eq!(pull(owner, admitted, resting_lever).await?, UseDisposition::Rejected);
     assert_eq!(counts(harness).await?, after);
-    assert_eq!(carried().await?, before_reward + i64::from(reward.count));
+    assert_eq!(ground_outputs(owner)?, 1);
+    let after_mints: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources")
+        .fetch_one(&harness.pool).await?;
+    assert_eq!(after_mints, before_mints);
     eprintln!("POSTGRES_CASE_COMPLETED dread-lord-lever");
     Ok(())
 }

@@ -247,10 +247,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
-            projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
-                due,
-                restore: before,
-            });
+            if let Some(crate::map::facts::QuestCallbackProjection::Scene {
+                source_reset, ..
+            }) = projection.as_mut()
+            {
+                *source_reset = Some((due, before));
+            } else {
+                projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                    due,
+                    restore: before,
+                });
+            }
         }
         if super::amphoras::is_strike(callback) {
             projection = match super::amphoras::prepare(
@@ -772,7 +779,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 if source_flame {
                     3
-                } else if callback.effects.place_item.is_some() || callback.effects.loot_merchant {
+                } else if callback.effects.place_item.is_some()
+                    || callback.effects.loot_merchant
+                    || matches!(
+                        &projection,
+                        Some(crate::map::facts::QuestCallbackProjection::Scene {
+                            source_reset: Some(_),
+                            ..
+                        })
+                    )
+                {
                     8
                 } else {
                     callback.passages.len()
@@ -1480,6 +1496,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                     | Some(crate::map::facts::QuestCallbackProjection::TimedAmphoras {
                         due, ..
+                    })
+                    | Some(crate::map::facts::QuestCallbackProjection::Scene {
+                        source_reset: Some((due, _)),
+                        ..
                     })
                     | Some(crate::map::facts::QuestCallbackProjection::ReadsetTransforms {
                         reset: Some((due, _)),

@@ -102,17 +102,34 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
                     position.floor == relocation.to.floor && edited.contains(position)
                 })
         });
+    // A one-shot offering can create one passable ground object on the offering tile.
+    // Keep its visual and reset tied to the same authored lever.
+    let offering_scene = matches!(
+        (callback.offerings.as_slice(), scene.open.as_slice(), &callback.effects.magic),
+        ([offering], [edit], Some(magic)) if offering.position == edit.position
+            && offering.position == magic.position
+            && edit.remove.is_none() && edit.passable == Some(true)
+    ) && callback.requires_world_admission
+        && !callback.reversible
+        && callback.effects.reset_after_ms.is_some()
+        && callback.item_reward().is_none()
+        && callback.storage.iter().any(|guard| {
+            !guard.preserve && guard.minimum == guard.maximum && guard.set != guard.minimum
+        })
+        && scene.close.is_empty()
+        && !scene.remove_self;
     callback.trigger == Trigger::Use
         && callback.lever.is_some()
         && callback.passages.is_empty()
         && callback.teleport.is_none()
-        && callback.offerings.is_empty()
+        && (callback.offerings.is_empty() || offering_scene)
         && callback.item_on_target.is_none()
         && callback.native_rule.is_none()
         && callback.experience.is_none()
         && callback.monk_reward.is_none()
         && callback.effects.transform.is_none()
-        && callback.effects.magic.is_none()
+        && (callback.effects.magic.is_none() || offering_scene)
+        && (callback.effects.reset_after_ms.is_none() || offering_scene)
         && callback.effects.facing.is_none()
         && callback.effects.item_reward.is_none()
         && callback.effects.outfit_reward.is_none()

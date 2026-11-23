@@ -590,12 +590,21 @@
             "floor": -14
           },
           "effect": 11
+        },
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32781,
+                "y": 32226,
+                "floor": -14
+              },
+              "create": 7845,
+              "passable": true
+            }
+          ],
+          "close": []
         }
-      },
-      "item_reward": {
-        "item": "oteryn:item.tibia.i769",
-        "count": 1,
-        "contents": []
       }
     }
   ]

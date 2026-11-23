@@ -938,24 +938,32 @@ pub fn activated_loop_monster_missing_child(
 
 #[cfg(test)]
 #[test]
-fn knightwatch_diamond_lever_reward_has_native_custody() -> Result<(), String> {
+fn knightwatch_diamond_lever_creates_crystal_ground_item() -> Result<(), String> {
+    use crate::content::native_gameplay::NativeItemDestination;
+
     let levers: serde_json::Value = serde_json::from_str(include_str!(
         "../../../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"
     ))
     .map_err(|error| error.to_string())?;
-    let rewards: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../../../content/quests/shared-reward-callbacks.json"
-    ))
-    .map_err(|error| error.to_string())?;
-    let lever_reward = &levers["callbacks"]
+    let lever = levers["callbacks"]
         .as_array()
         .and_then(|rows| rows.iter().find(|row| row["selector"]["unique"] == 3047))
-        .ok_or("Dread Lord lever")?["item_reward"];
-    let key = lever_reward["item"].as_str().ok_or("lever reward item")?;
-    let id = key
-        .strip_prefix("oteryn:item.tibia.i")
-        .and_then(|id| id.parse().ok())
-        .ok_or("native source item ID")?;
+        .ok_or("Dread Lord lever")?;
+    assert!(lever["item_reward"].is_null());
+    let [offering] = lever["offerings"].as_array().ok_or("offerings")?.as_slice() else {
+        return Err("expected one offering".into());
+    };
+    assert_eq!(offering["item"], "oteryn:item.tibia.i3028");
+    assert_eq!(offering["count"], 1);
+    let [created] = lever["effects"]["scene"]["open"]
+        .as_array()
+        .ok_or("scene")?
+        .as_slice()
+    else {
+        return Err("expected one ground item".into());
+    };
+    assert_eq!(created["position"], offering["position"]);
+    assert_eq!(created["create"], 7845);
 
     let world = test_source(1)
         .map_err(|error| format!("source world: {error:?}"))?
@@ -967,28 +975,14 @@ fn knightwatch_diamond_lever_reward_has_native_custody() -> Result<(), String> {
         .and_then(|generation| generation.native_gameplay())
         .ok_or("active native gameplay")?;
     let record = native
-        .item_policy_for_source_id(id)
-        .ok_or_else(|| format!("missing policy for {key}"))?
+        .item_policy_for_source_id(7845)
+        .ok_or("missing policy for Crystal lever ground item")?
         .record();
     assert!(record.admission.materializable);
-    assert!(
-        record
-            .admission
-            .legal_destinations
-            .contains(&crate::content::native_gameplay::NativeItemDestination::CharacterInventory)
+    assert_eq!(
+        record.admission.legal_destinations,
+        [NativeItemDestination::Ground]
     );
-
-    // Crystal's lever uses the old document ID. The officer NPC exchange
-    // provides the canonical identity in the current item catalogue.
-    let officer = rewards["callbacks"]
-        .as_array()
-        .and_then(|rows| {
-            rows.iter()
-                .find(|row| row["key"] == "oteryn:quest-reward/l10-brotherhood-officer")
-        })
-        .ok_or("Brotherhood officer reward")?;
-    assert_eq!(lever_reward["item"], officer["give"]["item"]);
-    assert_eq!(lever_reward["count"], officer["give"]["count"]);
     Ok(())
 }
 
