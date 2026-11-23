@@ -61,6 +61,7 @@ impl Outbox {
         };
         shared.properties.party_skull = oteryn_client_ui::party_skull::Panel {
             selected: session.feature_selected(134),
+            situation_identity: session.feature_selected(616),
             ..Default::default()
         };
         shared.properties.cyclopedia_map = oteryn_client_ui::cyclopedia_map::Panel {

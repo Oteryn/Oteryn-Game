@@ -224,10 +224,11 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     }
 
     async fn admit(&mut self) -> Result<Self::Output, Option<u32>> {
-        let capabilities = crate::play::feature_0179_hotkey_equip::view::supported_capabilities(
+        let mut capabilities = crate::play::feature_0179_hotkey_equip::view::supported_capabilities(
             *self.character_id.as_bytes(),
             self.config.preference_path.as_deref(),
         );
+        capabilities.extend([615, 616, 617]);
         self.queue = None;
         let traffic = std::sync::Arc::new(crate::traffic::Traffic::default());
         let counted = std::sync::Arc::clone(&traffic);
