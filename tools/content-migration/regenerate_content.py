@@ -52,8 +52,8 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import tarfile
+import tempfile
 from pathlib import Path
 
 from item_tree_index import item_index_fields
@@ -253,14 +253,14 @@ def quest_donor_feedback_inputs() -> dict[str, str]:
     index = json.loads((ROOT / "content/quests/definitions/index.json").read_bytes())
     sources = index.get("authoring_sources")
     if not isinstance(sources, list):
-        raise ValueError("Quest donor feedback source inventory is missing")
+        raise TypeError("Quest donor feedback source inventory is missing")
     prefix = "tools/content-schema/quest-authoring/samples/donor-source/"
     inputs = {}
     for descriptor in sources:
         if not isinstance(descriptor, dict) or not isinstance(
             descriptor.get("path"), str
         ):
-            raise ValueError("Quest donor feedback source descriptor is invalid")
+            raise TypeError("Quest donor feedback source descriptor is invalid")
         relative = descriptor["path"]
         if not relative.startswith(prefix):
             continue
@@ -302,7 +302,9 @@ def refresh_quest_donor_capture() -> None:
 
 def git(*args: str) -> str:
     """Run git and fail closed: any error stops the script instead of reading as "nothing"."""
-    result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
+    result = subprocess.run(
+        ["git", *args], cwd=ROOT, capture_output=True, text=True, check=False
+    )
     if result.returncode != 0:
         raise SystemExit(f"git {' '.join(args)} failed: {result.stderr.strip()}")
     return result.stdout
@@ -539,7 +541,10 @@ def merge_pin_test(*, write: bool) -> bool:
             path.write_text(masked(stage), encoding="utf-8")
             paths.append(str(path))
         merged = subprocess.run(
-            ["git", "merge-file", "-p", *paths], capture_output=True, text=True
+            ["git", "merge-file", "-p", *paths],
+            capture_output=True,
+            text=True,
+            check=False,
         )
     if merged.returncode != 0:
         return False
@@ -551,7 +556,9 @@ def merge_pin_test(*, write: bool) -> bool:
 def document_locators(text: str | None = None) -> list[str]:
     text = PIN_TEST.read_text(encoding="utf-8") if text is None else text
     block = re.search(
-        r"const DOCUMENTS: \[\(&str, usize, &str\); \d+\] = \[(.*?)\n\];", text, re.S
+        r"const DOCUMENTS: \[\(&str, usize, &str\); \d+\] = \[(.*?)\n\];",
+        text,
+        re.DOTALL,
     )
     if not block:
         raise SystemExit(f"DOCUMENTS table not found in {PIN_TEST}")
@@ -583,6 +590,7 @@ def export_predecessor(destination: Path) -> None:
         ["git", "cat-file", "-e", f"{PREDECESSOR_PIN}^{{commit}}"],
         cwd=ROOT,
         capture_output=True,
+        check=False,
     ).returncode:
         run(["git", "fetch", "--no-tags", "--depth=1", "origin", PREDECESSOR_PIN])
     for locator in PREDECESSOR_DOCUMENTS:
@@ -707,7 +715,7 @@ def repin_rust_inventory() -> None:
             r'(\(\s*"' + re.escape(locator) + r'",\s*)([\d_]+)(,\s*")[0-9a-f]{64}(")'
         )
         text, count = entry.subn(
-            lambda m: (
+            lambda m, data=data: (
                 f"{m.group(1)}{literal(len(data), m.group(2))}{m.group(3)}"
                 f"{hashlib.sha256(data).hexdigest()}{m.group(4)}"
             ),
@@ -851,7 +859,7 @@ def refresh_source_cohort_extent() -> None:
         + f"{measured['sources']:_},",
         catalogue_text,
         count=1,
-        flags=re.S,
+        flags=re.DOTALL,
     )
     catalogue.write_text(catalogue_text, encoding="utf-8", newline="\n")
     rewrite(
@@ -910,7 +918,7 @@ def unresolved_worktree_paths() -> list[str]:
         or re.search(
             rb"^(?:<<<<<<<|\|\|\|\|\|\|\||=======|>>>>>>>)",
             (ROOT / path).read_bytes(),
-            re.M,
+            re.MULTILINE,
         )
     ]
 
@@ -1066,7 +1074,12 @@ def main() -> int:
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
-    run(["python3", "tools/content-schema/quest-authoring/world_contribution_bindings.py"])
+    run(
+        [
+            "python3",
+            "tools/content-schema/quest-authoring/world_contribution_bindings.py",
+        ]
+    )
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     run(
         [

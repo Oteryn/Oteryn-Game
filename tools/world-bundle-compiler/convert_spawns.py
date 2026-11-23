@@ -62,26 +62,44 @@ PHARAOHS = {
     "oteryn:creature.vashresamun": (33121, 32655, 15),
 }
 
+
 def encounter_bosses() -> set[str]:
     """Keep quest-owned creatures and explicit encounter/room actors out of world clocks."""
     bindings = json.loads((ROOT / "imports/canary/bindings/creatures.json").read_text())
-    room_paths = ("quests/ancient_tombs/", "quests/in_service_of_yalahar/",
-                  "quests/isle_of_evil/", "quests/liquid_black/",
-                  "quests/the_inquisition/", "quests/the_new_frontier/",
-                  "quests/wrath_of_the_emperor/")
-    keys = {b["target"]["key"] for b in bindings["bindings"]
-            if b["external_id"].startswith(room_paths)}
+    room_paths = (
+        "quests/ancient_tombs/",
+        "quests/in_service_of_yalahar/",
+        "quests/isle_of_evil/",
+        "quests/liquid_black/",
+        "quests/the_inquisition/",
+        "quests/the_new_frontier/",
+        "quests/wrath_of_the_emperor/",
+    )
+    keys = {
+        b["target"]["key"]
+        for b in bindings["bindings"]
+        if b["external_id"].startswith(room_paths)
+    }
     # These quest bosses have a generic bosses/ donor path. Their scripted entry/kill
     # conditions are not a world-reset scheduling policy.
-    keys.update(f"oteryn:creature.{name}" for name in (
-        "black_knight", "koshei_the_deathless", "energized_raging_mage",
-        "the_flaming_orchid", "bibby_bloodbath", "renegade_orc",
-        "thawing_dragon_lord", "dazed_leaf_golem",
-    ))
+    keys.update(
+        f"oteryn:creature.{name}"
+        for name in (
+            "black_knight",
+            "koshei_the_deathless",
+            "energized_raging_mage",
+            "the_flaming_orchid",
+            "bibby_bloodbath",
+            "renegade_orc",
+            "thawing_dragon_lord",
+            "dazed_leaf_golem",
+        )
+    )
     for path in CREATURES.glob("creatures-*.json"):
         for record in json.loads(path.read_text())["records"]:
             if record["authoring"]["profile"].get("encounters"):
                 keys.add(record["definition"]["identity"]["key"])
+
     def collect_refs(value):
         if isinstance(value, dict):
             if value.get("family") == "Creature" and isinstance(value.get("key"), str):
@@ -91,6 +109,7 @@ def encounter_bosses() -> set[str]:
         elif isinstance(value, list):
             for child in value:
                 collect_refs(child)
+
     for path in (ROOT / "content/encounters").rglob("*.json"):
         collect_refs(json.loads(path.read_text()))
     rooms = json.loads((ROOT / "content/quests/grizzly-boss-rooms.json").read_text())
@@ -127,7 +146,10 @@ def convert(xml: bytes) -> dict[str, str]:
     for path in sorted(CREATURES.glob("creatures-*.json")):
         for record in json.loads(path.read_text())["records"]:
             details = record["authoring"]["profile"]["details"]
-            if details.get("bosstiary") is not None or details["system_eligibility"]["reward_boss"]:
+            if (
+                details.get("bosstiary") is not None
+                or details["system_eligibility"]["reward_boss"]
+            ):
                 boss_keys.add(record["definition"]["identity"]["key"])
     held_bosses = []
     encounter_bound = encounter_bosses()
@@ -148,7 +170,11 @@ def convert(xml: bytes) -> dict[str, str]:
             creature = f"oteryn:creature.{slug(name)}"
             if creature not in known:
                 sys.exit(f"{key}: `{name}` is not an admitted creature definition")
-            x, y, z = cx + int(point.get("x")), cy + int(point.get("y")), int(point.get("z", cz))
+            x, y, z = (
+                cx + int(point.get("x")),
+                cy + int(point.get("y")),
+                int(point.get("z", cz)),
+            )
             if z != cz or not (0 <= x <= 0xFFFF and 0 <= y <= 0xFFFF):
                 sys.exit(f"{key}: point ({x}, {y}, {z}) is off the source")
             weight = point.get("weight")
@@ -168,37 +194,69 @@ def convert(xml: bytes) -> dict[str, str]:
             if point["creature"] in PHARAOHS:
                 creature = point["creature"]
                 x, y, z = PHARAOHS[creature]
-                if (creature in pharaohs or point["cell"] != {"floor": z, "x": x, "y": y}
-                        or point["respawn_ms"] != 90_000):
+                if (
+                    creature in pharaohs
+                    or point["cell"] != {"floor": z, "x": x, "y": y}
+                    or point["respawn_ms"] != 90_000
+                ):
                     sys.exit(f"{key}: Ancient Tombs spawn differs from its source")
-                scheduled = {key: value for key, value in point.items() if key not in ("respawn_ms", "weight")}
+                scheduled = {
+                    key: value
+                    for key, value in point.items()
+                    if key not in ("respawn_ms", "weight")
+                }
                 scheduled["boss_policy"] = {"respawn": {"min_s": 90, "max_s": 90}}
-                pharaohs[creature] = {"declaration": {
-                    "centre": {"floor": cz, "x": cx, "y": cy},
-                    "identity": {"key": f"{key}.pharaoh", "revision": "definition-r1"},
-                    "points": [scheduled],
-                }}
+                pharaohs[creature] = {
+                    "declaration": {
+                        "centre": {"floor": cz, "x": cx, "y": cy},
+                        "identity": {
+                            "key": f"{key}.pharaoh",
+                            "revision": "definition-r1",
+                        },
+                        "points": [scheduled],
+                    }
+                }
             elif point["creature"] in boss_keys:
                 if point["creature"] in encounter_bound:
-                    held_bosses.append({"source": key, "point": point,
-                                        "reason": "encounter-bound"})
+                    held_bosses.append(
+                        {"source": key, "point": point, "reason": "encounter-bound"}
+                    )
                 else:
                     configured = chances[point["creature"]]
                     chance = configured["at_reset"]["chance"]
-                    if not (0 <= chance["numerator"] <= chance["denominator"] <= 0x7FFFFFFFFFFFFFFF
-                            and chance["denominator"] > 0):
+                    if not (
+                        0
+                        <= chance["numerator"]
+                        <= chance["denominator"]
+                        <= 0x7FFFFFFFFFFFFFFF
+                        and chance["denominator"] > 0
+                    ):
                         sys.exit(f"{point['creature']}: invalid boss chance")
-                    scheduled = {k: v for k, v in point.items() if k not in ("respawn_ms", "weight")}
+                    scheduled = {
+                        k: v
+                        for k, v in point.items()
+                        if k not in ("respawn_ms", "weight")
+                    }
                     scheduled["boss_policy"] = {"at_reset": configured["at_reset"]}
-                    scheduled_bosses.append({"declaration": {
-                        "centre": {"floor": cz, "x": cx, "y": cy},
-                        "identity": {"key": f"{key}.boss.{slug(point['creature'])}", "revision": "definition-r1"},
-                        "points": [scheduled],
-                        "provenance": {"kind": configured["basis"],
-                                       "derivation": configured["source"],
-                                       "policy_source": "tools/world-bundle-compiler/held-boss-chances.json",
-                                       "placement_source": SOURCE, "source_spawn": key},
-                    }})
+                    scheduled_bosses.append(
+                        {
+                            "declaration": {
+                                "centre": {"floor": cz, "x": cx, "y": cy},
+                                "identity": {
+                                    "key": f"{key}.boss.{slug(point['creature'])}",
+                                    "revision": "definition-r1",
+                                },
+                                "points": [scheduled],
+                                "provenance": {
+                                    "kind": configured["basis"],
+                                    "derivation": configured["source"],
+                                    "policy_source": "tools/world-bundle-compiler/held-boss-chances.json",
+                                    "placement_source": SOURCE,
+                                    "source_spawn": key,
+                                },
+                            }
+                        }
+                    )
             else:
                 live_points.append(point)
         points = live_points
@@ -222,18 +280,32 @@ def convert(xml: bytes) -> dict[str, str]:
         part = records[start : start + SHARD_SIZE]
         name = f"spawns-{start:05d}-{start + len(part) - 1:05d}.json"
         shards.append(f"content/world/spawns/{name}")
-        files[name] = dump({"coordinate_frame": FRAME, "family": "Spawn.Source", "records": part})
+        files[name] = dump(
+            {"coordinate_frame": FRAME, "family": "Spawn.Source", "records": part}
+        )
     bosses_bytes = BOSSES.read_bytes()
     bosses = json.loads(bosses_bytes)
     if bosses["family"] != "Spawn.Source" or bosses["coordinate_frame"] != FRAME:
         sys.exit("boss spawn authoring family or frame mismatch")
     for record in bosses["records"]:
         for point in record["declaration"]["points"]:
-            if point["creature"] not in known or "boss_policy" not in point or "respawn_ms" in point:
-                sys.exit("boss spawn must bind an admitted creature and only a boss policy")
+            if (
+                point["creature"] not in known
+                or "boss_policy" not in point
+                or "respawn_ms" in point
+            ):
+                sys.exit(
+                    "boss spawn must bind an admitted creature and only a boss policy"
+                )
     held_name = "held-bosses.json"
-    files[held_name] = dump({"family": "Held.Spawn.Point", "coordinate_frame": FRAME,
-                             "records": held_bosses, "source": SOURCE})
+    files[held_name] = dump(
+        {
+            "family": "Held.Spawn.Point",
+            "coordinate_frame": FRAME,
+            "records": held_bosses,
+            "source": SOURCE,
+        }
+    )
     boss_name = "spawns-boss-spawn1.json"
     files[boss_name] = dump(bosses)
     shards.append(f"content/world/spawns/{boss_name}")
@@ -249,9 +321,13 @@ def convert(xml: bytes) -> dict[str, str]:
                 "point_count": sum(r["point_count"] for r in held_records),
                 "sha256": HELD_SHA256,
             },
-            "held_bosses": {"path": f"content/world/spawns/{held_name}",
-                            "point_count": len(held_bosses),
-                            "sha256": hashlib.sha256((files[held_name]+"\n").encode()).hexdigest()},
+            "held_bosses": {
+                "path": f"content/world/spawns/{held_name}",
+                "point_count": len(held_bosses),
+                "sha256": hashlib.sha256(
+                    (files[held_name] + "\n").encode()
+                ).hexdigest(),
+            },
             "population_state": "POPULATED",
             "point_count": sum(len(r["declaration"]["points"]) for r in all_records),
             "record_count": len(all_records),
@@ -259,12 +335,18 @@ def convert(xml: bytes) -> dict[str, str]:
             "shard_size": SHARD_SIZE,
             "shards": shards,
             "source": SOURCE,
-            "additional_sources": [{"path": "tools/world-bundle-compiler/boss-spawns.json",
-                                    "sha256": hashlib.sha256(bosses_bytes).hexdigest(),
-                                    "record_count": len(bosses["records"])},
-                                   {"path": "tools/world-bundle-compiler/held-boss-chances.json",
-                                    "sha256": hashlib.sha256(chances_bytes).hexdigest(),
-                                    "record_count": len(chances)}],
+            "additional_sources": [
+                {
+                    "path": "tools/world-bundle-compiler/boss-spawns.json",
+                    "sha256": hashlib.sha256(bosses_bytes).hexdigest(),
+                    "record_count": len(bosses["records"]),
+                },
+                {
+                    "path": "tools/world-bundle-compiler/held-boss-chances.json",
+                    "sha256": hashlib.sha256(chances_bytes).hexdigest(),
+                    "record_count": len(chances),
+                },
+            ],
         }
     )
     return {name: text + "\n" for name, text in files.items()}
