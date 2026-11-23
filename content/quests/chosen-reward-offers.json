@@ -316,6 +316,40 @@
         "sniper gloves"
       ],
       "topic": 0,
+      "next_topic": 9,
+      "storage": [],
+      "reply": [
+        "You found sniper gloves?! Incredible! I would love to grant you the sniper gloves accessory, but I can only do that for premium warriors. However, I would pay you 2000 gold pieces for them. How about it?"
+      ],
+      "requires_premium": false
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you find sniper gloves AGAIN?! Incredible! I cannot grant you other accessories, but would you like to sell them to me for 2000 gold pieces?"
+      ],
+      "requires_premium": true
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
       "next_topic": 8,
       "storage": [
         {
@@ -328,7 +362,8 @@
       ],
       "reply": [
         "If you give me a pair of sniper gloves, I can let you wear the accessory. Would you like to?"
-      ]
+      ],
+      "requires_premium": true
     }
   ]
 }

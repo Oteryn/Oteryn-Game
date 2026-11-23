@@ -107,7 +107,7 @@ mod reward_contents_text_tests;
 #[serde(deny_unknown_fields)]
 pub struct OutfitReward {
     pub outfit: String,
-    /// Base entitlement is always included. Bits 1 and 2 earn the respective addons.
+    /// Bits 1 and 2 earn the respective addons.
     pub addons: u8,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sex: Option<CreationSex>,
@@ -311,6 +311,9 @@ pub struct RewardCallback {
     pub creation_sex: Option<CreationSex>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub requires_premium: bool,
+    /// This hand-in earns only the listed addon bits.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub addon_only: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -1134,6 +1137,9 @@ fn validate_document_with_capacity(
                 .is_some_and(|reward| !valid_item_reward(reward))
             || (!c.outfits.is_empty() && c.outfit.is_some())
             || c.outfits.len() > 4
+            || (c.addon_only
+                && (c.cosmetic_targets().next().is_none()
+                    || c.cosmetic_targets().any(|reward| reward.addons == 0)))
             || c.cosmetic_targets()
                 .map(|r| (&r.outfit, r.addons, r.sex))
                 .collect::<BTreeSet<_>>()
@@ -1316,6 +1322,12 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
             &callback.weighted_rewards,
         ))
         .map_err(|error| error.to_string())?
+    };
+    let current = if callback.addon_only {
+        serde_json::to_vec(&("oteryn:quest-reward-addon-only-v1", current))
+            .map_err(|error| error.to_string())?
+    } else {
+        current
     };
     if callback.per_occurrence_mint {
         serde_json::to_vec(&("oteryn:quest-reward-occurrence-mint-v1", current))
@@ -1845,6 +1857,49 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 #[cfg(test)]
 mod tests {
     #[test]
+    fn warmaster_crest_callbacks_refuse_an_owned_target_addon() -> Result<(), String> {
+        let rows = super::load()?;
+        for (name, addon) in [("crest", 1), ("tribal", 2)] {
+            for suffix in ["", "-complete"] {
+                let key = format!("oteryn:quest-reward/l1-warmaster-{name}{suffix}");
+                let callback = rows.iter().find(|row| row.key == key).ok_or(&key)?;
+                assert_eq!(
+                    callback.forbids_addons.as_slice(),
+                    &[super::OutfitReward {
+                        outfit: "oteryn:outfit.warmaster".into(),
+                        addons: addon,
+                        sex: None,
+                    }],
+                    "{key}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn elane_glove_sale_has_repeatable_native_payment() -> Result<(), String> {
+        let rows = super::load()?;
+        let sale = rows
+            .iter()
+            .find(|row| row.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale")
+            .ok_or("missing Elane glove sale")?;
+        assert!(sale.repeatable && sale.is_paid_exchange());
+        assert!(sale.cosmetic_targets().next().is_none());
+        assert_eq!(sale.take.len(), 1);
+        assert_eq!(
+            (sale.take[0].item.as_str(), sale.take[0].count),
+            ("oteryn:item.tibia.i5875", 1)
+        );
+        let payment = sale.give.as_ref().ok_or("missing sale payment")?;
+        assert_eq!(
+            (payment.item.as_str(), payment.count),
+            ("oteryn:item.tibia.i3035", 20)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn reward_storage_supports_one_atomic_sixteen_track_plan() -> Result<(), String> {
         let mut callback = super::parse(include_str!(
             "../../../../../content/quests/shared-reward-callbacks.json"
@@ -2365,7 +2420,7 @@ mod tests {
         for (key, expected) in [
             (
                 "oteryn:quest.outfit_and_addon_quests",
-                "de0d90685da65e806d7d1c86a6c067a62479af04f6e79f29b8d042d43237e7db",
+                "97baa2233c218843fe0f6064ba4c8d4d79e079ffe1e229a7ffc59afe23042d2f",
             ),
             // Includes the source seal callbacks, packed counter and Siflind vial grant.
             (
@@ -2412,10 +2467,10 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Outfit completions add four to the shared shard. Package 4 also adds the
-        // chosen routes (18), Prisoner (2), classic contacts (5), Nomads (3) and Explorer Society (89).
+        // chosen routes (19), Prisoner (2), classic contacts (5), Nomads (4) and Explorer Society (89).
         assert_eq!(
             load()?.len(),
-            (238 + 4) + 59 + 125 + 1 + 1 + 13 + 12 + 18 + 2 + 5 + 3 + 89
+            (238 + 4) + 59 + 125 + 1 + 1 + 13 + 12 + 19 + 2 + 5 + 4 + 89
         );
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
@@ -3320,8 +3375,8 @@ mod outfit_reward_predecessor_tests {
                 .iter()
                 .filter(|callback| callback.quest == QUEST)
                 .count(),
-            // 113 retained rows, including the female Hunter hand-in, plus 31 QB rows.
-            144
+            // 114 retained rows, including Elane's Hunter hand-ins, plus 31 QB rows.
+            145
         );
         document
             .callbacks
@@ -3331,7 +3386,7 @@ mod outfit_reward_predecessor_tests {
             .iter()
             .filter(|callback| callback.quest == QUEST)
             .count();
-        assert_eq!(owned, 113);
+        assert_eq!(owned, 114);
         let participants = document
             .callbacks
             .iter()
@@ -3400,7 +3455,7 @@ mod outfit_reward_predecessor_tests {
         );
         assert_eq!(
             hex(&full_hash),
-            "de0d90685da65e806d7d1c86a6c067a62479af04f6e79f29b8d042d43237e7db"
+            "97baa2233c218843fe0f6064ba4c8d4d79e079ffe1e229a7ffc59afe23042d2f"
         );
         assert_eq!((declared.1.len(), full_defaults.len()), (51, 52));
         assert!(

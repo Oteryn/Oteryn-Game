@@ -3,8 +3,6 @@ use super::qengine_rewards_fixtures::scenario;
 
 use super::TestResult;
 
-
-
 #[path = "qengine_rewards/m39_any_topic.rs"]
 mod m39_any_topic;
 
@@ -34,11 +32,20 @@ fn qengine_rewards_backpack_exchange() -> TestResult {
 }
 
 #[test]
+fn qengine_elane_buys_gloves_from_free_and_completed_characters() -> TestResult {
+    scenario("qengine-rewards-elane-gloves-free")?;
+    scenario("qengine-rewards-elane-gloves-completed")
+}
+
+#[test]
 fn qengine_l1_warmaster_crest() -> TestResult {
+    scenario("qengine-rewards-l1-warmaster-owned")?;
     scenario("qengine-rewards-l1-warmaster")
 }
 #[test]
 fn qengine_l1_wayfarer_cape() -> TestResult {
+    scenario("qengine-rewards-l1-wayfarer-free")?;
+    scenario("qengine-rewards-l1-wayfarer-addon-only")?;
     scenario("qengine-rewards-l1-wayfarer")
 }
 #[test]
@@ -48,6 +55,7 @@ fn qengine_l1_yalaharian_addon_sage() -> TestResult {
 
 #[test]
 fn qengine_l1_warmaster_tribal() -> TestResult {
+    scenario("qengine-rewards-l1-warmaster-tribal-owned")?;
     scenario("qengine-rewards-l1-warmaster-tribal")
 }
 #[test]

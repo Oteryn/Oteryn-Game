@@ -227,10 +227,13 @@ pub(crate) async fn apply(
         }
         _ => return Ok(false),
     }
-    if callback
-        .cosmetic_targets()
-        .any(|reward| !outfit_compatible(admission.native, reward))
-    {
+    if callback.cosmetic_targets().any(|reward| {
+        !super::super::character_appearance::quest_grants::outfit_targets_compatible(
+            admission.native,
+            reward,
+            !callback.addon_only,
+        )
+    }) {
         return Ok(false);
     }
     if !callback.requires_actor_conditions.is_empty()
@@ -454,12 +457,13 @@ pub(crate) async fn apply(
         ))
         .map_err(|_| DurabilityError::InvalidStoredState)?;
         grant_keys.extend(
-            super::super::character_appearance::grant_content_outfit(
+            super::super::character_appearance::quest_grants::grant_content_outfit_targets(
                 tx,
                 fence.character_id,
                 &occurrence,
                 reward,
                 admission.native,
+                !callback.addon_only,
             )
             .await?,
         );
@@ -1002,7 +1006,6 @@ async fn mint_with_source(
     Ok(Some(reservation.transaction_id))
 }
 
-
 /// Serialize paid reservations with other appearance grants using the caller's
 /// account lock. The enclosing quest transaction rolls back on any refusal.
 async fn apply_account_reservation(
@@ -1030,7 +1033,11 @@ async fn apply_account_reservation(
     .await?;
     let character = character.as_bytes().as_slice();
     match reservation {
-        AccountReservation::Start { track, pending_value, .. } => {
+        AccountReservation::Start {
+            track,
+            pending_value,
+            ..
+        } => {
             let inserted = sqlx::query(
                 "INSERT INTO game_quest_account_reservations
                  (account_id,reservation_key,character_id,pending_track,pending_value)

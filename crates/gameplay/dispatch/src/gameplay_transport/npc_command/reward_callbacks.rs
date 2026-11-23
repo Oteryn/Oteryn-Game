@@ -38,6 +38,8 @@ pub(super) struct Offer {
     #[serde(default)]
     minimum_level: Option<u32>,
     #[serde(default)]
+    requires_premium: Option<bool>,
+    #[serde(default)]
     inventory: Vec<reward_callbacks::InventoryRequirement>,
     #[serde(default)]
     failure_reply: Vec<String>,
@@ -196,11 +198,18 @@ pub(super) fn prepare(
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
                 return rottin_dialogue(topic, &text, tracks, refusal);
             }
-            if let Some(offer) = offers
-                .offers
-                .iter()
-                .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
-            {
+            if let Some(offer) = offers.offers.iter().find(|offer| {
+                offer.admits(&context.2, topic.number, &text, catalogue, tracks)
+                    && offer.requires_premium.is_none_or(|required| {
+                        let premium = admission
+                            .session_account(command.game_session_id)
+                            .zip(admission.premium_coordinator)
+                            .is_some_and(|(account, owner)| {
+                                owner.view(account).premium_gate().premium_current()
+                            });
+                        premium == required
+                    })
+            }) {
                 if !meets_level(offer.minimum_level)
                     || !offer
                         .inventory

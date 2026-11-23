@@ -530,6 +530,9 @@
             "$ref": "#/$defs/stateOperation"
           }
         },
+        "addon_only": {
+          "type": "boolean"
+        },
         "requires_premium": {
           "type": "boolean"
         },

@@ -20,11 +20,13 @@ fn wayfarer_first_and_final_hand_ins_require_current_premium() -> Result<(), Str
 }
 
 #[test]
-fn wayfarer_first_and_final_hand_ins_require_the_base_outfit() -> Result<(), String> {
+fn wayfarer_first_and_final_hand_ins_grant_only_the_addon() -> Result<(), String> {
     for callback in wayfarer_addon_callbacks()? {
+        assert!(callback.addon_only, "{}", callback.key);
+        assert!(callback.requires_outfits.is_empty(), "{}", callback.key);
         assert_eq!(
-            callback.requires_outfits,
-            ["oteryn:outfit.wayfarer"],
+            callback.requires_completed_quests,
+            ["oteryn:quest.the_spirit_will_get_you_quest"],
             "{}",
             callback.key
         );

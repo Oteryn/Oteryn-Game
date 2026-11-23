@@ -460,6 +460,16 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
       ],
+      "addon_only": true,
+      "requires_outfits": [
+        "oteryn:outfit.warmaster"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.warmaster",
+          "addons": 1
+        }
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_2",
@@ -510,6 +520,16 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
         "https://tibia.fandom.com/index.php?curid=42269&oldid=795619"
+      ],
+      "addon_only": true,
+      "requires_outfits": [
+        "oteryn:outfit.warmaster"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.warmaster",
+          "addons": 1
+        }
       ],
       "requires": [
         {
@@ -567,6 +587,16 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd"
       ],
+      "addon_only": true,
+      "requires_outfits": [
+        "oteryn:outfit.warmaster"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.warmaster",
+          "addons": 2
+        }
+      ],
       "requires": [
         {
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
@@ -617,6 +647,16 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
         "https://tibia.fandom.com/index.php?curid=42269&oldid=795619"
+      ],
+      "addon_only": true,
+      "requires_outfits": [
+        "oteryn:outfit.warmaster"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.warmaster",
+          "addons": 2
+        }
       ],
       "requires": [
         {
@@ -671,9 +711,7 @@
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],
       "requires_premium": true,
-      "requires_outfits": [
-        "oteryn:outfit.wayfarer"
-      ],
+      "addon_only": true,
       "requires": [
         {
           "track": "oteryn:quest-progress/wayfarer_outfit_1",
@@ -722,9 +760,7 @@
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],
       "requires_premium": true,
-      "requires_outfits": [
-        "oteryn:outfit.wayfarer"
-      ],
+      "addon_only": true,
       "requires": [
         {
           "track": "oteryn:quest-progress/wayfarer_outfit_1",
@@ -778,9 +814,7 @@
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],
       "requires_premium": true,
-      "requires_outfits": [
-        "oteryn:outfit.wayfarer"
-      ],
+      "addon_only": true,
       "requires": [
         {
           "track": "oteryn:quest-progress/wayfarer_outfit",
@@ -829,9 +863,7 @@
         "oteryn:quest.the_spirit_will_get_you_quest"
       ],
       "requires_premium": true,
-      "requires_outfits": [
-        "oteryn:outfit.wayfarer"
-      ],
+      "addon_only": true,
       "requires": [
         {
           "track": "oteryn:quest-progress/wayfarer_outfit",

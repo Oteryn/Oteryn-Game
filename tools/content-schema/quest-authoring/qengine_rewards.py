@@ -128,6 +128,94 @@ def donor_inputs():
     return result
 
 
+def elane_gloves(inputs):
+    path = "data-global/npc/elane.lua"
+    raw = inputs[path]
+    source = raw.decode()
+    branches = []
+    for start, end in (
+        ("Free Account", "Premium account with addon"),
+        ("Premium account with addon", "If you don't have the addon"),
+    ):
+        block = source.split(f"-- {start}\n", 1)[1].split(f"-- {end}\n", 1)[0]
+        lines = re.findall(r'^\s*"([^"\n]+)",?$', block, re.MULTILINE)
+        item, count = map(
+            int, re.search(r"player:removeItem\((\d+), (\d+)\)", block).groups()
+        )
+        gold = int(re.search(r"player:addMoney\((\d+)\)", block)[1])
+        branches.append((lines, item, count, gold))
+    (free, item, count, gold), (owned, owned_item, owned_count, owned_gold) = branches
+    if (item, count, gold) != (owned_item, owned_count, owned_gold) or gold % 100:
+        raise ValueError("Elane's glove sales need one exact platinum payment")
+
+    offer_path = "content/quests/chosen-reward-offers.json"
+    callback_path = "content/quests/chosen-reward-callbacks.json"
+    offers = json.loads((ROOT / offer_path).read_bytes())
+    callbacks = json.loads((ROOT / callback_path).read_bytes())
+    key = "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves"
+    addon = next(row for row in callbacks["callbacks"] if row["key"] == key)
+    addon["addon_only"] = True
+    sale_topic = 9
+    sale = {
+        "key": key + "-sale",
+        "quest": addon["quest"],
+        "npc": addon["npc"],
+        "keywords": addon["keywords"],
+        "topic": sale_topic,
+        "next_topic": addon["next_topic"],
+        "storage": [],
+        "take": [{"item": f"oteryn:item.tibia.i{item}", "count": count}],
+        "give": {
+            "item": "oteryn:item.tibia.i3035",
+            "count": gold // 100,
+            "contents": [],
+        },
+        "outfit": None,
+        "achievement": None,
+        "repeatable": True,
+        "reply": [free[2]],
+        "failure_reply": [free[1]],
+        "sources": [f"crystal:{PIN}:{path}:172-194:sha256:{sha(raw)}"],
+    }
+    callbacks["callbacks"] = [
+        row for row in callbacks["callbacks"] if row["key"] != sale["key"]
+    ]
+    callbacks["callbacks"].insert(callbacks["callbacks"].index(addon) + 1, sale)
+    validate_callbacks({"schema": 1, "callbacks": [sale]})
+
+    def matches(row):
+        return row["npc"] == addon["npc"] and row["keywords"] == ["sniper gloves"]
+
+    offer = next(
+        row
+        for row in offers["offers"]
+        if matches(row) and row["next_topic"] == addon["topic"]
+    )
+    offers["offers"] = [row for row in offers["offers"] if not matches(row)]
+    offers["offers"].extend(
+        [
+            {
+                **offer,
+                "requires_premium": False,
+                "next_topic": sale_topic,
+                "storage": [],
+                "reply": [free[0]],
+            },
+            {
+                **offer,
+                "requires_premium": True,
+                "next_topic": sale_topic,
+                "reply": [owned[0]],
+                "storage": [
+                    {**offer["storage"][0], "minimum": 1, "maximum": 1, "set": 1}
+                ],
+            },
+            {**offer, "requires_premium": True},
+        ]
+    )
+    return {offer_path: encoded(offers), callback_path: encoded(callbacks)}
+
+
 def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, ROOT / path)
     module = importlib.util.module_from_spec(spec)
@@ -394,8 +482,14 @@ def build():
         topic=1,
         present=[(death_list, 1)],
     )
-    callbacks[-1]["reply"] = [
+    referral_lines = [
         line.strip()[1:-2] for line in arito_referral if line.strip().startswith('"')
+    ]
+    # The scimitar and water ritual has no native entrance handler yet.
+    callbacks[-1]["reply"] = [
+        referral_lines[0],
+        referral_lines[1].split(" Please go", 1)[0],
+        "The entrance is sealed. The nomads' ritual calls for a scimitar and water.",
     ]
     callbacks[-1]["sources"] = [
         f"crystal:{PIN}:{arito_path}:71-96:sha256:{sha(inputs[arito_path])}"
@@ -434,6 +528,11 @@ def build():
             [storage(frontier+'questline',27,27,preserve=True),
              storage(frontier+'warmaster_addon_'+str(bit),-1,1,0)],
             take=[(item,1)],outfit=('warmaster',bit),topic=60+bit-1)
+        callbacks[-1].update(
+            addon_only=True,
+            requires_outfits=["oteryn:outfit.warmaster"],
+            forbids_addons=[callbacks[-1]["outfit"]],
+        )
         offers.append({'npc':'oteryn:npc.cael','keywords':[word], 'topic':0,
             'next_topic':60+bit-1,'storage':callbacks[-1]['storage'],
             'reply':['Can I have that '+('serpent' if bit==1 else 'tribal')+' crest?']})
@@ -445,7 +544,7 @@ def build():
             [storage(track,-1,1,0)],take=[(item,1)],outfit=('wayfarer',bit),topic=bit)
         callbacks[-1]['requires_completed_quests'] = ['oteryn:quest.the_spirit_will_get_you_quest']
         callbacks[-1]["requires_premium"] = True
-        callbacks[-1]["requires_outfits"] = ["oteryn:outfit.wayfarer"]
+        callbacks[-1]["addon_only"] = True
         offers.append({'npc':'oteryn:npc.cranky_lizard_crone','keywords':words,
             'topic':0,'next_topic':bit,'storage':callbacks[-1]['storage'],
             'requires':[{'track':'oteryn:quest-progress/l6/spirit/stage','minimum':2,'maximum':2}],
@@ -1223,6 +1322,7 @@ def build():
         if field == "callbacks":
             validate_callbacks(document)
         generated[path] = encoded(document)
+    generated.update(elane_gloves(inputs))
     greetings = reward_greetings(callbacks + m39_callbacks + ready_callbacks + l13_callbacks + programme_callbacks + [arito_callback], inputs)
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     generated['content/quests/shared-quest-shops.json']=encoded({'schema':1,'shops':questl2_ready.djinn.shops(inputs,PIN)})

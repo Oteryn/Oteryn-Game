@@ -1579,6 +1579,41 @@
           "addons": 1,
           "sex": "female"
         }
+      ],
+      "addon_only": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "repeatable": true,
+      "reply": [
+        "Alright! Here is your money, thank you very much."
+      ],
+      "failure_reply": [
+        "Maybe another time."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:172-194:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
       ]
     },
     {

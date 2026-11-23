@@ -262,7 +262,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l8-hunter-leather" => &["leather"],
         "l8-hunter-wings" => &["chicken wing"],
         "l8-hunter-hat" => &["steel"],
-        "l8-hunter-gloves" | "elane-gloves" => &["sniper gloves"],
+        "l8-hunter-gloves" | "elane-gloves" | "elane-gloves-sale" => &["sniper gloves"],
         "l8-mage-male-wand-start" => &["angelina", "yes"],
         "l8-mage-male-wands" => &["wand"],
         "l8-mage-male-sulphur" => &["sulphur"],
@@ -1207,15 +1207,24 @@ pub(super) async fn exercise(
         return Box::pin(legacy_decaying(owner, admitted, h)).await;
     }
     let key = match name {
-        "qengine-rewards-l1-warmaster-tribal" => "l1-warmaster-tribal",
+        "qengine-rewards-l1-warmaster-tribal" | "qengine-rewards-l1-warmaster-tribal-owned" => {
+            "l1-warmaster-tribal"
+        }
         "qengine-rewards-l1-wayfarer-hat" => "l1-wayfarer-hat",
         "qengine-rewards-l1-yalaharian-base-palimuth"
         | "qengine-rewards-l1-yalaharian-base-palimuth-villain" => "l1-yalaharian-base-palimuth",
         "qengine-rewards-l1-yalaharian-base-yalahari" => "l1-yalaharian-base-yalahari",
         "qengine-rewards-l1-yalaharian-villain" => "l1-yalaharian-villain",
-        "qengine-rewards-l1-warmaster" => "l1-warmaster-crest",
-        "qengine-rewards-l1-wayfarer" => "l1-wayfarer-cape",
+        "qengine-rewards-l1-warmaster" | "qengine-rewards-l1-warmaster-owned" => {
+            "l1-warmaster-crest"
+        }
+        "qengine-rewards-l1-wayfarer"
+        | "qengine-rewards-l1-wayfarer-free"
+        | "qengine-rewards-l1-wayfarer-addon-only" => "l1-wayfarer-cape",
         "qengine-rewards-l1-yalaharian" => "l1-yalaharian-sage",
+        "qengine-rewards-elane-gloves-free" | "qengine-rewards-elane-gloves-completed" => {
+            "elane-gloves-sale"
+        }
         "qengine-rewards-pirate" => "pirate-sabre",
         "qengine-rewards-knight" => "knight-sword",
         "qengine-rewards-deepling" => "deepling-helmet",
@@ -1256,7 +1265,10 @@ pub(super) async fn exercise(
                 preserve: true,
             });
     }
-    if key.starts_with("l1-warmaster-") || key.starts_with("l1-wayfarer-") {
+    if key.starts_with("l1-warmaster-")
+        || key.starts_with("l1-wayfarer-")
+        || key == "elane-gloves-sale"
+    {
         // Keep the production catalogue so either addon and its completion branch
         // can be reached after the first exchange.
         let mut prerequisites = setup
@@ -1264,6 +1276,12 @@ pub(super) async fn exercise(
             .iter()
             .map(|state| (state.track.clone(), state.minimum))
             .collect::<Vec<_>>();
+        if name == "qengine-rewards-elane-gloves-completed" {
+            prerequisites.push((
+                "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove".into(),
+                1,
+            ));
+        }
         if setup
             .requires_completed_quests
             .iter()
@@ -1447,47 +1465,65 @@ pub(super) async fn exercise(
         into_bag(owner, admitted, *item.as_bytes(), *bag.as_bytes(), 8200).await?;
         held_evidence.push(item);
     }
-    if key.starts_with("l1-wayfarer-") {
-        let before = counts(h).await?;
-        let (refused, _, _) = wire_reward(owner, admitted, npc, &callback, false).await?;
-        assert_eq!(refused, NpcIntentDisposition::Rejected);
-        assert_eq!(counts(h).await?, before, "Spirit alone cannot award the base outfit");
-
-        // Arrange the entitlement awarded by Wrath for the positive addon case.
+    let only = name.ends_with("-addon-only");
+    let free = name == "qengine-rewards-l1-wayfarer-free";
+    let owned = name.ends_with("-owned");
+    if key.starts_with("l1-warmaster-") || (key.starts_with("l1-wayfarer-") && !only && !free) {
+        let outfit = callback.outfit.as_ref().ok_or("outfit")?;
+        let keys = [outfit.grant_key(0), outfit.grant_key(outfit.addons)];
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
             .map_err(|_| "fence")?
             .ok_or("fence")?;
-        let base = callback.outfit.as_ref().ok_or("Wayfarer addon")?.grant_key(0);
-        let occurrence = sqlx::types::Uuid::from_bytes([
-            0x91, 0x91, 0x91, 0x91, 0x91, 0x91, 0x81, 0x91,
-            0x91, 0x91, 0x91, 0x91, 0x91, 0x91, 0x91, 0x92,
-        ]);
-        sqlx::query(
-            "WITH receipt AS (
-                INSERT INTO game_account_appearance_unlock_receipts
-                    (grant_occurrence_id,account_id,unlock_key,content_revision,
-                     granting_character_id,source_kind,source_event_id)
-                SELECT $1,account_id,$2,'wayfarer-test',character_id,'quest',$3
-                FROM game_character_roots WHERE character_id=encode($4,'hex')::uuid
-                RETURNING account_id,unlock_key,grant_occurrence_id
-             )
-             INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id)
-             SELECT account_id,unlock_key,grant_occurrence_id FROM receipt",
-        )
-        .bind(occurrence)
-        .bind(base)
-        .bind(b"wayfarer-wardrobe".as_slice())
-        .bind(fence.character_id.as_bytes().as_slice())
-        .execute(&h.pool)
-        .await?;
+        for (index, key) in keys.iter().take(if owned { 2 } else { 1 }).enumerate() {
+            let event = format!("qengine-l1-existing-grant-{index}");
+            sqlx::query(
+                "WITH receipt AS (
+                    INSERT INTO game_account_appearance_unlock_receipts
+                        (grant_occurrence_id,account_id,unlock_key,content_revision,
+                         granting_character_id,source_kind,source_event_id)
+                    SELECT gen_random_uuid(),account_id,$1,$2,character_id,'quest',$3
+                    FROM game_character_roots WHERE character_id=encode($4,'hex')::uuid
+                    RETURNING account_id,unlock_key,grant_occurrence_id
+                 )
+                 INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id)
+                 SELECT account_id,unlock_key,grant_occurrence_id FROM receipt",
+            )
+            .bind(key)
+            .bind(oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE)
+            .bind(event.as_bytes())
+            .bind(fence.character_id.as_bytes().as_slice())
+            .execute(&h.pool)
+            .await?;
+        }
     }
     let original = counts(h).await?;
     let (disposition, catalogues, committed_command) =
-        wire_grant(owner, admitted, npc, &callback).await?;
+        wire_reward(owner, admitted, npc, &callback, !free && !only && !owned).await?;
     command = committed_command;
+    if free || owned {
+        assert_eq!(disposition, NpcIntentDisposition::Rejected);
+        assert_eq!(
+            counts(h).await?,
+            original,
+            "refusal keeps the carried input"
+        );
+        return Ok(());
+    }
     assert_eq!(disposition, NpcIntentDisposition::Ok);
+    if only {
+        let outfit = callback.outfit.as_ref().ok_or("outfit")?;
+        let unlocks: Vec<String> = sqlx::query_scalar(
+            "SELECT unlock_key FROM game_account_appearance_unlocks WHERE unlock_key = ANY($1)",
+        )
+        .bind([outfit.grant_key(0), outfit.grant_key(outfit.addons)].as_slice())
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(unlocks, vec![outfit.grant_key(outfit.addons)]);
+        assert_eq!(counts(h).await?.3, original.3 + 1);
+        return Ok(());
+    }
     if let Some(outfit) = &callback.outfit {
         assert!(
             catalogues.iter().any(|catalogue| catalogue
