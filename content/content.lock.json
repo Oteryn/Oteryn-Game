@@ -1,35 +1,35 @@
 {
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
-    "Ability": 7396,
-    "Behavior": 3147,
-    "Creature": 1865,
-    "Effect": 5800,
+    "Ability": 7421,
+    "Behavior": 3158,
+    "Creature": 1876,
+    "Effect": 5821,
     "Encounter": 108,
-    "Formula": 6129,
+    "Formula": 6152,
     "Loot": 40,
-    "Presentation": 3147
+    "Presentation": 3158
   },
   "editor_entry_counts": {
     "Item": 165,
     "Mount": 252
   },
   "family_counts": {
-    "Ability": 7396,
-    "Behavior": 3147,
+    "Ability": 7421,
+    "Behavior": 3158,
     "Charm": 25,
-    "Creature": 1865,
+    "Creature": 1876,
     "Dialogue": 836,
     "Document": 1609,
-    "Effect": 5800,
+    "Effect": 5821,
     "Encounter": 108,
     "Encounter.Raid": 240,
-    "Formula": 6129,
+    "Formula": 6152,
     "Item": 34123,
-    "Loot": 1292,
+    "Loot": 1300,
     "Mount": 252,
     "NPC": 1282,
-    "Presentation": 3147,
+    "Presentation": 3158,
     "Proficiency": 443,
     "Quest": 352,
     "RewardClaim": 346,
@@ -47,11 +47,11 @@
     "taxonomy": 12251
   },
   "legacy_blobs": {
-    "declarations": "8b1b9c5d9603f29a57c942283ab5721a0084c6d9",
+    "declarations": "355666534445016a5bbe15629e3d56b46487b6fe",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "307cf0a3d2c62e222a27ceab4f3b19af9f8b3edf",
-    "reference": "e8c4487697f321137afbd4b4962a7d0e202a4331",
-    "sources": "2cf0e78314dfab9278d37c5bb45e73d155c09eec"
+    "imports": "3c107159e0a4ae0438631147a63689e1aa8cadb9",
+    "reference": "fe2c46a03e89a8e5776f82c704ad6bfb26dc869e",
+    "sources": "c73fbcbe2afe3e706b84bcbe537fc45181c91457"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
@@ -89,7 +89,7 @@
   },
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
-    "Creature": 1865,
+    "Creature": 1882,
     "Encounter": 108,
     "Item": 476,
     "Mount": 252,
@@ -155,7 +155,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1877,
+          "record_count": 1888,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "f2bc8e4231a2e887514379b92a9cee1ad43bd1627dd6422cf01c8adc46fd6e3c"
+          "sha256": "a33f2119293621d6efc673c52f299c949aca6bf552e9bb647cf1213f34a3d70e"
         },
         {
           "creates_canonical_identities": false,
@@ -193,7 +193,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/creature-races.json",
-          "record_count": 1865,
+          "record_count": 1876,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_CREATURE_RACES/v1",
@@ -201,7 +201,7 @@
             "kind": "source_validator",
             "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
           },
-          "sha256": "56408cc9603e754fb97f48d5b324bd88d7ba18a94197caeb8533a464a2d8112d"
+          "sha256": "afbeddff2832788f256da0d94d92fd785bd98bad050f483e55393c11bdb9a501"
         }
       ],
       "Effect": [
@@ -234,7 +234,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6604,
+          "record_count": 6608,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +242,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "95c73f86507fbe599631b9e6a572a9bb5af9f43ce1206224d7d39fec017e6cf8"
+          "sha256": "c0942cfe6dd1226570721eaaac1ef3f862b8e01147d321376a3d37ffc6f04174"
         },
         {
           "creates_canonical_identities": false,
@@ -255,14 +255,14 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "4d2bf471ff0992dcc19ffd11e6ad42f691421a4521158dd9f7897473c39f566a"
+          "sha256": "ef80c9aef898558c2e81a5af72a8025a21deba6ffc5a2956a501599bebbfc4c6"
         }
       ],
       "Presentation": [
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/definitions/spell-native-profiles.json",
-          "record_count": 1875,
+          "record_count": 1886,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
@@ -270,7 +270,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
           },
-          "sha256": "b1fadd23d9641b7d437eb4e8da7cfc39638beec83b8e87b98ff4d79ef866315e"
+          "sha256": "76caa0283df9656ced1e86e4ffd670e74cc20a945a1912b0dfad3fa438d85800"
         },
         {
           "creates_canonical_identities": false,
@@ -301,7 +301,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/bindings/client-ids.json",
-          "record_count": 423,
+          "record_count": 424,
           "representation": "client_id_bindings",
           "runtime_activation": false,
           "schema": "OTERYN_PRESENTATION_CLIENT_IDS/v1",
@@ -309,7 +309,7 @@
             "kind": "source_validator",
             "path": "tools/content-schema/native-gameplay/test_presentation_bindings.py"
           },
-          "sha256": "fbc833e1c6b08b31f2e6c091283639c5d782bcdc658c2c2c58bb4fb64cbb68ff"
+          "sha256": "596b1ad32095ccbcddf3fa9433a2004d4ab7abe9e3ee575f3e1b1f3f45f0edfd"
         },
         {
           "creates_canonical_identities": false,

@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "seasonal-cake-creature-20261107-r1",
-  "content_lock_digest": "129a311f25dd07a1216d6285f84abbdaaa4e3ccde5d30c88bedc412d1f285d98",
+  "content_revision": "cyclopedia-creatures-crystal-201189f-r1",
+  "content_lock_digest": "f20a6a81768854d328b1127635cf8af1b984d882d51699144f02aacc363a4b1e",
   "min_runtime_version": "4",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:seasonal-cake-creature-20261107-r1/718ae3edc271e42a3c88c794de9079e0bdf21e77aee7ccdf75c51447f53a737a"
+  "provenance_summary": "lock:cyclopedia-creatures-crystal-201189f-r1/eac1b54cb9b843e70e8b82cf6926b0d99f4fce18ded7491012d9bae3b6c4bf6a"
 }

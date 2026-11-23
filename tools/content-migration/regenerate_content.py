@@ -119,6 +119,8 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/world-object-authoring/crystal_delta_ground.py", "--check"],
+    ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
@@ -1130,29 +1132,13 @@ def main() -> int:
     canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
-    repin_rust_inventory()
     run(["python3", "tools/content-migration/import_cyclopedia_global.py"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
-    # Native policies seal the complete regenerated creature root. Keep their
-    # bounded, independently reviewed source witnesses in the same generation.
     native = "tools/content-schema/native-gameplay/"
-    for name in (
-        "build_srx3_soul_war_witness.py",
-        "build_srx3_primal_witness.py",
-        "build_srx3_soul_war_attacks.py",
-        "build_srx3_omrafir_attacks.py",
-        "build_srx3_w01_prepare_death.py",
-    ):
-        run(["python3", native + name])
-    run(
-        [
-            "python3",
-            native + "build_srx3_soul_war_death_events.py",
-            "--refresh-native-pin",
-        ]
-    )
+    run(["python3", "tools/content-schema/world-object-authoring/crystal_delta_ground.py"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
+    repin_rust_inventory()
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])
     # Callback witnesses add authored props to the native index; rooms must pin that final index.
@@ -1211,6 +1197,22 @@ def main() -> int:
         [
             "python3",
             native + "build_srx3_rotten_death_events.py",
+            "--refresh-native-pin",
+        ]
+    )
+    # Rebuild the source witnesses from the final native Creature root.
+    for name in (
+        "build_srx3_soul_war_witness.py",
+        "build_srx3_primal_witness.py",
+        "build_srx3_soul_war_attacks.py",
+        "build_srx3_omrafir_attacks.py",
+        "build_srx3_w01_prepare_death.py",
+    ):
+        run(["python3", native + name])
+    run(
+        [
+            "python3",
+            native + "build_srx3_soul_war_death_events.py",
             "--refresh-native-pin",
         ]
     )

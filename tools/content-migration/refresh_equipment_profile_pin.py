@@ -6,6 +6,7 @@ import argparse
 import copy
 import importlib
 import first_dragon_item_profiles
+import imbuement_item_profiles
 import m01c_key_door_equipment_pin
 import qengine_reward_equipment_pin
 import json
@@ -60,6 +61,7 @@ def registered_source_document(root, document):
                           if row["production_definition"]["production_key"] in proven]}
     if keys(result) != proven:
         raise ValueError("source registration changed the qualified identity set")
+    imbuement_item_profiles.apply_crystal_audit(root, result, require_all=False)
     return result
 
 

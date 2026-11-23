@@ -1,0 +1,127 @@
+{
+  "records": [
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.ayana_the_crimson_curse",
+        "revision": "definition-r1"
+      },
+      "race": "undead",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/bosses/ayana_the_crimson_curse.lua",
+      "source_sha256": "9648712217cc1f3c1c47005314c135f969136d60b7e90cd4a1d05c9a64f85ec3"
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.common_beetle",
+        "revision": "definition-r1"
+      },
+      "race": "venom",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/vermins/common_beetle.lua",
+      "source_sha256": "ab7c5fb1ecf12e80d5f9bfab3d5929c64f2e631d8cb38d42c2cceb8d30921115"
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.cublarc_the_plunderer",
+        "revision": "definition-r1"
+      },
+      "race": "blood",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/bosses/cublarc_the_plunderer.lua",
+      "source_sha256": "3425a5c95ccd6b91ba4ac0592cfc8308ebcf7772b16ba688d3aee2d7de305e76"
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.enusat_the_onyx_wing",
+        "revision": "definition-r1"
+      },
+      "race": "blood",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/quests/kilmaresh/enusat_the_onyx_wing.lua",
+      "source_sha256": "de48270e477994412c746899dade4ffb5c3c0f3297fb938ebaaf91248d163f44"
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.gorga",
+        "revision": "definition-r1"
+      },
+      "race": "blood",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/bosses/gorga.lua",
+      "source_sha256": "739dfc13e98ec5450705952db0a58b79fdf6dd14cd926631deaadf98d06ed06a"
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.gralvalon",
+        "revision": "definition-r1"
+      },
+      "race": "undead",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/quests/no_rest_for_the_wicked/gralvalon.lua",
+      "source_sha256": "55a1ff66757795ba7af811c63f416ff298ccbab38353bac5a7d99b4d48260897"
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.grove_guardian",
+        "revision": "definition-r1"
+      },
+      "race": "venom",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/plants/grove_guardian.lua",
+      "source_sha256": "b240c449e5c94e59fbd3a3434960fa2d9be3cbedb70f2d3e8aa25b46e57fce3d"
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.herd_weevil",
+        "revision": "definition-r1"
+      },
+      "race": "venom",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/vermins/herd_weevil.lua",
+      "source_sha256": "6194b881a2a6418d146e641a3c74cc0e2d0042265a4f24a5e9f093d56bf93c46"
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.malvaroth",
+        "revision": "definition-r1"
+      },
+      "race": "undead",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/quests/no_rest_for_the_wicked/malvaroth.lua",
+      "source_sha256": "bf6b22cddceed5ea91943808110bf99aa4ce5b68202ed401da936fd8a0d3844b"
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.rootthing_cocoon",
+        "revision": "definition-r1"
+      },
+      "race": "venom",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/plants/rootthing_cocoon.lua",
+      "source_sha256": "6fe81010c5e45cb1d5fab33530d9caed5fca94626dbf5979edaa505c3a29e9b3"
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.twisterror",
+        "revision": "definition-r1"
+      },
+      "race": "undead",
+      "race_disposition": "explicit",
+      "source_path": "data-global/monster/quests/no_rest_for_the_wicked/twisterror.lua",
+      "source_sha256": "786d20bd2e069748a9e08b42c80907f8bd7b8c5028058724df6c0debdf240595"
+    }
+  ],
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+}

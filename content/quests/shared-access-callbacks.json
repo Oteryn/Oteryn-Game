@@ -651,7 +651,7 @@
       "failure_message": null,
       "requires_world_admission": true,
       "sources": [
-        "content/world/spawns/spawns-42000-43999.json#/records/110/declaration/points/3",
+        "content/world/spawns/spawns-42000-43999.json#/records/109/declaration/points/3",
         "content/world/placements/region-z12-x129-y123.b3",
         "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
       ],

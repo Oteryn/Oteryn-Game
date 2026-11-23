@@ -413,6 +413,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     generated = current_sources.outputs(root, generated)
     from compose_monster_current_sources import compose
     generated = compose(root, baseline, generated)
+    from crystal_spawn_creatures import admit as admit_spawn_creatures
+    from bind_monster_source_definitions import bind_definitions
+    generated = bind_definitions(root, admit_spawn_creatures(root, generated))
     import engenc2_fugue_profile
     engenc2_fugue_profile.admit(root, generated, spell_import.canonical_bytes)
     admit_overlay_profiles(root, generated)
@@ -694,8 +697,15 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     imbuement_item_profiles.complete_boots(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     # Later admitted creature overlays (for example forge eligibility) change
     # Creature roots. Bind executable closures only after those policies settle.
-    from bind_monster_source_definitions import bind_definitions
+    import cyclopedia_creatures
+    cyclopedia_creatures.apply(root, generated)
+    from build_creature_races import CREATURE_RACES, dumps, race_catalogue
+    generated[CREATURE_RACES.relative_to(ROOT).as_posix()] = dumps(race_catalogue(root)).encode()
     generated = bind_definitions(root, generated)
+    presentation_path = spell_import.PROVIDER_DESTINATIONS["presentation_profiles"]
+    manifest = json.loads(generated[NATIVE_MANIFEST])
+    manifest["presentation_profiles"]["sha256"] = hashlib.sha256(generated[presentation_path]).hexdigest()
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
     # W11 source callback outfits share the registered native appearance provider.
     import soul_war_appearance_profiles
     soul_war_appearance_profiles.admit(
@@ -730,6 +740,13 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     house_top_order = json.loads((root / house_decoration_actions.PROFILES).read_bytes())
     house_decoration_actions.apply_top_order(hard_items, house_top_order)
     item_detail_source_facts.apply(root, items, item_detail_weights)
+    # Qualify each audited Item in its owning provider, including mage hat in
+    # the starter fragment. SRX-1 updates then inherit the same base allowances.
+    starter_items = json.loads(generated[starting_loadout_profiles.FRAGMENT])
+    imbuement_item_profiles.apply_crystal_audit(root, items, starter_items)
+    native_manifest = json.loads(generated[NATIVE_MANIFEST])
+    starting_loadout_profiles.write_fragment(generated, native_manifest, starter_items["records"])
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.

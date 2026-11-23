@@ -8,7 +8,7 @@ import boss_conditional_item_reference as reference
 KEY='oteryn:item.tibia.i43666'
 ORDINAL=25377
 LEGACY_APPEND_ORDINAL=34117
-REFERENCE_COUNT=34117
+REFERENCE_COUNT=34123
 PATH='tools/content-schema/native-gameplay/elder-corpse-terminal-reference.json'
 PIN_PATH='tools/content-schema/native-gameplay/elder-corpse-terminal-reference-pin.json'
 PACKET='tools/content-schema/native-gameplay/candidate-bindings/elder-corpse-terminal-candidate.json'
@@ -124,19 +124,19 @@ def publish(cache,root,check=False):
     index_path=root/'content/items/index.json';index=json.loads(index_path.read_bytes())
     manifest_path=root/'content/manifest.json';manifest=json.loads(manifest_path.read_bytes())
     count=index['record_count'];old=index['shards'][-1];doc=json.loads((root/old).read_bytes())
-    if (count not in (REFERENCE_COUNT,REFERENCE_COUNT+1) or manifest['families']['Item']['records']!=count
+    if (count not in (REFERENCE_COUNT, LEGACY_APPEND_ORDINAL, LEGACY_APPEND_ORDINAL + 1) or manifest['families']['Item']['records']!=count
             or doc['shard']!={'count':count-34000,'end':count-1,'index':68,'start':34000}):
         raise ValueError('ELDER_TERMINAL_REFERENCE_NUMBER_GUARD')
     records=[row['definition'] for path in index['shards']
              for row in json.loads((root/path).read_bytes())['records']]
     if len(records)!=count:raise ValueError('ELDER_TERMINAL_REFERENCE_REGISTRY_COUNT')
     _retain_existing(records)
-    if count==REFERENCE_COUNT+1:
+    if count==LEGACY_APPEND_ORDINAL+1:
         if check:raise ValueError('ELDER_TERMINAL_OBSOLETE_APPEND_STILL_REGISTERED')
         if doc['records'][-1]!={'definition':reference.definition(KEY)}:
             raise ValueError('ELDER_TERMINAL_OBSOLETE_APPEND_CHANGED')
         doc['records'].pop();doc['shard']['count']-=1;doc['shard']['end']-=1
-        new=f'content/items/definitions/items-34000-{REFERENCE_COUNT-1}.json'
+        new=f'content/items/definitions/items-34000-{LEGACY_APPEND_ORDINAL-1}.json'
         index['record_count']-=1;index['shards'][-1]=new;manifest['families']['Item']['records']-=1
         matching=[row for row in manifest['managed_files'] if row['path']==old]
         if len(matching)!=1:raise ValueError('ELDER_TERMINAL_REFERENCE_MANIFEST')

@@ -577,6 +577,19 @@ def test_normal_repin_updates_raw_extent_without_rewriting_history_checks() -> N
         )
 
 
+def test_crystal_spawn_source_receipts_bind_schema_valid_packets() -> None:
+    import crystal_spawn_creatures as spawn
+
+    spawn.validate_source_bundles(rc.ROOT)
+    raw = (rc.ROOT / spawn.PATH).read_bytes()
+    try:
+        spawn.verify_source_receipts(rc.ROOT, [(spawn.REVISION, spawn.BATCH, raw + b" ")])
+    except ValueError as error:
+        assert spawn.BATCH in str(error)
+    else:
+        raise AssertionError("changed Crystal Creature capture passed the receipt")
+
+
 def test_source_cohort_includes_installed_successors() -> None:
     installed = []
 
@@ -739,8 +752,11 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         ("project-travel-routes",),
         ("canonicalize-world",),
         ("source-cohort",),
-        ("repin-world",),
         ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
+        ("python3", "tools/content-schema/world-object-authoring/crystal_delta_ground.py"),
+        ("python3", "tools/content-schema/world-object-authoring/activity_static.py"),
+        ("python3", "tools/content-schema/world-authoring/m01c_key_doors.py"),
+        ("repin-world",),
     ]
     events = []
     assert full_generation_trace(events, lambda *_: None) == 0
@@ -1587,6 +1603,7 @@ def main() -> None:
         test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_checks,
         test_imbuement_candidate_precedes_content_consumers_and_refusal_stops_them,
         test_reward_variant_packet_follows_final_claim_item_and_metadata_inputs,
+        test_crystal_spawn_source_receipts_bind_schema_valid_packets,
         test_source_cohort_includes_installed_successors,
         test_normal_repin_updates_raw_extent_without_rewriting_history_checks,
         test_source_cohort_extent_separates_npc_profiles_and_tracks_successors,

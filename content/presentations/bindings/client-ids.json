@@ -286,6 +286,13 @@
       "source_member": "CONST_ME_DIVINE_DAZZLE"
     },
     {
+      "client_id": 246,
+      "key": "canary.appearance:effect/divine_empowerment",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_DIVINE_EMPOWERMENT"
+    },
+    {
       "client_id": 245,
       "key": "canary.appearance:effect/divine_grenade",
       "kind": "effect",

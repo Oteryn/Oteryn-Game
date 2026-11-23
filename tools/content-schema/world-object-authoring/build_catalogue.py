@@ -482,7 +482,12 @@ def outputs(
         ]
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
-        index["notes"] += engnpc2_ram_world.NOTE
+        import crystal_delta_ground
+
+        files[crystal_delta_ground.SHARD] = crystal_delta_ground.outputs()[
+            crystal_delta_ground.SHARD
+        ]
+        index["notes"] += engnpc2_ram_world.NOTE + crystal_delta_ground.MARKER_NOTE
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
@@ -534,6 +539,7 @@ def official_shards():
 
 def qualified_shards():
     import activity_static
+    import crystal_delta_ground
     import feroxa_static
 
     return {
@@ -549,6 +555,7 @@ def qualified_shards():
             "content/world/terrain/terrain-08750-08750.json",
             "content/world/objects/objects-12917-12931.json",
             *activity_static.SHARDS.values(),
+            crystal_delta_ground.SHARD,
             feroxa_static.SHARD,
         )
         if (path := ROOT / relative).exists()

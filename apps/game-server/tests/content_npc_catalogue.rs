@@ -26,11 +26,11 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     // The source tree digest is refreshed by regenerate_content.py with the package pins.
     assert_eq!(
         catalogue.project_revision(),
-        "seasonal-cake-creature-20261107-r1"
+        "cyclopedia-creatures-crystal-201189f-r1"
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "ced29aa4c3ccda9a03e21ff8621c03cbff65c691d16758677f20dbe62910a959"
+        "cd52bee5f7b76fe81784e90de3e2717bea7078ef579e991a2b75d9cf8b914e74"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);

@@ -94,7 +94,11 @@ def refresh_bestiary_inventory(root: Path) -> None:
     count = len(records)
     if count != index["record_count"]:
         raise RuntimeError("BESTIARY_SHARD_COUNT")
+    binding_count = sum(len(record.get("source_bindings", [])) for record in records)
+    if binding_count != index["attached_source_bindings"]:
+        raise RuntimeError("BESTIARY_BINDING_COUNT")
     bestiary_count = 0
+    boss_counts = Counter()
     for record in records:
         authoring = record.get("authoring")
         if (not isinstance(authoring, dict) or authoring.get("kind") != "Creature"
@@ -105,15 +109,23 @@ def refresh_bestiary_inventory(root: Path) -> None:
             if not isinstance(bestiary, dict):
                 raise RuntimeError("BESTIARY_PROFILE_SHAPE")
             bestiary_count += 1
+        profile = authoring["profile"]
+        boss = profile.get("details", {}).get("bosstiary") or profile.get("bosstiary")
+        if boss is not None:
+            boss_counts[boss["category"]] += 1
     body = f"const SHARDS: [(&str, &[u8]); {len(shards)}] = [\n"
     for path in shards:
         body += f'    (\n        "{path}",\n        include_bytes!(\n            "../../../../../../{path}"\n        ),\n    ),\n'
-    body += f"];\nconst CREATURE_COUNT: usize = {count:_};\nconst BESTIARY_COUNT: usize = {bestiary_count:_};"
+    body += f"];\nconst CREATURE_COUNT: usize = {count:_};\nconst CREATURE_BINDING_COUNT: usize = {binding_count:_};\nconst BESTIARY_COUNT: usize = {bestiary_count:_};"
     target = root / "crates/gameplay/content/src/content/project/bestiary.rs"
     text = target.read_text()
     replacements = (
-        (r"const SHARDS: \[\(&str, &\[u8\]\); [0-9]+\] = \[[\s\S]*?\n\];\nconst CREATURE_COUNT: usize = [0-9_]+;\nconst BESTIARY_COUNT: usize = [0-9_]+;", body),
+        (r"const SHARDS: \[\(&str, &\[u8\]\); [0-9]+\] = \[[\s\S]*?\n\];\nconst CREATURE_COUNT: usize = [0-9_]+;\nconst CREATURE_BINDING_COUNT: usize = [0-9_]+;\nconst BESTIARY_COUNT: usize = [0-9_]+;", body),
         (r"assert_eq!\(catalogue\.bestiary\.len\(\), [0-9_]+\);", f"assert_eq!(catalogue.bestiary.len(), {bestiary_count:_});"),
+        (r"assert_eq!\(catalogue\.bosstiary\.len\(\), [0-9_]+\);",
+         f"assert_eq!(catalogue.bosstiary.len(), {sum(boss_counts.values()):_});"),
+        *((rf'\("{category}", [0-9_]+\)', f'("{category}", {boss_counts[category]:_})')
+          for category in ("bane", "archfoe", "nemesis")),
         (r"assert_eq!\(limits\(\)\.max_reference_records, [0-9_]+\);", f"assert_eq!(limits().max_reference_records, {count:_});"),
         (r"fn canonical_projection_retains_all_[0-9]+_admitted_bestiary_blocks", f"fn canonical_projection_retains_all_{bestiary_count}_admitted_bestiary_blocks"),
     )
@@ -141,11 +153,11 @@ def refresh_bestiary_inventory(root: Path) -> None:
         raise RuntimeError("BESTIARY_VALIDATOR_GUARD_SEAM")
     golden = root / "tools/content-migration/test_world_project_v2_to_tree.py"
     golden_text = golden.read_text()
-    for pattern in (
-        r'''(?m)^([ \t]*assert family_counts\[(?:'Creature'|"Creature")\] == )[0-9_]+$''',
-        r'(?m)^([ \t]*assert lock\["source_binding_counts"\] == \{[^{}]*?"Creature":\s*)[0-9_]+',
+    for pattern, expected in (
+        (r'''(?m)^([ \t]*assert family_counts\[(?:'Creature'|"Creature")\] == )[0-9_]+$''', count),
+        (r'(?m)^([ \t]*assert lock\["source_binding_counts"\] == \{[^{}]*?"Creature":\s*)[0-9_]+', binding_count),
     ):
-        golden_text, guarded = re.subn(pattern, lambda match: match.group(1) + f"{count:_}", golden_text)
+        golden_text, guarded = re.subn(pattern, lambda match: match.group(1) + f"{expected:_}", golden_text)
         if guarded != 1:
             raise RuntimeError("BESTIARY_CORPUS_GOLDEN_SEAM")
     charm = root / "crates/gameplay/dispatch/src/gameplay_transport/charm_progression_tests.rs"
@@ -872,6 +884,9 @@ def main(*, items_only: bool = False) -> int:
                     "--refresh-item-keys"], cwd=ROOT, check=True)
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
+    # The model hashes the spawn corpus, so compile it against the new Creature shards first.
+    subprocess.run([sys.executable, str(ROOT / "tools/world-bundle-compiler/convert_spawns.py")],
+                   cwd=ROOT, check=True)
     import m42_cooking_canonical
     m42_cooking_canonical.refresh(ROOT)
     import prey_difficulty

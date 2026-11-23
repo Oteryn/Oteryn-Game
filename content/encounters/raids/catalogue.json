@@ -27845,7 +27845,6 @@
         }
       ],
       "inactive_reasons": [
-        "creature_unbound:Cublarc The Plunderer",
         "global_broadcast_sequence_conflict:oteryn:raid.zao_raids.orcs_raid_on_zzaion"
       ],
       "key": "raid:farmine.zulazzathecorruptor",
@@ -35511,10 +35510,10 @@
         "kind": "until_reset"
       },
       "inactive_reasons": [
-        "creature_unbound:Gorga"
+        "global_regular_spawn_has_no_public_raid"
       ],
       "key": "raid:porthope.gorga",
-      "kind": "area",
+      "kind": "boss",
       "name": "porthope.gorga",
       "schedule": {
         "interval_s": 86400,
@@ -35588,7 +35587,7 @@
                     "transform_source": "tools/world-bundle-compiler/convert_spawns.py:88-104"
                   },
                   "area_anchor": "raid-anchor:32867_32829_1-32867_32829_1",
-                  "boss": false,
+                  "boss": true,
                   "boss_source": null,
                   "creature": "oteryn:creature.gorga",
                   "source": {
@@ -50641,11 +50640,11 @@
   "totals": {
     "area": {
       "active": 34,
-      "total": 102
+      "total": 101
     },
     "boss": {
       "active": 70,
-      "total": 86
+      "total": 87
     },
     "calendar": {
       "active": 2,

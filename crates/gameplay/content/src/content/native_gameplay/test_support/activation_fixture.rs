@@ -593,7 +593,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     );
     assert_eq!(
         (missing, inadmissible, inadmissible_loot, admitted.len()),
-        (52, 261, 38, 38)
+        (52, 264, 38, 40)
     );
     assert_eq!(
         admitted,
@@ -613,6 +613,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.enraged_arbaziloth",
             "oteryn:creature.eradicator",
             "oteryn:creature.eradicator2",
+            "oteryn:creature.gorga",
+            "oteryn:creature.gorgo",
             "oteryn:creature.goshnar_s_cruelty",
             "oteryn:creature.goshnar_s_greed",
             "oteryn:creature.goshnar_s_hatred",
@@ -686,7 +688,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_weakened_count",
         ]
     );
-    assert_eq!(bosses.len(), 389);
+    assert_eq!(bosses.len(), 394);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source
         .policies()

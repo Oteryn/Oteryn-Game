@@ -73,11 +73,48 @@ def creature_records():
         yield from json.loads((ROOT / shard).read_bytes())['records']
 
 
+def reviewed_race_records(root):
+    packet = json.loads((root / 'imports/crystalserver/facts/creature-races-201189f8.json').read_bytes())
+    if (packet['repository'], packet['revision']) != ('zimbadev/crystalserver', CAKE_REVISION):
+        raise ValueError('Crystal Creature race authority changed')
+    records = {
+        row['identity']['key']: {
+            'creature': row['identity'], 'race': row['race'], 'disposition': row['race_disposition'],
+            'source': {'repository': packet['repository'], 'path': row['source_path'],
+                       'sha256': row['source_sha256']},
+        }
+        for row in packet['records']
+    }
+    if len(records) != len(packet['records']):
+        raise ValueError('duplicate Crystal Creature race facts')
+    return records
+
+
+def race_catalogue(root):
+    races = json.loads((root / CREATURE_RACES.relative_to(ROOT)).read_bytes())
+    records = {row['creature']['key']: row for row in races['records']}
+    records.update(reviewed_race_records(root))
+    races['records'] = [records[key] for key in sorted(records)]
+    races['record_count'] = len(records)
+    return races
+
+
 def build(checkouts):
+    reviewed = reviewed_race_records(ROOT)
     records = []
     for record in creature_records():
         identity = record['definition']['identity']
         bindings = [b for b in record['source_bindings'] if b['identity_namespace'] in SOURCES]
+        current = reviewed.pop(identity["key"], None)
+        if current is not None:
+            if not any(binding['identity_namespace'] == 'crystalserver/monster-file'
+                       and binding['target'] == current['creature']
+                       and binding['external_id'] == current['source']['path']
+                       and binding['source_revision'].endswith(CAKE_REVISION)
+                       for binding in bindings):
+                raise ValueError('missing reviewed monster file for ' + identity['key'])
+            records.append(current)
+            continue
         if len(bindings) > 1:
             raise ValueError('more than one monster file for ' + identity['key'])
         if not bindings:
@@ -87,14 +124,23 @@ def build(checkouts):
         binding = bindings[0]
         repository, revision, path_of = SOURCES[binding['identity_namespace']]
         path = path_of(binding['external_id'])
-        revision = binding_revision(binding, identity, revision)
+        source_revision = binding_revision(binding, identity, revision)
+        # The workflow fetches only the legacy Crystal pin. The Cake blob is
+        # byte-identical at both pins, as verified by its reviewed source hash.
         blob = subprocess.check_output(['git', '-C', str(checkouts[repository]), 'show',
                                         revision + ':' + path])
+        if source_revision == CAKE_REVISION:
+            cake = json.loads((Path(__file__).parent / 'cake-creature-admission.json').read_bytes())
+            expected, = (row['sha256'] for row in cake['sources'] if row['path'] == CAKE_PATH)
+            if cake['crystal_commit'] != source_revision or hashlib.sha256(blob).hexdigest() != expected:
+                raise ValueError('legacy Cake monster blob differs from the reviewed successor')
         race, disposition = source_race(blob.decode())
         records.append({'creature': identity, 'race': race, 'disposition': disposition,
                         'source': {'repository': repository, 'path': path,
                                    'sha256': hashlib.sha256(blob).hexdigest(),
-                                   **({'revision': revision} if revision == CAKE_REVISION else {})}})
+                                   **({'revision': source_revision} if source_revision == CAKE_REVISION else {})}})
+    if reviewed:
+        raise ValueError('unused reviewed monster files: ' + repr(sorted(reviewed)))
     records.sort(key=lambda r: r['creature']['key'])
     return {
         'schema': 'OTERYN_CREATURE_RACES/v1',

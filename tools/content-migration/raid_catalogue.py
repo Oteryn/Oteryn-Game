@@ -520,6 +520,8 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
             reconcile_global(record, wiki[identity])
         if key == "raid:abdendriel.chayenne":
             record["inactive_reasons"].append("global_raid_membership_unproven:donor_chayenne_has_no_archived_global_identity")
+        if key == "raid:porthope.gorga":
+            record["inactive_reasons"].append("global_regular_spawn_has_no_public_raid")
         qualify(record, creatures, placements)
         records.append(record)
     for key, observed in sorted(wiki.items()):

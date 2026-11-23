@@ -18,6 +18,17 @@ FRAGMENT = 'content/items/definitions/starting-loadout-profiles.json'
 APPEARANCES_SHA256 = 'aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50'
 
 
+def write_fragment(generated, manifest, records):
+    raw = ('{\n  "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",\n  "records": [\n'
+           + ',\n'.join('    ' + json.dumps(row, sort_keys=True, separators=(',', ':')) for row in records)
+           + '\n  ]\n}\n').encode()
+    generated[FRAGMENT] = raw
+    manifest['starting_loadout_item_profiles'] = {
+        'path': 'items/definitions/starting-loadout-profiles.json',
+        'sha256': hashlib.sha256(raw).hexdigest(),
+    }
+
+
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     sys.path.insert(0, str(root / 'tools/content-schema/native-gameplay'))
     import build_source_item_profiles as native
@@ -79,20 +90,12 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             previous['semantics'][group] = merge_fact(old, fact, f'{key}/{group}')
     # Separate providers must never repeat an identity. The legacy provider
     # retains existing owners; only missing source-derived records enter this one.
-    records = sorted(additions, key=order)
-    raw = ('{\n  "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",\n  "records": [\n'
-           + ',\n'.join('    ' + json.dumps(row, sort_keys=True, separators=(',', ':')) for row in records)
-           + '\n  ]\n}\n').encode()
     # Publish only after every overlap has passed identity and known-fact checks.
-    generated[FRAGMENT] = raw
     profile_raw = encode_native_profile(document)
     if additions != bound:
         generated[profile_path] = profile_raw
     manifest = json.loads(generated[manifest_path])
     if additions != bound:
         manifest['item_profiles']['sha256'] = hashlib.sha256(profile_raw).hexdigest()
-    manifest['starting_loadout_item_profiles'] = {
-        'path': 'items/definitions/starting-loadout-profiles.json',
-        'sha256': hashlib.sha256(raw).hexdigest(),
-    }
+    write_fragment(generated, manifest, sorted(additions, key=order))
     generated[manifest_path] = canonical(manifest)

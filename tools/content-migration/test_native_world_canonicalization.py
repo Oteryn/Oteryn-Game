@@ -264,6 +264,36 @@ class NativeWorldCompletion(unittest.TestCase):
             regenerate.main()
         repin.assert_not_called()
 
+    def test_staged_admissions_precede_writer_and_do_not_rewrite_checkout(self):
+        import crystal_spawn_creatures as spawn
+
+        self.write(self.repo / spawn.PATH, b"fixture")
+        paths = [
+            "crates/gameplay/content/src/content/npc_catalogue.rs",
+            regenerate.PIN_PATH,
+            "apps/game-server/tests/content_npc_catalogue.rs",
+        ]
+        for path in paths:
+            self.write(self.repo / path, b"keep checkout untouched")
+        def native(command, **kwargs):
+            staged = Path(command[command.index("--input-root") + 1])
+            install_spawn.assert_called_once_with(self.repo, staged)
+            install_buddel.assert_called_once_with(self.repo, staged)
+            project_routes.assert_called_once_with(self.repo, staged)
+            self.native_output(command, **kwargs)
+            raise subprocess.CalledProcessError(1, command)
+
+        with (
+            patch.object(spawn, "install") as install_spawn,
+            patch("buddel_travel.install_buddel") as install_buddel,
+            patch("travel_route_corrections.project_routes") as project_routes,
+            patch.object(canonical.subprocess, "run", side_effect=native),
+        ):
+            with self.assertRaises(subprocess.CalledProcessError):
+                canonical.complete_world_project(self.repo, self.world, include_buddel=True)
+        self.assertEqual(canonical.read_documents(self.world), self.original)
+        for path in paths:
+            self.assertEqual((self.repo / path).read_bytes(), b"keep checkout untouched")
     def test_missing_extra_or_changed_unowned_output_refuses_every_replacement(self):
         def missing(output):
             (output / "project.json").unlink()
