@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RestartParams",
+  "type": "object",
+  "properties": {
+    "countdown_seconds": {
+      "$ref": "#/$defs/CountdownSeconds"
+    },
+    "preview_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "countdown_seconds"
+  ],
+  "$defs": {
+    "CountdownSeconds": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 3600,
+      "minimum": 1
+    }
+  }
+}

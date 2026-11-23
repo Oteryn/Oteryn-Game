@@ -97,6 +97,12 @@
     "signature"
   ],
   "$defs": {
+    "ActiveState": {
+      "type": "string",
+      "enum": [
+        "active"
+      ]
+    },
     "Agent": {
       "type": "object",
       "properties": {
@@ -146,6 +152,88 @@
         "agents"
       ]
     },
+    "Alert": {
+      "type": "object",
+      "properties": {
+        "acknowledged_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "alert_id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/AlertKind"
+        },
+        "node_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "opened_at": {
+          "type": "string"
+        },
+        "world_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "alert_id",
+        "kind",
+        "opened_at"
+      ]
+    },
+    "AlertAckResult": {
+      "type": "object",
+      "properties": {
+        "acknowledged_at": {
+          "type": "string"
+        },
+        "alert_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "alert_id",
+        "acknowledged_at"
+      ]
+    },
+    "AlertKind": {
+      "type": "string",
+      "enum": [
+        "node_down",
+        "lag",
+        "disk",
+        "backup_age",
+        "error_spike"
+      ]
+    },
+    "AlertsResult": {
+      "type": "object",
+      "properties": {
+        "alerts": {
+          "$ref": "#/$defs/PageRows"
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "alerts"
+      ]
+    },
     "AnalyticsCatalog": {
       "type": "object",
       "properties": {
@@ -181,6 +269,120 @@
       "required": [
         "query_id",
         "metric_revision"
+      ]
+    },
+    "AnalyticsQueryResult": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GoldSourcesSinksResult"
+        },
+        {
+          "$ref": "#/$defs/GoldSupplyResult"
+        },
+        {
+          "$ref": "#/$defs/ItemSupplyByTypeResult"
+        },
+        {
+          "$ref": "#/$defs/MarketPriceSeriesResult"
+        },
+        {
+          "$ref": "#/$defs/MarketVolumeResult"
+        },
+        {
+          "$ref": "#/$defs/NpcTradeFlowResult"
+        },
+        {
+          "$ref": "#/$defs/TopWealthResult"
+        }
+      ]
+    },
+    "AnalyticsRows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/GoldFlowRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows2": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/GoldSupplyRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows3": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ItemSupplyRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows4": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MarketPriceRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows5": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MarketVolumeRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows6": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/NpcTradeRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows7": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/WealthRow"
+      },
+      "maxItems": 10000
+    },
+    "AnalyticsRows8": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MetricPoint"
+      },
+      "maxItems": 10000
+    },
+    "BanAccountProfile": {
+      "type": "string",
+      "enum": [
+        "ban_account"
+      ]
+    },
+    "BanCharacterProfile": {
+      "type": "string",
+      "enum": [
+        "ban_character"
+      ]
+    },
+    "BanProfile": {
+      "type": "string",
+      "enum": [
+        "ban_character",
+        "ban_account"
+      ]
+    },
+    "BroadcastResult": {
+      "type": "object",
+      "properties": {
+        "recipients": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "recipients"
       ]
     },
     "Character": {
@@ -262,6 +464,15 @@
         "last_logins"
       ]
     },
+    "Completeness": {
+      "type": "string",
+      "enum": [
+        "PROVEN_COMPLETE_FOR_DECLARED_DURABLE_SCOPE",
+        "NO_KNOWN_GAP_BEST_EFFORT",
+        "PARTIAL",
+        "UNKNOWN"
+      ]
+    },
     "DatabaseStatus": {
       "type": "object",
       "properties": {
@@ -316,6 +527,157 @@
         "cache_hit_ratio"
       ]
     },
+    "Decimal": {
+      "description": "Exact nonnegative amount or count, including values outside JSON's safe integer range.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "DecisionRevision": {
+      "type": "integer",
+      "format": "uint64",
+      "maximum": 9007199254740991,
+      "minimum": 1
+    },
+    "DiagnosticLine": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticToken"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "channel": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticToken"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticToken"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event": {
+          "$ref": "#/$defs/DiagnosticToken"
+        },
+        "level": {
+          "$ref": "#/$defs/LogLevel"
+        },
+        "module": {
+          "$ref": "#/$defs/DiagnosticToken"
+        },
+        "process": {
+          "$ref": "#/$defs/DiagnosticToken"
+        },
+        "ts": {
+          "$ref": "#/$defs/UnixMillis"
+        },
+        "wire": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "world": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticToken"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "process",
+        "ts",
+        "level",
+        "module",
+        "event"
+      ]
+    },
+    "DiagnosticToken": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:/+-]+$"
+    },
+    "DrainResult": {
+      "type": "object",
+      "properties": {
+        "admission_closed": {
+          "type": "boolean"
+        },
+        "gameplay_sealed": {
+          "type": "boolean"
+        },
+        "sessions_remaining": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "admission_closed",
+        "gameplay_sealed",
+        "sessions_remaining"
+      ]
+    },
+    "EconomyContext": {
+      "type": "object",
+      "properties": {
+        "active_characters": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_revision": {
+          "type": "string"
+        },
+        "ruleset_revision": {
+          "type": "string"
+        },
+        "world_age_days": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "world_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "world_id",
+        "world_age_days",
+        "ruleset_revision",
+        "content_revision"
+      ]
+    },
     "Effect": {
       "type": "object",
       "properties": {
@@ -343,6 +705,10 @@
         "aggregate",
         "id"
       ]
+    },
+    "EnforcementId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
     },
     "ErrorCode": {
       "type": "string",
@@ -385,6 +751,210 @@
         "code",
         "message",
         "retryable"
+      ]
+    },
+    "GoldFlowRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "burned_gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "minted_gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "source",
+        "minted_gold",
+        "burned_gold"
+      ]
+    },
+    "GoldSourcesSinksFilters": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "GoldSourcesSinksId": {
+      "type": "string",
+      "enum": [
+        "gold_sources_sinks"
+      ]
+    },
+    "GoldSourcesSinksParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/GoldSourcesSinksFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/GoldSourcesSinksId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "GoldSourcesSinksResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/GoldSourcesSinksParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/GoldSourcesSinksId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "GoldSupplyFilters": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "GoldSupplyId": {
+      "type": "string",
+      "enum": [
+        "gold_supply"
+      ]
+    },
+    "GoldSupplyParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/GoldSupplyFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/GoldSupplyId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "GoldSupplyResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/GoldSupplyParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/GoldSupplyId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows2"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "GoldSupplyRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "gold": {
+          "$ref": "#/$defs/Decimal"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "gold"
+      ]
+    },
+    "Grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day"
       ]
     },
     "Inventory": {
@@ -438,6 +1008,124 @@
         "type_id",
         "count",
         "location"
+      ]
+    },
+    "ItemSupplyByTypeFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "ItemSupplyByTypeId": {
+      "type": "string",
+      "enum": [
+        "item_supply_by_type"
+      ]
+    },
+    "ItemSupplyByTypeParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/ItemSupplyByTypeFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/ItemSupplyByTypeId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "ItemSupplyByTypeResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/ItemSupplyByTypeParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/ItemSupplyByTypeId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows3"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "ItemSupplyRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "quantity": {
+          "$ref": "#/$defs/Decimal"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "item_type_id",
+        "quantity"
+      ]
+    },
+    "KickResult": {
+      "type": "object",
+      "properties": {
+        "fenced_session_generation": {
+          "$ref": "#/$defs/SessionGeneration"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "fenced_session_generation"
       ]
     },
     "LedgerEntry": {
@@ -519,6 +1207,322 @@
         "entries"
       ]
     },
+    "LogLevel": {
+      "type": "string",
+      "enum": [
+        "error",
+        "warn",
+        "info",
+        "debug"
+      ]
+    },
+    "LogLines": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/DiagnosticLine"
+      },
+      "maxItems": 2000
+    },
+    "LogsResult": {
+      "type": "object",
+      "properties": {
+        "lines": {
+          "$ref": "#/$defs/LogLines"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "lines"
+      ]
+    },
+    "MarketPriceRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "max_unit_price_gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "median_unit_price_gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "min_unit_price_gold": {
+          "$ref": "#/$defs/Decimal"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "item_type_id",
+        "min_unit_price_gold",
+        "median_unit_price_gold",
+        "max_unit_price_gold"
+      ]
+    },
+    "MarketPriceSeriesFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "item_type_id"
+      ]
+    },
+    "MarketPriceSeriesId": {
+      "type": "string",
+      "enum": [
+        "market_price_series"
+      ]
+    },
+    "MarketPriceSeriesParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/MarketPriceSeriesFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketPriceSeriesId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "MarketPriceSeriesResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/MarketPriceSeriesParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketPriceSeriesId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows4"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "MarketVolumeFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "MarketVolumeId": {
+      "type": "string",
+      "enum": [
+        "market_volume"
+      ]
+    },
+    "MarketVolumeParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/MarketVolumeFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketVolumeId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "MarketVolumeResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/MarketVolumeParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/MarketVolumeId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows5"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "MarketVolumeRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "gold_volume": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "quantity": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "trade_count": {
+          "$ref": "#/$defs/Decimal"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "item_type_id",
+        "trade_count",
+        "quantity",
+        "gold_volume"
+      ]
+    },
+    "MessageResult": {
+      "type": "object",
+      "properties": {
+        "delivered": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "delivered"
+      ]
+    },
+    "Metric": {
+      "type": "string",
+      "enum": [
+        "tick_time_ms",
+        "players_online",
+        "cpu_percent",
+        "memory_bytes",
+        "disk_used_bytes",
+        "pg_pool_wait_ms",
+        "queue_depth",
+        "error_rate_per_second"
+      ]
+    },
+    "MetricPoint": {
+      "type": "object",
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "at"
+      ]
+    },
+    "MetricsResult": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "$ref": "#/$defs/Metric"
+        },
+        "points": {
+          "$ref": "#/$defs/AnalyticsRows8"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "metric",
+        "points"
+      ]
+    },
     "Migration": {
       "type": "object",
       "properties": {
@@ -562,6 +1566,29 @@
       "additionalProperties": false,
       "required": [
         "migrations"
+      ]
+    },
+    "MotdResult": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "$ref": "#/$defs/MotdText"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "text"
+      ]
+    },
+    "MotdText": {
+      "type": "string",
+      "maxLength": 255,
+      "minLength": 0
+    },
+    "MuteProfile": {
+      "type": "string",
+      "enum": [
+        "mute"
       ]
     },
     "Node": {
@@ -631,6 +1658,146 @@
         "nodes"
       ]
     },
+    "NotationResult": {
+      "type": "object",
+      "properties": {
+        "notation_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "notation_id"
+      ]
+    },
+    "NpcTradeFlowFilters": {
+      "type": "object",
+      "properties": {
+        "item_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "npc_type_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "NpcTradeFlowId": {
+      "type": "string",
+      "enum": [
+        "npc_trade_flow"
+      ]
+    },
+    "NpcTradeFlowParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/NpcTradeFlowFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/NpcTradeFlowId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "NpcTradeFlowResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/NpcTradeFlowParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/NpcTradeFlowId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows6"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "NpcTradeRow": {
+      "type": "object",
+      "properties": {
+        "bucket_start": {
+          "type": "string"
+        },
+        "gold_paid_to_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "gold_received_from_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "item_type_id": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "items_bought_from_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "items_sold_to_npc": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "npc_type_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket_start",
+        "npc_type_id",
+        "item_type_id",
+        "items_bought_from_npc",
+        "items_sold_to_npc",
+        "gold_paid_to_npc",
+        "gold_received_from_npc"
+      ]
+    },
     "OperationResult": {
       "anyOf": [
         {
@@ -677,6 +1844,66 @@
         },
         {
           "$ref": "#/$defs/AnalyticsCatalog"
+        },
+        {
+          "$ref": "#/$defs/AnalyticsQueryResult"
+        },
+        {
+          "$ref": "#/$defs/DrainResult"
+        },
+        {
+          "$ref": "#/$defs/AlertAckResult"
+        },
+        {
+          "$ref": "#/$defs/AlertsResult"
+        },
+        {
+          "$ref": "#/$defs/LogsResult"
+        },
+        {
+          "$ref": "#/$defs/MetricsResult"
+        },
+        {
+          "$ref": "#/$defs/KickResult"
+        },
+        {
+          "$ref": "#/$defs/MessageResult"
+        },
+        {
+          "$ref": "#/$defs/TeleportResult"
+        },
+        {
+          "$ref": "#/$defs/SanctionDecisionResult"
+        },
+        {
+          "$ref": "#/$defs/SanctionDecisionResult2"
+        },
+        {
+          "$ref": "#/$defs/SanctionDecisionResult3"
+        },
+        {
+          "$ref": "#/$defs/NotationResult"
+        },
+        {
+          "$ref": "#/$defs/SanctionDecisionResult4"
+        },
+        {
+          "$ref": "#/$defs/SanctionDecisionResult5"
+        },
+        {
+          "$ref": "#/$defs/BroadcastResult"
+        },
+        {
+          "$ref": "#/$defs/MotdResult"
+        },
+        {
+          "$ref": "#/$defs/RestartResult"
+        },
+        {
+          "$ref": "#/$defs/SaveReceipt"
+        },
+        {
+          "$ref": "#/$defs/WorldStateResult"
         }
       ]
     },
@@ -733,6 +1960,19 @@
         "db_available",
         "alerts"
       ]
+    },
+    "PageLimit": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 100,
+      "minimum": 1
+    },
+    "PageRows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Alert"
+      },
+      "maxItems": 100
     },
     "PlayerPage": {
       "type": "object",
@@ -896,6 +2136,43 @@
         "text"
       ]
     },
+    "RestartResult": {
+      "type": "object",
+      "properties": {
+        "restarted_node_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "save_receipt": {
+          "$ref": "#/$defs/SaveReceipt"
+        },
+        "state": {
+          "$ref": "#/$defs/WorldState"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "restarted_node_ids",
+        "save_receipt",
+        "state"
+      ]
+    },
+    "RestrictionEffect": {
+      "type": "string",
+      "enum": [
+        "online_applied",
+        "on_next_admission",
+        "none"
+      ]
+    },
+    "RevokedState": {
+      "type": "string",
+      "enum": [
+        "revoked"
+      ]
+    },
     "RiskClass": {
       "type": "string",
       "enum": [
@@ -966,6 +2243,166 @@
         "active"
       ]
     },
+    "SanctionDecisionResult": {
+      "type": "object",
+      "properties": {
+        "decision_revision": {
+          "$ref": "#/$defs/DecisionRevision"
+        },
+        "operation_id": {
+          "$ref": "#/$defs/EnforcementId"
+        },
+        "profile": {
+          "$ref": "#/$defs/BanAccountProfile"
+        },
+        "runtime_effect": {
+          "$ref": "#/$defs/RestrictionEffect"
+        },
+        "sanction_state": {
+          "$ref": "#/$defs/ActiveState"
+        },
+        "sanction_stream_id": {
+          "$ref": "#/$defs/EnforcementId"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "sanction_stream_id",
+        "decision_revision",
+        "profile",
+        "sanction_state",
+        "runtime_effect"
+      ]
+    },
+    "SanctionDecisionResult2": {
+      "type": "object",
+      "properties": {
+        "decision_revision": {
+          "$ref": "#/$defs/DecisionRevision"
+        },
+        "operation_id": {
+          "$ref": "#/$defs/EnforcementId"
+        },
+        "profile": {
+          "$ref": "#/$defs/BanCharacterProfile"
+        },
+        "runtime_effect": {
+          "$ref": "#/$defs/RestrictionEffect"
+        },
+        "sanction_state": {
+          "$ref": "#/$defs/ActiveState"
+        },
+        "sanction_stream_id": {
+          "$ref": "#/$defs/EnforcementId"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "sanction_stream_id",
+        "decision_revision",
+        "profile",
+        "sanction_state",
+        "runtime_effect"
+      ]
+    },
+    "SanctionDecisionResult3": {
+      "type": "object",
+      "properties": {
+        "decision_revision": {
+          "$ref": "#/$defs/DecisionRevision"
+        },
+        "operation_id": {
+          "$ref": "#/$defs/EnforcementId"
+        },
+        "profile": {
+          "$ref": "#/$defs/MuteProfile"
+        },
+        "runtime_effect": {
+          "$ref": "#/$defs/RestrictionEffect"
+        },
+        "sanction_state": {
+          "$ref": "#/$defs/ActiveState"
+        },
+        "sanction_stream_id": {
+          "$ref": "#/$defs/EnforcementId"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "sanction_stream_id",
+        "decision_revision",
+        "profile",
+        "sanction_state",
+        "runtime_effect"
+      ]
+    },
+    "SanctionDecisionResult4": {
+      "type": "object",
+      "properties": {
+        "decision_revision": {
+          "$ref": "#/$defs/DecisionRevision"
+        },
+        "operation_id": {
+          "$ref": "#/$defs/EnforcementId"
+        },
+        "profile": {
+          "$ref": "#/$defs/BanProfile"
+        },
+        "runtime_effect": {
+          "$ref": "#/$defs/RestrictionEffect"
+        },
+        "sanction_state": {
+          "$ref": "#/$defs/RevokedState"
+        },
+        "sanction_stream_id": {
+          "$ref": "#/$defs/EnforcementId"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "sanction_stream_id",
+        "decision_revision",
+        "profile",
+        "sanction_state",
+        "runtime_effect"
+      ]
+    },
+    "SanctionDecisionResult5": {
+      "type": "object",
+      "properties": {
+        "decision_revision": {
+          "$ref": "#/$defs/DecisionRevision"
+        },
+        "operation_id": {
+          "$ref": "#/$defs/EnforcementId"
+        },
+        "profile": {
+          "$ref": "#/$defs/MuteProfile"
+        },
+        "runtime_effect": {
+          "$ref": "#/$defs/RestrictionEffect"
+        },
+        "sanction_state": {
+          "$ref": "#/$defs/RevokedState"
+        },
+        "sanction_stream_id": {
+          "$ref": "#/$defs/EnforcementId"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "sanction_stream_id",
+        "decision_revision",
+        "profile",
+        "sanction_state",
+        "runtime_effect"
+      ]
+    },
     "SanctionPage": {
       "type": "object",
       "properties": {
@@ -986,6 +2423,28 @@
       "required": [
         "sanctions"
       ]
+    },
+    "SaveReceipt": {
+      "type": "object",
+      "properties": {
+        "save_receipt_id": {
+          "type": "string"
+        },
+        "saved_at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "save_receipt_id",
+        "saved_at"
+      ]
+    },
+    "SessionGeneration": {
+      "description": "A positive session generation, represented as a string to cover the full u64 range.",
+      "type": "string",
+      "maxLength": 20,
+      "pattern": "^[1-9][0-9]*$"
     },
     "Skill": {
       "type": "object",
@@ -1074,6 +2533,140 @@
       },
       "additionalProperties": false
     },
+    "TeleportResult": {
+      "type": "object",
+      "properties": {
+        "from_position": {
+          "$ref": "#/$defs/Position"
+        },
+        "to_position": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "from_position",
+        "to_position"
+      ]
+    },
+    "TopWealthFilters": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "$ref": "#/$defs/PageLimit"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "limit"
+      ]
+    },
+    "TopWealthId": {
+      "type": "string",
+      "enum": [
+        "top_wealth"
+      ]
+    },
+    "TopWealthParams": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "grain": {
+          "$ref": "#/$defs/Grain"
+        },
+        "params": {
+          "$ref": "#/$defs/TopWealthFilters"
+        },
+        "query_id": {
+          "$ref": "#/$defs/TopWealthId"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "params",
+        "from",
+        "to",
+        "grain"
+      ]
+    },
+    "TopWealthResult": {
+      "type": "object",
+      "properties": {
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "context": {
+          "$ref": "#/$defs/EconomyContext"
+        },
+        "filters": {
+          "$ref": "#/$defs/TopWealthParams"
+        },
+        "metric_revision": {
+          "type": "string"
+        },
+        "query_id": {
+          "$ref": "#/$defs/TopWealthId"
+        },
+        "rows": {
+          "$ref": "#/$defs/AnalyticsRows7"
+        },
+        "watermark": {
+          "$ref": "#/$defs/Watermark"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query_id",
+        "filters",
+        "metric_revision",
+        "watermark",
+        "completeness",
+        "context",
+        "rows"
+      ]
+    },
+    "UnixMillis": {
+      "type": "integer",
+      "format": "uint64",
+      "maximum": 9007199254740991,
+      "minimum": 0
+    },
+    "Watermark": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "WealthRow": {
+      "type": "object",
+      "properties": {
+        "analytics_actor_id": {
+          "type": "string"
+        },
+        "gold": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "rank": {
+          "$ref": "#/$defs/PageLimit"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rank",
+        "analytics_actor_id",
+        "gold"
+      ]
+    },
     "World": {
       "type": "object",
       "properties": {
@@ -1136,6 +2729,36 @@
       "additionalProperties": false,
       "required": [
         "worlds"
+      ]
+    },
+    "WorldState": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "maintenance"
+      ]
+    },
+    "WorldStateResult": {
+      "type": "object",
+      "properties": {
+        "previous_state": {
+          "$ref": "#/$defs/WorldState"
+        },
+        "sessions_kicked": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "state": {
+          "$ref": "#/$defs/WorldState"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "previous_state",
+        "state",
+        "sessions_kicked"
       ]
     }
   }
